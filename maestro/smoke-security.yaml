@@ -1,0 +1,11 @@
+appId: com.opesware.opesinsure
+---
+- launchApp
+- tapOn: "Account"
+- tapOn: "Device security"
+- assertVisible: "Native Play Integrity or App Attest evidence"
+- tapOn: "Run server device check"
+- assertVisible: "LIMIT"
+- back
+- tapOn: "Service status"
+- assertVisible: "Server-confirmed availability"

@@ -69,6 +69,7 @@ export default function RootLayout() {
           <Stack.Screen name="sync/index" />
           <Stack.Screen name="account/data-usage" />
           <Stack.Screen name="security/step-up" />
+          <Stack.Screen name="security/device-status" />
           <Stack.Screen name="system/status" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>

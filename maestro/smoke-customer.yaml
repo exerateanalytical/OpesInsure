@@ -1,0 +1,15 @@
+appId: com.opesware.opesinsure
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Insurance made clear."
+- tapOn: "Get started"
+- assertVisible: "Sign in"
+- tapOn: "Choose a demo account"
+- tapOn: "Customer"
+- inputText: "246810"
+- tapOn: "Verify"
+- assertVisible: "Protection, without the confusion."
+- tapOn: "Account"
+- assertVisible: "Synchronization"
+- assertVisible: "Service status"

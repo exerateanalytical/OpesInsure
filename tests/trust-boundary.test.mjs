@@ -437,3 +437,50 @@ test("patch seven demo fixtures and service-status routes are isolated", () => {
   assert.match(layout, /security\/step-up/);
   assert.match(layout, /system\/status/);
 });
+test("patch eight defines production EAS profiles and dynamic native configuration", () => {
+  const eas = JSON.parse(read("eas.json"));
+  const config = read("app.config.js");
+  assert.equal(eas.build.production.channel, "production");
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_DEMO_MODE, "false");
+  assert.match(config, /runtimeVersion/);
+  assert.match(config, /associatedDomains/);
+  assert.match(config, /autoVerify:\s*true/);
+});
+test("patch eight hardens Android native release builds", () => {
+  const plugin = read("plugins/withOpesInsureSecurity.js");
+  assert.match(plugin, /FLAG_SECURE/);
+  assert.match(plugin, /android:allowBackup/);
+  assert.match(plugin, /android:usesCleartextTraffic/);
+  assert.match(plugin, /withMainActivity/);
+});
+test("patch eight keeps device integrity server mediated", () => {
+  const client = read("src/api/client.ts");
+  const screen = read("app/security/device-status.tsx");
+  assert.match(client, /DeviceSecurityApi/);
+  assert.match(client, /device-attestation\/nonce/);
+  assert.match(client, /device-attestation\/assess/);
+  assert.match(screen, /UNAVAILABLE_MANAGED_RUNTIME/);
+  assert.match(screen, /never claims.*JavaScript check proves device integrity/i);
+});
+test("patch eight verified links retain signing placeholders as release blockers", () => {
+  const android = read("store/associations/assetlinks.json");
+  const apple = read("store/associations/apple-app-site-association");
+  const doctor = read("scripts/release-doctor.mjs");
+  assert.match(android, /REPLACE_WITH_PLAY_APP_SIGNING_SHA256/);
+  assert.match(apple, /REPLACE_WITH_APPLE_TEAM_ID/);
+  assert.match(doctor, /ANDROID_ASSOCIATION_PLACEHOLDER/);
+  assert.match(doctor, /process\.exit\(1\)/);
+});
+test("patch eight includes automated device flows and staged rollback controls", () => {
+  assert.match(read("maestro/smoke-customer.yaml"), /appId: com\.opesware\.opesinsure/);
+  assert.match(read("maestro/smoke-security.yaml"), /Run server device check/);
+  const rollback = read("release/STAGED_ROLLOUT_AND_ROLLBACK.md");
+  assert.match(rollback, /5%, 20%, 50% and 100%/);
+  assert.match(rollback, /backend remains authoritative/i);
+});
+test("patch eight tracks external MASVS evidence without claiming completion", () => {
+  const tracker = JSON.parse(read("security/OWASP_MASVS_EVIDENCE_TRACKER.json"));
+  assert.equal(tracker.release_blocking, true);
+  assert.equal(tracker.status, "EVIDENCE_REQUIRED");
+  assert.ok(tracker.controls.every((control) => control.status !== "COMPLETE"));
+});

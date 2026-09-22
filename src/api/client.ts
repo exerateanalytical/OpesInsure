@@ -1413,3 +1413,30 @@ export const StepUpApi = {
     return grant;
   },
 };
+
+export type DeviceRiskResult = {
+  assessment_id: string;
+  action: "ALLOW" | "LIMIT" | "BLOCK";
+  reasons: string[];
+  expires_at: string;
+};
+export const DeviceSecurityApi = {
+  nonce: () =>
+    api<{ nonce: string; expires_at: string }>(
+      "/mobile/security/device-attestation/nonce",
+      { method: "POST", idempotent: true },
+    ),
+  assess: (payload: {
+    nonce: string;
+    platform: "ANDROID" | "IOS";
+    provider: "PLAY_INTEGRITY" | "APP_ATTEST" | "UNAVAILABLE_MANAGED_RUNTIME";
+    attestation_token: string | null;
+    app_version: string;
+  }) =>
+    api<DeviceRiskResult>("/mobile/security/device-attestation/assess", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+      timeoutMs: 20000,
+    }),
+};

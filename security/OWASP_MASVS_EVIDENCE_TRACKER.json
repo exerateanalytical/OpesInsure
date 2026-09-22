@@ -1,0 +1,15 @@
+{
+  "standard": "OWASP MASVS",
+  "status": "EVIDENCE_REQUIRED",
+  "release_blocking": true,
+  "controls": [
+    { "area": "MASVS-STORAGE", "owner": "mobile-security", "evidence": ["secure-store-review", "offline-data-deletion-test"], "status": "PENDING_EXTERNAL_REVIEW" },
+    { "area": "MASVS-CRYPTO", "owner": "security-architecture", "evidence": ["cryptography-inventory", "key-management-review"], "status": "PENDING_EXTERNAL_REVIEW" },
+    { "area": "MASVS-AUTH", "owner": "identity-team", "evidence": ["token-rotation-tests", "step-up-tests", "session-revocation-tests"], "status": "IMPLEMENTED_NEEDS_VERIFICATION" },
+    { "area": "MASVS-NETWORK", "owner": "platform-security", "evidence": ["tls-scan", "pinning-risk-decision", "cleartext-build-check"], "status": "PARTIAL" },
+    { "area": "MASVS-PLATFORM", "owner": "mobile-team", "evidence": ["deep-link-verification", "permission-review", "android-flag-secure-test"], "status": "IMPLEMENTED_NEEDS_DEVICE_TEST" },
+    { "area": "MASVS-CODE", "owner": "engineering", "evidence": ["sast", "sca", "sbom", "secret-scan"], "status": "PENDING_CI" },
+    { "area": "MASVS-RESILIENCE", "owner": "mobile-security", "evidence": ["play-integrity", "app-attest", "tamper-response-test"], "status": "PENDING_NATIVE_PROVIDER" },
+    { "area": "MASVS-PRIVACY", "owner": "privacy-officer", "evidence": ["data-flow-register", "retention-schedule", "store-declarations"], "status": "PENDING_APPROVAL" }
+  ]
+}

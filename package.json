@@ -1,6 +1,6 @@
 {
   "name": "opesinsure-mobile",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "node --test tests/*.test.mjs",
-    "verify": "npm run typecheck && npm run lint && npm test"
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "release:doctor": "node scripts/release-doctor.mjs",
+    "release:doctor:production": "node scripts/release-doctor.mjs --production"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.1",

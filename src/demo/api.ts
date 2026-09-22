@@ -147,6 +147,21 @@ export async function demoApi<T>(
       expires_at: new Date(Date.now() + 300000).toISOString(),
     } as T;
   }
+  if (path === "/mobile/security/device-attestation/nonce")
+    return {
+      nonce: `demo-device-nonce-${Date.now()}`,
+      expires_at: new Date(Date.now() + 300000).toISOString(),
+    } as T;
+  if (path === "/mobile/security/device-attestation/assess")
+    return {
+      assessment_id: `demo-assessment-${Date.now()}`,
+      action: body.provider === "UNAVAILABLE_MANAGED_RUNTIME" ? "LIMIT" : "ALLOW",
+      reasons:
+        body.provider === "UNAVAILABLE_MANAGED_RUNTIME"
+          ? ["NATIVE_ATTESTATION_NOT_AVAILABLE_IN_DEMO"]
+          : [],
+      expires_at: new Date(Date.now() + 3600000).toISOString(),
+    } as T;
   if (path === "/mobile/sync/status")
     return {
       server_time: state.meta.demo_clock,
