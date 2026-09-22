@@ -10,6 +10,7 @@ import {
   StatusChip,
 } from "@/components/ui";
 import { ClaimSettlement, ClaimsCompletionApi } from "@/api/client";
+import { handleStepUpRequired } from "@/security/step-up";
 export default function Settlement() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [x, setX] = useState<ClaimSettlement>();
@@ -36,8 +37,13 @@ export default function Settlement() {
         {
           text: decision === "ACCEPT" ? "Accept" : "Reject",
           style: decision === "REJECT" ? "destructive" : "default",
-          onPress: async () =>
-            setX(await ClaimsCompletionApi.decideSettlement(id, decision)),
+          onPress: async () => {
+            try {
+              setX(await ClaimsCompletionApi.decideSettlement(id, decision));
+            } catch (error) {
+              if (!handleStepUpRequired(error, "CLAIM_SETTLEMENT_DECISION", `/claim/${id}/settlement`)) throw error;
+            }
+          },
         },
       ],
     );

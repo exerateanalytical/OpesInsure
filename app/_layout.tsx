@@ -12,6 +12,7 @@ import {
 import { colors } from "@/theme/tokens";
 import { roleToPortal, useSession } from "@/store/session";
 import { AppRuntime } from "@/components/AppRuntime";
+import { ProductionErrorBoundary } from "@/components/ProductionErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,6 +55,7 @@ export default function RootLayout() {
     );
   const authenticated = status === "authenticated";
   return (
+    <ProductionErrorBoundary>
     <AppRuntime>
       <StatusBar style="dark" />
       <Stack
@@ -66,6 +68,8 @@ export default function RootLayout() {
         <Stack.Protected guard={authenticated}>
           <Stack.Screen name="sync/index" />
           <Stack.Screen name="account/data-usage" />
+          <Stack.Screen name="security/step-up" />
+          <Stack.Screen name="system/status" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
           <Stack.Screen name="quote/product" />
@@ -161,5 +165,6 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
     </AppRuntime>
+    </ProductionErrorBoundary>
   );
 }

@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "environment": "DEMO_ONLY",
+    "production_forbidden": true,
+    "app_version": "1.1.0",
+    "release_channel": "demo"
+  },
+  "runtime_bootstrap": {
+    "release": {
+      "minimum_version": "1.0.0",
+      "force_update": false,
+      "store_url": null
+    },
+    "maintenance": {
+      "active": false,
+      "message": null,
+      "ends_at": null
+    },
+    "services": [
+      { "key": "LARAVEL_API", "status": "OPERATIONAL" },
+      { "key": "MTN_MOMO", "status": "OPERATIONAL" },
+      { "key": "ORANGE_MONEY", "status": "DEGRADED" },
+      { "key": "CARRIER_GATEWAY", "status": "OPERATIONAL" },
+      { "key": "SMS", "status": "OPERATIONAL" }
+    ],
+    "security": {
+      "step_up_ttl_seconds": 300,
+      "device_risk_action": "ALLOW"
+    }
+  },
+  "step_up_scenarios": [
+    { "purpose": "PAYMENT_REFUND_REQUEST", "code": "246810", "result": "GRANTED" },
+    { "purpose": "COMMISSION_WITHDRAWAL", "code": "246810", "result": "GRANTED" },
+    { "purpose": "CLAIM_SETTLEMENT_DECISION", "code": "246810", "result": "GRANTED" }
+  ],
+  "release_gates": [
+    "production_https_configuration",
+    "demo_mode_disabled",
+    "production_release_channel",
+    "minimum_version_policy",
+    "maintenance_policy",
+    "provider_certification",
+    "mobile_penetration_test",
+    "owasp_masvs_assessment",
+    "store_signing_and_review"
+  ]
+}

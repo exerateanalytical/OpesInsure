@@ -12,6 +12,7 @@ const keys = {
   tenant: "opesinsure.tenant_id",
   device: "opesinsure.device_id",
   payment: "opesinsure.pending_payment_id",
+  stepUp: "opesinsure.step_up_grant",
 };
 export type ApiFieldErrors = Record<string, string[]>;
 export class ApiError extends Error {
@@ -33,8 +34,14 @@ type Options = RequestInit & {
   timeoutMs?: number;
   anonymous?: boolean;
   retryAuth?: boolean;
+  stepUpPurpose?: string;
 };
 let refreshPromise: Promise<boolean> | null = null;
+const sessionExpiredListeners = new Set<() => void>();
+export const onSessionExpired = (listener: () => void) => {
+  sessionExpiredListeners.add(listener);
+  return () => sessionExpiredListeners.delete(listener);
+};
 
 export const TokenVault = {
   async save(access: string, refresh: string) {
@@ -60,6 +67,7 @@ export const TokenVault = {
       SecureStore.deleteItemAsync(keys.access),
       SecureStore.deleteItemAsync(keys.refresh),
       SecureStore.deleteItemAsync(keys.tenant),
+      SecureStore.deleteItemAsync(keys.stepUp),
     ]);
   },
   async setPendingPayment(id: string) {
@@ -79,6 +87,34 @@ export const TokenVault = {
     }
     return id;
   },
+};
+export type StepUpGrant = {
+  grant_token: string;
+  purpose: string;
+  expires_at: string;
+};
+export const StepUpVault = {
+  async save(grant: StepUpGrant) {
+    await SecureStore.setItemAsync(keys.stepUp, JSON.stringify(grant), {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  },
+  async valid(purpose: string) {
+    const raw = await SecureStore.getItemAsync(keys.stepUp);
+    if (!raw) return null;
+    try {
+      const grant = JSON.parse(raw) as StepUpGrant;
+      if (grant.purpose !== purpose || Date.parse(grant.expires_at) <= Date.now()) {
+        await SecureStore.deleteItemAsync(keys.stepUp);
+        return null;
+      }
+      return grant;
+    } catch {
+      await SecureStore.deleteItemAsync(keys.stepUp);
+      return null;
+    }
+  },
+  clear: () => SecureStore.deleteItemAsync(keys.stepUp),
 };
 function toError(status: number, payload: any, response: Response) {
   const first = payload?.errors?.[0];
@@ -123,6 +159,16 @@ async function rotate() {
   return refreshPromise;
 }
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  if (
+    process.env.EXPO_PUBLIC_DEMO_MODE === "true" &&
+    options.stepUpPurpose &&
+    !(await StepUpVault.valid(options.stepUpPurpose))
+  )
+    throw new ApiError(
+      401,
+      "STEP_UP_REQUIRED",
+      "Verify this sensitive action before continuing.",
+    );
   if (process.env.EXPO_PUBLIC_DEMO_MODE === "true")
     return demoApi<T>(path, options);
   if (!API_URL)
@@ -139,6 +185,15 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       TokenVault.access(),
       TokenVault.tenant(),
     ]);
+    const stepUp = options.stepUpPurpose
+      ? await StepUpVault.valid(options.stepUpPurpose)
+      : null;
+    if (options.stepUpPurpose && !stepUp)
+      throw new ApiError(
+        401,
+        "STEP_UP_REQUIRED",
+        "Verify this sensitive action before continuing.",
+      );
     const multipart =
       typeof FormData !== "undefined" && options.body instanceof FormData;
     const response = await fetch(`${API_URL}${path}`, {
@@ -155,16 +210,21 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
           ? { Authorization: `Bearer ${token}` }
           : {}),
         ...(!options.anonymous && tenant ? { "X-Tenant-Id": tenant } : {}),
+        ...(stepUp ? { "X-Step-Up-Grant": stepUp.grant_token } : {}),
         ...options.headers,
       },
     });
-    if (
-      response.status === 401 &&
-      !options.anonymous &&
-      (options.retryAuth ?? true) &&
-      (await rotate())
-    )
-      return api<T>(path, { ...options, retryAuth: false });
+    if (response.status === 401 && !options.anonymous) {
+      if ((options.retryAuth ?? true) && (await rotate()))
+        return api<T>(path, { ...options, retryAuth: false });
+      await TokenVault.clear();
+      sessionExpiredListeners.forEach((listener) => listener());
+      throw new ApiError(
+        401,
+        "SESSION_EXPIRED",
+        "Your secure session has expired.",
+      );
+    }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw toError(response.status, payload, response);
     return (payload as Envelope<T>).data;
@@ -614,6 +674,7 @@ export const ClaimsCompletionApi = {
       method: "POST",
       body: JSON.stringify({ decision }),
       idempotent: true,
+      stepUpPurpose: "CLAIM_SETTLEMENT_DECISION",
     }),
   requestEmergencyAssistance: (payload: {
     policy_id: string;
@@ -747,6 +808,7 @@ export const AgentApi = {
       method: "POST",
       body: JSON.stringify(payload),
       idempotent: true,
+      stepUpPurpose: "COMMISSION_WITHDRAWAL",
     }),
   offlineQueue: () => api<OfflineFieldItem[]>("/mobile/agent/offline-queue"),
   retryOffline: (id: string) =>
@@ -1086,6 +1148,7 @@ export const PaymentsApi = {
       method: "POST",
       body: JSON.stringify({ reason }),
       idempotent: true,
+      stepUpPurpose: "PAYMENT_REFUND_REQUEST",
     }),
 };
 export const WalletApi = {
@@ -1282,4 +1345,71 @@ export const SyncApi = {
       idempotent: true,
       timeoutMs: 30000,
     }),
+};
+
+export type RuntimeBootstrap = {
+  release: {
+    minimum_version: string;
+    force_update: boolean;
+    store_url: string | null;
+  };
+  maintenance: {
+    active: boolean;
+    message: string | null;
+    ends_at: string | null;
+  };
+  services: {
+    key: string;
+    status: "OPERATIONAL" | "DEGRADED" | "UNAVAILABLE";
+    message?: string;
+  }[];
+  security: {
+    step_up_ttl_seconds: number;
+    device_risk_action: "ALLOW" | "LIMIT" | "BLOCK";
+  };
+};
+export const RuntimeApi = {
+  bootstrap: (params: {
+    version: string;
+    build: string;
+    channel: string;
+  }) =>
+    api<RuntimeBootstrap>(
+      `/mobile/runtime/bootstrap?version=${encodeURIComponent(params.version)}&build=${encodeURIComponent(params.build)}&channel=${encodeURIComponent(params.channel)}`,
+      { anonymous: true, timeoutMs: 8000 },
+    ),
+  telemetry: (payload: {
+    event: string;
+    correlation_id: string;
+    app_version: string;
+    release_channel: string;
+    attributes: Record<string, unknown>;
+  }) =>
+    api<void>("/mobile/runtime/telemetry", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      anonymous: true,
+      idempotent: true,
+      timeoutMs: 5000,
+    }),
+};
+export const StepUpApi = {
+  request: (purpose: string) =>
+    api<{ challenge_id: string; delivery_hint: string; expires_in: number }>(
+      "/mobile/security/step-up/request",
+      {
+        method: "POST",
+        body: JSON.stringify({ purpose }),
+        idempotent: true,
+      },
+    ),
+  verify: async (challenge_id: string, purpose: string, code: string) => {
+    const grant = await api<StepUpGrant>("/mobile/security/step-up/verify", {
+      method: "POST",
+      body: JSON.stringify({ challenge_id, purpose, code }),
+      idempotent: true,
+    });
+    await StepUpVault.save(grant);
+    return grant;
+  },
 };

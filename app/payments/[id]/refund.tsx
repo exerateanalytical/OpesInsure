@@ -3,6 +3,7 @@ import { Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { PaymentsApi } from "@/api/client";
+import { handleStepUpRequired } from "@/security/step-up";
 export default function Refund() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [reason, setReason] = useState("");
@@ -24,9 +25,13 @@ export default function Refund() {
         <Button
           label="Submit for review"
           disabled={reason.trim().length < 10}
-          onPress={async () =>
-            setStatus((await PaymentsApi.refund(id, reason)).status)
-          }
+          onPress={async () => {
+            try {
+              setStatus((await PaymentsApi.refund(id, reason)).status);
+            } catch (error) {
+              if (!handleStepUpRequired(error, "PAYMENT_REFUND_REQUEST", `/payments/${id}/refund`)) throw error;
+            }
+          }}
         />
         {status ? <Text>Request status: {status}</Text> : null}
       </Card>

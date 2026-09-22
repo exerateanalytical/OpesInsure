@@ -9,6 +9,9 @@ import { useSession } from "@/store/session";
 import { colors, space, type } from "@/theme/tokens";
 import { useResilience } from "@/store/resilience";
 import { useTranslation } from "@/i18n";
+import { onSessionExpired } from "@/api/client";
+import { useRuntime } from "@/store/runtime";
+import { RuntimeGateView } from "@/components/RuntimeGate";
 const biometricKey = "opesinsure.biometric_enabled";
 const safePaths = [
   "/(customer)/(tabs)/policies",
@@ -18,12 +21,18 @@ const safePaths = [
 ];
 export function AppRuntime({ children }: { children: ReactNode }) {
   const status = useSession((s) => s.status);
+  const invalidate = useSession((s) => s.invalidate);
   const { t } = useTranslation();
   const online = useResilience((s) => s.online);
   const hydrateResilience = useResilience((s) => s.hydrate);
   const refreshNetwork = useResilience((s) => s.refreshNetwork);
   const syncNow = useResilience((s) => s.syncNow);
   const [locked, setLocked] = useState(false);
+  const [privacyCovered, setPrivacyCovered] = useState(false);
+  const gate = useRuntime((s) => s.gate);
+  const runtime = useRuntime((s) => s.bootstrap);
+  const runtimeIssues = useRuntime((s) => s.issues);
+  const checkRuntime = useRuntime((s) => s.check);
   const unlock = async () => {
     const enabled = await SecureStore.getItemAsync(biometricKey);
     if (enabled !== "true") {
@@ -38,13 +47,20 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     setLocked(!result.success);
   };
   useEffect(() => {
+    void checkRuntime();
+    const removeSessionListener = onSessionExpired(() => {
+      void invalidate().then(() => router.replace("/session-expired" as never));
+    });
     const check = async () => {
       if (await refreshNetwork()) void syncNow();
+      void checkRuntime();
     };
     void hydrateResilience();
     const timer = setInterval(() => void check(), 10000);
     const app = AppState.addEventListener("change", (next) => {
-      if (next === "active" && status === "authenticated") void unlock();
+      setPrivacyCovered(next !== "active");
+      if (next === "active" && status === "authenticated")
+        void unlock().finally(() => setPrivacyCovered(false));
     });
     const notification = Notifications.addNotificationResponseReceivedListener(
       (response) => {
@@ -57,8 +73,25 @@ export function AppRuntime({ children }: { children: ReactNode }) {
       clearInterval(timer);
       app.remove();
       notification.remove();
+      removeSessionListener();
     };
-  }, [status, hydrateResilience, refreshNetwork, syncNow]);
+  }, [status, hydrateResilience, refreshNetwork, syncNow, checkRuntime, invalidate]);
+  if (gate !== "ready" && gate !== "checking")
+    return (
+      <RuntimeGateView
+        gate={gate}
+        bootstrap={runtime}
+        issues={runtimeIssues}
+        retry={() => void checkRuntime()}
+      />
+    );
+  if (privacyCovered)
+    return (
+      <View style={styles.privacy}>
+        <Text style={styles.privacyTitle}>OpesInsure</Text>
+        <Text style={styles.privacyBody}>Sensitive information is hidden while the app is inactive.</Text>
+      </View>
+    );
   if (locked)
     return (
       <View style={styles.lock}>
@@ -106,4 +139,13 @@ const styles = StyleSheet.create({
   },
   title: { ...type.pageTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
+  privacy: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: space.x5,
+    backgroundColor: colors.navy950,
+  },
+  privacyTitle: { ...type.pageTitle, color: colors.white },
+  privacyBody: { ...type.body, color: colors.neutral200, textAlign: "center" },
 });

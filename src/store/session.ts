@@ -16,6 +16,7 @@ type SessionState = {
   selectWorkspace: (workspace: Workspace) => Promise<void>;
   setLanguage: (language: Language) => void;
   signOut: () => Promise<void>;
+  invalidate: () => Promise<void>;
   clearError: () => void;
 };
 
@@ -89,6 +90,15 @@ export const useSession = create<SessionState>((set, get) => ({
         error: null,
       });
     }
+  },
+  async invalidate() {
+    await TokenVault.clear();
+    set({
+      status: "anonymous",
+      bootstrap: null,
+      activeWorkspace: null,
+      error: "SESSION_EXPIRED",
+    });
   },
   clearError: () => set({ error: null }),
 }));

@@ -9,6 +9,7 @@ import {
   TextField,
 } from "@/components/ui";
 import { AgentApi, AgentWithdrawal } from "@/api/client";
+import { handleStepUpRequired } from "@/security/step-up";
 export default function AgentWithdrawalScreen() {
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState("+237690000002");
@@ -36,15 +37,17 @@ export default function AgentWithdrawalScreen() {
         <Button
           label="Request withdrawal"
           disabled={Number(amount) <= 0 || phone.length < 8}
-          onPress={async () =>
-            setResult(
-              await AgentApi.requestWithdrawal({
+          onPress={async () => {
+            try {
+              setResult(await AgentApi.requestWithdrawal({
                 amount_minor: Number(amount) * 100,
                 provider: "mtn_momo",
                 destination_phone: phone,
-              }),
-            )
-          }
+              }));
+            } catch (error) {
+              if (!handleStepUpRequired(error, "COMMISSION_WITHDRAWAL", "/agent/withdrawal")) throw error;
+            }
+          }}
         />
         {result ? (
           <>

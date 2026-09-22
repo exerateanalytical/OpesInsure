@@ -386,3 +386,54 @@ test("patch six has bilingual resilience copy and accessibility semantics", () =
   assert.equal(fixtures.meta.production_forbidden, true);
   assert.ok(fixtures.operations.some((item) => item.state === "CONFLICT"));
 });
+test("patch seven fails closed for unsafe production configuration", () => {
+  const environment = read("src/config/environment.ts");
+  assert.match(environment, /DEMO_MODE_FORBIDDEN/);
+  assert.match(environment, /HTTPS_API_REQUIRED/);
+  assert.match(environment, /NON_PRODUCTION_API_HOST/);
+  assert.match(environment, /PRODUCTION_CHANNEL_REQUIRED/);
+});
+test("patch seven enforces server-driven release and maintenance gates", () => {
+  const runtime = read("src/store/runtime.ts");
+  const client = read("src/api/client.ts");
+  const gate = read("src/components/RuntimeGate.tsx");
+  assert.match(client, /\/mobile\/runtime\/bootstrap/);
+  assert.match(runtime, /force_update/);
+  assert.match(runtime, /minimum_version/);
+  assert.match(runtime, /maintenance\.active/);
+  assert.match(gate, /Update required/);
+});
+test("patch seven requires purpose-bound step-up grants for sensitive actions", () => {
+  const client = read("src/api/client.ts");
+  const screen = read("app/security/step-up.tsx");
+  for (const purpose of [
+    "PAYMENT_REFUND_REQUEST",
+    "COMMISSION_WITHDRAWAL",
+    "CLAIM_SETTLEMENT_DECISION",
+  ]) assert.match(client, new RegExp(purpose));
+  assert.match(client, /X-Step-Up-Grant/);
+  assert.match(client, /WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
+  assert.match(screen, /StepUpApi\.verify/);
+});
+test("patch seven expires invalid sessions and hides inactive-app content", () => {
+  const client = read("src/api/client.ts");
+  const runtime = read("src/components/AppRuntime.tsx");
+  assert.match(client, /SESSION_EXPIRED/);
+  assert.match(client, /sessionExpiredListeners/);
+  assert.match(runtime, /privacyCovered/);
+  assert.match(runtime, /Sensitive information is hidden/);
+});
+test("patch seven telemetry rejects common PII fields", () => {
+  const telemetry = read("src/security/telemetry.ts");
+  assert.match(telemetry, /name\|email\|phone\|token\|address\|document/);
+  assert.match(telemetry, /Telemetry must never block/);
+  assert.doesNotMatch(telemetry, /console\.log/);
+});
+test("patch seven demo fixtures and service-status routes are isolated", () => {
+  const fixture = JSON.parse(read("src/data/demo/production-readiness.v1.json"));
+  const layout = read("app/_layout.tsx");
+  assert.equal(fixture.meta.production_forbidden, true);
+  assert.equal(fixture.step_up_scenarios.length, 3);
+  assert.match(layout, /security\/step-up/);
+  assert.match(layout, /system\/status/);
+});

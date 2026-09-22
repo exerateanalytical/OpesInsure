@@ -1,6 +1,6 @@
 {
   "name": "opesinsure-mobile",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -17,6 +17,7 @@
     "@expo-google-fonts/inter": "^0.4.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "~54.0.0",
+    "expo-application": "~7.0.8",
     "expo-constants": "~18.0.0",
     "expo-crypto": "~15.0.0",
     "expo-document-picker": "~14.0.8",

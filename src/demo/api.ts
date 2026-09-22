@@ -114,6 +114,39 @@ export async function demoApi<T>(
     await SecureStore.deleteItemAsync(accountKey);
     return undefined as T;
   }
+  if (path.startsWith("/mobile/runtime/bootstrap"))
+    return {
+      release: {
+        minimum_version: "1.0.0",
+        force_update: false,
+        store_url: null,
+      },
+      maintenance: { active: false, message: null, ends_at: null },
+      services: [
+        { key: "LARAVEL_API", status: "OPERATIONAL" },
+        { key: "MTN_MOMO", status: "OPERATIONAL" },
+        { key: "ORANGE_MONEY", status: "DEGRADED", message: "Demo delayed webhook scenario" },
+        { key: "CARRIER_GATEWAY", status: "OPERATIONAL" },
+        { key: "SMS", status: "OPERATIONAL" },
+      ],
+      security: { step_up_ttl_seconds: 300, device_risk_action: "ALLOW" },
+    } as T;
+  if (path === "/mobile/runtime/telemetry") return undefined as T;
+  if (path === "/mobile/security/step-up/request")
+    return {
+      challenge_id: `step-up-${Date.now()}`,
+      delivery_hint: "Demo OTP · 246810",
+      expires_in: 300,
+    } as T;
+  if (path === "/mobile/security/step-up/verify") {
+    if (body.code !== state.demo_auth.fixed_otp)
+      throw new Error("Use demo step-up code 246810.");
+    return {
+      grant_token: `demo-step-up-${body.purpose}`,
+      purpose: body.purpose,
+      expires_at: new Date(Date.now() + 300000).toISOString(),
+    } as T;
+  }
   if (path === "/mobile/sync/status")
     return {
       server_time: state.meta.demo_clock,
