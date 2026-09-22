@@ -30,4 +30,9 @@ return [
     'upload_incomplete' => 'Not every part of this upload has arrived yet.',
     'upload_size_mismatch' => 'The assembled file does not match the declared size. Please upload it again.',
     'upload_checksum_mismatch' => 'The assembled file does not match the expected checksum. Please upload it again.',
+    'claim_no_party' => 'We could not find a customer profile for your account.',
+    'claim_evidence_upload_not_ready' => 'That upload is not ready to be used as evidence yet.',
+    'claim_evidence_upload_unreadable' => 'That upload could not be read. Please try uploading it again.',
+    'claim_closed_for_edits' => 'This claim is closed and can no longer be updated.',
+    'claim_party_consent_required' => 'Confirm this person\'s consent before saving their contact details.',
 ];

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Carrier;
+use App\Models\Claim;
 use App\Models\Document;
 use App\Models\FulfilmentOrder;
 use App\Models\InsuranceProduct;
@@ -142,6 +143,22 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'delivery_attempts' => 0,
             'sla_due_at' => now()->addDays(3),
             'idempotency_key' => (string) Str::uuid(),
+        ], $overrides));
+    }
+
+    function makeMobileTestClaim(Tenant $tenant, Policy $policy, Party $party, array $overrides = []): Claim
+    {
+        return Claim::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'policy_id' => $policy->id,
+            'claimant_party_id' => $party->id,
+            'claim_number' => 'CLM-'.Str::random(10),
+            'status' => 'SUBMITTED',
+            'loss_occurred_at' => now()->subDays(2),
+            'loss_details' => ['description' => 'Rear-ended at a traffic light.'],
+            'loss_location' => 'Douala',
+            'currency' => 'XAF',
+            'submitted_at' => now()->subDays(2),
         ], $overrides));
     }
 

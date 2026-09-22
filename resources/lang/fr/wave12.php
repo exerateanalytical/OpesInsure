@@ -30,4 +30,9 @@ return [
     'upload_incomplete' => 'Toutes les parties de ce téléversement ne sont pas encore arrivées.',
     'upload_size_mismatch' => 'Le fichier assemblé ne correspond pas à la taille déclarée. Veuillez le téléverser à nouveau.',
     'upload_checksum_mismatch' => 'Le fichier assemblé ne correspond pas à la somme de contrôle attendue. Veuillez le téléverser à nouveau.',
+    'claim_no_party' => 'Nous n\'avons trouvé aucun profil client associé à votre compte.',
+    'claim_evidence_upload_not_ready' => 'Ce téléversement n\'est pas encore prêt à être utilisé comme pièce justificative.',
+    'claim_evidence_upload_unreadable' => 'Ce téléversement n\'a pas pu être lu. Veuillez le téléverser à nouveau.',
+    'claim_closed_for_edits' => 'Ce sinistre est clôturé et ne peut plus être modifié.',
+    'claim_party_consent_required' => 'Confirmez le consentement de cette personne avant d\'enregistrer ses coordonnées.',
 ];
