@@ -15,6 +15,7 @@ use App\Models\QuoteOffer;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
+use App\Models\UploadSession;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -112,6 +113,20 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'quote_id' => $quote->id, 'carrier_id' => $carrierId, 'product_id' => $productId, 'tariff_version_id' => $tariffId,
             'premium_minor' => 100000, 'total_minor' => 100000, 'currency' => 'XAF', 'status' => 'OFFERED',
             'calculation_breakdown' => [], 'valid_until' => now()->addDays(7),
+        ], $overrides));
+    }
+
+    function makeMobileTestUploadSession(Tenant $tenant, User $user, array $overrides = []): UploadSession
+    {
+        return UploadSession::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'resource_type' => 'CLAIM_EVIDENCE',
+            'mime_type' => 'image/jpeg',
+            'total_chunks' => 2,
+            'total_size_bytes' => 20,
+            'status' => 'IN_PROGRESS',
+            'expires_at' => now()->addHours(48),
         ], $overrides));
     }
 

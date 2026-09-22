@@ -18,9 +18,9 @@ final class MobileDeliveryController
 
     public function updateAddress(string $delivery, Request $request, MobileDeliveryService $service): JsonResponse
     {
-        $data = $request->validate(['address' => 'required|array']);
+        $data = $request->validate(['address' => 'required|array', 'version' => 'sometimes|string']);
 
-        return response()->json(['data' => $service->updateAddress($delivery, $data['address'], $request->user(), app(TenantContext::class)->id())]);
+        return response()->json(['data' => $service->updateAddress($delivery, $data['address'], $request->user(), app(TenantContext::class)->id(), $data['version'] ?? null)]);
     }
 
     public function confirm(string $delivery, Request $request, MobileDeliveryService $service): JsonResponse

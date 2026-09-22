@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Logistics;
 
+use App\Application\Concerns\EnforcesOptimisticConcurrency;
 use App\Application\Identity\PartyResolver;
 use App\Domain\Logistics\FulfilmentStateMachine;
 use App\Models\FulfilmentOrder;
@@ -24,6 +25,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class MobileDeliveryService
 {
+    use EnforcesOptimisticConcurrency;
+
     public function __construct(private PartyResolver $parties)
     {
     }
@@ -33,9 +36,19 @@ final class MobileDeliveryService
         return $this->owned($deliveryId, $user, $tenantId)->load('courier');
     }
 
-    public function updateAddress(string $deliveryId, array $address, User $user, string $tenantId): FulfilmentOrder
+    /**
+     * $clientVersion is the delivery's `updated_at` as the customer last saw
+     * it (see EnforcesOptimisticConcurrency) — a customer editing an address
+     * while a courier update lands concurrently is a believable real race,
+     * so a stale write here gets a 409 instead of silently clobbering it.
+     * Optional/non-breaking: omit it to keep the previous last-write-wins
+     * behaviour.
+     */
+    public function updateAddress(string $deliveryId, array $address, User $user, string $tenantId, ?string $clientVersion = null): FulfilmentOrder
     {
         $order = $this->owned($deliveryId, $user, $tenantId);
+
+        $this->assertNotStale($order, $clientVersion);
 
         // Once a courier is actively assigned/en route, redirecting the
         // address is a courier/staff-mediated change, not a self-service one.
