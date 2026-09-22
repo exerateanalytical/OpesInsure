@@ -35,10 +35,13 @@ export default function RootLayout() {
   const customer =
     status === "authenticated" &&
     roleToPortal(workspace?.role_code ?? "") === "customer";
+  const agent =
+    status === "authenticated" &&
+    roleToPortal(workspace?.role_code ?? "") === "agent";
   const partner =
     status === "authenticated" &&
     !!workspace &&
-    roleToPortal(workspace.role_code) !== "customer";
+    !["customer", "agent"].includes(roleToPortal(workspace.role_code) ?? "");
   return (
     <AppRuntime>
       <StatusBar style="dark" />
@@ -105,6 +108,19 @@ export default function RootLayout() {
           <Stack.Screen name="support/index" />
           <Stack.Screen name="support/new" />
           <Stack.Screen name="support/[id]" />
+        </Stack.Protected>
+        <Stack.Protected guard={agent}>
+          <Stack.Screen name="agent/index" />
+          <Stack.Screen name="agent/onboarding" />
+          <Stack.Screen name="agent/clients/index" />
+          <Stack.Screen name="agent/clients/new" />
+          <Stack.Screen name="agent/clients/[id]" />
+          <Stack.Screen name="agent/sales/new" />
+          <Stack.Screen name="agent/sales/[id]" />
+          <Stack.Screen name="agent/renewals" />
+          <Stack.Screen name="agent/wallet" />
+          <Stack.Screen name="agent/withdrawal" />
+          <Stack.Screen name="agent/offline" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

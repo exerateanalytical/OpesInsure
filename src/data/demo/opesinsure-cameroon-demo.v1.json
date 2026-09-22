@@ -1324,6 +1324,110 @@
       "terms": "Demonstration settled claim."
     }
   ],
+  "agent_mobile": {
+    "profile": {
+      "id": "usr-agent",
+      "status": "ACTIVE",
+      "agent_code": "OI-AG-00017",
+      "full_name": "Alain Demo Agent",
+      "national_id_number": "CM-DEMO-AGENT-17",
+      "momo_phone_e164": "+237690000002",
+      "mandate_expires_at": "2027-06-30",
+      "compliance_items": [
+        { "label": "Identity verified", "status": "COMPLETE" },
+        { "label": "Agent mandate", "status": "COMPLETE" },
+        { "label": "Code of conduct", "status": "COMPLETE" }
+      ]
+    },
+    "dashboard": {
+      "metrics": [
+        { "label": "Sales this month", "value": "12" },
+        { "label": "Available commission", "value": "4,200 FCFA" },
+        { "label": "Renewals due", "value": "8", "tone": "warning" },
+        { "label": "Pending client payments", "value": "3", "tone": "warning" }
+      ],
+      "recent_sales": [
+        {
+          "id": "agent-sale-001",
+          "customer_id": "customer-002",
+          "customer_name": "Brice Demo Client",
+          "product": "Motor Third Party",
+          "status": "PAYMENT_REQUESTED",
+          "premium_minor": 7080000,
+          "currency": "XAF",
+          "payment_phone_e164": "+237690000101",
+          "payment_status": "PENDING_CLIENT",
+          "commission_minor": 420000,
+          "created_at": "2026-09-22T09:00:00+01:00"
+        }
+      ]
+    },
+    "clients": [
+      {
+        "id": "customer-002",
+        "full_name": "Brice Demo Client",
+        "phone_e164": "+237690000101",
+        "city": "Douala",
+        "kyc_status": "VERIFIED",
+        "origin_locked": true,
+        "active_policies": 1,
+        "renewal_due_at": "2026-10-09"
+      },
+      {
+        "id": "agent-client-002",
+        "full_name": "Carine Demo",
+        "phone_e164": "+237690000103",
+        "city": "Yaoundé",
+        "kyc_status": "PENDING_REVIEW",
+        "origin_locked": true,
+        "active_policies": 0,
+        "renewal_due_at": null
+      }
+    ],
+    "sales": [
+      {
+        "id": "agent-sale-001",
+        "customer_id": "customer-002",
+        "customer_name": "Brice Demo Client",
+        "product": "Motor Third Party",
+        "status": "PAYMENT_REQUESTED",
+        "premium_minor": 7080000,
+        "currency": "XAF",
+        "payment_phone_e164": "+237690000101",
+        "payment_status": "PENDING_CLIENT",
+        "commission_minor": 420000,
+        "created_at": "2026-09-22T09:00:00+01:00"
+      }
+    ],
+    "renewals": [
+      {
+        "id": "renewal-agent-001",
+        "customer_id": "customer-002",
+        "customer_name": "Brice Demo Client",
+        "policy_number": "OI-DEMO-CM-0002",
+        "expires_at": "2026-10-09",
+        "days_remaining": 17,
+        "status": "ACTION_DUE"
+      }
+    ],
+    "offline_queue": [
+      {
+        "id": "offline-agent-001",
+        "type": "CLIENT_REGISTRATION",
+        "local_reference": "LOCAL-CLIENT-001",
+        "status": "FAILED",
+        "updated_at": "2026-09-22T09:45:00+01:00",
+        "error": "Connection interrupted before server acknowledgement"
+      },
+      {
+        "id": "offline-agent-002",
+        "type": "DOCUMENT_UPLOAD",
+        "local_reference": "LOCAL-DOC-001",
+        "status": "QUEUED",
+        "updated_at": "2026-09-22T09:50:00+01:00"
+      }
+    ]
+  },
   "risk_and_compliance": {
     "fraud_alerts": [
       {

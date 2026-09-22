@@ -625,6 +625,135 @@ export const ClaimsCompletionApi = {
       { method: "POST", body: JSON.stringify(payload), idempotent: true },
     ),
 };
+export type AgentProfile = {
+  id: string;
+  status: "DRAFT" | "PENDING_REVIEW" | "ACTIVE" | "SUSPENDED";
+  agent_code: string;
+  full_name: string;
+  national_id_number?: string;
+  momo_phone_e164: string;
+  mandate_expires_at?: string | null;
+  compliance_items: { label: string; status: string }[];
+};
+export type AgentClient = {
+  id: string;
+  full_name: string;
+  phone_e164: string;
+  city: string;
+  kyc_status: string;
+  origin_locked: boolean;
+  active_policies: number;
+  renewal_due_at?: string | null;
+};
+export type AgentSale = {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  product: string;
+  status: string;
+  premium_minor: number;
+  currency: "XAF";
+  payment_phone_e164: string;
+  payment_status: string;
+  commission_minor: number;
+  created_at: string;
+};
+export type AgentCommission = {
+  id: string;
+  policy_id?: string;
+  status: string;
+  amount_minor: number;
+  currency: "XAF";
+  available_at?: string;
+  reason?: string;
+};
+export type AgentWithdrawal = {
+  id: string;
+  provider: string;
+  amount_minor: number;
+  status: string;
+  requested_at: string;
+  destination_phone: string;
+};
+export type AgentRenewal = {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  policy_number: string;
+  expires_at: string;
+  days_remaining: number;
+  status: string;
+};
+export type OfflineFieldItem = {
+  id: string;
+  type: string;
+  local_reference: string;
+  status: "QUEUED" | "SYNCING" | "FAILED" | "SYNCED";
+  updated_at: string;
+  error?: string;
+};
+export const AgentApi = {
+  profile: () => api<AgentProfile>("/mobile/agent/profile"),
+  submitProfile: (payload: Partial<AgentProfile>) =>
+    api<AgentProfile>("/mobile/agent/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  dashboard: () =>
+    api<{
+      metrics: { label: string; value: string; tone?: string }[];
+      recent_sales: AgentSale[];
+    }>("/mobile/agent/dashboard"),
+  clients: () => api<AgentClient[]>("/mobile/agent/clients"),
+  client: (id: string) => api<AgentClient>(`/mobile/agent/clients/${id}`),
+  createClient: (payload: {
+    full_name: string;
+    phone_e164: string;
+    city: string;
+    consent_reference: string;
+  }) =>
+    api<AgentClient>("/mobile/agent/clients", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  createSale: (payload: {
+    customer_id: string;
+    product: string;
+    payment_phone_e164: string;
+  }) =>
+    api<AgentSale>("/mobile/agent/sales", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  sale: (id: string) => api<AgentSale>(`/mobile/agent/sales/${id}`),
+  requestPayment: (id: string) =>
+    api<AgentSale>(`/mobile/agent/sales/${id}/payment-request`, {
+      method: "POST",
+      idempotent: true,
+    }),
+  renewals: () => api<AgentRenewal[]>("/mobile/agent/renewals"),
+  commissions: () => api<AgentCommission[]>("/mobile/agent/commissions"),
+  withdrawals: () => api<AgentWithdrawal[]>("/mobile/agent/withdrawals"),
+  requestWithdrawal: (payload: {
+    amount_minor: number;
+    provider: "mtn_momo" | "orange_money";
+    destination_phone: string;
+  }) =>
+    api<AgentWithdrawal>("/mobile/agent/withdrawals", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  offlineQueue: () => api<OfflineFieldItem[]>("/mobile/agent/offline-queue"),
+  retryOffline: (id: string) =>
+    api<OfflineFieldItem>(`/mobile/agent/offline-queue/${id}/retry`, {
+      method: "POST",
+      idempotent: true,
+    }),
+};
 export const InsuranceApi = {
   createQuote: (payload: {
     customer_id: string;

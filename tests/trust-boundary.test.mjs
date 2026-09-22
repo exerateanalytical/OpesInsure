@@ -244,3 +244,51 @@ test("settlement payment screen warns against advance fee fraud", () => {
   assert.match(screen, /never asks you to pay a fee/i);
   assert.match(screen, /server/i);
 });
+test("patch four agent routes use a dedicated role guard", () => {
+  const layout = read("app/_layout.tsx");
+  const role = read("app/(auth)/role.tsx");
+  assert.match(layout, /Stack\.Protected guard=\{agent\}/);
+  for (const route of [
+    "agent/index",
+    "agent/onboarding",
+    "agent/clients/index",
+    "agent/sales/new",
+    "agent/renewals",
+    "agent/wallet",
+    "agent/withdrawal",
+    "agent/offline",
+  ])
+    assert.match(layout, new RegExp(route));
+  assert.match(role, /portal === "agent"/);
+});
+test("agent operations are typed and server mediated", () => {
+  const client = read("src/api/client.ts");
+  for (const contract of [
+    "AgentApi",
+    "createClient",
+    "requestPayment",
+    "requestWithdrawal",
+    "retryOffline",
+  ])
+    assert.match(client, new RegExp(contract));
+  assert.match(client, /Idempotency-Key/);
+});
+test("agent UI protects client payment and origin ownership", () => {
+  const sale = read("app/agent/sales/new.tsx");
+  const client = read("app/agent/clients/new.tsx");
+  assert.match(sale, /never collect or enter/i);
+  assert.match(client, /cannot overwrite/i);
+  assert.match(client, /consent/i);
+});
+test("patch four demo data covers field operations", () => {
+  const demo = JSON.parse(
+    read("src/data/demo/opesinsure-cameroon-demo.v1.json"),
+  );
+  assert.ok(demo.agent_mobile.profile);
+  for (const key of ["clients", "sales", "renewals", "offline_queue"])
+    assert.ok(
+      Array.isArray(demo.agent_mobile[key]) &&
+        demo.agent_mobile[key].length > 0,
+      `missing ${key}`,
+    );
+});

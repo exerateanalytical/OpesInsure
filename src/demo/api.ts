@@ -122,6 +122,96 @@ export async function demoApi<T>(
       result: "NOT_FOUND",
       verified_at: state.meta.demo_clock,
     }) as T;
+  if (path === "/mobile/agent/profile") {
+    if (method === "PATCH") Object.assign(state.agent_mobile.profile, body);
+    return state.agent_mobile.profile as T;
+  }
+  if (path === "/mobile/agent/dashboard")
+    return state.agent_mobile.dashboard as T;
+  if (path === "/mobile/agent/clients" && method === "GET")
+    return state.agent_mobile.clients as T;
+  if (path === "/mobile/agent/clients" && method === "POST") {
+    const existing = state.agent_mobile.clients.find(
+      (x: any) => x.phone_e164 === body.phone_e164,
+    );
+    if (existing) return { ...existing, duplicate_detected: true } as T;
+    const item = {
+      id: `agent-client-${Date.now()}`,
+      kyc_status: "NOT_STARTED",
+      origin_locked: true,
+      active_policies: 0,
+      renewal_due_at: null,
+      ...body,
+    };
+    state.agent_mobile.clients.unshift(item);
+    return item as T;
+  }
+  if (/^\/mobile\/agent\/clients\/[^/]+$/.test(path))
+    return state.agent_mobile.clients.find(
+      (x: any) => x.id === path.split("/")[4],
+    ) as T;
+  if (path === "/mobile/agent/sales" && method === "POST") {
+    const client = state.agent_mobile.clients.find(
+      (x: any) => x.id === body.customer_id,
+    );
+    const item = {
+      id: `agent-sale-${Date.now()}`,
+      customer_name: client?.full_name ?? "Client",
+      status: "QUOTE_READY",
+      premium_minor: 7080000,
+      currency: "XAF",
+      payment_status: "NOT_REQUESTED",
+      commission_minor: 420000,
+      created_at: state.meta.demo_clock,
+      ...body,
+    };
+    state.agent_mobile.sales.unshift(item);
+    return item as T;
+  }
+  if (
+    path.endsWith("/payment-request") &&
+    path.startsWith("/mobile/agent/sales/")
+  ) {
+    const item = state.agent_mobile.sales.find(
+      (x: any) => x.id === path.split("/")[4],
+    );
+    item.payment_status = "PENDING_CLIENT";
+    item.status = "PAYMENT_REQUESTED";
+    return item as T;
+  }
+  if (/^\/mobile\/agent\/sales\/[^/]+$/.test(path))
+    return state.agent_mobile.sales.find(
+      (x: any) => x.id === path.split("/")[4],
+    ) as T;
+  if (path === "/mobile/agent/renewals")
+    return state.agent_mobile.renewals as T;
+  if (path === "/mobile/agent/commissions")
+    return state.agent_operations.commissions as T;
+  if (path === "/mobile/agent/withdrawals" && method === "GET")
+    return state.agent_operations.withdrawals as T;
+  if (path === "/mobile/agent/withdrawals" && method === "POST") {
+    const item = {
+      id: `withdrawal-${Date.now()}`,
+      status: "PENDING_APPROVAL",
+      requested_at: state.meta.demo_clock,
+      ...body,
+    };
+    state.agent_operations.withdrawals.unshift(item);
+    return item as T;
+  }
+  if (path === "/mobile/agent/offline-queue")
+    return state.agent_mobile.offline_queue as T;
+  if (
+    path.endsWith("/retry") &&
+    path.startsWith("/mobile/agent/offline-queue/")
+  ) {
+    const item = state.agent_mobile.offline_queue.find(
+      (x: any) => x.id === path.split("/")[4],
+    );
+    item.status = "QUEUED";
+    delete item.error;
+    return item as T;
+  }
   if (path === "/mobile/claims/emergency-assistance")
     return {
       id: `assistance-${Date.now()}`,
