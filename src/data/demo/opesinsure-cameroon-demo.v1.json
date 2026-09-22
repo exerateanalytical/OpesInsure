@@ -1169,6 +1169,161 @@
       "attachments": []
     }
   ],
+  "claim_incidents": [
+    {
+      "claim_id": "claim-open",
+      "incident_type": "COLLISION",
+      "police_report_number": "POL-DEMO-2026-01",
+      "latitude": 4.0921,
+      "longitude": 9.7419,
+      "injuries_reported": false,
+      "vehicle_drivable": true,
+      "towing_required": false,
+      "declaration_confirmed": true
+    },
+    {
+      "claim_id": "claim-settled",
+      "incident_type": "GLASS_DAMAGE",
+      "police_report_number": null,
+      "latitude": 4.0511,
+      "longitude": 9.7679,
+      "injuries_reported": false,
+      "vehicle_drivable": true,
+      "towing_required": false,
+      "declaration_confirmed": true
+    },
+    {
+      "claim_id": "claim-rejected",
+      "incident_type": "COLLISION",
+      "police_report_number": null,
+      "latitude": 5.4764,
+      "longitude": 10.4176,
+      "injuries_reported": false,
+      "vehicle_drivable": true,
+      "towing_required": false,
+      "declaration_confirmed": true
+    }
+  ],
+  "claim_parties": [
+    {
+      "id": "claim-party-001",
+      "claim_id": "claim-open",
+      "role": "DRIVER",
+      "full_name": "Mireille Demo",
+      "phone_e164": "+237690000001",
+      "vehicle_registration": "LT 245 AB"
+    },
+    {
+      "id": "claim-party-002",
+      "claim_id": "claim-open",
+      "role": "THIRD_PARTY",
+      "full_name": "Samuel Demo",
+      "phone_e164": "+237670000099",
+      "vehicle_registration": "CE 990 XY",
+      "insurer_name": "Demo Mutual Assurance"
+    },
+    {
+      "id": "claim-party-003",
+      "claim_id": "claim-open",
+      "role": "WITNESS",
+      "full_name": "Nadine Witness",
+      "phone_e164": "+237650000088"
+    }
+  ],
+  "claim_evidence_requirements": [
+    {
+      "claim_id": "claim-open",
+      "key": "vehicle_wide",
+      "label": "Wide-angle vehicle photos",
+      "required": true,
+      "status": "VERIFIED",
+      "guidance": "Capture all four sides in daylight."
+    },
+    {
+      "claim_id": "claim-open",
+      "key": "damage_closeup",
+      "label": "Damage close-ups",
+      "required": true,
+      "status": "UPLOADED",
+      "guidance": "Include surrounding undamaged panels."
+    },
+    {
+      "claim_id": "claim-open",
+      "key": "police_report",
+      "label": "Police report",
+      "required": false,
+      "status": "MISSING",
+      "guidance": "Required when injuries, theft or major third-party damage occurred."
+    },
+    {
+      "claim_id": "claim-open",
+      "key": "repair_estimate",
+      "label": "Repair estimate",
+      "required": true,
+      "status": "MISSING",
+      "guidance": "Upload a signed estimate from a registered garage."
+    }
+  ],
+  "claim_inspections": [
+    {
+      "id": "inspection-001",
+      "claim_id": "claim-open",
+      "status": "SCHEDULED",
+      "appointment_at": "2026-09-25T09:30:00+01:00",
+      "location": "Demo Auto Assessment Centre, Bonamoussadi",
+      "surveyor_name": "Jean Demo Surveyor",
+      "contact_phone": "+237620000001",
+      "notes": "Bring the vehicle and original registration card."
+    }
+  ],
+  "claim_repairs": [
+    {
+      "claim_id": "claim-open",
+      "status": "ESTIMATE_REVIEW",
+      "garage_name": "Bonamoussadi Demo Auto",
+      "estimate_minor": 48500000,
+      "approved_minor": null,
+      "deductible_minor": 5000000,
+      "authorization_reference": null
+    },
+    {
+      "claim_id": "claim-settled",
+      "status": "COMPLETED",
+      "garage_name": "Akwa Demo Glass",
+      "estimate_minor": 13000000,
+      "approved_minor": 13000000,
+      "deductible_minor": 500000,
+      "authorization_reference": "AUTH-DEMO-0002"
+    }
+  ],
+  "claim_settlements": [
+    {
+      "id": "settlement-open",
+      "claim_id": "claim-open",
+      "status": "OFFERED",
+      "offered_minor": 42000000,
+      "deductible_minor": 5000000,
+      "net_minor": 37000000,
+      "currency": "XAF",
+      "payment_status": "NOT_STARTED",
+      "payment_reference": null,
+      "decision_deadline": "2026-10-05T17:00:00+01:00",
+      "terms": "Full and final settlement of the assessed insured damage, subject to verified payment details."
+    },
+    {
+      "id": "settlement-paid",
+      "claim_id": "claim-settled",
+      "status": "ACCEPTED",
+      "offered_minor": 13000000,
+      "deductible_minor": 500000,
+      "net_minor": 12500000,
+      "currency": "XAF",
+      "payment_status": "PAID",
+      "payment_reference": "CLM-PAY-DEMO-0002",
+      "decision_deadline": "2025-04-25T17:00:00+01:00",
+      "terms": "Demonstration settled claim."
+    }
+  ],
   "risk_and_compliance": {
     "fraud_alerts": [
       {

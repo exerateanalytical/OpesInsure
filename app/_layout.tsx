@@ -64,6 +64,14 @@ export default function RootLayout() {
           <Stack.Screen name="claim/[id]" />
           <Stack.Screen name="claim/[id]/evidence" />
           <Stack.Screen name="claim/[id]/appeal" />
+          <Stack.Screen name="claim/emergency" />
+          <Stack.Screen name="claim/[id]/incident" />
+          <Stack.Screen name="claim/[id]/parties" />
+          <Stack.Screen name="claim/[id]/checklist" />
+          <Stack.Screen name="claim/[id]/inspection" />
+          <Stack.Screen name="claim/[id]/repair" />
+          <Stack.Screen name="claim/[id]/settlement" />
+          <Stack.Screen name="claim/[id]/settlement-payment" />
           <Stack.Screen name="account/profile" />
           <Stack.Screen name="account/language" />
           <Stack.Screen name="account/devices" />

@@ -122,6 +122,62 @@ export async function demoApi<T>(
       result: "NOT_FOUND",
       verified_at: state.meta.demo_clock,
     }) as T;
+  if (path === "/mobile/claims/emergency-assistance")
+    return {
+      id: `assistance-${Date.now()}`,
+      status: "DISPATCH_REQUESTED",
+      reference: "OI-HELP-DEMO-001",
+    } as T;
+  if (/^\/mobile\/claims\/[^/]+\/incident$/.test(path)) {
+    const item = state.claim_incidents.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    );
+    if (method === "PUT") Object.assign(item, body);
+    return item as T;
+  }
+  if (/^\/mobile\/claims\/[^/]+\/parties$/.test(path)) {
+    const claimId = path.split("/")[3];
+    if (method === "GET")
+      return state.claim_parties.filter(
+        (x: any) => x.claim_id === claimId,
+      ) as T;
+    const item = { id: `party-${Date.now()}`, claim_id: claimId, ...body };
+    state.claim_parties.push(item);
+    return item as T;
+  }
+  if (/^\/mobile\/claims\/[^/]+\/evidence-requirements$/.test(path))
+    return state.claim_evidence_requirements.filter(
+      (x: any) => x.claim_id === path.split("/")[3],
+    ) as T;
+  if (/^\/mobile\/claims\/[^/]+\/inspection$/.test(path))
+    return state.claim_inspections.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    ) as T;
+  if (path.endsWith("/inspection/reschedule")) {
+    const item = state.claim_inspections.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    );
+    item.appointment_at = body.appointment_at;
+    item.status = "RESCHEDULED";
+    return item as T;
+  }
+  if (/^\/mobile\/claims\/[^/]+\/repair$/.test(path))
+    return state.claim_repairs.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    ) as T;
+  if (/^\/mobile\/claims\/[^/]+\/settlement$/.test(path))
+    return state.claim_settlements.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    ) as T;
+  if (path.endsWith("/settlement/decision")) {
+    const item = state.claim_settlements.find(
+      (x: any) => x.claim_id === path.split("/")[3],
+    );
+    item.status =
+      body.decision === "ACCEPT" ? "ACCEPTED" : "REJECTED_BY_CUSTOMER";
+    if (body.decision === "ACCEPT") item.payment_status = "QUEUED";
+    return item as T;
+  }
   if (path === "/mobile/quotes") return state.quote_history as T;
   if (/^\/mobile\/quotes\/[^/]+$/.test(path) && method === "GET") {
     const id = path.split("/")[3];
@@ -417,6 +473,35 @@ export async function demoApi<T>(
       ...body,
     };
     state.claims.unshift(item);
+    state.claim_incidents.push({
+      claim_id: item.id,
+      incident_type: "COLLISION",
+      police_report_number: null,
+      latitude: null,
+      longitude: null,
+      injuries_reported: false,
+      vehicle_drivable: true,
+      towing_required: false,
+      declaration_confirmed: false,
+    });
+    state.claim_evidence_requirements.push(
+      {
+        claim_id: item.id,
+        key: "vehicle_wide",
+        label: "Wide-angle vehicle photos",
+        required: true,
+        status: "MISSING",
+        guidance: "Capture all four sides in daylight.",
+      },
+      {
+        claim_id: item.id,
+        key: "damage_closeup",
+        label: "Damage close-ups",
+        required: true,
+        status: "MISSING",
+        guidance: "Include surrounding undamaged panels.",
+      },
+    );
     return item as T;
   }
   if (/^\/claims\/[^/]+$/.test(path))

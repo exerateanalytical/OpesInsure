@@ -195,3 +195,52 @@ test("patch two demo fixtures cover lifecycle states", () => {
       `missing ${key}`,
     );
 });
+test("patch three claims completion routes are customer protected", () => {
+  const layout = read("app/_layout.tsx");
+  for (const route of [
+    "claim/emergency",
+    "claim/[id]/incident",
+    "claim/[id]/parties",
+    "claim/[id]/checklist",
+    "claim/[id]/inspection",
+    "claim/[id]/repair",
+    "claim/[id]/settlement",
+    "claim/[id]/settlement-payment",
+  ])
+    assert.match(layout, new RegExp(route.replace(/[\[\]]/g, "\\$&")));
+});
+test("claims completion decisions and assistance are API mediated", () => {
+  const client = read("src/api/client.ts");
+  for (const contract of [
+    "ClaimsCompletionApi",
+    "evidenceRequirements",
+    "rescheduleInspection",
+    "decideSettlement",
+    "requestEmergencyAssistance",
+  ])
+    assert.match(client, new RegExp(contract));
+  assert.match(client, /settlement\/decision/);
+  assert.match(client, /idempotent:\s*true/);
+});
+test("patch three demo data covers operational claim lifecycle", () => {
+  const demo = JSON.parse(
+    read("src/data/demo/opesinsure-cameroon-demo.v1.json"),
+  );
+  for (const key of [
+    "claim_incidents",
+    "claim_parties",
+    "claim_evidence_requirements",
+    "claim_inspections",
+    "claim_repairs",
+    "claim_settlements",
+  ])
+    assert.ok(
+      Array.isArray(demo[key]) && demo[key].length > 0,
+      `missing ${key}`,
+    );
+});
+test("settlement payment screen warns against advance fee fraud", () => {
+  const screen = read("app/claim/[id]/settlement-payment.tsx");
+  assert.match(screen, /never asks you to pay a fee/i);
+  assert.match(screen, /server/i);
+});

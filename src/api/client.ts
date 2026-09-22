@@ -520,6 +520,111 @@ export const ClaimsApi = {
       idempotent: true,
     }),
 };
+export type ClaimIncidentDetails = {
+  claim_id: string;
+  incident_type: string;
+  police_report_number?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  injuries_reported: boolean;
+  vehicle_drivable: boolean;
+  towing_required: boolean;
+  declaration_confirmed: boolean;
+};
+export type ClaimParty = {
+  id: string;
+  claim_id: string;
+  role: "DRIVER" | "THIRD_PARTY" | "WITNESS" | "PASSENGER";
+  full_name: string;
+  phone_e164?: string;
+  vehicle_registration?: string;
+  insurer_name?: string;
+};
+export type EvidenceRequirement = {
+  key: string;
+  label: string;
+  required: boolean;
+  status: "MISSING" | "UPLOADED" | "VERIFIED" | "REJECTED";
+  guidance: string;
+};
+export type ClaimInspection = {
+  id: string;
+  claim_id: string;
+  status: string;
+  appointment_at: string;
+  location: string;
+  surveyor_name?: string | null;
+  contact_phone?: string | null;
+  notes?: string | null;
+};
+export type ClaimRepair = {
+  claim_id: string;
+  status: string;
+  garage_name?: string | null;
+  estimate_minor?: number | null;
+  approved_minor?: number | null;
+  deductible_minor?: number | null;
+  authorization_reference?: string | null;
+};
+export type ClaimSettlement = {
+  id: string;
+  claim_id: string;
+  status: string;
+  offered_minor: number;
+  deductible_minor: number;
+  net_minor: number;
+  currency: "XAF";
+  payment_status: string;
+  payment_reference?: string | null;
+  decision_deadline: string;
+  terms: string;
+};
+export const ClaimsCompletionApi = {
+  incident: (id: string) =>
+    api<ClaimIncidentDetails>(`/mobile/claims/${id}/incident`),
+  saveIncident: (id: string, payload: Partial<ClaimIncidentDetails>) =>
+    api<ClaimIncidentDetails>(`/mobile/claims/${id}/incident`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  parties: (id: string) => api<ClaimParty[]>(`/mobile/claims/${id}/parties`),
+  addParty: (id: string, payload: Omit<ClaimParty, "id" | "claim_id">) =>
+    api<ClaimParty>(`/mobile/claims/${id}/parties`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  evidenceRequirements: (id: string) =>
+    api<EvidenceRequirement[]>(`/mobile/claims/${id}/evidence-requirements`),
+  inspection: (id: string) =>
+    api<ClaimInspection>(`/mobile/claims/${id}/inspection`),
+  rescheduleInspection: (id: string, appointment_at: string) =>
+    api<ClaimInspection>(`/mobile/claims/${id}/inspection/reschedule`, {
+      method: "POST",
+      body: JSON.stringify({ appointment_at }),
+      idempotent: true,
+    }),
+  repair: (id: string) => api<ClaimRepair>(`/mobile/claims/${id}/repair`),
+  settlement: (id: string) =>
+    api<ClaimSettlement>(`/mobile/claims/${id}/settlement`),
+  decideSettlement: (id: string, decision: "ACCEPT" | "REJECT") =>
+    api<ClaimSettlement>(`/mobile/claims/${id}/settlement/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision }),
+      idempotent: true,
+    }),
+  requestEmergencyAssistance: (payload: {
+    policy_id: string;
+    service: "MEDICAL" | "POLICE" | "TOWING";
+    location: string;
+    callback_phone: string;
+  }) =>
+    api<{ id: string; status: string; reference: string }>(
+      "/mobile/claims/emergency-assistance",
+      { method: "POST", body: JSON.stringify(payload), idempotent: true },
+    ),
+};
 export const InsuranceApi = {
   createQuote: (payload: {
     customer_id: string;
