@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "dataset_id": "opesinsure-cameroon-demo-v1",
+    "version": "1.0.0",
+    "country": "CM",
+    "currency": "XAF",
+    "timezone": "Africa/Douala",
+    "locale_default": "en",
+    "supported_locales": ["en", "fr"],
+    "demo_clock": "2026-09-22T10:00:00+01:00",
+    "fictional_data": true,
+    "production_forbidden": true,
+    "notice": "All persons, organisations, identifiers and transactions in this dataset are fictional demonstration records."
+  },
+  "demo_auth": {
+    "fixed_otp": "246810",
+    "accounts": [
+      {"id":"usr-customer","full_name":"Mireille Demo","email":"customer@demo.opesinsure.example.invalid","phone_e164":"+237690000001","locale":"en","role_code":"CUSTOMER","workspace_id":"ws-customer"},
+      {"id":"usr-agent","full_name":"Alain Demo Agent","email":"agent@demo.opesinsure.example.invalid","phone_e164":"+237690000002","locale":"fr","role_code":"FREELANCE_AGENT","workspace_id":"ws-agent"},
+      {"id":"usr-broker-admin","full_name":"Carine Demo Broker","email":"broker.admin@demo.opesinsure.example.invalid","phone_e164":"+237690000003","locale":"en","role_code":"BROKER_ADMIN","workspace_id":"ws-broker-admin"},
+      {"id":"usr-broker-staff","full_name":"Joel Demo Staff","email":"broker.staff@demo.opesinsure.example.invalid","phone_e164":"+237690000004","locale":"fr","role_code":"BROKER_STAFF","workspace_id":"ws-broker-staff"},
+      {"id":"usr-carrier-admin","full_name":"Nadine Demo Carrier","email":"carrier.admin@demo.opesinsure.example.invalid","phone_e164":"+237690000005","locale":"en","role_code":"CARRIER_ADMIN","workspace_id":"ws-carrier-admin"},
+      {"id":"usr-underwriter","full_name":"Serge Demo Underwriter","email":"underwriter@demo.opesinsure.example.invalid","phone_e164":"+237690000006","locale":"fr","role_code":"CARRIER_UNDERWRITER","workspace_id":"ws-underwriter"},
+      {"id":"usr-claims","full_name":"Aline Demo Claims","email":"claims@demo.opesinsure.example.invalid","phone_e164":"+237690000007","locale":"en","role_code":"CARRIER_CLAIMS","workspace_id":"ws-claims"},
+      {"id":"usr-platform-admin","full_name":"System Demo Admin","email":"platform.admin@demo.opesinsure.example.invalid","phone_e164":"+237690000008","locale":"en","role_code":"SYSTEM_ADMIN","workspace_id":"ws-platform-admin"},
+      {"id":"usr-finance","full_name":"Finance Demo Officer","email":"finance@demo.opesinsure.example.invalid","phone_e164":"+237690000009","locale":"fr","role_code":"FINANCE_OPERATOR","workspace_id":"ws-finance"},
+      {"id":"usr-compliance","full_name":"Compliance Demo Officer","email":"compliance@demo.opesinsure.example.invalid","phone_e164":"+237690000010","locale":"en","role_code":"COMPLIANCE_OFFICER","workspace_id":"ws-compliance"},
+      {"id":"usr-support","full_name":"Support Demo Officer","email":"support@demo.opesinsure.example.invalid","phone_e164":"+237690000011","locale":"fr","role_code":"SUPPORT_OPERATOR","workspace_id":"ws-support"}
+    ]
+  },
+  "tenants": [
+    {"id":"tenant-b2c","type":"PLATFORM","name":"OpesInsure Demo B2C","status":"ACTIVE"},
+    {"id":"tenant-agents","type":"AGENT_NETWORK","name":"OpesInsure Demo Agents","status":"ACTIVE"},
+    {"id":"tenant-broker","type":"BROKER","name":"Horizon Demo Brokerage SARL","city":"Douala","licence_status":"DEMO_ONLY","status":"ACTIVE"},
+    {"id":"tenant-carrier","type":"CARRIER","name":"Demo Assurance Cameroun SA","city":"Yaoundé","licence_status":"DEMO_ONLY","status":"ACTIVE"},
+    {"id":"tenant-platform","type":"PLATFORM","name":"OpesInsure Platform Operations","status":"ACTIVE"}
+  ],
+  "workspaces": [
+    {"id":"ws-customer","membership_id":"mem-customer","tenant_id":"tenant-b2c","tenant_name":"OpesInsure Demo B2C","tenant_type":"PLATFORM","role_code":"CUSTOMER","customer_id":"customer-001","permissions":["customer.quote","customer.policy.read","customer.claim.create","customer.account.manage"]},
+    {"id":"ws-agent","membership_id":"mem-agent","tenant_id":"tenant-agents","tenant_name":"OpesInsure Demo Agents","tenant_type":"AGENT_NETWORK","role_code":"FREELANCE_AGENT","customer_id":null,"permissions":["agent.client.create","agent.sale.create","agent.wallet.read","agent.withdrawal.create"]},
+    {"id":"ws-broker-admin","membership_id":"mem-broker-admin","tenant_id":"tenant-broker","tenant_name":"Horizon Demo Brokerage SARL","tenant_type":"BROKER","role_code":"BROKER_ADMIN","customer_id":null,"permissions":["broker.customer.manage","broker.policy.manage","broker.claim.manage","broker.report.read","broker.staff.manage","broker.marketplace.manage"]},
+    {"id":"ws-broker-staff","membership_id":"mem-broker-staff","tenant_id":"tenant-broker","tenant_name":"Horizon Demo Brokerage SARL","tenant_type":"BROKER","role_code":"BROKER_STAFF","customer_id":null,"permissions":["broker.customer.manage","broker.policy.manage","broker.claim.manage"]},
+    {"id":"ws-carrier-admin","membership_id":"mem-carrier-admin","tenant_id":"tenant-carrier","tenant_name":"Demo Assurance Cameroun SA","tenant_type":"CARRIER","role_code":"CARRIER_ADMIN","customer_id":null,"permissions":["carrier.product.manage","carrier.referral.manage","carrier.policy.manage","carrier.claim.manage","carrier.settlement.read"]},
+    {"id":"ws-underwriter","membership_id":"mem-underwriter","tenant_id":"tenant-carrier","tenant_name":"Demo Assurance Cameroun SA","tenant_type":"CARRIER","role_code":"CARRIER_UNDERWRITER","customer_id":null,"permissions":["carrier.referral.manage","carrier.policy.read"]},
+    {"id":"ws-claims","membership_id":"mem-claims","tenant_id":"tenant-carrier","tenant_name":"Demo Assurance Cameroun SA","tenant_type":"CARRIER","role_code":"CARRIER_CLAIMS","customer_id":null,"permissions":["carrier.claim.manage","carrier.policy.read"]},
+    {"id":"ws-platform-admin","membership_id":"mem-platform-admin","tenant_id":"tenant-platform","tenant_name":"OpesInsure Platform Operations","tenant_type":"PLATFORM","role_code":"SYSTEM_ADMIN","customer_id":null,"permissions":["platform.partner.manage","platform.integration.manage","platform.finance.manage","platform.compliance.manage","platform.support.manage"]},
+    {"id":"ws-finance","membership_id":"mem-finance","tenant_id":"tenant-platform","tenant_name":"OpesInsure Platform Operations","tenant_type":"PLATFORM","role_code":"FINANCE_OPERATOR","customer_id":null,"permissions":["platform.finance.manage","platform.settlement.approve"]},
+    {"id":"ws-compliance","membership_id":"mem-compliance","tenant_id":"tenant-platform","tenant_name":"OpesInsure Platform Operations","tenant_type":"PLATFORM","role_code":"COMPLIANCE_OFFICER","customer_id":null,"permissions":["platform.compliance.manage","platform.fraud.manage","platform.report.approve"]},
+    {"id":"ws-support","membership_id":"mem-support","tenant_id":"tenant-platform","tenant_name":"OpesInsure Platform Operations","tenant_type":"PLATFORM","role_code":"SUPPORT_OPERATOR","customer_id":null,"permissions":["platform.support.manage","platform.customer.read"]}
+  ],
+  "customers": [
+    {"id":"customer-001","full_name":"Mireille Demo","phone_e164":"+237690000001","email":"customer@demo.opesinsure.example.invalid","city":"Douala","registered_by_type":"SYSTEM","registered_by_id":null,"kyc_status":"VERIFIED"},
+    {"id":"customer-002","full_name":"Brice Demo Client","phone_e164":"+237690000101","email":null,"city":"Douala","registered_by_type":"AGENT","registered_by_id":"usr-agent","kyc_status":"VERIFIED"},
+    {"id":"customer-003","full_name":"Sandrine Demo Fleet","phone_e164":"+237690000102","email":"fleet@demo.example.invalid","city":"Yaoundé","registered_by_type":"BROKER","registered_by_id":"tenant-broker","kyc_status":"PENDING_REVIEW"}
+  ],
+  "risk_assets": [
+    {"id":"asset-car-001","customer_id":"customer-001","type":"MOTOR_VEHICLE","registration_number":"LT DEMO 001","make":"Toyota","model":"Corolla","year":2021,"fiscal_power":8,"usage_type":"PRIVATE","zone":"CAMEROON"},
+    {"id":"asset-car-002","customer_id":"customer-002","type":"MOTOR_VEHICLE","registration_number":"CE DEMO 002","make":"Hyundai","model":"Tucson","year":2020,"fiscal_power":10,"usage_type":"PRIVATE","zone":"CAMEROON"},
+    {"id":"asset-home-001","customer_id":"customer-001","type":"PROPERTY","city":"Douala","property_type":"APARTMENT","declared_value_minor":2500000000}
+  ],
+  "catalogue": {
+    "carriers": [{"id":"carrier-demo","name":"Demo Assurance Cameroun SA","cima_code":"DEMO-CM-001","institution_status":"DEMO_ONLY","tenant_id":"tenant-carrier"}],
+    "products": [
+      {"id":"product-motor","carrier_id":"carrier-demo","line_code":"MOTOR","name":"Auto Essentiel Démo","status":"ACTIVE","currency":"XAF"},
+      {"id":"product-health","carrier_id":"carrier-demo","line_code":"HEALTH","name":"Santé Famille Démo","status":"ACTIVE","currency":"XAF"},
+      {"id":"product-travel","carrier_id":"carrier-demo","line_code":"TRAVEL","name":"Voyage Serein Démo","status":"ACTIVE","currency":"XAF"},
+      {"id":"product-home","carrier_id":"carrier-demo","line_code":"HOME","name":"Habitation Démo","status":"ACTIVE","currency":"XAF"},
+      {"id":"product-life","carrier_id":"carrier-demo","line_code":"LIFE","name":"Protection Famille Démo","status":"ACTIVE","currency":"XAF"}
+    ],
+    "tariff_versions": [
+      {"id":"tariff-motor-v1","product_id":"product-motor","version":"DEMO-1","effective_from":"2026-01-01","status":"ACTIVE","regulatory_basis":"DEMONSTRATION_ONLY"},
+      {"id":"tariff-health-v1","product_id":"product-health","version":"DEMO-1","effective_from":"2026-01-01","status":"ACTIVE","regulatory_basis":"DEMONSTRATION_ONLY"}
+    ]
+  },
+  "quotes": [
+    {"id":"quote-001","party_id":"customer-001","customer_id":"customer-001","line_code":"MOTOR","channel":"B2C","status":"RATED","currency":"XAF","risk_asset_id":"asset-car-001","risk_facts":{"registration_number":"LT DEMO 001","fiscal_power":8,"usage_type":"PRIVATE","zone":"CAMEROON"},"expires_at":"2026-09-29T10:00:00+01:00","version":1},
+    {"id":"quote-agent-001","party_id":"customer-002","customer_id":"customer-002","line_code":"MOTOR","channel":"AGENT","status":"OFFERED","currency":"XAF","risk_asset_id":"asset-car-002","risk_facts":{"registration_number":"CE DEMO 002","fiscal_power":10,"usage_type":"PRIVATE","zone":"CAMEROON"},"expires_at":"2026-09-28T10:00:00+01:00","version":1}
+  ],
+  "offers": [
+    {"id":"offer-001","quote_id":"quote-001","carrier_id":"carrier-demo","product_id":"product-motor","premium_minor":5830000,"tax_minor":1100000,"fee_minor":150000,"total_minor":7080000,"currency":"XAF","status":"ELIGIBLE","valid_until":"2026-09-29T10:00:00+01:00","coverage_snapshot":{"third_party":true,"defence_recours":true,"digital_certificate":true},"ranking_reasons":["Lowest returned total"]},
+    {"id":"offer-002","quote_id":"quote-001","carrier_id":"carrier-demo","product_id":"product-motor","premium_minor":6275000,"tax_minor":1200000,"fee_minor":150000,"total_minor":7625000,"currency":"XAF","status":"ELIGIBLE","valid_until":"2026-09-29T10:00:00+01:00","coverage_snapshot":{"third_party":true,"defence_recours":true,"theft":true},"ranking_reasons":["Broader cover"]}
+  ],
+  "proposals": [
+    {"id":"proposal-001","proposal_number":"PROP-DEMO-0001","quote_offer_id":"offer-001","party_id":"customer-001","status":"PAYMENT_PENDING","terms_snapshot":{"premium_minor":5830000,"tax_minor":1100000,"fee_minor":150000,"total_minor":7080000,"currency":"XAF"}},
+    {"id":"proposal-paid","proposal_number":"PROP-DEMO-0002","quote_offer_id":"offer-002","party_id":"customer-001","status":"ISSUED","terms_snapshot":{"premium_minor":6275000,"tax_minor":1200000,"fee_minor":150000,"total_minor":7625000,"currency":"XAF"}}
+  ],
+  "payments": [
+    {"id":"payment-pending","proposal_id":"proposal-001","provider":"mtn_momo","payer_phone_e164":"+237690000001","amount_minor":7080000,"currency":"XAF","status":"PENDING_CUSTOMER","expires_at":"2026-09-22T10:15:00+01:00"},
+    {"id":"payment-success","proposal_id":"proposal-paid","provider":"orange_money","payer_phone_e164":"+237690000001","amount_minor":7625000,"currency":"XAF","status":"SUCCEEDED","expires_at":"2026-09-20T10:15:00+01:00"},
+    {"id":"payment-failed","proposal_id":"proposal-001","provider":"mtn_momo","payer_phone_e164":"+237690000001","amount_minor":7080000,"currency":"XAF","status":"FAILED","failure_code":"CUSTOMER_DECLINED","expires_at":"2026-09-21T10:15:00+01:00"}
+  ],
+  "policies": [
+    {"id":"policy-active","customer_id":"customer-001","carrier_id":"carrier-demo","policy_number":"OI-DEMO-CM-0001","status":"ACTIVE","coverage_starts_at":"2026-09-20T00:00:00+01:00","coverage_ends_at":"2027-09-19T23:59:59+01:00","origin_type":"SYSTEM","origin_id":null},
+    {"id":"policy-renewal","customer_id":"customer-001","carrier_id":"carrier-demo","policy_number":"OI-DEMO-CM-0002","status":"ACTIVE","coverage_starts_at":"2025-10-10T00:00:00+01:00","coverage_ends_at":"2026-10-09T23:59:59+01:00","origin_type":"AGENT","origin_id":"usr-agent"},
+    {"id":"policy-expired","customer_id":"customer-001","carrier_id":"carrier-demo","policy_number":"OI-DEMO-CM-0000","status":"EXPIRED","coverage_starts_at":"2024-08-01T00:00:00+01:00","coverage_ends_at":"2025-07-31T23:59:59+01:00","origin_type":"BROKER","origin_id":"tenant-broker"}
+  ],
+  "certificates": [{"id":"certificate-001","policy_id":"policy-active","label":"Motor insurance certificate","reference":"CERT-DEMO-0001","verification_result":"VALID","download_url":"https://demo.invalid/certificates/CERT-DEMO-0001.pdf","expires_at":"2026-09-22T10:10:00+01:00"}],
+  "claims": [
+    {"id":"claim-open","claim_number":"CLM-DEMO-0001","customer_id":"customer-001","policy_id":"policy-active","status":"EVIDENCE_REQUESTED","incident_at":"2026-09-18T18:20:00+01:00","incident_location":"Bonamoussadi, Douala","description":"Rear bumper damage after a low-speed collision while the vehicle was stationary.","created_at":"2026-09-18T19:00:00+01:00"},
+    {"id":"claim-settled","claim_number":"CLM-DEMO-0002","customer_id":"customer-001","policy_id":"policy-expired","status":"SETTLED","incident_at":"2025-04-12T09:30:00+01:00","incident_location":"Akwa, Douala","description":"Demonstration windscreen damage claim.","created_at":"2025-04-12T11:00:00+01:00"},
+    {"id":"claim-rejected","claim_number":"CLM-DEMO-0003","customer_id":"customer-001","policy_id":"policy-active","status":"REJECTED","incident_at":"2026-08-03T21:00:00+01:00","incident_location":"Bafoussam","description":"Demonstration claim rejected with an appealable decision.","created_at":"2026-08-04T08:00:00+01:00"}
+  ],
+  "claim_evidence": [{"id":"evidence-001","claim_id":"claim-open","type":"PHOTO","file_name":"rear-bumper-demo.jpg","status":"VERIFIED","sha256":"demo-sha256-evidence-001","created_at":"2026-09-18T19:10:00+01:00"}],
+  "claim_timeline": [
+    {"id":"event-001","claim_id":"claim-open","type":"FNOL_CREATED","label":"Incident reported","occurred_at":"2026-09-18T19:00:00+01:00"},
+    {"id":"event-002","claim_id":"claim-open","type":"EVIDENCE_REQUESTED","label":"Additional evidence requested","occurred_at":"2026-09-19T09:00:00+01:00","description":"Upload wide-angle vehicle photos and the police report if available."},
+    {"id":"event-003","claim_id":"claim-settled","type":"SETTLED","label":"Settlement completed","occurred_at":"2025-05-02T14:00:00+01:00","description":"125,000 FCFA demonstration settlement."}
+  ],
+  "agent_operations": {
+    "clients": ["customer-002"],
+    "commissions": [
+      {"id":"commission-001","agent_id":"usr-agent","policy_id":"policy-renewal","status":"AVAILABLE","amount_minor":420000,"currency":"XAF"},
+      {"id":"commission-002","agent_id":"usr-agent","policy_id":"policy-active","status":"PENDING","amount_minor":350000,"currency":"XAF"},
+      {"id":"commission-003","agent_id":"usr-agent","status":"REVERSED","amount_minor":140000,"currency":"XAF","reason":"Payment reversed"}
+    ],
+    "withdrawals": [{"id":"withdrawal-001","agent_id":"usr-agent","provider":"mtn_momo","amount_minor":300000,"status":"PROCESSING","requested_at":"2026-09-22T08:00:00+01:00"}]
+  },
+  "broker_operations": {
+    "offices": [{"id":"office-dla","name":"Douala Head Office","city":"Douala"},{"id":"office-yde","name":"Yaoundé Branch","city":"Yaoundé"}],
+    "client_ids": ["customer-003"],
+    "marketplace_publications": [{"id":"publication-001","product_id":"product-motor","status":"PENDING_APPROVAL"},{"id":"publication-002","product_id":"product-health","status":"PUBLISHED"}],
+    "bordereaux": [{"id":"bordereau-001","period":"2026-09","carrier_id":"carrier-demo","gross_premium_minor":4820000000,"status":"DRAFT"}],
+    "receivables": [{"id":"receivable-001","customer_id":"customer-003","amount_minor":640000000,"currency":"XAF","status":"OVERDUE"}]
+  },
+  "carrier_operations": {
+    "agreement":{"id":"agreement-001","carrier_id":"carrier-demo","status":"ACTIVE","effective_from":"2026-01-01","authority_limit_minor":500000000},
+    "referrals":[{"id":"referral-001","quote_id":"quote-agent-001","reason":"Vehicle value above automatic authority","status":"PENDING_REVIEW"},{"id":"referral-002","quote_id":"quote-001","reason":"Demo prior claim","status":"APPROVED"}],
+    "issuance_queue":[{"id":"issuance-001","proposal_id":"proposal-paid","status":"COMPLETED"}],
+    "claim_queue":[{"id":"carrier-claim-task-001","claim_id":"claim-open","assignee_id":"usr-claims","status":"EVIDENCE_REVIEW"}]
+  },
+  "finance": {
+    "ledger_entries":[{"id":"ledger-001","type":"PREMIUM_RECEIPT","amount_minor":7625000,"currency":"XAF","status":"POSTED"},{"id":"ledger-002","type":"PLATFORM_FEE","amount_minor":150000,"currency":"XAF","status":"POSTED"}],
+    "reconciliation_exceptions":[{"id":"recon-001","provider":"mtn_momo","external_reference":"DEMO-MOMO-001","amount_minor":7080000,"status":"UNMATCHED"}],
+    "settlements":[{"id":"settlement-001","carrier_id":"carrier-demo","period_end":"2026-09-18","gross_minor":8260000000,"commission_minor":1239000000,"net_minor":7021000000,"status":"AWAITING_APPROVAL"}]
+  },
+  "operations": {
+    "deliveries":[{"id":"delivery-001","policy_id":"policy-active","city":"Douala","address":"Bonamoussadi demo address","status":"DISPATCHED","courier_name":"Demo Courier","delivery_otp":"DEMO-ONLY"}],
+    "notifications":[{"id":"notification-001","user_id":"usr-customer","type":"POLICY_ISSUED","title":"Policy issued","read":false,"path":"/(customer)/(tabs)/policies"},{"id":"notification-002","user_id":"usr-customer","type":"CLAIM_UPDATE","title":"Evidence requested","read":true,"path":"/(customer)/(tabs)/claims"}],
+    "devices":[{"id":"device-current","user_id":"usr-customer","name":"Demo Android","platform":"android","last_seen_at":"2026-09-22T10:00:00+01:00","current":true},{"id":"device-old","user_id":"usr-customer","name":"Previous Demo Phone","platform":"android","last_seen_at":"2026-08-10T12:00:00+01:00","current":false}],
+    "webhook_deliveries":[{"id":"webhook-001","event":"policy.issued","status":"DELIVERED","attempts":1},{"id":"webhook-002","event":"claim.updated","status":"RETRY_SCHEDULED","attempts":2},{"id":"webhook-003","event":"payment.failed","status":"DEAD_LETTER","attempts":8}]
+  },
+  "risk_and_compliance": {
+    "fraud_alerts":[{"id":"fraud-001","subject_type":"PAYMENT","subject_id":"payment-failed","risk_score":72,"status":"UNDER_REVIEW","reason":"Repeated authorization failures"}],
+    "compliance_cases":[{"id":"compliance-001","tenant_id":"tenant-broker","type":"LICENCE_REVERIFICATION","status":"ACTION_REQUIRED","due_at":"2026-10-15T17:00:00+01:00"}],
+    "privileged_access":[{"id":"access-001","requester_id":"usr-support","scope":"customer-001:read","status":"PENDING_APPROVAL"}],
+    "regulatory_reports":[{"id":"report-001","type":"MONTHLY_PRODUCTION","period":"2026-08","status":"APPROVED"},{"id":"report-002","type":"CLAIMS_REGISTER","period":"2026-Q3","status":"DRAFT"}]
+  },
+  "public_verifications": [{"reference":"OI-DEMO-CM-0001","result":"VALID","carrier_name":"Demo Assurance Cameroun SA","product_class":"MOTOR","coverage_starts_at":"2026-09-20T00:00:00+01:00","coverage_ends_at":"2027-09-19T23:59:59+01:00","verified_at":"2026-09-22T10:00:00+01:00"},{"reference":"OI-DEMO-CM-0000","result":"EXPIRED","carrier_name":"Demo Assurance Cameroun SA","product_class":"MOTOR","coverage_starts_at":"2024-08-01T00:00:00+01:00","coverage_ends_at":"2025-07-31T23:59:59+01:00","verified_at":"2026-09-22T10:00:00+01:00"}],
+  "workspace_dashboards": {
+    "FREELANCE_AGENT":{"title":"Your field business","subtitle":"Demo agent operations","metrics":[{"key":"sales","label":"Sales this month","value":"12"},{"key":"commission","label":"Available commission","value":"4,200 FCFA"},{"key":"renewals","label":"Renewals due","value":"8","tone":"warning"}],"modules":[{"key":"clients","label":"Client portfolio","description":"Origin-protected clients","permission":"agent.client.create"},{"key":"sales","label":"Assisted sales","description":"Quotes and remote payments","permission":"agent.sale.create"},{"key":"wallet","label":"Commission wallet","description":"Earnings and withdrawals","permission":"agent.wallet.read"}]},
+    "BROKER_ADMIN":{"title":"Broker operations","subtitle":"Horizon Demo Brokerage SARL","metrics":[{"key":"clients","label":"Active clients","value":"1,284"},{"key":"premium","label":"Gross premium","value":"48.2M FCFA"},{"key":"receivables","label":"Receivables","value":"6.4M FCFA","tone":"warning"}],"modules":[{"key":"customers","label":"Customer ledger","description":"Private broker clients","permission":"broker.customer.manage"},{"key":"production","label":"Production","description":"Quotes, policies and renewals","permission":"broker.policy.manage"},{"key":"reports","label":"Bordereaux","description":"Carrier reports","permission":"broker.report.read"}]},
+    "BROKER_STAFF":{"title":"Assigned work","subtitle":"Broker staff workspace","metrics":[{"key":"tasks","label":"Tasks due","value":"9","tone":"warning"}],"modules":[{"key":"customers","label":"Customer ledger","description":"Authorised records","permission":"broker.customer.manage"},{"key":"production","label":"Production","description":"Quotes and policies","permission":"broker.policy.manage"}]},
+    "CARRIER_ADMIN":{"title":"Carrier exchange","subtitle":"Demo Assurance Cameroun SA","metrics":[{"key":"premium","label":"Premium received","value":"82.6M FCFA"},{"key":"referrals","label":"Referrals waiting","value":"17","tone":"warning"}],"modules":[{"key":"referrals","label":"Underwriting referrals","description":"Review exceptions","permission":"carrier.referral.manage"},{"key":"products","label":"Products and tariffs","description":"Versioned catalogue","permission":"carrier.product.manage"},{"key":"settlements","label":"Settlements","description":"Statements and reconciliation","permission":"carrier.settlement.read"}]},
+    "CARRIER_UNDERWRITER":{"title":"Underwriting workbench","subtitle":"Demo Assurance Cameroun SA","metrics":[{"key":"pending","label":"Pending referrals","value":"17","tone":"warning"},{"key":"approved","label":"Approved today","value":"6"}],"modules":[{"key":"referrals","label":"Underwriting referrals","description":"Assess risks and exceptions","permission":"carrier.referral.manage"}]},
+    "CARRIER_CLAIMS":{"title":"Claims operations","subtitle":"Demo Assurance Cameroun SA","metrics":[{"key":"open","label":"Open claims","value":"31"},{"key":"evidence","label":"Evidence reviews","value":"8","tone":"warning"}],"modules":[{"key":"claims","label":"Claims queue","description":"Evidence, decisions and settlements","permission":"carrier.claim.manage"}]},
+    "SYSTEM_ADMIN":{"title":"Clearinghouse control","subtitle":"OpesInsure platform operations","metrics":[{"key":"gtv","label":"Gross transaction value","value":"128.4M FCFA"},{"key":"matching","label":"Payments matching","value":"98.7%"},{"key":"findings","label":"Security findings","value":"3","tone":"warning"}],"modules":[{"key":"partners","label":"Partners","description":"Institutions and licensing","permission":"platform.partner.manage"},{"key":"integrations","label":"Integrations","description":"API clients and webhooks","permission":"platform.integration.manage"},{"key":"compliance","label":"Compliance","description":"Cases and reports","permission":"platform.compliance.manage"}]},
+    "FINANCE_OPERATOR":{"title":"Finance operations","subtitle":"Escrow, reconciliation and settlement","metrics":[{"key":"unmatched","label":"Unmatched payments","value":"1","tone":"warning"},{"key":"settlement","label":"Awaiting approval","value":"70.21M FCFA"}],"modules":[{"key":"finance","label":"Financial ledger","description":"Payments and entries","permission":"platform.finance.manage"},{"key":"settlements","label":"Carrier settlements","description":"Review settlement batches","permission":"platform.settlement.approve"}]},
+    "COMPLIANCE_OFFICER":{"title":"Compliance operations","subtitle":"Regulatory and fraud control","metrics":[{"key":"cases","label":"Cases requiring action","value":"1","tone":"warning"},{"key":"fraud","label":"Fraud alerts","value":"1","tone":"warning"}],"modules":[{"key":"compliance","label":"Compliance cases","description":"Actions and regulatory reports","permission":"platform.compliance.manage"},{"key":"fraud","label":"Fraud alerts","description":"Risk review queue","permission":"platform.fraud.manage"}]},
+    "SUPPORT_OPERATOR":{"title":"Customer support","subtitle":"Permission-limited service workspace","metrics":[{"key":"open","label":"Open requests","value":"4"},{"key":"sla","label":"Within SLA","value":"100%"}],"modules":[{"key":"support","label":"Support queue","description":"Customer assistance cases","permission":"platform.support.manage"}]}
+  },
+  "screen_scenarios": {
+    "/(auth)/sign-in":["demo_auth.accounts"],
+    "/(auth)/role":["workspaces"],
+    "/(customer)/(tabs)":["policies","notifications"],
+    "/quote/product":["catalogue.products"],
+    "/quote/risk":["risk_assets","quotes"],
+    "/quote/offers":["offers"],
+    "/quote/disclosure":["proposals"],
+    "/checkout":["proposals","payments"],
+    "/payment":["payments"],
+    "/confirmation":["payments","policies"],
+    "/policy/[id]":["policies","certificates"],
+    "/claim/new":["policies"],
+    "/claim/[id]":["claims","claim_timeline"],
+    "/claim/[id]/evidence":["claim_evidence"],
+    "/claim/[id]/appeal":["claims"],
+    "/verify":["public_verifications"],
+    "/account/devices":["operations.devices"],
+    "/account/notifications":["operations.notifications"],
+    "/workspace/[role]":["workspace_dashboards"],
+    "/workspace/[role]/module/[module]":["agent_operations","broker_operations","carrier_operations","finance","risk_and_compliance","operations"]
+  }
+}

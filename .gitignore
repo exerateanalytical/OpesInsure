@@ -1,0 +1,6 @@
+node_modules/
+.expo/
+dist/
+_legacy_v0.3.0_backup/
+OPESINSURE_EXPO_*/
+OPESINSURE_CAMEROON_DEMO_DATA_v1*.json

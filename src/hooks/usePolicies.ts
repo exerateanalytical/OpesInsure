@@ -1,0 +1,3 @@
+import { useCallback, useEffect, useState } from 'react';
+import { InsuranceApi, Policy } from '@/api/client';
+export function usePolicies(){const[data,setData]=useState<Policy[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState<string|null>(null);const reload=useCallback(async()=>{setLoading(true);setError(null);try{const result=await InsuranceApi.policies();setData(Array.isArray(result)?result:result?.data??[]);}catch(e){setError(e instanceof Error?e.message:'Policies could not be loaded.');}finally{setLoading(false);}},[]);useEffect(()=>{void reload();},[reload]);return{policies:data,loading,error,reload};}
