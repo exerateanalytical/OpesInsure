@@ -8,4 +8,15 @@ return [
         'sms_from' => env('TWILIO_SMS_FROM'),
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
     ],
+
+    // clamd (ClamAV daemon) INSTREAM scanning — see
+    // App\Application\Documents\Adapters\ClamAvMalwareScanAdapter. Blank
+    // host until a real scanner is provisioned; MobileDocumentService's
+    // bound MalwareScanAdapter falls back to FailClosedMalwareScanAdapter
+    // whenever this is empty (see AppServiceProvider).
+    'clamav' => [
+        'host' => env('CLAMAV_HOST'),
+        'port' => (int) env('CLAMAV_PORT', 3310),
+        'timeout' => (int) env('CLAMAV_TIMEOUT', 10),
+    ],
 ];

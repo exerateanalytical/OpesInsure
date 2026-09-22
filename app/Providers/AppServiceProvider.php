@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Application\Documents\Adapters\ClamAvMalwareScanAdapter;
+use App\Application\Documents\Adapters\FailClosedMalwareScanAdapter;
+use App\Application\Documents\Adapters\LocalSignedUrlAdapter;
+use App\Application\Documents\Adapters\MalwareScanAdapter;
+use App\Application\Documents\Adapters\S3SignedUrlAdapter;
+use App\Application\Documents\Adapters\SignedUrlAdapter;
 use App\Application\WebExperiences\{PortalDashboardQuery, PortalWorkspaceService};
 use App\Domain\Tenancy\TenantContext;
 use App\Interfaces\Http\Middleware\ResolveAdminPanelTenant;
@@ -17,7 +23,18 @@ use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void { $this->app->scoped(TenantContext::class, fn () => new TenantContext); }
+    public function register(): void
+    {
+        $this->app->scoped(TenantContext::class, fn () => new TenantContext);
+
+        // Picks the real S3 adapter only when this app is actually configured
+        // for cloud storage; today FILESYSTEM_DISK=local, so the local
+        // signed-route adapter is what's active (see LocalSignedUrlAdapter).
+        $this->app->bind(SignedUrlAdapter::class, fn () => config('filesystems.default') === 's3' ? new S3SignedUrlAdapter : new LocalSignedUrlAdapter);
+
+        // Fails closed until CLAMAV_HOST is set — see FailClosedMalwareScanAdapter.
+        $this->app->bind(MalwareScanAdapter::class, fn () => filled(config('services.clamav.host')) ? new ClamAvMalwareScanAdapter : new FailClosedMalwareScanAdapter);
+    }
 
     public function boot(): void
     {

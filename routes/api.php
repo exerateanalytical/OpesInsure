@@ -36,6 +36,8 @@ use App\Interfaces\Http\Controllers\Api\V1\Commissions\CommissionController;
 use App\Interfaces\Http\Controllers\Api\V1\Reconciliation\ReconciliationController;
 use App\Interfaces\Http\Controllers\Api\V1\Settlements\SettlementController;
 use App\Interfaces\Http\Controllers\Api\V1\Documents\DocumentController;
+use App\Interfaces\Http\Controllers\Api\V1\Documents\MobileDocumentController;
+use App\Interfaces\Http\Controllers\Api\V1\Documents\MobileDocumentDownloadController;
 use App\Interfaces\Http\Controllers\Api\V1\Certificates\CertificateController;
 use App\Interfaces\Http\Controllers\Api\V1\Logistics\FulfilmentController;
 use App\Interfaces\Http\Controllers\Api\V1\Notifications\NotificationController;
@@ -62,6 +64,12 @@ Route::prefix('v1')->group(function (): void {
     Route::match(['get', 'post'], 'webhooks/payments/orange-money/callback', OrangeMoneyCallbackController::class)->middleware('throttle:120,1')->name('payments.orange_money.callback');
     Route::post('webhooks/notifications/twilio/callback', TwilioDeliveryReceiptController::class)->middleware('throttle:120,1')->name('notifications.twilio.callback');
     Route::post('public/certificates/verify', [CertificateController::class, 'verify'])->middleware('throttle:30,1');
+    // The signed-URL target MobileDocumentService's LocalSignedUrlAdapter
+    // points to. Outside auth:api/tenant/json.api on purpose: a valid,
+    // unexpired signature (see the 'signed' middleware) IS the
+    // authorization here, exactly like Laravel's own signed
+    // email-verification links — see MobileDocumentDownloadController.
+    Route::get('mobile/documents/{document}/download', MobileDocumentDownloadController::class)->middleware(['signed', 'throttle:60,1'])->name('mobile.documents.download');
     Route::post('auth/mobile/otp/request', [MobileAuthController::class, 'requestOtp'])->middleware('throttle:5,1');
     Route::post('auth/mobile/otp/verify', [MobileAuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
     Route::post('auth/mobile/refresh', [MobileAuthController::class, 'refresh'])->middleware('throttle:20,1');
@@ -167,6 +175,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('mobile/quotes/{quote}', [MobileQuoteController::class, 'show']);
         Route::delete('mobile/quotes/{quote}', [MobileQuoteController::class, 'destroy']);
         Route::post('mobile/quotes/{quote}/resume', [MobileQuoteController::class, 'resume'])->middleware('throttle:20,1');
+        Route::get('mobile/documents', [MobileDocumentController::class, 'index']);
+        Route::get('mobile/documents/{document}', [MobileDocumentController::class, 'show']);
+        Route::post('mobile/documents', [MobileDocumentController::class, 'upload'])->middleware('throttle:10,1');
+        Route::post('mobile/documents/{document}/access', [MobileDocumentController::class, 'requestAccess'])->middleware('throttle:30,1');
         Route::post('payments/{payment}/chargebacks', [FinancialControlController::class, 'openChargeback'])->middleware('permission:chargeback.manage');
         Route::post('chargebacks/{chargeback}/resolve', [FinancialControlController::class, 'resolveChargeback'])->middleware('permission:chargeback.resolve');
         Route::get('ledger/accounts', [LedgerController::class, 'accounts'])->middleware('permission:ledger.read');
