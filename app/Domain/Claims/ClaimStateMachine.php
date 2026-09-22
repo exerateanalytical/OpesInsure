@@ -1,0 +1,3 @@
+<?php
+namespace App\Domain\Claims;use DomainException;
+final class ClaimStateMachine{private const T=['DRAFT'=>['SUBMITTED'],'SUBMITTED'=>['ACKNOWLEDGED'],'ACKNOWLEDGED'=>['EVIDENCE_PENDING','ASSESSMENT'],'EVIDENCE_PENDING'=>['ASSESSMENT'],'ASSESSMENT'=>['CARRIER_REVIEW'],'CARRIER_REVIEW'=>['APPROVED','PARTIALLY_APPROVED','DECLINED'],'APPROVED'=>['PAID','CLOSED'],'PARTIALLY_APPROVED'=>['PAID','DISPUTED'],'DECLINED'=>['DISPUTED','CLOSED'],'PAID'=>['CLOSED'],'DISPUTED'=>['CARRIER_REVIEW','CLOSED']];public function assert(string $from,string $to):void{if(!in_array($to,self::T[$from]??[],true))throw new DomainException("Invalid claim transition from {$from} to {$to}.");}}

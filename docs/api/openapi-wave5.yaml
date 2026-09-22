@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: OpesInsure Policy Lifecycle API
+  version: 5.0.0-wave5
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /policies:
+    get:
+      operationId: listPolicies
+      parameters:
+        - {name: status, in: query, schema: {type: string}}
+        - {name: party_id, in: query, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Tenant-scoped policies}
+  /policies/{policy}:
+    get:
+      operationId: showPolicy
+      parameters: [{$ref: '#/components/parameters/Policy'}]
+      responses:
+        '200': {description: Policy lifecycle record}
+        '404': {description: Not found in tenant}
+  /policy-issuance-requests:
+    post:
+      operationId: requestPolicyIssuance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IssuanceRequest'}
+      responses:
+        '201': {description: Issuance requested}
+        '422': {description: Payment, terms or authority gate failed}
+  /policy-issuance-requests/{issuance}/approve:
+    post:
+      operationId: authorizeAndIssuePolicy
+      parameters: [{$ref: '#/components/parameters/Issuance'}]
+      responses:
+        '201': {description: Policy activated}
+        '422': {description: Maker-checker or integrity gate failed}
+  /policy-issuance-requests/{issuance}/reject:
+    post:
+      operationId: rejectPolicyIssuance
+      parameters: [{$ref: '#/components/parameters/Issuance'}]
+      responses:
+        '200': {description: Issuance rejected with reason}
+  /policies/{policy}/transactions:
+    post:
+      operationId: requestPolicyService
+      parameters: [{$ref: '#/components/parameters/Policy'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PolicyServiceRequest'}
+      responses:
+        '201': {description: Endorsement, cancellation or reinstatement requested}
+        '422': {description: State or calculation gate failed}
+  /policies/{policy}/transactions/{transaction}/payment-intents:
+    post:
+      operationId: requestPolicyServicePayment
+      parameters:
+        - {$ref: '#/components/parameters/Policy'}
+        - {$ref: '#/components/parameters/Transaction'}
+      responses:
+        '201': {description: Exact-amount adjustment payment created}
+  /policies/{policy}/transactions/{transaction}/payment:
+    post:
+      operationId: linkReconciledPolicyServicePayment
+      parameters:
+        - {$ref: '#/components/parameters/Policy'}
+        - {$ref: '#/components/parameters/Transaction'}
+      responses:
+        '200': {description: Assigned payment validated and linked}
+        '422': {description: Payment does not exactly match}
+  /policies/{policy}/transactions/{transaction}/approve:
+    post:
+      operationId: approvePolicyService
+      parameters:
+        - {$ref: '#/components/parameters/Policy'}
+        - {$ref: '#/components/parameters/Transaction'}
+      responses:
+        '200': {description: Service applied and refund request created when due}
+  /policies/{policy}/transactions/{transaction}/reject:
+    post:
+      operationId: rejectPolicyService
+      parameters:
+        - {$ref: '#/components/parameters/Policy'}
+        - {$ref: '#/components/parameters/Transaction'}
+      responses:
+        '200': {description: Service rejected and pending policy state restored}
+  /certificate-templates:
+    post:
+      operationId: createCertificateTemplate
+      responses:
+        '201': {description: Draft hashed template created}
+  /certificate-templates/{template}/approve:
+    post:
+      operationId: approveCertificateTemplate
+      parameters:
+        - {name: template, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Template independently approved}
+  /sticker-batches:
+    post:
+      operationId: receiveStickerBatch
+      responses:
+        '201': {description: Carrier batch and hashed security codes received}
+  /certificates:
+    post:
+      operationId: issueCertificate
+      responses:
+        '201': {description: Certificate and optional tenant-custodied sticker issued}
+  /certificates/{certificate}/void:
+    post:
+      operationId: voidCertificate
+      parameters:
+        - {name: certificate, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Certificate voided with reason}
+  /public/certificates/verify:
+    post:
+      operationId: verifyCertificate
+      security: []
+      responses:
+        '200': {description: Privacy-minimised active coverage verification}
+        '422': {description: Invalid, void, inactive, future or expired certificate}
+  /renewals/seed:
+    post:
+      operationId: seedRenewalCases
+      responses:
+        '200': {description: Due policies created or found}
+  /renewals/{renewal}/quote:
+    post:
+      operationId: createRenewalQuote
+      parameters: [{$ref: '#/components/parameters/Renewal'}]
+      responses:
+        '201': {description: Renewal quote submitted with original attribution}
+  /renewals/{renewal}/complete:
+    post:
+      operationId: completeRenewal
+      parameters: [{$ref: '#/components/parameters/Renewal'}]
+      responses:
+        '200': {description: Active successor policy linked}
+  /configuration/cancellation-rules:
+    post:
+      operationId: createCancellationRule
+      responses:
+        '201': {description: Draft effective-dated rule created}
+  /configuration/cancellation-rules/{rule}/approve:
+    post:
+      operationId: approveCancellationRule
+      parameters:
+        - {name: rule, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Rule independently approved}
+        '422': {description: Maker-checker or effective-period overlap}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  parameters:
+    Issuance: {name: issuance, in: path, required: true, schema: {type: string, format: uuid}}
+    Policy: {name: policy, in: path, required: true, schema: {type: string, format: uuid}}
+    Transaction: {name: transaction, in: path, required: true, schema: {type: string, format: uuid}}
+    Renewal: {name: renewal, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    IssuanceRequest:
+      type: object
+      required: [proposal_id, payment_intent_id, territory, coverage_starts_at, coverage_ends_at]
+      properties:
+        proposal_id: {type: string, format: uuid}
+        payment_intent_id: {type: string, format: uuid}
+        delegated_authority_agreement_id: {type: [string, 'null'], format: uuid}
+        territory: {type: string}
+        coverage_starts_at: {type: string, format: date-time}
+        coverage_ends_at: {type: string, format: date-time}
+    PolicyServiceRequest:
+      type: object
+      required: [type, effective_at, premium_delta_minor, reason_code]
+      properties:
+        type: {type: string, enum: [ENDORSEMENT, CANCELLATION, REINSTATEMENT]}
+        effective_at: {type: string, format: date-time}
+        requested_changes: {type: object, additionalProperties: true}
+        premium_delta_minor: {type: integer}
+        reason_code: {type: string}
+        notes: {type: [string, 'null']}

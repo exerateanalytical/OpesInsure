@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info: {title: OpesInsure Proposal and Underwriting API, version: 3.0.0-wave3}
+servers: [{url: /api/v1}]
+security: [{bearerAuth: []}]
+paths:
+  /proposals:
+    post: {operationId: createProposal, responses: {'201': {description: Proposal created}, '422': {description: Offer or tenant gate failed}}}
+  /proposals/{proposal}:
+    get: {operationId: getProposal, parameters: [{$ref: '#/components/parameters/Proposal'}], responses: {'200': {description: Proposal aggregate}}}
+  /proposals/{proposal}/disclosures:
+    put: {operationId: answerDisclosures, parameters: [{$ref: '#/components/parameters/Proposal'}], responses: {'200': {description: Answers recorded}}}
+  /proposals/{proposal}/disclosures/attest:
+    post: {operationId: attestDisclosures, parameters: [{$ref: '#/components/parameters/Proposal'}], responses: {'200': {description: Answers attested}}}
+  /proposals/{proposal}/documents:
+    post: {operationId: attachProposalDocument, parameters: [{$ref: '#/components/parameters/Proposal'}], responses: {'201': {description: Attached}}}
+  /proposals/{proposal}/submit:
+    post: {operationId: submitProposal, parameters: [{$ref: '#/components/parameters/Proposal'}], responses: {'202': {description: Underwriting queued}, '422': {description: Disclosure or evidence gate failed}}}
+  /underwriting/cases/{case}/assign:
+    post: {operationId: assignUnderwritingCase, parameters: [{$ref: '#/components/parameters/Case'}], responses: {'200': {description: Assigned}}}
+  /underwriting/cases/{case}/decision:
+    post: {operationId: decideUnderwritingCase, parameters: [{$ref: '#/components/parameters/Case'}], responses: {'200': {description: Decision recorded}, '422': {description: Open referral gate}}}
+  /payments:
+    post: {operationId: createCustomerPaymentRequest, responses: {'201': {description: Customer authorization requested}, '200': {description: Existing idempotent request}}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  parameters:
+    Proposal: {name: proposal, in: path, required: true, schema: {type: string, format: uuid}}
+    Case: {name: case, in: path, required: true, schema: {type: string, format: uuid}}

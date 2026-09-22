@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;use Illuminate\Database\Eloquent\Relations\HasMany;use Illuminate\Database\Eloquent\SoftDeletes;
+final class TenantBranch extends Model{use HasUuids,SoftDeletes;protected$fillable=['tenant_id','code','name','status','phone_e164','email','address','timezone','manager_user_id'];protected function casts():array{return['address'=>'array'];}public function tenant():BelongsTo{return$this->belongsTo(Tenant::class);}public function manager():BelongsTo{return$this->belongsTo(User::class,'manager_user_id');}public function memberships():HasMany{return$this->hasMany(TenantMembership::class,'branch_id');}}

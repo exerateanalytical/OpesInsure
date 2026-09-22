@@ -1,0 +1,12 @@
+<?php
+use Illuminate\Database\Migrations\Migration;use Illuminate\Database\Schema\Blueprint;use Illuminate\Support\Facades\DB;use Illuminate\Support\Facades\Schema;
+return new class extends Migration{
+public function up():void{
+Schema::create('tenant_branches',function(Blueprint$t){$t->uuid('id')->primary();$t->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();$t->string('code',40);$t->string('name');$t->string('status',24)->default('ACTIVE');$t->string('phone_e164',20)->nullable();$t->string('email')->nullable();$t->jsonb('address')->default('{}');$t->string('timezone',64)->default('Africa/Douala');$t->foreignUuid('manager_user_id')->nullable()->constrained('users');$t->timestampsTz();$t->softDeletesTz();$t->unique(['tenant_id','code']);});
+Schema::table('tenant_memberships',function(Blueprint$t){$t->foreignUuid('branch_id')->nullable()->constrained('tenant_branches');$t->timestampTz('suspended_at')->nullable();$t->timestampTz('revoked_at')->nullable();$t->foreignUuid('revoked_by')->nullable()->constrained('users');$t->string('revocation_reason')->nullable();});
+Schema::create('tenant_status_history',function(Blueprint$t){$t->uuid('id')->primary();$t->foreignUuid('tenant_id')->constrained()->cascadeOnDelete();$t->string('from_status',24)->nullable();$t->string('to_status',24);$t->string('reason_code',64);$t->text('notes');$t->foreignUuid('actor_id')->constrained('users');$t->timestampTz('occurred_at');});
+Schema::create('security_events',function(Blueprint$t){$t->uuid('id')->primary();$t->foreignUuid('user_id')->nullable()->constrained();$t->string('type',64);$t->string('severity',16);$t->string('ip_hash',64)->nullable();$t->string('user_agent_hash',64)->nullable();$t->jsonb('metadata')->default('{}');$t->timestampTz('occurred_at');});
+Schema::create('mfa_recovery_codes',function(Blueprint$t){$t->uuid('id')->primary();$t->foreignUuid('user_id')->constrained()->cascadeOnDelete();$t->string('code_hash');$t->timestampTz('used_at')->nullable();$t->timestampsTz();});
+DB::statement("ALTER TABLE tenant_branches ADD CONSTRAINT tenant_branch_status_allowed CHECK (status IN ('ACTIVE','SUSPENDED','CLOSED'))");}
+public function down():void{Schema::dropIfExists('mfa_recovery_codes');Schema::dropIfExists('security_events');Schema::dropIfExists('tenant_status_history');Schema::table('tenant_memberships',function(Blueprint$t){$t->dropConstrainedForeignId('branch_id');$t->dropConstrainedForeignId('revoked_by');$t->dropColumn(['suspended_at','revoked_at','revocation_reason']);});Schema::dropIfExists('tenant_branches');}}
+;

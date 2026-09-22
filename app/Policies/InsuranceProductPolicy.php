@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\{InsuranceProduct,User};
+final class InsuranceProductPolicy{private function role(User$u,array$r):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',$r)->exists();}public function viewAny(User$u):bool{return$this->role($u,['SYSTEM_ADMIN','PLATFORM_ADMIN','PRODUCT_ADMIN','PRODUCT_VIEWER','BROKER_ADMIN']);}public function view(User$u,InsuranceProduct$m):bool{return$this->viewAny($u);}public function create(User$u):bool{return$this->role($u,['SYSTEM_ADMIN','PLATFORM_ADMIN','PRODUCT_ADMIN']);}public function update(User$u,InsuranceProduct$m):bool{return$this->create($u)&&$m->status==='DRAFT';}public function delete(User$u,InsuranceProduct$m):bool{return false;}}

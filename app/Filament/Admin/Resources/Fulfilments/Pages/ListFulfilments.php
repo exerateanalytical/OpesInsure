@@ -1,0 +1,1 @@
+<?php namespace App\Filament\Admin\Resources\Fulfilments\Pages;use App\Filament\Admin\Resources\Fulfilments\FulfilmentResource;use Filament\Resources\Pages\ListRecords;final class ListFulfilments extends ListRecords{protected static string $resource=FulfilmentResource::class;}

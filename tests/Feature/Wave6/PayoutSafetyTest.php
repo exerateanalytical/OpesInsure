@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('encrypts destinations, reserves balances and tracks provider failures',function(){$s=file_get_contents(base_path('app/Application/FinancialDistribution/PayoutService.php'));expect($s)->toContain('Crypt::encryptString')->toContain("['REQUESTED','APPROVED','PROCESSING','PAID']")->toContain('PartnerPayoutAttempt')->toContain("status'=>'FAILED'")->toContain('lockForUpdate');});

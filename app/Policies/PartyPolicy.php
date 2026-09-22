@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\Party;use App\Models\User;
+final class PartyPolicy{private function allowed(User$u):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',['SYSTEM_ADMIN','PLATFORM_ADMIN','COMPLIANCE_ADMIN','BROKER_ADMIN','BROKER_STAFF'])->exists();}public function viewAny(User$u):bool{return$this->allowed($u);}public function view(User$u,Party$p):bool{return$this->allowed($u);}public function create(User$u):bool{return$this->allowed($u);}public function update(User$u,Party$p):bool{return false;}public function delete(User$u,Party$p):bool{return false;}}

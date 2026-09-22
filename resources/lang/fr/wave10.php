@@ -1,0 +1,1 @@
+<?php return ['invalid_portal'=>'Le portail demandé n’est pas pris en charge.','stale_or_invalid'=>'Le dossier a changé ou ne peut pas être approuvé dans son état actuel.','primary_navigation'=>'Navigation principale','notifications'=>'Notifications','account'=>'Menu du compte','priority_work'=>'Travail prioritaire','next_actions'=>'Actions suivantes'];

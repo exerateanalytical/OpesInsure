@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Branches\Pages;use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Branches\BranchResource;use Filament\Resources\Pages\EditRecord;final class EditBranch extends EditRecord{protected static string$resource=BranchResource::class;protected function afterSave():void{app(AuditWriter::class)->record('tenant.branch.updated','tenant_branch',$this->record->id);}}

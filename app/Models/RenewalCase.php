@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class RenewalCase extends Model{use HasUuids;protected$fillable=['tenant_id','policy_id','renewal_quote_id','successor_policy_id','status','due_on','attribution_snapshot','assigned_to','contact_attempts','last_contacted_at'];protected function casts():array{return['due_on'=>'date','attribution_snapshot'=>'array','last_contacted_at'=>'datetime'];}public function policy():BelongsTo{return$this->belongsTo(Policy::class);}public function quote():BelongsTo{return$this->belongsTo(Quote::class,'renewal_quote_id');}}

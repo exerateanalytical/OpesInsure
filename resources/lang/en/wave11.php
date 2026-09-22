@@ -1,0 +1,1 @@
+<?php return ['locked'=>'This release candidate is locked.','maker_checker'=>'Certification requires a different approver and the current record version.','gates_failed'=>'All release gates must pass and high-risk findings must be resolved.'];

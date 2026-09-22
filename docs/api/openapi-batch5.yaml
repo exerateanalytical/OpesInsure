@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: OpesInsure Trust Operations API, version: 1.0.0-alpha.5}
+servers: [{url: https://api.opesinsure.com/v1}]
+security: [{oauth2: [insurance.read]}]
+paths:
+  /fulfilment-orders: {post: {operationId: createFulfilmentOrder, responses: {'201': {description: Order and delivery OTP created}}}}
+  /fulfilment-orders/{order}/transitions: {post: {operationId: transitionFulfilment, responses: {'200': {description: Custody event recorded}}}}
+  /communication-preferences: {put: {operationId: updateCommunicationPreference, responses: {'200': {description: Purpose and channel preference saved}}}}
+  /notifications: {post: {operationId: queueNotification, responses: {'202': {description: Consent-checked notification queued}}}}
+  /support-tickets: {post: {operationId: createSupportTicket, responses: {'201': {description: SLA-bound ticket created}}}}
+  /support-tickets/{ticket}/transitions: {post: {operationId: transitionSupportTicket, responses: {'200': {description: Guarded ticket transition}}}}
+  /risk-alerts: {post: {operationId: createRiskAlert, responses: {'201': {description: Review alert created}}}}
+  /risk-alerts/{alert}/decision: {post: {operationId: decideRiskAlert, responses: {'200': {description: Human decision recorded}}}}
+  /compliance/privileged-access: {post: {operationId: grantPrivilegedAccess, responses: {'201': {description: Time-bound separately approved grant}}}}
+  /compliance/data-subject-requests: {post: {operationId: createDataSubjectRequest, responses: {'201': {description: Data-rights request registered}}}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {authorizationCode: {authorizationUrl: https://identity.opesinsure.com/oauth/authorize, tokenUrl: https://identity.opesinsure.com/oauth/token, scopes: {insurance.read: Read authorized data}}}}

@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info: {title: OpesInsure Claims API, version: 7.0.0}
+servers: [{url: /api/v1}]
+security: [{oauth2: [claims]}]
+paths:
+  /claims/fnol:
+    post:
+      operationId: submitFnol
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Fnol'}}}}
+      responses: {'201': {description: Claim submitted}, '409': {description: Idempotency conflict}, '422': {description: Invalid policy, claimant or loss}}
+  /claims/{id}:
+    get:
+      operationId: getClaim
+      parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}]
+      responses: {'200': {description: Tenant-scoped claim}, '404': {description: Not found}}
+  /claims/{id}/reserves:
+    post:
+      operationId: requestClaimReserve
+      parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [amount_minor, reason_code], properties: {amount_minor: {type: integer, minimum: 0}, reason_code: {type: string}, notes: {type: string}}}}}}
+      responses: {'201': {description: Reserve approval requested}}
+  /claims/{id}/decisions:
+    post:
+      operationId: proposeClaimDecision
+      parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}]
+      responses: {'201': {description: Decision awaiting separate approval}, '422': {description: Authority exceeded}}
+  /claims/{id}/evidence:
+    post:
+      operationId: attachClaimEvidence
+      parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}]
+      responses: {'201': {description: Hash-bound evidence attached}, '422': {description: Evidence failed security gate}}
+  /claims/{id}/carrier-messages:
+    post:
+      operationId: queueClaimCarrierMessage
+      parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}]
+      responses: {'202': {description: Hashed message queued}}
+  /claims/{id}/assign:
+    post: {operationId: assignClaim, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Claim assigned}}}
+  /claims/{id}/transitions:
+    post: {operationId: transitionClaim, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: State advanced}, '422': {description: Invalid transition}}}
+  /claims/{id}/reserves/{reserve}/approve:
+    post: {operationId: approveClaimReserve, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Reserve approved by separate checker}}}
+  /claims/{id}/decisions/{decision}/approve:
+    post: {operationId: approveClaimDecision, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Authority-checked decision approved}}}
+  /claims/{id}/evidence/{document}/verify:
+    post: {operationId: verifyClaimEvidence, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Evidence hash verified and custody recorded}}}
+  /claims/{id}/disputes:
+    post: {operationId: openClaimDispute, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'201': {description: Dispute opened}}}
+  /claims/{id}/disputes/{dispute}/resolve:
+    post: {operationId: resolveClaimDispute, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Dispute resolved or returned to review}}}
+  /claims/{id}/recoveries:
+    post: {operationId: openClaimRecovery, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'201': {description: Recovery or subrogation opened}}}
+  /claims/{id}/recoveries/{recovery}/receipts:
+    post: {operationId: recordClaimRecovery, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Recovery receipt recorded}}}
+  /claims/{id}/decisions/{decision}/payments:
+    post: {operationId: requestClaimPayment, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'201': {description: Payment awaiting separate approval}}}
+  /claims/{id}/payments/{payment}/approve:
+    post: {operationId: approveClaimPayment, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Claim payment approved}}}
+  /claims/{id}/payments/{payment}/processing:
+    post: {operationId: markClaimPaymentProcessing, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Execution attempt started}}}
+  /claims/{id}/payments/{payment}/failed:
+    post: {operationId: failClaimPayment, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Failure captured and retry scheduled}}}
+  /claims/{id}/payments/{payment}/paid:
+    post: {operationId: completeClaimPayment, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Claim payment completed}}}
+  /claims/{id}/payments/{payment}/reverse:
+    post: {operationId: reverseClaimPayment, parameters: [{$ref: '#/components/parameters/ClaimId'}, {$ref: '#/components/parameters/Tenant'}], responses: {'200': {description: Claim payment reversed by separate checker}}}
+components:
+  parameters:
+    Tenant: {name: X-Tenant-ID, in: header, required: true, schema: {type: string, format: uuid}}
+    ClaimId: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    Fnol:
+      type: object
+      required: [policy_id, claimant_party_id, loss_occurred_at, loss_details, idempotency_key]
+      properties:
+        policy_id: {type: string, format: uuid}
+        claimant_party_id: {type: string, format: uuid}
+        loss_occurred_at: {type: string, format: date-time}
+        loss_details: {type: object, additionalProperties: true}
+        loss_location: {type: string, maxLength: 255}
+        estimated_loss_minor: {type: integer, minimum: 0}
+        priority: {type: string, enum: [LOW, NORMAL, HIGH, CRITICAL]}
+        idempotency_key: {type: string, minLength: 16, maxLength: 128}
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: /oauth/token, scopes: {claims: Manage claims}}}}

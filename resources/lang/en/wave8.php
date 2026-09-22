@@ -1,0 +1,1 @@
+<?php return ['notification_not_retryable'=>'Only queued or failed notifications can be retried.','notification_not_cancellable'=>'Only queued or failed notifications can be cancelled.','operations'=>'Operations','fulfilment'=>'Fulfilment','support'=>'Support and complaints','communications'=>'Customer communications'];

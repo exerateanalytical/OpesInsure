@@ -1,0 +1,4 @@
+<?php
+namespace App\Domain\CarrierOperations;
+final readonly class AuthorityDecision{public function __construct(public bool $allowed,public string $reason) {}}
+final class AuthorityChecker{public function check(array$a,string$line,int$premium,string$territory,\DateTimeImmutable$at):AuthorityDecision{if(($a['status']??null)!=='ACTIVE')return new AuthorityDecision(false,'AGREEMENT_INACTIVE');if($at<new \DateTimeImmutable($a['effective_from'])||$at>new \DateTimeImmutable($a['effective_until']))return new AuthorityDecision(false,'OUTSIDE_EFFECTIVE_PERIOD');if(!in_array($line,$a['permitted_lines']??[],true))return new AuthorityDecision(false,'LINE_NOT_PERMITTED');if($premium>(int)$a['max_policy_premium_minor'])return new AuthorityDecision(false,'PREMIUM_AUTHORITY_EXCEEDED');if(!in_array($territory,$a['territories']??[],true))return new AuthorityDecision(false,'TERRITORY_NOT_PERMITTED');return new AuthorityDecision(true,'WITHIN_AUTHORITY');}}

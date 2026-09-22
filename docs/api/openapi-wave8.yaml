@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info: {title: OpesInsure Wave 8 Operations API, version: 1.0.0}
+paths:
+  /v1/fulfilments:
+    post: {summary: Create an idempotent policy delivery order, security: [{oauth2: [fulfilments.manage]}], responses: {'201': {description: Created}, '422': {description: Invalid policy or payload}}}
+  /v1/fulfilments/{order}/transitions:
+    post: {summary: Apply a guarded fulfilment transition, security: [{oauth2: [fulfilments.manage]}], parameters: [{in: path, name: order, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Transitioned}, '422': {description: Invalid transition or OTP}}}
+  /v1/communications/preferences:
+    put: {summary: Update a communication preference, security: [{oauth2: [communications.manage]}], responses: {'200': {description: Updated}}}
+  /v1/notifications:
+    post: {summary: Queue an idempotent templated notification, security: [{oauth2: [communications.manage]}], responses: {'202': {description: Queued}}}
+  /v1/notifications/{delivery}/retry:
+    post: {summary: Retry with bounded exponential backoff, security: [{oauth2: [communications.manage]}], responses: {'200': {description: Queued or dead-lettered}}}
+  /v1/notifications/{delivery}/cancel:
+    post: {summary: Cancel a pending delivery, security: [{oauth2: [communications.manage]}], responses: {'200': {description: Cancelled}}}
+  /v1/support/tickets:
+    post: {summary: Open an idempotent support or complaint case, security: [{oauth2: [support.manage]}], responses: {'201': {description: Opened}}}
+  /v1/support/tickets/{ticket}/transitions:
+    post: {summary: Apply the support state machine, security: [{oauth2: [support.manage]}], responses: {'200': {description: Transitioned}}}
+  /v1/communications/logs:
+    post: {summary: Record a privacy-minimized customer interaction, security: [{oauth2: [communications.manage]}], responses: {'201': {description: Recorded}}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: /oauth/token, scopes: {fulfilments.manage: Manage fulfilment, communications.manage: Manage communications, support.manage: Manage support}}}}

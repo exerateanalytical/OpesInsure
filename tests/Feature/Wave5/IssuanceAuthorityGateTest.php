@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('requires an exact reconciled payment and correctly scoped authority',function(){$s=file_get_contents(base_path('app/Application/Policies/PolicyIssuanceService.php'));expect($s)->toContain("!== 'SUCCEEDED'")->toContain('reconciled_at')->toContain('amount_minor')->toContain("partners.tenant_id")->toContain("authority.carrier_id")->toContain('CARRIER_REVIEW_REQUIRED')->toContain('AuthorityChecker')->toContain('lockForUpdate');});

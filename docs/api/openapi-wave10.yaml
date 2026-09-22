@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info: {title: OpesInsure Web Experiences API, version: 1.0.0}
+paths:
+  /api/v1/web-experiences/{portal}/dashboard:
+    get:
+      summary: Read tenant-scoped portal dashboard
+      parameters: [{name: portal, in: path, required: true, schema: {type: string, enum: [admin, broker, carrier, agent, customer]}}]
+      responses: {'200': {description: Dashboard read model}, '401': {description: Unauthenticated}, '403': {description: Forbidden}}
+  /api/v1/web-experiences/marketplace/publications:
+    post:
+      summary: Draft a controlled marketplace publication
+      responses: {'201': {description: Draft created}, '422': {description: Validation failure}}
+  /api/v1/web-experiences/marketplace/comparisons:
+    post:
+      summary: Save a customer quote comparison
+      responses: {'201': {description: Comparison saved}}

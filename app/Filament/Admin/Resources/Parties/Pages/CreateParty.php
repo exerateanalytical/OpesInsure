@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Parties\Pages;use App\Application\Customers\PartyService;use App\Filament\Admin\Concerns\NotifiesServiceValidationErrors;use App\Filament\Admin\Resources\Parties\PartyResource;use Illuminate\Database\Eloquent\Model;use Filament\Resources\Pages\CreateRecord;final class CreateParty extends CreateRecord{use NotifiesServiceValidationErrors;protected static string$resource=PartyResource::class;protected function handleRecordCreation(array$data):Model{return app(PartyService::class)->create($data);}}

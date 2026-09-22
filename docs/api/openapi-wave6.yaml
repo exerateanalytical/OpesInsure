@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info: {title: OpesInsure Financial Distribution API, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{oauth2: [financial_distribution]}]
+paths:
+  /financial-distribution/commission-rules:
+    post: {operationId: createCommissionRule, summary: Create an effective-dated commission rule, responses: {'201': {description: Draft created}, '422': {description: Invalid configuration}}}
+  /financial-distribution/commission-rules/{rule}/approve:
+    post: {operationId: approveCommissionRule, summary: Approve a rule under maker-checker, parameters: [{$ref: '#/components/parameters/Rule'}], responses: {'200': {description: Approved}, '422': {description: Conflict or maker-checker failure}}}
+  /financial-distribution/commissions/accrue:
+    post: {operationId: accrueCommission, summary: Calculate a commission from an approved rule, responses: {'201': {description: Accrued}}}
+  /financial-distribution/commissions/{accrual}/vest:
+    post: {operationId: vestCommission, parameters: [{$ref: '#/components/parameters/Accrual'}], responses: {'200': {description: Vested}}}
+  /financial-distribution/commissions/{accrual}/clawback:
+    post: {operationId: clawbackCommission, parameters: [{$ref: '#/components/parameters/Accrual'}], responses: {'200': {description: Clawed back}}}
+  /partner-statements:
+    post: {operationId: preparePartnerStatement, summary: Prepare an immutable partner statement, responses: {'201': {description: Prepared}}}
+  /partner-statements/{statement}/approve:
+    post: {operationId: approvePartnerStatement, parameters: [{$ref: '#/components/parameters/Statement'}], responses: {'200': {description: Approved}}}
+  /partner-statements/{statement}/publish:
+    post: {operationId: publishPartnerStatement, parameters: [{$ref: '#/components/parameters/Statement'}], responses: {'200': {description: Published}}}
+  /partner-statements/{statement}/payouts:
+    post: {operationId: requestPartnerPayout, parameters: [{$ref: '#/components/parameters/Statement'}], responses: {'201': {description: Requested}, '422': {description: Insufficient available balance}}}
+  /partner-payouts/{payout}/approve:
+    post: {operationId: approvePartnerPayout, parameters: [{$ref: '#/components/parameters/Payout'}], responses: {'200': {description: Approved}}}
+  /partner-payouts/{payout}/process:
+    post: {operationId: processPartnerPayout, parameters: [{$ref: '#/components/parameters/Payout'}], responses: {'200': {description: Processing}}}
+  /partner-payouts/{payout}/complete:
+    post: {operationId: completePartnerPayout, parameters: [{$ref: '#/components/parameters/Payout'}], responses: {'200': {description: Paid}}}
+  /partner-payouts/{payout}/fail:
+    post: {operationId: failPartnerPayout, parameters: [{$ref: '#/components/parameters/Payout'}], responses: {'200': {description: Failed}}}
+  /partner-payouts/{payout}/reverse:
+    post: {operationId: reversePartnerPayout, parameters: [{$ref: '#/components/parameters/Payout'}], responses: {'200': {description: Reversed}}}
+  /carrier-settlements:
+    post: {operationId: prepareCarrierSettlement, summary: Prepare a carrier net settlement, responses: {'201': {description: Prepared}}}
+  /carrier-settlements/{settlement}/approve:
+    post: {operationId: approveCarrierSettlement, parameters: [{$ref: '#/components/parameters/Settlement'}], responses: {'200': {description: Approved}}}
+  /carrier-settlements/{settlement}/submit:
+    post: {operationId: submitCarrierSettlement, parameters: [{$ref: '#/components/parameters/Settlement'}], responses: {'200': {description: Submitted}}}
+  /carrier-settlements/{settlement}/paid:
+    post: {operationId: confirmCarrierSettlement, parameters: [{$ref: '#/components/parameters/Settlement'}], responses: {'200': {description: Paid}}}
+  /carrier-settlements/{settlement}/fail:
+    post: {operationId: failCarrierSettlement, parameters: [{$ref: '#/components/parameters/Settlement'}], responses: {'200': {description: Failed}}}
+  /carrier-settlements/{settlement}/reverse:
+    post: {operationId: reverseCarrierSettlement, parameters: [{$ref: '#/components/parameters/Settlement'}], responses: {'200': {description: Reversed}}}
+  /bordereaux:
+    post: {operationId: prepareBordereau, summary: Prepare a premium or commission bordereau, responses: {'201': {description: Prepared}}}
+  /bordereaux/{bordereau}/submit:
+    post: {operationId: submitBordereau, parameters: [{$ref: '#/components/parameters/Bordereau'}], responses: {'200': {description: Submitted}}}
+  /bordereaux/{bordereau}/approve:
+    post: {operationId: approveBordereau, parameters: [{$ref: '#/components/parameters/Bordereau'}], responses: {'200': {description: Approved}}}
+  /bordereaux/{bordereau}/acknowledge:
+    post: {operationId: acknowledgeBordereau, parameters: [{$ref: '#/components/parameters/Bordereau'}], responses: {'200': {description: Acknowledged}}}
+  /bordereaux/{bordereau}/reject:
+    post: {operationId: rejectBordereau, parameters: [{$ref: '#/components/parameters/Bordereau'}], responses: {'200': {description: Rejected}}}
+components:
+  parameters:
+    Rule: {name: rule, in: path, required: true, schema: {type: string, format: uuid}}
+    Statement: {name: statement, in: path, required: true, schema: {type: string, format: uuid}}
+    Payout: {name: payout, in: path, required: true, schema: {type: string, format: uuid}}
+    Settlement: {name: settlement, in: path, required: true, schema: {type: string, format: uuid}}
+    Bordereau: {name: bordereau, in: path, required: true, schema: {type: string, format: uuid}}
+    Accrual: {name: accrual, in: path, required: true, schema: {type: string, format: uuid}}
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: /oauth/token, scopes: {financial_distribution: Manage financial distribution}}}}

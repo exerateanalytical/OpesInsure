@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info: {title: OpesInsure Trust and Compliance API, version: 9.0.0}
+servers: [{url: /api/v1}]
+security: [{oauth2: [trust.manage]}]
+paths:
+  /trust/fraud-alerts:
+    post: {operationId: openFraudAlert, parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], responses: {'201': {description: Created}, '409': {description: Idempotency conflict}}}
+  /trust/fraud-alerts/{id}/decision:
+    post: {operationId: decideFraudAlert, responses: {'200': {description: Decided}, '422': {description: Invalid review}}}
+  /trust/compliance-cases:
+    post: {operationId: openComplianceCase, responses: {'201': {description: Created}}}
+  /trust/compliance-cases/{id}/transition:
+    post: {operationId: transitionComplianceCase, responses: {'200': {description: Transitioned}}}
+  /trust/data-subject-requests:
+    post: {operationId: receiveDataSubjectRequest, responses: {'201': {description: Received}}}
+  /trust/data-subject-requests/{id}/verify:
+    post: {operationId: verifyDataSubjectIdentity, responses: {'200': {description: Verified}}}
+  /trust/data-subject-requests/{id}/resolve:
+    post: {operationId: resolveDataSubjectRequest, responses: {'200': {description: Resolved}}}
+  /trust/privileged-access:
+    post: {operationId: requestPrivilegedAccess, responses: {'201': {description: Requested}}}
+  /trust/privileged-access/{id}/approve:
+    post: {operationId: approvePrivilegedAccess, responses: {'200': {description: Approved}}}
+  /trust/regulatory-reports/{definition}/runs:
+    post: {operationId: prepareRegulatoryReport, responses: {'201': {description: Prepared}}}
+  /trust/regulatory-report-runs/{id}/submit:
+    post: {operationId: submitRegulatoryReport, responses: {'200': {description: Submission started}}}
+components:
+  parameters:
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, maxLength: 100}}
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: /oauth/token, scopes: {trust.manage: Manage trust operations}}}}

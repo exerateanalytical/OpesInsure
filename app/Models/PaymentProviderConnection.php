@@ -1,0 +1,2 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;final class PaymentProviderConnection extends Model{use HasUuids;protected$fillable=['tenant_id','provider','environment','status','credential_reference','capabilities','created_by','approved_by','approved_at'];protected function casts():array{return['capabilities'=>'array','approved_at'=>'datetime'];}}

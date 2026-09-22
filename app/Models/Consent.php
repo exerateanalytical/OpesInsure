@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;use Illuminate\Database\Eloquent\Relations\HasMany;
+final class Consent extends Model{use HasUuids;protected$fillable=['party_id','tenant_id','purpose','notice_version','status','channel','captured_by','given_at','withdrawn_at','evidence','evidence_hash'];protected function casts():array{return['given_at'=>'datetime','withdrawn_at'=>'datetime','evidence'=>'array'];}public function party():BelongsTo{return$this->belongsTo(Party::class);}public function tenant():BelongsTo{return$this->belongsTo(Tenant::class);}public function events():HasMany{return$this->hasMany(ConsentEvent::class);}}

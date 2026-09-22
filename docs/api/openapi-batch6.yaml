@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: OpesInsure Insurance Control Plane API, version: 1.0.0-alpha.6}
+servers: [{url: https://api.opesinsure.com/v1}]
+security: [{oauth2: [insurance.read]}]
+paths:
+  /reports/insurance-portfolio: {get: {operationId: insurancePortfolioReport, responses: {'200': {description: GWP policy claim frequency and estimated loss ratio}}}}
+  /configuration/regulatory-reference-sets: {post: {operationId: createRegulatoryReferenceVersion, responses: {'201': {description: Hashed draft reference set}}}}
+  /integrations/clients: {post: {operationId: createIntegrationClient, responses: {'201': {description: Scoped client with one-time secret}}}}
+  /broker/bordereaux: {post: {operationId: createBordereau, responses: {'201': {description: Itemized insurance bordereau}}}}
+  /broker/renewals/seed: {post: {operationId: seedRenewalWorkbench, responses: {'200': {description: Expiring policies queued}}}}
+  /carrier/delegated-authorities/{agreement}/check: {post: {operationId: checkDelegatedAuthority, responses: {'200': {description: Authority decision and reason}}}}
+  /carrier/bordereaux/{bordereau}/decision: {post: {operationId: carrierDecideBordereau, responses: {'200': {description: Carrier acknowledgement or rejection}}}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {authorizationCode: {authorizationUrl: https://identity.opesinsure.com/oauth/authorize, tokenUrl: https://identity.opesinsure.com/oauth/token, scopes: {insurance.read: Read authorized insurance data}}}}

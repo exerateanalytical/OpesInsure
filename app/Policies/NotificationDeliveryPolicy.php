@@ -1,0 +1,1 @@
+<?php namespace App\Policies;use App\Models\{NotificationDelivery,User};final class NotificationDeliveryPolicy{public function view(User$u,NotificationDelivery$o):bool{return $u->tenantMemberships()->where('tenant_id',$o->tenant_id)->where('status','ACTIVE')->exists();}public function update(User$u,NotificationDelivery$o):bool{return $this->view($u,$o);}}

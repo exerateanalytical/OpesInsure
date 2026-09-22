@@ -1,0 +1,108 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@source '../../../../app/Filament/Admin/**/*.php';
+@source '../../../../resources/views/filament/admin/**/*.blade.php';
+@source '../../../../resources/views/filament/auth/**/*.blade.php';
+
+/* Manrope Variable — self-hosted per v3 spec §5.1/§21 (no external font service calls) */
+@font-face{font-family:'Manrope Variable';font-style:normal;font-display:swap;font-weight:200 800;src:url('/fonts/manrope/manrope-latin-ext-variable.woff2') format('woff2-variations');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Manrope Variable';font-style:normal;font-display:swap;font-weight:200 800;src:url('/fonts/manrope/manrope-latin-variable.woff2') format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+/* ==========================================================================
+   OpesInsure v3 — Cameroon Modern Assurance design tokens
+   Source: OpesInsure_Premium_Visual_Identity_and_Dashboard_Specification_v3.docx
+   This file supersedes the v1 token set. Do not reintroduce --oi-* v1 names
+   or the Wave10 portal shell's teal/ink token set (see
+   docs/design/ROUTE_TO_SCREEN_REGISTER.md, style conflict register).
+   ========================================================================== */
+:root{
+  /* institutional brand */
+  --oi-obsidian-1000:#04131F;
+  --oi-navy-950:#071A2B;
+  --oi-navy-850:#0E3048;
+  --oi-blue-650:#155FCC;
+  --oi-blue-550:#2F78E6;
+  --oi-blue-100:#DCEAFF;
+  --oi-blue-50:#EFF5FF;
+  --oi-brass-650:#A96F13;
+  --oi-brass-500:#D5A13C;
+  --oi-brass-100:#F3DFAF;
+  --oi-brass-50:#FCF7EA;
+
+  /* mineral neutrals */
+  --oi-ink-950:#111820;
+  --oi-graphite-800:#26333F;
+  --oi-slate-700:#3C4C5B;
+  --oi-slate-600:#566776;
+  --oi-stone-400:#94A0AA;
+  --oi-mist-300:#C3CCD3;
+  --oi-mist-200:#DCE3E8;
+  --oi-mist-100:#ECF0F3;
+  --oi-mineral-50:#F5F7F8;
+  --oi-ivory-25:#FCFBF7;
+  --oi-white:#FFFFFF;
+
+  /* semantic */
+  --oi-verified:#07855B; --oi-verified-soft:#E7F6F0; --oi-verified-border:#9DDAC6; --oi-verified-text:#056B49;
+  --oi-info:#155FCC; --oi-info-soft:#EFF5FF; --oi-info-border:#AFCDF7; --oi-info-text:#124FA9;
+  --oi-pending:#B77800; --oi-pending-soft:#FFF6DD; --oi-pending-border:#EAC66F; --oi-pending-text:#764B00;
+  --oi-failed:#C9363E; --oi-failed-soft:#FDEDEF; --oi-failed-border:#E8A9AE; --oi-failed-text:#98272E;
+  --oi-draft:#566776; --oi-draft-soft:#F1F4F6; --oi-draft-border:#CDD5DC; --oi-draft-text:#344454;
+
+  /* identity thread */
+  --oi-heritage-green:#07855B; --oi-heritage-red:#C9363E; --oi-heritage-brass:#D5A13C;
+
+  /* radius (v3 §9.2) */
+  --oi-radius-control:10px; --oi-radius-card:12px; --oi-radius-signature:16px; --oi-radius-hero:20px; --oi-radius-pill:999px;
+
+  /* fonts */
+  --oi-font-display:'Manrope Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --oi-font-body:'Inter Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+
+/* ==========================================================================
+   Canvas — Mineral 50 is the operational canvas. Ivory is reserved for
+   signature/welcome surfaces only (v3 §9.1) — this was the #1 conflict
+   found in the audit (Ivory was previously used for the whole app body).
+   ========================================================================== */
+.fi-body{background:var(--oi-mineral-50);font-family:var(--oi-font-body)}
+.fi-main{max-width:1440px}
+
+/* Typography: Manrope for headings/titles/values, Inter for body (v3 §5.1) */
+.fi-header-heading,.fi-section-header-heading,.fi-modal-heading,.fi-page-header-heading,
+.fi-widget h1,.fi-widget h2,.fi-fo-field-wrp-label,.fi-ta-header-cell-label{
+  font-family:var(--oi-font-display);
+}
+h1,h2,h3{font-family:var(--oi-font-display)}
+
+/* ==========================================================================
+   Sidebar — Assurance Navy 950, 264px / 80px collapsed, 44px item targets
+   (v3 §14.4)
+   ========================================================================== */
+.fi-sidebar{background:var(--oi-navy-950);width:264px}
+.fi-sidebar.fi-sidebar-collapsed{width:80px}
+.fi-sidebar-item-label,.fi-sidebar-group-label{color:#DCE7EF;font-family:var(--oi-font-body)}
+.fi-sidebar-item-button{min-height:44px;border-radius:var(--oi-radius-control)}
+.fi-sidebar-item.fi-active>.fi-sidebar-item-button{background:var(--oi-navy-850)}
+.fi-sidebar-item-button:hover{background:color-mix(in srgb,var(--oi-navy-850) 60%,transparent)}
+
+/* Topbar — 64–72px (v3 §14.4) */
+.fi-topbar,.fi-topbar-ctn{min-height:64px}
+
+/* ==========================================================================
+   Controls, cards, borders (v3 §9.2/9.3, §10.1)
+   ========================================================================== */
+.fi-btn{min-height:44px;border-radius:var(--oi-radius-control);font-family:var(--oi-font-body)}
+.fi-input-wrp{border-radius:var(--oi-radius-control)}
+.fi-section{border:1px solid var(--oi-mist-200);border-radius:var(--oi-radius-card);box-shadow:none;background:var(--oi-white)}
+.fi-ta-ctn{border-radius:var(--oi-radius-card)}
+
+/* Selected border uses Insurance Blue, not a glow (v3 §9.3) */
+*:focus-visible{outline:3px solid color-mix(in srgb,var(--oi-blue-650) 30%,transparent);outline-offset:2px}
+
+/* Status: icon + label always accompany color, never color alone (v3 §4.3) — enforced at
+   the component-authoring level; these tokens exist so future badge/status components pull
+   from one place instead of Filament's generic palette. */
+.fi-badge{font-family:var(--oi-font-body)}
+
+@media(max-width:768px){.fi-main{padding-inline:16px}.fi-ta-content{overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}

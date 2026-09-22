@@ -1,0 +1,2 @@
+<?php
+namespace App\Policies; use App\Domain\Tenancy\TenantContext; use App\Models\{CommissionAccrual,User}; final class CommissionAccrualPolicy{public function viewAny(User$u):bool{return$u->memberships()->where('status','ACTIVE')->exists();}public function view(User$u,CommissionAccrual$m):bool{return$m->tenant_id===app(TenantContext::class)->id()&&$this->viewAny($u);}public function create(User$u):bool{return false;}public function update(User$u,CommissionAccrual$m):bool{return false;}public function delete(User$u,CommissionAccrual$m):bool{return false;}}

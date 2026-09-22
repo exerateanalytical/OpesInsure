@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class DisclosureSchemaVersion extends Model{use HasUuids;protected$fillable=['insurance_line_id','version','status','questions','schema_hash','effective_from','effective_until','created_by','approved_by','approved_at'];protected function casts():array{return['questions'=>'array','effective_from'=>'date','effective_until'=>'date','approved_at'=>'datetime'];}public function line():BelongsTo{return$this->belongsTo(InsuranceLine::class,'insurance_line_id');}}

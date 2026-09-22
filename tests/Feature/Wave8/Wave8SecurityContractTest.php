@@ -1,0 +1,3 @@
+<?php
+it('does not persist communication destinations in clear text',function(){$src=file_get_contents(app_path('Interfaces/Http/Controllers/Api/V1/Notifications/NotificationController.php'));expect($src)->toContain("hash('sha256'")->not->toContain("'destination'=>\$d[")->not->toContain("'destination'=>\$request->");});
+it('scopes operational controllers to tenant context',function(){foreach(['Logistics/FulfilmentController.php','Notifications/NotificationController.php','Support/SupportController.php']as$f)expect(file_get_contents(app_path('Interfaces/Http/Controllers/Api/V1/'.$f)))->toContain('TenantContext');});

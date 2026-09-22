@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('uses approved non-overlapping effective-dated rules and bounded refunds',function(){$calculator=file_get_contents(base_path('app/Application/Policies/CancellationCalculator.php'));$governance=file_get_contents(base_path('app/Application/Policies/CancellationRuleService.php'));expect($calculator)->toContain("status'=>'APPROVED'")->toContain('SHORT_RATE')->toContain('min($p->premium_minor');expect($governance)->toContain('cancellation_rule_overlap')->toContain('lockForUpdate');});

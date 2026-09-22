@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: OpesInsure API
+  version: 1.0.0-alpha.1
+  description: Contract-first API for B2C, agent, broker, carrier and operational clients.
+servers:
+  - url: https://api.opesinsure.com/v1
+security:
+  - oauth2: [insurance.read]
+paths:
+  /public/capabilities:
+    get:
+      operationId: getCapabilities
+      security: []
+      responses:
+        '200':
+          description: Supported platform capabilities
+          content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}
+  /quotes:
+    post:
+      operationId: submitQuote
+      security: [{oauth2: [quotes.write]}]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer_id, line_code, risk_facts]
+              properties:
+                customer_id: {type: string, format: uuid}
+                line_code: {type: string, enum: [AUTOMOBILE, HEALTH, TRAVEL, PROPERTY]}
+                risk_facts: {type: object, additionalProperties: true}
+      responses:
+        '202': {description: Quote accepted for rating, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /webhooks/payments/{provider}:
+    post:
+      operationId: receivePaymentWebhook
+      security: []
+      parameters:
+        - {name: provider, in: path, required: true, schema: {type: string}}
+        - {name: X-Provider-Event-Id, in: header, required: true, schema: {type: string}}
+        - {name: X-Signature, in: header, required: true, schema: {type: string}}
+      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
+      responses:
+        '202': {description: Event durably accepted}
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.opesinsure.com/oauth/authorize
+          tokenUrl: https://identity.opesinsure.com/oauth/token
+          scopes:
+            insurance.read: Read authorized insurance resources
+            quotes.write: Create and manage quotes
+            payments.write: Initiate authorized collections
+  parameters:
+    TenantId: {name: X-Tenant-Id, in: header, required: true, schema: {type: string, format: uuid}}
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 16, maxLength: 128}}
+    RequestId: {name: X-Request-Id, in: header, required: false, schema: {type: string, maxLength: 64}}
+  schemas:
+    Envelope:
+      type: object
+      required: [data]
+      properties: {data: {}, meta: {type: object, additionalProperties: true}}
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: {type: string, format: uri-reference}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        errors: {type: object, additionalProperties: {type: array, items: {type: string}}}
+  responses:
+    ValidationError:
+      description: Validation failed
+      content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}

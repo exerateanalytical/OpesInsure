@@ -1,0 +1,1 @@
+<?php namespace App\Filament\Admin\Resources\Fulfilments\Pages;use App\Filament\Admin\Resources\Fulfilments\FulfilmentResource;use Filament\Resources\Pages\ViewRecord;final class ViewFulfilment extends ViewRecord{protected static string $resource=FulfilmentResource::class;}

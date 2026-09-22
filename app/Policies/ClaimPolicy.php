@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\{Claim,User};
+final class ClaimPolicy{private function allowed(User$u):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',['SYSTEM_ADMIN','PLATFORM_ADMIN','COMPLIANCE_ADMIN','CLAIMS_MANAGER','CLAIMS_OFFICER'])->exists();}public function viewAny(User$u):bool{return$this->allowed($u);}public function view(User$u,Claim$c):bool{return$this->allowed($u)&&$c->tenant_id===app(\App\Domain\Tenancy\TenantContext::class)->id();}public function create(User$u):bool{return$this->allowed($u);}public function update(User$u,Claim$c):bool{return$this->view($u,$c);}public function delete(User$u,Claim$c):bool{return false;}}

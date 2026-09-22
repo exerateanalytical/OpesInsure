@@ -1,0 +1,2 @@
+<?php
+it('declares maker checker controls for governed operations',function(){expect(file_get_contents(app_path('Application/Trust/FraudReviewService.php')))->toContain('maker_checker');expect(file_get_contents(app_path('Application/Compliance/RegulatoryReportingService.php')))->toContain('maker_checker');expect(file_get_contents(app_path('Application/Security/PrivilegedAccessService.php')))->toContain('maker_checker');});

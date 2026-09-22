@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Partners\Pages;use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Partners\PartnerResource;use Filament\Resources\Pages\CreateRecord;final class CreatePartner extends CreateRecord{protected static string$resource=PartnerResource::class;protected function mutateFormDataBeforeCreate(array$data):array{return[...$data,'status'=>'PENDING','compliance'=>[]];}protected function afterCreate():void{app(AuditWriter::class)->record('partner.created','partner',$this->record->id,['type'=>$this->record->type]);}}

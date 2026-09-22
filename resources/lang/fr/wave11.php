@@ -1,0 +1,1 @@
+<?php return ['locked'=>'Cette version candidate est verrouillée.','maker_checker'=>'La certification exige un approbateur différent et la version actuelle du dossier.','gates_failed'=>'Tous les contrôles doivent réussir et les risques élevés doivent être résolus.'];

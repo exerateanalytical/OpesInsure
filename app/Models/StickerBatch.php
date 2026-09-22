@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\{BelongsTo,HasMany};
+final class StickerBatch extends Model{use HasUuids;protected$fillable=['carrier_id','batch_number','quantity','status','received_by','received_at','evidence'];protected function casts():array{return['received_at'=>'datetime','evidence'=>'array'];}public function carrier():BelongsTo{return$this->belongsTo(Carrier::class);}public function stocks():HasMany{return$this->hasMany(StickerStock::class,'sticker_batch_id');}}

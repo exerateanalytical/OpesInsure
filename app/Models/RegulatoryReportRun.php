@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;
+final class RegulatoryReportRun extends Model{use HasUuids;protected$fillable=['tenant_id','definition_id','period_key','status','idempotency_key','payload_hash','payload','prepared_by','approved_by','approved_at','attempt_count','next_attempt_at','failure_reason','external_reference','submitted_at','acknowledged_at','reversed_at'];protected function casts():array{return['payload'=>'array','approved_at'=>'datetime','next_attempt_at'=>'datetime','submitted_at'=>'datetime','acknowledged_at'=>'datetime','reversed_at'=>'datetime'];}}

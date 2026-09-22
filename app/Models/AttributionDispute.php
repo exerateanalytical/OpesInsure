@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class AttributionDispute extends Model{use HasUuids;protected$fillable=['attribution_id','raised_by_partner_id','reason_code','description','status','evidence','assigned_to','resolved_by','resolution_code','resolution_notes','resolved_at'];protected function casts():array{return['evidence'=>'array','resolved_at'=>'datetime'];}public function attribution():BelongsTo{return$this->belongsTo(CustomerAttribution::class);}public function raisedBy():BelongsTo{return$this->belongsTo(Partner::class,'raised_by_partner_id');}}

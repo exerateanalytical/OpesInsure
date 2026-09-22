@@ -1,0 +1,11 @@
+<?php
+declare(strict_types=1);
+namespace App\Application\Customers;
+use App\Application\Audit\AuditWriter;use App\Application\Events\OutboxWriter;use App\Models\Party;use App\Models\Tenant;use App\Models\TenantCustomer;use App\Models\User;use Illuminate\Support\Facades\DB;use Illuminate\Support\Str;use Illuminate\Validation\ValidationException;
+final class CustomerService
+{
+private const TRANSITIONS=['ACTIVE'=>['SUSPENDED','ARCHIVED'],'SUSPENDED'=>['ACTIVE','ARCHIVED'],'ARCHIVED'=>[]];
+public function __construct(private readonly AuditWriter$audit,private readonly OutboxWriter$outbox){}
+public function register(Tenant$tenant,Party$party,array$metadata=[]):TenantCustomer{return DB::transaction(function()use($tenant,$party,$metadata){if(TenantCustomer::where(['tenant_id'=>$tenant->id,'party_id'=>$party->id])->exists())throw ValidationException::withMessages(['party_id'=>__('wave1.customer_exists')]);$customer=TenantCustomer::create(['tenant_id'=>$tenant->id,'party_id'=>$party->id,'customer_number'=>'CUS-'.strtoupper(Str::random(10)),'status'=>'ACTIVE','private_metadata'=>$metadata]);$this->audit->record('customer.registered','tenant_customer',$customer->id,['party_id'=>$party->id,'tenant_id'=>$tenant->id]);$this->outbox->record('customer.registered','tenant_customer',$customer->id,['customer_id'=>$customer->id,'party_id'=>$party->id,'tenant_id'=>$tenant->id]);return$customer;});}
+public function transition(TenantCustomer$customer,string$to,string$reason,string$notes,User$actor):TenantCustomer{$from=$customer->status;if(!in_array($to,self::TRANSITIONS[$from]??[],true))throw ValidationException::withMessages(['status'=>__('wave1.invalid_customer_transition')]);return DB::transaction(function()use($customer,$from,$to,$reason,$notes,$actor){$customer->update(['status'=>$to]);DB::table('customer_status_history')->insert(['id'=>(string)Str::uuid(),'tenant_customer_id'=>$customer->id,'from_status'=>$from,'to_status'=>$to,'reason_code'=>$reason,'notes'=>$notes,'actor_id'=>$actor->id,'occurred_at'=>now()]);$this->audit->record('customer.status.changed','tenant_customer',$customer->id,['from'=>$from,'to'=>$to,'notes'=>$notes],$reason);$this->outbox->record('customer.status.changed','tenant_customer',$customer->id,['customer_id'=>$customer->id,'from'=>$from,'to'=>$to]);return$customer->refresh();});}
+}

@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info: {title: OpesInsure Payment and Financial Control API, version: 4.0.0-wave4}
+servers: [{url: /api/v1}]
+security: [{bearerAuth: []}]
+paths:
+  /payments/{payment}/initiate:
+    post: {operationId: initiatePaymentAuthorization, parameters: [{$ref: '#/components/parameters/Payment'}], responses: {'202': {description: Authorization requested}, '422': {description: Provider inactive or invalid state}}}
+  /webhooks/payments/{provider}:
+    post:
+      operationId: acceptSignedPaymentWebhook
+      security: []
+      parameters: [{name: provider, in: path, required: true, schema: {type: string}}]
+      responses: {'202': {description: Accepted}, '401': {description: Signature or timestamp rejected}}
+  /reconciliation/imports:
+    post: {operationId: importProviderStatement, responses: {'201': {description: Reconciled}}}
+  /reconciliation/imports/{import}/approve:
+    post: {operationId: approveReconciliation, parameters: [{$ref: '#/components/parameters/Import'}], responses: {'200': {description: Approved}, '422': {description: Open exceptions or maker-checker failure}}}
+  /payments/{payment}/refunds:
+    post: {operationId: requestRefund, parameters: [{$ref: '#/components/parameters/Payment'}], responses: {'201': {description: Requested}, '200': {description: Existing idempotent request}}}
+  /payments/{payment}/chargebacks:
+    post: {operationId: openChargeback, parameters: [{$ref: '#/components/parameters/Payment'}], responses: {'201': {description: Case opened}}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  parameters:
+    Payment: {name: payment, in: path, required: true, schema: {type: string, format: uuid}}
+    Import: {name: import, in: path, required: true, schema: {type: string, format: uuid}}

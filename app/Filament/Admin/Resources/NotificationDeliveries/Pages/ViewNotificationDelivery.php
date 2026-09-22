@@ -1,0 +1,1 @@
+<?php namespace App\Filament\Admin\Resources\NotificationDeliveries\Pages;use App\Filament\Admin\Resources\NotificationDeliveries\NotificationDeliveryResource;use Filament\Resources\Pages\ViewRecord;final class ViewNotificationDelivery extends ViewRecord{protected static string $resource=NotificationDeliveryResource::class;}

@@ -1,0 +1,60 @@
+openapi: 3.1.0
+info: {title: OpesInsure Insurance Core API, version: 1.0.0-alpha.2}
+servers: [{url: https://api.opesinsure.com/v1}]
+security: [{oauth2: [insurance.read]}]
+paths:
+  /catalogue/products:
+    get: {operationId: listProducts, responses: {'200': {description: Product versions}}}
+    post: {operationId: createProductVersion, security: [{oauth2: [catalogue.manage]}], responses: {'201': {description: Draft product version created}}}
+  /catalogue/products/{product}/publish:
+    post:
+      operationId: publishProductVersion
+      security: [{oauth2: [catalogue.publish]}]
+      parameters: [{name: product, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Version activated}, '422': {description: Approved tariff missing}}
+  /tariffs:
+    post: {operationId: createTariffVersion, security: [{oauth2: [tariff.manage]}], responses: {'201': {description: Draft tariff created}}}
+  /tariffs/{tariff}/approve:
+    post:
+      operationId: approveTariffVersion
+      security: [{oauth2: [tariff.approve]}]
+      parameters: [{name: tariff, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Tariff approved}}
+  /risk-assets:
+    get: {operationId: listRiskAssets, responses: {'200': {description: Tenant-scoped assets}}}
+    post: {operationId: createRiskAsset, responses: {'201': {description: Risk asset created}}}
+  /quotes/{quote}/rate:
+    post:
+      operationId: rateQuote
+      security: [{oauth2: [quotes.rate]}]
+      parameters: [{name: quote, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Explainable carrier offers generated}, '422': {description: No approved applicable tariff}}
+  /quotes/{quote}/offers/{offer}/accept:
+    post:
+      operationId: acceptQuoteOffer
+      parameters:
+        - {name: quote, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: offer, in: path, required: true, schema: {type: string, format: uuid}}
+      responses: {'200': {description: Offer accepted}, '409': {description: Offer expired}}
+  /proposals:
+    post: {operationId: createProposal, responses: {'201': {description: Proposal created from accepted offer}}}
+  /proposals/{proposal}/submit:
+    post:
+      operationId: submitProposal
+      parameters: [{name: proposal, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'202': {description: Underwriting case queued}}
+  /proposals/{proposal}/decision:
+    post:
+      operationId: decideProposal
+      security: [{oauth2: [underwriting.decide]}]
+      parameters: [{name: proposal, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Audited underwriting decision recorded}}
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.opesinsure.com/oauth/authorize
+          tokenUrl: https://identity.opesinsure.com/oauth/token
+          scopes: {insurance.read: Read insurance data, catalogue.manage: Manage drafts, catalogue.publish: Publish products, tariff.manage: Manage tariff drafts, tariff.approve: Approve tariffs, quotes.rate: Execute rating, underwriting.decide: Decide referred risks}

@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('builds net carrier settlements and requires independent approval',function(){$s=file_get_contents(base_path('app/Application/FinancialDistribution/CarrierSettlementService.php'));expect($s)->toContain('$p->premium_minor-$commission')->toContain('negative_settlement')->toContain('prepared_by===$actor->id')->toContain("'SUBMITTED','PAID'")->toContain('bank_reference');});

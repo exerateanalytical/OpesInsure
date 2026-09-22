@@ -1,0 +1,4 @@
+<?php
+namespace App\Application\Operations;
+use App\Application\Audit\AuditWriter; use Illuminate\Support\Facades\DB; use Illuminate\Support\Str;
+final class CommunicationLogService { public function __construct(private AuditWriter $audit){} public function record(string $tenant,array $d,?string $actor):string{$id=(string)Str::uuid();$counterparty=$d['counterparty'];$metadata=$d['metadata']??[];unset($d['counterparty'],$d['metadata']);DB::table('communication_logs')->insert([...$d,'id'=>$id,'tenant_id'=>$tenant,'counterparty_hash'=>hash('sha256',mb_strtolower(trim($counterparty))),'recorded_by'=>$actor,'metadata'=>json_encode($metadata),'occurred_at'=>$d['occurred_at']??now(),'created_at'=>now(),'updated_at'=>now()]);$this->audit->record('communication.logged','communication_log',$id,['channel'=>$d['channel'],'purpose'=>$d['purpose']]);return $id;}}

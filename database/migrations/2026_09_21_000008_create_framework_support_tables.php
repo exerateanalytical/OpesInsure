@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Database\Migrations\Migration;use Illuminate\Database\Schema\Blueprint;use Illuminate\Support\Facades\Schema;
+return new class extends Migration{public function up():void{Schema::create('password_reset_tokens',function(Blueprint$t){$t->string('email')->primary();$t->string('token');$t->timestamp('created_at')->nullable();});Schema::create('failed_jobs',function(Blueprint$t){$t->id();$t->string('uuid')->unique();$t->text('connection');$t->text('queue');$t->longText('payload');$t->longText('exception');$t->timestamp('failed_at')->useCurrent();});}public function down():void{Schema::dropIfExists('failed_jobs');Schema::dropIfExists('password_reset_tokens');}};

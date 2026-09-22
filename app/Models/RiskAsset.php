@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;use Illuminate\Database\Eloquent\SoftDeletes;
+final class RiskAsset extends Model{use HasUuids,SoftDeletes;protected$fillable=['tenant_id','party_id','type','external_reference','display_name','facts','facts_hash','status','version'];protected function casts():array{return['facts'=>'array'];}public function tenant():BelongsTo{return$this->belongsTo(Tenant::class);}public function party():BelongsTo{return$this->belongsTo(Party::class);}}

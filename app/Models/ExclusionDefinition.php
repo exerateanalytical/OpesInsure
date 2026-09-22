@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+final class ExclusionDefinition extends Model{use HasUuids;protected$fillable=['insurance_line_id','code','name','description','status'];protected function casts():array{return['name'=>'array','description'=>'array'];}public function line():BelongsTo{return$this->belongsTo(InsuranceLine::class,'insurance_line_id');}public function products():BelongsToMany{return$this->belongsToMany(InsuranceProduct::class,'product_exclusions')->withPivot('configuration');}}

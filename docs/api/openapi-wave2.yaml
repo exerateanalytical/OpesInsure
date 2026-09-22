@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: OpesInsure Catalogue and Rating API
+  version: 2.0.0-wave2
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /catalogue/lines:
+    get: {operationId: listInsuranceLines, responses: {'200': {description: Active lines}}}
+    post: {operationId: createInsuranceLine, responses: {'201': {description: Created}, '422': {description: Validation error}}}
+  /catalogue/lines/{line}/coverages:
+    post:
+      operationId: createCoverage
+      parameters: [{$ref: '#/components/parameters/Uuid'}]
+      responses: {'201': {description: Created}}
+  /catalogue/lines/{line}/exclusions:
+    post:
+      operationId: createExclusion
+      parameters: [{$ref: '#/components/parameters/Uuid'}]
+      responses: {'201': {description: Created}}
+  /catalogue/products:
+    get: {operationId: listProducts, responses: {'200': {description: Paginated products}}}
+    post: {operationId: createProductVersion, responses: {'201': {description: Draft created}}}
+  /catalogue/products/{product}/submit:
+    post: {operationId: submitProduct, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: In review}}}
+  /catalogue/products/{product}/publish:
+    post: {operationId: publishProduct, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: Active}, '422': {description: Governance failure}}}
+  /tariffs:
+    post: {operationId: createTariffVersion, responses: {'201': {description: Draft created}}}
+  /tariffs/{tariff}/submit:
+    post: {operationId: submitTariff, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: In review}}}
+  /tariffs/{tariff}/approve:
+    post: {operationId: approveTariff, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: Approved}, '422': {description: Governance failure}}}
+  /risk-assets:
+    get: {operationId: listRiskAssets, responses: {'200': {description: Tenant-scoped risks}}}
+    post: {operationId: createRiskAsset, responses: {'201': {description: Created}}}
+  /risk-assets/{risk_asset}:
+    get: {operationId: getRiskAsset, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: Risk}}}
+    put: {operationId: updateRiskAsset, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: Updated}, '422': {description: Stale version}}}
+  /quotes:
+    post: {operationId: submitQuote, responses: {'202': {description: Submitted}}}
+  /quotes/{quote}/rate:
+    post: {operationId: rateQuote, parameters: [{$ref: '#/components/parameters/Uuid'}], responses: {'200': {description: Ranked offers}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  parameters:
+    Uuid: {name: id, in: path, required: true, schema: {type: string, format: uuid}}

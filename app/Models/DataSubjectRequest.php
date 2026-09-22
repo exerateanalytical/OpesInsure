@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;
+final class DataSubjectRequest extends Model{use HasUuids;protected$fillable=['party_id','tenant_id','request_number','type','status','identity_verified_at','due_on','assigned_to','completed_at','idempotency_key','payload_hash','identity_evidence_hash','verified_by','approved_by','rejection_code','resolution_notes','fulfilled_at'];protected function casts():array{return['identity_verified_at'=>'datetime','due_on'=>'date','completed_at'=>'datetime','fulfilled_at'=>'datetime'];}}

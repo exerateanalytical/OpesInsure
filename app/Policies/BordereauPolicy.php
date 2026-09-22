@@ -1,0 +1,2 @@
+<?php
+namespace App\Policies; use App\Domain\Tenancy\TenantContext; use App\Models\{Bordereau,User}; final class BordereauPolicy{public function viewAny(User$u):bool{return$u->memberships()->where('status','ACTIVE')->exists();}public function view(User$u,Bordereau$m):bool{return$m->tenant_id===app(TenantContext::class)->id()&&$this->viewAny($u);}public function create(User$u):bool{return$this->viewAny($u);}public function update(User$u,Bordereau$m):bool{return false;}public function delete(User$u,Bordereau$m):bool{return false;}}

@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info: {title: OpesInsure Customer and Partner API, version: 0.3.0}
+servers: [{url: /api/v1}]
+security: [{oauth2: []}]
+paths:
+  /parties:
+    get: {summary: List canonical identities visible to the resolved tenant, operationId: listParties, responses: {'200': {description: Paginated identities}}}
+    post: {summary: Create a canonical identity with protected identifiers, operationId: createParty, responses: {'201': {description: Identity created}, '422': {description: Duplicate contact or identifier}}}
+  /customers:
+    get: {summary: List tenant customers, operationId: listCustomers, responses: {'200': {description: Paginated customers}}}
+    post: {summary: Atomically onboard identity, customer, consent and origin lock, operationId: onboardCustomer, responses: {'201': {description: Customer onboarded}, '422': {description: Validation or ownership conflict}}}
+  /customers/{customer}/status:
+    post:
+      summary: Apply a guarded customer status transition
+      operationId: transitionCustomer
+      parameters: [{in: path, name: customer, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Status changed}, '422': {description: Transition rejected}}
+  /consents:
+    post: {summary: Capture affirmative purpose-specific consent, operationId: grantConsent, responses: {'201': {description: Consent recorded}}}
+  /consents/{consent}/withdraw:
+    post:
+      summary: Withdraw active consent while retaining evidence history
+      operationId: withdrawConsent
+      parameters: [{in: path, name: consent, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Consent withdrawn}}
+  /partners:
+    get: {summary: List tenant-visible distribution partners, operationId: listPartners, responses: {'200': {description: Partners}}}
+    post: {summary: Register an agent broker or carrier pending licence review, operationId: createPartner, responses: {'201': {description: Partner registered}}}
+  /partners/{partner}/licences:
+    post:
+      summary: Submit regulatory licence evidence
+      operationId: submitPartnerLicence
+      parameters: [{in: path, name: partner, required: true, schema: {type: string, format: uuid}}]
+      responses: {'201': {description: Licence pending independent verification}}
+  /partners/{partner}/licences/{licence}/decision:
+    post:
+      summary: Verify or reject a pending licence
+      operationId: decidePartnerLicence
+      parameters:
+        - {in: path, name: partner, required: true, schema: {type: string, format: uuid}}
+        - {in: path, name: licence, required: true, schema: {type: string, format: uuid}}
+      responses: {'200': {description: Decision recorded}, '422': {description: Already decided}}
+  /attributions:
+    post: {summary: Create an idempotent permanent customer origin lock, operationId: lockCustomerOrigin, responses: {'201': {description: Origin locked}, '422': {description: Conflicting lock or inactive partner}}}
+  /attributions/{attribution}/disputes:
+    post:
+      summary: Open an evidence-backed ownership dispute
+      operationId: disputeAttribution
+      parameters: [{in: path, name: attribution, required: true, schema: {type: string, format: uuid}}]
+      responses: {'201': {description: Dispute opened}}
+  /attribution-disputes/{dispute}/resolution:
+    post:
+      summary: Resolve or reassign through controlled adjudication
+      operationId: resolveAttributionDispute
+      parameters: [{in: path, name: dispute, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Resolution recorded}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {authorizationCode: {authorizationUrl: /oauth/authorize, tokenUrl: /oauth/token, scopes: {}}}}

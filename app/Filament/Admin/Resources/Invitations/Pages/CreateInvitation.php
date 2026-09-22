@@ -1,0 +1,4 @@
+<?php
+namespace App\Filament\Admin\Resources\Invitations\Pages;
+use App\Application\Identity\InvitationService;use App\Filament\Admin\Concerns\NotifiesServiceValidationErrors;use App\Filament\Admin\Resources\Invitations\InvitationResource;use App\Models\Tenant;use Illuminate\Database\Eloquent\Model;use Filament\Notifications\Notification;use Filament\Resources\Pages\CreateRecord;
+final class CreateInvitation extends CreateRecord{use NotifiesServiceValidationErrors;protected static string$resource=InvitationResource::class;protected function handleRecordCreation(array$data):Model{$result=app(InvitationService::class)->issue(Tenant::findOrFail($data['tenant_id']),auth()->user(),$data['recipient_email']??null,$data['recipient_phone_e164']??null,$data['role_code'],(int)$data['ttl_hours']);Notification::make()->title('Invitation created')->body('One-time token: '.$result['token'])->warning()->persistent()->send();return$result['invitation'];}}

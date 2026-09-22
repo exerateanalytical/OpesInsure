@@ -1,0 +1,2 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;final class CertificateTemplate extends Model{use HasUuids;protected$fillable=['type','code','version','status','template_hash','layout_schema','effective_from','effective_until','created_by','approved_by','approved_at'];protected function casts():array{return['layout_schema'=>'array','effective_from'=>'date','effective_until'=>'date','approved_at'=>'datetime'];}}

@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('keeps rates configured, versioned, bounded and maker-checker approved',function(){$s=file_get_contents(base_path('app/Application/FinancialDistribution/CommissionService.php'));$m=file_get_contents(base_path('database/migrations/2026_09_21_000015_complete_wave_six_financial_distribution.php'));expect($s)->toContain('basis_points')->toContain('pg_advisory_xact_lock')->toContain('rule_overlap')->toContain('created_by===$actor->id')->not->toContain('7%')->not->toContain('15%');expect($m)->toContain('commission_rule_maker_checker');});

@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Memberships\Pages;use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Memberships\MembershipResource;use Filament\Resources\Pages\CreateRecord;final class CreateMembership extends CreateRecord{protected static string$resource=MembershipResource::class;protected function afterCreate():void{app(AuditWriter::class)->record('identity.membership.created','tenant_membership',$this->record->id,['role_code'=>$this->record->role_code]);}}

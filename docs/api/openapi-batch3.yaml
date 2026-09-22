@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info: {title: OpesInsure Policy and Financial API, version: 1.0.0-alpha.3}
+servers: [{url: https://api.opesinsure.com/v1}]
+security: [{oauth2: [insurance.read]}]
+paths:
+  /payments: {post: {operationId: createPaymentIntent, responses: {'201': {description: Idempotent payment intent created}}}}
+  /webhooks/payments/{provider}: {post: {operationId: receiveSignedPaymentEvent, security: [], responses: {'202': {description: Authenticated event accepted}, '401': {description: Invalid signature or replay window}}}}
+  /payments/{payment}/refunds: {post: {operationId: requestRefund, responses: {'201': {description: Refund awaiting separate approval}}}}
+  /policies/issue: {post: {operationId: issuePolicy, responses: {'201': {description: Paid policy issued}, '422': {description: Successful matching payment required}}}}
+  /policies/{policy}/transactions: {post: {operationId: requestPolicyService, responses: {'201': {description: Policy transaction awaiting approval}}}}
+  /ledger/journals: {post: {operationId: postBalancedJournal, responses: {'201': {description: Balanced journal posted}, '422': {description: Unbalanced journal rejected}}}}
+  /ledger/journals/{journal}/reverse: {post: {operationId: reverseJournal, responses: {'200': {description: Opposite journal posted}}}}
+  /commission-rules: {post: {operationId: createCommissionRule, responses: {'201': {description: Versioned draft rule created}}}}
+  /commissions/accrue: {post: {operationId: accrueCommission, responses: {'201': {description: Commission accrued from active policy}}}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {authorizationCode: {authorizationUrl: https://identity.opesinsure.com/oauth/authorize, tokenUrl: https://identity.opesinsure.com/oauth/token, scopes: {insurance.read: Read insurance data}}}}

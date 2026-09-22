@@ -1,0 +1,1 @@
+<?php namespace App\Policies;use App\Models\{SupportTicket,User};final class SupportTicketPolicy{public function view(User$u,SupportTicket$o):bool{return $o->tenant_id&&$u->tenantMemberships()->where('tenant_id',$o->tenant_id)->where('status','ACTIVE')->exists();}public function update(User$u,SupportTicket$o):bool{return $this->view($u,$o);}}

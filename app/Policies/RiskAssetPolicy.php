@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Domain\Tenancy\TenantContext;use App\Models\{RiskAsset,User};
+final class RiskAssetPolicy{private function member(User$u):bool{return$u->memberships()->where(['tenant_id'=>app(TenantContext::class)->id(),'status'=>'ACTIVE'])->exists();}public function viewAny(User$u):bool{return$this->member($u);}public function view(User$u,RiskAsset$m):bool{return$this->member($u)&&$m->tenant_id===app(TenantContext::class)->id();}public function create(User$u):bool{return$this->member($u);}public function update(User$u,RiskAsset$m):bool{return$this->view($u,$m);}public function delete(User$u,RiskAsset$m):bool{return false;}}

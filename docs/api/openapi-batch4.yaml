@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: OpesInsure Operations and Evidence API, version: 1.0.0-alpha.4}
+servers: [{url: https://api.opesinsure.com/v1}]
+security: [{oauth2: [insurance.read]}]
+paths:
+  /reconciliation/imports: {post: {operationId: importStatement, responses: {'201': {description: Statement matched with exception totals}}}}
+  /reconciliation/items/{item}/resolve: {post: {operationId: resolveReconciliationException, responses: {'200': {description: Exception resolved with audit evidence}}}}
+  /settlements: {post: {operationId: prepareCarrierSettlement, responses: {'201': {description: Settlement batch awaiting approval}}}}
+  /settlements/{batch}/approve: {post: {operationId: approveCarrierSettlement, responses: {'200': {description: Separately approved settlement}}}}
+  /claims: {post: {operationId: submitFnol, responses: {'201': {description: Claim submitted}}}}
+  /claims/{claim}/transitions: {post: {operationId: transitionClaim, responses: {'200': {description: Guarded transition recorded}}}}
+  /documents: {post: {operationId: registerUploadedDocument, responses: {'201': {description: Document awaiting malware scan}}}}
+  /documents/{document}/review: {post: {operationId: reviewDocument, responses: {'200': {description: Scan OCR and verification state recorded}}}}
+  /certificates: {post: {operationId: issuePolicyCertificate, responses: {'201': {description: Certificate and optional sticker assigned}}}}
+  /public/certificates/verify: {post: {operationId: verifyPolicyCertificate, security: [], responses: {'200': {description: Minimal certificate validity result}, '404': {description: Not verifiable}}}}
+components:
+  securitySchemes:
+    oauth2: {type: oauth2, flows: {authorizationCode: {authorizationUrl: https://identity.opesinsure.com/oauth/authorize, tokenUrl: https://identity.opesinsure.com/oauth/token, scopes: {insurance.read: Read authorized insurance data}}}}

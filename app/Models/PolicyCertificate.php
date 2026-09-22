@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class PolicyCertificate extends Model{use HasUuids;protected$fillable=['policy_id','certificate_template_id','serial_number','verification_token_hash','document_hash','status','issued_at','issued_by','voided_at','voided_by','void_reason'];protected function casts():array{return['issued_at'=>'datetime','voided_at'=>'datetime'];}public function policy():BelongsTo{return$this->belongsTo(Policy::class);}public function template():BelongsTo{return$this->belongsTo(CertificateTemplate::class,'certificate_template_id');}}

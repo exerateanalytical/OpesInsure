@@ -1,0 +1,19 @@
+<?php
+use App\Interfaces\Http\Controllers\Api\V1\Trust\Wave9Controller;use Illuminate\Support\Facades\Route;
+Route::prefix('trust')->controller(Wave9Controller::class)->group(function(){
+    Route::post('fraud-alerts','alert')->middleware('permission:trust.fraud-alerts.create');
+    Route::post('fraud-alerts/{x}/decision','decide')->middleware('permission:trust.fraud-alerts.decide');
+    Route::post('compliance-cases','openCase')->middleware('permission:trust.compliance-cases.create');
+    Route::post('compliance-cases/{x}/transition','caseTransition')->middleware('permission:trust.compliance-cases.transition');
+    Route::post('data-subject-requests','dsr')->middleware('permission:trust.dsr.receive');
+    Route::post('data-subject-requests/{x}/verify','verifyDsr')->middleware('permission:trust.dsr.verify');
+    Route::post('data-subject-requests/{x}/resolve','resolveDsr')->middleware('permission:trust.dsr.resolve');
+    Route::post('privileged-access','access')->middleware('permission:trust.privileged-access.request');
+    Route::post('privileged-access/{x}/approve','approveAccess')->middleware('permission:trust.privileged-access.approve');
+    Route::post('privileged-access/{x}/revoke','revokeAccess')->middleware('permission:trust.privileged-access.revoke');
+    Route::post('regulatory-reports/{d}/runs','prepareReport')->middleware('permission:trust.regulatory-reports.prepare');
+    Route::post('regulatory-report-runs/{x}/approve','approveReport')->middleware('permission:trust.regulatory-reports.approve');
+    Route::post('regulatory-report-runs/{x}/submit','submitReport')->middleware('permission:trust.regulatory-reports.submit');
+    Route::post('regulatory-report-runs/{x}/failure','reportFailure')->middleware('permission:trust.regulatory-reports.submit');
+    Route::post('regulatory-report-runs/{x}/acknowledge','acknowledgeReport')->middleware('permission:trust.regulatory-reports.acknowledge');
+});

@@ -1,0 +1,4 @@
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\HasMany;use Illuminate\Database\Eloquent\SoftDeletes;
+final class Tenant extends Model{use HasUuids,SoftDeletes;protected $fillable=['type','legal_name','trade_name','slug','registration_number','tax_number','status','country_code','currency','primary_locale','parent_tenant_id','settings','activated_at'];protected function casts():array{return['settings'=>'array','activated_at'=>'datetime'];}public function memberships():HasMany{return$this->hasMany(TenantMembership::class);}public function invitations():HasMany{return$this->hasMany(TenantInvitation::class);}public function branches():HasMany{return$this->hasMany(TenantBranch::class);}public function customers():HasMany{return$this->hasMany(TenantCustomer::class);}}

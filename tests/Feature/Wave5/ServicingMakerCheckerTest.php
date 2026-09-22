@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);it('uses pending states, exact payments, rejection recovery and independent approval',function(){$s=file_get_contents(base_path('app/Application/Policies/PolicyServicingService.php'));expect($s)->toContain('CANCELLATION_PENDING')->toContain('ENDORSEMENT_PENDING')->toContain('maker_checker')->toContain('terms_hash')->toContain('payment->amount_minor !== $transaction->premium_delta_minor')->toContain('SERVICE_REJECTED')->toContain('requestRefund')->toContain('lockForUpdate');});

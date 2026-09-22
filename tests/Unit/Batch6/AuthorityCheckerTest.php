@@ -1,0 +1,3 @@
+<?php
+use App\Domain\CarrierOperations\AuthorityChecker;
+test('delegated authority enforces line premium territory and dates',function(){$a=['status'=>'ACTIVE','effective_from'=>'2026-01-01','effective_until'=>'2026-12-31','permitted_lines'=>['AUTOMOBILE'],'max_policy_premium_minor'=>100000,'territories'=>['CM-LT']];$c=new AuthorityChecker;expect($c->check($a,'AUTOMOBILE',90000,'CM-LT',new DateTimeImmutable('2026-06-01'))->allowed)->toBeTrue()->and($c->check($a,'PROPERTY',90000,'CM-LT',new DateTimeImmutable('2026-06-01'))->reason)->toBe('LINE_NOT_PERMITTED')->and($c->check($a,'AUTOMOBILE',120000,'CM-LT',new DateTimeImmutable('2026-06-01'))->reason)->toBe('PREMIUM_AUTHORITY_EXCEEDED');});

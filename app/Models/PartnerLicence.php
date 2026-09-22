@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class PartnerLicence extends Model{use HasUuids;protected$fillable=['partner_id','authority','licence_type','licence_number','issued_on','expires_on','status','evidence_document_id','verified_by','verified_at','verification_notes'];protected function casts():array{return['issued_on'=>'date','expires_on'=>'date','verified_at'=>'datetime'];}public function partner():BelongsTo{return$this->belongsTo(Partner::class);}public function verifier():BelongsTo{return$this->belongsTo(User::class,'verified_by');}}

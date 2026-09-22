@@ -1,0 +1,1 @@
+<?php return ['notification_not_retryable'=>'Seules les notifications en attente ou échouées peuvent être relancées.','notification_not_cancellable'=>'Seules les notifications en attente ou échouées peuvent être annulées.','operations'=>'Opérations','fulfilment'=>'Livraison','support'=>'Assistance et réclamations','communications'=>'Communications clients'];

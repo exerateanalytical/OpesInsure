@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Domain\Tenancy\TenantContext;use App\Models\{Quote,User};
+final class QuotePolicy{private function member(User$u):bool{return$u->memberships()->where(['tenant_id'=>app(TenantContext::class)->id(),'status'=>'ACTIVE'])->exists();}public function viewAny(User$u):bool{return$this->member($u);}public function view(User$u,Quote$m):bool{return$this->member($u)&&$m->tenant_id===app(TenantContext::class)->id();}public function create(User$u):bool{return$this->member($u);}public function update(User$u,Quote$m):bool{return false;}public function delete(User$u,Quote$m):bool{return false;}}

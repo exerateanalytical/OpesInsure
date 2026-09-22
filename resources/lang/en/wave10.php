@@ -1,0 +1,1 @@
+<?php return ['invalid_portal'=>'The requested portal is not supported.','stale_or_invalid'=>'The record changed or cannot be approved from its current state.','primary_navigation'=>'Primary navigation','notifications'=>'Notifications','account'=>'Account menu','priority_work'=>'Priority work','next_actions'=>'Next actions'];

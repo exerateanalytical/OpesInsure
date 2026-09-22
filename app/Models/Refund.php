@@ -1,0 +1,2 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;final class Refund extends Model{use HasUuids;protected$fillable=['tenant_id','payment_intent_id','refund_number','amount_minor','currency','status','reason_code','notes','provider_reference','requested_by','approved_by','approved_at','completed_at','journal_id','idempotency_key'];protected function casts():array{return['approved_at'=>'datetime','completed_at'=>'datetime'];}}

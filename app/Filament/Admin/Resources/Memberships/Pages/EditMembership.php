@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Memberships\Pages;use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Memberships\MembershipResource;use Filament\Resources\Pages\EditRecord;final class EditMembership extends EditRecord{protected static string$resource=MembershipResource::class;protected function afterSave():void{app(AuditWriter::class)->record('identity.membership.updated','tenant_membership',$this->record->id,['role_code'=>$this->record->role_code]);}}

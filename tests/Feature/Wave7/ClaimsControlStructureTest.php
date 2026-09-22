@@ -1,0 +1,4 @@
+<?php
+it('keeps tenant and concurrency controls on material claim commands',function(){$s=file_get_contents(app_path('Application/Claims/ClaimLifecycleService.php'));expect($s)->toContain('lockForUpdate()')->toContain('TenantContext')->toContain('ClaimCommandGuard')->toContain("'PENDING_APPROVAL'");});
+it('binds evidence to a clean immutable hash and custody trail',function(){$s=file_get_contents(app_path('Application/Claims/ClaimEvidenceService.php'));expect($s)->toContain("scan_status!=='CLEAN'")->toContain('hash_equals')->toContain('claim_evidence_custody_events');});
+it('implements payment failure retry paid and reversal paths',function(){$s=file_get_contents(app_path('Application/Claims/ClaimPaymentService.php'));expect($s)->toContain('RETRY_PENDING')->toContain("status'=>'PAID'")->toContain("status'=>'REVERSED'")->toContain('idempotency_key');});

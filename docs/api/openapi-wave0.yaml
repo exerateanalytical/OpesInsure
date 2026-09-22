@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: OpesInsure Identity and Tenancy API
+  version: 0.2.0
+servers:
+  - url: /api/v1
+security:
+  - oauth2: []
+paths:
+  /invitations:
+    post:
+      summary: Invite a user to an organization
+      operationId: issueInvitation
+      responses:
+        '201': {description: Invitation issued; token is returned once}
+        '422': {description: Invalid or duplicate pending invitation}
+  /invitations/accept:
+    post:
+      summary: Accept an invitation bound to the authenticated identity
+      operationId: acceptInvitation
+      responses:
+        '200': {description: Membership activated}
+        '422': {description: Invalid, expired, replayed, or identity-mismatched token}
+  /memberships/{membership}/revoke:
+    post:
+      summary: Revoke organization access and active API tokens
+      operationId: revokeMembership
+      parameters:
+        - {in: path, name: membership, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Access revoked}
+  /branches:
+    get:
+      summary: List branches in the resolved tenant
+      operationId: listBranches
+      responses:
+        '200': {description: Paginated branch list}
+    post:
+      summary: Create a branch in the resolved tenant
+      operationId: createBranch
+      responses:
+        '201': {description: Branch created}
+  /tenants/{tenant}/status:
+    post:
+      summary: Apply a controlled organization status transition
+      operationId: transitionTenantStatus
+      parameters:
+        - {in: path, name: tenant, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Status changed and recorded}
+        '422': {description: Transition not allowed}
+  /me/mfa/totp:
+    post:
+      summary: Begin TOTP enrollment
+      operationId: beginTotpEnrollment
+      responses:
+        '200': {description: One-time secret and provisioning URI}
+  /me/mfa/totp/{method}/confirm:
+    post:
+      summary: Confirm TOTP and generate recovery codes
+      operationId: confirmTotpEnrollment
+      parameters:
+        - {in: path, name: method, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: MFA enabled; recovery codes returned once}
+  /me/devices:
+    get:
+      summary: List the authenticated user's devices
+      operationId: listMyDevices
+      responses:
+        '200': {description: Device list}
+  /me/devices/{device}:
+    delete:
+      summary: Revoke a trusted device and its sessions
+      operationId: revokeMyDevice
+      parameters:
+        - {in: path, name: device, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Device revoked}
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          scopes: {}

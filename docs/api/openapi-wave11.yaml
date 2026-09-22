@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info: {title: OpesInsure Release Assurance API, version: 1.0.0}
+paths:
+  /api/v1/release-assurance/candidates:
+    post:
+      summary: Create immutable release candidate identity
+      responses: {'201': {description: Candidate created}, '422': {description: Validation failure}}
+  /api/v1/release-assurance/candidates/{candidate}/gates:
+    post:
+      summary: Record evidence-hashed gate outcome
+      parameters: [{name: candidate, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Gate recorded}}
+  /api/v1/release-assurance/candidates/{candidate}/certify:
+    post:
+      summary: Maker-checker release certification
+      parameters: [{name: candidate, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Certified}, '422': {description: Gate or approval failure}}

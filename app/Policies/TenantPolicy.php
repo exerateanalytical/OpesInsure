@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\Tenant;use App\Models\User;
+final class TenantPolicy{private function privileged(User$u):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',['SYSTEM_ADMIN','PLATFORM_ADMIN'])->exists();}public function viewAny(User$u):bool{return$this->privileged($u);}public function view(User$u,Tenant$t):bool{return$this->privileged($u);}public function create(User$u):bool{return$this->privileged($u);}public function update(User$u,Tenant$t):bool{return$this->privileged($u);}public function delete(User$u,Tenant$t):bool{return false;}public function restore(User$u,Tenant$t):bool{return$this->privileged($u);}public function forceDelete(User$u,Tenant$t):bool{return false;}}

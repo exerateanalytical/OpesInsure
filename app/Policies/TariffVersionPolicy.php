@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\{TariffVersion,User};
+final class TariffVersionPolicy{private function role(User$u,array$r):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',$r)->exists();}public function viewAny(User$u):bool{return$this->role($u,['SYSTEM_ADMIN','PLATFORM_ADMIN','PRODUCT_ADMIN','PRICING_ACTUARY','PRICING_APPROVER']);}public function view(User$u,TariffVersion$m):bool{return$this->viewAny($u);}public function create(User$u):bool{return$this->role($u,['SYSTEM_ADMIN','PLATFORM_ADMIN','PRICING_ACTUARY']);}public function update(User$u,TariffVersion$m):bool{return$this->create($u)&&$m->status==='DRAFT';}public function delete(User$u,TariffVersion$m):bool{return false;}}

@@ -1,0 +1,13 @@
+{
+  "resources/css/filament/admin/theme.css": {
+    "file": "assets/theme--oAv69c8.css",
+    "src": "resources/css/filament/admin/theme.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DMsN-rLE.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

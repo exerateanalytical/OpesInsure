@@ -1,0 +1,3 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Concerns\HasUuids; use Illuminate\Database\Eloquent\Model; use Illuminate\Database\Eloquent\Relations\HasMany;
+final class PartnerStatement extends Model { use HasUuids; protected $fillable=['tenant_id','partner_id','statement_number','period_start','period_end','currency','status','opening_balance_minor','earned_minor','clawed_back_minor','paid_minor','closing_balance_minor','content_hash','idempotency_key','prepared_by','approved_by','approved_at','published_at']; protected function casts():array{return['period_start'=>'date','period_end'=>'date','approved_at'=>'datetime','published_at'=>'datetime'];} public function items():HasMany{return$this->hasMany(PartnerStatementItem::class);} }

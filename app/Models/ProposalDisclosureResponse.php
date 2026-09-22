@@ -1,0 +1,3 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+final class ProposalDisclosureResponse extends Model{use HasUuids;protected$fillable=['proposal_id','disclosure_schema_version_id','answers','referral_flags','answers_hash','attested_at','attested_by'];protected function casts():array{return['answers'=>'array','referral_flags'=>'array','attested_at'=>'datetime'];}public function proposal():BelongsTo{return$this->belongsTo(Proposal::class);}public function schema():BelongsTo{return$this->belongsTo(DisclosureSchemaVersion::class,'disclosure_schema_version_id');}}

@@ -1,0 +1,3 @@
+<?php
+namespace App\Policies;use App\Models\Consent;use App\Models\User;
+final class ConsentPolicy{private function allowed(User$u):bool{return$u->memberships()->where('status','ACTIVE')->whereIn('role_code',['SYSTEM_ADMIN','PLATFORM_ADMIN','COMPLIANCE_ADMIN','BROKER_ADMIN'])->exists();}public function viewAny(User$u):bool{return$this->allowed($u);}public function view(User$u,Consent$c):bool{return$this->allowed($u);}public function create(User$u):bool{return$this->allowed($u);}public function update(User$u,Consent$c):bool{return$c->status==='GRANTED'&&$this->allowed($u);}public function delete(User$u,Consent$c):bool{return false;}}

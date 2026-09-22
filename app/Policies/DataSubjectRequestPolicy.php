@@ -1,0 +1,2 @@
+<?php
+namespace App\Policies;use App\Domain\Tenancy\TenantContext;use App\Models\{DataSubjectRequest,User};final class DataSubjectRequestPolicy{public function viewAny(User$u):bool{return$u->memberships()->where('status','ACTIVE')->exists();}public function view(User$u,DataSubjectRequest$x):bool{return$x->tenant_id===app(TenantContext::class)->id()&&$this->viewAny($u);}public function update(User$u,DataSubjectRequest$x):bool{return$this->view($u,$x)&&$u->memberships()->whereIn('role_code',['SYSTEM_ADMIN','PLATFORM_ADMIN','COMPLIANCE_ADMIN'])->exists();}}

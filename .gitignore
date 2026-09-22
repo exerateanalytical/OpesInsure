@@ -1,0 +1,18 @@
+/.env
+/.env.testing
+/vendor/
+/node_modules/
+/storage/*.key
+/storage/app/private/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/.phpunit.cache
+/.idea/
+/.vscode/
+/.claude/
+coverage/
+
+# The Expo mobile app is its own independent git repository (see mobile app/.git) — not tracked here.
+/mobile app/

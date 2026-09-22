@@ -1,0 +1,2 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;final class Chargeback extends Model{use HasUuids;protected$fillable=['tenant_id','payment_intent_id','provider_case_reference','amount_minor','currency','status','reason_code','response_due_at','evidence','resolved_at','journal_id','assigned_to','resolution_notes'];protected function casts():array{return['evidence'=>'array','response_due_at'=>'datetime','resolved_at'=>'datetime'];}}

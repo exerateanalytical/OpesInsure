@@ -1,0 +1,26 @@
+<?php
+use App\Interfaces\Http\Controllers\Api\V1\Claims\ClaimLifecycleController;use Illuminate\Support\Facades\Route;
+Route::get('claims',[ClaimLifecycleController::class,'index'])->middleware('permission:claims.view');
+Route::post('claims/fnol',[ClaimLifecycleController::class,'fnol'])->middleware('permission:claims.create');
+Route::get('claims/{id}',[ClaimLifecycleController::class,'show'])->middleware('permission:claims.view');
+Route::post('claims/{id}/assign',[ClaimLifecycleController::class,'assign'])->middleware('permission:claims.assign');
+Route::post('claims/{id}/transitions',[ClaimLifecycleController::class,'transition'])->middleware('permission:claims.transition');
+Route::post('claims/{id}/reserves',[ClaimLifecycleController::class,'reserve'])->middleware('permission:claims.reserve.request');
+Route::post('claims/{id}/reserves/{reserve}/approve',[ClaimLifecycleController::class,'approveReserve'])->middleware('permission:claims.reserve.approve');
+Route::post('claims/{id}/decisions',[ClaimLifecycleController::class,'decision'])->middleware('permission:claims.decision.propose');
+Route::post('claims/{id}/decisions/{decision}/approve',[ClaimLifecycleController::class,'approveDecision'])->middleware('permission:claims.decision.approve');
+Route::post('claims/{id}/evidence',[ClaimLifecycleController::class,'evidence'])->middleware('permission:claims.evidence.manage');
+Route::post('claims/{id}/evidence/{document}/verify',[ClaimLifecycleController::class,'verifyEvidence'])->middleware('permission:claims.evidence.verify');
+Route::post('claims/{id}/disputes',[ClaimLifecycleController::class,'dispute'])->middleware('permission:claims.dispute');
+Route::post('claims/{id}/disputes/{dispute}/resolve',[ClaimLifecycleController::class,'resolveDispute'])->middleware('permission:claims.dispute.resolve');
+Route::post('claims/{id}/recoveries',[ClaimLifecycleController::class,'recovery'])->middleware('permission:claims.recovery');
+Route::post('claims/{id}/recoveries/{recovery}/receipts',[ClaimLifecycleController::class,'recordRecovery'])->middleware('permission:claims.recovery');
+Route::post('claims/{id}/carrier-messages',[ClaimLifecycleController::class,'carrier'])->middleware('permission:claims.carrier.exchange');
+Route::post('claims/{id}/carrier-messages/{message}/failed',[ClaimLifecycleController::class,'carrierFailed'])->middleware('permission:claims.carrier.callback');
+Route::post('claims/{id}/carrier-messages/{message}/acknowledged',[ClaimLifecycleController::class,'carrierAcknowledged'])->middleware('permission:claims.carrier.callback');
+Route::post('claims/{id}/decisions/{decision}/payments',[ClaimLifecycleController::class,'payment'])->middleware('permission:claims.payment.request');
+Route::post('claims/{id}/payments/{payment}/approve',[ClaimLifecycleController::class,'approvePayment'])->middleware('permission:claims.payment.approve');
+Route::post('claims/{id}/payments/{payment}/processing',[ClaimLifecycleController::class,'processPayment'])->middleware('permission:claims.payment.execute');
+Route::post('claims/{id}/payments/{payment}/failed',[ClaimLifecycleController::class,'failPayment'])->middleware('permission:claims.payment.execute');
+Route::post('claims/{id}/payments/{payment}/paid',[ClaimLifecycleController::class,'paidPayment'])->middleware('permission:claims.payment.execute');
+Route::post('claims/{id}/payments/{payment}/reverse',[ClaimLifecycleController::class,'reversePayment'])->middleware('permission:claims.payment.reverse');

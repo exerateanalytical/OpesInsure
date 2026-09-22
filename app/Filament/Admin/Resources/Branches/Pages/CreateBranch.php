@@ -1,0 +1,2 @@
+<?php
+namespace App\Filament\Admin\Resources\Branches\Pages;use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Branches\BranchResource;use Filament\Resources\Pages\CreateRecord;final class CreateBranch extends CreateRecord{protected static string$resource=BranchResource::class;protected function afterCreate():void{app(AuditWriter::class)->record('tenant.branch.created','tenant_branch',$this->record->id);}}

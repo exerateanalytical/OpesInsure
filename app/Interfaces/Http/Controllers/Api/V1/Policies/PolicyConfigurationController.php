@@ -1,0 +1,4 @@
+<?php
+declare(strict_types=1);namespace App\Interfaces\Http\Controllers\Api\V1\Policies;
+use App\Application\Policies\CancellationRuleService;use App\Models\CancellationRuleVersion;use Illuminate\Http\{JsonResponse,Request};
+final class PolicyConfigurationController{public function createCancellationRule(Request$r,CancellationRuleService$s):JsonResponse{$d=$r->validate(['line_code'=>'required|string|max:32|exists:insurance_lines,code','basis'=>'required|in:PRO_RATA,SHORT_RATE','short_rate_basis_points'=>'required|integer|min:0|max:10000','admin_fee_minor'=>'required|integer|min:0','effective_from'=>'required|date','effective_until'=>'nullable|date|after_or_equal:effective_from']);return response()->json(['data'=>$s->create($d,$r->user())],201);}public function approveCancellationRule(Request$r,string$rule,CancellationRuleService$s):JsonResponse{return response()->json(['data'=>$s->approve(CancellationRuleVersion::findOrFail($rule),$r->user())]);}}
