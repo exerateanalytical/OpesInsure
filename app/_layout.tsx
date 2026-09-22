@@ -52,6 +52,7 @@ export default function RootLayout() {
     !["customer", "agent", "broker_admin", "broker_staff", "carrier"].includes(
       roleToPortal(workspace.role_code) ?? "",
     );
+  const authenticated = status === "authenticated";
   return (
     <AppRuntime>
       <StatusBar style="dark" />
@@ -62,6 +63,10 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       >
+        <Stack.Protected guard={authenticated}>
+          <Stack.Screen name="sync/index" />
+          <Stack.Screen name="account/data-usage" />
+        </Stack.Protected>
         <Stack.Protected guard={customer}>
           <Stack.Screen name="quote/product" />
           <Stack.Screen name="quote/risk" />

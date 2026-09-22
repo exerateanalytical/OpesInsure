@@ -2,6 +2,7 @@ import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { demoApi } from "@/demo/api";
+import { OfflineOperation } from "@/offline/types";
 
 const configuredUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const API_URL = configuredUrl ?? (__DEV__ ? "http://10.0.2.2:8000/api/v1" : "");
@@ -1262,5 +1263,23 @@ export const SupportApi = {
       body: form,
       timeoutMs: 45000,
       idempotent: true,
+    }),
+};
+
+export type SyncReceipt = {
+  operation_id: string;
+  status: "APPLIED" | "DUPLICATE";
+  server_version: number;
+  synchronized_at: string;
+};
+
+export const SyncApi = {
+  status: () => api<{ server_time: string; minimum_client_version: string }>("/mobile/sync/status"),
+  apply: (operation: OfflineOperation) =>
+    api<SyncReceipt>("/mobile/sync/operations", {
+      method: "POST",
+      body: JSON.stringify(operation),
+      idempotent: true,
+      timeoutMs: 30000,
     }),
 };

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { router } from "expo-router";
 import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
-import { AgentApi } from "@/api/client";
+import { AgentApi, ApiError } from "@/api/client";
+import { OfflineVault } from "@/offline/vault";
 export default function NewAgentClient() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+237");
@@ -43,13 +44,29 @@ export default function NewAgentClient() {
             city.length < 2
           }
           onPress={async () => {
-            const c = await AgentApi.createClient({
+            const payload = {
               full_name: name,
               phone_e164: phone,
               city,
               consent_reference: `CONSENT-${Date.now()}`,
-            });
-            router.replace(`/agent/clients/${c.id}`);
+            };
+            try {
+              const c = await AgentApi.createClient(payload);
+              router.replace(`/agent/clients/${c.id}`);
+            } catch (error) {
+              if (error instanceof ApiError && error.status === 0) {
+                await OfflineVault.enqueue({
+                  kind: "MUTATION",
+                  resource: "Consented agent client registration",
+                  method: "POST",
+                  path: "/mobile/agent/clients",
+                  payload,
+                });
+                router.replace("/sync");
+                return;
+              }
+              throw error;
+            }
           }}
         />
       </Card>

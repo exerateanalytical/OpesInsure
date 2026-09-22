@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   UserRound,
   WalletCards,
+  CloudCog,
+  Gauge,
 } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
@@ -33,6 +35,8 @@ const links = [
   ["Security and devices", LockKeyhole, "/account/security"],
   ["Notifications", Bell, "/account/notifications"],
   ["Language", Languages, "/account/language"],
+  ["Synchronization", CloudCog, "/sync"],
+  ["Data and uploads", Gauge, "/account/data-usage"],
   ["Insurance companies", Building2, "/institutions/insurers"],
 ] as const;
 export default function Account() {
@@ -78,7 +82,7 @@ export default function Account() {
         <Text style={styles.logoutText}>Sign out securely</Text>
       </Pressable>
       <Text style={styles.version}>
-        OpesInsure 0.2.0 · Opesware Technologies
+        OpesInsure 1.0.0 · Opesware Technologies
       </Text>
     </Screen>
   );

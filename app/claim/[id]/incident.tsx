@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
-import { ClaimIncidentDetails, ClaimsCompletionApi } from "@/api/client";
+import { ApiError, ClaimIncidentDetails, ClaimsCompletionApi } from "@/api/client";
+import { OfflineVault } from "@/offline/vault";
 import { colors, radius, space, type } from "@/theme/tokens";
 const kinds = ["COLLISION", "THEFT", "FIRE", "GLASS_DAMAGE", "FLOOD", "OTHER"];
 export default function Incident() {
@@ -61,8 +62,28 @@ export default function Incident() {
         <Button
           label="Save and add involved people"
           onPress={async () => {
-            await ClaimsCompletionApi.saveIncident(id, x);
-            router.push(`/claim/${id}/parties`);
+            try {
+              await ClaimsCompletionApi.saveIncident(id, x);
+              router.push(`/claim/${id}/parties`);
+            } catch (error) {
+              if (error instanceof ApiError && error.status === 0) {
+                await OfflineVault.enqueue({
+                  kind: "DRAFT",
+                  resource: "Claim incident draft",
+                  resource_id: id,
+                  method: "PUT",
+                  path: `/mobile/claims/${id}/incident`,
+                  payload: { ...x },
+                });
+                Alert.alert(
+                  "Draft saved securely",
+                  "This incident remains a draft until the server acknowledges it.",
+                  [{ text: "View sync", onPress: () => router.push("/sync") }],
+                );
+                return;
+              }
+              throw error;
+            }
           }}
         />
       </Card>

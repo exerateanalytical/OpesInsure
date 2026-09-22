@@ -5,7 +5,9 @@ import { AccountApi } from "@/api/client";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 export default function Language() {
+  const { t } = useTranslation();
   const current = useSession((s) => s.language);
   const setLanguage = useSession((s) => s.setLanguage);
   const [value, setValue] = useState<"en" | "fr">(current);
@@ -22,7 +24,7 @@ export default function Language() {
   };
   return (
     <Screen>
-      <AppHeader title="Language" back />
+      <AppHeader title={t("language")} back />
       {(
         [
           ["en", "English"],
@@ -41,7 +43,7 @@ export default function Language() {
         </Pressable>
       ))}
       <Button
-        label="Save language"
+        label={t("saveLanguage")}
         loading={busy}
         onPress={() => void save()}
       />

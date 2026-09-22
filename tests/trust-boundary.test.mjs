@@ -77,7 +77,8 @@ test("claim evidence and policy servicing are API backed", () => {
 });
 test("runtime protects offline, notification and biometric boundaries", () => {
   const runtime = read("src/components/AppRuntime.tsx");
-  assert.match(runtime, /getNetworkStateAsync/);
+  const resilience = read("src/store/resilience.ts");
+  assert.match(resilience, /getNetworkStateAsync/);
   assert.match(runtime, /LocalAuthentication/);
   assert.match(runtime, /safePaths/);
 });
@@ -346,4 +347,42 @@ test("patch five demo data covers broker and carrier operations", () => {
       Array.isArray(demo.carrier_mobile[key]),
       `missing carrier ${key}`,
     );
+});
+test("patch six provides a device-encrypted offline vault and clears it on logout", () => {
+  const vault = read("src/offline/vault.ts");
+  const session = read("src/store/session.ts");
+  assert.match(vault, /expo-secure-store/);
+  assert.match(vault, /WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
+  assert.match(vault, /maxSecurePayloadBytes/);
+  assert.match(session, /OfflineVault\.clearSensitiveData/);
+});
+test("patch six synchronization remains server mediated and conflict aware", () => {
+  const client = read("src/api/client.ts");
+  const store = read("src/store/resilience.ts");
+  assert.match(client, /export const SyncApi/);
+  assert.match(client, /\/mobile\/sync\/operations/);
+  assert.match(store, /apiError\.status === 409/);
+  assert.match(store, /409 \? "CONFLICT"/);
+  assert.match(client, /idempotent:\s*true/);
+});
+test("patch six exposes protected sync and low-data controls", () => {
+  const layout = read("app/_layout.tsx");
+  const sync = read("app/sync/index.tsx");
+  const settings = read("app/account/data-usage.tsx");
+  assert.match(layout, /Stack\.Protected guard=\{authenticated\}/);
+  assert.match(layout, /sync\/index/);
+  assert.match(settings, /wifi_only_uploads/);
+  assert.match(settings, /compress_images/);
+  assert.match(sync, /transactionsPaused/);
+});
+test("patch six has bilingual resilience copy and accessibility semantics", () => {
+  const strings = read("src/i18n/strings.ts");
+  const ui = read("src/components/ui.tsx");
+  const fixtures = JSON.parse(read("src/data/demo/resilience.v1.json"));
+  assert.match(strings, /Centre de synchronisation/);
+  assert.match(strings, /Brouillons hors connexion sécurisés/);
+  assert.match(ui, /maxFontSizeMultiplier/);
+  assert.match(ui, /accessibilityLiveRegion/);
+  assert.equal(fixtures.meta.production_forbidden, true);
+  assert.ok(fixtures.operations.some((item) => item.state === "CONFLICT"));
 });

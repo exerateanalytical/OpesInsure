@@ -16,7 +16,7 @@ export function FlowRow({
   onPress?: () => void;
 }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={s.row}>
+    <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} style={s.row}>
       <View style={s.icon}>
         <Icon size={21} color={colors.blue600} />
       </View>
@@ -27,7 +27,7 @@ export function FlowRow({
           <Text style={s.status}>{status.replaceAll("_", " ")}</Text>
         ) : null}
       </View>
-      <ChevronRight size={20} color={colors.neutral400} />
+      <ChevronRight accessibilityElementsHidden importantForAccessibility="no-hide-descendants" size={20} color={colors.neutral400} />
     </Pressable>
   );
 }

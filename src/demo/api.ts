@@ -114,6 +114,18 @@ export async function demoApi<T>(
     await SecureStore.deleteItemAsync(accountKey);
     return undefined as T;
   }
+  if (path === "/mobile/sync/status")
+    return {
+      server_time: state.meta.demo_clock,
+      minimum_client_version: "1.0.0",
+    } as T;
+  if (path === "/mobile/sync/operations" && method === "POST")
+    return {
+      operation_id: body.id,
+      status: "APPLIED",
+      server_version: (body.payload?.version ?? 0) + 1,
+      synchronized_at: state.meta.demo_clock,
+    } as T;
   if (path === "/public/insurance/verify" && method === "POST")
     return (state.public_verifications.find(
       (v: any) => v.reference === body.reference,

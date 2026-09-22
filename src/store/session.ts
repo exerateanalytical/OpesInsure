@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { AuthApi, SessionBootstrap, TokenVault, Workspace } from "@/api/client";
 import { Language } from "@/i18n/strings";
+import { OfflineVault } from "@/offline/vault";
 
 export type SessionStatus =
   "booting" | "anonymous" | "authenticating" | "authenticated" | "error";
@@ -80,6 +81,7 @@ export const useSession = create<SessionState>((set, get) => ({
     try {
       await AuthApi.logout();
     } finally {
+      await OfflineVault.clearSensitiveData();
       set({
         status: "anonymous",
         bootstrap: null,
@@ -97,7 +99,15 @@ export const roleToPortal = (role: string) => {
   if (role === "BROKER_STAFF") return "broker_staff";
   if (role === "BROKER_ADMIN") return "broker_admin";
   if (role.includes("CARRIER")) return "carrier";
-  if (["SYSTEM_ADMIN", "PLATFORM_ADMIN", "FINANCE_OPERATOR", "COMPLIANCE_OFFICER", "SUPPORT_OPERATOR"].includes(role))
+  if (
+    [
+      "SYSTEM_ADMIN",
+      "PLATFORM_ADMIN",
+      "FINANCE_OPERATOR",
+      "COMPLIANCE_OFFICER",
+      "SUPPORT_OPERATOR",
+    ].includes(role)
+  )
     return "platform_admin";
   return null;
 };

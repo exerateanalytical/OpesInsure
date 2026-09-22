@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "environment": "DEMO_ONLY",
+    "production_forbidden": true,
+    "timezone": "Africa/Douala",
+    "default_locale": "fr-CM",
+    "supported_locales": ["en-CM", "fr-CM"]
+  },
+  "sync_summary": {
+    "pending": 2,
+    "failed": 1,
+    "conflicts": 1,
+    "last_synced_at": "2026-09-22T12:30:00Z"
+  },
+  "operations": [
+    {
+      "id": "sync-demo-claim-draft",
+      "kind": "DRAFT",
+      "resource": "Claim incident draft",
+      "resource_id": "claim-001",
+      "method": "PUT",
+      "path": "/mobile/claims/claim-001/incident",
+      "payload": { "version": 2, "vehicle_drivable": false },
+      "state": "PENDING",
+      "attempts": 0
+    },
+    {
+      "id": "sync-demo-upload",
+      "kind": "UPLOAD",
+      "resource": "Claim damage photograph",
+      "resource_id": "claim-001",
+      "method": "POST",
+      "path": "/claims/claim-001/evidence",
+      "payload": { "upload_session_id": "upload-demo-001", "compressed": true },
+      "state": "FAILED",
+      "attempts": 2,
+      "error_code": "UPLOAD_SESSION_EXPIRED"
+    },
+    {
+      "id": "sync-demo-conflict",
+      "kind": "MUTATION",
+      "resource": "Customer address",
+      "resource_id": "customer-001",
+      "method": "PATCH",
+      "path": "/mobile/account/profile",
+      "payload": { "version": 3, "city": "Douala" },
+      "state": "CONFLICT",
+      "attempts": 1,
+      "conflict": { "server_version": 4, "local_version": 3 }
+    }
+  ],
+  "data_usage": {
+    "low_data_mode": true,
+    "wifi_only_uploads": false,
+    "compress_images": true
+  },
+  "accessibility_acceptance": [
+    "screen_reader_labels",
+    "dynamic_text_scaling",
+    "44_point_touch_targets",
+    "non_colour_status_cues",
+    "keyboard_safe_forms",
+    "long_french_copy"
+  ]
+}
