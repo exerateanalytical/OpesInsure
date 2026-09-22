@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Carrier;
+use App\Models\Document;
 use App\Models\FulfilmentOrder;
 use App\Models\InsuranceProduct;
 use App\Models\PaymentIntentRecord;
@@ -126,6 +127,22 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'delivery_attempts' => 0,
             'sla_due_at' => now()->addDays(3),
             'idempotency_key' => (string) Str::uuid(),
+        ], $overrides));
+    }
+
+    function makeMobileTestDocument(Tenant $tenant, Party $party, array $overrides = []): Document
+    {
+        return Document::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'category' => 'POLICY_DOCUMENT',
+            'storage_key' => 'documents/test/'.Str::random(20).'.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 1024,
+            'sha256' => hash('sha256', Str::random(32)),
+            'scan_status' => 'CLEAN',
+            'verification_status' => 'VERIFIED',
+            'ocr_data' => [],
         ], $overrides));
     }
 }
