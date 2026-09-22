@@ -122,7 +122,8 @@ async function rotate() {
   return refreshPromise;
 }
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
-  if (process.env.EXPO_PUBLIC_DEMO_MODE === "true") return demoApi<T>(path, options);
+  if (process.env.EXPO_PUBLIC_DEMO_MODE === "true")
+    return demoApi<T>(path, options);
   if (!API_URL)
     throw new ApiConfigurationError(
       "EXPO_PUBLIC_API_BASE_URL is required for production builds.",
@@ -571,4 +572,197 @@ export const InsuranceApi = {
     api<PurchaseStatus>(`/mobile/purchases/${proposalId}/status`),
   policies: () => api<any>("/policies"),
   policy: (id: string) => api<Policy>(`/policies/${id}`),
+};
+
+export type KycProfile = {
+  status: string;
+  legal_name: string;
+  date_of_birth?: string;
+  national_id_number?: string;
+  city?: string;
+  rejection_reason?: string | null;
+};
+export type RiskAsset = {
+  id: string;
+  type: string;
+  label: string;
+  registration_number?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  status: string;
+  documents?: AssetDocument[];
+};
+export type AssetDocument = {
+  id: string;
+  asset_id: string;
+  type: string;
+  file_name: string;
+  status: string;
+  extracted_fields?: Record<string, string>;
+};
+export type DisclosureSession = {
+  id: string;
+  proposal_id: string;
+  status: string;
+  questions: {
+    id: string;
+    label: string;
+    type: "boolean" | "text";
+    required: boolean;
+    answer?: boolean | string;
+  }[];
+  referral_reason?: string | null;
+};
+export type PaymentReceipt = {
+  id: string;
+  payment_id: string;
+  receipt_number: string;
+  issued_at: string;
+  amount_minor: number;
+  currency: "XAF";
+  download_url: string;
+};
+export type RefundRequest = {
+  id: string;
+  payment_id: string;
+  reason: string;
+  status: string;
+  created_at: string;
+};
+export type WalletPolicy = Policy & {
+  carrier_name?: string;
+  product_name?: string;
+  documents?: PolicyCertificate[];
+  delivery?: StickerDelivery | null;
+};
+export type StickerDelivery = {
+  id: string;
+  policy_id: string;
+  status: string;
+  recipient_name: string;
+  phone_e164: string;
+  address_line: string;
+  city: string;
+  eta?: string;
+  tracking_code: string;
+  timeline: { label: string; occurred_at: string; complete: boolean }[];
+};
+export const KycApi = {
+  profile: () => api<KycProfile>("/mobile/kyc/profile"),
+  saveProfile: (payload: Partial<KycProfile>) =>
+    api<KycProfile>("/mobile/kyc/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  uploadDocument: (form: FormData) =>
+    api<{ id: string; status: string }>("/mobile/kyc/documents", {
+      method: "POST",
+      body: form,
+      timeoutMs: 45000,
+      idempotent: true,
+    }),
+  submit: () =>
+    api<KycProfile>("/mobile/kyc/submission", {
+      method: "POST",
+      idempotent: true,
+    }),
+};
+export const AssetsApi = {
+  list: () => api<RiskAsset[]>("/mobile/assets"),
+  show: (id: string) => api<RiskAsset>(`/mobile/assets/${id}`),
+  create: (payload: Partial<RiskAsset>) =>
+    api<RiskAsset>("/mobile/assets", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  uploadDocument: (id: string, form: FormData) =>
+    api<AssetDocument>(`/mobile/assets/${id}/documents`, {
+      method: "POST",
+      body: form,
+      timeoutMs: 45000,
+      idempotent: true,
+    }),
+  scan: (id: string) =>
+    api<AssetDocument>(`/mobile/assets/${id}/scan`, {
+      method: "POST",
+      idempotent: true,
+    }),
+  confirmScan: (
+    id: string,
+    documentId: string,
+    fields: Record<string, string>,
+  ) =>
+    api<RiskAsset>(`/mobile/assets/${id}/scan/${documentId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ fields }),
+      idempotent: true,
+    }),
+};
+export const DisclosureApi = {
+  session: (proposalId: string) =>
+    api<DisclosureSession>(`/proposals/${proposalId}/disclosure`),
+  saveAnswers: (
+    proposalId: string,
+    answers: Record<string, boolean | string>,
+  ) =>
+    api<DisclosureSession>(`/proposals/${proposalId}/disclosure/answers`, {
+      method: "PUT",
+      body: JSON.stringify({ answers }),
+      idempotent: true,
+    }),
+  submit: (proposalId: string) =>
+    api<DisclosureSession>(`/proposals/${proposalId}/disclosure/submit`, {
+      method: "POST",
+      idempotent: true,
+    }),
+  acceptTerms: (proposalId: string, accepted: boolean) =>
+    api<{ accepted: boolean; accepted_at: string }>(
+      `/proposals/${proposalId}/terms`,
+      { method: "POST", body: JSON.stringify({ accepted }), idempotent: true },
+    ),
+};
+export const PaymentsApi = {
+  list: () => api<Payment[]>("/mobile/payments"),
+  show: (id: string) => api<Payment>(`/mobile/payments/${id}`),
+  retry: (id: string) =>
+    api<Payment>(`/mobile/payments/${id}/retry`, {
+      method: "POST",
+      idempotent: true,
+    }),
+  receipt: (id: string) =>
+    api<PaymentReceipt>(`/mobile/payments/${id}/receipt`),
+  refund: (id: string, reason: string) =>
+    api<RefundRequest>(`/mobile/payments/${id}/refunds`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+      idempotent: true,
+    }),
+};
+export const WalletApi = {
+  list: () => api<WalletPolicy[]>("/mobile/wallet"),
+  policy: (id: string) => api<WalletPolicy>(`/mobile/wallet/policies/${id}`),
+  delivery: (id: string) => api<StickerDelivery>(`/mobile/deliveries/${id}`),
+  updateAddress: (
+    id: string,
+    payload: {
+      recipient_name: string;
+      phone_e164: string;
+      address_line: string;
+      city: string;
+    },
+  ) =>
+    api<StickerDelivery>(`/mobile/deliveries/${id}/address`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  confirmDelivery: (id: string, otp: string) =>
+    api<StickerDelivery>(`/mobile/deliveries/${id}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+      idempotent: true,
+    }),
 };

@@ -64,6 +64,17 @@ export async function demoApi<T>(
 ): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const body = parse(options.body);
+  const enrichPolicy = (policy: any) => ({
+    ...policy,
+    carrier_name: "Demo Cameroon Assurance",
+    product_name: "Automobile Responsabilité Civile",
+    documents:
+      state.policy_documents?.filter((d: any) => d.policy_id === policy.id) ??
+      [],
+    delivery:
+      state.sticker_deliveries?.find((d: any) => d.policy_id === policy.id) ??
+      null,
+  });
   if (path === "/auth/mobile/otp/request")
     return {
       challenge_id: `demo-${body.phone_e164}`,
@@ -109,6 +120,128 @@ export async function demoApi<T>(
       result: "NOT_FOUND",
       verified_at: state.meta.demo_clock,
     }) as T;
+  if (path === "/mobile/kyc/profile") {
+    if (method === "PATCH")
+      state.kyc_profiles[0] = { ...state.kyc_profiles[0], ...body };
+    return state.kyc_profiles[0] as T;
+  }
+  if (path === "/mobile/kyc/documents")
+    return { id: `kyc-document-${Date.now()}`, status: "RECEIVED" } as T;
+  if (path === "/mobile/kyc/submission") {
+    state.kyc_profiles[0].status = "PENDING_REVIEW";
+    return state.kyc_profiles[0] as T;
+  }
+  if (path === "/mobile/assets" && method === "GET")
+    return state.risk_assets as T;
+  if (path === "/mobile/assets" && method === "POST") {
+    const item = {
+      id: `asset-${Date.now()}`,
+      type: "VEHICLE",
+      status: "DRAFT",
+      ...body,
+    };
+    state.risk_assets.unshift(item);
+    return item as T;
+  }
+  if (/^\/mobile\/assets\/[^/]+$/.test(path))
+    return state.risk_assets.find((a: any) => a.id === path.split("/")[3]) as T;
+  if (path.endsWith("/documents")) {
+    const id = path.split("/")[3];
+    const doc = {
+      id: `asset-document-${Date.now()}`,
+      asset_id: id,
+      type: "REGISTRATION_CARD",
+      file_name: "registration-card.jpg",
+      status: "SCANNED",
+      extracted_fields: {
+        registration_number: "LT 245 AB",
+        make: "TOYOTA",
+        model: "Corolla",
+        year: "2019",
+      },
+    };
+    state.asset_documents.push(doc);
+    return doc as T;
+  }
+  if (path.endsWith("/scan"))
+    return state.asset_documents.find(
+      (d: any) => d.asset_id === path.split("/")[3],
+    ) as T;
+  if (path.includes("/scan/") && path.endsWith("/confirm")) {
+    const asset = state.risk_assets.find(
+      (a: any) => a.id === path.split("/")[3],
+    );
+    Object.assign(asset, body.fields, { status: "VERIFIED" });
+    return asset as T;
+  }
+  if (/^\/proposals\/[^/]+\/disclosure$/.test(path))
+    return state.disclosure_sessions[0] as T;
+  if (path.endsWith("/disclosure/answers")) {
+    state.disclosure_sessions[0].questions =
+      state.disclosure_sessions[0].questions.map((q: any) => ({
+        ...q,
+        answer: body.answers[q.id],
+      }));
+    state.disclosure_sessions[0].status = "IN_PROGRESS";
+    return state.disclosure_sessions[0] as T;
+  }
+  if (path.endsWith("/disclosure/submit")) {
+    state.disclosure_sessions[0].status =
+      state.disclosure_sessions[0].questions.some(
+        (q: any) => q.id === "commercial_use" && q.answer === true,
+      )
+        ? "REFERRED"
+        : "APPROVED";
+    return state.disclosure_sessions[0] as T;
+  }
+  if (path.endsWith("/terms"))
+    return { accepted: body.accepted, accepted_at: state.meta.demo_clock } as T;
+  if (path === "/mobile/payments") return state.payments as T;
+  if (/^\/mobile\/payments\/[^/]+$/.test(path))
+    return state.payments.find((p: any) => p.id === path.split("/")[3]) as T;
+  if (path.endsWith("/retry")) {
+    const p = state.payments.find((x: any) => x.id === path.split("/")[3]);
+    p.status = "PENDING_CUSTOMER";
+    return p as T;
+  }
+  if (path.endsWith("/receipt"))
+    return state.payment_receipts.find(
+      (r: any) => r.payment_id === path.split("/")[3],
+    ) as T;
+  if (path.endsWith("/refunds")) {
+    const item = {
+      id: `refund-${Date.now()}`,
+      payment_id: path.split("/")[3],
+      reason: body.reason,
+      status: "REQUESTED",
+      created_at: state.meta.demo_clock,
+    };
+    state.refund_requests.push(item);
+    return item as T;
+  }
+  if (path === "/mobile/wallet") return state.policies.map(enrichPolicy) as T;
+  if (/^\/mobile\/wallet\/policies\/[^/]+$/.test(path))
+    return enrichPolicy(
+      state.policies.find((p: any) => p.id === path.split("/")[4]),
+    ) as T;
+  if (/^\/mobile\/deliveries\/[^/]+$/.test(path))
+    return state.sticker_deliveries.find(
+      (d: any) => d.id === path.split("/")[3],
+    ) as T;
+  if (path.endsWith("/address")) {
+    const d = state.sticker_deliveries.find(
+      (x: any) => x.id === path.split("/")[3],
+    );
+    Object.assign(d, body);
+    return d as T;
+  }
+  if (path.endsWith("/confirm")) {
+    const d = state.sticker_deliveries.find(
+      (x: any) => x.id === path.split("/")[3],
+    );
+    d.status = body.otp === "246810" ? "DELIVERED" : d.status;
+    return d as T;
+  }
   if (path === "/policies") return { data: state.policies } as T;
   if (/^\/policies\/[^/]+$/.test(path))
     return state.policies.find((p: any) => p.id === path.split("/")[2]) as T;
@@ -145,7 +278,8 @@ export async function demoApi<T>(
     state.claims.unshift(item);
     return item as T;
   }
-  if (/^\/claims\/[^/]+$/.test(path)) return claim(path.split("/")[2] ?? "") as T;
+  if (/^\/claims\/[^/]+$/.test(path))
+    return claim(path.split("/")[2] ?? "") as T;
   if (path.endsWith("/evidence")) {
     const id = path.split("/")[2];
     const item = {
@@ -242,7 +376,9 @@ export async function demoApi<T>(
     } as T;
   if (path === "/mobile/account/devices") {
     const user = await account();
-    return state.operations.devices.filter((d: any) => d.user_id === user.id) as T;
+    return state.operations.devices.filter(
+      (d: any) => d.user_id === user.id,
+    ) as T;
   }
   if (path.startsWith("/mobile/account/devices/") && method === "DELETE") {
     state.operations.devices = state.operations.devices.filter(
