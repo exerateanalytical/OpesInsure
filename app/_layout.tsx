@@ -38,10 +38,20 @@ export default function RootLayout() {
   const agent =
     status === "authenticated" &&
     roleToPortal(workspace?.role_code ?? "") === "agent";
+  const broker =
+    status === "authenticated" &&
+    ["broker_admin", "broker_staff"].includes(
+      roleToPortal(workspace?.role_code ?? "") ?? "",
+    );
+  const carrier =
+    status === "authenticated" &&
+    roleToPortal(workspace?.role_code ?? "") === "carrier";
   const partner =
     status === "authenticated" &&
     !!workspace &&
-    !["customer", "agent"].includes(roleToPortal(workspace.role_code) ?? "");
+    !["customer", "agent", "broker_admin", "broker_staff", "carrier"].includes(
+      roleToPortal(workspace.role_code) ?? "",
+    );
   return (
     <AppRuntime>
       <StatusBar style="dark" />
@@ -121,6 +131,24 @@ export default function RootLayout() {
           <Stack.Screen name="agent/wallet" />
           <Stack.Screen name="agent/withdrawal" />
           <Stack.Screen name="agent/offline" />
+        </Stack.Protected>
+        <Stack.Protected guard={broker}>
+          <Stack.Screen name="broker/index" />
+          <Stack.Screen name="broker/clients" />
+          <Stack.Screen name="broker/clients/[id]" />
+          <Stack.Screen name="broker/production" />
+          <Stack.Screen name="broker/renewals" />
+          <Stack.Screen name="broker/receivables" />
+          <Stack.Screen name="broker/compliance" />
+          <Stack.Screen name="broker/publications" />
+        </Stack.Protected>
+        <Stack.Protected guard={carrier}>
+          <Stack.Screen name="carrier/index" />
+          <Stack.Screen name="carrier/referrals/index" />
+          <Stack.Screen name="carrier/referrals/[id]" />
+          <Stack.Screen name="carrier/issuance" />
+          <Stack.Screen name="carrier/claims" />
+          <Stack.Screen name="carrier/settlements" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

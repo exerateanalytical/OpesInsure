@@ -122,6 +122,61 @@ export async function demoApi<T>(
       result: "NOT_FOUND",
       verified_at: state.meta.demo_clock,
     }) as T;
+  if (path === "/mobile/broker/dashboard")
+    return state.broker_mobile.dashboard as T;
+  if (path === "/mobile/broker/clients")
+    return state.broker_mobile.clients as T;
+  if (/^\/mobile\/broker\/clients\/[^/]+$/.test(path))
+    return state.broker_mobile.clients.find(
+      (x: any) => x.id === path.split("/")[4],
+    ) as T;
+  if (path === "/mobile/broker/production")
+    return state.broker_mobile.production as T;
+  if (path === "/mobile/broker/renewals")
+    return state.broker_mobile.renewals as T;
+  if (path === "/mobile/broker/receivables")
+    return state.broker_mobile.receivables as T;
+  if (path === "/mobile/broker/compliance")
+    return state.broker_mobile.compliance as T;
+  if (path === "/mobile/broker/marketplace-publications")
+    return state.broker_mobile.publications as T;
+  if (/^\/mobile\/broker\/marketplace-publications\/[^/]+$/.test(path)) {
+    const item = state.broker_mobile.publications.find(
+      (x: any) => x.id === path.split("/")[4],
+    );
+    item.status = body.enabled ? "PENDING_APPROVAL" : "UNPUBLISHED";
+    return item as T;
+  }
+  if (path === "/mobile/carrier/dashboard")
+    return state.carrier_mobile.dashboard as T;
+  if (path === "/mobile/carrier/referrals")
+    return state.carrier_mobile.referrals as T;
+  if (
+    path.endsWith("/decision") &&
+    path.startsWith("/mobile/carrier/referrals/")
+  ) {
+    const item = state.carrier_mobile.referrals.find(
+      (x: any) => x.id === path.split("/")[4],
+    );
+    item.status =
+      body.decision === "APPROVE"
+        ? "APPROVED"
+        : body.decision === "DECLINE"
+          ? "DECLINED"
+          : "INFORMATION_REQUESTED";
+    item.decision_note = body.note;
+    return item as T;
+  }
+  if (/^\/mobile\/carrier\/referrals\/[^/]+$/.test(path))
+    return state.carrier_mobile.referrals.find(
+      (x: any) => x.id === path.split("/")[4],
+    ) as T;
+  if (path === "/mobile/carrier/issuance")
+    return state.carrier_mobile.issuance as T;
+  if (path === "/mobile/carrier/claims")
+    return state.carrier_mobile.claims as T;
+  if (path === "/mobile/carrier/settlements")
+    return state.carrier_mobile.settlements as T;
   if (path === "/mobile/agent/profile") {
     if (method === "PATCH") Object.assign(state.agent_mobile.profile, body);
     return state.agent_mobile.profile as T;

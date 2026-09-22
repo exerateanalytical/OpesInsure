@@ -754,6 +754,118 @@ export const AgentApi = {
       idempotent: true,
     }),
 };
+export type BrokerClient = {
+  id: string;
+  full_name: string;
+  phone_e164: string;
+  city: string;
+  origin_locked: boolean;
+  policies: number;
+  outstanding_minor: number;
+  renewal_due_at?: string | null;
+};
+export type BrokerProduction = {
+  id: string;
+  policy_number: string;
+  customer_name: string;
+  carrier_name: string;
+  premium_minor: number;
+  status: string;
+  issued_at: string;
+};
+export type BrokerComplianceItem = {
+  id: string;
+  label: string;
+  status: string;
+  due_at: string;
+  severity: string;
+};
+export type BrokerPublication = {
+  id: string;
+  product_name: string;
+  status: string;
+  channel: string;
+  submitted_at: string;
+};
+export const BrokerApi = {
+  dashboard: () =>
+    api<{ metrics: { label: string; value: string; tone?: string }[] }>(
+      "/mobile/broker/dashboard",
+    ),
+  clients: () => api<BrokerClient[]>("/mobile/broker/clients"),
+  client: (id: string) => api<BrokerClient>(`/mobile/broker/clients/${id}`),
+  production: () => api<BrokerProduction[]>("/mobile/broker/production"),
+  renewals: () => api<AgentRenewal[]>("/mobile/broker/renewals"),
+  receivables: () =>
+    api<
+      {
+        id: string;
+        customer_name: string;
+        amount_minor: number;
+        currency: "XAF";
+        status: string;
+        due_at: string;
+      }[]
+    >("/mobile/broker/receivables"),
+  compliance: () => api<BrokerComplianceItem[]>("/mobile/broker/compliance"),
+  publications: () =>
+    api<BrokerPublication[]>("/mobile/broker/marketplace-publications"),
+  togglePublication: (id: string, enabled: boolean) =>
+    api<BrokerPublication>(`/mobile/broker/marketplace-publications/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+      idempotent: true,
+    }),
+};
+export type CarrierReferral = {
+  id: string;
+  quote_id: string;
+  customer_name: string;
+  product: string;
+  reason: string;
+  status: string;
+  premium_minor: number;
+  submitted_at: string;
+  decision_note?: string;
+};
+export type CarrierQueueItem = {
+  id: string;
+  reference: string;
+  subject: string;
+  status: string;
+  priority: string;
+  submitted_at: string;
+};
+export type CarrierSettlement = {
+  id: string;
+  period: string;
+  gross_premium_minor: number;
+  net_payable_minor: number;
+  currency: "XAF";
+  status: string;
+};
+export const CarrierApi = {
+  dashboard: () =>
+    api<{ metrics: { label: string; value: string; tone?: string }[] }>(
+      "/mobile/carrier/dashboard",
+    ),
+  referrals: () => api<CarrierReferral[]>("/mobile/carrier/referrals"),
+  referral: (id: string) =>
+    api<CarrierReferral>(`/mobile/carrier/referrals/${id}`),
+  decideReferral: (
+    id: string,
+    decision: "APPROVE" | "DECLINE" | "MORE_INFORMATION",
+    note: string,
+  ) =>
+    api<CarrierReferral>(`/mobile/carrier/referrals/${id}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision, note }),
+      idempotent: true,
+    }),
+  issuance: () => api<CarrierQueueItem[]>("/mobile/carrier/issuance"),
+  claims: () => api<CarrierQueueItem[]>("/mobile/carrier/claims"),
+  settlements: () => api<CarrierSettlement[]>("/mobile/carrier/settlements"),
+};
 export const InsuranceApi = {
   createQuote: (payload: {
     customer_id: string;

@@ -292,3 +292,58 @@ test("patch four demo data covers field operations", () => {
       `missing ${key}`,
     );
 });
+test("patch five isolates broker and carrier routes with dedicated guards", () => {
+  const layout = read("app/_layout.tsx");
+  const role = read("app/(auth)/role.tsx");
+  assert.match(layout, /Stack\.Protected guard=\{broker\}/);
+  assert.match(layout, /Stack\.Protected guard=\{carrier\}/);
+  for (const route of [
+    "broker/index",
+    "broker/clients",
+    "broker/compliance",
+    "carrier/index",
+    "carrier/referrals/index",
+    "carrier/issuance",
+    "carrier/claims",
+    "carrier/settlements",
+  ])
+    assert.match(layout, new RegExp(route.replace(/[\[\]]/g, "\\$&")));
+  assert.match(role, /router\.replace\("\/broker"\)/);
+  assert.match(role, /router\.replace\("\/carrier"\)/);
+});
+test("broker and carrier mobile operations use typed API contracts", () => {
+  const client = read("src/api/client.ts");
+  for (const contract of [
+    "BrokerApi",
+    "togglePublication",
+    "CarrierApi",
+    "decideReferral",
+  ])
+    assert.match(client, new RegExp(contract));
+  assert.match(client, /idempotent:\s*true/);
+});
+test("carrier underwriting decisions require confirmation and a note", () => {
+  const screen = read("app/carrier/referrals/[id].tsx");
+  assert.match(screen, /Alert\.alert/);
+  assert.match(screen, /disabled=\{note\.length\s*<\s*5\}/);
+});
+test("patch five demo data covers broker and carrier operations", () => {
+  const demo = JSON.parse(
+    read("src/data/demo/opesinsure-cameroon-demo.v1.json"),
+  );
+  for (const root of ["broker_mobile", "carrier_mobile"]) assert.ok(demo[root]);
+  for (const key of [
+    "clients",
+    "production",
+    "renewals",
+    "receivables",
+    "compliance",
+    "publications",
+  ])
+    assert.ok(Array.isArray(demo.broker_mobile[key]), `missing broker ${key}`);
+  for (const key of ["referrals", "issuance", "claims", "settlements"])
+    assert.ok(
+      Array.isArray(demo.carrier_mobile[key]),
+      `missing carrier ${key}`,
+    );
+});

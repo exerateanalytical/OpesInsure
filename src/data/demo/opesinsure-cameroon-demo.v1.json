@@ -1428,6 +1428,159 @@
       }
     ]
   },
+  "broker_mobile": {
+    "dashboard": {
+      "metrics": [
+        { "label": "Active clients", "value": "1,284" },
+        { "label": "Gross premium", "value": "48.2M FCFA" },
+        { "label": "Renewals due", "value": "37", "tone": "warning" },
+        {
+          "label": "Overdue receivables",
+          "value": "6.4M FCFA",
+          "tone": "danger"
+        }
+      ]
+    },
+    "clients": [
+      {
+        "id": "customer-003",
+        "full_name": "Sandrine Demo Fleet",
+        "phone_e164": "+237690000102",
+        "city": "Yaoundé",
+        "origin_locked": true,
+        "policies": 8,
+        "outstanding_minor": 640000000,
+        "renewal_due_at": "2026-10-15"
+      }
+    ],
+    "production": [
+      {
+        "id": "broker-production-001",
+        "policy_number": "OI-BRK-DEMO-0001",
+        "customer_name": "Sandrine Demo Fleet",
+        "carrier_name": "Demo Assurance Cameroun SA",
+        "premium_minor": 482000000,
+        "status": "ACTIVE",
+        "issued_at": "2026-09-10"
+      }
+    ],
+    "renewals": [
+      {
+        "id": "broker-renewal-001",
+        "customer_id": "customer-003",
+        "customer_name": "Sandrine Demo Fleet",
+        "policy_number": "OI-BRK-DEMO-0001",
+        "expires_at": "2026-10-15",
+        "days_remaining": 23,
+        "status": "ACTION_DUE"
+      }
+    ],
+    "receivables": [
+      {
+        "id": "receivable-001",
+        "customer_name": "Sandrine Demo Fleet",
+        "amount_minor": 640000000,
+        "currency": "XAF",
+        "status": "OVERDUE",
+        "due_at": "2026-09-15"
+      }
+    ],
+    "compliance": [
+      {
+        "id": "broker-compliance-001",
+        "label": "MINFI licence renewal evidence",
+        "status": "ACTION_REQUIRED",
+        "due_at": "2026-10-15",
+        "severity": "HIGH"
+      },
+      {
+        "id": "broker-compliance-002",
+        "label": "Monthly production register",
+        "status": "CURRENT",
+        "due_at": "2026-10-05",
+        "severity": "NORMAL"
+      }
+    ],
+    "publications": [
+      {
+        "id": "publication-001",
+        "product_name": "Motor Fleet Plus",
+        "status": "PENDING_APPROVAL",
+        "channel": "PUBLIC_MARKETPLACE",
+        "submitted_at": "2026-09-20"
+      },
+      {
+        "id": "publication-002",
+        "product_name": "SME Health Cover",
+        "status": "PUBLISHED",
+        "channel": "PUBLIC_MARKETPLACE",
+        "submitted_at": "2026-09-01"
+      }
+    ]
+  },
+  "carrier_mobile": {
+    "dashboard": {
+      "metrics": [
+        { "label": "Pending referrals", "value": "17", "tone": "warning" },
+        { "label": "Issuance waiting", "value": "6" },
+        { "label": "Claims evidence review", "value": "8", "tone": "warning" },
+        { "label": "Settlement due", "value": "70.21M FCFA" }
+      ]
+    },
+    "referrals": [
+      {
+        "id": "referral-001",
+        "quote_id": "quote-agent-001",
+        "customer_name": "Brice Demo Client",
+        "product": "Motor Comprehensive",
+        "reason": "Vehicle value above automatic authority",
+        "status": "PENDING_REVIEW",
+        "premium_minor": 12500000,
+        "submitted_at": "2026-09-22T09:20:00+01:00"
+      },
+      {
+        "id": "referral-002",
+        "quote_id": "quote-001",
+        "customer_name": "Mireille Demo",
+        "product": "Motor Third Party",
+        "reason": "Prior claim disclosure",
+        "status": "APPROVED",
+        "premium_minor": 7080000,
+        "submitted_at": "2026-09-20T10:00:00+01:00",
+        "decision_note": "Accepted within underwriting authority."
+      }
+    ],
+    "issuance": [
+      {
+        "id": "issuance-001",
+        "reference": "PROP-DEMO-PAID",
+        "subject": "Mireille Demo · Motor Third Party",
+        "status": "READY_TO_ISSUE",
+        "priority": "NORMAL",
+        "submitted_at": "2026-09-22T08:30:00+01:00"
+      }
+    ],
+    "claims": [
+      {
+        "id": "carrier-claim-task-001",
+        "reference": "CLM-DEMO-0001",
+        "subject": "Rear bumper collision evidence",
+        "status": "EVIDENCE_REVIEW",
+        "priority": "HIGH",
+        "submitted_at": "2026-09-18T19:00:00+01:00"
+      }
+    ],
+    "settlements": [
+      {
+        "id": "carrier-settlement-001",
+        "period": "2026-W38",
+        "gross_premium_minor": 8260000000,
+        "net_payable_minor": 7021000000,
+        "currency": "XAF",
+        "status": "AWAITING_RECONCILIATION"
+      }
+    ]
+  },
   "risk_and_compliance": {
     "fraud_alerts": [
       {
