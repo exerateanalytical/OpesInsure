@@ -23,7 +23,12 @@ export default function WalletPolicyScreen() {
       <Card>
         <Text>Documents</Text>
         {p?.documents?.map((d) => (
-          <Text key={d.id}>• {d.label}</Text>
+          <Button
+            key={d.id}
+            label={d.label}
+            variant="secondary"
+            onPress={() => router.push(`/documents/${d.id}`)}
+          />
         ))}
       </Card>
       {p?.delivery ? (

@@ -1026,6 +1026,149 @@
       ]
     }
   ],
+  "quote_history": [
+    {
+      "id": "quote-001",
+      "party_id": "customer-001",
+      "line_code": "MOTOR",
+      "status": "RATED",
+      "currency": "XAF",
+      "risk_facts": { "registration_number": "LT 245 AB" },
+      "expires_at": "2026-09-29T10:00:00+01:00",
+      "version": 1,
+      "product_name": "Motor insurance",
+      "vehicle_label": "Toyota Corolla · LT 245 AB",
+      "lowest_total_minor": 7080000,
+      "offer_count": 3,
+      "can_resume": true
+    },
+    {
+      "id": "quote-expired",
+      "party_id": "customer-001",
+      "line_code": "TRAVEL",
+      "status": "EXPIRED",
+      "currency": "XAF",
+      "risk_facts": { "destination": "France" },
+      "expires_at": "2026-08-20T10:00:00+01:00",
+      "version": 1,
+      "product_name": "Travel insurance",
+      "vehicle_label": "France · 14 days",
+      "lowest_total_minor": 2250000,
+      "offer_count": 2,
+      "can_resume": false
+    }
+  ],
+  "secure_documents": [
+    {
+      "id": "document-policy-certificate",
+      "owner_type": "POLICY",
+      "owner_id": "policy-active",
+      "label": "Insurance certificate",
+      "mime_type": "application/pdf",
+      "status": "AVAILABLE",
+      "issued_at": "2026-09-20T10:20:00+01:00",
+      "expires_at": "2027-09-19T23:59:59+01:00",
+      "signed_url": null,
+      "share_reference": "OI-DEMO-CM-0001"
+    },
+    {
+      "id": "document-policy-schedule",
+      "owner_type": "POLICY",
+      "owner_id": "policy-active",
+      "label": "Policy schedule",
+      "mime_type": "application/pdf",
+      "status": "AVAILABLE",
+      "issued_at": "2026-09-20T10:20:00+01:00",
+      "expires_at": null,
+      "signed_url": null,
+      "share_reference": "OI-DOC-DEMO-2"
+    }
+  ],
+  "policy_service_cases": [
+    {
+      "id": "service-case-001",
+      "policy_id": "policy-active",
+      "type": "ADDRESS_CHANGE",
+      "reason": "Update correspondence and sticker delivery address",
+      "status": "IN_REVIEW",
+      "created_at": "2026-09-21T09:00:00+01:00",
+      "updated_at": "2026-09-22T08:30:00+01:00",
+      "requested_documents": [],
+      "timeline": [
+        {
+          "id": "service-event-1",
+          "label": "Request submitted",
+          "occurred_at": "2026-09-21T09:00:00+01:00"
+        },
+        {
+          "id": "service-event-2",
+          "label": "Assigned for review",
+          "occurred_at": "2026-09-22T08:30:00+01:00",
+          "description": "A policy service officer is reviewing the request."
+        }
+      ]
+    }
+  ],
+  "customer_notifications": [
+    {
+      "id": "customer-notification-001",
+      "type": "POLICY_ISSUED",
+      "title": "Your policy is ready",
+      "body": "Policy OI-DEMO-CM-0001 and its certificate are available in your policy wallet.",
+      "read": false,
+      "created_at": "2026-09-20T10:20:00+01:00",
+      "path": "/wallet/policy/policy-active",
+      "severity": "SUCCESS"
+    },
+    {
+      "id": "customer-notification-002",
+      "type": "DELIVERY_UPDATE",
+      "title": "Sticker out for delivery",
+      "body": "Your physical insurance sticker is expected today before 13:00.",
+      "read": false,
+      "created_at": "2026-09-22T10:00:00+01:00",
+      "path": "/delivery/delivery-001",
+      "severity": "INFO"
+    },
+    {
+      "id": "customer-notification-003",
+      "type": "CLAIM_ACTION",
+      "title": "Evidence requested",
+      "body": "Please upload the requested repair estimate to keep your claim moving.",
+      "read": true,
+      "created_at": "2026-09-21T15:00:00+01:00",
+      "path": "/(customer)/(tabs)/claims",
+      "severity": "WARNING"
+    }
+  ],
+  "support_cases": [
+    {
+      "id": "support-case-001",
+      "reference": "OI-SUP-0001",
+      "category": "POLICY_DOCUMENT",
+      "subject": "Certificate name correction",
+      "description": "The middle name on my certificate requires review.",
+      "status": "WAITING_FOR_CUSTOMER",
+      "priority": "NORMAL",
+      "created_at": "2026-09-21T11:00:00+01:00",
+      "updated_at": "2026-09-22T08:00:00+01:00",
+      "messages": [
+        {
+          "id": "support-message-1",
+          "sender": "CUSTOMER",
+          "body": "Please verify the middle name against my identity document.",
+          "created_at": "2026-09-21T11:00:00+01:00"
+        },
+        {
+          "id": "support-message-2",
+          "sender": "SUPPORT",
+          "body": "Please attach the front of your current identity document. Do not send your PIN or mobile-money code.",
+          "created_at": "2026-09-22T08:00:00+01:00"
+        }
+      ],
+      "attachments": []
+    }
+  ],
   "risk_and_compliance": {
     "fraud_alerts": [
       {

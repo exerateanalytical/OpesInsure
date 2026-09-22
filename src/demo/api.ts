@@ -75,6 +75,8 @@ export async function demoApi<T>(
       state.sticker_deliveries?.find((d: any) => d.policy_id === policy.id) ??
       null,
   });
+  const supportCase = (id: string) =>
+    state.support_cases.find((x: any) => x.id === id);
   if (path === "/auth/mobile/otp/request")
     return {
       challenge_id: `demo-${body.phone_e164}`,
@@ -120,6 +122,145 @@ export async function demoApi<T>(
       result: "NOT_FOUND",
       verified_at: state.meta.demo_clock,
     }) as T;
+  if (path === "/mobile/quotes") return state.quote_history as T;
+  if (/^\/mobile\/quotes\/[^/]+$/.test(path) && method === "GET") {
+    const id = path.split("/")[3];
+    return {
+      summary: state.quote_history.find((q: any) => q.id === id),
+      quote: state.quotes.find((q: any) => q.id === id) ?? state.quotes[0],
+      offers: state.offers.filter(
+        (o: any) => o.quote_id === id || id === "quote-001",
+      ),
+    } as T;
+  }
+  if (path.endsWith("/resume"))
+    return { quote_id: path.split("/")[3], next_path: "/quote/offers" } as T;
+  if (/^\/mobile\/quotes\/[^/]+$/.test(path) && method === "DELETE") {
+    state.quote_history = state.quote_history.filter(
+      (q: any) => q.id !== path.split("/")[3],
+    );
+    return undefined as T;
+  }
+  if (path.startsWith("/mobile/documents")) {
+    const clean = path.split("?")[0] ?? path;
+    const parts = clean.split("/");
+    if (parts.length === 3) return state.secure_documents as T;
+    const doc =
+      state.secure_documents.find((d: any) => d.id === parts[3]) ??
+      (() => {
+        const p = state.policy_documents.find((d: any) => d.id === parts[3]);
+        return p
+          ? {
+              ...p,
+              owner_type: "POLICY",
+              owner_id: p.policy_id,
+              mime_type: "application/pdf",
+              status: "AVAILABLE",
+              issued_at: state.meta.demo_clock,
+              share_reference: p.id,
+            }
+          : undefined;
+      })();
+    if (clean.endsWith("/access"))
+      return {
+        ...doc,
+        signed_url: "https://example.invalid/secure/demo-document.pdf",
+      } as T;
+    return doc as T;
+  }
+  if (path.startsWith("/mobile/policy-service-requests")) {
+    const clean = path.split("?")[0] ?? path;
+    const parts = clean.split("/");
+    if (parts.length === 3 && method === "GET")
+      return state.policy_service_cases as T;
+    if (parts.length === 3 && method === "POST") {
+      const item = {
+        id: `service-${Date.now()}`,
+        status: "SUBMITTED",
+        created_at: state.meta.demo_clock,
+        updated_at: state.meta.demo_clock,
+        timeline: [
+          {
+            id: "event-created",
+            label: "Request submitted",
+            occurred_at: state.meta.demo_clock,
+          },
+        ],
+        ...body,
+      };
+      state.policy_service_cases.unshift(item);
+      return item as T;
+    }
+    const item = state.policy_service_cases.find((x: any) => x.id === parts[3]);
+    if (clean.endsWith("/messages")) {
+      item.timeline.push({
+        id: `event-${Date.now()}`,
+        label: "Customer message",
+        description: body.message,
+        occurred_at: state.meta.demo_clock,
+      });
+      return item as T;
+    }
+    return item as T;
+  }
+  if (path === "/mobile/notifications")
+    return state.customer_notifications as T;
+  if (path === "/mobile/notifications/read-all") {
+    state.customer_notifications.forEach((n: any) => (n.read = true));
+    return { updated: state.customer_notifications.length } as T;
+  }
+  if (path.endsWith("/read") && path.startsWith("/mobile/notifications/")) {
+    const n = state.customer_notifications.find(
+      (x: any) => x.id === path.split("/")[3],
+    );
+    n.read = true;
+    return n as T;
+  }
+  if (/^\/mobile\/notifications\/[^/]+$/.test(path))
+    return state.customer_notifications.find(
+      (x: any) => x.id === path.split("/")[3],
+    ) as T;
+  if (path === "/mobile/support/cases" && method === "GET")
+    return state.support_cases as T;
+  if (path === "/mobile/support/cases" && method === "POST") {
+    const item = {
+      id: `support-${Date.now()}`,
+      reference: `OI-SUP-${state.support_cases.length + 1}`,
+      status: "OPEN",
+      priority: "NORMAL",
+      created_at: state.meta.demo_clock,
+      updated_at: state.meta.demo_clock,
+      messages: [],
+      attachments: [],
+      ...body,
+    };
+    state.support_cases.unshift(item);
+    return item as T;
+  }
+  if (/^\/mobile\/support\/cases\/[^/]+$/.test(path))
+    return supportCase(path.split("/")[4] ?? "") as T;
+  if (path.endsWith("/messages") && path.startsWith("/mobile/support/cases/")) {
+    const item = supportCase(path.split("/")[4] ?? "");
+    item.messages.push({
+      id: `message-${Date.now()}`,
+      sender: "CUSTOMER",
+      body: body.body,
+      created_at: state.meta.demo_clock,
+    });
+    return item as T;
+  }
+  if (
+    path.endsWith("/attachments") &&
+    path.startsWith("/mobile/support/cases/")
+  ) {
+    const item = supportCase(path.split("/")[4] ?? "");
+    item.attachments.push({
+      id: `attachment-${Date.now()}`,
+      file_name: "customer-attachment.pdf",
+      status: "RECEIVED",
+    });
+    return item as T;
+  }
   if (path === "/mobile/kyc/profile") {
     if (method === "PATCH")
       state.kyc_profiles[0] = { ...state.kyc_profiles[0], ...body };

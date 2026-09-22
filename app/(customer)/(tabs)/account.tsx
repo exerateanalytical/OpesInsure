@@ -7,9 +7,12 @@ import {
   CarFront,
   ChevronRight,
   CreditCard,
+  Clock3,
+  FileCog,
   Languages,
   LockKeyhole,
   LogOut,
+  LifeBuoy,
   ShieldCheck,
   UserRound,
   WalletCards,
@@ -18,10 +21,14 @@ import { AppHeader, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
 const links = [
+  ["Saved quotes", Clock3, "/quotes"],
   ["Identity verification", ShieldCheck, "/onboarding/kyc"],
   ["My vehicles & assets", CarFront, "/assets"],
   ["Policy wallet", WalletCards, "/wallet"],
   ["Payments & receipts", CreditCard, "/payments"],
+  ["Policy service requests", FileCog, "/services"],
+  ["Notification centre", Bell, "/notifications"],
+  ["Help & complaints", LifeBuoy, "/support"],
   ["Personal information", UserRound, "/account/profile"],
   ["Security and devices", LockKeyhole, "/account/security"],
   ["Notifications", Bell, "/account/notifications"],

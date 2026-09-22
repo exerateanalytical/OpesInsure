@@ -152,3 +152,46 @@ test("customer core demo fixtures cover all five flows", () => {
   ])
     assert.ok(demo[key], `missing ${key}`);
 });
+test("patch two customer lifecycle routes are protected and API backed", () => {
+  const layout = read("app/_layout.tsx");
+  const client = read("src/api/client.ts");
+  for (const route of [
+    "quotes/index",
+    "documents/[id]",
+    "services/index",
+    "notifications/index",
+    "support/index",
+  ])
+    assert.match(layout, new RegExp(route.replace(/[\[\]]/g, "\\$&")));
+  for (const api of [
+    "QuotesApi",
+    "DocumentsApi",
+    "PolicyServicesApi",
+    "NotificationsApi",
+    "SupportApi",
+  ])
+    assert.match(client, new RegExp(`export const ${api}`));
+});
+test("secure document access and customer service mutations remain server mediated", () => {
+  const client = read("src/api/client.ts");
+  assert.match(client, /documents\/\$\{id\}\/access/);
+  assert.match(client, /policy-service-requests/);
+  assert.match(client, /support\/cases/);
+  assert.match(client, /idempotent:\s*true/);
+});
+test("patch two demo fixtures cover lifecycle states", () => {
+  const demo = JSON.parse(
+    read("src/data/demo/opesinsure-cameroon-demo.v1.json"),
+  );
+  for (const key of [
+    "quote_history",
+    "secure_documents",
+    "policy_service_cases",
+    "customer_notifications",
+    "support_cases",
+  ])
+    assert.ok(
+      Array.isArray(demo[key]) && demo[key].length > 0,
+      `missing ${key}`,
+    );
+});

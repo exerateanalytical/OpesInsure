@@ -86,6 +86,17 @@ export default function RootLayout() {
           <Stack.Screen name="delivery/[id]" />
           <Stack.Screen name="delivery/[id]/address" />
           <Stack.Screen name="delivery/[id]/confirm" />
+          <Stack.Screen name="quotes/index" />
+          <Stack.Screen name="quotes/[id]" />
+          <Stack.Screen name="documents/[id]" />
+          <Stack.Screen name="services/index" />
+          <Stack.Screen name="services/new" />
+          <Stack.Screen name="services/[id]" />
+          <Stack.Screen name="notifications/index" />
+          <Stack.Screen name="notifications/[id]" />
+          <Stack.Screen name="support/index" />
+          <Stack.Screen name="support/new" />
+          <Stack.Screen name="support/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

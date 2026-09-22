@@ -766,3 +766,155 @@ export const WalletApi = {
       idempotent: true,
     }),
 };
+
+export type CustomerQuoteSummary = Quote & {
+  product_name?: string;
+  vehicle_label?: string;
+  lowest_total_minor?: number;
+  offer_count: number;
+  can_resume: boolean;
+};
+export type SecureDocument = {
+  id: string;
+  owner_type: "POLICY" | "PAYMENT" | "CLAIM" | "SERVICE_REQUEST";
+  owner_id: string;
+  label: string;
+  mime_type: string;
+  status: string;
+  issued_at: string;
+  expires_at?: string | null;
+  signed_url?: string | null;
+  share_reference: string;
+};
+export type PolicyServiceCase = {
+  id: string;
+  policy_id: string;
+  type: string;
+  reason: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  timeline: {
+    id: string;
+    label: string;
+    occurred_at: string;
+    description?: string;
+  }[];
+  requested_documents?: string[];
+};
+export type CustomerNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+  path?: string | null;
+  severity: "INFO" | "SUCCESS" | "WARNING" | "CRITICAL";
+};
+export type SupportCase = {
+  id: string;
+  reference: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+  messages: {
+    id: string;
+    sender: "CUSTOMER" | "SUPPORT";
+    body: string;
+    created_at: string;
+  }[];
+  attachments?: { id: string; file_name: string; status: string }[];
+};
+export const QuotesApi = {
+  history: () => api<CustomerQuoteSummary[]>("/mobile/quotes"),
+  show: (id: string) =>
+    api<QuoteResult & { summary: CustomerQuoteSummary }>(
+      `/mobile/quotes/${id}`,
+    ),
+  resume: (id: string) =>
+    api<{ quote_id: string; next_path: string }>(
+      `/mobile/quotes/${id}/resume`,
+      { method: "POST", idempotent: true },
+    ),
+  discard: (id: string) =>
+    api<void>(`/mobile/quotes/${id}`, { method: "DELETE", idempotent: true }),
+};
+export const DocumentsApi = {
+  list: (ownerType?: string, ownerId?: string) =>
+    api<SecureDocument[]>(
+      `/mobile/documents${ownerType && ownerId ? `?owner_type=${encodeURIComponent(ownerType)}&owner_id=${encodeURIComponent(ownerId)}` : ""}`,
+    ),
+  show: (id: string) => api<SecureDocument>(`/mobile/documents/${id}`),
+  access: (id: string) =>
+    api<SecureDocument>(`/mobile/documents/${id}/access`, {
+      method: "POST",
+      idempotent: true,
+    }),
+};
+export const PolicyServicesApi = {
+  list: (policyId?: string) =>
+    api<PolicyServiceCase[]>(
+      `/mobile/policy-service-requests${policyId ? `?policy_id=${encodeURIComponent(policyId)}` : ""}`,
+    ),
+  show: (id: string) =>
+    api<PolicyServiceCase>(`/mobile/policy-service-requests/${id}`),
+  create: (payload: { policy_id: string; type: string; reason: string }) =>
+    api<PolicyServiceCase>("/mobile/policy-service-requests", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  addMessage: (id: string, message: string) =>
+    api<PolicyServiceCase>(`/mobile/policy-service-requests/${id}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+      idempotent: true,
+    }),
+};
+export const NotificationsApi = {
+  list: () => api<CustomerNotification[]>("/mobile/notifications"),
+  show: (id: string) =>
+    api<CustomerNotification>(`/mobile/notifications/${id}`),
+  markRead: (id: string) =>
+    api<CustomerNotification>(`/mobile/notifications/${id}/read`, {
+      method: "POST",
+      idempotent: true,
+    }),
+  markAllRead: () =>
+    api<{ updated: number }>("/mobile/notifications/read-all", {
+      method: "POST",
+      idempotent: true,
+    }),
+};
+export const SupportApi = {
+  list: () => api<SupportCase[]>("/mobile/support/cases"),
+  show: (id: string) => api<SupportCase>(`/mobile/support/cases/${id}`),
+  create: (payload: {
+    category: string;
+    subject: string;
+    description: string;
+  }) =>
+    api<SupportCase>("/mobile/support/cases", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  reply: (id: string, body: string) =>
+    api<SupportCase>(`/mobile/support/cases/${id}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+      idempotent: true,
+    }),
+  upload: (id: string, form: FormData) =>
+    api<SupportCase>(`/mobile/support/cases/${id}/attachments`, {
+      method: "POST",
+      body: form,
+      timeoutMs: 45000,
+      idempotent: true,
+    }),
+};
