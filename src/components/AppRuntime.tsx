@@ -13,6 +13,7 @@ import { onSessionExpired } from "@/api/client";
 import { useRuntime } from "@/store/runtime";
 import { RuntimeGateView } from "@/components/RuntimeGate";
 import { IssueReportButton } from "@/components/IssueReportButton";
+import { UpdateNotice } from "@/components/UpdateNotice";
 const biometricKey = "opesinsure.biometric_enabled";
 const safePaths = [
   "/(customer)/(tabs)/policies",
@@ -108,6 +109,7 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     );
   return (
     <View style={styles.flex}>
+      <UpdateNotice />
       {!online ? (
         <Pressable
           accessibilityRole="button"
