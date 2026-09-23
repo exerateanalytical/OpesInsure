@@ -9,7 +9,7 @@ module.exports = () => {
     runtimeVersion: { policy: "appVersion" },
     ios: {
       ...base.expo.ios,
-      associatedDomains: ["applinks:opesinsure.com", "applinks:www.opesinsure.com"],
+      associatedDomains: ["applinks:insurance.opesdatacenter.tech"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: true,
         NSFaceIDUsageDescription: "Use Face ID to protect insurance and financial information.",
@@ -22,8 +22,7 @@ module.exports = () => {
           action: "VIEW",
           autoVerify: true,
           data: [
-            { scheme: "https", host: "opesinsure.com", pathPrefix: "/app" },
-            { scheme: "https", host: "www.opesinsure.com", pathPrefix: "/app" },
+            { scheme: "https", host: "insurance.opesdatacenter.tech", pathPrefix: "/app" },
           ],
           category: ["BROWSABLE", "DEFAULT"],
         },

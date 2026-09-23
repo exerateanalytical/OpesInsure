@@ -11,8 +11,7 @@
             "supportsTablet": true,
             "bundleIdentifier": "com.opesware.opesinsure",
             "associatedDomains": [
-                "applinks:opesinsure.com",
-                "applinks:www.opesinsure.com"
+                "applinks:insurance.opesdatacenter.tech"
             ],
             "infoPlist": {
                 "ITSAppUsesNonExemptEncryption": true,
@@ -33,12 +32,7 @@
                     "data": [
                         {
                             "scheme": "https",
-                            "host": "opesinsure.com",
-                            "pathPrefix": "/app"
-                        },
-                        {
-                            "scheme": "https",
-                            "host": "www.opesinsure.com",
+                            "host": "insurance.opesdatacenter.tech",
                             "pathPrefix": "/app"
                         }
                     ],
