@@ -75,29 +75,102 @@ it('lets a customer request a refund on their own successful payment without the
 
     Passport::actingAs($fixture['user']); // no permissions granted at all
 
+    $stepUp = issueMobileStepUpGrant($fixture['user'], $fixture['tenant'], 'PAYMENT_REFUND_REQUEST');
+
     $response = $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", [
         'amount_minor' => 50000,
         'reason_code' => 'CUSTOMER_REQUEST',
         'idempotency_key' => (string) Str::uuid(),
-    ], tenantHeaderFor($fixture['tenant']));
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']));
 
     $response->assertStatus(201);
     expect($response->json('data.status'))->toBe('REQUESTED');
     expect(DB::table('refunds')->where('payment_intent_id', $payment->id)->count())->toBe(1);
 });
 
-it('refuses a refund request for a payment belonging to another customer', function () {
+it('refuses a refund request for a payment belonging to another customer, even with a valid step-up grant', function () {
     $fixture = makeMobileCustomerFixture();
     $otherFixture = makeMobileCustomerFixture('+237670000097');
     $theirs = makeMobileTestPayment($otherFixture['proposal'], $fixture['tenant']);
 
     Passport::actingAs($fixture['user']);
 
+    $stepUp = issueMobileStepUpGrant($fixture['user'], $fixture['tenant'], 'PAYMENT_REFUND_REQUEST');
+
     $this->postJson("/api/v1/mobile/payments/{$theirs->id}/refunds", [
         'amount_minor' => 10000,
         'reason_code' => 'CUSTOMER_REQUEST',
         'idempotency_key' => (string) Str::uuid(),
-    ], tenantHeaderFor($fixture['tenant']))->assertStatus(403);
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']))->assertStatus(403);
+});
+
+it('rejects a refund request with no step-up grant at all', function () {
+    $fixture = makeMobileCustomerFixture();
+    $payment = makeMobileTestPayment($fixture['proposal'], $fixture['tenant']);
+
+    Passport::actingAs($fixture['user']);
+
+    $response = $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", [
+        'amount_minor' => 50000,
+        'reason_code' => 'CUSTOMER_REQUEST',
+        'idempotency_key' => (string) Str::uuid(),
+    ], tenantHeaderFor($fixture['tenant']));
+
+    $response->assertStatus(401);
+    expect($response->json('code'))->toBe('STEP_UP_REQUIRED');
+    expect(DB::table('refunds')->where('payment_intent_id', $payment->id)->count())->toBe(0);
+});
+
+it('rejects a refund request whose step-up grant was issued for a different purpose', function () {
+    $fixture = makeMobileCustomerFixture();
+    $payment = makeMobileTestPayment($fixture['proposal'], $fixture['tenant']);
+
+    Passport::actingAs($fixture['user']);
+
+    $stepUp = issueMobileStepUpGrant($fixture['user'], $fixture['tenant'], 'COMMISSION_WITHDRAWAL');
+
+    $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", [
+        'amount_minor' => 50000,
+        'reason_code' => 'CUSTOMER_REQUEST',
+        'idempotency_key' => (string) Str::uuid(),
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']))->assertStatus(401);
+});
+
+it('rejects a refund request whose step-up grant has already expired', function () {
+    $fixture = makeMobileCustomerFixture();
+    $payment = makeMobileTestPayment($fixture['proposal'], $fixture['tenant']);
+
+    Passport::actingAs($fixture['user']);
+
+    $stepUp = issueMobileStepUpGrant($fixture['user'], $fixture['tenant'], 'PAYMENT_REFUND_REQUEST', ['expires_at' => now()->subMinute()]);
+
+    $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", [
+        'amount_minor' => 50000,
+        'reason_code' => 'CUSTOMER_REQUEST',
+        'idempotency_key' => (string) Str::uuid(),
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']))->assertStatus(401);
+});
+
+it('rejects a replayed refund step-up grant on a second use', function () {
+    $fixture = makeMobileCustomerFixture();
+    $first = makeMobileTestPayment($fixture['proposal'], $fixture['tenant']);
+    $second = makeMobileTestPayment($fixture['proposal'], $fixture['tenant']);
+
+    Passport::actingAs($fixture['user']);
+
+    $stepUp = issueMobileStepUpGrant($fixture['user'], $fixture['tenant'], 'PAYMENT_REFUND_REQUEST');
+
+    $this->postJson("/api/v1/mobile/payments/{$first->id}/refunds", [
+        'amount_minor' => 10000,
+        'reason_code' => 'CUSTOMER_REQUEST',
+        'idempotency_key' => (string) Str::uuid(),
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']))->assertStatus(201);
+
+    $this->postJson("/api/v1/mobile/payments/{$second->id}/refunds", [
+        'amount_minor' => 10000,
+        'reason_code' => 'CUSTOMER_REQUEST',
+        'idempotency_key' => (string) Str::uuid(),
+    ], tenantHeaderFor($fixture['tenant']) + stepUpHeaderFor($stepUp['token']))->assertStatus(401);
 });
 
 it('rejects an unauthenticated request to list payments', function () {

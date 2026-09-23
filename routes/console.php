@@ -8,3 +8,4 @@ Schedule::command('policies:notify-expiry')->dailyAt('08:00')->timezone('Africa/
 Schedule::command('integration:dispatch-outbox')->everyMinute()->withoutOverlapping()->onOneServer();
 Schedule::command('payments:poll-pending')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('notifications:dispatch-pending')->everyMinute()->withoutOverlapping()->onOneServer();
+Schedule::command('telemetry:prune')->dailyAt('03:00')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();

@@ -30,4 +30,11 @@ return [
     'upload_incomplete' => 'Not every part of this upload has arrived yet.',
     'upload_size_mismatch' => 'The assembled file does not match the declared size. Please upload it again.',
     'upload_checksum_mismatch' => 'The assembled file does not match the expected checksum. Please upload it again.',
+    'step_up_required' => 'Verify this action before continuing.',
+    'step_up_code_invalid' => 'That code is invalid or has expired. Request a new one.',
+    'step_up_purpose_invalid' => 'This action does not support step-up verification.',
+    'step_up_rate_limited' => 'Too many attempts. Try again later.',
+    'telemetry_attribute_not_allowed' => 'The attribute ":key" is not accepted.',
+    'telemetry_attribute_not_scalar' => 'The attribute ":key" must be a simple value.',
+    'app_version_unsupported' => 'Update the app to continue.',
 ];

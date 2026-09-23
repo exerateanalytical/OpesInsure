@@ -30,4 +30,11 @@ return [
     'upload_incomplete' => 'Toutes les parties de ce téléversement ne sont pas encore arrivées.',
     'upload_size_mismatch' => 'Le fichier assemblé ne correspond pas à la taille déclarée. Veuillez le téléverser à nouveau.',
     'upload_checksum_mismatch' => 'Le fichier assemblé ne correspond pas à la somme de contrôle attendue. Veuillez le téléverser à nouveau.',
+    'step_up_required' => 'Vérifiez cette action avant de continuer.',
+    'step_up_code_invalid' => 'Ce code est invalide ou a expiré. Demandez-en un nouveau.',
+    'step_up_purpose_invalid' => 'Cette action ne prend pas en charge la vérification renforcée.',
+    'step_up_rate_limited' => 'Trop de tentatives. Réessayez plus tard.',
+    'telemetry_attribute_not_allowed' => 'L\'attribut ":key" n\'est pas accepté.',
+    'telemetry_attribute_not_scalar' => 'L\'attribut ":key" doit être une valeur simple.',
+    'app_version_unsupported' => 'Mettez à jour l\'application pour continuer.',
 ];
