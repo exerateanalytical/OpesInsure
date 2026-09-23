@@ -348,14 +348,20 @@ export type SessionBootstrap = {
   };
   workspaces: Workspace[];
 };
+/**
+ * What POST /auth/mobile/otp/verify actually returns: token fields sitting
+ * directly alongside user/workspaces, not nested under a bootstrap key. This
+ * type previously declared bootstrap: SessionBootstrap plus
+ * refresh_expires_in/session_id fields the backend has never sent — nobody
+ * had run the compiled app against the real API to notice. Every login
+ * crashed on "Cannot read properties of undefined (reading 'workspaces')"
+ * because verify.tsx read the nonexistent auth.bootstrap.
+ */
 export type AuthTokens = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
-  refresh_expires_in: number;
-  session_id: string;
-  bootstrap: SessionBootstrap;
-};
+} & SessionBootstrap;
 export type DemoAccount = {
   label: string;
   full_name: string;
