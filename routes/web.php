@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 Route::get('/', fn () => view('public.home'))->name('home');
 
@@ -26,10 +25,9 @@ Route::get('/download/android', function () {
 
     abort_unless(is_file($path), 404);
 
+    // download() already emits an attachment Content-Disposition with this
+    // filename; the header override just corrects the MIME type.
     return response()->download($path, 'OpesInsure-'.config('mobile_app.version').'.apk', [
         'Content-Type' => 'application/vnd.android.package-archive',
-    ])->setAutoLastModified()->setContentDisposition(
-        BinaryFileResponse::DISPOSITION_ATTACHMENT,
-        'OpesInsure-'.config('mobile_app.version').'.apk'
-    );
+    ]);
 })->name('download.android');
