@@ -71,6 +71,22 @@ Route::prefix('v1')->group(function (): void {
     Route::post('webhooks/payments/mtn-momo/callback', MtnMomoCallbackController::class)->middleware('throttle:120,1')->name('payments.mtn_momo.callback');
     Route::match(['get', 'post'], 'webhooks/payments/orange-money/callback', OrangeMoneyCallbackController::class)->middleware('throttle:120,1')->name('payments.orange_money.callback');
     Route::post('webhooks/notifications/twilio/callback', TwilioDeliveryReceiptController::class)->middleware('throttle:120,1')->name('notifications.twilio.callback');
+    // Demo credential directory for the mobile sign-in screen. The route only
+    // exists while demo mode is on, so a real deployment simply 404s here and
+    // the app hides its demo affordance rather than showing dead accounts.
+    if (config('demo.enabled')) {
+        Route::get('public/demo-accounts', function () {
+            return response()->json(['data' => [
+                'otp' => (string) config('demo.otp'),
+                'accounts' => array_map(static fn (array $a) => [
+                    'label' => $a['label'],
+                    'full_name' => $a['name'],
+                    'phone_e164' => $a['phone'],
+                    'role_code' => $a['role_code'],
+                ], \Database\Seeders\DemoMobileAccountSeeder::ACCOUNTS),
+            ]]);
+        })->middleware('throttle:30,1');
+    }
     Route::post('public/certificates/verify', [CertificateController::class, 'verify'])->middleware('throttle:30,1');
     // The signed-URL target MobileDocumentService's LocalSignedUrlAdapter
     // points to. Outside auth:api/tenant/json.api on purpose: a valid,
