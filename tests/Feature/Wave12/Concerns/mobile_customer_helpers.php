@@ -2,17 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Models\Bordereau;
 use App\Models\Carrier;
+use App\Models\CommissionAccrual;
 use App\Models\Document;
 use App\Models\FulfilmentOrder;
 use App\Models\InsuranceProduct;
 use App\Models\PaymentIntentRecord;
+use App\Models\Partner;
+use App\Models\PartnerStatement;
 use App\Models\Party;
 use App\Models\PartyContact;
 use App\Models\Policy;
 use App\Models\Proposal;
 use App\Models\Quote;
 use App\Models\QuoteOffer;
+use App\Models\SettlementBatch;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
@@ -158,6 +163,137 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'scan_status' => 'CLEAN',
             'verification_status' => 'VERIFIED',
             'ocr_data' => [],
+        ], $overrides));
+    }
+
+    /**
+     * A broker/agent/carrier mobile persona: a Tenant, an ORGANIZATION
+     * Party, a Partner row for that party (so PartyResolver::partnerForUser
+     * resolves it — see PartyResolverTest), and a User whose own party_id
+     * IS that same party, with an ACTIVE membership in the tenant.
+     *
+     * @return array{tenant: Tenant, user: User, party: Party, partner: Partner}
+     */
+    function makeMobilePartnerFixture(string $type = 'BROKER', string $phone = '+237670000200'): array
+    {
+        $tenant = Tenant::create([
+            'type' => $type, 'legal_name' => 'Mobile '.$type.' Test Org '.Str::random(6),
+            'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en',
+        ]);
+        $party = Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Mobile '.$type.' Test Party', 'status' => 'ACTIVE']);
+        PartyContact::create(['party_id' => $party->id, 'type' => 'PHONE', 'normalized_value' => $phone, 'is_primary' => true]);
+        $partner = Partner::create(['tenant_id' => $tenant->id, 'party_id' => $party->id, 'type' => $type, 'status' => 'ACTIVE', 'compliance' => []]);
+        $user = User::create(['full_name' => 'Mobile '.$type.' Test User', 'phone_e164' => $phone, 'party_id' => $party->id, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $type === 'CARRIER' ? 'CARRIER_STAFF' : 'BROKER_STAFF', 'status' => 'ACTIVE']);
+
+        return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner];
+    }
+
+    /** A tenant staff member with no personal Partner link — e.g. a carrier finance/ops user. */
+    function makeMobileTenantStaffUser(Tenant $tenant, string $phone, string $roleCode = 'FINANCE_STAFF'): User
+    {
+        $user = User::create(['full_name' => 'Mobile Tenant Staff', 'phone_e164' => $phone, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
+        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $roleCode, 'status' => 'ACTIVE']);
+
+        return $user;
+    }
+
+    /**
+     * The quote/offer/proposal chain makeMobileTestPolicy() needs, scoped to
+     * a *given* tenant — unlike makeMobileCustomerFixture(), which always
+     * creates its own fresh tenant. Broker/carrier finance fixtures need a
+     * real Policy row owned by the specific tenant under test (commission
+     * accruals have a mandatory policy_id FK).
+     *
+     * @return array{proposal: Proposal, carrier: Carrier, party: Party}
+     */
+    function makeMobileFinanceProposalChain(Tenant $tenant): array
+    {
+        $party = Party::create(['type' => 'INDIVIDUAL', 'display_name' => 'Mobile Finance Test Customer', 'status' => 'ACTIVE']);
+        $carrierParty = Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Mobile Finance Test Carrier Org '.Str::random(6), 'status' => 'ACTIVE']);
+        $carrier = Carrier::create(['party_id' => $carrierParty->id, 'cima_code' => 'CIMA-'.Str::random(6), 'status' => 'ACTIVE']);
+        $product = InsuranceProduct::create(['carrier_id' => $carrier->id, 'line_code' => 'AUTO', 'code' => 'AUTO-'.Str::random(6), 'name' => 'Test Plan', 'version' => 1, 'effective_from' => now()->toDateString(), 'status' => 'ACTIVE']);
+        $tariff = TariffVersion::create(['insurance_product_id' => $product->id, 'version' => 1, 'effective_from' => now()->toDateString(), 'status' => 'APPROVED', 'input_schema' => [], 'rules' => [], 'rules_hash' => Str::random(64)]);
+        $quote = Quote::create(['tenant_id' => $tenant->id, 'party_id' => $party->id, 'line_code' => 'AUTO', 'status' => 'RATED', 'currency' => 'XAF', 'risk_facts' => []]);
+        $offer = QuoteOffer::create(['quote_id' => $quote->id, 'carrier_id' => $carrier->id, 'product_id' => $product->id, 'tariff_version_id' => $tariff->id, 'premium_minor' => 100000, 'total_minor' => 100000, 'currency' => 'XAF', 'status' => 'OFFERED', 'calculation_breakdown' => [], 'valid_until' => now()->addDays(7)]);
+        $proposal = Proposal::create(['tenant_id' => $tenant->id, 'quote_offer_id' => $offer->id, 'party_id' => $party->id, 'status' => 'APPROVED']);
+
+        return ['proposal' => $proposal, 'carrier' => $carrier, 'party' => $party];
+    }
+
+    function makeMobileTestCommissionAccrual(Tenant $tenant, Partner $partner, Policy $policy, array $overrides = []): CommissionAccrual
+    {
+        return CommissionAccrual::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'policy_id' => $policy->id,
+            'partner_id' => $partner->id,
+            'rule_version' => '1',
+            'amount_minor' => 10000,
+            'currency' => 'XAF',
+            'status' => 'PENDING',
+            'vested_minor' => 0,
+            'paid_minor' => 0,
+            'clawed_back_minor' => 0,
+            'vests_at' => now()->addDays(7),
+            'idempotency_key' => (string) Str::uuid(),
+        ], $overrides));
+    }
+
+    function makeMobileTestPartnerStatement(Tenant $tenant, Partner $partner, User $preparer, array $overrides = []): PartnerStatement
+    {
+        return PartnerStatement::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'partner_id' => $partner->id,
+            'statement_number' => 'PST-'.Str::random(12),
+            'period_start' => now()->subMonth()->toDateString(),
+            'period_end' => now()->toDateString(),
+            'currency' => 'XAF',
+            'status' => 'DRAFT',
+            'opening_balance_minor' => 0,
+            'earned_minor' => 10000,
+            'clawed_back_minor' => 0,
+            'paid_minor' => 0,
+            'closing_balance_minor' => 10000,
+            'content_hash' => hash('sha256', Str::random(20)),
+            'idempotency_key' => (string) Str::uuid(),
+            'prepared_by' => $preparer->id,
+        ], $overrides));
+    }
+
+    function makeMobileTestSettlementBatch(Tenant $tenant, string $carrierId, User $preparer, array $overrides = []): SettlementBatch
+    {
+        return SettlementBatch::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'carrier_id' => $carrierId,
+            'settlement_number' => 'SET-'.Str::random(12),
+            'period_start' => now()->subMonth()->toDateString(),
+            'period_end' => now()->toDateString(),
+            'net_amount_minor' => 50000,
+            'currency' => 'XAF',
+            'status' => 'DRAFT',
+            'prepared_by' => $preparer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'content_hash' => hash('sha256', Str::random(20)),
+        ], $overrides));
+    }
+
+    function makeMobileTestBordereau(Tenant $tenant, string $carrierId, User $preparer, array $overrides = []): Bordereau
+    {
+        return Bordereau::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'carrier_id' => $carrierId,
+            'type' => 'PREMIUM',
+            'bordereau_number' => 'BOR-'.Str::random(12),
+            'period_start' => now()->subMonth()->toDateString(),
+            'period_end' => now()->toDateString(),
+            'status' => 'DRAFT',
+            'item_count' => 0,
+            'gross_premium_minor' => 0,
+            'commission_minor' => 0,
+            'currency' => 'XAF',
+            'prepared_by' => $preparer->id,
+            'idempotency_key' => (string) Str::uuid(),
+            'content_hash' => hash('sha256', Str::random(20)),
         ], $overrides));
     }
 }
