@@ -158,3 +158,32 @@ it('preserves a device trusted_at across repeat logins instead of resetting it',
 it('rejects an unauthenticated call to /session', function () {
     $this->getJson('/api/v1/auth/mobile/session')->assertStatus(401);
 });
+
+
+it('accepts the nested device object the shipped Expo client actually sends', function () {
+    // The installed app posts {device: {fingerprint, name, platform}} rather
+    // than the flat device_fingerprint this endpoint was written for, so real
+    // users hit "device fingerprint field is required" on every login until
+    // the server accepted both shapes.
+    Http::fake(['api.twilio.com/*' => Http::response(['sid' => 'SM1'], 201)]);
+    $user = makeMobileTestUser();
+    makeMobileTestWorkspace($user, [], 'CUSTOMER');
+
+    $requested = $this->postJson('/api/v1/auth/mobile/otp/request', ['phone_e164' => $user->phone_e164]);
+    $code = extractMobileOtpCode();
+
+    $verified = $this->postJson('/api/v1/auth/mobile/otp/verify', [
+        'challenge_id' => $requested->json('data.challenge_id'),
+        'phone_e164' => $user->phone_e164,
+        'code' => $code,
+        'device' => ['fingerprint' => 'expo-device-abc', 'name' => 'OpesInsure android', 'platform' => 'android'],
+    ]);
+
+    $verified->assertStatus(201);
+    expect($verified->json('data.access_token'))->not->toBeEmpty();
+
+    // The nested values must reach the device record, not be silently dropped.
+    $device = UserDevice::where('user_id', $user->id)->where('device_fingerprint', 'expo-device-abc')->first();
+    expect($device)->not->toBeNull();
+    expect($device->platform)->toBe('android');
+});

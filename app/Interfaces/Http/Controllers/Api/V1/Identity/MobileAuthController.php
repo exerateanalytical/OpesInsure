@@ -25,6 +25,22 @@ final class MobileAuthController
 
     public function verifyOtp(Request $request, MobileAuthService $service): JsonResponse
     {
+        // The shipped Expo client sends the device as a nested object
+        // ({device: {fingerprint, name, platform}}) while this endpoint was
+        // built to a flat shape. The handoff spec never pinned the body down,
+        // so neither side is wrong — but the client is already installed on
+        // phones, and the server is one deploy away. Normalising here means
+        // both shapes work and neither has to ship in lockstep with the other.
+        $device = $request->input('device');
+
+        if (is_array($device)) {
+            $request->merge(array_filter([
+                'device_fingerprint' => $device['fingerprint'] ?? null,
+                'device_name' => $device['name'] ?? null,
+                'platform' => $device['platform'] ?? null,
+            ], static fn ($v) => $v !== null));
+        }
+
         $data = $request->validate([
             'challenge_id' => 'required|uuid',
             'code' => 'required|string|size:6',
