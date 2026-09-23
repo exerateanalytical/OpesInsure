@@ -16,3 +16,8 @@ coverage/
 
 # The Expo mobile app is its own independent git repository (see mobile app/.git) — not tracked here.
 /mobile app/
+
+# Laravel package-discovery caches are build artifacts, not source.
+# Committing them leaks dev-only providers (e.g. Laravel\Pail) into --no-dev
+# production builds, which then fatal on boot.
+/bootstrap/cache/*.php
