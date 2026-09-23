@@ -19,7 +19,8 @@ a{color:inherit}
 header.site{background:var(--navy);color:#fff}
 header.site .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em;text-decoration:none;color:#fff;padding:12px 0}
-.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--blue));font-style:normal;font-weight:800}
+.brand img{height:34px;width:auto;display:block}
+@media(max-width:640px){.brand img{height:28px}}
 nav.site a{color:#cfdae4;text-decoration:none;margin-left:22px;font-size:.94rem;font-weight:600}
 nav.site a:hover,nav.site a:focus-visible{color:#fff}
 .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 58%,#0d3550 100%);color:#fff;padding:72px 0 80px}
@@ -50,6 +51,7 @@ h2{font-size:clamp(1.45rem,3vw,2rem);letter-spacing:-.02em;margin:0 0 12px;font-
 footer.site{background:var(--navy);color:#8fa3b4;padding:34px 0;font-size:.88rem}
 footer.site .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 footer.site a{color:#c3d3e0;text-decoration:none;margin-left:18px}
+.foot-brand img{height:26px;width:auto;display:block;margin-bottom:9px;opacity:.92}
 .note{display:flex;gap:12px;padding:15px 17px;border-radius:11px;background:rgba(213,161,60,.1);border:1px solid rgba(213,161,60,.34);color:#6b5115;font-size:.9rem;align-items:flex-start}
 .note strong{color:#4a380e}
 @media(max-width:640px){
@@ -63,7 +65,7 @@ footer.site a{color:#c3d3e0;text-decoration:none;margin-left:18px}
 </head>
 <body>
 <header class="site"><div class="wrap">
-  <a class="brand" href="/"><i>O</i> OpesInsure</a>
+  <a class="brand" href="/"><img src="{{ asset('img/logo-white.png') }}" alt="OpesInsure" width="2172" height="724"></a>
   <nav class="site">
     <a href="/download">{{ __('public.nav_download') }}</a>
     <a href="/admin">{{ __('public.nav_portal') }}</a>
@@ -71,7 +73,7 @@ footer.site a{color:#c3d3e0;text-decoration:none;margin-left:18px}
 </div></header>
 {{ $slot }}
 <footer class="site"><div class="wrap">
-  <span>&copy; {{ date('Y') }} OpesInsure</span>
+  <span class="foot-brand"><img src="{{ asset('img/logo-white.png') }}" alt="OpesInsure" width="2172" height="724"><br>&copy; {{ date('Y') }} OpesInsure</span>
   <span><a href="/download">{{ __('public.nav_download') }}</a><a href="/admin">{{ __('public.nav_portal') }}</a></span>
 </div></footer>
 </body>
