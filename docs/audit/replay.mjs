@@ -1,6 +1,6 @@
 // Logs in as every server demo persona exactly like the app does, then hits
 // every screen-load GET the app makes and prints the real status/error.
-const BASE = "https://insurance.opesdatacenter.tech/api/v1";
+const BASE = process.env.API_BASE ?? "https://insurance.opesdatacenter.tech/api/v1";
 const j = (o) => JSON.stringify(o);
 const uuid = () => crypto.randomUUID();
 
@@ -62,7 +62,9 @@ const SCREEN_GETS = [
 
 const demo = (await call("/public/demo-accounts")).json.data;
 const results = {};
+const ONLY = (process.env.ONLY ?? "").split(",").filter(Boolean);
 for (const account of demo.accounts) {
+  if (ONLY.length && !ONLY.includes(account.role_code)) continue;
   const req = await call("/auth/mobile/otp/request", { method: "POST", body: j({ phone_e164: account.phone_e164 }) });
   if (req.status !== 200) { console.log(`\n## ${account.label}: OTP request failed ${req.status} ${req.text.slice(0, 200)}`); continue; }
   const ver = await call("/auth/mobile/otp/verify", {

@@ -55,19 +55,47 @@ below was verified against the live server, not inferred.
 
 ## Endpoint audit (before fixes) — see `docs/audit/replay-before.txt`
 
-## Work plan / status
+## Work plan / status (updated 2026-09-23 15:30 UTC)
 
-Each module is deployed as soon as it lands; status is updated below.
+- [x] A. Platform data + permissions — DEPLOYED. `PlatformCatalogueSeeder` (5 lines, 8 carriers,
+      17 products, 17 APPROVED tariffs, disclosure schemas, tax/fee rules) and
+      `DemoScenarioSeeder` (customer policies/claims/payments/documents/devices, agent clients +
+      commissions + statement, broker clients/production/receivables/compliance/publications,
+      insurer referrals/issuance queue). Both idempotent; run on prod with
+      `php artisan db:seed --class=DemoScenarioSeeder --force`. Roles repaired (CUSTOMER has
+      `quotes.rate`, AGENT/BROKER_STAFF/CARRIER_STAFF real permissions). New demo persona
+      "Insurer staff (mobile)" +237600000103. Self-registered customers now get a
+      `tenant_customers` row (`MobileAuthService::provisionCustomerAccess`).
+- [x] C/D. Backend endpoints — DEPLOYED (`routes/wave14_mobile.php`, controllers under
+      `app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/`): account, notifications
+      (`user_notifications`), support, policy service requests + renewal quote, claims completion
+      (incident/checklist/inspection/repair/settlement/appeal/emergency), disclosure/terms
+      adapters, agent portal (dashboard/profile/renewals/sales/clients/commissions/withdrawals/
+      offline queue — app-shaped), broker ops, carrier ops, workspace, device attestation.
+      Broker/carrier dashboards now also carry `metrics`. `Claim` model exposes
+      `incident_at/incident_location/description`. Offers eager-load carrier + product names.
+      `ProposalService::submit` is straight-through (PAYMENT_PENDING) when no disclosure raises a
+      referral flag; flagged proposals still go UNDER_REVIEW for the insurer persona to decide.
+      Demo mode routes payments through the fake adapter and `DemoPurchaseSettler` confirms the
+      payment ~20s after initiation and issues the policy via `PolicyIssuanceService` (polled from
+      `GET /mobile/purchases/{proposal}/status`).
+      Verified live with `docs/audit/replay.mjs` (every persona, every screen-load endpoint 200)
+      and `docs/audit/journey.mjs` (quote → 6 offers → proposal → disclosure → terms →
+      payment → issued policy → FNOL → service request → support → renewal quote).
+- [~] B. App — `ClaimsApi` repointed to `/mobile/claims*` and tab bar bottom inset fixed in the
+      working tree of `mobile app/` (NOT yet built into an APK). Still to do: home quick view for
+      insurers/brokers, institutions screens → API (E), then
+      `npx eas build --profile production-apk --platform android` and upload to `/download`.
+- [ ] E. Institutional directory in Laravel (`/public/institutions/*`) — not started; app still
+      reads bundled `src/data/insurers.ts`/`brokers.ts` (works offline, provenance-labelled).
+- [ ] F. API docs page (`composer require dedoc/scramble`, serve at `/docs/api`) — not started.
+- [ ] G. Run the app in react-native-web / emulator and click through — not done (no Android SDK
+      on this machine); verification so far is contract-level via the two scripts above.
 
-- [ ] A. Platform data + permissions: seeders for lines/coverages/carriers/products/
-      approved tariffs/tax+fee rules, demo scenario per persona, role permission repair,
-      tenant_customers provisioning. 
-- [ ] B. App: claims → `/mobile/claims`, disclosure paths, tab-bar safe area, home quick
-      view (insurers/brokers), new APK.
-- [ ] C. Backend: account, notifications, support, policy service requests, claims
-      completion, renewal quote, emergency assistance.
-- [ ] D. Backend: agent dashboard/profile/renewals/sales, broker ops, carrier ops,
-      workspace, device attestation; dashboard shape adapters.
-- [ ] E. Institutional directory in Laravel + public endpoints; app reads API.
-- [ ] F. API docs page (`/docs/api`, OpenAPI via dedoc/scramble).
-- [ ] G. Run the app in a real runtime (react-native-web in browser) and click through.
+## Known gaps / notes for the next session
+- Twilio is not configured on prod: OTP for non-demo phones cannot be delivered (demo phones use
+  the fixed OTP). `MAIL_MAILER=log`.
+- The scheduled MTN MoMo reconciler logs "MTN MoMo authentication failed" every run (no real
+  credentials) — harmless in demo mode but noisy.
+- `reconciliation:run` scheduled command exits 1 on prod (pre-existing).
+- OTP request is throttled 5/min per IP and per phone; the audit scripts hit this if rerun quickly.
