@@ -41,7 +41,10 @@ final class DemoPurchaseSettler
             return;
         }
 
-        if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $payment->created_at->lte(now()->subSeconds(self::CUSTOMER_PROMPT_SECONDS))) {
+        // payment_intents.created_at is timestamptz (UTC); compare in UTC so the
+        // app timezone (Africa/Douala) cannot make a fresh payment look future-dated.
+        $ageSeconds = $payment->created_at->utc()->diffInSeconds(now()->utc(), false);
+        if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $ageSeconds >= self::CUSTOMER_PROMPT_SECONDS) {
             DB::transaction(function () use ($payment) {
                 $previous = $payment->status;
                 $payment->update(['status' => 'SUCCEEDED', 'reconciled_at' => now(), 'provider_snapshot' => array_merge($payment->provider_snapshot ?? [], ['demo' => true, 'settled_by' => 'DemoPurchaseSettler'])]);
