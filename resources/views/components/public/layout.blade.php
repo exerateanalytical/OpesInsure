@@ -54,6 +54,13 @@ footer.site a{color:#c3d3e0;text-decoration:none;margin-left:18px}
 .foot-brand img{height:26px;width:auto;display:block;margin-bottom:9px;opacity:.92}
 .note{display:flex;gap:12px;padding:15px 17px;border-radius:11px;background:rgba(213,161,60,.1);border:1px solid rgba(213,161,60,.34);color:#6b5115;font-size:.9rem;align-items:flex-start}
 .note strong{color:#4a380e}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--white)}
+table.demo{width:100%;border-collapse:collapse;font-size:.93rem;min-width:420px}
+table.demo th{text-align:left;font-weight:700;padding:13px 18px;background:var(--bg);border-bottom:1px solid var(--line);white-space:nowrap}
+table.demo td{padding:13px 18px;border-bottom:1px solid var(--line)}
+table.demo tr:last-child td{border-bottom:0}
+table.demo code{background:rgba(7,26,43,.06);padding:3px 8px;border-radius:6px;font-size:.88em}
+
 @media(max-width:640px){
  nav.site{display:none}
  .hero{padding:52px 0 58px}
@@ -68,6 +75,7 @@ footer.site a{color:#c3d3e0;text-decoration:none;margin-left:18px}
   <a class="brand" href="/"><img src="{{ asset('img/logo-white.png') }}" alt="OpesInsure" width="2172" height="724"></a>
   <nav class="site">
     <a href="/download">{{ __('public.nav_download') }}</a>
+    @if(config('demo.enabled'))<a href="/demo">{{ __('public.nav_demo') }}</a>@endif
     <a href="/admin">{{ __('public.nav_portal') }}</a>
   </nav>
 </div></header>

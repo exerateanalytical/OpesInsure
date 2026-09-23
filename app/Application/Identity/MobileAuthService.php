@@ -53,7 +53,7 @@ final class MobileAuthService
         $this->assertWithinRateLimits($phoneE164, $ip);
 
         $user = User::where('phone_e164', $phoneE164)->first();
-        $code = (string) random_int(100000, 999999);
+        $code = $this->issueCode($phoneE164);
 
         $challenge = VerificationChallenge::create([
             'user_id' => $user?->id,
@@ -302,5 +302,26 @@ final class MobileAuthService
             // (enumeration-safety) — ops visibility only.
             report($e);
         }
+    }
+
+    /**
+     * Real users always get a cryptographically random code. Demo accounts get
+     * a fixed one, and only while demo mode is enabled, because the mobile app
+     * signs in by SMS OTP and no SMS provider is configured — a demo tester
+     * would otherwise have no way to receive a code at all.
+     *
+     * This is deliberately done at generation time rather than in verifyOtp():
+     * the code is still hashed, still rate limited, still attempt limited and
+     * still expires, so the verification path has no special case and no
+     * bypass. Turning demo mode off restores random codes everywhere with no
+     * other change.
+     */
+    private function issueCode(string $phoneE164): string
+    {
+        if (config('demo.enabled') && in_array($phoneE164, \Database\Seeders\DemoMobileAccountSeeder::phones(), true)) {
+            return (string) config('demo.otp');
+        }
+
+        return (string) random_int(100000, 999999);
     }
 }

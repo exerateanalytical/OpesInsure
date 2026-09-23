@@ -31,3 +31,15 @@ Route::get('/download/android', function () {
         'Content-Type' => 'application/vnd.android.package-archive',
     ]);
 })->name('download.android');
+
+// Demo credential directory. The route itself only exists while demo mode
+// is enabled, so disabling the flag removes the page rather than leaving it
+// reachable and empty.
+if (config('demo.enabled')) {
+    Route::get('/demo', fn () => view('public.demo', [
+        'staff' => \Database\Seeders\DatabaseSeeder::DEMO_ACCOUNTS,
+        'mobile' => \Database\Seeders\DemoMobileAccountSeeder::ACCOUNTS,
+        'password' => config('demo.password'),
+        'otp' => config('demo.otp'),
+    ]))->name('demo');
+}

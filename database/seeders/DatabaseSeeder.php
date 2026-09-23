@@ -39,11 +39,11 @@ final class DatabaseSeeder extends Seeder
         $this->call(VehicleMakeReferenceSeeder::class);
         $this->call(MobileOAuthClientSeeder::class);
 
-        if (! app()->environment(['local', 'testing'])) {
+        if (! app()->environment(['local', 'testing']) && ! config('demo.enabled')) {
             return;
         }
 
-        $password = env('LOCAL_ADMIN_PASSWORD');
+        $password = env('LOCAL_ADMIN_PASSWORD') ?: (config('demo.enabled') ? config('demo.password') : null);
 
         if (blank($password)) {
             if (app()->environment('testing')) {
@@ -78,5 +78,7 @@ final class DatabaseSeeder extends Seeder
 
             $membership->roles()->syncWithoutDetaching([$role->id]);
         }
+
+        $this->call(DemoMobileAccountSeeder::class);
     }
 }
