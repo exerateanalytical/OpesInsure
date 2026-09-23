@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { demoApi } from "@/demo/api";
 import { OfflineOperation } from "@/offline/types";
+import { environmentConfig } from "@/config/environment";
 
 const configuredUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const API_URL = configuredUrl ?? (__DEV__ ? "http://10.0.2.2:8000/api/v1" : "");
@@ -1442,6 +1443,21 @@ export const RuntimeApi = {
       anonymous: true,
       idempotent: true,
       timeoutMs: 5000,
+    }),
+};
+// Attaches the auth header when a session exists (so the report is
+// attributed) but never requires one — this must also work from the
+// pre-auth screens, matching RuntimeApi's telemetry() endpoint.
+export const IssueReportApi = {
+  report: (payload: { route: string; note: string }) =>
+    api<{ accepted: boolean; id: string }>("/mobile/issue-reports", {
+      method: "POST",
+      body: JSON.stringify({
+        ...payload,
+        platform: Platform.OS,
+        app_version: environmentConfig.appVersion,
+      }),
+      timeoutMs: 8000,
     }),
 };
 export const StepUpApi = {

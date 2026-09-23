@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { router } from "expo-router";
-import { Text } from "react-native";
+import { Alert, Text } from "react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { AgentApi, ApiError } from "@/api/client";
 import { OfflineVault } from "@/offline/vault";
@@ -62,7 +62,14 @@ export default function NewAgentClient() {
                   path: "/mobile/agent/clients",
                   payload,
                 });
-                router.replace("/sync");
+                Alert.alert(
+                  "Saved for sync",
+                  "You're offline, so this client record will be created once the connection is back. It stays queued in Sync Centre until then.",
+                  [
+                    { text: "Stay here", style: "cancel" },
+                    { text: "View sync", onPress: () => router.push("/sync") },
+                  ],
+                );
                 return;
               }
               throw error;

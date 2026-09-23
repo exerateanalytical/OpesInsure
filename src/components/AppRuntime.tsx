@@ -12,6 +12,7 @@ import { useTranslation } from "@/i18n";
 import { onSessionExpired } from "@/api/client";
 import { useRuntime } from "@/store/runtime";
 import { RuntimeGateView } from "@/components/RuntimeGate";
+import { IssueReportButton } from "@/components/IssueReportButton";
 const biometricKey = "opesinsure.biometric_enabled";
 const safePaths = [
   "/(customer)/(tabs)/policies",
@@ -120,6 +121,7 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         </Pressable>
       ) : null}
       <View style={styles.flex}>{children}</View>
+      <IssueReportButton />
     </View>
   );
 }

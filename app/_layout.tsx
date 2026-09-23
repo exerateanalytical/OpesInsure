@@ -9,6 +9,12 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import {
+  Manrope_400Regular,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import { colors } from "@/theme/tokens";
 import { roleToPortal, useSession } from "@/store/session";
 import { AppRuntime } from "@/components/AppRuntime";
@@ -22,6 +28,10 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Manrope_400Regular,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
   const hydrate = useSession((s) => s.hydrate);
   const status = useSession((s) => s.status);
