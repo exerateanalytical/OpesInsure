@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ $title ?? 'OpesInsure' }}</title>
 <meta name="description" content="{{ $description ?? __('public.meta_description') }}">
+<link rel="icon" type="image/png" href="{{ asset('img/app-icon.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('img/app-icon.png') }}">
 <link rel="preload" href="{{ asset('fonts/manrope/manrope-latin-variable.woff2') }}" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:Manrope;src:url("{{ asset('fonts/manrope/manrope-latin-variable.woff2') }}") format("woff2");font-weight:200 800;font-display:swap}
@@ -31,6 +33,11 @@ nav.site a:hover,nav.site a:focus-visible{color:#fff}
 .btn-ghost:hover{background:rgba(255,255,255,.09)}
 .btn[aria-disabled=true]{opacity:.5;pointer-events:none;box-shadow:none}
 .btn-row{display:flex;gap:14px;flex-wrap:wrap}
+.app-icon{width:104px;height:104px;border-radius:24px;display:block;box-shadow:0 12px 34px rgba(0,0,0,.42)}
+.hero-flex{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+.hero-flex>div{flex:1;min-width:280px}
+@media(max-width:640px){.app-icon{width:78px;height:78px;border-radius:18px}}
+
 section{padding:66px 0}
 section.alt{background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 h2{font-size:clamp(1.45rem,3vw,2rem);letter-spacing:-.02em;margin:0 0 12px;font-weight:800}

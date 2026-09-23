@@ -1,5 +1,8 @@
 <x-public.layout :title="__('public.download_title')">
 <div class="hero"><div class="wrap">
+<div class="hero-flex">
+<img class="app-icon" src="{{ asset('img/app-icon.png') }}" alt="{{ __('public.download_title') }}" width="1254" height="1254">
+<div>
   <span class="eyebrow">{{ __('public.download_eyebrow') }}</span>
   <h1>{{ __('public.download_heading') }}</h1>
   <p class="lede">{{ __('public.download_lede') }}</p>
@@ -17,6 +20,8 @@
       <span class="btn btn-ghost" aria-disabled="true">{{ __('public.download_ios_pending') }}</span>
     @endif
   </div>
+</div>
+</div>
 </div></div>
 
 @unless($android && $ios)
