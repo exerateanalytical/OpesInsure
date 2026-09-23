@@ -29,7 +29,11 @@ final class DatabaseSeeder extends Seeder
         // creation needs no permission string at all (see routes/api.php), so
         // these only need the broker-specific back-office actions on top of that.
         ['role_code' => 'BROKER_STAFF', 'label' => 'Broker staff', 'name' => 'Demo Broker Staff', 'email' => 'demo-broker-staff@opesinsure.local', 'phone' => '+237600000007', 'permissions' => ['broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage']],
-        ['role_code' => 'AGENT', 'label' => 'Commercial agent', 'name' => 'Demo Commercial Agent', 'email' => 'demo-agent@opesinsure.local', 'phone' => '+237600000008', 'permissions' => []],
+        // Wave 12 Agent Mode grants: config/permissions.php's 'agent' category is the
+        // deliberate exception to 'never_grant_to' — these exist specifically to be
+        // granted to AGENT, scoped by AgentPartnerResolver ownership checks rather
+        // than by withholding the permission itself.
+        ['role_code' => 'AGENT', 'label' => 'Commercial agent', 'name' => 'Demo Commercial Agent', 'email' => 'demo-agent@opesinsure.local', 'phone' => '+237600000008', 'permissions' => ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch']],
     ];
 
     public function run(): void

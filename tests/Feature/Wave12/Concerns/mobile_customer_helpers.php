@@ -8,6 +8,10 @@ use App\Models\Document;
 use App\Models\FulfilmentOrder;
 use App\Models\InsuranceProduct;
 use App\Models\KycSubmission;
+use App\Models\MfaMethod;
+use App\Models\Partner;
+use App\Models\PartnerPayoutRequest;
+use App\Models\PartnerStatement;
 use App\Models\PaymentIntentRecord;
 use App\Models\Party;
 use App\Models\PartyContact;
@@ -17,6 +21,7 @@ use App\Models\Quote;
 use App\Models\QuoteOffer;
 use App\Models\RiskAsset;
 use App\Models\StepUpGrant;
+use App\Models\Role;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
 use App\Models\TenantCustomer;
@@ -59,6 +64,25 @@ if (! function_exists('makeMobileCustomerFixture')) {
     function tenantHeaderFor(Tenant $tenant): array
     {
         return ['X-Tenant-Id' => $tenant->id];
+    }
+
+    /** tenantHeaderFor() plus a fresh (or caller-chosen) Idempotency-Key — every Agent Mode mutating endpoint requires one. */
+    function agentHeaders(array $fixture, ?string $idempotencyKey = null): array
+    {
+        return array_merge(tenantHeaderFor($fixture['tenant']), ['Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid()]);
+    }
+
+    /** A valid POST /mobile/agent/clients body — shared by the direct-endpoint tests and the offline-queue dispatch tests, which replay the exact same payload shape through SyncOperationDispatchService. */
+    function agentClientIntakePayload(array $overrides = []): array
+    {
+        return array_merge([
+            'type' => 'PERSON',
+            'display_name' => 'New Client Kamga',
+            'phone_e164' => '+237671112233',
+            'notice_version' => 'privacy-2026-01',
+            'evidence_reference' => 'field-visit-2026-09-22',
+            'consent' => true,
+        ], $overrides);
     }
 
     function makeMobileTestCertificateTemplate(array $overrides = []): App\Models\CertificateTemplate
@@ -252,5 +276,134 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'party_id' => $party->id,
             'status' => 'DRAFT',
         ], $overrides));
+    }
+     * The full chain an Agent Mode endpoint needs: a real party_id-linked
+     * agent User (per PartyResolver::partnerForUser — the Partner's own
+     * party_id must equal the agent User's users.party_id), an ACTIVE AGENT
+     * Partner, an AGENT TenantMembership, and a Role carrying every
+     * agent.* permission (see config/permissions.php and
+     * DatabaseSeeder::DEMO_ACCOUNTS) so RequirePermission passes without
+     * every test having to opt into individual permission strings.
+     *
+     * @return array{tenant: Tenant, user: User, party: Party, partner: Partner, membership: TenantMembership, role: Role}
+     */
+    function makeMobileAgentFixture(string $phone = '+237680000000', array $partnerOverrides = []): array
+    {
+        $tenant = Tenant::create(['type' => 'BROKER', 'legal_name' => 'Agent Mode Test Tenant '.Str::random(6), 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en']);
+        $party = Party::create(['type' => 'PERSON', 'display_name' => 'Agent Mode Test Agent', 'status' => 'ACTIVE']);
+        PartyContact::create(['party_id' => $party->id, 'type' => 'PHONE', 'normalized_value' => $phone, 'is_primary' => true]);
+        $user = User::create(['full_name' => 'Agent Mode Test Agent', 'phone_e164' => $phone, 'party_id' => $party->id, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
+
+        $membership = TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => 'AGENT', 'status' => 'ACTIVE']);
+        $role = Role::create(['tenant_id' => $tenant->id, 'code' => 'AGENT', 'permissions' => [
+            'agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read',
+            'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch',
+        ], 'is_system' => false]);
+        $membership->roles()->attach($role->id);
+
+        $partner = Partner::create(array_merge([
+            'tenant_id' => $tenant->id, 'party_id' => $party->id, 'type' => 'AGENT', 'status' => 'ACTIVE', 'compliance' => [],
+        ], $partnerOverrides));
+
+        return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner, 'membership' => $membership, 'role' => $role];
+    }
+
+    /** Same shape as makeMobileAgentFixture(), but joins an EXISTING tenant — for cross-agent-same-tenant isolation tests (two AGENT partners sharing one brokerage tenant). */
+    function makeMobileAgentFixtureInTenant(Tenant $tenant, string $phone, array $partnerOverrides = []): array
+    {
+        $party = Party::create(['type' => 'PERSON', 'display_name' => 'Agent Mode Test Agent '.$phone, 'status' => 'ACTIVE']);
+        PartyContact::create(['party_id' => $party->id, 'type' => 'PHONE', 'normalized_value' => $phone, 'is_primary' => true]);
+        $user = User::create(['full_name' => 'Agent Mode Test Agent '.$phone, 'phone_e164' => $phone, 'party_id' => $party->id, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
+
+        $membership = TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => 'AGENT', 'status' => 'ACTIVE']);
+        $role = Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => 'AGENT'], ['permissions' => [
+            'agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read',
+            'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch',
+        ], 'is_system' => false]);
+        $membership->roles()->attach($role->id);
+
+        $partner = Partner::create(array_merge([
+            'tenant_id' => $tenant->id, 'party_id' => $party->id, 'type' => 'AGENT', 'status' => 'ACTIVE', 'compliance' => [],
+        ], $partnerOverrides));
+
+        return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner, 'membership' => $membership, 'role' => $role];
+    }
+
+    /**
+     * A PUBLISHED partner statement — the back-office-produced artefact a
+     * self-service withdrawal draws its available balance from (see
+     * PartnerStatementService::prepare/approve/publish). prepared_by is a
+     * separate staff user on purpose: the maker-checker DB constraint on
+     * partner_statements forbids approver == preparer, and an agent never
+     * prepares their own statement.
+     */
+    function makeMobileAgentStatement(Tenant $tenant, Partner $partner, array $overrides = []): PartnerStatement
+    {
+        return PartnerStatement::create(array_merge([
+            'prepared_by' => User::factory()->create()->id,
+            'tenant_id' => $tenant->id,
+            'partner_id' => $partner->id,
+            'statement_number' => 'PST-'.strtoupper(Str::random(10)),
+            'period_start' => now()->subMonth()->startOfMonth()->toDateString(),
+            'period_end' => now()->subMonth()->endOfMonth()->toDateString(),
+            'currency' => 'XAF',
+            'status' => 'PUBLISHED',
+            'opening_balance_minor' => 0,
+            'earned_minor' => 100000,
+            'clawed_back_minor' => 0,
+            'paid_minor' => 0,
+            'closing_balance_minor' => 100000,
+            'content_hash' => hash('sha256', Str::random(20)),
+            'idempotency_key' => (string) Str::uuid(),
+            'published_at' => now(),
+        ], $overrides));
+    }
+
+    function makeMobileAgentPayoutRequest(Tenant $tenant, Partner $partner, PartnerStatement $statement, array $overrides = []): PartnerPayoutRequest
+    {
+        return PartnerPayoutRequest::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'partner_id' => $partner->id,
+            'partner_statement_id' => $statement->id,
+            'payout_number' => 'PAY-'.strtoupper(Str::random(10)),
+            'amount_minor' => 10000,
+            'currency' => 'XAF',
+            'status' => 'REQUESTED',
+            'destination_type' => 'MOBILE_MONEY',
+            'destination_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('+237680000000'),
+            'idempotency_key' => (string) Str::uuid(),
+            'requested_by' => User::factory()->create()->id,
+        ], $overrides));
+    }
+
+    /** verified_at set immediately: bypasses the enrollment confirmTotp() step for tests that only need a usable step-up method. */
+    function makeMobileAgentMfaMethod(User $user, string $secret = 'JBSWY3DPEHPK3PXP'): MfaMethod
+    {
+        return MfaMethod::create(['user_id' => $user->id, 'type' => 'TOTP', 'secret_encrypted' => $secret, 'verified_at' => now()]);
+    }
+
+    /** Reimplements TotpService's RFC 6238 math (kept private there) purely so tests can produce a code that verify() will accept — not a shortcut around the real check. */
+    function totpCodeFor(string $secret, ?int $time = null): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $input = strtoupper((string) preg_replace('/[^A-Z2-7]/', '', $secret));
+        $bits = '';
+        foreach (str_split($input) as $c) {
+            $bits .= str_pad(decbin((int) strpos($alphabet, $c)), 5, '0', STR_PAD_LEFT);
+        }
+        $key = '';
+        foreach (str_split($bits, 8) as $b) {
+            if (strlen($b) === 8) {
+                $key .= chr((int) bindec($b));
+            }
+        }
+
+        $counter = intdiv($time ?? time(), 30);
+        $bin = pack('N2', ($counter >> 32) & 0xffffffff, $counter & 0xffffffff);
+        $hash = hash_hmac('sha1', $bin, $key, true);
+        $offset = ord($hash[19]) & 15;
+        $value = ((ord($hash[$offset]) & 127) << 24) | ((ord($hash[$offset + 1]) & 255) << 16) | ((ord($hash[$offset + 2]) & 255) << 8) | (ord($hash[$offset + 3]) & 255);
+
+        return str_pad((string) ($value % 1000000), 6, '0', STR_PAD_LEFT);
     }
 }
