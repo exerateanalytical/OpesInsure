@@ -1,16 +1,54 @@
-import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { LockKeyhole, Phone } from "lucide-react-native";
+import { ChevronRight, LockKeyhole, Phone } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandMark } from "@/components/BrandMark";
 import { colors, space, type } from "@/theme/tokens";
-import { AuthApi } from "@/api/client";
+import { AuthApi, type DemoAccount } from "@/api/client";
 
 export default function SignIn() {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [demo, setDemo] = useState<{ otp: string; accounts: DemoAccount[] } | null>(null);
+
+  // Ask the API it is actually pointed at. Returns null in a real deployment,
+  // where the endpoint does not exist, so nothing renders.
+  useEffect(() => {
+    let live = true;
+    void AuthApi.demoAccounts().then((d) => {
+      if (live) setDemo(d);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  // One tap: request the code and jump straight to verification with it
+  // prefilled, so a reviewer never has to copy a number or a code by hand.
+  const signInAsDemoAccount = async (account: DemoAccount) => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await AuthApi.requestOtp(account.phone_e164);
+      router.push({
+        pathname: "/(auth)/verify",
+        params: {
+          challengeId: result.challenge_id,
+          phone: account.phone_e164,
+          expiresIn: String(result.expires_in),
+          prefill: demo?.otp ?? "",
+        },
+      });
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Demo account is unavailable.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
   const submit = async () => {
     const normalized = phone.replace(/\s/g, "").replace(/^6/, "+2376");
     if (!/^\+2376\d{8}$/.test(normalized)) {
@@ -75,8 +113,31 @@ export default function SignIn() {
         variant="tertiary"
         onPress={() => router.push("/institutions/insurers")}
       />
+      {demo && demo.accounts.length > 0 ? (
+        <Card>
+          <Text style={styles.demoTitle}>Demo accounts</Text>
+          <Text style={styles.demoHint}>
+            Tap a role to sign in. The code {demo.otp} is filled in for you.
+          </Text>
+          {demo.accounts.map((account) => (
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              key={account.phone_e164}
+              onPress={() => void signInAsDemoAccount(account)}
+              style={styles.demoRow}
+            >
+              <View style={styles.demoFlex}>
+                <Text style={styles.demoRole}>{account.label}</Text>
+                <Text style={styles.demoPhone}>{account.phone_e164}</Text>
+              </View>
+              <ChevronRight size={20} color={colors.neutral500} />
+            </Pressable>
+          ))}
+        </Card>
+      ) : null}
       {process.env.EXPO_PUBLIC_DEMO_MODE === "true" ? (
-        <Button label="Choose a demo account" variant="secondary" onPress={() => router.push("/demo-accounts")} />
+        <Button label="Browse bundled demo personas" variant="tertiary" onPress={() => router.push("/demo-accounts")} />
       ) : null}
     </Screen>
   );
@@ -85,4 +146,15 @@ const styles = StyleSheet.create({
   brand: { marginTop: space.x3 },
   trust: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
   trustText: { ...type.meta, color: colors.neutral600, flex: 1 },
+  demoTitle: { ...type.label, color: colors.navy950 },
+  demoHint: { ...type.meta, color: colors.neutral600 },
+  demoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.x3,
+    paddingVertical: space.x3,
+  },
+  demoFlex: { flex: 1 },
+  demoRole: { ...type.body, color: colors.navy950 },
+  demoPhone: { ...type.meta, color: colors.neutral500 },
 });

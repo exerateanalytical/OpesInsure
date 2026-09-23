@@ -356,6 +356,13 @@ export type AuthTokens = {
   session_id: string;
   bootstrap: SessionBootstrap;
 };
+export type DemoAccount = {
+  label: string;
+  full_name: string;
+  phone_e164: string;
+  role_code: string;
+};
+
 export const AuthApi = {
   requestOtp: (phone_e164: string) =>
     api<{
@@ -386,6 +393,22 @@ export const AuthApi = {
     });
     await TokenVault.save(data.access_token, data.refresh_token);
     return data;
+  },
+  /**
+   * Demo credentials the SERVER is seeded with. The bundled demo dataset has
+   * its own personas, but those exist only inside the in-app demo adapter — a
+   * build pointed at a real API must offer the accounts that API actually has.
+   * The endpoint only exists while the server has demo mode on, so a 404 here
+   * is the normal answer in production and simply hides the affordance.
+   */
+  demoAccounts: async (): Promise<{ otp: string; accounts: DemoAccount[] } | null> => {
+    try {
+      return await api<{ otp: string; accounts: DemoAccount[] }>("/public/demo-accounts", {
+        anonymous: true,
+      });
+    } catch {
+      return null;
+    }
   },
   session: () => api<SessionBootstrap>("/auth/mobile/session"),
   logout: async () => {
