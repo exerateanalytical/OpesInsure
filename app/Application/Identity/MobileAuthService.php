@@ -387,12 +387,25 @@ final class MobileAuthService
                 'status' => 'ACTIVE',
             ]);
 
+            // quotes.rate is the one permission-gated step on the customer
+            // purchase path (POST quotes/{id}/rate); without it a customer can
+            // create a quote but never see an offer.
             $role = Role::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'code' => 'CUSTOMER'],
-                ['id' => (string) Str::uuid(), 'permissions' => [], 'is_system' => true],
+                ['id' => (string) Str::uuid(), 'permissions' => ['quotes.rate'], 'is_system' => true],
             );
+            if (! in_array('quotes.rate', $role->permissions ?? [], true)) {
+                $role->update(['permissions' => [...($role->permissions ?? []), 'quotes.rate']]);
+            }
 
             $membership->roles()->syncWithoutDetaching([$role->id]);
+
+            // QuoteService::submit and RiskAssetService both require an ACTIVE
+            // tenant customer, not just a membership.
+            \App\Models\TenantCustomer::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'party_id' => $party->id],
+                ['customer_number' => 'CUST-'.strtoupper(Str::random(8)), 'status' => 'ACTIVE'],
+            );
 
             $this->audit->record('mobile.customer.provisioned', 'user', $user->id, ['party_id' => $party->id, 'tenant_id' => $tenant->id]);
         });

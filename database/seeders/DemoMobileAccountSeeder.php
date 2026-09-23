@@ -29,6 +29,7 @@ final class DemoMobileAccountSeeder extends Seeder
         ['role_code' => 'CUSTOMER', 'label' => 'Customer', 'name' => 'Demo Customer', 'email' => 'demo-customer@opesinsure.local', 'phone' => '+237600000100', 'party_type' => 'INDIVIDUAL'],
         ['role_code' => 'AGENT', 'label' => 'Commercial agent (mobile)', 'name' => 'Demo Mobile Agent', 'email' => 'demo-mobile-agent@opesinsure.local', 'phone' => '+237600000101', 'party_type' => 'INDIVIDUAL'],
         ['role_code' => 'BROKER_STAFF', 'label' => 'Broker staff (mobile)', 'name' => 'Demo Mobile Broker', 'email' => 'demo-mobile-broker@opesinsure.local', 'phone' => '+237600000102', 'party_type' => 'INDIVIDUAL'],
+        ['role_code' => 'CARRIER_STAFF', 'label' => 'Insurer staff (mobile)', 'name' => 'Demo Mobile Insurer', 'email' => 'demo-mobile-insurer@opesinsure.local', 'phone' => '+237600000103', 'party_type' => 'INDIVIDUAL'],
     ];
 
     /**
@@ -91,10 +92,19 @@ final class DemoMobileAccountSeeder extends Seeder
                 ['id' => (string) Str::uuid(), 'status' => 'ACTIVE'],
             );
 
-            $role = Role::firstOrCreate(
+            // updateOrCreate, not firstOrCreate: a role seeded before its
+            // permission list existed must pick the list up on reseed.
+            $role = Role::updateOrCreate(
                 ['tenant_id' => $tenant->id, 'code' => $account['role_code']],
-                ['id' => (string) Str::uuid(), 'permissions' => $this->permissionsFor($account['role_code']), 'is_system' => true],
+                ['permissions' => $this->permissionsFor($account['role_code']), 'is_system' => true],
             );
+
+            if ($account['role_code'] === 'CUSTOMER') {
+                \App\Models\TenantCustomer::firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'party_id' => $party->id],
+                    ['customer_number' => 'CUST-DEMO-0001', 'status' => 'ACTIVE'],
+                );
+            }
 
             $membership->roles()->syncWithoutDetaching([$role->id]);
         }
@@ -106,9 +116,12 @@ final class DemoMobileAccountSeeder extends Seeder
         return match ($roleCode) {
             // A customer holds no staff permissions at all — mobile customer
             // endpoints authorise by Party ownership, never by permission.
-            'CUSTOMER' => [],
+            // quotes.rate is the one staff-style gate on the customer purchase
+            // path (POST quotes/{id}/rate); everything else is Party-owned.
+            'CUSTOMER' => ['quotes.rate'],
             'AGENT' => ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch'],
-            'BROKER_STAFF' => ['broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage'],
+            'BROKER_STAFF' => ['broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate'],
+            'CARRIER_STAFF' => ['carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read'],
             default => [],
         };
     }

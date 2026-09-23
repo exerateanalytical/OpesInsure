@@ -241,6 +241,7 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave13_runtime.php';
         require __DIR__.'/wave12_agentmode.php';
         require __DIR__.'/wave12_brokercarrier.php';
+        require __DIR__.'/wave14_mobile.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);

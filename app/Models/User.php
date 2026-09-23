@@ -17,7 +17,7 @@ class User extends Authenticatable implements FilamentUser, HasName
     use HasApiTokens, HasFactory, HasUuids;
     protected $fillable = ['full_name', 'email', 'phone_e164', 'party_id', 'password', 'locale', 'status'];
     protected $hidden = ['password', 'remember_token'];
-    protected function casts(): array { return ['password' => 'hashed', 'email_verified_at' => 'datetime', 'phone_verified_at' => 'datetime']; }
+    protected function casts(): array { return ['password' => 'hashed', 'email_verified_at' => 'datetime', 'phone_verified_at' => 'datetime', 'notification_preferences' => 'array']; }
     public function memberships(): HasMany { return $this->hasMany(TenantMembership::class); }
     public function devices(): HasMany { return $this->hasMany(UserDevice::class); }
     public function mfaMethods(): HasMany { return $this->hasMany(MfaMethod::class); }
