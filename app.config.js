@@ -9,7 +9,6 @@ module.exports = () => {
     runtimeVersion: { policy: "appVersion" },
     ios: {
       ...base.expo.ios,
-      buildNumber: process.env.IOS_BUILD_NUMBER ?? "1",
       associatedDomains: ["applinks:opesinsure.com", "applinks:www.opesinsure.com"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: true,
@@ -18,7 +17,6 @@ module.exports = () => {
     },
     android: {
       ...base.expo.android,
-      versionCode: Number(process.env.ANDROID_VERSION_CODE ?? 1),
       intentFilters: [
         {
           action: "VIEW",
@@ -39,7 +37,7 @@ module.exports = () => {
       ...base.expo.extra,
       appEnvironment: environment,
       releaseChannel: process.env.EXPO_PUBLIC_RELEASE_CHANNEL ?? "demo",
-      eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? "SET_IN_EAS" },
+      eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? base.expo.extra?.eas?.projectId },
     },
   };
 };

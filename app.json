@@ -9,7 +9,15 @@
         "newArchEnabled": true,
         "ios": {
             "supportsTablet": true,
-            "bundleIdentifier": "com.opesware.opesinsure"
+            "bundleIdentifier": "com.opesware.opesinsure",
+            "associatedDomains": [
+                "applinks:opesinsure.com",
+                "applinks:www.opesinsure.com"
+            ],
+            "infoPlist": {
+                "ITSAppUsesNonExemptEncryption": true,
+                "NSFaceIDUsageDescription": "Use Face ID to protect insurance and financial information."
+            }
         },
         "android": {
             "package": "com.opesware.opesinsure",
@@ -17,7 +25,34 @@
                 "backgroundColor": "#071A2B",
                 "foregroundImage": "./assets/adaptive-icon.png"
             },
-            "edgeToEdgeEnabled": true
+            "edgeToEdgeEnabled": true,
+            "intentFilters": [
+                {
+                    "action": "VIEW",
+                    "autoVerify": true,
+                    "data": [
+                        {
+                            "scheme": "https",
+                            "host": "opesinsure.com",
+                            "pathPrefix": "/app"
+                        },
+                        {
+                            "scheme": "https",
+                            "host": "www.opesinsure.com",
+                            "pathPrefix": "/app"
+                        }
+                    ],
+                    "category": [
+                        "BROWSABLE",
+                        "DEFAULT"
+                    ]
+                }
+            ],
+            "permissions": [
+                "android.permission.RECORD_AUDIO",
+                "android.permission.USE_BIOMETRIC",
+                "android.permission.USE_FINGERPRINT"
+            ]
         },
         "plugins": [
             "expo-router",
@@ -38,8 +73,20 @@
             "typedRoutes": true
         },
         "extra": {
-            "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}"
+            "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
+            "eas": {
+                "projectId": "257a3907-e58d-442b-914f-984d74c96767"
+            }
         },
-        "icon": "./assets/icon.png"
+        "icon": "./assets/icon.png",
+        "owner": "opeswares-team",
+        "runtimeVersion": {
+            "policy": "appVersion"
+        },
+        "updates": {
+            "url": "https://u.expo.dev/257a3907-e58d-442b-914f-984d74c96767",
+            "fallbackToCacheTimeout": 0,
+            "checkAutomatically": "ON_LOAD"
+        }
     }
 }
