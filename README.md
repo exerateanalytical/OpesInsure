@@ -1,5 +1,10 @@
 # OpesInsure
 
+> **Deploying to live?** The production environment at
+> <https://insurance.opesdatacenter.tech> is already provisioned and verified.
+> Connection details, the deploy command, rollback steps and the isolation
+> rules for the shared VPS are in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 OpesInsure is a multi-tenant, API-first insurance distribution platform for Cameroon and the CEMAC market. The backend is a Laravel modular monolith organized with domain-driven design, CQRS, transactional outbox events, OAuth 2.0, OpenAPI contracts, PostgreSQL, Redis, and asynchronous workers.
 
 Current delivery has been reset to an **end-to-end acceptance model**. Earlier Batches 1–6 are provisional architecture/backend foundations, not completed modules. Wave 0 now starts the actual Laravel/Filament web application with platform administration, organizations and users. See `docs/END_TO_END_MASTER_PLAN.md`, `docs/MODULE_ACCEPTANCE_GATE.md`, `docs/END_TO_END_STATUS.md` and `docs/WAVE_00_PROGRESS.md`.
