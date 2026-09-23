@@ -43,6 +43,19 @@
             "android": {
                 "buildType": "apk"
             }
+        },
+        "demo-apk": {
+            "distribution": "internal",
+            "channel": "demo",
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_APP_ENV": "demo",
+                "EXPO_PUBLIC_RELEASE_CHANNEL": "demo",
+                "EXPO_PUBLIC_DEMO_MODE": "true",
+                "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
+            }
         }
     },
     "submit": {
