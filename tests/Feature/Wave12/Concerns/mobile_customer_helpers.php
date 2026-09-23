@@ -6,6 +6,7 @@ use App\Models\Carrier;
 use App\Models\Document;
 use App\Models\FulfilmentOrder;
 use App\Models\InsuranceProduct;
+use App\Models\KycSubmission;
 use App\Models\PaymentIntentRecord;
 use App\Models\Party;
 use App\Models\PartyContact;
@@ -13,8 +14,10 @@ use App\Models\Policy;
 use App\Models\Proposal;
 use App\Models\Quote;
 use App\Models\QuoteOffer;
+use App\Models\RiskAsset;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
+use App\Models\TenantCustomer;
 use App\Models\TenantMembership;
 use App\Models\UploadSession;
 use App\Models\User;
@@ -158,6 +161,50 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'scan_status' => 'CLEAN',
             'verification_status' => 'VERIFIED',
             'ocr_data' => [],
+        ], $overrides));
+    }
+
+    /**
+     * RiskAssetService::create() requires the party to be an ACTIVE
+     * TenantCustomer of the tenant — makeMobileCustomerFixture() does not
+     * create one (it only links the party via a User row), so the KYC/asset
+     * batch's own tests need this alongside that fixture whenever they
+     * exercise POST /mobile/assets (which goes through the real
+     * RiskAssetService, not a raw model insert).
+     */
+    function makeMobileTestTenantCustomer(Tenant $tenant, Party $party): TenantCustomer
+    {
+        return TenantCustomer::create([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'customer_number' => 'CUST-'.Str::random(6),
+            'status' => 'ACTIVE',
+        ]);
+    }
+
+    /** Direct model insert (like makeMobileTestDocument) for tests that only need an already-existing owned asset, without exercising RiskAssetService::create(). */
+    function makeMobileTestRiskAsset(Tenant $tenant, Party $party, array $overrides = []): RiskAsset
+    {
+        $facts = $overrides['facts'] ?? ['plate_number' => 'LT-1234-AB'];
+
+        return RiskAsset::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'type' => 'VEHICLE',
+            'display_name' => 'Mobile Test Vehicle',
+            'facts' => $facts,
+            'facts_hash' => hash('sha256', json_encode($facts)),
+            'status' => 'ACTIVE',
+            'version' => 1,
+        ], $overrides));
+    }
+
+    function makeMobileTestKycSubmission(Tenant $tenant, Party $party, array $overrides = []): KycSubmission
+    {
+        return KycSubmission::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'status' => 'DRAFT',
         ], $overrides));
     }
 }

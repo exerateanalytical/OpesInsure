@@ -6,6 +6,8 @@ use App\Application\Documents\Adapters\ClamAvMalwareScanAdapter;
 use App\Application\Documents\Adapters\FailClosedMalwareScanAdapter;
 use App\Application\Documents\Adapters\LocalSignedUrlAdapter;
 use App\Application\Documents\Adapters\MalwareScanAdapter;
+use App\Application\Documents\Adapters\ManualReviewOcrAdapter;
+use App\Application\Documents\Adapters\OcrAdapter;
 use App\Application\Documents\Adapters\S3SignedUrlAdapter;
 use App\Application\Documents\Adapters\SignedUrlAdapter;
 use App\Application\WebExperiences\{PortalDashboardQuery, PortalWorkspaceService};
@@ -34,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Fails closed until CLAMAV_HOST is set — see FailClosedMalwareScanAdapter.
         $this->app->bind(MalwareScanAdapter::class, fn () => filled(config('services.clamav.host')) ? new ClamAvMalwareScanAdapter : new FailClosedMalwareScanAdapter);
+
+        // No OCR/data-extraction provider exists anywhere in this app —
+        // unlike MalwareScanAdapter there is no real second implementation
+        // to switch to yet, so this always binds the honest placeholder.
+        // See ManualReviewOcrAdapter and the KYC batch report.
+        $this->app->bind(OcrAdapter::class, fn () => new ManualReviewOcrAdapter);
     }
 
     public function boot(): void
