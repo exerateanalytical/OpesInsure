@@ -43,4 +43,11 @@ return [
     'claim_evidence_upload_unreadable' => 'Ce téléversement n\'a pas pu être lu. Veuillez le téléverser à nouveau.',
     'claim_closed_for_edits' => 'Ce sinistre est clôturé et ne peut plus être modifié.',
     'claim_party_consent_required' => 'Confirmez le consentement de cette personne avant d\'enregistrer ses coordonnées.',
+    'step_up_required' => 'Vérifiez cette action avant de continuer.',
+    'step_up_code_invalid' => 'Ce code est invalide ou a expiré. Demandez-en un nouveau.',
+    'step_up_purpose_invalid' => 'Cette action ne prend pas en charge la vérification renforcée.',
+    'step_up_rate_limited' => 'Trop de tentatives. Réessayez plus tard.',
+    'telemetry_attribute_not_allowed' => 'L\'attribut ":key" n\'est pas accepté.',
+    'telemetry_attribute_not_scalar' => 'L\'attribut ":key" doit être une valeur simple.',
+    'app_version_unsupported' => 'Mettez à jour l\'application pour continuer.',
 ];

@@ -43,4 +43,11 @@ return [
     'claim_evidence_upload_unreadable' => 'That upload could not be read. Please try uploading it again.',
     'claim_closed_for_edits' => 'This claim is closed and can no longer be updated.',
     'claim_party_consent_required' => 'Confirm this person\'s consent before saving their contact details.',
+    'step_up_required' => 'Verify this action before continuing.',
+    'step_up_code_invalid' => 'That code is invalid or has expired. Request a new one.',
+    'step_up_purpose_invalid' => 'This action does not support step-up verification.',
+    'step_up_rate_limited' => 'Too many attempts. Try again later.',
+    'telemetry_attribute_not_allowed' => 'The attribute ":key" is not accepted.',
+    'telemetry_attribute_not_scalar' => 'The attribute ":key" must be a simple value.',
+    'app_version_unsupported' => 'Update the app to continue.',
 ];

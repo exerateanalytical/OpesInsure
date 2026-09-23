@@ -12,6 +12,8 @@ use App\Interfaces\Http\Controllers\Api\V1\Logistics\MobileDeliveryController;
 use App\Interfaces\Http\Controllers\Api\V1\Quotes\MobileQuoteController;
 use App\Interfaces\Http\Controllers\Api\V1\QuoteController;
 use App\Interfaces\Http\Controllers\Api\V1\SystemController;
+use App\Interfaces\Http\Controllers\Api\V1\Runtime\MobileRuntimeController;
+use App\Interfaces\Http\Controllers\Api\V1\Security\MobileStepUpController;
 use Illuminate\Support\Facades\Route;
 use App\Interfaces\Http\Controllers\Api\V1\Tenancy\TenantController;
 use App\Interfaces\Http\Controllers\Api\V1\Identity\AccountController;
@@ -59,6 +61,12 @@ use App\Interfaces\Http\Controllers\Api\V1\Tenancy\TenantLifecycleController;
 Route::prefix('v1')->group(function (): void {
     Route::get('public/capabilities', [SystemController::class, 'capabilities']);
     Route::post('public/accounts', [AccountController::class, 'register'])->middleware('throttle:5,1');
+    // Public runtime surface (CLAUDE_MERGE_GUIDE.md, Patch 7): cold-start
+    // bootstrap and telemetry both intentionally run before any session
+    // exists, so they live alongside public/capabilities rather than inside
+    // the auth:api/tenant group — see MobileRuntimeController.
+    Route::get('mobile/runtime/bootstrap', [MobileRuntimeController::class, 'bootstrap'])->middleware('throttle:60,1');
+    Route::post('mobile/runtime/telemetry', [MobileRuntimeController::class, 'telemetry'])->middleware(['throttle:60,1', 'idempotency:mobile.runtime.telemetry']);
     Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->middleware('throttle:120,1')->name('payments.webhook');
     Route::post('webhooks/payments/mtn-momo/callback', MtnMomoCallbackController::class)->middleware('throttle:120,1')->name('payments.mtn_momo.callback');
     Route::match(['get', 'post'], 'webhooks/payments/orange-money/callback', OrangeMoneyCallbackController::class)->middleware('throttle:120,1')->name('payments.orange_money.callback');
@@ -164,7 +172,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('mobile/payments/{payment}', [MobilePaymentController::class, 'show']);
         Route::post('mobile/payments/{payment}/retry', [MobilePaymentController::class, 'retry'])->middleware('throttle:10,1');
         Route::get('mobile/payments/{payment}/receipt', [MobilePaymentController::class, 'receipt']);
-        Route::post('mobile/payments/{payment}/refunds', [MobilePaymentController::class, 'requestRefund']);
+        // PAYMENT_REFUND_REQUEST step-up (CLAUDE_MERGE_GUIDE.md, Patch 7):
+        // retrofits a real elevated-grant check onto a mutating financial
+        // endpoint that previously had none. COMMISSION_WITHDRAWAL and
+        // CLAIM_SETTLEMENT_DECISION should adopt the identical
+        // '->middleware('step-up:<PURPOSE>')' pattern once those endpoints
+        // exist — see the batch report.
+        Route::post('mobile/payments/{payment}/refunds', [MobilePaymentController::class, 'requestRefund'])->middleware(['step-up:PAYMENT_REFUND_REQUEST', 'throttle:10,1']);
         Route::get('mobile/wallet', [MobileWalletController::class, 'index']);
         Route::get('mobile/wallet/policies/{policy}', [MobileWalletController::class, 'show']);
         Route::get('policies/{policy}/certificate', [MobileWalletController::class, 'certificate']);
@@ -206,6 +220,7 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave12.php';
         require __DIR__.'/wave12_kyc.php';
         require __DIR__.'/wave12_claims.php';
+        require __DIR__.'/wave13_runtime.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);

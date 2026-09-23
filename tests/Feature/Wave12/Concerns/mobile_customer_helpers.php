@@ -16,6 +16,7 @@ use App\Models\Proposal;
 use App\Models\Quote;
 use App\Models\QuoteOffer;
 use App\Models\RiskAsset;
+use App\Models\StepUpGrant;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
 use App\Models\TenantCustomer;
@@ -163,6 +164,34 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'currency' => 'XAF',
             'submitted_at' => now()->subDays(2),
         ], $overrides));
+    /**
+     * Issues a valid step-up grant directly (bypassing the request/verify
+     * OTP round trip), returning the raw token to send back via the
+     * X-Step-Up-Grant header. Mirrors makeMobileTestPayment()'s "build the
+     * end state a test needs, don't re-run the whole flow" style.
+     *
+     * @return array{token: string, grant: StepUpGrant}
+     */
+    function issueMobileStepUpGrant(User $user, Tenant $tenant, string $purpose, array $overrides = []): array
+    {
+        $token = Str::random(64);
+
+        $grant = StepUpGrant::create(array_merge([
+            'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
+            'device_id' => null,
+            'challenge_id' => null,
+            'purpose' => $purpose,
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => now()->addMinutes(5),
+        ], $overrides));
+
+        return ['token' => $token, 'grant' => $grant];
+    }
+
+    function stepUpHeaderFor(string $token): array
+    {
+        return ['X-Step-Up-Grant' => $token];
     }
 
     function makeMobileTestDocument(Tenant $tenant, Party $party, array $overrides = []): Document
