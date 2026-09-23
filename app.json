@@ -1,38 +1,45 @@
 {
-  "expo": {
-    "name": "OpesInsure",
-    "slug": "opesinsure",
-    "version": "1.2.0",
-    "orientation": "portrait",
-    "scheme": "opesinsure",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.opesware.opesinsure"
-    },
-    "android": {
-      "package": "com.opesware.opesinsure",
-      "adaptiveIcon": {
-        "backgroundColor": "#071A2B"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-font",
-      "expo-localization",
-      "expo-notifications",
-      ["expo-image-picker", {"cameraPermission": "Allow OpesInsure to capture claim evidence."}],
-      "expo-document-picker",
-      "expo-local-authentication"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}"
+    "expo": {
+        "name": "OpesInsure",
+        "slug": "opesinsure",
+        "version": "1.2.0",
+        "orientation": "portrait",
+        "scheme": "opesinsure",
+        "userInterfaceStyle": "light",
+        "newArchEnabled": true,
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.opesware.opesinsure"
+        },
+        "android": {
+            "package": "com.opesware.opesinsure",
+            "adaptiveIcon": {
+                "backgroundColor": "#071A2B",
+                "foregroundImage": "./assets/adaptive-icon.png"
+            },
+            "edgeToEdgeEnabled": true
+        },
+        "plugins": [
+            "expo-router",
+            "expo-secure-store",
+            "expo-font",
+            "expo-localization",
+            "expo-notifications",
+            [
+                "expo-image-picker",
+                {
+                    "cameraPermission": "Allow OpesInsure to capture claim evidence."
+                }
+            ],
+            "expo-document-picker",
+            "expo-local-authentication"
+        ],
+        "experiments": {
+            "typedRoutes": true
+        },
+        "extra": {
+            "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}"
+        },
+        "icon": "./assets/icon.png"
     }
-  }
 }
