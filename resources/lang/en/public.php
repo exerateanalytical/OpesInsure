@@ -1,0 +1,57 @@
+<?php
+
+return [
+    'meta_description' => 'OpesInsure — digital insurance distribution for Cameroon. Quote, buy, and manage motor, health, travel and property cover.',
+    'nav_download' => 'Get the app',
+    'nav_portal' => 'Staff portal',
+
+    'home_title' => 'OpesInsure — Insurance, simplified',
+    'home_eyebrow' => 'Insurance distribution platform',
+    'home_heading' => 'Insurance that moves at the speed of your phone',
+    'home_lede' => 'Compare cover from licensed carriers, pay with MTN MoMo or Orange Money, and carry proof of insurance in your pocket. Motor, health, travel and property — all in one place.',
+    'home_cta_download' => 'Download the mobile app',
+    'home_cta_portal' => 'Staff portal',
+
+    'features_heading' => 'Built for how insurance actually works here',
+    'features_sub' => 'A complete distribution platform connecting customers, agents, brokers and carriers on shared, auditable infrastructure.',
+    'features' => [
+        ['icon' => '⚡', 'title' => 'Quotes in minutes', 'body' => 'Answer a few questions and compare priced offers from multiple licensed carriers side by side.'],
+        ['icon' => '₣', 'title' => 'Mobile money payments', 'body' => 'Pay premiums directly with MTN Mobile Money or Orange Money. No card required.'],
+        ['icon' => '⬛', 'title' => 'Digital policy wallet', 'body' => 'Your certificates and policy documents, available offline whenever you need to show proof.'],
+        ['icon' => '⇄', 'title' => 'Claims that track themselves', 'body' => 'File a claim with photos from your phone and follow every status change as it happens.'],
+        ['icon' => '⌂', 'title' => 'Doorstep delivery', 'body' => 'Physical certificates and motor stickers delivered, with OTP confirmation on handover.'],
+        ['icon' => '◈', 'title' => 'Agent & broker tools', 'body' => 'Intake clients, track commission, and keep working when the network drops.'],
+    ],
+
+    'download_title' => 'Download the OpesInsure mobile app',
+    'download_eyebrow' => 'Mobile app',
+    'download_heading' => 'Carry your cover with you',
+    'download_lede' => 'Quote, buy, and manage your insurance from your phone. Available for Android and iOS.',
+    'download_android' => 'Download for Android',
+    'download_ios' => 'Get it on iOS',
+    'download_android_pending' => 'Android build in preparation',
+    'download_ios_pending' => 'iOS build in preparation',
+
+    'pending_title' => 'Builds are not published yet.',
+    'pending_body' => 'The signed app packages are still being produced. This page will serve them as soon as a verified build is available — we would rather show you nothing than a broken or unverified download.',
+
+    'install_heading' => 'Before you install',
+    'install_sub' => 'What each platform needs, and how we protect the download.',
+    'android_title' => 'Android',
+    'android_body' => 'Version :version. Requires Android :min or newer. If you install the APK directly, Android will ask you to allow installs from this source — that prompt is expected.',
+    'ios_title' => 'iOS',
+    'ios_body' => 'Version :version. Requires iOS :min or newer. Distributed through Apple, so installation follows the normal App Store flow.',
+    'security_title' => 'Verified downloads',
+    'security_body' => 'Packages are signed and served over HTTPS from this domain. Only install OpesInsure from this page or an official app store — never from a link sent to you in a message.',
+
+    'capabilities_heading' => 'What you can do in the app',
+    'capabilities_sub' => 'Everything the platform supports, from your first quote to a settled claim.',
+    'capabilities' => [
+        ['title' => 'Get covered', 'body' => 'Compare offers from licensed carriers, pick your cover, and pay with mobile money.'],
+        ['title' => 'Your wallet', 'body' => 'Every active policy and certificate in one place, viewable offline.'],
+        ['title' => 'Track delivery', 'body' => 'Follow your physical certificate to your door and confirm handover with a code.'],
+        ['title' => 'File a claim', 'body' => 'Report an incident with photos, add the people involved, and watch it progress.'],
+        ['title' => 'Payments & receipts', 'body' => 'Full payment history, retry a failed payment, and request a refund.'],
+        ['title' => 'Support', 'body' => 'Open a support case, attach evidence, and keep the whole thread in one place.'],
+    ],
+];
