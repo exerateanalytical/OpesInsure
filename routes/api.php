@@ -12,6 +12,7 @@ use App\Interfaces\Http\Controllers\Api\V1\Logistics\MobileDeliveryController;
 use App\Interfaces\Http\Controllers\Api\V1\Quotes\MobileQuoteController;
 use App\Interfaces\Http\Controllers\Api\V1\QuoteController;
 use App\Interfaces\Http\Controllers\Api\V1\SystemController;
+use App\Interfaces\Http\Controllers\Api\V1\Runtime\MobileIssueReportController;
 use App\Interfaces\Http\Controllers\Api\V1\Runtime\MobileRuntimeController;
 use App\Interfaces\Http\Controllers\Api\V1\Security\MobileStepUpController;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,10 @@ Route::prefix('v1')->group(function (): void {
     // the auth:api/tenant group — see MobileRuntimeController.
     Route::get('mobile/runtime/bootstrap', [MobileRuntimeController::class, 'bootstrap'])->middleware('throttle:60,1');
     Route::post('mobile/runtime/telemetry', [MobileRuntimeController::class, 'telemetry'])->middleware(['throttle:60,1', 'idempotency:mobile.runtime.telemetry']);
+    // "Report a problem" — filed from wherever the user is in the app,
+    // including pre-auth screens, so it lives alongside runtime/telemetry
+    // rather than behind auth:api. See MobileIssueReportController.
+    Route::post('mobile/issue-reports', [MobileIssueReportController::class, 'store'])->middleware('throttle:20,1');
     Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->middleware('throttle:120,1')->name('payments.webhook');
     Route::post('webhooks/payments/mtn-momo/callback', MtnMomoCallbackController::class)->middleware('throttle:120,1')->name('payments.mtn_momo.callback');
     Route::match(['get', 'post'], 'webhooks/payments/orange-money/callback', OrangeMoneyCallbackController::class)->middleware('throttle:120,1')->name('payments.orange_money.callback');
