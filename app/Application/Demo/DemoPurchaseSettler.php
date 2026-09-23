@@ -41,9 +41,13 @@ final class DemoPurchaseSettler
             return;
         }
 
-        // payment_intents.created_at is timestamptz (UTC); compare in UTC so the
-        // app timezone (Africa/Douala) cannot make a fresh payment look future-dated.
-        $ageSeconds = $payment->created_at->utc()->diffInSeconds(now()->utc(), false);
+        // Eloquent writes app-timezone wall-clock time into the timestamptz
+        // column with no offset, so the stored value reads back labelled UTC
+        // while actually being Africa/Douala. Re-interpret the wall clock in
+        // the app timezone before measuring age, or a fresh payment looks an
+        // hour in the future and never settles.
+        $createdLocal = \Carbon\Carbon::parse($payment->created_at->format('Y-m-d H:i:s'), config('app.timezone'));
+        $ageSeconds = $createdLocal->diffInSeconds(now(), false);
         if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $ageSeconds >= self::CUSTOMER_PROMPT_SECONDS) {
             DB::transaction(function () use ($payment) {
                 $previous = $payment->status;
