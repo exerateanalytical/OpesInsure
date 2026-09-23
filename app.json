@@ -81,6 +81,10 @@
             "url": "https://u.expo.dev/257a3907-e58d-442b-914f-984d74c96767",
             "fallbackToCacheTimeout": 0,
             "checkAutomatically": "ON_LOAD"
-        }
+        },
+        "platforms": [
+            "ios",
+            "android"
+        ]
     }
 }
