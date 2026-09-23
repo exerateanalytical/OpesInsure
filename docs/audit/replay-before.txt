@@ -1,0 +1,76 @@
+
+## Customer (CUSTOMER) workspaces=CUSTOMER@3f8cb145
+OK  200 session                      /auth/mobile/session                       keys=user|workspaces 
+OK  200 home/policies (usePolicies)  /policies                                  keys=current_page|data|first_page_url|from|last_page|last_page_url 
+ERR 403 claims tab                   /claims                                     Permission denied.
+ERR 404 account/devices              /mobile/account/devices                     The route api/v1/mobile/account/devices could not be found.
+ERR 404 account/notifications        /mobile/account/notification-preferences    The route api/v1/mobile/account/notification-preferences could not be found.
+OK  200 assets                       /mobile/assets                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 payments                     /mobile/payments                           keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 wallet                       /mobile/wallet                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 quotes history               /mobile/quotes                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+ERR 404 notifications                /mobile/notifications                       The route api/v1/mobile/notifications could not be found.
+ERR 404 support cases                /mobile/support/cases                       The route api/v1/mobile/support/cases could not be found.
+ERR 404 policy service requests      /mobile/policy-service-requests             The route api/v1/mobile/policy-service-requests could not be found.
+OK  200 kyc profile                  /mobile/kyc/profile                        keys=party_id|display_name|identifiers|submission 
+OK  200 documents                    /mobile/documents                          keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 sync status                  /mobile/sync/status                        keys=server_time|minimum_client_version 
+ERR 404 workspace dashboard          /mobile/workspace/dashboard                 The route api/v1/mobile/workspace/dashboard could not be found.
+ERR 404 agent dashboard              /mobile/agent/dashboard                     The route api/v1/mobile/agent/dashboard could not be found.
+ERR 403 agent clients                /mobile/agent/clients                       Permission denied.
+ERR 404 agent profile                /mobile/agent/profile                       The route api/v1/mobile/agent/profile could not be found.
+ERR 404 agent renewals               /mobile/agent/renewals                      The route api/v1/mobile/agent/renewals could not be found.
+ERR 403 agent commissions            /mobile/agent/commissions                   Permission denied.
+ERR 403 agent offline queue          /mobile/agent/offline-queue                 Permission denied.
+OK  200 broker dashboard             /mobile/broker/dashboard                   keys=partner|commission|latest_statement|bordereaux_status_counts 
+ERR 404 broker clients               /mobile/broker/clients                      The route api/v1/mobile/broker/clients could not be found.
+ERR 404 broker production            /mobile/broker/production                   The route api/v1/mobile/broker/production could not be found.
+ERR 404 broker renewals              /mobile/broker/renewals                     The route api/v1/mobile/broker/renewals could not be found.
+OK  200 broker receivables           /mobile/broker/receivables                 items=0 
+ERR 404 broker compliance            /mobile/broker/compliance                   The route api/v1/mobile/broker/compliance could not be found.
+ERR 404 broker publications          /mobile/broker/marketplace-publications     The route api/v1/mobile/broker/marketplace-publications could not be found.
+OK  200 carrier dashboard            /mobile/carrier/dashboard                  keys=settlements_status_counts|settlements_net_by_currency|bordereaux_status_counts 
+ERR 404 carrier referrals            /mobile/carrier/referrals                   The route api/v1/mobile/carrier/referrals could not be found.
+ERR 404 carrier issuance             /mobile/carrier/issuance                    The route api/v1/mobile/carrier/issuance could not be found.
+ERR 404 carrier claims               /mobile/carrier/claims                      The route api/v1/mobile/carrier/claims could not be found.
+OK  200 carrier settlements          /mobile/carrier/settlements                keys=current_page|data|first_page_url|from|last_page|last_page_url 
+
+## Commercial agent (mobile) (AGENT) workspaces=AGENT@3f8cb145
+OK  200 session                      /auth/mobile/session                       keys=user|workspaces 
+OK  200 home/policies (usePolicies)  /policies                                  keys=current_page|data|first_page_url|from|last_page|last_page_url 
+ERR 403 claims tab                   /claims                                     Permission denied.
+ERR 404 account/devices              /mobile/account/devices                     The route api/v1/mobile/account/devices could not be found.
+ERR 404 account/notifications        /mobile/account/notification-preferences    The route api/v1/mobile/account/notification-preferences could not be found.
+OK  200 assets                       /mobile/assets                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 payments                     /mobile/payments                           keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 wallet                       /mobile/wallet                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 quotes history               /mobile/quotes                             keys=current_page|data|first_page_url|from|last_page|last_page_url 
+ERR 404 notifications                /mobile/notifications                       The route api/v1/mobile/notifications could not be found.
+ERR 404 support cases                /mobile/support/cases                       The route api/v1/mobile/support/cases could not be found.
+ERR 404 policy service requests      /mobile/policy-service-requests             The route api/v1/mobile/policy-service-requests could not be found.
+OK  200 kyc profile                  /mobile/kyc/profile                        keys=party_id|display_name|identifiers|submission 
+OK  200 documents                    /mobile/documents                          keys=current_page|data|first_page_url|from|last_page|last_page_url 
+OK  200 sync status                  /mobile/sync/status                        keys=server_time|minimum_client_version 
+ERR 404 workspace dashboard          /mobile/workspace/dashboard                 The route api/v1/mobile/workspace/dashboard could not be found.
+ERR 404 agent dashboard              /mobile/agent/dashboard                     The route api/v1/mobile/agent/dashboard could not be found.
+ERR 403 agent clients                /mobile/agent/clients                       Permission denied.
+ERR 404 agent profile                /mobile/agent/profile                       The route api/v1/mobile/agent/profile could not be found.
+ERR 404 agent renewals               /mobile/agent/renewals                      The route api/v1/mobile/agent/renewals could not be found.
+ERR 403 agent commissions            /mobile/agent/commissions                   Permission denied.
+ERR 403 agent offline queue          /mobile/agent/offline-queue                 Permission denied.
+OK  200 broker dashboard             /mobile/broker/dashboard                   keys=partner|commission|latest_statement|bordereaux_status_counts 
+ERR 404 broker clients               /mobile/broker/clients                      The route api/v1/mobile/broker/clients could not be found.
+ERR 404 broker production            /mobile/broker/production                   The route api/v1/mobile/broker/production could not be found.
+ERR 404 broker renewals              /mobile/broker/renewals                     The route api/v1/mobile/broker/renewals could not be found.
+OK  200 broker receivables           /mobile/broker/receivables                 items=0 
+ERR 404 broker compliance            /mobile/broker/compliance                   The route api/v1/mobile/broker/compliance could not be found.
+ERR 404 broker publications          /mobile/broker/marketplace-publications     The route api/v1/mobile/broker/marketplace-publications could not be found.
+OK  200 carrier dashboard            /mobile/carrier/dashboard                  keys=settlements_status_counts|settlements_net_by_currency|bordereaux_status_counts 
+ERR 404 carrier referrals            /mobile/carrier/referrals                   The route api/v1/mobile/carrier/referrals could not be found.
+ERR 404 carrier issuance             /mobile/carrier/issuance                    The route api/v1/mobile/carrier/issuance could not be found.
+ERR 404 carrier claims               /mobile/carrier/claims                      The route api/v1/mobile/carrier/claims could not be found.
+OK  200 carrier settlements          /mobile/carrier/settlements                keys=current_page|data|first_page_url|from|last_page|last_page_url 
+
+## Broker staff (mobile): OTP request failed 429 {
+    "message": "Too Many Attempts."
+}
