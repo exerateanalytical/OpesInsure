@@ -105,6 +105,11 @@ export default function SignIn() {
           loading={busy}
           onPress={submit}
         />
+        <Button
+          label="Create an account"
+          variant="tertiary"
+          onPress={() => router.push("/(auth)/sign-up")}
+        />
       </Card>
       <View style={styles.trust}>
         <LockKeyhole size={18} color={colors.success} />

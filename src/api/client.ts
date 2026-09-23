@@ -369,7 +369,29 @@ export type DemoAccount = {
   role_code: string;
 };
 
+export type RegisterPayload = {
+  full_name: string;
+  phone_e164: string;
+  email?: string;
+  password: string;
+  password_confirmation: string;
+  locale: "en" | "fr";
+  terms_version: string;
+};
+
 export const AuthApi = {
+  /**
+   * POST /public/accounts. Leaves the account at status PENDING_VERIFICATION
+   * — sign-in.tsx immediately follows this with requestOtp/verifyOtp on the
+   * same phone number, and a correct OTP is what the server treats as the
+   * activation step. There is no separate "verify your email" flow.
+   */
+  register: (payload: RegisterPayload) =>
+    api<{ id: string; status: string; verification_required: boolean }>(
+      "/public/accounts",
+      { method: "POST", body: JSON.stringify(payload), anonymous: true },
+    ),
+
   requestOtp: (phone_e164: string) =>
     api<{
       challenge_id: string;
