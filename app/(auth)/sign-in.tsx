@@ -6,6 +6,7 @@ import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandMark } from "@/components/BrandMark";
 import { colors, space, type } from "@/theme/tokens";
 import { AuthApi, type DemoAccount } from "@/api/client";
+import { useSession } from "@/store/session";
 
 export default function SignIn() {
   const [phone, setPhone] = useState("");
@@ -25,28 +26,32 @@ export default function SignIn() {
     };
   }, []);
 
-  // One tap: request the code and jump straight to verification with it
-  // prefilled, so a reviewer never has to copy a number or a code by hand.
+  // True one tap: request the code, verify it with the known demo OTP, and
+  // complete sign-in immediately. No second screen, no second tap — a
+  // reviewer never enters or even sees a code.
+  const completeAuth = useSession((s) => s.completeAuthentication);
+  const [demoAccountId, setDemoAccountId] = useState<string | null>(null);
   const signInAsDemoAccount = async (account: DemoAccount) => {
+    if (!demo) return;
     setBusy(true);
+    setDemoAccountId(account.phone_e164);
     setError(undefined);
     try {
-      const result = await AuthApi.requestOtp(account.phone_e164);
-      router.push({
-        pathname: "/(auth)/verify",
-        params: {
-          challengeId: result.challenge_id,
-          phone: account.phone_e164,
-          expiresIn: String(result.expires_in),
-          prefill: demo?.otp ?? "",
-        },
-      });
+      const challenge = await AuthApi.requestOtp(account.phone_e164);
+      const auth = await AuthApi.verifyOtp(
+        challenge.challenge_id,
+        account.phone_e164,
+        demo.otp,
+      );
+      await completeAuth(auth);
+      router.replace("/(auth)/role");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Demo account is unavailable.",
       );
     } finally {
       setBusy(false);
+      setDemoAccountId(null);
     }
   };
   const submit = async () => {
@@ -131,7 +136,11 @@ export default function SignIn() {
                 <Text style={styles.demoRole}>{account.label}</Text>
                 <Text style={styles.demoPhone}>{account.phone_e164}</Text>
               </View>
-              <ChevronRight size={20} color={colors.neutral500} />
+              {demoAccountId === account.phone_e164 ? (
+                <Text style={styles.demoBusy}>Signing in…</Text>
+              ) : (
+                <ChevronRight size={20} color={colors.neutral500} />
+              )}
             </Pressable>
           ))}
         </Card>
@@ -157,4 +166,5 @@ const styles = StyleSheet.create({
   demoFlex: { flex: 1 },
   demoRole: { ...type.body, color: colors.navy950 },
   demoPhone: { ...type.meta, color: colors.neutral500 },
+  demoBusy: { ...type.meta, color: colors.blue600 },
 });
