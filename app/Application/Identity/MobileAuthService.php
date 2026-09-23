@@ -7,6 +7,10 @@ namespace App\Application\Identity;
 use App\Application\Audit\AuditWriter;
 use App\Application\Notifications\Adapters\NotificationAdapterRegistry;
 use App\Models\MobileRefreshToken;
+use App\Models\Party;
+use App\Models\PartyContact;
+use App\Models\Role;
+use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -116,8 +120,17 @@ final class MobileAuthService
 
         $user = User::find($userId);
 
-        if (! $user || $user->status !== 'ACTIVE') {
+        // A user created by self-registration starts PENDING_VERIFICATION —
+        // this OTP check is exactly the phone-ownership proof that status
+        // exists to require, so a correct code promotes them here rather
+        // than needing a separate activation step nothing else provides.
+        if (! $user || ! in_array($user->status, ['ACTIVE', 'PENDING_VERIFICATION'], true)) {
             throw ValidationException::withMessages(['code' => __('wave12.otp_invalid')]);
+        }
+
+        if ($user->status === 'PENDING_VERIFICATION') {
+            $user->forceFill(['status' => 'ACTIVE', 'phone_verified_at' => now()])->save();
+            $this->provisionCustomerAccess($user);
         }
 
         return DB::transaction(function () use ($user, $deviceFingerprint, $ip, $deviceName, $platform) {
@@ -323,5 +336,65 @@ final class MobileAuthService
         }
 
         return (string) random_int(100000, 999999);
+    }
+
+    /**
+     * Self-registration (POST /public/accounts) only ever creates the login
+     * User row — no Party, no PartyContact, no TenantMembership. Without a
+     * Party, PartyResolver can't resolve this user at all, so every
+     * ownership-scoped mobile endpoint (wallet, payments, quotes, claims...)
+     * would return empty results forever. Without a TenantMembership,
+     * ResolveTenant refuses every tenant-scoped request outright and the app
+     * has nothing to show but "no active workspace".
+     *
+     * Runs once, at the same moment status flips to ACTIVE — a verified phone
+     * is the point at which a self-registered visitor becomes a real
+     * customer. Mirrors DemoMobileAccountSeeder's own pattern (the same
+     * platform tenant, the same CUSTOMER role, no staff permissions) rather
+     * than inventing a second way to wire up a customer identity.
+     */
+    private function provisionCustomerAccess(User $user): void
+    {
+        if ($user->party_id !== null) {
+            return;
+        }
+
+        DB::transaction(function () use ($user) {
+            $party = Party::create([
+                'type' => 'INDIVIDUAL',
+                'display_name' => $user->full_name,
+                'status' => 'ACTIVE',
+            ]);
+
+            PartyContact::create([
+                'party_id' => $party->id,
+                'type' => 'PHONE',
+                'normalized_value' => $user->phone_e164,
+                'is_primary' => true,
+            ]);
+
+            $user->forceFill(['party_id' => $party->id])->save();
+
+            $tenant = Tenant::firstOrCreate(
+                ['slug' => 'opesinsure-platform'],
+                ['id' => (string) Str::uuid(), 'type' => 'PLATFORM', 'legal_name' => 'Opesware Technologies', 'trade_name' => 'OpesInsure', 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en', 'settings' => [], 'activated_at' => now()],
+            );
+
+            $membership = TenantMembership::create([
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id,
+                'role_code' => 'CUSTOMER',
+                'status' => 'ACTIVE',
+            ]);
+
+            $role = Role::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'code' => 'CUSTOMER'],
+                ['id' => (string) Str::uuid(), 'permissions' => [], 'is_system' => true],
+            );
+
+            $membership->roles()->syncWithoutDetaching([$role->id]);
+
+            $this->audit->record('mobile.customer.provisioned', 'user', $user->id, ['party_id' => $party->id, 'tenant_id' => $tenant->id]);
+        });
     }
 }
