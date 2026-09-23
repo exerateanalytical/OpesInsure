@@ -38,4 +38,9 @@ return [
     'asset_document_already_attached' => 'Ce document a déjà été joint à ce bien.',
     'asset_document_not_attached' => 'Ce document n\'est pas joint à ce bien.',
     'asset_document_not_clean' => 'Ce document n\'a pas encore réussi le contrôle antivirus.',
+    'claim_no_party' => 'Nous n\'avons trouvé aucun profil client associé à votre compte.',
+    'claim_evidence_upload_not_ready' => 'Ce téléversement n\'est pas encore prêt à être utilisé comme pièce justificative.',
+    'claim_evidence_upload_unreadable' => 'Ce téléversement n\'a pas pu être lu. Veuillez le téléverser à nouveau.',
+    'claim_closed_for_edits' => 'Ce sinistre est clôturé et ne peut plus être modifié.',
+    'claim_party_consent_required' => 'Confirmez le consentement de cette personne avant d\'enregistrer ses coordonnées.',
 ];

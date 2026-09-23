@@ -38,4 +38,9 @@ return [
     'asset_document_already_attached' => 'This document has already been attached to this asset.',
     'asset_document_not_attached' => 'That document is not attached to this asset.',
     'asset_document_not_clean' => 'This document has not passed the malware scan yet.',
+    'claim_no_party' => 'We could not find a customer profile for your account.',
+    'claim_evidence_upload_not_ready' => 'That upload is not ready to be used as evidence yet.',
+    'claim_evidence_upload_unreadable' => 'That upload could not be read. Please try uploading it again.',
+    'claim_closed_for_edits' => 'This claim is closed and can no longer be updated.',
+    'claim_party_consent_required' => 'Confirm this person\'s consent before saving their contact details.',
 ];
