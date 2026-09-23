@@ -30,4 +30,13 @@ return [
     'upload_incomplete' => 'Not every part of this upload has arrived yet.',
     'upload_size_mismatch' => 'The assembled file does not match the declared size. Please upload it again.',
     'upload_checksum_mismatch' => 'The assembled file does not match the expected checksum. Please upload it again.',
+    'agent_not_registered' => 'We could not find an agent profile for your account.',
+    'agent_not_active' => 'Your agent account is suspended and cannot register clients, sell or withdraw right now.',
+    'agent_client_phone_invalid' => 'That phone number does not look valid. Use a Cameroon number such as +2376XXXXXXXX.',
+    'agent_withdrawal_in_flight' => 'You already have a withdrawal in progress. Wait for it to complete before requesting another.',
+    'agent_no_available_balance' => 'There is no published, available balance to withdraw yet.',
+    'agent_withdrawal_destination_invalid' => 'That mobile money number does not look valid.',
+    'agent_withdrawal_mfa_required' => 'Enable two-factor authentication before requesting a withdrawal.',
+    'agent_withdrawal_mfa_invalid' => 'That verification code is invalid or has expired.',
+    'sync_operation_not_allowlisted' => 'This offline action is not supported for replay.',
 ];

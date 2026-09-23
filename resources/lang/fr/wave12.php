@@ -30,4 +30,13 @@ return [
     'upload_incomplete' => 'Toutes les parties de ce téléversement ne sont pas encore arrivées.',
     'upload_size_mismatch' => 'Le fichier assemblé ne correspond pas à la taille déclarée. Veuillez le téléverser à nouveau.',
     'upload_checksum_mismatch' => 'Le fichier assemblé ne correspond pas à la somme de contrôle attendue. Veuillez le téléverser à nouveau.',
+    'agent_not_registered' => 'Nous n\'avons trouvé aucun profil agent associé à votre compte.',
+    'agent_not_active' => 'Votre compte agent est suspendu et ne peut pas enregistrer de clients, vendre ou retirer des fonds pour le moment.',
+    'agent_client_phone_invalid' => 'Ce numéro de téléphone ne semble pas valide. Utilisez un numéro camerounais tel que +2376XXXXXXXX.',
+    'agent_withdrawal_in_flight' => 'Vous avez déjà un retrait en cours. Attendez qu\'il soit terminé avant d\'en demander un autre.',
+    'agent_no_available_balance' => 'Aucun solde publié n\'est encore disponible pour un retrait.',
+    'agent_withdrawal_destination_invalid' => 'Ce numéro d\'argent mobile ne semble pas valide.',
+    'agent_withdrawal_mfa_required' => 'Activez l\'authentification à deux facteurs avant de demander un retrait.',
+    'agent_withdrawal_mfa_invalid' => 'Ce code de vérification est invalide ou a expiré.',
+    'sync_operation_not_allowlisted' => 'Cette action hors ligne n\'est pas prise en charge pour la relecture.',
 ];

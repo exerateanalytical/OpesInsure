@@ -204,6 +204,7 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave10.php';
         require __DIR__.'/wave11.php';
         require __DIR__.'/wave12.php';
+        require __DIR__.'/wave12_agentmode.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);
