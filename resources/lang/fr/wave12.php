@@ -30,4 +30,12 @@ return [
     'upload_incomplete' => 'Toutes les parties de ce téléversement ne sont pas encore arrivées.',
     'upload_size_mismatch' => 'Le fichier assemblé ne correspond pas à la taille déclarée. Veuillez le téléverser à nouveau.',
     'upload_checksum_mismatch' => 'Le fichier assemblé ne correspond pas à la somme de contrôle attendue. Veuillez le téléverser à nouveau.',
+    'kyc_document_infected' => 'Ce document a échoué au contrôle antivirus et ne peut pas être utilisé pour la vérification.',
+    'kyc_document_already_attached' => 'Ce document a déjà été joint à votre dossier de vérification.',
+    'kyc_no_documents' => 'Joignez au moins un document avant de soumettre votre dossier de vérification.',
+    'kyc_documents_not_ready' => 'Un ou plusieurs documents joints n\'ont pas encore réussi le contrôle antivirus.',
+    'asset_duplicate_reference' => 'Vous avez déjà un bien enregistré avec cette référence.',
+    'asset_document_already_attached' => 'Ce document a déjà été joint à ce bien.',
+    'asset_document_not_attached' => 'Ce document n\'est pas joint à ce bien.',
+    'asset_document_not_clean' => 'Ce document n\'a pas encore réussi le contrôle antivirus.',
 ];

@@ -30,4 +30,12 @@ return [
     'upload_incomplete' => 'Not every part of this upload has arrived yet.',
     'upload_size_mismatch' => 'The assembled file does not match the declared size. Please upload it again.',
     'upload_checksum_mismatch' => 'The assembled file does not match the expected checksum. Please upload it again.',
+    'kyc_document_infected' => 'This document failed the malware scan and cannot be used for verification.',
+    'kyc_document_already_attached' => 'This document has already been attached to your verification submission.',
+    'kyc_no_documents' => 'Attach at least one document before submitting for verification.',
+    'kyc_documents_not_ready' => 'One or more attached documents have not passed the malware scan yet.',
+    'asset_duplicate_reference' => 'You already have an asset registered with that reference.',
+    'asset_document_already_attached' => 'This document has already been attached to this asset.',
+    'asset_document_not_attached' => 'That document is not attached to this asset.',
+    'asset_document_not_clean' => 'This document has not passed the malware scan yet.',
 ];
