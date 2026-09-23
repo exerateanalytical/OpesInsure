@@ -41,7 +41,7 @@ final class DemoPurchaseSettler
             return;
         }
 
-        if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $payment->updated_at->lte(now()->subSeconds(self::CUSTOMER_PROMPT_SECONDS))) {
+        if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $payment->created_at->lte(now()->subSeconds(self::CUSTOMER_PROMPT_SECONDS))) {
             DB::transaction(function () use ($payment) {
                 $previous = $payment->status;
                 $payment->update(['status' => 'SUCCEEDED', 'reconciled_at' => now(), 'provider_snapshot' => array_merge($payment->provider_snapshot ?? [], ['demo' => true, 'settled_by' => 'DemoPurchaseSettler'])]);
