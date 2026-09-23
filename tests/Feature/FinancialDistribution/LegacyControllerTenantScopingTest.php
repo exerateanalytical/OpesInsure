@@ -13,19 +13,20 @@ require_once __DIR__.'/../Concerns/wave_auth_helpers.php';
 require_once __DIR__.'/../Wave12/Concerns/mobile_customer_helpers.php';
 
 /**
- * First behavioural coverage for the legacy commission/settlement controllers.
+ * Covers what is left of the legacy commission/settlement controllers after
+ * their write endpoints were removed, plus proof the removal took effect.
  *
  * The Wave6 tests next door only file_get_contents() the service classes and
- * assert substrings, so they cannot catch any of this. Every case below fails
- * against the pre-fix controllers.
+ * assert substrings, so they never touch the database and cannot catch any of
+ * this. Runs against an isolated database, never the shared one.
  */
 function legacyCarrier(): string
 {
-    $party = DB::table('parties')->insertGetId([
-        'id' => (string) Str::uuid(), 'type' => 'ORGANIZATION',
-        'display_name' => 'Legacy Carrier '.Str::random(5), 'status' => 'ACTIVE',
-        'legal_identity' => '{}', 'created_at' => now(), 'updated_at' => now(),
-    ], 'id');
+    $party = (string) Str::uuid();
+    DB::table('parties')->insert([
+        'id' => $party, 'type' => 'ORGANIZATION', 'display_name' => 'Legacy Carrier '.Str::random(5),
+        'status' => 'ACTIVE', 'legal_identity' => '{}', 'created_at' => now(), 'updated_at' => now(),
+    ]);
 
     $id = (string) Str::uuid();
     DB::table('carriers')->insert([
@@ -54,9 +55,9 @@ function legacyPartner(string $tenantId): string
 }
 
 /**
- * A policy row in the given tenant. commission_accruals.policy_id is NOT NULL,
- * and a policy needs the whole proposal -> offer -> quote chain behind it, so
- * this leans on the Wave12 fixture builders rather than duplicating them.
+ * commission_accruals.policy_id is NOT NULL and a policy needs the whole
+ * proposal -> offer -> quote chain behind it, so this leans on the Wave12
+ * fixture builders rather than duplicating them.
  */
 function legacyPolicy(string $tenantId): string
 {
@@ -79,6 +80,56 @@ function legacyAccrual(string $tenantId, string $partnerId, int $amount = 500000
 
     return $id;
 }
+
+function legacyBatch(string $tenantId, string $preparedBy): string
+{
+    $id = (string) Str::uuid();
+    DB::table('settlement_batches')->insert([
+        'id' => $id, 'tenant_id' => $tenantId, 'carrier_id' => legacyCarrier(),
+        'period_start' => now()->subMonth()->toDateString(), 'period_end' => now()->toDateString(),
+        'net_amount_minor' => 4500000, 'currency' => 'XAF', 'status' => 'PENDING_APPROVAL',
+        'prepared_by' => $preparedBy, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    return $id;
+}
+
+it('no longer exposes the legacy commission and settlement write routes', function () {
+    $tenant = makeAuthTestTenant();
+    $user = makeAuthTestUser($tenant, [
+        'commission.manage', 'commission.approve', 'commission.accrue',
+        'commission.vest', 'commission.clawback',
+        'settlement.prepare', 'settlement.approve',
+    ]);
+
+    Passport::actingAs($user);
+
+    $uuid = (string) Str::uuid();
+    $removed = [
+        '/api/v1/commission-rules',
+        "/api/v1/commission-rules/{$uuid}/approve",
+        '/api/v1/commissions/accrue',
+        "/api/v1/commissions/{$uuid}/vest",
+        "/api/v1/commissions/{$uuid}/clawback",
+        '/api/v1/settlements',
+        "/api/v1/settlements/{$uuid}/approve",
+    ];
+
+    // These wrote the same tables as the Wave6 domain with an incompatible
+    // status vocabulary. Holding the permission must no longer reach them.
+    foreach ($removed as $path) {
+        $this->postJson($path, [], tenantHeader($tenant))->assertStatus(404);
+    }
+});
+
+it('still serves the Wave6 commission and settlement write routes', function () {
+    // The replacement path must remain reachable — a miss here would mean the
+    // removal took the governed endpoints with it.
+    $routes = collect(app('router')->getRoutes())->map(fn ($r) => $r->uri())->all();
+
+    expect($routes)->toContain('api/v1/financial-distribution/commissions/accrue');
+    expect($routes)->toContain('api/v1/carrier-settlements');
+});
 
 it('does not leak another tenant commission balance', function () {
     $mine = makeAuthTestTenant();
@@ -115,121 +166,40 @@ it('reports only the calling tenant balance when the same partner id exists in b
     expect((int) $rows[0]['earned_minor'])->toBe(100000);
 });
 
-it('cannot vest an accrual belonging to another tenant', function () {
-    $mine = makeAuthTestTenant();
-    $theirs = makeAuthTestTenant();
-    $user = makeAuthTestUser($mine, ['commission.vest']);
-
-    $accrual = legacyAccrual($theirs->id, legacyPartner($theirs->id));
-
-    Passport::actingAs($user);
-
-    $this->postJson("/api/v1/commissions/{$accrual}/vest", [], tenantHeader($mine))->assertStatus(409);
-
-    expect(DB::table('commission_accruals')->where('id', $accrual)->value('status'))->toBe('ACCRUED');
-});
-
-it('cannot claw back an accrual belonging to another tenant', function () {
-    $mine = makeAuthTestTenant();
-    $theirs = makeAuthTestTenant();
-    $user = makeAuthTestUser($mine, ['commission.clawback']);
-
-    $accrual = legacyAccrual($theirs->id, legacyPartner($theirs->id));
-
-    Passport::actingAs($user);
-
-    $this->postJson("/api/v1/commissions/{$accrual}/clawback", [
-        'amount_minor' => 1000,
-        'reason_code' => 'POLICY_CANCELLED',
-        'notes' => 'Attempting a cross-tenant clawback which must be refused.',
-    ], tenantHeader($mine))->assertStatus(404);
-
-    expect((int) DB::table('commission_accruals')->where('id', $accrual)->value('clawed_back_minor'))->toBe(0);
-});
-
-it('stamps tenant_id and created_by on a commission rule so Wave6 governance can see it', function () {
-    $tenant = makeAuthTestTenant();
-    $user = makeAuthTestUser($tenant, ['commission.manage']);
-
-    Passport::actingAs($user);
-
-    $id = $this->postJson('/api/v1/commission-rules', [
-        'carrier_id' => legacyCarrier(),
-        'effective_from' => now()->toDateString(),
-        'basis_points' => 1200,
-        'vesting_days' => 30,
-        'holdback_basis_points' => 100,
-    ], tenantHeader($tenant))->assertStatus(201)->json('data.id');
-
-    $row = DB::table('commission_rule_versions')->where('id', $id)->first();
-
-    // tenant_id NULL made the row permanently unapprovable through Wave6,
-    // whose owns() check compares tenant_id.
-    expect($row->tenant_id)->toBe($tenant->id);
-    // created_by NULL meant Wave6's maker-checker could never fire: NULL is
-    // never equal to the approving actor, so self-approval always passed.
-    expect($row->created_by)->toBe($user->id);
-});
-
-it('refuses to let the maker approve their own commission rule', function () {
-    $tenant = makeAuthTestTenant();
-    $maker = makeAuthTestUser($tenant, ['commission.manage', 'commission.approve']);
-
-    Passport::actingAs($maker);
-
-    $id = $this->postJson('/api/v1/commission-rules', [
-        'carrier_id' => legacyCarrier(),
-        'effective_from' => now()->toDateString(),
-        'basis_points' => 1000,
-        'vesting_days' => 30,
-        'holdback_basis_points' => 0,
-    ], tenantHeader($tenant))->assertStatus(201)->json('data.id');
-
-    $this->postJson("/api/v1/commission-rules/{$id}/approve", [
-        'reason' => 'Self approval must be refused to preserve maker-checker separation.',
-    ], tenantHeader($tenant))->assertStatus(403);
-
-    expect(DB::table('commission_rule_versions')->where('id', $id)->value('status'))->toBe('DRAFT');
-});
-
 it('does not expose another tenant settlement batch', function () {
     $mine = makeAuthTestTenant();
     $theirs = makeAuthTestTenant();
     $user = makeAuthTestUser($mine, ['settlement.read']);
 
-    $batch = (string) Str::uuid();
-    DB::table('settlement_batches')->insert([
-        'id' => $batch, 'tenant_id' => $theirs->id, 'carrier_id' => legacyCarrier(),
-        'period_start' => now()->subMonth()->toDateString(), 'period_end' => now()->toDateString(),
-        'net_amount_minor' => 4500000, 'currency' => 'XAF', 'status' => 'PENDING_APPROVAL',
-        'prepared_by' => makeAuthTestUser($theirs, [])->id,
-        'created_at' => now(), 'updated_at' => now(),
-    ]);
+    $batch = legacyBatch($theirs->id, makeAuthTestUser($theirs, [])->id);
 
     Passport::actingAs($user);
 
     $this->getJson("/api/v1/settlements/{$batch}", tenantHeader($mine))->assertStatus(404);
 });
 
-it('cannot approve another tenant settlement batch', function () {
-    $mine = makeAuthTestTenant();
-    $theirs = makeAuthTestTenant();
-    $preparer = makeAuthTestUser($theirs, ['settlement.prepare']);
-    $attacker = makeAuthTestUser($mine, ['settlement.approve']);
+it('serves the calling tenant own settlement batch with its approvals', function () {
+    $tenant = makeAuthTestTenant();
+    $preparer = makeAuthTestUser($tenant, ['settlement.prepare']);
+    $reader = makeAuthTestUser($tenant, ['settlement.read']);
 
-    $batch = (string) Str::uuid();
-    DB::table('settlement_batches')->insert([
-        'id' => $batch, 'tenant_id' => $theirs->id, 'carrier_id' => legacyCarrier(),
-        'period_start' => now()->subMonth()->toDateString(), 'period_end' => now()->toDateString(),
-        'net_amount_minor' => 4500000, 'currency' => 'XAF', 'status' => 'PENDING_APPROVAL',
-        'prepared_by' => $preparer->id, 'created_at' => now(), 'updated_at' => now(),
+    $batch = legacyBatch($tenant->id, $preparer->id);
+
+    // settlement_approvals is written only by this legacy path today; the read
+    // must keep surfacing it while CarrierSettlementService adopts it.
+    DB::table('settlement_approvals')->insert([
+        'id' => (string) Str::uuid(), 'settlement_batch_id' => $batch, 'stage' => 'FINANCE_APPROVAL',
+        'decision' => 'APPROVED', 'actor_id' => $preparer->id,
+        'notes' => 'Approved during the reporting period close for this carrier.',
+        'decided_at' => now(),
     ]);
 
-    Passport::actingAs($attacker);
+    Passport::actingAs($reader);
 
-    $this->postJson("/api/v1/settlements/{$batch}/approve", [
-        'notes' => 'Cross-tenant approval attempt which must be refused outright.',
-    ], tenantHeader($mine))->assertStatus(409);
+    $data = $this->getJson("/api/v1/settlements/{$batch}", tenantHeader($tenant))
+        ->assertStatus(200)->json('data');
 
-    expect(DB::table('settlement_batches')->where('id', $batch)->value('status'))->toBe('PENDING_APPROVAL');
+    expect($data['batch']['id'])->toBe($batch);
+    expect($data['approvals'])->toHaveCount(1);
+    expect($data['approvals'][0]['decision'])->toBe('APPROVED');
 });

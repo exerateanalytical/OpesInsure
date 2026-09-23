@@ -95,7 +95,34 @@ landed ahead of the structural decision rather than waiting on it.
 Covered by `tests/Feature/FinancialDistribution/LegacyControllerTenantScopingTest.php`
 — 8 cases, each verified to fail against the pre-fix controllers and pass after.
 
-### Recommended, needs sign-off — the structural change
+### Executed — the structural change (signed off)
+
+All three open questions were answered, and the answers made deletion viable:
+
+- **Nothing calls the legacy routes**, so they were deleted outright rather than
+  wrapped. The `ACTIVE`->`APPROVED` / `ACCRUED`->`PENDING` vocabulary break
+  disappears with them — there was no client to break.
+- **Both bordereau flows are real**, so `BordereauService::prepare()` gained an
+  explicit `policy_ids` selection mode alongside its period auto-select. An
+  explicit list naming a policy outside the caller's tenant or carrier now
+  fails loudly rather than quietly billing a shorter list.
+- **`settlement_approvals` is worth keeping**, so `CarrierSettlementService::approve()`
+  now writes it. The events trail records the transition but not the stage,
+  deciding actor or reasoning.
+
+Also closed: `BrokerOperationsController::submitBordereau` required only
+`DRAFT`, letting one actor create and submit with no second approver. It now
+requires `APPROVED` and refuses submission by the preparer.
+
+Removed: `POST /commission-rules`, `POST /commission-rules/{rule}/approve`,
+`POST /commissions/accrue`, `POST /commissions/{accrual}/vest`,
+`POST /commissions/{accrual}/clawback`, `POST /settlements`,
+`POST /settlements/{batch}/approve`.
+
+Retained (read-only, no Wave6 equivalent):
+`GET /partners/{partner}/commission-balance` and `GET /settlements/{batch}`.
+
+### Original recommendation, superseded by the above
 
 | Endpoint | Decision | Rationale |
 |---|---|---|
@@ -130,7 +157,7 @@ implemented in this change.**
 
 ---
 
-## Open questions for product
+## Open questions for product — all answered, see "Executed" above
 
 1. **Are the two bordereau flows both wanted?** If the explicit-`policy_ids`
    flow is real, `BordereauService` needs to accept an explicit selection mode

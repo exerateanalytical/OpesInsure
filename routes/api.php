@@ -199,19 +199,16 @@ Route::prefix('v1')->group(function (): void {
         Route::get('ledger/journals/{journal}', [LedgerController::class, 'journal'])->middleware('permission:ledger.read');
         Route::post('ledger/journals', [LedgerController::class, 'manual'])->middleware('permission:ledger.adjust');
         Route::post('ledger/journals/{journal}/reverse', [LedgerController::class, 'reverse'])->middleware('permission:ledger.reverse');
-        Route::post('commission-rules', [CommissionController::class, 'createRule'])->middleware('permission:commission.manage');
-        Route::post('commission-rules/{rule}/approve', [CommissionController::class, 'approveRule'])->middleware('permission:commission.approve');
-        Route::post('commissions/accrue', [CommissionController::class, 'accrue'])->middleware('permission:commission.accrue');
-        Route::post('commissions/{accrual}/vest', [CommissionController::class, 'vest'])->middleware('permission:commission.vest');
-        Route::post('commissions/{accrual}/clawback', [CommissionController::class, 'clawback'])->middleware('permission:commission.clawback');
+        // The legacy commission/settlement WRITE routes were removed: they wrote the
+        // same tables as the Wave6 domain via raw queries, with an incompatible status
+        // vocabulary. routes/wave6.php is now the only write path. These two reads stay
+        // because Wave6 has no equivalent. See docs/design/FINANCIAL_DISTRIBUTION_LEGACY_PATHS.md
         Route::get('partners/{partner}/commission-balance', [CommissionController::class, 'balance'])->middleware('permission:commission.read');
         Route::post('reconciliation/imports', [ReconciliationController::class, 'import'])->middleware('permission:reconciliation.import');
         Route::get('reconciliation/imports/{import}', [ReconciliationController::class, 'show'])->middleware('permission:reconciliation.read');
         Route::post('reconciliation/items/{item}/resolve', [ReconciliationController::class, 'resolve'])->middleware('permission:reconciliation.resolve');
         Route::post('reconciliation/imports/{import}/approve', [ReconciliationController::class, 'approve'])->middleware('permission:reconciliation.approve');
-        Route::post('settlements', [SettlementController::class, 'prepare'])->middleware('permission:settlement.prepare');
         Route::get('settlements/{batch}', [SettlementController::class, 'show'])->middleware('permission:settlement.read');
-        Route::post('settlements/{batch}/approve', [SettlementController::class, 'approve'])->middleware('permission:settlement.approve');
         require __DIR__.'/wave7.php';
         require __DIR__.'/wave8.php';
         require __DIR__.'/wave9.php';

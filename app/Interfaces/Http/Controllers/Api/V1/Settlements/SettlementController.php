@@ -1,7 +1,24 @@
 <?php
 namespace App\Interfaces\Http\Controllers\Api\V1\Settlements;
-use App\Application\Audit\AuditWriter;use Illuminate\Http\Request;use Illuminate\Support\Facades\DB;use Illuminate\Support\Str;
-final class SettlementController{
-public function prepare(Request$r,AuditWriter$audit){$d=$r->validate(['carrier_id'=>'required|uuid|exists:carriers,id','period_start'=>'required|date','period_end'=>'required|date|after_or_equal:period_start','policy_ids'=>'required|array|min:1|max:5000','policy_ids.*'=>'uuid|exists:policies,id']);$policies=DB::table('policies')->where('tenant_id',app(\App\Domain\Tenancy\TenantContext::class)->id())->where('carrier_id',$d['carrier_id'])->whereIn('id',$d['policy_ids'])->where('status','ACTIVE')->get();abort_unless($policies->count()===count(array_unique($d['policy_ids'])),422,'Every selected policy must be active and belong to the carrier.');$id=(string)Str::uuid();$computed=$policies->map(function($p){$commission=(int)DB::table('commission_accruals')->where('tenant_id',$p->tenant_id)->where('policy_id',$p->id)->sum('amount_minor');return[$p,$commission,$p->premium_minor-$commission];});$net=(int)$computed->sum(fn($x)=>$x[2]);DB::transaction(function()use($d,$computed,$id,$r,$net,$audit){DB::table('settlement_batches')->insert(['id'=>$id,'tenant_id'=>app(\App\Domain\Tenancy\TenantContext::class)->id(),'carrier_id'=>$d['carrier_id'],'period_start'=>$d['period_start'],'period_end'=>$d['period_end'],'net_amount_minor'=>$net,'currency'=>'XAF','status'=>'PENDING_APPROVAL','prepared_by'=>$r->user()->id,'created_at'=>now(),'updated_at'=>now()]);foreach($computed as[$p,$commission,$due])DB::table('settlement_items')->insert(['id'=>(string)Str::uuid(),'settlement_batch_id'=>$id,'policy_id'=>$p->id,'payment_intent_id'=>$p->payment_intent_id,'gross_premium_minor'=>$p->premium_minor,'commission_minor'=>$commission,'tax_minor'=>0,'adjustment_minor'=>0,'net_due_minor'=>$due,'currency'=>$p->currency,'status'=>'INCLUDED','created_at'=>now(),'updated_at'=>now()]);$audit->record('settlement.prepared','settlement_batch',$id,['net_minor'=>$net,'items'=>$computed->count()]);});return response()->json(['data'=>['id'=>$id,'net_amount_minor'=>$net,'status'=>'PENDING_APPROVAL']],201);}
-public function approve(Request$r,string$batch,AuditWriter$audit){$d=$r->validate(['notes'=>'required|string|min:20|max:2000']);$row=DB::table('settlement_batches')->where('tenant_id',app(\App\Domain\Tenancy\TenantContext::class)->id())->where('id',$batch)->where('status','PENDING_APPROVAL')->first();abort_unless($row,409);abort_if($row->prepared_by===$r->user()->id,403,'Preparer cannot approve settlement.');DB::transaction(function()use($row,$batch,$r,$d,$audit){DB::table('settlement_batches')->where('id',$batch)->update(['status'=>'APPROVED','approved_by'=>$r->user()->id,'approved_at'=>now(),'updated_at'=>now()]);DB::table('settlement_approvals')->insert(['id'=>(string)Str::uuid(),'settlement_batch_id'=>$batch,'stage'=>'FINANCE_APPROVAL','decision'=>'APPROVED','actor_id'=>$r->user()->id,'notes'=>$d['notes'],'decided_at'=>now()]);$audit->record('settlement.approved','settlement_batch',$batch,['net_minor'=>$row->net_amount_minor]);});return response()->json(['data'=>['id'=>$batch,'status'=>'APPROVED']]);}
-public function show(string$batch){$row=DB::table('settlement_batches')->where('tenant_id',app(\App\Domain\Tenancy\TenantContext::class)->id())->where('id',$batch)->first();abort_unless($row,404);return response()->json(['data'=>['batch'=>$row,'items'=>DB::table('settlement_items')->where('settlement_batch_id',$batch)->get(),'approvals'=>DB::table('settlement_approvals')->where('settlement_batch_id',$batch)->get()]]);}}
+
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Read-only settlement reporting.
+ *
+ * prepare() and approve() were removed: they wrote settlement_batches and
+ * settlement_items with raw queries on a narrower state machine
+ * (PENDING_APPROVAL / APPROVED) than
+ * App\Application\FinancialDistribution\CarrierSettlementService models
+ * (DRAFT / APPROVED / SUBMITTED / PAID / FAILED / REVERSED), and prepare()
+ * selected policies with no tenant filter at all. routes/wave6.php is now the
+ * only write path.
+ *
+ * show() stays because Wave6 has no equivalent read, and it surfaces
+ * settlement_approvals, which CarrierSettlementService is being taught to
+ * write. See docs/design/FINANCIAL_DISTRIBUTION_LEGACY_PATHS.md.
+ */
+final class SettlementController
+{
+    public function show(string$batch){$row=DB::table('settlement_batches')->where('tenant_id',app(\App\Domain\Tenancy\TenantContext::class)->id())->where('id',$batch)->first();abort_unless($row,404);return response()->json(['data'=>['batch'=>$row,'items'=>DB::table('settlement_items')->where('settlement_batch_id',$batch)->get(),'approvals'=>DB::table('settlement_approvals')->where('settlement_batch_id',$batch)->get()]]);}
+}
