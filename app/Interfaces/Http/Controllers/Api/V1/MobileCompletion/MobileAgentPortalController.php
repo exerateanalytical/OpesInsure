@@ -172,7 +172,7 @@ final class MobileAgentPortalController
             'MOTOR' => ['registration_number' => 'TBC', 'fiscal_power' => 7, 'usage_type' => 'PRIVATE', 'zone' => 'CAMEROON'],
             'TRAVEL' => ['destination_country' => 'FRANCE', 'departure_date' => now()->addDays(14)->toDateString(), 'return_date' => now()->addDays(28)->toDateString(), 'traveller_count' => 1],
             'HOME' => ['property_type' => 'HOUSE', 'occupancy' => 'OWNER_OCCUPIED', 'city' => 'DOUALA', 'declared_value_minor' => 20_000_000_00],
-            'HEALTH' => ['plan_tier' => 'STANDARD', 'member_count' => 1, 'region' => 'CAMEROON'],
+            'HEALTH' => ['beneficiary_count' => 1, 'oldest_age' => 35, 'coverage_zone' => 'CAMEROON', 'plan_type' => 'INDIVIDUAL'],
             default => ['insured_age' => 35, 'cover_amount_minor' => 10_000_000_00, 'term_years' => 10, 'purpose' => 'FAMILY_PROTECTION'],
         };
         $quote = $quotes->submit(Tenant::findOrFail($t), $customer->party_id, ['line_code' => $line, 'channel' => 'AGENT', 'risk_facts' => $facts], $request->user());

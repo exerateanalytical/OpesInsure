@@ -37,7 +37,7 @@ final class PlatformCatalogueSeeder extends Seeder
             'HOME' => ['Home', 'Habitation', ['property_type', 'occupancy', 'city', 'declared_value_minor'],
                 [['FIRE', 'Fire and explosion', 'Incendie et explosion', 'AMOUNT', true], ['WATER_DAMAGE', 'Water damage', 'Dégâts des eaux', 'AMOUNT', false], ['THEFT', 'Theft', 'Vol', 'AMOUNT', false], ['LIABILITY', 'Household liability', 'Responsabilité civile vie privée', 'AMOUNT', true]],
                 [['WEAR_TEAR', 'Wear and tear', 'Usure normale'], ['UNOCCUPIED', 'Unoccupied over 90 days', 'Inoccupation de plus de 90 jours']]],
-            'HEALTH' => ['Health', 'Santé', ['plan_tier', 'member_count', 'region'],
+            'HEALTH' => ['Health', 'Santé', ['beneficiary_count', 'oldest_age', 'coverage_zone', 'plan_type'],
                 [['HOSPITALISATION', 'Hospitalisation', 'Hospitalisation', 'AMOUNT', true], ['OUTPATIENT', 'Outpatient care', 'Soins ambulatoires', 'AMOUNT', false], ['MATERNITY', 'Maternity', 'Maternité', 'AMOUNT', false], ['DENTAL_OPTICAL', 'Dental and optical', 'Dentaire et optique', 'AMOUNT', false]],
                 [['COSMETIC', 'Cosmetic procedures', 'Chirurgie esthétique'], ['SELF_INFLICTED', 'Self-inflicted injury', 'Blessures volontaires']]],
             'LIFE' => ['Life', 'Vie', ['insured_age', 'cover_amount_minor', 'term_years', 'purpose'],
@@ -104,10 +104,10 @@ final class PlatformCatalogueSeeder extends Seeder
             ['code' => 'APARTMENT', 'fact' => 'property_type', 'operator' => 'EQUALS', 'value' => 'APARTMENT', 'basis_points' => -1000],
         ];
         $healthFactors = [
-            ['code' => 'TIER_PLUS', 'fact' => 'plan_tier', 'operator' => 'EQUALS', 'value' => 'PLUS', 'basis_points' => 6000],
-            ['code' => 'TIER_PREMIUM', 'fact' => 'plan_tier', 'operator' => 'EQUALS', 'value' => 'PREMIUM', 'basis_points' => 14000],
-            ['code' => 'FAMILY_2_4', 'fact' => 'member_count', 'operator' => 'BETWEEN', 'value' => [2, 4], 'basis_points' => 9000],
-            ['code' => 'FAMILY_5_PLUS', 'fact' => 'member_count', 'operator' => 'BETWEEN', 'value' => [5, 12], 'basis_points' => 18000],
+            ['code' => 'FAMILY_PLAN', 'fact' => 'plan_type', 'operator' => 'EQUALS', 'value' => 'FAMILY', 'basis_points' => 9000],
+            ['code' => 'MEMBERS_3_5', 'fact' => 'beneficiary_count', 'operator' => 'BETWEEN', 'value' => [3, 5], 'basis_points' => 6000],
+            ['code' => 'MEMBERS_6_PLUS', 'fact' => 'beneficiary_count', 'operator' => 'BETWEEN', 'value' => [6, 20], 'basis_points' => 15000],
+            ['code' => 'AGE_50_PLUS', 'fact' => 'oldest_age', 'operator' => 'BETWEEN', 'value' => [50, 90], 'basis_points' => 8000],
         ];
         $lifeFactors = [
             ['code' => 'AGE_41_55', 'fact' => 'insured_age', 'operator' => 'BETWEEN', 'value' => [41, 55], 'basis_points' => 6000],
