@@ -14,19 +14,17 @@ use App\Models\MfaMethod;
 use App\Models\Partner;
 use App\Models\PartnerPayoutRequest;
 use App\Models\PartnerStatement;
-use App\Models\PaymentIntentRecord;
-use App\Models\Partner;
-use App\Models\PartnerStatement;
 use App\Models\Party;
 use App\Models\PartyContact;
+use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\Proposal;
 use App\Models\Quote;
 use App\Models\QuoteOffer;
 use App\Models\RiskAsset;
-use App\Models\StepUpGrant;
 use App\Models\Role;
 use App\Models\SettlementBatch;
+use App\Models\StepUpGrant;
 use App\Models\TariffVersion;
 use App\Models\Tenant;
 use App\Models\TenantCustomer;
@@ -71,13 +69,11 @@ if (! function_exists('makeMobileCustomerFixture')) {
         return ['X-Tenant-Id' => $tenant->id];
     }
 
-    /** tenantHeaderFor() plus a fresh (or caller-chosen) Idempotency-Key — every Agent Mode mutating endpoint requires one. */
     function agentHeaders(array $fixture, ?string $idempotencyKey = null): array
     {
         return array_merge(tenantHeaderFor($fixture['tenant']), ['Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid()]);
     }
 
-    /** A valid POST /mobile/agent/clients body — shared by the direct-endpoint tests and the offline-queue dispatch tests, which replay the exact same payload shape through SyncOperationDispatchService. */
     function agentClientIntakePayload(array $overrides = []): array
     {
         return array_merge([
@@ -179,50 +175,6 @@ if (! function_exists('makeMobileCustomerFixture')) {
         ], $overrides));
     }
 
-    function makeMobileTestClaim(Tenant $tenant, Policy $policy, Party $party, array $overrides = []): Claim
-    {
-        return Claim::create(array_merge([
-            'tenant_id' => $tenant->id,
-            'policy_id' => $policy->id,
-            'claimant_party_id' => $party->id,
-            'claim_number' => 'CLM-'.Str::random(10),
-            'status' => 'SUBMITTED',
-            'loss_occurred_at' => now()->subDays(2),
-            'loss_details' => ['description' => 'Rear-ended at a traffic light.'],
-            'loss_location' => 'Douala',
-            'currency' => 'XAF',
-            'submitted_at' => now()->subDays(2),
-        ], $overrides));
-    /**
-     * Issues a valid step-up grant directly (bypassing the request/verify
-     * OTP round trip), returning the raw token to send back via the
-     * X-Step-Up-Grant header. Mirrors makeMobileTestPayment()'s "build the
-     * end state a test needs, don't re-run the whole flow" style.
-     *
-     * @return array{token: string, grant: StepUpGrant}
-     */
-    function issueMobileStepUpGrant(User $user, Tenant $tenant, string $purpose, array $overrides = []): array
-    {
-        $token = Str::random(64);
-
-        $grant = StepUpGrant::create(array_merge([
-            'user_id' => $user->id,
-            'tenant_id' => $tenant->id,
-            'device_id' => null,
-            'challenge_id' => null,
-            'purpose' => $purpose,
-            'token_hash' => hash('sha256', $token),
-            'expires_at' => now()->addMinutes(5),
-        ], $overrides));
-
-        return ['token' => $token, 'grant' => $grant];
-    }
-
-    function stepUpHeaderFor(string $token): array
-    {
-        return ['X-Step-Up-Grant' => $token];
-    }
-
     function makeMobileTestDocument(Tenant $tenant, Party $party, array $overrides = []): Document
     {
         return Document::create(array_merge([
@@ -240,48 +192,6 @@ if (! function_exists('makeMobileCustomerFixture')) {
     }
 
     /**
-     * RiskAssetService::create() requires the party to be an ACTIVE
-     * TenantCustomer of the tenant — makeMobileCustomerFixture() does not
-     * create one (it only links the party via a User row), so the KYC/asset
-     * batch's own tests need this alongside that fixture whenever they
-     * exercise POST /mobile/assets (which goes through the real
-     * RiskAssetService, not a raw model insert).
-     */
-    function makeMobileTestTenantCustomer(Tenant $tenant, Party $party): TenantCustomer
-    {
-        return TenantCustomer::create([
-            'tenant_id' => $tenant->id,
-            'party_id' => $party->id,
-            'customer_number' => 'CUST-'.Str::random(6),
-            'status' => 'ACTIVE',
-        ]);
-    }
-
-    /** Direct model insert (like makeMobileTestDocument) for tests that only need an already-existing owned asset, without exercising RiskAssetService::create(). */
-    function makeMobileTestRiskAsset(Tenant $tenant, Party $party, array $overrides = []): RiskAsset
-    {
-        $facts = $overrides['facts'] ?? ['plate_number' => 'LT-1234-AB'];
-
-        return RiskAsset::create(array_merge([
-            'tenant_id' => $tenant->id,
-            'party_id' => $party->id,
-            'type' => 'VEHICLE',
-            'display_name' => 'Mobile Test Vehicle',
-            'facts' => $facts,
-            'facts_hash' => hash('sha256', json_encode($facts)),
-            'status' => 'ACTIVE',
-            'version' => 1,
-        ], $overrides));
-    }
-
-    function makeMobileTestKycSubmission(Tenant $tenant, Party $party, array $overrides = []): KycSubmission
-    {
-        return KycSubmission::create(array_merge([
-            'tenant_id' => $tenant->id,
-            'party_id' => $party->id,
-            'status' => 'DRAFT',
-        ], $overrides));
-    }
      * The full chain an Agent Mode endpoint needs: a real party_id-linked
      * agent User (per PartyResolver::partnerForUser — the Partner's own
      * party_id must equal the agent User's users.party_id), an ACTIVE AGENT
@@ -313,7 +223,6 @@ if (! function_exists('makeMobileCustomerFixture')) {
         return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner, 'membership' => $membership, 'role' => $role];
     }
 
-    /** Same shape as makeMobileAgentFixture(), but joins an EXISTING tenant — for cross-agent-same-tenant isolation tests (two AGENT partners sharing one brokerage tenant). */
     function makeMobileAgentFixtureInTenant(Tenant $tenant, string $phone, array $partnerOverrides = []): array
     {
         $party = Party::create(['type' => 'PERSON', 'display_name' => 'Agent Mode Test Agent '.$phone, 'status' => 'ACTIVE']);
@@ -381,13 +290,11 @@ if (! function_exists('makeMobileCustomerFixture')) {
         ], $overrides));
     }
 
-    /** verified_at set immediately: bypasses the enrollment confirmTotp() step for tests that only need a usable step-up method. */
     function makeMobileAgentMfaMethod(User $user, string $secret = 'JBSWY3DPEHPK3PXP'): MfaMethod
     {
         return MfaMethod::create(['user_id' => $user->id, 'type' => 'TOTP', 'secret_encrypted' => $secret, 'verified_at' => now()]);
     }
 
-    /** Reimplements TotpService's RFC 6238 math (kept private there) purely so tests can produce a code that verify() will accept — not a shortcut around the real check. */
     function totpCodeFor(string $secret, ?int $time = null): string
     {
         $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -410,6 +317,9 @@ if (! function_exists('makeMobileCustomerFixture')) {
         $value = ((ord($hash[$offset]) & 127) << 24) | ((ord($hash[$offset + 1]) & 255) << 16) | ((ord($hash[$offset + 2]) & 255) << 8) | (ord($hash[$offset + 3]) & 255);
 
         return str_pad((string) ($value % 1000000), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * A broker/agent/carrier mobile persona: a Tenant, an ORGANIZATION
      * Party, a Partner row for that party (so PartyResolver::partnerForUser
      * resolves it — see PartyResolverTest), and a User whose own party_id
@@ -432,7 +342,6 @@ if (! function_exists('makeMobileCustomerFixture')) {
         return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner];
     }
 
-    /** A tenant staff member with no personal Partner link — e.g. a carrier finance/ops user. */
     function makeMobileTenantStaffUser(Tenant $tenant, string $phone, string $roleCode = 'FINANCE_STAFF'): User
     {
         $user = User::create(['full_name' => 'Mobile Tenant Staff', 'phone_e164' => $phone, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
@@ -537,6 +446,95 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'prepared_by' => $preparer->id,
             'idempotency_key' => (string) Str::uuid(),
             'content_hash' => hash('sha256', Str::random(20)),
+        ], $overrides));
+    }
+
+    /**
+     * RiskAssetService::create() requires the party to be an ACTIVE
+     * TenantCustomer of the tenant — makeMobileCustomerFixture() does not
+     * create one (it only links the party via a User row), so the KYC/asset
+     * batch's own tests need this alongside that fixture whenever they
+     * exercise POST /mobile/assets (which goes through the real
+     * RiskAssetService, not a raw model insert).
+     */
+    function makeMobileTestTenantCustomer(Tenant $tenant, Party $party): TenantCustomer
+    {
+        return TenantCustomer::create([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'customer_number' => 'CUST-'.Str::random(6),
+            'status' => 'ACTIVE',
+        ]);
+    }
+
+    function makeMobileTestRiskAsset(Tenant $tenant, Party $party, array $overrides = []): RiskAsset
+    {
+        $facts = $overrides['facts'] ?? ['plate_number' => 'LT-1234-AB'];
+
+        return RiskAsset::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'type' => 'VEHICLE',
+            'display_name' => 'Mobile Test Vehicle',
+            'facts' => $facts,
+            'facts_hash' => hash('sha256', json_encode($facts)),
+            'status' => 'ACTIVE',
+            'version' => 1,
+        ], $overrides));
+    }
+
+    function makeMobileTestKycSubmission(Tenant $tenant, Party $party, array $overrides = []): KycSubmission
+    {
+        return KycSubmission::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'party_id' => $party->id,
+            'status' => 'DRAFT',
+        ], $overrides));
+    }
+
+    /**
+     * Issues a valid step-up grant directly (bypassing the request/verify
+     * OTP round trip), returning the raw token to send back via the
+     * X-Step-Up-Grant header. Mirrors makeMobileTestPayment()'s "build the
+     * end state a test needs, don't re-run the whole flow" style.
+     *
+     * @return array{token: string, grant: StepUpGrant}
+     */
+    function issueMobileStepUpGrant(User $user, Tenant $tenant, string $purpose, array $overrides = []): array
+    {
+        $token = Str::random(64);
+
+        $grant = StepUpGrant::create(array_merge([
+            'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
+            'device_id' => null,
+            'challenge_id' => null,
+            'purpose' => $purpose,
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => now()->addMinutes(5),
+        ], $overrides));
+
+        return ['token' => $token, 'grant' => $grant];
+    }
+
+    function stepUpHeaderFor(string $token): array
+    {
+        return ['X-Step-Up-Grant' => $token];
+    }
+
+    function makeMobileTestClaim(Tenant $tenant, Policy $policy, Party $party, array $overrides = []): Claim
+    {
+        return Claim::create(array_merge([
+            'tenant_id' => $tenant->id,
+            'policy_id' => $policy->id,
+            'claimant_party_id' => $party->id,
+            'claim_number' => 'CLM-'.Str::random(10),
+            'status' => 'SUBMITTED',
+            'loss_occurred_at' => now()->subDays(2),
+            'loss_details' => ['description' => 'Rear-ended at a traffic light.'],
+            'loss_location' => 'Douala',
+            'currency' => 'XAF',
+            'submitted_at' => now()->subDays(2),
         ], $overrides));
     }
 }
