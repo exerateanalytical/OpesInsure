@@ -9,6 +9,7 @@ import {
 } from "lucide-react-native";
 import { colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const icon = (Icon: any) => {
   function TabIcon({ color, size }: { color: string; size: number }) {
@@ -18,6 +19,9 @@ const icon = (Icon: any) => {
 };
 export default function CustomerTabs() {
   const { t } = useTranslation();
+  // SDK 54 is edge-to-edge on Android: without the bottom inset the tab bar
+  // sits under the system navigation bar.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -25,9 +29,9 @@ export default function CustomerTabs() {
         tabBarActiveTintColor: colors.blue600,
         tabBarInactiveTintColor: colors.neutral500,
         tabBarStyle: {
-          height: 68,
+          height: 60 + insets.bottom,
           paddingTop: 7,
-          paddingBottom: 8,
+          paddingBottom: 8 + insets.bottom,
           borderTopColor: colors.neutral200,
           backgroundColor: colors.white,
         },

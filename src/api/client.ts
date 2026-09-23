@@ -601,33 +601,34 @@ export type Claim = {
   timeline?: ClaimEvent[];
 };
 export const ClaimsApi = {
-  list: () => api<any>("/claims"),
-  show: (id: string) => api<Claim>(`/claims/${id}`),
+  list: () => api<any>("/mobile/claims"),
+  show: (id: string) => api<Claim>(`/mobile/claims/${id}`),
   create: (payload: {
     policy_id: string;
     incident_at: string;
     incident_location: string;
     description: string;
   }) =>
-    api<Claim>("/claims", {
+    api<Claim>("/mobile/claims", {
       method: "POST",
       body: JSON.stringify(payload),
       idempotent: true,
     }),
   uploadEvidence: (id: string, form: FormData) =>
-    api<ClaimEvidence>(`/claims/${id}/evidence`, {
+    api<ClaimEvidence>(`/mobile/claims/${id}/evidence`, {
       method: "POST",
       body: form,
       idempotent: true,
       timeoutMs: 45000,
     }),
   submitDeclaration: (id: string) =>
-    api<Claim>(`/claims/${id}/declaration`, {
-      method: "POST",
+    api<Claim>(`/mobile/claims/${id}/incident`, {
+      method: "PUT",
+      body: JSON.stringify({ declaration_confirmed: true }),
       idempotent: true,
     }),
   appeal: (id: string, reason: string) =>
-    api<Claim>(`/claims/${id}/appeals`, {
+    api<Claim>(`/mobile/claims/${id}/appeals`, {
       method: "POST",
       body: JSON.stringify({ reason }),
       idempotent: true,
