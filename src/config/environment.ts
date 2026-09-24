@@ -4,15 +4,18 @@ export type AppEnvironment = "demo" | "staging" | "production";
 
 const environment = (process.env.EXPO_PUBLIC_APP_ENV ?? (__DEV__ ? "demo" : "production")) as AppEnvironment;
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
-// Only controls whether sign-in lists the server's demo accounts. There is no
-// in-app fake API any more: every build talks to the real backend.
-const demoMode = process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "true";
+// Demo mode = a non-production build environment. It is not the same thing as
+// showing the demo accounts on sign-in: that list is served by the backend only
+// while server-side demo mode is on, so production builds may show it safely.
+const demoMode = environment === "demo";
+const showDemoLogin = process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "true";
 const releaseChannel = process.env.EXPO_PUBLIC_RELEASE_CHANNEL ?? "development";
 
 export const environmentConfig = {
   environment,
   apiBaseUrl,
   demoMode,
+  showDemoLogin,
   releaseChannel,
   appVersion: Application.nativeApplicationVersion ?? "1.1.0",
   buildVersion: Application.nativeBuildVersion ?? "development",
