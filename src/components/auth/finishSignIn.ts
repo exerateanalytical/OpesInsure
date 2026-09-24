@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import { router } from "expo-router";
 import { AuthApi, InvitationApi, type SessionBootstrap } from "@/api/client";
 import { useSession } from "@/store/session";
@@ -23,6 +24,14 @@ export async function finishSignIn(auth: SessionBootstrap, invite?: string) {
     }
   }
   await useSession.getState().completeAuthentication(session);
+  // The server discards a password that was set before this phone was proven
+  // (protects owners from someone who registered their number first).
+  if ((auth as { password_reset_required?: boolean }).password_reset_required) {
+    Alert.alert(
+      "Set a new password",
+      "Your phone is now verified. For your security, any earlier password was cleared. Use \"Forgot password?\" on the sign-in screen to choose a new one.",
+    );
+  }
   router.replace(
     inviteError
       ? { pathname: "/(auth)/invitation", params: { error: inviteError } }
