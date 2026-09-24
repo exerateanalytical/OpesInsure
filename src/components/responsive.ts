@@ -17,11 +17,19 @@ export function useColumns({
   gap = space.x3,
   inset = space.x5 * 2,
   max,
-}: { gap?: number; inset?: number; max?: number } = {}) {
+  minItem,
+}: { gap?: number; inset?: number; max?: number; minItem?: number } = {}) {
   const { width } = useWindowDimensions();
   let columns = columnsFor(width);
   if (max) columns = Math.min(columns, max);
   const available = Math.max(0, width - inset);
+  // Drop a column while items would be narrower than minItem.
+  if (minItem)
+    while (
+      columns > 1 &&
+      (available - gap * (columns - 1)) / columns < minItem
+    )
+      columns -= 1;
   const itemWidth = Math.floor((available - gap * (columns - 1)) / columns);
   return {
     columns,

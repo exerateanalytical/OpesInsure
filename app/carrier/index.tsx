@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import {
   ClipboardCheck,
   FileCheck2,
+  FileSpreadsheet,
   HandCoins,
   ShieldAlert,
 } from "lucide-react-native";
@@ -69,6 +70,12 @@ export default function CarrierHome() {
           title="Settlements"
           subtitle="Reconciled premium statements"
           onPress={() => router.push("/carrier/settlements")}
+        />
+        <FlowRow
+          icon={FileSpreadsheet}
+          title="Bordereaux"
+          subtitle="Premium and commission bordereaux from brokers"
+          onPress={() => router.push("/carrier/bordereaux")}
         />
       </Card>
     </PortalScreen>

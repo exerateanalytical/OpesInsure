@@ -1,3 +1,48 @@
-import React from'react';import{Linking,StyleSheet,Text}from'react-native';import{useLocalSearchParams}from'expo-router';import{ExternalLink}from'lucide-react-native';import{AppHeader,Button,Card,Screen,StatusChip}from'@/components/ui';import{brokers,BROKER_SOURCE}from'@/data/brokers';import{colors,type}from'@/theme/tokens';
-export default function BrokerDetail(){const{id}=useLocalSearchParams<{id:string}>();const broker=brokers.find(b=>b.id===id);if(!broker)return <Screen><AppHeader title="Broker unavailable" back/><Card><Text style={styles.body}>This directory record does not exist.</Text></Card></Screen>;return <Screen><AppHeader title="Broker profile" subtitle="Institutional directory record" back/><Card feature><Text style={styles.title}>{broker.name}</Text><Text style={styles.body}>{broker.city}, Cameroon</Text><StatusChip label="MINFI 2022 record · current status unverified" tone="warning"/></Card><Card><Text style={styles.card}>Offers and represented insurers</Text><Text style={styles.body}>No verified digital catalogue is attached. Products must come from the broker’s connected ERP and pass publication controls before appearing here.</Text></Card><Button label="Open official source publication" icon={ExternalLink} variant="secondary" onPress={()=>void Linking.openURL(BROKER_SOURCE)}/><Text style={styles.source}>A dated listing is not proof of a current licence. Verify with MINFI before transacting.</Text></Screen>}
-const styles=StyleSheet.create({title:{...type.pageTitle,color:colors.navy950},card:{...type.cardTitle,color:colors.navy950},body:{...type.body,color:colors.neutral600},source:{...type.meta,color:colors.neutral500}});
+import React from "react";
+import { StyleSheet, Text } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
+import { StatePanel } from "@/components/StatePanel";
+import { useLoad } from "@/hooks/useLoad";
+import { InstitutionsApi } from "@/api/extra";
+import { colors, type } from "@/theme/tokens";
+
+export default function BrokerDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const q = useLoad(() => InstitutionsApi.show(id), [id]);
+  return (
+    <Screen>
+      <AppHeader title="Broker profile" back />
+      <StatePanel {...q} onRetry={q.reload} isEmpty={() => false}>
+        {(broker) => (
+          <>
+            <Card feature>
+              <Text style={styles.title}>{broker.name}</Text>
+              {broker.city ? (
+                <Text style={styles.body}>{broker.city}, Cameroon</Text>
+              ) : null}
+              {broker.licence_number ? (
+                <StatusChip label={`Licence ${broker.licence_number}`} tone="info" />
+              ) : null}
+              {broker.licence_expires_on ? (
+                <Text style={styles.body}>
+                  Licence valid until{" "}
+                  {new Date(broker.licence_expires_on).toLocaleDateString()}
+                </Text>
+              ) : null}
+            </Card>
+            <Text style={styles.source}>
+              Verify a broker&apos;s current licence with MINFI before
+              transacting.
+            </Text>
+          </>
+        )}
+      </StatePanel>
+    </Screen>
+  );
+}
+const styles = StyleSheet.create({
+  title: { ...type.pageTitle, color: colors.navy950 },
+  body: { ...type.body, color: colors.neutral600 },
+  source: { ...type.meta, color: colors.neutral500 },
+});

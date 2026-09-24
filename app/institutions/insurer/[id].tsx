@@ -1,3 +1,113 @@
-import React from'react';import{Linking,StyleSheet,Text,View}from'react-native';import{router,useLocalSearchParams}from'expo-router';import{ExternalLink,Phone}from'lucide-react-native';import{AppHeader,Button,Card,Screen,SectionTitle,StatusChip}from'@/components/ui';import{insurers}from'@/data/insurers';import{useInsurance}from'@/store/insurance';import{useSession}from'@/store/session';import{colors,radius,space,type}from'@/theme/tokens';
-export default function InsurerDetail(){const{id}=useLocalSearchParams<{id:string}>();const insurer=insurers.find(i=>i.id===id);const status=useSession(s=>s.status);const setProduct=useInsurance(s=>s.setProduct);if(!insurer)return <Screen><AppHeader title="Company unavailable" back/><Card><Text style={styles.body}>This directory record does not exist.</Text></Card></Screen>;const compare=(kind:string)=>{if(status!=='authenticated'){router.push('/(auth)/sign-in');return}setProduct(kind);router.push('/quote/risk')};return <Screen><AppHeader title="Company profile" subtitle="Independent institutional directory" back/><Card feature><View style={styles.logo}><Text style={styles.logoText}>{insurer.initials}</Text></View><Text style={styles.title}>{insurer.name}</Text><StatusChip label={insurer.branch==='life'?'Life & capitalisation':'General / non-life'} tone="info"/><Text style={styles.body}>{insurer.city}{insurer.phone?` · ${insurer.phone}`:''}</Text>{insurer.phone?<Button label="Call company" icon={Phone} variant="secondary" onPress={()=>void Linking.openURL(`tel:${insurer.phone}`)}/>:null}{insurer.website?<Button label="Open official website" icon={ExternalLink} variant="tertiary" onPress={()=>void Linking.openURL(insurer.website!)}/>:null}</Card><SectionTitle title="Offers verified online"/>{insurer.offers.length?insurer.offers.map(o=><Card key={o.id}><View style={styles.between}><Text style={styles.offer}>{o.name}</Text><StatusChip label={o.onlineAction==='quote'?'Comparison eligible':'Information'} tone={o.onlineAction==='quote'?'success':'neutral'}/></View><Text style={styles.body}>{o.summary}</Text><Button label={o.onlineAction==='quote'?'Compare this product':'View official information'} onPress={()=>o.onlineAction==='quote'?compare(o.kind):void Linking.openURL(o.sourceUrl)}/></Card>):<Card><Text style={styles.offer}>No offer verified online yet</Text><Text style={styles.body}>This does not mean the company has no products. No official digital product page has been verified for this entry.</Text></Card>}<Text style={styles.source}>Institution source: ASAC · Checked {insurer.verifiedOn}. Logos are used only when approved brand assets are available.</Text></Screen>}
-const styles=StyleSheet.create({logo:{width:56,height:56,borderRadius:radius.card,backgroundColor:colors.navy950,alignItems:'center',justifyContent:'center'},logoText:{...type.label,color:colors.white},title:{...type.pageTitle,color:colors.navy950},offer:{...type.cardTitle,color:colors.navy950,flex:1},body:{...type.body,color:colors.neutral600},between:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:space.x3},source:{...type.meta,color:colors.neutral500}});
+import React from "react";
+import { Linking, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { ExternalLink, Phone } from "lucide-react-native";
+import {
+  AppHeader,
+  Button,
+  Card,
+  Screen,
+  SectionTitle,
+  StatusChip,
+} from "@/components/ui";
+import { StatePanel } from "@/components/StatePanel";
+import { useLoad } from "@/hooks/useLoad";
+import { InstitutionsApi } from "@/api/extra";
+import { useInsurance } from "@/store/insurance";
+import { useSession } from "@/store/session";
+import { colors, radius, space, type } from "@/theme/tokens";
+
+export default function InsurerDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const q = useLoad(() => InstitutionsApi.show(id), [id]);
+  const status = useSession((s) => s.status);
+  const setProduct = useInsurance((s) => s.setProduct);
+  const compare = (lineCode: string) => {
+    if (status !== "authenticated") {
+      router.push("/(auth)/sign-in");
+      return;
+    }
+    setProduct(lineCode.toLowerCase());
+    router.push("/quote/risk");
+  };
+  return (
+    <Screen>
+      <AppHeader title="Company profile" back />
+      <StatePanel {...q} onRetry={q.reload} isEmpty={() => false}>
+        {(insurer) => (
+          <>
+            <Card feature>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>{insurer.initials}</Text>
+              </View>
+              <Text style={styles.title}>{insurer.name}</Text>
+              {insurer.city || insurer.phone ? (
+                <Text style={styles.body}>
+                  {[insurer.city, insurer.phone].filter(Boolean).join(" · ")}
+                </Text>
+              ) : null}
+              {insurer.phone ? (
+                <Button
+                  label="Call company"
+                  icon={Phone}
+                  variant="secondary"
+                  onPress={() => void Linking.openURL(`tel:${insurer.phone}`)}
+                />
+              ) : null}
+              {insurer.website ? (
+                <Button
+                  label="Open official website"
+                  icon={ExternalLink}
+                  variant="tertiary"
+                  onPress={() => void Linking.openURL(insurer.website!)}
+                />
+              ) : null}
+            </Card>
+            <SectionTitle title="Products on OpesInsure" />
+            {insurer.products?.length ? (
+              insurer.products.map((p) => (
+                <Card key={p.id}>
+                  <View style={styles.between}>
+                    <Text style={styles.offer}>{p.name}</Text>
+                    <StatusChip label={p.line_code} tone="info" />
+                  </View>
+                  <Button
+                    label="Compare this product"
+                    onPress={() => compare(p.line_code)}
+                  />
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <Text style={styles.offer}>No products available yet</Text>
+                <Text style={styles.body}>
+                  This company has not published a product on OpesInsure yet.
+                </Text>
+              </Card>
+            )}
+          </>
+        )}
+      </StatePanel>
+    </Screen>
+  );
+}
+const styles = StyleSheet.create({
+  logo: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.card,
+    backgroundColor: colors.navy950,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoText: { ...type.label, color: colors.white },
+  title: { ...type.pageTitle, color: colors.navy950 },
+  offer: { ...type.cardTitle, color: colors.navy950, flex: 1 },
+  body: { ...type.body, color: colors.neutral600 },
+  between: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: space.x3,
+  },
+});

@@ -21,7 +21,7 @@ export default function BrokerClientDetail() {
               tone="success"
             />
             <Text>
-              {x?.phone_e164} · {x?.city}
+              {[x?.phone_e164, x?.city].filter(Boolean).join(" · ")}
             </Text>
             <Text>Policies: {x?.policies}</Text>
             <Text>Outstanding balance</Text>

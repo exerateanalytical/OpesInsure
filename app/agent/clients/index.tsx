@@ -31,7 +31,7 @@ export default function AgentClients() {
                 key={c.id}
                 icon={ContactRound}
                 title={c.full_name}
-                subtitle={`${c.phone_e164} · ${c.city}`}
+                subtitle={[c.phone_e164, c.city].filter(Boolean).join(" · ")}
                 status={c.kyc_status}
                 onPress={() => router.push(`/agent/clients/${c.id}`)}
               />

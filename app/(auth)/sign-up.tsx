@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -7,6 +7,7 @@ import {
   Building2,
   Check,
   Handshake,
+  KeyRound,
   Mail,
   Phone,
   ShieldCheck,
@@ -18,15 +19,10 @@ import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthPrimaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
 import { TrustStrip } from "@/components/auth/TrustStrip";
+import { ChannelPicker } from "@/components/auth/ChannelPicker";
+import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authRadius, authSpace, authType } from "@/theme/tokens";
-import * as Crypto from "expo-crypto";
-import { AuthApi } from "@/api/client";
-
-/** Sign-in is OTP-only, but POST /public/accounts still requires a password
- * (min 12). Send a random one the user never needs; drop this once the
- * backend makes the field optional. */
-const throwawayPassword = () =>
-  Array.from(Crypto.getRandomBytes(24), (b) => b.toString(16).padStart(2, "0")).join("");
+import { AuthApi, hasTokens, type VerificationChannel } from "@/api/client";
 
 const TERMS_VERSION = "2026-01-01";
 
@@ -48,21 +44,36 @@ export default function SignUp() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [channel, setChannel] = useState<VerificationChannel>("whatsapp");
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const hasEmail = /^\S+@\S+\.\S+$/.test(email.trim());
+  const channelOptions: { key: VerificationChannel; label: string }[] = [
+    { key: "whatsapp", label: "WhatsApp" },
+    { key: "sms", label: "SMS" },
+    ...(hasEmail ? [{ key: "email" as const, label: "Email" }] : []),
+  ];
+  // Email stops being a valid channel as soon as the address is cleared.
+  useEffect(() => {
+    if (!hasEmail && channel === "email") setChannel("whatsapp");
+  }, [hasEmail, channel]);
+
   const submit = async () => {
     setError(undefined);
     setFieldErrors({});
 
-    const normalizedPhone = phone.replace(/\s/g, "").replace(/^6/, "+2376");
+    const normalizedPhone = normalizeCameroonPhone(phone);
     const errors: Record<string, string> = {};
-    if (fullName.trim().length < 3)
-      errors.fullName = "Enter your full name.";
-    if (!/^\+2376\d{8}$/.test(normalizedPhone))
-      errors.phone = "Enter a valid Cameroon mobile number.";
+    if (fullName.trim().length < 3) errors.fullName = "Enter your full name.";
+    if (!isCameroonMobile(normalizedPhone)) errors.phone = "Enter a valid Cameroon mobile number.";
+    if (email.trim() && !hasEmail) errors.email = "Enter a valid email address or leave it empty.";
+    if (password.length < 8) errors.password = "Use at least 8 characters.";
+    else if (password !== confirm) errors.confirm = "The passwords do not match.";
     if (!agreed) errors.agreed = "Required to continue.";
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -70,28 +81,44 @@ export default function SignUp() {
     }
 
     setBusy(true);
-    const password = throwawayPassword();
     try {
-      await AuthApi.register({
+      const result = await AuthApi.register({
         full_name: fullName.trim(),
         phone_e164: normalizedPhone,
         email: email.trim() || undefined,
         password,
-        password_confirmation: password,
+        password_confirmation: confirm,
         locale: "en",
         terms_version: TERMS_VERSION,
+        verification_channel: channel,
       });
-      // Registration alone leaves the account unverified. Requesting a code
-      // immediately and handing off to the same verify screen sign-in uses
-      // means completing that one OTP is the only extra step — it doubles
-      // as the account's activation, not a separate email/SMS confirmation.
-      const challenge = await AuthApi.requestOtp(normalizedPhone);
+      // Verification lifted (server default): the account is active and the
+      // response already signed us in.
+      if (hasTokens(result)) {
+        await finishSignIn(result);
+        return;
+      }
+      // Verification required: continue with the code on the chosen channel.
+      let challengeId = result.challenge_id;
+      let expiresIn = result.expires_in;
+      if (!challengeId && channel !== "email") {
+        const challenge = await AuthApi.requestOtp(normalizedPhone, channel);
+        challengeId = challenge.challenge_id;
+        expiresIn = challenge.expires_in;
+      }
+      if (!challengeId) {
+        // Email verification without a phone challenge: sign in normally.
+        const auth = await AuthApi.passwordLogin(normalizedPhone, password);
+        await finishSignIn(auth);
+        return;
+      }
       router.push({
         pathname: "/(auth)/verify",
         params: {
-          challengeId: challenge.challenge_id,
+          challengeId,
           phone: normalizedPhone,
-          expiresIn: String(challenge.expires_in),
+          channel: result.verification_channel ?? channel,
+          expiresIn: String(expiresIn ?? ""),
         },
       });
     } catch (e) {
@@ -99,8 +126,10 @@ export default function SignUp() {
         const serverErrors: Record<string, string> = {};
         const fields = e.fields as Record<string, string[]>;
         if (fields.full_name?.[0]) serverErrors.fullName = fields.full_name[0];
-        if (fields.phone_e164?.[0]) serverErrors.phone = fields.phone_e164[0];
+        const phoneError = fields.phone_e164?.[0] ?? fields.phone?.[0];
+        if (phoneError) serverErrors.phone = phoneError;
         if (fields.email?.[0]) serverErrors.email = fields.email[0];
+        if (fields.password?.[0]) serverErrors.password = fields.password[0];
         setFieldErrors(serverErrors);
       }
       setError(e instanceof Error ? e.message : "Could not create your account.");
@@ -152,23 +181,54 @@ export default function SignUp() {
                   error={fieldErrors.fullName}
                 />
                 <AuthTextField
+                  icon={Phone}
+                  placeholder="Phone number"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  error={fieldErrors.phone}
+                />
+                <Text style={styles.hint}>Country code +237 · e.g. 6 70 00 00 00. You sign in with this number.</Text>
+                <AuthTextField
+                  icon={KeyRound}
+                  placeholder="Password (min 8 characters)"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureToggle
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  error={fieldErrors.password}
+                />
+                <AuthTextField
+                  icon={KeyRound}
+                  placeholder="Confirm password"
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  secureToggle
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  error={fieldErrors.confirm}
+                />
+                <AuthTextField
                   icon={Mail}
                   placeholder="Email address (optional)"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoComplete="email"
                   error={fieldErrors.email}
                 />
-                <AuthTextField
-                  icon={Phone}
-                  placeholder="Phone number"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  error={fieldErrors.phone}
+                <Text style={styles.hint}>
+                  <Text style={styles.recommended}>Recommended</Text> · helps you recover your account and receive documents.
+                </Text>
+                <ChannelPicker
+                  label="Send my verification code by"
+                  options={channelOptions}
+                  value={channel}
+                  onChange={setChannel}
                 />
-                <Text style={styles.hint}>Country code +237 · e.g. 6 70 00 00 00</Text>
                 <Pressable
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: agreed }}
@@ -225,6 +285,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: authColors.navy950 },
   flex: { flex: 1 },
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
+  recommended: { color: authColors.blue500, fontFamily: "Inter_700Bold" },
   terms: {
     flexDirection: "row",
     alignItems: "flex-start",

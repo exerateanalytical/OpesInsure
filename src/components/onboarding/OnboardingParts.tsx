@@ -2,6 +2,7 @@ import React from "react";
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
 import { authColors, authIcon, authSpace, authType } from "@/theme/tokens";
+import { useColumns } from "@/components/responsive";
 
 const icon = require("../../../assets/icon.png");
 const map = require("../../../assets/auth/splash_map.png");
@@ -72,14 +73,16 @@ export function OnboardingFeatureRow({ items }: { items: FeatureItem[] }) {
 
 /** The 2x2 audience-node grid used on slide 3, with the map/network art behind it. */
 export function OnboardingNodeGrid({ items }: { items: FeatureItem[] }) {
+  // 2x2 on phones; a single column when a cell would be under 150dp.
+  const grid = useColumns({ max: 2, minItem: 150, gap: authSpace[2] });
   return (
     <View style={styles.nodeWrap}>
       <Image source={map} style={styles.nodeMap} resizeMode="contain" />
-      <View style={styles.nodeGrid}>
+      <View style={[styles.nodeGrid, grid.row]}>
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <View key={item.label} style={styles.nodeItem}>
+            <View key={item.label} style={[styles.nodeItem, grid.item]}>
               <View style={styles.nodeBadge}>
                 <Icon size={authIcon.feature} strokeWidth={authIcon.strokeWidth} color={authColors.white} />
               </View>
@@ -142,11 +145,9 @@ const styles = StyleSheet.create({
   nodeMap: { position: "absolute", width: 170, height: 170, opacity: 0.8 },
   nodeGrid: {
     width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
-  nodeItem: { width: "48%", alignItems: "center", gap: 4, marginBottom: authSpace[4] },
+  nodeItem: { alignItems: "center", gap: 4, marginBottom: authSpace[4] },
   nodeBadge: {
     width: 72,
     height: 72,

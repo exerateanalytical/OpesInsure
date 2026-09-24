@@ -60,7 +60,11 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)/sign-in" />
           <Stack.Screen name="(auth)/sign-up" />
           <Stack.Screen name="(auth)/verify" />
+          <Stack.Screen name="(auth)/forgot-password" />
         </Stack.Protected>
+        {/* Invitation works signed out (carried through sign-in) and signed
+            in (accepted immediately), so it is not guarded. */}
+        <Stack.Screen name="(auth)/invitation" />
         <Stack.Protected guard={authenticated}>
           <Stack.Screen name="(auth)/role" />
           <Stack.Screen name="sync/index" />
@@ -70,6 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="system/status" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
+          <Stack.Screen name="(customer)" />
           <Stack.Screen name="quote/product" />
           <Stack.Screen name="quote/risk" />
           <Stack.Screen name="quote/offers" />
@@ -162,6 +167,8 @@ export default function RootLayout() {
           <Stack.Screen name="carrier/issuance" />
           <Stack.Screen name="carrier/claims" />
           <Stack.Screen name="carrier/settlements" />
+          <Stack.Screen name="carrier/settlement/[id]" />
+          <Stack.Screen name="carrier/bordereaux" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

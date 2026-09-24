@@ -5,6 +5,7 @@ import { Handshake, KeyRound } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { InvitationApi } from "@/api/client";
 import { portalRoute, useSession } from "@/store/session";
+import { SupportContactList } from "@/components/auth/SupportContacts";
 import { colors, type } from "@/theme/tokens";
 
 /**
@@ -85,9 +86,10 @@ export default function Invitation() {
           onPress={() => void submit()}
         />
         <Text style={styles.meta}>
-          No invitation yet? Contact partners@opesinsure.cm to start licence
-          verification. Customers can create an account directly.
+          No invitation yet? Contact the OpesInsure partnerships team to start
+          licence verification. Customers can create an account directly.
         </Text>
+        <SupportContactList partner />
         {!signedIn ? (
           <Button
             label="Create a customer account instead"

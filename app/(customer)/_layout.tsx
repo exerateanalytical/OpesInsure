@@ -1,4 +1,12 @@
-import React from 'react';
-import { Redirect, Slot } from 'expo-router';
-import { roleToPortal, useSession } from '@/store/session';
-export default function CustomerGuard(){const status=useSession(s=>s.status);const workspace=useSession(s=>s.activeWorkspace);if(status==='booting')return null;if(status!=='authenticated')return <Redirect href="/(auth)/sign-in"/>;if(!workspace||roleToPortal(workspace.role_code)!=='customer')return <Redirect href="/access-denied"/>;return <Slot/>;}
+import React from "react";
+import { Slot } from "expo-router";
+
+/**
+ * The customer group is guarded once, in app/_layout.tsx
+ * (`<Stack.Protected guard={customer}>` registers "(customer)"), like every
+ * other customer route. A second redirect here used to disagree with it
+ * (access-denied vs. back to index), so this layout only renders its slot.
+ */
+export default function CustomerLayout() {
+  return <Slot />;
+}

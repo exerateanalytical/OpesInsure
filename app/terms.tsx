@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text } from "react-native";
 import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
+import { SupportContactList } from "@/components/auth/SupportContacts";
 import { colors, type } from "@/theme/tokens";
 
 // Placeholder legal copy. Must be reviewed and replaced by counsel before a
@@ -12,7 +13,7 @@ const sections: [string, string][] = [
   ],
   [
     "2. Your account",
-    "You sign in with your Cameroon mobile number and a one-time code. Keep your phone secure and never share codes; OpesInsure staff will never ask for them. You must give accurate information, as insurers rely on it to price and pay claims. Misrepresentation can void cover.",
+    "You sign in with your Cameroon mobile number and password, or a one-time code sent by WhatsApp or SMS. Adding an email address is optional but recommended. Keep your password and phone secure and never share codes; OpesInsure staff will never ask for them. You must give accurate information, as insurers rely on it to price and pay claims. Misrepresentation can void cover.",
   ],
   [
     "3. Quotes, policies and payments",
@@ -32,7 +33,7 @@ const sections: [string, string][] = [
   ],
   [
     "7. Contact",
-    "Questions or complaints: support@opesinsure.cm. Unresolved complaints may be referred to the insurer and to the competent insurance regulator.",
+    "Questions or complaints: contact OpesInsure support using the details below. Unresolved complaints may be referred to the insurer and to the competent insurance regulator.",
   ],
 ];
 
@@ -51,6 +52,7 @@ export default function Terms() {
         <Card key={title}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
+          {title === "7. Contact" ? <SupportContactList /> : null}
         </Card>
       ))}
     </Screen>

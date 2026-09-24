@@ -4,6 +4,7 @@ import { LifeBuoy, Plus } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { SupportApi, SupportCase } from "@/api/client";
+import { SupportContactList } from "@/components/auth/SupportContacts";
 export default function Support() {
   const [x, setX] = useState<SupportCase[]>([]);
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function Support() {
         icon={Plus}
         onPress={() => router.push("/support/new")}
       />
+      <SupportContactList heading="Talk to us" />
       <Card>
         {x.map((c) => (
           <FlowRow

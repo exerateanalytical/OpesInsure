@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -20,9 +20,11 @@ import {
   Gauge,
   Activity,
   ShieldAlert,
+  MailCheck,
 } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
+import { AuthApi } from "@/api/client";
 import { colors, radius, space, type } from "@/theme/tokens";
 const links = [
   ["Saved quotes", Clock3, "/quotes"],
@@ -47,6 +49,21 @@ export default function Account() {
   const user = useSession((s) => s.bootstrap?.user);
   const workspace = useSession((s) => s.activeWorkspace);
   const signOut = useSession((s) => s.signOut);
+  // Only when the server reports it (field present and null / flag false);
+  // older payloads without the field show nothing.
+  const emailUnverified =
+    !!user?.email &&
+    (user.email_verified_at === null || user.contacts_verified === false);
+  const [verifyState, setVerifyState] = useState<"idle" | "busy" | "sent" | "error">("idle");
+  const verifyEmail = async () => {
+    setVerifyState("busy");
+    try {
+      const r = await AuthApi.requestEmailVerification();
+      setVerifyState(r.sent ? "sent" : "error");
+    } catch {
+      setVerifyState("error");
+    }
+  };
   return (
     <Screen>
       <AppHeader
@@ -54,9 +71,28 @@ export default function Account() {
         subtitle={`${user?.full_name ?? "Account"} · ${workspace?.role_code ?? ""}`}
       />
       <Card>
-        <Text style={styles.title}>Verified contact</Text>
+        <Text style={styles.title}>Contact details</Text>
         <Text style={styles.body}>{user?.phone_e164}</Text>
         <Text style={styles.body}>{user?.email ?? "No email supplied"}</Text>
+        {emailUnverified ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={verifyState === "busy" || verifyState === "sent"}
+            style={styles.verify}
+            onPress={() => void verifyEmail()}
+          >
+            <MailCheck size={20} color={colors.warningText} />
+            <Text style={styles.verifyText}>
+              {verifyState === "sent"
+                ? "Verification email sent. Check your inbox."
+                : verifyState === "busy"
+                  ? "Sending…"
+                  : verifyState === "error"
+                    ? "Could not send. Tap to try again."
+                    : "Verify your email"}
+            </Text>
+          </Pressable>
+        ) : null}
       </Card>
       <Card>
         {links.map(([label, Icon, path]) => (
@@ -94,6 +130,16 @@ export default function Account() {
 const styles = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
+  verify: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.x2,
+    minHeight: 44,
+    paddingHorizontal: space.x3,
+    borderRadius: radius.control,
+    backgroundColor: colors.warningSoft,
+  },
+  verifyText: { ...type.label, color: colors.warningText, flex: 1 },
   item: {
     minHeight: 58,
     flexDirection: "row",

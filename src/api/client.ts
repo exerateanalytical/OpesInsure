@@ -121,7 +121,11 @@ function toError(status: number, payload: any, response: Response) {
   return new ApiError(
     status,
     first?.code ?? payload?.code ?? "REQUEST_FAILED",
-    first?.detail ?? payload?.message ?? "The request could not be completed.",
+    first?.detail ??
+      payload?.message ??
+      (status === 429
+        ? "Too many attempts. Please wait a moment and try again."
+        : "The request could not be completed."),
     first?.meta?.fields ?? (status === 422 ? payload?.errors : undefined),
     Number(response.headers.get("Retry-After") || 0) || undefined,
   );
@@ -337,6 +341,10 @@ export type SessionBootstrap = {
     locale: "en" | "fr";
     status: string;
     phone_verified_at: string | null;
+    /** Present once the backend reports email verification (Phase 9.6). */
+    email_verified_at?: string | null;
+    /** Set when registration activated the account with verification lifted. */
+    contacts_verified?: boolean;
   };
   workspaces: Workspace[];
 };
@@ -359,7 +367,12 @@ export type DemoAccount = {
   full_name: string;
   phone_e164: string;
   role_code: string;
+  /** Only present while the server is in demo mode. */
+  password?: string;
 };
+
+export type VerificationChannel = "whatsapp" | "sms" | "email";
+export type OtpChannel = "whatsapp" | "sms";
 
 export type RegisterPayload = {
   full_name: string;
@@ -369,51 +382,130 @@ export type RegisterPayload = {
   password_confirmation: string;
   locale: "en" | "fr";
   terms_version: string;
+  verification_channel?: VerificationChannel;
 };
 
-export const AuthApi = {
-  /**
-   * POST /public/accounts. Leaves the account at status PENDING_VERIFICATION
-   * — sign-in.tsx immediately follows this with requestOtp/verifyOtp on the
-   * same phone number, and a correct OTP is what the server treats as the
-   * activation step. There is no separate "verify your email" flow.
-   */
-  register: (payload: RegisterPayload) =>
-    api<{ id: string; status: string; verification_required: boolean }>(
-      "/public/accounts",
-      { method: "POST", body: JSON.stringify(payload), anonymous: true },
-    ),
+/**
+ * POST /public/accounts. With contact verification lifted (server default)
+ * the account is active immediately and the response carries the same
+ * token + bootstrap payload as OTP verify. When verification is required it
+ * carries a challenge instead and the app continues on the verify screen.
+ */
+export type RegisterResult = Partial<AuthTokens> & {
+  id?: string;
+  status?: string;
+  verification_required?: boolean;
+  challenge_id?: string;
+  verification_channel?: VerificationChannel;
+};
 
-  requestOtp: (phone_e164: string) =>
+const deviceInfo = async () => ({
+  fingerprint: await TokenVault.deviceId(),
+  name: `OpesInsure ${Platform.OS}`,
+  platform: Platform.OS,
+});
+
+/** Stores the pair from any endpoint that returns the OTP-verify shape. */
+const keepTokens = async (data: AuthTokens) => {
+  await TokenVault.save(data.access_token, data.refresh_token);
+  return data;
+};
+
+export const hasTokens = (data: RegisterResult): data is AuthTokens =>
+  typeof data.access_token === "string" &&
+  typeof data.refresh_token === "string" &&
+  !!data.user &&
+  Array.isArray(data.workspaces);
+
+export const AuthApi = {
+  register: async (payload: RegisterPayload) => {
+    const data = await api<RegisterResult>("/public/accounts", {
+      method: "POST",
+      body: JSON.stringify({ ...payload, phone: payload.phone_e164 }),
+      anonymous: true,
+      idempotent: true,
+    });
+    if (hasTokens(data)) await keepTokens(data);
+    return data;
+  },
+  /** Primary sign-in: phone + password. Same payload as OTP verify. */
+  passwordLogin: async (phone_e164: string, password: string) =>
+    keepTokens(
+      await api<AuthTokens>("/auth/mobile/password-login", {
+        method: "POST",
+        body: JSON.stringify({
+          phone: phone_e164,
+          phone_e164,
+          password,
+          device: await deviceInfo(),
+        }),
+        anonymous: true,
+        idempotent: true,
+      }),
+    ),
+  forgotPassword: (phone_e164: string, channel?: OtpChannel) =>
+    api<{ challenge_id: string; delivery_status: string; expires_in: number }>(
+      "/auth/mobile/password/forgot",
+      {
+        method: "POST",
+        body: JSON.stringify({ phone: phone_e164, phone_e164, channel }),
+        anonymous: true,
+        idempotent: true,
+      },
+    ),
+  resetPassword: async (
+    phone_e164: string,
+    challenge_id: string,
+    code: string,
+    password: string,
+  ) =>
+    keepTokens(
+      await api<AuthTokens>("/auth/mobile/password/reset", {
+        method: "POST",
+        body: JSON.stringify({
+          phone: phone_e164,
+          phone_e164,
+          challenge_id,
+          code,
+          password,
+          password_confirmation: password,
+          device: await deviceInfo(),
+        }),
+        anonymous: true,
+        idempotent: true,
+      }),
+    ),
+  requestOtp: (phone_e164: string, channel?: OtpChannel) =>
     api<{
       challenge_id: string;
       delivery_status: "QUEUED";
       expires_in: number;
     }>("/auth/mobile/otp/request", {
       method: "POST",
-      body: JSON.stringify({ phone_e164 }),
+      body: JSON.stringify(channel ? { phone_e164, channel } : { phone_e164 }),
       anonymous: true,
       idempotent: true,
     }),
-  verifyOtp: async (challenge_id: string, phone_e164: string, code: string) => {
-    const data = await api<AuthTokens>("/auth/mobile/otp/verify", {
-      method: "POST",
-      body: JSON.stringify({
-        challenge_id,
-        phone_e164,
-        code,
-        device: {
-          fingerprint: await TokenVault.deviceId(),
-          name: `OpesInsure ${Platform.OS}`,
-          platform: Platform.OS,
-        },
+  verifyOtp: async (challenge_id: string, phone_e164: string, code: string) =>
+    keepTokens(
+      await api<AuthTokens>("/auth/mobile/otp/verify", {
+        method: "POST",
+        body: JSON.stringify({
+          challenge_id,
+          phone_e164,
+          code,
+          device: await deviceInfo(),
+        }),
+        anonymous: true,
+        idempotent: true,
       }),
-      anonymous: true,
+    ),
+  /** POST /me/email/verification — sends a verification link/code. */
+  requestEmailVerification: () =>
+    api<{ sent: boolean }>("/me/email/verification", {
+      method: "POST",
       idempotent: true,
-    });
-    await TokenVault.save(data.access_token, data.refresh_token);
-    return data;
-  },
+    }),
   /**
    * Demo credentials the SERVER is seeded with. The bundled demo dataset has
    * its own personas, but those exist only inside the in-app demo adapter — a
@@ -564,6 +656,28 @@ export const InvitationApi = {
       body: JSON.stringify({ token }),
       idempotent: true,
     }),
+};
+export type SupportContacts = {
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  whatsapp_url: string | null;
+  partner_email: string | null;
+};
+let supportContactsCache: Promise<SupportContacts | null> | null = null;
+/** GET /public/support-contacts — managed in the admin panel. Cached in
+ * memory for the app session; a failure is not cached so it retries. */
+export const SupportContactsApi = {
+  get: () => {
+    if (!supportContactsCache)
+      supportContactsCache = api<SupportContacts>("/public/support-contacts", {
+        anonymous: true,
+      }).catch(() => {
+        supportContactsCache = null;
+        return null;
+      });
+    return supportContactsCache;
+  },
 };
 export const PublicApi = {
   verify: (reference: string) =>
@@ -819,7 +933,6 @@ export const AgentApi = {
   dashboard: () =>
     api<{
       metrics: { label: string; value: string; tone?: string }[];
-      recent_sales: AgentSale[];
     }>("/mobile/agent/dashboard"),
   clients: () => api<AgentClient[]>("/mobile/agent/clients"),
   client: (id: string) => api<AgentClient>(`/mobile/agent/clients/${id}`),

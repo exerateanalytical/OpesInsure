@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { LockKeyhole, LogOut } from "lucide-react-native";
 import { Button, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
+import { SupportContactList } from "@/components/auth/SupportContacts";
 import { colors, type } from "@/theme/tokens";
 
 /** Shown whenever a signed-in account has no portal this app can open (an
@@ -24,6 +25,8 @@ export default function AccessDenied() {
             ? `Your ${workspace.role_code.replaceAll("_", " ").toLowerCase()} role at ${workspace.tenant_name} is not available in the mobile app yet. Use the OpesInsure web console, or choose another workspace.`
             : "This area is not assigned to your account. No restricted information has been loaded."}
         </Text>
+        <Text style={styles.body}>Think this is a mistake? Contact support:</Text>
+        <SupportContactList />
         {status === "authenticated" && workspaces.length > 1 ? (
           <Button
             label="Choose another workspace"

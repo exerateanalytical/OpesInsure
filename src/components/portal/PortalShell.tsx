@@ -16,6 +16,7 @@ import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import {
   AccountApi,
+  AuthApi,
   NotificationPreferences,
   NotificationsApi,
 } from "@/api/client";
@@ -186,6 +187,19 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
     payments: true,
   });
   const [notice, setNotice] = useState<string | null>(null);
+  const emailUnverified =
+    !!user?.email &&
+    (user.email_verified_at === null || user.contacts_verified === false);
+  const [verifyState, setVerifyState] = useState<"idle" | "busy" | "sent" | "error">("idle");
+  const verifyEmail = async () => {
+    setVerifyState("busy");
+    try {
+      const r = await AuthApi.requestEmailVerification();
+      setVerifyState(r.sent ? "sent" : "error");
+    } catch {
+      setVerifyState("error");
+    }
+  };
   useEffect(() => {
     AccountApi.notificationPreferences()
       .then(setPrefs)
@@ -239,9 +253,28 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
             {user?.phone_verified_at ? "Verified" : "Not verified"}
           </Text>
         </Row>
+        {emailUnverified ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={verifyState === "busy" || verifyState === "sent"}
+            onPress={verifyEmail}
+          >
+            <Row icon={LockKeyhole} label="Email verification">
+              <Text style={s.meta}>
+                {verifyState === "busy"
+                  ? "Sending…"
+                  : verifyState === "sent"
+                    ? "Check your inbox"
+                    : verifyState === "error"
+                      ? "Could not send — tap to retry"
+                      : "Verify your email"}
+              </Text>
+            </Row>
+          </Pressable>
+        ) : null}
         <Text style={s.body}>
-          Sign-in uses a one-time code sent to your phone. Never share it; our
-          staff will never ask for it.
+          Sign in with your phone number and password, or a one-time code. Never
+          share a code; our staff will never ask for it.
         </Text>
       </Card>
 

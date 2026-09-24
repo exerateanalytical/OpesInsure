@@ -25,7 +25,7 @@ export default function BrokerClients() {
             rows={x.map((c) => ({
               id: c.id,
               title: c.full_name,
-              subtitle: `${c.city} · ${c.policies} policies`,
+              subtitle: [c.city, `${c.policies} policies`].filter(Boolean).join(" · "),
               status: c.origin_locked ? "ORIGIN LOCKED" : "REVIEW",
             }))}
             onPress={(id) => router.push(`/broker/clients/${id}`)}

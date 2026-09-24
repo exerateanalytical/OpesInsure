@@ -2,16 +2,17 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Building2, CheckCircle2, ChevronRight, MapPin, ShieldCheck } from 'lucide-react-native';
 import { Card, StatusChip } from './ui';
-import { Broker, Insurer } from '@/types/domain';
+import type { Institution } from '@/api/extra';
 import { Policy } from '@/api/client';
 import { colors, radius, space, type } from '@/theme/tokens';
 
-export function InsurerCard({ insurer, onPress }: { insurer: Insurer; onPress: () => void }) {
-  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.logo}><Text style={styles.logoText}>{insurer.initials}</Text></View><View style={styles.copy}><Text style={styles.title}>{insurer.name}</Text><Text style={styles.meta}>{insurer.branch === 'life' ? 'Life & capitalisation' : 'General / non-life'} · {insurer.city}</Text></View><ChevronRight size={20} color={colors.neutral500}/></View>{insurer.offers.length > 0 && <View style={styles.verified}><CheckCircle2 size={16} color={colors.success}/><Text style={styles.verifiedText}>{insurer.offers.length} online offer{insurer.offers.length > 1 ? 's' : ''} verified</Text></View>}</Card></Pressable>;
+export function InsurerCard({ insurer, onPress }: { insurer: Institution; onPress: () => void }) {
+  const offers = insurer.products?.length ?? 0;
+  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.logo}><Text style={styles.logoText}>{insurer.initials}</Text></View><View style={styles.copy}><Text style={styles.title}>{insurer.name}</Text>{insurer.city ? <Text style={styles.meta}>{insurer.city}</Text> : null}</View><ChevronRight size={20} color={colors.neutral500}/></View>{offers > 0 && <View style={styles.verified}><CheckCircle2 size={16} color={colors.success}/><Text style={styles.verifiedText}>{offers} product{offers > 1 ? 's' : ''} available on OpesInsure</Text></View>}</Card></Pressable>;
 }
 
-export function BrokerCard({ broker, onPress }: { broker: Broker; onPress: () => void }) {
-  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.brokerIcon}><Building2 size={20} color={colors.navy800}/></View><View style={styles.copy}><Text style={styles.title}>{broker.name}</Text><View style={styles.inline}><MapPin size={14} color={colors.neutral500}/><Text style={styles.meta}>{broker.city}</Text></View></View><ChevronRight size={20} color={colors.neutral500}/></View><StatusChip label={`Official ${broker.licenceSourceYear} listing — re-check current status`} tone="warning"/></Card></Pressable>;
+export function BrokerCard({ broker, onPress }: { broker: Institution; onPress: () => void }) {
+  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.brokerIcon}><Building2 size={20} color={colors.navy800}/></View><View style={styles.copy}><Text style={styles.title}>{broker.name}</Text>{broker.city ? <View style={styles.inline}><MapPin size={14} color={colors.neutral500}/><Text style={styles.meta}>{broker.city}</Text></View> : null}</View><ChevronRight size={20} color={colors.neutral500}/></View>{broker.licence_number ? <StatusChip label={`Licence ${broker.licence_number}`} tone="info"/> : null}</Card></Pressable>;
 }
 
 export function PolicyCard({policy,onPress}:{policy:Policy;onPress?:()=>void}) { const active=policy.status==='ACTIVE';return <Pressable accessibilityRole={onPress?'button':undefined} onPress={onPress}><Card><View style={styles.between}><View style={styles.inline}><View style={styles.logo}><ShieldCheck size={20} color={colors.blue600}/></View><View><Text style={styles.title}>Insurance policy</Text><Text style={styles.meta}>Carrier reference available in details</Text></View></View><StatusChip label={policy.status} tone={active?'success':'neutral'}/></View><Text style={styles.ref}>{policy.policy_number}</Text><View style={styles.between}><Text style={styles.meta}>{new Date(policy.coverage_starts_at).toLocaleDateString()} — {new Date(policy.coverage_ends_at).toLocaleDateString()}</Text>{onPress&&<Text style={styles.link}>View policy</Text>}</View></Card></Pressable>; }

@@ -31,9 +31,9 @@ export default function SplashOne() {
         <Text style={styles.promise}>Insurance made clear.</Text>
       </View>
       <View style={styles.motif}>
-        <View style={[styles.line, { backgroundColor: "#07855B" }]} />
-        <View style={[styles.line, { backgroundColor: "#C9363E" }]} />
-        <View style={[styles.line, { backgroundColor: "#D99100" }]} />
+        <View style={[styles.line, { backgroundColor: colors.success }]} />
+        <View style={[styles.line, { backgroundColor: colors.danger }]} />
+        <View style={[styles.line, { backgroundColor: colors.gold500 }]} />
       </View>
     </LinearGradient>
   );
@@ -41,7 +41,7 @@ export default function SplashOne() {
 const styles = StyleSheet.create({
   page: { flex: 1, alignItems: "center", justifyContent: "center" },
   center: { alignItems: "center", gap: space.x4 },
-  promise: { ...type.bodyLarge, color: "#DCE3E8" },
+  promise: { ...type.bodyLarge, color: colors.neutral200 },
   motif: {
     position: "absolute",
     bottom: 0,

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -92,6 +92,14 @@ export default function Onboarding() {
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const last = page === slides.length - 1;
+  const pageRef = useRef(0);
+  pageRef.current = page;
+
+  // Rotation / split-screen / foldables change the width: keep the pager on
+  // the same slide instead of stranding it between two pages.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: pageRef.current * width, animated: false });
+  }, [width]);
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));

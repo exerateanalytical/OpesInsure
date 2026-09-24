@@ -1,1 +1,102 @@
-import React,{useEffect,useState}from'react';import{ActivityIndicator,ScrollView,StyleSheet,Text,View}from'react-native';import{useLocalSearchParams}from'expo-router';import{AppHeader,Card,Screen}from'@/components/ui';import{WorkspaceApi,WorkspaceModuleData}from'@/api/client';import{colors,space,type}from'@/theme/tokens';export default function Module(){const{module}=useLocalSearchParams<{module:string}>();const[data,setData]=useState<WorkspaceModuleData|null>(null);const[error,setError]=useState<string|null>(null);useEffect(()=>{if(module)WorkspaceApi.module(module).then(setData).catch(e=>setError(e instanceof Error?e.message:'Module unavailable.'))},[module]);return <Screen><AppHeader title={data?.label??data?.title??'Workspace module'} back/>{!data&&!error?<ActivityIndicator color={colors.blue600}/>:null}{error?<Card><Text style={styles.error}>{error}</Text></Card>:null}{data?<ScrollView horizontal showsHorizontalScrollIndicator={false}><View><View style={styles.row}>{data.columns.map(column=><Text key={column} style={[styles.cell,styles.header]}>{column}</Text>)}</View>{data.rows.map((row,index)=><View key={index} style={styles.row}>{data.columns.map(column=><Text key={column} style={styles.cell}>{String(row[column]??'—')}</Text>)}</View>)}</View></ScrollView>:null}{data&&!data.rows.length?<Card><Text style={styles.body}>No authorised records were returned.</Text></Card>:null}</Screen>}const styles=StyleSheet.create({row:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:colors.neutral200},cell:{width:150,padding:space.x3,...type.meta,color:colors.neutral700},header:{...type.label,color:colors.navy950,backgroundColor:colors.neutral100},body:{...type.body,color:colors.neutral600},error:{...type.body,color:colors.dangerText}});
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { MoveHorizontal } from "lucide-react-native";
+import { AppHeader, Card, Screen } from "@/components/ui";
+import { StatePanel } from "@/components/StatePanel";
+import { useLoad } from "@/hooks/useLoad";
+import { WorkspaceApi } from "@/api/client";
+import { colors, space, type } from "@/theme/tokens";
+
+const cellText = (v: unknown) =>
+  v === null || v === undefined || v === "" ? "" : String(v);
+
+export default function Module() {
+  const { module } = useLocalSearchParams<{ module: string }>();
+  const q = useLoad(() => WorkspaceApi.module(module), [module]);
+  const { width } = useWindowDimensions();
+  const narrow = width < 600;
+  return (
+    <Screen>
+      <AppHeader
+        title={q.data?.label ?? q.data?.title ?? "Workspace module"}
+        back
+      />
+      <StatePanel
+        {...q}
+        onRetry={q.reload}
+        isEmpty={(d) => d.rows.length === 0}
+        emptyTitle="No records"
+        emptyMessage="No authorised records were returned."
+      >
+        {(data) =>
+          narrow ? (
+            <>
+              {data.rows.map((row, index) => (
+                <Card key={index}>
+                  {data.columns.map((column) => (
+                    <View key={column} style={styles.pair}>
+                      <Text style={styles.label}>{column}</Text>
+                      <Text style={styles.value}>{cellText(row[column])}</Text>
+                    </View>
+                  ))}
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <View style={styles.hint}>
+                <MoveHorizontal size={16} color={colors.neutral600} />
+                <Text style={styles.hintText}>Scroll sideways to see every column</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator>
+                <View>
+                  <View style={styles.row}>
+                    {data.columns.map((column) => (
+                      <Text key={column} style={[styles.cell, styles.header]}>
+                        {column}
+                      </Text>
+                    ))}
+                  </View>
+                  {data.rows.map((row, index) => (
+                    <View key={index} style={styles.row}>
+                      {data.columns.map((column) => (
+                        <Text key={column} style={styles.cell}>
+                          {cellText(row[column])}
+                        </Text>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </>
+          )
+        }
+      </StatePanel>
+    </Screen>
+  );
+}
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral200,
+  },
+  cell: { width: 150, padding: space.x3, ...type.meta, color: colors.neutral700 },
+  header: {
+    ...type.label,
+    color: colors.navy950,
+    backgroundColor: colors.neutral100,
+  },
+  pair: { gap: 2 },
+  label: { ...type.caption, color: colors.neutral600 },
+  value: { ...type.body, color: colors.navy950 },
+  hint: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  hintText: { ...type.meta, color: colors.neutral600 },
+});
