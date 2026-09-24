@@ -222,6 +222,8 @@ final class PolicyIssuanceService
             } catch (\Throwable $e) {
                 report($e);
             }
+            // Document engine: the class pack for this lifecycle trigger (savepoint; never blocks issuance).
+            app(\App\Application\Documents\Engine\DocumentEngine::class)->fireQuietly($policy->previous_policy_id ? 'RENEWAL_ISSUED' : 'POLICY_ISSUED', $policy, [], $actor);
 
             if ($renewalCase && $renewalCase->status === 'QUOTED') {
                 try {

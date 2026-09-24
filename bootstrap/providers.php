@@ -1,2 +1,2 @@
 <?php
-return [App\Providers\AppServiceProvider::class,App\Providers\Filament\AdminPanelProvider::class,App\Providers\LifecycleServiceProvider::class];
+return [App\Providers\AppServiceProvider::class,App\Providers\Filament\AdminPanelProvider::class,App\Providers\LifecycleServiceProvider::class,App\Providers\RegulatoryServiceProvider::class,App\Providers\VehicleMasterServiceProvider::class,App\Providers\MasterDataServiceProvider::class,App\Providers\DocumentEngineServiceProvider::class,App\Providers\DocumentCatalogueServiceProvider::class,App\Providers\StateMachineServiceProvider::class,App\Providers\TemporalServiceProvider::class];

@@ -1,0 +1,4078 @@
+{
+ "generated": "2026-09-24",
+ "base_commit": "dcb367e",
+ "totals": {
+  "EXISTS": 18,
+  "PARTIAL": 132,
+  "WIP": 26,
+  "MISSING": 78,
+  "DUPLICATE": 23
+ },
+ "by_wave": {
+  "W0": {
+   "EXISTS": 2,
+   "PARTIAL": 12,
+   "WIP": 1,
+   "MISSING": 5,
+   "DUPLICATE": 3
+  },
+  "W1": {
+   "EXISTS": 4,
+   "PARTIAL": 15,
+   "WIP": 0,
+   "MISSING": 3,
+   "DUPLICATE": 1
+  },
+  "W2": {
+   "EXISTS": 2,
+   "PARTIAL": 9,
+   "WIP": 15,
+   "MISSING": 4,
+   "DUPLICATE": 3
+  },
+  "W3": {
+   "EXISTS": 2,
+   "PARTIAL": 6,
+   "WIP": 0,
+   "MISSING": 7,
+   "DUPLICATE": 0
+  },
+  "W4": {
+   "EXISTS": 0,
+   "PARTIAL": 15,
+   "WIP": 1,
+   "MISSING": 7,
+   "DUPLICATE": 1
+  },
+  "W5": {
+   "EXISTS": 0,
+   "PARTIAL": 8,
+   "WIP": 0,
+   "MISSING": 3,
+   "DUPLICATE": 1
+  },
+  "W6": {
+   "EXISTS": 0,
+   "PARTIAL": 4,
+   "WIP": 0,
+   "MISSING": 4,
+   "DUPLICATE": 1
+  },
+  "W7": {
+   "EXISTS": 0,
+   "PARTIAL": 10,
+   "WIP": 1,
+   "MISSING": 3,
+   "DUPLICATE": 2
+  },
+  "W8": {
+   "EXISTS": 0,
+   "PARTIAL": 4,
+   "WIP": 6,
+   "MISSING": 2,
+   "DUPLICATE": 4
+  },
+  "W9": {
+   "EXISTS": 2,
+   "PARTIAL": 6,
+   "WIP": 0,
+   "MISSING": 8,
+   "DUPLICATE": 0
+  },
+  "W10": {
+   "EXISTS": 1,
+   "PARTIAL": 4,
+   "WIP": 0,
+   "MISSING": 0,
+   "DUPLICATE": 2
+  },
+  "W11": {
+   "EXISTS": 0,
+   "PARTIAL": 3,
+   "WIP": 0,
+   "MISSING": 2,
+   "DUPLICATE": 0
+  },
+  "W12": {
+   "EXISTS": 0,
+   "PARTIAL": 7,
+   "WIP": 0,
+   "MISSING": 4,
+   "DUPLICATE": 1
+  },
+  "W13": {
+   "EXISTS": 0,
+   "PARTIAL": 3,
+   "WIP": 0,
+   "MISSING": 0,
+   "DUPLICATE": 0
+  },
+  "W14": {
+   "EXISTS": 0,
+   "PARTIAL": 1,
+   "WIP": 0,
+   "MISSING": 2,
+   "DUPLICATE": 0
+  },
+  "W15": {
+   "EXISTS": 0,
+   "PARTIAL": 1,
+   "WIP": 1,
+   "MISSING": 2,
+   "DUPLICATE": 0
+  },
+  "W16": {
+   "EXISTS": 0,
+   "PARTIAL": 0,
+   "WIP": 0,
+   "MISSING": 4,
+   "DUPLICATE": 0
+  },
+  "W17": {
+   "EXISTS": 0,
+   "PARTIAL": 0,
+   "WIP": 0,
+   "MISSING": 4,
+   "DUPLICATE": 0
+  },
+  "W18": {
+   "EXISTS": 0,
+   "PARTIAL": 0,
+   "WIP": 0,
+   "MISSING": 1,
+   "DUPLICATE": 0
+  },
+  "W19": {
+   "EXISTS": 1,
+   "PARTIAL": 2,
+   "WIP": 0,
+   "MISSING": 3,
+   "DUPLICATE": 1
+  },
+  "W20": {
+   "EXISTS": 1,
+   "PARTIAL": 1,
+   "WIP": 0,
+   "MISSING": 2,
+   "DUPLICATE": 1
+  },
+  "W21": {
+   "EXISTS": 0,
+   "PARTIAL": 1,
+   "WIP": 0,
+   "MISSING": 1,
+   "DUPLICATE": 0
+  },
+  "W22": {
+   "EXISTS": 0,
+   "PARTIAL": 0,
+   "WIP": 0,
+   "MISSING": 3,
+   "DUPLICATE": 0
+  },
+  "W23": {
+   "EXISTS": 0,
+   "PARTIAL": 4,
+   "WIP": 0,
+   "MISSING": 2,
+   "DUPLICATE": 0
+  },
+  "W24": {
+   "EXISTS": 2,
+   "PARTIAL": 5,
+   "WIP": 0,
+   "MISSING": 1,
+   "DUPLICATE": 0
+  },
+  "W25": {
+   "EXISTS": 0,
+   "PARTIAL": 6,
+   "WIP": 1,
+   "MISSING": 0,
+   "DUPLICATE": 1
+  },
+  "W26": {
+   "EXISTS": 0,
+   "PARTIAL": 1,
+   "WIP": 0,
+   "MISSING": 1,
+   "DUPLICATE": 0
+  },
+  "W27": {
+   "EXISTS": 1,
+   "PARTIAL": 4,
+   "WIP": 0,
+   "MISSING": 0,
+   "DUPLICATE": 1
+  }
+ },
+ "requirements": [
+  {
+   "id": "REQ-ARC-001",
+   "wave": "W0",
+   "title": "Layered structure Domain/Application/Infrastructure/Http; app/Models is not the architecture",
+   "sources": "BP XII §173; ICE 0.7",
+   "status": "PARTIAL",
+   "evidence": "app/Domain has 19 files (state machines, rating, Money); logic lives in app/Application services + controllers",
+   "gap": "Domain layer thin; no Infrastructure adapters folder convention; migrate incrementally per bounded context",
+   "deps": "—",
+   "owner": "app/Domain/*, app/Application/*, app/Infrastructure/*"
+  },
+  {
+   "id": "REQ-ARC-002",
+   "wave": "W0",
+   "title": "Mutation pipeline Request→AuthN→AuthZ→Validate→Command→Guard→Tx→Persist→Event→Outbox→Audit→Response; never button→status update",
+   "sources": "MPS §7; WRS backend rule; SSR §24–33; BP IV",
+   "status": "PARTIAL",
+   "evidence": "AuditWriter + OutboxWriter used in services (e.g. WebhookProcessingService); ClaimCommandGuard; some Filament actions update models directly",
+   "gap": "No shared command bus/guard; Filament and several controllers mutate status directly; no arch test",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Application/Bus, app/Domain/Shared, Filament actions"
+  },
+  {
+   "id": "REQ-ARC-003",
+   "wave": "W0",
+   "title": "Transactional outbox + async dispatcher",
+   "sources": "MPS arch; WRS backend rule; ICE 0.5",
+   "status": "EXISTS",
+   "evidence": "outbox_messages, inbox_messages; integration:dispatch-outbox scheduled every minute",
+   "gap": "—",
+   "deps": "—",
+   "owner": "app/Application/Events"
+  },
+  {
+   "id": "REQ-ARC-004",
+   "wave": "W0",
+   "title": "Canonical domain event catalogue (26 WRS events + 15 product events + engine events), versioned schemas",
+   "sources": "WRS required events; PRE §85–92; BP VII; ICE 0.5",
+   "status": "PARTIAL",
+   "evidence": "canonical_event_schemas table; events emitted as dotted names (payment.status.changed, claim.*)",
+   "gap": "Names differ from WRS PascalCase list; no catalogue doc/registry test; OQ-0.1 open",
+   "deps": "REQ-ARC-003",
+   "owner": "app/Application/Events, canonical_event_schemas seeder"
+  },
+  {
+   "id": "REQ-ARC-005",
+   "wave": "W0",
+   "title": "Keys: bigint internal + public UUID/ULID (ADR) ; never expose integer PKs",
+   "sources": "BP X §175; SEED rule 2",
+   "status": "PARTIAL",
+   "evidence": "All tables use UUID PKs; canonical IDs CM-INS-*/CM-BRK-* on register",
+   "gap": "ADR-001 needed (keep UUID PKs). docs/adr/ is empty",
+   "deps": "—",
+   "owner": "docs/adr"
+  },
+  {
+   "id": "REQ-ARC-006",
+   "wave": "W0",
+   "title": "Money as integer minor units / DECIMAL, never float",
+   "sources": "BP X §175; PRE §26",
+   "status": "EXISTS",
+   "evidence": "*_minor columns throughout; app/Domain/Shared/Money.php",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-ARC-007",
+   "wave": "W0",
+   "title": "Effective dating, no deletion as business state, DB constraints",
+   "sources": "BP X; MPS §106–107; LOCK-007",
+   "status": "PARTIAL",
+   "evidence": "effective_from/until on tariff/tax/fee/cancellation/commission versions; softDeletes on core tables",
+   "gap": "softDeletes used as business state on tenants/users; many rules as jsonb without DB checks",
+   "deps": "REQ-TMP-001",
+   "owner": "migrations (additive)"
+  },
+  {
+   "id": "REQ-ARC-008",
+   "wave": "W0",
+   "title": "Build control: ADR-###, CR-YYYY-NNNN, traceability REQ→domain→workflow→API→screen→test",
+   "sources": "BP XIII; MPS status; STA rule 4",
+   "status": "WIP",
+   "evidence": "CHANGE_REQUEST_LOG.md (untracked); this matrix",
+   "gap": "No ADR files; no test-to-REQ tagging",
+   "deps": "—",
+   "owner": "docs/adr, docs/spec, tests (@covers REQ tags)"
+  },
+  {
+   "id": "REQ-AUD-001",
+   "wave": "W0",
+   "title": "Append-only audit_events with hash chain for high-risk events",
+   "sources": "BP I (audit_events); MPS §98; ICE 0.5, gap 21",
+   "status": "PARTIAL",
+   "evidence": "audit_log (sequence, previous_hash, entry_hash, correlation_id) + AuditWriter",
+   "gap": "Name differs (ADR audit_log vs audit_events); no DB trigger blocking UPDATE/DELETE; no AuditChainVerifier",
+   "deps": "REQ-ARC-008",
+   "owner": "app/Application/Audit, migration trigger"
+  },
+  {
+   "id": "REQ-AUD-002",
+   "wave": "W0",
+   "title": "Audit fields actor, tenant, branch, entity, action, old/new, reason, source, IP/device, approval",
+   "sources": "SCF §86; DSH #20; AOM override; FRP VI monetary audit",
+   "status": "PARTIAL",
+   "evidence": "audit_log payload jsonb; privileged_access_events; security_events",
+   "gap": "Old/new + reason + device not systematically captured; no branch",
+   "deps": "REQ-AUD-001",
+   "owner": "AuditWriter callers"
+  },
+  {
+   "id": "REQ-TMP-001",
+   "wave": "W0",
+   "title": "Temporal / reference-date engine: Clock, VersionResolver, reference_date_rules, transaction_resolved_versions",
+   "sources": "ICE E1 (gap 45); MPS §23; LOCK-007/017",
+   "status": "MISSING",
+   "evidence": "Only CancellationCalculator resolves cancellation_rule_versions by date; now() used everywhere",
+   "gap": "Build E1.1–E1.2; arch test banning now() in Domain/Application",
+   "deps": "REQ-ENG-001",
+   "owner": "app/Domain/Shared/Clock, app/Application/Temporal (new)"
+  },
+  {
+   "id": "REQ-TMP-002",
+   "wave": "W0",
+   "title": "Bitemporal replay (recorded_at/superseded_at) on tariffs, product versions, authorizations",
+   "sources": "ICE §0.3, E1.3",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Additive columns + replay test",
+   "deps": "REQ-TMP-001",
+   "owner": "migrations on tariff_versions, insurance_products, insurer_authorizations"
+  },
+  {
+   "id": "REQ-ENG-001",
+   "wave": "W0",
+   "title": "EngineResult envelope: engine_evaluations (append-only) + engine_overrides (maker-checker CHECK)",
+   "sources": "ICE E0 §0.2–0.4",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Tables, envelope DTO, append-only trigger helper",
+   "deps": "REQ-AUD-001",
+   "owner": "app/Domain/Shared/EngineResult, migrations"
+  },
+  {
+   "id": "REQ-OVR-001",
+   "wave": "W0",
+   "title": "Controlled human override (previous/new value, reason, user, authority, timestamp, approval above threshold)",
+   "sources": "AOM override; PREP A6; ICE 0.4; SSR BRK-035",
+   "status": "MISSING",
+   "evidence": "Ad-hoc approve endpoints only",
+   "gap": "value_overrides/engine_overrides + OverrideService; no silent edits (arch test)",
+   "deps": "REQ-ENG-001, REQ-AUTH-001",
+   "owner": "app/Application/Overrides (new)"
+  },
+  {
+   "id": "REQ-WFL-001",
+   "wave": "W0",
+   "title": "Generic workflow/state engine with Part II columns (state, event, from, to, actor, guard, authority, side effect, audit, notification, failure path)",
+   "sources": "BP II; MPS §103 Workflow/State; SSR §24",
+   "status": "PARTIAL",
+   "evidence": "5 state classes (Policy, Claim x2, Ticket, Fulfilment) + TRANSITIONS consts in Payment/Tenant/Customer services",
+   "gap": "No shared definition/table; 21 machines inconsistent (see state machine delta)",
+   "deps": "REQ-ARC-002",
+   "owner": "app/Domain/Shared/StateMachine (new), per-domain definitions"
+  },
+  {
+   "id": "REQ-CAS-001",
+   "wave": "W0",
+   "title": "Case engine core: cases (8 types), tasks, sla_definitions, diary, queues, SlaService, \"My Work\"",
+   "sources": "BP I; ICE E6.1 (gaps 24–26, 43); MPS §60–86",
+   "status": "MISSING",
+   "evidence": "Fragments: underwriting_referral_tasks, renewal_work_items, compliance_cases, support_tickets",
+   "gap": "Unified case/task/SLA tables; bridges later (REQ-CAS-002)",
+   "deps": "REQ-WFL-001, REQ-CAL-001",
+   "owner": "app/Application/Cases (new), migrations"
+  },
+  {
+   "id": "REQ-CAL-001",
+   "wave": "W0",
+   "title": "Business calendar (weekends, holidays, branch hours) consumed by SLA",
+   "sources": "ICE E6; SCF §83",
+   "status": "PARTIAL",
+   "evidence": "business_calendars table (no consumer)",
+   "gap": "Consumer in SlaService; holiday data source OQ",
+   "deps": "REQ-CAS-001",
+   "owner": "app/Application/Cases/Sla"
+  },
+  {
+   "id": "REQ-IDM-001",
+   "wave": "W0",
+   "title": "Idempotency on all mutations and financial/integration actions",
+   "sources": "BP IV; MPS §99; FRP VI; AOM strict",
+   "status": "PARTIAL",
+   "evidence": "idempotency_keys; idempotency middleware on 16 route files (e.g. mobile.claims.fnol)",
+   "gap": "Not on all mutations; mobile retry regenerated keys (AUD A10) — verify fixed in app 1.2.2",
+   "deps": "—",
+   "owner": "app/Http/Middleware, mobile app/src/api/client.ts"
+  },
+  {
+   "id": "REQ-TST-001",
+   "wave": "W0",
+   "title": "Test matrix: unit, domain, API, financial, claims, reinsurance, document, security, tenant-leakage, RBAC",
+   "sources": "BP VI; MPS §115; SSR §34",
+   "status": "PARTIAL",
+   "evidence": "128 feature test files (tests/Feature/Wave*, Security, Regulatory…)",
+   "gap": "No tenant-leakage suite per route; mobile tests are regex checks; no REQ tagging",
+   "deps": "REQ-ARC-008",
+   "owner": "tests/"
+  },
+  {
+   "id": "REQ-NFR-001",
+   "wave": "W0",
+   "title": "Observability: correlation ID end-to-end (customer→payment→webhook→job→ledger→issuance)",
+   "sources": "BP XI; ESR OPS rule",
+   "status": "PARTIAL",
+   "evidence": "correlation_id on audit_log, journals, engine spec",
+   "gap": "No request middleware propagating Correlation-ID to jobs/webhooks; no trace view",
+   "deps": "REQ-API-002",
+   "owner": "app/Http/Middleware, jobs"
+  },
+  {
+   "id": "REQ-TEN-001",
+   "wave": "W1",
+   "title": "Tenants typed PLATFORM, INSURER, BROKER, REINSURER, PROVIDER_NETWORK, CORPORATE",
+   "sources": "BP I",
+   "status": "PARTIAL",
+   "evidence": "tenants.type varchar(24)",
+   "gap": "Enum not constrained; no REINSURER/PROVIDER_NETWORK/CORPORATE usage",
+   "deps": "—",
+   "owner": "tenants migration, TenantLifecycleService"
+  },
+  {
+   "id": "REQ-TEN-002",
+   "wave": "W1",
+   "title": "Organizations, branches (hierarchy with capabilities), departments (managers, limits, queues)",
+   "sources": "BP I; SCF §5–6, §31–32; ESR BRM",
+   "status": "PARTIAL",
+   "evidence": "carriers, partners (= organizations), tenant_branches; branches API GET/POST",
+   "gap": "No organizations table, no branch hierarchy/capabilities, no departments",
+   "deps": "REQ-TEN-001",
+   "owner": "app/Application/Tenancy, migrations"
+  },
+  {
+   "id": "REQ-TEN-003",
+   "wave": "W1",
+   "title": "Strict tenant isolation + row ownership; tenant-leakage tests",
+   "sources": "AOM strict; MPS §107; AUD A1",
+   "status": "PARTIAL",
+   "evidence": "TenantContext; OwnershipScope (customer owner scoping, dcb367e); tests/Feature/Security",
+   "gap": "Only OWN/TENANT; broker/branch book scoping absent; mobile/* coverage to verify",
+   "deps": "REQ-RBAC-002",
+   "owner": "app/Application/Identity/OwnershipScope"
+  },
+  {
+   "id": "REQ-TEN-004",
+   "wave": "W1",
+   "title": "Tenant lifecycle PENDING→ACTIVE→SUSPENDED→CLOSED",
+   "sources": "ESR ADM-004..006",
+   "status": "EXISTS",
+   "evidence": "TenantLifecycleService TRANSITIONS; tenants/{t}/status route; tenant_status_history",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-IAM-001",
+   "wave": "W1",
+   "title": "Users + memberships (active membership check), invitations",
+   "sources": "BP I; ESR ADM-015..017",
+   "status": "EXISTS",
+   "evidence": "users, tenant_memberships, membership_roles, tenant_invitations; invitations routes; memberships/{m}/revoke",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-IAM-002",
+   "wave": "W1",
+   "title": "Registration + phone/email verification (WF-001/002)",
+   "sources": "WRS WF-001/002; MSR CUST-001..008",
+   "status": "EXISTS",
+   "evidence": "auth/mobile/otp/*, public/accounts, me/phone/verification, email/verify; otp_deliveries (ETECH/Twilio)",
+   "gap": "OTP countdown/resend UX gaps (AUD §3)",
+   "deps": "—",
+   "owner": "MobileAuthController"
+  },
+  {
+   "id": "REQ-IAM-003",
+   "wave": "W1",
+   "title": "Password, MFA, step-up, device sessions, sign-out everywhere",
+   "sources": "MSR SHR-019; SSR CUST-003",
+   "status": "EXISTS",
+   "evidence": "mfa_methods, step_up_grants, user_devices, auth/mobile/logout-all, me/devices",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-IAM-004",
+   "wave": "W1",
+   "title": "OAuth 2.1 / OIDC with scopes for API clients",
+   "sources": "BP IV",
+   "status": "PARTIAL",
+   "evidence": "Passport oauth_* tables; integration_clients lifecycle",
+   "gap": "No OIDC discovery; scopes not mapped to permissions",
+   "deps": "REQ-RBAC-001",
+   "owner": "config/auth, integration clients"
+  },
+  {
+   "id": "REQ-RBAC-001",
+   "wave": "W1",
+   "title": "Permission naming module.resource.action; roles/permissions/role_permissions with conditions",
+   "sources": "BP III; SSR ADM-020",
+   "status": "PARTIAL",
+   "evidence": "roles.permissions jsonb; config/permissions.php catalogue; middleware permission:*",
+   "gap": "No permissions/role_permissions tables; no conditions; naming mixed (carrier.claims.read ok)",
+   "deps": "—",
+   "owner": "app/Application/Identity, migrations"
+  },
+  {
+   "id": "REQ-RBAC-002",
+   "wave": "W1",
+   "title": "Scopes OWN, TEAM, BRANCH, REGION, ORGANIZATION, TENANT, ASSIGNED, PRODUCT, PORTFOLIO",
+   "sources": "BP III; SCF RBAC scopes; ESR BRM rule",
+   "status": "PARTIAL",
+   "evidence": "OWN (OwnershipScope) + TENANT (TenantContext)",
+   "gap": "7 scopes missing; nothing branch-scoped (MSG)",
+   "deps": "REQ-RBAC-001, REQ-TEN-002",
+   "owner": "app/Application/Identity/Scopes (new)"
+  },
+  {
+   "id": "REQ-RBAC-003",
+   "wave": "W1",
+   "title": "Role profiles incl. UNDERWRITER, SENIOR_UW, ADJUSTER/EXPERT, BRANCH_MANAGER, REINSURANCE_OFFICER, PROVIDER_* roles, DEVELOPER, CARRIER_SUPER_ADMIN…CUSTOMER_SERVICE",
+   "sources": "BP III; SCF §7; FRP IV–V; MSG",
+   "status": "PARTIAL",
+   "evidence": "RoleCatalogue: 13 roles (AGENT, BROKER_ADMIN/STAFF, CARRIER_ADMIN/STAFF, CLAIMS_MANAGER/OFFICER, COMPLIANCE_ADMIN, CUSTOMER, FINANCE_ADMIN/MANAGER, PLATFORM_ADMIN, SYSTEM_ADMIN)",
+   "gap": "Missing specialist roles block UND/CLP/BRM/DEV/PRV screens",
+   "deps": "REQ-RBAC-001",
+   "owner": "app/Application/Identity/RoleCatalogue"
+  },
+  {
+   "id": "REQ-RBAC-004",
+   "wave": "W1",
+   "title": "Admin privilege ≠ business-data privilege",
+   "sources": "BP III",
+   "status": "MISSING",
+   "evidence": "SYSTEM_ADMIN bypasses every check (User::hasPermission); demo accounts get *",
+   "gap": "Remove bypass for business data; break-glass via privileged_access_grants",
+   "deps": "REQ-RBAC-001",
+   "owner": "app/Models/User, DatabaseSeeder"
+  },
+  {
+   "id": "REQ-RBAC-005",
+   "wave": "W1",
+   "title": "Segregation of duties & maker-checker (maker ≠ checker) on the WF-081 list + FRP VI list",
+   "sources": "WRS WF-081; FRP VI; AOM strict; MPS §97",
+   "status": "PARTIAL",
+   "evidence": "Maker-checker on tariffs, products, cancellation/commission rules, templates, reserves, privileged access, DA agreements",
+   "gap": "Not generic; missing on manual payment confirmation, document revocation, permission change, write-off",
+   "deps": "REQ-RBAC-006",
+   "owner": "app/Application/Approvals (new)"
+  },
+  {
+   "id": "REQ-RBAC-006",
+   "wave": "W1",
+   "title": "Central approval matrix (workflow, action, amount, role, branch, product, insurer)",
+   "sources": "SCF §58; ESR ADM-029",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Table + resolver used by REQ-AUTH-002",
+   "deps": "REQ-RBAC-001",
+   "owner": "app/Application/Approvals"
+  },
+  {
+   "id": "REQ-SEC-001",
+   "wave": "W1",
+   "title": "Security events, privileged access, security findings, login activity",
+   "sources": "ESR OPS-014..017",
+   "status": "PARTIAL",
+   "evidence": "security_events, privileged_access_grants/events, security_findings; trust/privileged-access routes",
+   "gap": "No OPS screens",
+   "deps": "—",
+   "owner": "Filament OPS pages"
+  },
+  {
+   "id": "REQ-SEC-002",
+   "wave": "W1",
+   "title": "Demo/production separation: seed-demo refused in production, staging env, prod demo mode off, env banner",
+   "sources": "SEED §9, §46; AUD A2/A3; OQ Q4",
+   "status": "PARTIAL",
+   "evidence": "Regulatory/master seeders production-safe; demo:seed; config/demo.php",
+   "gap": "Production runs demo mode; single EAS target; no refusal guard verified",
+   "deps": "—",
+   "owner": "app/Console/Commands, config/demo.php, eas.json"
+  },
+  {
+   "id": "REQ-SEC-003",
+   "wave": "W1",
+   "title": "Consent & purpose-of-use registry; data-subject requests",
+   "sources": "ICG 19; SCF privacy",
+   "status": "PARTIAL",
+   "evidence": "consents, consent_events, data_subject_requests(+events); consents routes",
+   "gap": "No purpose-of-use enforcement at data access; API consent (gap 41) missing",
+   "deps": "—",
+   "owner": "app/Application/Privacy"
+  },
+  {
+   "id": "REQ-SEC-004",
+   "wave": "W1",
+   "title": "Feature flags scoped by environment/country/tenant/branch/product",
+   "sources": "SCF §82",
+   "status": "PARTIAL",
+   "evidence": "platform_settings, public/capabilities",
+   "gap": "No scoping dimensions",
+   "deps": "REQ-TEN-002",
+   "owner": "app/Application/Settings"
+  },
+  {
+   "id": "REQ-SEC-005",
+   "wave": "W1",
+   "title": "Mobile hardening (MASVS: root detection, pinning, attestation, secure storage)",
+   "sources": "AUD §19",
+   "status": "PARTIAL",
+   "evidence": "Secure storage ok; attestation fake",
+   "gap": "MASVS 0/9 closed",
+   "deps": "—",
+   "owner": "mobile app/src/security"
+  },
+  {
+   "id": "REQ-NOT-001",
+   "wave": "W1",
+   "title": "Notification engine: approved templates, SMS/email/push deliveries, attempts, workflow notifications (WF-073), delivery health",
+   "sources": "WRS WF-073; SCF §78–81; ESR OPS-013",
+   "status": "PARTIAL",
+   "evidence": "notification_templates(+approve), notification_deliveries/attempts, user_push_tokens, LifecycleNotificationProducer, notifications:dispatch-pending",
+   "gap": "Few events notify; push sender limited (AUD A14); no catalogue",
+   "deps": "REQ-ARC-004",
+   "owner": "app/Application/Notifications"
+  },
+  {
+   "id": "REQ-UI-001",
+   "wave": "W1",
+   "title": "Web experience shells for 14 experiences (/agent, /broker, /carrier, /underwriting, /adjuster, /finance, /compliance, /branch, /admin, /developers…)",
+   "sources": "SSR §3, §37; ESR",
+   "status": "MISSING",
+   "evidence": "/portal/{portal} is one placeholder template (wave10); only Filament /admin works",
+   "gap": "Decide surface per experience (Filament panels vs SPA); build shell + RBAC nav",
+   "deps": "REQ-RBAC-002",
+   "owner": "resources/views, app/Providers/Filament (new panels)"
+  },
+  {
+   "id": "REQ-UI-002",
+   "wave": "W1",
+   "title": "Reusable record shell + dashboard shell; per-screen DoD (states, EN/FR, audit, RBAC tests)",
+   "sources": "ESR locked principles; SSR §2, §34; DSH framework",
+   "status": "PARTIAL",
+   "evidence": "mobile app/src/components; no backend record-summary/metric contract",
+   "gap": "Shared RecordSummary + Metric API contracts",
+   "deps": "REQ-UI-001",
+   "owner": "app/Application/WebExperiences, mobile components"
+  },
+  {
+   "id": "REQ-MDM-001",
+   "wave": "W2",
+   "title": "Master data engine: Category→Subcategory→Value→Attributes→Aliases→Source→Status→Effective, EN/FR, canonical codes",
+   "sources": "MDC; MPS §14–15; LOCK-003",
+   "status": "WIP",
+   "evidence": "master_data_domains/lists/values/aliases/changes (2026_09_29_100001, untracked); MasterDataCatalogue",
+   "gap": "Commit + tests",
+   "deps": "—",
+   "owner": "app/Application/MasterData, app/Models/MasterData"
+  },
+  {
+   "id": "REQ-MDM-002",
+   "wave": "W2",
+   "title": "38 domains seeded in owner seed order",
+   "sources": "MDC seed order",
+   "status": "WIP",
+   "evidence": "database/data/master_data/{core,reference,specialty}_2026.json (73 lists); opesinsure:seed-master-data",
+   "gap": "Verify coverage vs 38 domains; FRP Part VIII finance/reinsurance/provider lists",
+   "deps": "REQ-MDM-001",
+   "owner": "database/data/master_data"
+  },
+  {
+   "id": "REQ-MDM-003",
+   "wave": "W2",
+   "title": "\"Other / Not listed\" fallback never blocks; review queue SUBMITTED…ARCHIVED with duplicates and frequency",
+   "sources": "MDC fallback; MPS §15",
+   "status": "WIP",
+   "evidence": "master_data_review_queue; POST master-data/suggestions; MasterDataReviewService",
+   "gap": "Review screen (MDM-008/009) missing",
+   "deps": "REQ-MDM-001",
+   "owner": "app/Application/MasterData"
+  },
+  {
+   "id": "REQ-MDM-004",
+   "wave": "W2",
+   "title": "Provenance (source_type, reference, verified_at/by), INACTIVE never delete",
+   "sources": "MDC provenance; SEED rule 1",
+   "status": "WIP",
+   "evidence": "master_data_values provenance columns (untracked)",
+   "gap": "—",
+   "deps": "REQ-MDM-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-MDM-005",
+   "wave": "W2",
+   "title": "Search: aliases, EN/FR, accent-insensitive, typo-tolerant, priority, cascading selects",
+   "sources": "MDC search",
+   "status": "WIP",
+   "evidence": "MasterDataSearch; GET master-data/{domain}/search",
+   "gap": "Typo tolerance to verify",
+   "deps": "REQ-MDM-001",
+   "owner": "MasterDataSearch"
+  },
+  {
+   "id": "REQ-MDM-006",
+   "wave": "W2",
+   "title": "Tenant overrides (hide/alias/private/map, never change meaning); carrier & broker mappings",
+   "sources": "MDC ownership",
+   "status": "WIP",
+   "evidence": "master_data_tenant_overrides, carrier_/broker_master_data_mappings",
+   "gap": "No API/screens (MDM-015/016)",
+   "deps": "REQ-MDM-001",
+   "owner": "app/Application/MasterData"
+  },
+  {
+   "id": "REQ-MDM-007",
+   "wave": "W2",
+   "title": "Duplicate detection, maker-checker merge, import/export CSV/XLSX/JSON, version history",
+   "sources": "MDC operations",
+   "status": "PARTIAL",
+   "evidence": "master_data_imports table; master_data_changes",
+   "gap": "No XLSX parser, merge or export",
+   "deps": "REQ-IMP-001",
+   "owner": "app/Application/MasterData/Import"
+  },
+  {
+   "id": "REQ-MDM-008",
+   "wave": "W2",
+   "title": "Expo offline cache with catalog_version sync",
+   "sources": "MDC; SSR offline",
+   "status": "WIP",
+   "evidence": "GET master-data/versions, MasterDataCache; mobile master-data route",
+   "gap": "App-side cache to verify",
+   "deps": "REQ-MDM-001",
+   "owner": "mobile app/src/masterData"
+  },
+  {
+   "id": "REQ-MDM-009",
+   "wave": "W2",
+   "title": "MDM screens MDM-001…020 incl. data quality dashboard",
+   "sources": "MDC screens",
+   "status": "MISSING",
+   "evidence": "Only vehicle master Filament resources",
+   "gap": "20 staff screens (Filament)",
+   "deps": "REQ-MDM-001..007",
+   "owner": "app/Filament/Admin/Resources/MasterData* (new)"
+  },
+  {
+   "id": "REQ-VEH-001",
+   "wave": "W2",
+   "title": "Vehicle master: makes, models, generations, variants, aliases, reference values, review queue; cascading make→model",
+   "sources": "MPS §16; MDC vehicles; STA rule 2",
+   "status": "WIP",
+   "evidence": "vehicle_* tables (2026_09_28_100001), 5 Filament resources, public/vehicles/*, mobile/vehicles/master-review",
+   "gap": "Generations/variants optional per STA rule 2",
+   "deps": "REQ-MDM-001",
+   "owner": "app/Application/Vehicles"
+  },
+  {
+   "id": "REQ-CIMA-001",
+   "wave": "W2",
+   "title": "Regulatory dictionary: regimes, Art.328 branches + subclasses, Art.717 micro-branches, Art.411 categories, terms EN/FR, authorities, legal references, compulsory insurance",
+   "sources": "CIMA; MPS §21; PRE §4",
+   "status": "WIP",
+   "evidence": "14 tables (2026_09_27_100001), cima_regulatory_master_2026.json, opesinsure:seed-cima, public/regulatory/*",
+   "gap": "Commit; naming ADR regulatory_branches vs insurance_branches",
+   "deps": "—",
+   "owner": "app/Application/Regulatory, app/Models/Regulatory"
+  },
+  {
+   "id": "REQ-CIMA-002",
+   "wave": "W2",
+   "title": "Insurer authorization → authorized branches; publication gate AUTHORIZED / NOT_AUTHORIZED / EXPIRED / SUSPENDED / MAPPING_REQUIRED",
+   "sources": "CIMA; PRE §4–5; ICE E3; LOCK-001",
+   "status": "WIP",
+   "evidence": "insurer_regulatory_authorizations, insurer_authorized_branches, CimaAuthorizationService, CimaPublicationGuard",
+   "gap": "No insurer has authorized branches recorded (OQ Q2) → new versions blocked",
+   "deps": "REQ-CIMA-001",
+   "owner": "app/Application/Regulatory"
+  },
+  {
+   "id": "REQ-CIMA-003",
+   "wave": "W2",
+   "title": "Product regulatory mappings PRIMARY/ACCESSORY/COMPLEMENTARY, effective-dated, Art.328-1 accessory rule",
+   "sources": "CIMA; PRE §4",
+   "status": "WIP",
+   "evidence": "product_regulatory_mappings, CimaProductMappingService, CimaProductMappings resource",
+   "gap": "Open mappings OQ Q1",
+   "deps": "REQ-CIMA-001, REQ-PRD-001",
+   "owner": "app/Application/Regulatory"
+  },
+  {
+   "id": "REQ-CIMA-004",
+   "wave": "W2",
+   "title": "RegulatoryTerminologyService (regime, locale, term)→label; CIMA invisible to customers",
+   "sources": "CIMA; AOM CIMA visibility",
+   "status": "WIP",
+   "evidence": "RegulatoryTerminologyService, regulatory_term_translations",
+   "gap": "Wire into customer-facing labels",
+   "deps": "REQ-CIMA-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CIMA-005",
+   "wave": "W2",
+   "title": "CIMA screens PLT-CIMA-001…012, INS-SET-CIMA-001…006, BRK-SET-CIMA-001…004",
+   "sources": "CIMA screens",
+   "status": "WIP",
+   "evidence": "CimaRegulatoryDashboard + 10 Cima* Filament resources (PLT)",
+   "gap": "INS-SET-CIMA and BRK-SET-CIMA screens missing",
+   "deps": "REQ-CIMA-002, REQ-SET-002",
+   "owner": "app/Filament/Admin"
+  },
+  {
+   "id": "REQ-CIMA-006",
+   "wave": "W2",
+   "title": "CIMA-ready 28-item checklist; Art.557 intermediary measures",
+   "sources": "CIMA checklist",
+   "status": "WIP",
+   "evidence": "CimaComplianceReport (untracked)",
+   "gap": "Checklist evaluation + report",
+   "deps": "REQ-CIMA-001..003",
+   "owner": "app/Application/Regulatory"
+  },
+  {
+   "id": "REQ-SEED-001",
+   "wave": "W2",
+   "title": "Provenance on seeded records: data_origin REGULATORY / CARRIER_PUBLISHED / PLATFORM_NORMALIZED / DEMO_SYNTHETIC, source_authority, reference_year, is_demo",
+   "sources": "SEED 1; MPS §89–90",
+   "status": "PARTIAL",
+   "evidence": "data_origin on carriers/partners/insurance_classes (2026_09_26); is_demo in 10 files",
+   "gap": "Not on transactional demo data consistently",
+   "deps": "—",
+   "owner": "seeders, migrations"
+  },
+  {
+   "id": "REQ-SEED-002",
+   "wave": "W2",
+   "title": "Official register: 29 insurers (CM-INS-IARD/LIFE-*), 123 brokers (CM-BRK-2026-*), idempotent opesinsure:seed-regulatory",
+   "sources": "SEED 2, 9; MPS §108",
+   "status": "EXISTS",
+   "evidence": "SeedRegulatoryRegister, cameroon_insurance_register_2026.json, public/institutions",
+   "gap": "Broker enrichment (123) open",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-SEED-003",
+   "wave": "W2",
+   "title": "Effective-dated insurer/intermediary authorizations and name/brand history, never overwrite a year",
+   "sources": "SEED 6",
+   "status": "PARTIAL",
+   "evidence": "insurer_authorizations, intermediary_authorizations, partner_licences",
+   "gap": "No name/brand history table",
+   "deps": "REQ-SEED-002",
+   "owner": "migrations"
+  },
+  {
+   "id": "REQ-SEED-004",
+   "wave": "W2",
+   "title": "carrier_broker_agreements + product permissions (can_quote/can_bind/can_collect_premium/requires_carrier_approval) + per-agreement commission",
+   "sources": "SEED 7; SCF §23–25; PRE §57–62",
+   "status": "PARTIAL",
+   "evidence": "delegated_authority_agreements (permitted_lines, max premium, territories); commission_rule_versions per carrier/product/partner",
+   "gap": "No agreement-product permission table",
+   "deps": "REQ-SEED-002",
+   "owner": "app/Application/CarrierOperations"
+  },
+  {
+   "id": "REQ-SEED-005",
+   "wave": "W2",
+   "title": "Demo layer: DEMO brokerage + 5 branches, DEMO tariffs, .invalid identities, watermark, DEMO_VALID QR, banner, one record per workflow state, end-to-end chain",
+   "sources": "SEED 8, 10",
+   "status": "PARTIAL",
+   "evidence": "demo:seed, DatabaseSeeder demo accounts, DemoPurchaseSettler",
+   "gap": "Coverage per state and CUS-DEMO-0001 chain not verified; watermark only in WIP engine-document view",
+   "deps": "REQ-SEC-002",
+   "owner": "app/Application/Demo, seeders"
+  },
+  {
+   "id": "REQ-SEED-006",
+   "wave": "W2",
+   "title": "Unknown institutional facts stay NULL/UNVERIFIED/PENDING_VERIFICATION",
+   "sources": "MPS §108; SEED 3",
+   "status": "EXISTS",
+   "evidence": "Seeders leave null; OWNER_OPEN_QUESTIONS lists unknowns",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-SET-001",
+   "wave": "W2",
+   "title": "Platform setup: country CM/XAF/Africa-Douala, geography, languages, currency; PLT-SET-001…034 + wizard",
+   "sources": "SCF §51–86",
+   "status": "PARTIAL",
+   "evidence": "platform_settings + PlatformSettingsPage",
+   "gap": "Most PLT-SET screens and wizard missing",
+   "deps": "REQ-MDM-002",
+   "owner": "app/Filament/Admin/Pages"
+  },
+  {
+   "id": "REQ-SET-002",
+   "wave": "W2",
+   "title": "Insurer setup lifecycle DRAFT→REGULATORY_REVIEW→CONFIGURATION→TESTING→READY_FOR_APPROVAL→ACTIVE (+SUSPENDED/INACTIVE/TERMINATED), 23-item activation gate, INS-SET-001…038",
+   "sources": "SCF lifecycles; MPS §109–113",
+   "status": "MISSING",
+   "evidence": "carriers.status only",
+   "gap": "Lifecycle machine, checklist evaluator, screens",
+   "deps": "REQ-CIMA-002, REQ-AOM-001",
+   "owner": "app/Application/CarrierOperations/Setup (new)"
+  },
+  {
+   "id": "REQ-SET-003",
+   "wave": "W2",
+   "title": "Broker setup lifecycle DRAFT→REVIEW→CONFIGURATION→TESTING→ACTIVE, 19-item gate, BRK-SET-001…030",
+   "sources": "SCF",
+   "status": "PARTIAL",
+   "evidence": "partners status + partner_status_history + licence decisions",
+   "gap": "Checklist + screens missing",
+   "deps": "REQ-SEED-004",
+   "owner": "app/Application/Partners/Setup (new)"
+  },
+  {
+   "id": "REQ-SET-004",
+   "wave": "W2",
+   "title": "Configuration inheritance & precedence Platform→Insurer→Broker agreement→Broker internal→Branch→User (only more restrictive)",
+   "sources": "SCF governing rules",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Resolver + guard",
+   "deps": "REQ-TEN-002",
+   "owner": "app/Application/Configuration"
+  },
+  {
+   "id": "REQ-SET-005",
+   "wave": "W2",
+   "title": "Configuration governance: Draft→Review→Approved→Published, maker-checker, audit, effective-dated",
+   "sources": "SCF; PRE §74",
+   "status": "PARTIAL",
+   "evidence": "approve endpoints on tariffs, templates, rules, reference sets",
+   "gap": "No uniform config_approvals",
+   "deps": "REQ-RBAC-005",
+   "owner": "app/Application/Configuration"
+  },
+  {
+   "id": "REQ-SET-006",
+   "wave": "W2",
+   "title": "Numbering engine: per-tenant sequences, server-side only (e.g. AXA-MOT-2026-000001)",
+   "sources": "SCF §59; DCP numbering",
+   "status": "WIP",
+   "evidence": "document_numbering_families, document_number_counters, DocumentNumberAllocator",
+   "gap": "Policy numbers still supplied by caller (PREP)",
+   "deps": "—",
+   "owner": "app/Application/Documents/Engine"
+  },
+  {
+   "id": "REQ-ORG-001",
+   "wave": "W2",
+   "title": "Broker agent hierarchy (branch→supervisor→agent→sub-agent), agent types, licensing history, suspension without broken refs (WF-080)",
+   "sources": "SCF §32–33; WRS WF-080",
+   "status": "PARTIAL",
+   "evidence": "partners, partner_licences, partner_status_history, AgentPartnerResolver",
+   "gap": "No hierarchy/supervisor; no suspension workflow",
+   "deps": "REQ-TEN-002",
+   "owner": "app/Application/Agents, Partners"
+  },
+  {
+   "id": "REQ-AOM-001",
+   "wave": "W2",
+   "title": "Insurance Company Capability Profile: mode per capability (MANUAL/CONFIGURED/HYBRID/REMOTE_API), maturity L1–L5, pinning on transactions",
+   "sources": "AOM; MPS §3–5; PREP A1; LOCK-002",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Profile tables, CapabilityResolver, pinning",
+   "deps": "REQ-SET-002",
+   "owner": "app/Application/Capabilities (new)"
+  },
+  {
+   "id": "REQ-PTY-001",
+   "wave": "W3",
+   "title": "Parties PERSON/ORGANIZATION, persons, addresses, contacts, identity documents (encrypted)",
+   "sources": "BP I; MDC identity",
+   "status": "EXISTS",
+   "evidence": "parties, party_addresses, party_contacts, party_identifiers; parties API",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PTY-002",
+   "wave": "W3",
+   "title": "Golden record with party_roles (bitemporal), 16 CIMA person roles; policyholder ≠ insured ≠ beneficiary",
+   "sources": "BP I; CIMA roles; ICE gap 16; LOCK-006",
+   "status": "PARTIAL",
+   "evidence": "tenant_customers, claim_involved_parties, users.party_id",
+   "gap": "No party_roles; roles implicit per table",
+   "deps": "REQ-PTY-001",
+   "owner": "app/Application/Customers, migrations"
+  },
+  {
+   "id": "REQ-PTY-003",
+   "wave": "W3",
+   "title": "party_relationships (household, employer, group) + ownership_interests (UBO graph)",
+   "sources": "BP I; ICE gap 17, E5",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Tables + graph API",
+   "deps": "REQ-PTY-002",
+   "owner": "app/Application/Customers/Relationships (new)"
+  },
+  {
+   "id": "REQ-PTY-004",
+   "wave": "W3",
+   "title": "Duplicate entity resolution: probable-match review, no auto-merge, survivorship log (BRK-017)",
+   "sources": "ICE gap 15; MPS §60–86",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "entity_match_candidates + DATA_STEWARD case",
+   "deps": "REQ-CAS-001",
+   "owner": "app/Application/Customers/Matching (new)"
+  },
+  {
+   "id": "REQ-KYC-001",
+   "wave": "W3",
+   "title": "Individual KYC (WF-003): not_started→draft→submitted→reviewing→approved; more_information_required, rejected, expired; maker-checker review",
+   "sources": "WRS WF-003; BP II KYC; MSR CUST-009..016",
+   "status": "PARTIAL",
+   "evidence": "kyc_submissions(+documents), MobileKycService, mobile/kyc/*, documents/{d}/review",
+   "gap": "No kyc_cases state machine; no review queue (BRK-020)",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Application/Kyc"
+  },
+  {
+   "id": "REQ-KYC-002",
+   "wave": "W3",
+   "title": "Corporate KYC / due diligence / corporate onboarding (WF-004, WF-076)",
+   "sources": "WRS; ESR CMP-006; MSR BRK-024",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Needs REQ-PTY-003 UBO",
+   "deps": "REQ-PTY-003, REQ-KYC-001",
+   "owner": "app/Application/Kyc"
+  },
+  {
+   "id": "REQ-KYC-003",
+   "wave": "W3",
+   "title": "KYC remediation & expiring documents (WF-074/075), original submission retained",
+   "sources": "WRS",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Remediation state + CUST-016/BRK-022/023",
+   "deps": "REQ-KYC-001",
+   "owner": "app/Application/Kyc"
+  },
+  {
+   "id": "REQ-KYC-004",
+   "wave": "W3",
+   "title": "Screening hook (screening_checks) at onboarding",
+   "sources": "BP I; ICE E5.1",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "See REQ-AML-001",
+   "deps": "REQ-AML-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CRM-001",
+   "wave": "W3",
+   "title": "Leads NEW→CONTACTED→QUALIFIED→QUOTE→NEGOTIATION→WON/LOST; assignment rules (WF-005..007)",
+   "sources": "BP I leads; WRS; SCF §40",
+   "status": "PARTIAL",
+   "evidence": "partner_leads; mobile/partner/agent/leads (+convert)",
+   "gap": "No broker lead directory/assignment API (BRK-009..011)",
+   "deps": "—",
+   "owner": "app/Application/Agents, PartnerWorkspace"
+  },
+  {
+   "id": "REQ-CRM-002",
+   "wave": "W3",
+   "title": "Customer 360 single record across roles (WF-088)",
+   "sources": "WRS WF-088; ESR ownership",
+   "status": "PARTIAL",
+   "evidence": "mobile agent/broker client detail",
+   "gap": "No broker/web 360; no timeline aggregation",
+   "deps": "REQ-UI-002",
+   "owner": "app/Application/Customers/Customer360 (new)"
+  },
+  {
+   "id": "REQ-CRM-003",
+   "wave": "W3",
+   "title": "Customer attribution/ownership and portfolio transfer (WF-079) with preview and history",
+   "sources": "WRS WF-079; ICE gap 36",
+   "status": "PARTIAL",
+   "evidence": "customer_attributions, attribution_disputes, attributions API",
+   "gap": "Portfolio transfer missing",
+   "deps": "REQ-RBAC-002",
+   "owner": "app/Application/Attribution"
+  },
+  {
+   "id": "REQ-CRM-004",
+   "wave": "W3",
+   "title": "Beneficiary engine: primary/contingent, allocation = 100%, history (WF-078)",
+   "sources": "PRE §67; WRS WF-078",
+   "status": "MISSING",
+   "evidence": "Mentions only in risk-fact schemas",
+   "gap": "Tables + validation",
+   "deps": "REQ-PTY-002",
+   "owner": "app/Application/Customers/Beneficiaries (new)"
+  },
+  {
+   "id": "REQ-CUS-001",
+   "wave": "W3",
+   "title": "Customer status ACTIVE/SUSPENDED/ARCHIVED",
+   "sources": "—",
+   "status": "EXISTS",
+   "evidence": "CustomerService TRANSITIONS; customers/{c}/status",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-RSK-001",
+   "wave": "W3",
+   "title": "Insured objects: vehicles (WF-077 with duplicate check), properties, business risks referencing golden IDs",
+   "sources": "BP I; MPS §16–20",
+   "status": "PARTIAL",
+   "evidence": "risk_assets, risk_asset_vehicles, risk_asset_documents/events, RiskAssetVehicleSync",
+   "gap": "No properties/business_risks tables; VIN duplicate check to verify",
+   "deps": "REQ-VEH-001",
+   "owner": "app/Application/Risks"
+  },
+  {
+   "id": "REQ-SRC-001",
+   "wave": "W3",
+   "title": "Global & advanced search (SHR-001/002)",
+   "sources": "MPS §94; MSG top-20",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Search API + index",
+   "deps": "REQ-RBAC-002",
+   "owner": "app/Application/Search (new)"
+  },
+  {
+   "id": "REQ-PRD-001",
+   "wave": "W4",
+   "title": "Product/version split; version states DRAFT/REVIEW/APPROVED/PUBLISHED/SUSPENDED/RETIRED; versions never edited live",
+   "sources": "PRE §7–10; MPS §11; PREP 2.1",
+   "status": "PARTIAL",
+   "evidence": "insurance_products row = version (version int); DRAFT→IN_REVIEW→ACTIVE; product_status_history",
+   "gap": "Create product_versions; keep compatibility FKs",
+   "deps": "—",
+   "owner": "app/Application/Catalogue, migrations"
+  },
+  {
+   "id": "REQ-PRD-002",
+   "wave": "W4",
+   "title": "Hierarchy CIMA branch→class→family→carrier product→version→plan→coverage; class taxonomy (6 groups)",
+   "sources": "PRE layers, classes; MPS §9; SEED 5",
+   "status": "PARTIAL",
+   "evidence": "insurance_lines (flat), insurance_classes; regulatory_class_defaults (WIP)",
+   "gap": "Family/plan levels missing",
+   "deps": "REQ-CIMA-001",
+   "owner": "app/Application/Catalogue"
+  },
+  {
+   "id": "REQ-PRD-003",
+   "wave": "W4",
+   "title": "Carrier product attributes: EN/FR names/descriptions, customer type, currency, market",
+   "sources": "PRE §7; SCF §8",
+   "status": "MISSING",
+   "evidence": "Single name column",
+   "gap": "—",
+   "deps": "REQ-PRD-001",
+   "owner": "migrations"
+  },
+  {
+   "id": "REQ-PRD-004",
+   "wave": "W4",
+   "title": "Plans/packages (TP/TP+/…; Bronze…Platinum) with coverage sets and pricing reference",
+   "sources": "PRE §10",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "product_plans",
+   "deps": "REQ-PRD-001",
+   "owner": "app/Application/Catalogue"
+  },
+  {
+   "id": "REQ-PRD-005",
+   "wave": "W4",
+   "title": "Coverages v2: limit types (10), deductible types incl. 5% min 50k, waiting periods, territory, mandatory/optional/default",
+   "sources": "PRE §11–13; SCF §9",
+   "status": "PARTIAL",
+   "evidence": "coverage_definitions, product_coverages (single ints)",
+   "gap": "Typed limits/deductibles",
+   "deps": "REQ-PRD-001",
+   "owner": "app/Application/Catalogue"
+  },
+  {
+   "id": "REQ-PRD-006",
+   "wave": "W4",
+   "title": "Exclusions at PRODUCT/PLAN/COVERAGE/CUSTOMER/RISK/CLAIM with versioned legal text; extensions",
+   "sources": "PRE §14–15",
+   "status": "PARTIAL",
+   "evidence": "exclusion_definitions, product_exclusions",
+   "gap": "Levels + legal text versions",
+   "deps": "REQ-PRD-005",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PRD-007",
+   "wave": "W4",
+   "title": "Product governance workflow DRAFT→CONFIGURATION→TECHNICAL_REVIEW→COMPLIANCE_REVIEW→BUSINESS_APPROVAL→READY→PUBLISHED; completeness checklist; diff; scheduled publish; rollback; dependency graph; governance attributes (owner, target/prohibited market, review date)",
+   "sources": "PRE §74–84, §97–98; ICE gap 35",
+   "status": "PARTIAL",
+   "evidence": "submit/publish with maker-checker; publish requires regulatory_reference + approved tariff",
+   "gap": "Most steps absent",
+   "deps": "REQ-PRD-001, REQ-CIMA-002",
+   "owner": "app/Application/Catalogue/Governance"
+  },
+  {
+   "id": "REQ-PRD-008",
+   "wave": "W4",
+   "title": "Test sandbox + portfolio simulation with full trace, no side effects",
+   "sources": "PRE §76–78; SCF sandbox; PREP B10",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-RAT-001, REQ-RUL-002",
+   "owner": "app/Application/Sandbox (new)"
+  },
+  {
+   "id": "REQ-PRD-009",
+   "wave": "W4",
+   "title": "Simple product onboarding: 5 questions with background CIMA mapping",
+   "sources": "AOM; PREP A2",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-AOM-001, REQ-CIMA-003",
+   "owner": "app/Application/Catalogue/Onboarding"
+  },
+  {
+   "id": "REQ-PRD-010",
+   "wave": "W4",
+   "title": "Product Builder UI (CAR-013..022, 19-step wizard, dashboard, completeness, blocking vs warnings)",
+   "sources": "PRE §93–99; ESR CAR",
+   "status": "PARTIAL",
+   "evidence": "Filament staff CRUD (InsuranceProducts, CoverageDefinitions, TariffVersions…); mobile carrier products list/status",
+   "gap": "Carrier-facing builder missing",
+   "deps": "REQ-PRD-001..007, REQ-UI-001",
+   "owner": "app/Filament or carrier web"
+  },
+  {
+   "id": "REQ-RUL-001",
+   "wave": "W4",
+   "title": "Configurable questions per product version (12 types, validation, visibility, risk factor, effects)",
+   "sources": "PRE §17–18; SCF §10",
+   "status": "WIP",
+   "evidence": "RiskSchemaCatalogue hard-coded (modified, uncommitted), NonMotorRiskSchemas, MotorRiskSchema, disclosure_schema_versions",
+   "gap": "Version-scoped question_definitions/product_questions",
+   "deps": "REQ-PRD-001",
+   "owner": "app/Application/Catalogue"
+  },
+  {
+   "id": "REQ-RUL-002",
+   "wave": "W4",
+   "title": "Shared structured expression engine (operators EQUAL…NOT, priority, stop_processing, trace, no uploaded code, determinism)",
+   "sources": "PRE §19–22, §85; PREP §3",
+   "status": "MISSING",
+   "evidence": "QuoteService::eligible (EQUALS/IN/BETWEEN, AND only)",
+   "gap": "Build B3",
+   "deps": "—",
+   "owner": "app/Domain/Rules (new)"
+  },
+  {
+   "id": "REQ-RUL-003",
+   "wave": "W4",
+   "title": "Eligibility outcomes ELIGIBLE/INELIGIBLE/CONDITIONAL/REFER/MORE_INFO with explanation",
+   "sources": "PRE §19; SCF §10",
+   "status": "PARTIAL",
+   "evidence": "Boolean eligibility; ineligible products silently skipped",
+   "gap": "Outcome enum + trace",
+   "deps": "REQ-RUL-002",
+   "owner": "app/Application/Quotes"
+  },
+  {
+   "id": "REQ-RUL-004",
+   "wave": "W4",
+   "title": "Completeness / data-quality gates (blocking rules at quote, bind, issue, claim)",
+   "sources": "ICE gap 14",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "completeness_rules",
+   "deps": "REQ-RUL-002",
+   "owner": "app/Application/Rules"
+  },
+  {
+   "id": "REQ-RAT-001",
+   "wave": "W4",
+   "title": "Rating v2: premium build-up, 13 methods, tables/bands, min premium, discount caps, loadings, rounding",
+   "sources": "PRE §26–33; PREP §5",
+   "status": "PARTIAL",
+   "evidence": "DeterministicRatingEngine (base + bp factors + one tax + one fee)",
+   "gap": "Coverage-level premium, tables, caps",
+   "deps": "REQ-RUL-002",
+   "owner": "app/Domain/Rating"
+  },
+  {
+   "id": "REQ-RAT-002",
+   "wave": "W4",
+   "title": "Tariff versions workflow DRAFT→REVIEW→APPROVAL→SCHEDULED→ACTIVE→EXPIRED, immutable history",
+   "sources": "PRE §75; SSR CAR-019",
+   "status": "PARTIAL",
+   "evidence": "tariff_versions + TariffGovernanceService (DRAFT→IN_REVIEW→APPROVED, overlap guard, hash)",
+   "gap": "SCHEDULED/ACTIVE/EXPIRED states",
+   "deps": "REQ-TMP-001",
+   "owner": "app/Application/Rating"
+  },
+  {
+   "id": "REQ-RAT-003",
+   "wave": "W4",
+   "title": "Tax & statutory charge engine (charge code, jurisdiction, basis, rate/fixed, effective, classes); no hard-coded rates",
+   "sources": "PRE §33; FRP premium components; MPS §106",
+   "status": "PARTIAL",
+   "evidence": "tax_levy_versions, fee_schedule_versions (one blob per line); rates DEMO (OQ-9)",
+   "gap": "Charge-code catalogue",
+   "deps": "REQ-RAT-001",
+   "owner": "app/Application/Rating"
+  },
+  {
+   "id": "REQ-RAT-004",
+   "wave": "W4",
+   "title": "Immutable pricing snapshot storing tariff, tax, fee and rule versions",
+   "sources": "PRE §34; BP I pricing_snapshots; WRS WF-010",
+   "status": "PARTIAL",
+   "evidence": "rating_runs (stores only tariff_version_id — bug), quote_offers.calculation_breakdown",
+   "gap": "Store all versions; formal pricing_snapshots",
+   "deps": "REQ-RAT-001",
+   "owner": "app/Application/Quotes/QuoteService"
+  },
+  {
+   "id": "REQ-RAT-005",
+   "wave": "W4",
+   "title": "Per-CIMA-branch premium allocation (Art.411)",
+   "sources": "PREP §5.5; OQ-24",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-CIMA-003, REQ-RAT-001",
+   "owner": "app/Application/Rating"
+  },
+  {
+   "id": "REQ-DST-001",
+   "wave": "W4",
+   "title": "Sellability: product ACTIVE + version PUBLISHED + agreement ACTIVE + authorization ACTIVE + branch/agent allowed; channels; territory",
+   "sources": "PRE §57–62; SCF §24",
+   "status": "PARTIAL",
+   "evidence": "AuthorityChecker (DA agreement lines/territory/period), marketplace_publications",
+   "gap": "Version/authorization/channel checks",
+   "deps": "REQ-SEED-004, REQ-AUTH-003",
+   "owner": "app/Application/Distribution (new)"
+  },
+  {
+   "id": "REQ-DST-002",
+   "wave": "W4",
+   "title": "Broker catalogue derived from carrier product + agreement + authorization; broker cannot override cover/tariff",
+   "sources": "SCF §36–37",
+   "status": "PARTIAL",
+   "evidence": "marketplace publications toggled by broker",
+   "gap": "Derivation rule",
+   "deps": "REQ-DST-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DST-003",
+   "wave": "W4",
+   "title": "Marketplace comparison on normalized dimensions (limits, excess, exclusions, tax/fees)",
+   "sources": "PRE §99; MSR CUST-024; AUD §9; STA quote-comparisons",
+   "status": "PARTIAL",
+   "evidence": "POST web-experiences/marketplace/comparisons, saved_comparisons; server sends dimensions",
+   "gap": "App shows total only",
+   "deps": "REQ-RAT-004",
+   "owner": "mobile app compare screens"
+  },
+  {
+   "id": "REQ-AOM-002",
+   "wave": "W4",
+   "title": "Execution adapters QuoteProvider / UnderwritingProvider / PolicyIssuer / ClaimProvider / PaymentExecution",
+   "sources": "AOM adapters; MPS §3; PREP A0/A3; LOCK-014",
+   "status": "PARTIAL",
+   "evidence": "PaymentProviderAdapter + PaymentAdapterRegistry only",
+   "gap": "Wrap current services as OPES adapters",
+   "deps": "REQ-AOM-001",
+   "owner": "app/Application/*/Adapters"
+  },
+  {
+   "id": "REQ-QUO-001",
+   "wave": "W5",
+   "title": "Quote state machine draft→rating→calculated→generated→sent→viewed→accepted; declined, expired, cancelled",
+   "sources": "BP II Quote; WRS canonical states; SSR AGT-027",
+   "status": "PARTIAL",
+   "evidence": "quotes.status strings (SUBMITTED, REFERRED, OFFERED, ACCEPTED…), no enum",
+   "gap": "Adopt canonical states; app mapping",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Application/Quotes"
+  },
+  {
+   "id": "REQ-QUO-002",
+   "wave": "W5",
+   "title": "Configurable quote validity → QUOTE_EXPIRED",
+   "sources": "PRE §34",
+   "status": "PARTIAL",
+   "evidence": "expires_at hard-coded +7d",
+   "gap": "Per product version",
+   "deps": "REQ-PRD-001",
+   "owner": "QuoteService"
+  },
+  {
+   "id": "REQ-QUO-003",
+   "wave": "W5",
+   "title": "Quote risks + multi-carrier offers (quote_risks)",
+   "sources": "BP I",
+   "status": "PARTIAL",
+   "evidence": "quotes.risk_facts jsonb, quote_offers",
+   "gap": "quote_risks table referencing insured objects",
+   "deps": "REQ-RSK-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-QUO-004",
+   "wave": "W5",
+   "title": "Send/share quote, quote PDF, viewed tracking, lost quote (WF-012, WF-014)",
+   "sources": "WRS; MSR AGT-026/028",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-DOC-002",
+   "owner": "app/Application/Quotes"
+  },
+  {
+   "id": "REQ-QUO-005",
+   "wave": "W5",
+   "title": "Premium override approval with authority and permanent audit (BRK-035)",
+   "sources": "SSR BRK-035; BP authority PREMIUM_OVERRIDE",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-OVR-001, REQ-AUTH-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-QUO-006",
+   "wave": "W5",
+   "title": "Manual quotation (Mode 1): carrier quote request/response, broker-on-behalf with evidence, carrier queue, SLA/expiry",
+   "sources": "AOM Mode 1; PREP A3",
+   "status": "PARTIAL",
+   "evidence": "carrier_exchange_messages; mobile carrier referrals",
+   "gap": "carrier_quote_requests/responses + record-offer",
+   "deps": "REQ-AOM-002",
+   "owner": "app/Application/CarrierOperations"
+  },
+  {
+   "id": "REQ-PRP-001",
+   "wave": "W5",
+   "title": "Proposal state machine draft→submitted→reviewing→information_required→resubmitted→approved/declined; immutable submitted snapshot",
+   "sources": "BP II Proposal; WRS WF-015/016; CIMA Art.6",
+   "status": "PARTIAL",
+   "evidence": "ProposalStatus (9 states incl. COUNTEROFFERED, PAYMENT_PENDING), proposal_status_history, terms_snapshot",
+   "gap": "information_required/resubmitted/withdrawn missing",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Application/Underwriting/ProposalService"
+  },
+  {
+   "id": "REQ-PRP-002",
+   "wave": "W5",
+   "title": "Declarations, consent, beneficiaries and market-conduct evidence (disclosure hash)",
+   "sources": "PRE §35; ICE gap 3; WRS WF-016",
+   "status": "PARTIAL",
+   "evidence": "proposal_disclosure_responses, disclosures/attest",
+   "gap": "Beneficiaries, suitability artefacts",
+   "deps": "REQ-CRM-004",
+   "owner": "ProposalService"
+  },
+  {
+   "id": "REQ-PRP-003",
+   "wave": "W5",
+   "title": "Risk-dependent document requirements MISSING/UPLOADED/REVIEWING/ACCEPTED/REJECTED/EXPIRED",
+   "sources": "PRE §36; DRM",
+   "status": "PARTIAL",
+   "evidence": "document_requirement_versions, proposal_documents(+review)",
+   "gap": "Unify with product document requirements (see DUP-004)",
+   "deps": "REQ-DOC-005",
+   "owner": "app/Application/Underwriting/DocumentRequirementService"
+  },
+  {
+   "id": "REQ-PRP-004",
+   "wave": "W5",
+   "title": "POLICY_ISSUABLE gate (approved + payment condition + documents + UW + approvals)",
+   "sources": "PRE §37",
+   "status": "PARTIAL",
+   "evidence": "PAYMENT_PENDING → issuance request",
+   "gap": "Explicit PolicyIssuabilityService",
+   "deps": "REQ-PRP-001, REQ-POL-008",
+   "owner": "app/Application/Policies"
+  },
+  {
+   "id": "REQ-PRP-005",
+   "wave": "W5",
+   "title": "Effective-date rules, durations, instalment plans (SINGLE…CUSTOM)",
+   "sources": "PRE §38–42",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PAY-006",
+   "owner": "app/Application/Policies"
+  },
+  {
+   "id": "REQ-UW-001",
+   "wave": "W6",
+   "title": "Underwriting case (+referral) machine referred→assigned→reviewing→decision_pending→approved/conditional/declined",
+   "sources": "BP II; WRS WF-018; ESR UND",
+   "status": "PARTIAL",
+   "evidence": "underwriting_cases, underwriting_decisions, underwriting_referral_tasks; assign/decision/resolve routes; mobile carrier referral decision",
+   "gap": "Canonical states; UW info-request loop",
+   "deps": "REQ-WFL-001, REQ-CAS-001",
+   "owner": "app/Application/Underwriting"
+  },
+  {
+   "id": "REQ-UW-002",
+   "wave": "W6",
+   "title": "Rule-driven decisions AUTO_ACCEPT/REFER/CONDITIONAL_ACCEPT/DECLINE/REQUEST_INFO/INSPECTION/MEDICAL; STP records rule set version (WF-017)",
+   "sources": "PRE §23–25; WRS WF-017; AOM UW modes",
+   "status": "MISSING",
+   "evidence": "Referrals from disclosure flags only",
+   "gap": "UnderwritingDecisionService",
+   "deps": "REQ-RUL-002",
+   "owner": "app/Application/Underwriting"
+  },
+  {
+   "id": "REQ-UW-003",
+   "wave": "W6",
+   "title": "Additional information request loop with exact items, return to originator (WF-019)",
+   "sources": "WRS WF-019; MSR BRK-042/AGT-033",
+   "status": "MISSING",
+   "evidence": "Info request exists for claims only",
+   "gap": "—",
+   "deps": "REQ-UW-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-UW-004",
+   "wave": "W6",
+   "title": "Explainable risk score (factor, weight, input, contribution)",
+   "sources": "PRE §25; ESR UND-012",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-RUL-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-UW-005",
+   "wave": "W6",
+   "title": "Underwriting workspace UND-001…020 + UNDERWRITER role",
+   "sources": "ESR UND; SSR UND-005/018",
+   "status": "PARTIAL",
+   "evidence": "Mobile carrier referrals; Filament UnderwritingCases (no actions)",
+   "gap": "Role + screens",
+   "deps": "REQ-RBAC-003, REQ-UI-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-AUTH-001",
+   "wave": "W6",
+   "title": "Authority profiles/limits for 14 types (QUOTE…REINSURANCE_PLACEMENT), grants, consumption",
+   "sources": "BP III; ICE E3; LOCK-018",
+   "status": "PARTIAL",
+   "evidence": "delegated_authority_agreements + AuthorityChecker; carrier/delegated-authorities(+check/approve)",
+   "gap": "Profiles/limits/consumption; OQ-3.4 extra types",
+   "deps": "REQ-RBAC-001",
+   "owner": "app/Application/Authority (new), CarrierOperations"
+  },
+  {
+   "id": "REQ-AUTH-002",
+   "wave": "W6",
+   "title": "Authority check algorithm (permission→scope→membership→product/branch→threshold→maker-checker→regulatory→transition); threshold exceeded → referral; never bare error",
+   "sources": "BP III; MPS §26–28; ICE E3.2",
+   "status": "MISSING",
+   "evidence": "AuthorityChecker has no enforcement callers",
+   "gap": "AuthorityService::check + ResumableStep",
+   "deps": "REQ-AUTH-001, REQ-CAS-001, REQ-RBAC-002",
+   "owner": "app/Application/Authority"
+  },
+  {
+   "id": "REQ-AUTH-003",
+   "wave": "W6",
+   "title": "Intermediary authorization enforcement (current, mandate, product, branch, jurisdiction, dates) at quote/bind/issue",
+   "sources": "ICE gaps 5–7; SEED 6",
+   "status": "PARTIAL",
+   "evidence": "intermediary_authorizations, partner_licences",
+   "gap": "Not enforced",
+   "deps": "REQ-AUTH-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-POL-001",
+   "wave": "W7",
+   "title": "Policy machine issuance_pending→issued→active→expired; amended, suspended, cancelled, renewed",
+   "sources": "BP II Policy; WRS canonical",
+   "status": "PARTIAL",
+   "evidence": "PolicyStateMachine (10 states); policy_status_history; policies:expire",
+   "gap": "Canonical naming alignment",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Domain/Policies"
+  },
+  {
+   "id": "REQ-POL-002",
+   "wave": "W7",
+   "title": "policy_versions (bitemporal chronology per change), policy_parties, policy_risks, policy_coverages, policy_limits",
+   "sources": "BP I; ICE E2.1",
+   "status": "PARTIAL",
+   "evidence": "policies.version, terms_snapshot/hash, policy_transactions(+events)",
+   "gap": "Structured tables + backfill",
+   "deps": "REQ-TMP-002, REQ-PTY-002",
+   "owner": "app/Application/Policies, migrations"
+  },
+  {
+   "id": "REQ-POL-003",
+   "wave": "W7",
+   "title": "Immutable issuance snapshot (§84: version, coverages, limits, deductibles, premium, taxes, fees, risk, rules, documents, beneficiaries)",
+   "sources": "PRE §83–84; MPS §115",
+   "status": "PARTIAL",
+   "evidence": "terms_snapshot + terms_hash + authority_snapshot",
+   "gap": "Structure per §84",
+   "deps": "REQ-POL-002",
+   "owner": "PolicyIssuanceService"
+  },
+  {
+   "id": "REQ-POL-004",
+   "wave": "W7",
+   "title": "Payment→issuance automation, idempotent; failed/paid-not-issued queue (WF-028/029/084); customer message",
+   "sources": "WRS; BP II issuance failure; AUD A4; MSR BRK-058",
+   "status": "PARTIAL",
+   "evidence": "PaymentIssuanceTrigger (dcb367e), policy_issuance_requests(+approve/reject), mobile carrier issuance",
+   "gap": "No failed-issuance queue API/screen, retry/escalate/refund actions",
+   "deps": "REQ-PAY-001",
+   "owner": "app/Application/Policies"
+  },
+  {
+   "id": "REQ-POL-005",
+   "wave": "W7",
+   "title": "Manual issuance with carrier original documents (provenance, sha256, immutable)",
+   "sources": "AOM carrier docs; PREP A4",
+   "status": "WIP",
+   "evidence": "CarrierDocumentService; POST policies/{p}/carrier-documents (untracked document_engine routes)",
+   "gap": "Commit + tests",
+   "deps": "REQ-DOC-003",
+   "owner": "app/Application/Documents/Engine"
+  },
+  {
+   "id": "REQ-POL-006",
+   "wave": "W7",
+   "title": "Suspension & reinstatement (WF-046/047)",
+   "sources": "WRS; PRE §48",
+   "status": "PARTIAL",
+   "evidence": "SUSPENDED state",
+   "gap": "No reinstatement workflow/queue (BRK-063)",
+   "deps": "REQ-POL-001",
+   "owner": "PolicyServicingService"
+  },
+  {
+   "id": "REQ-POL-007",
+   "wave": "W7",
+   "title": "Motor sticker chain carrier→broker→branch→agent→policy with custody (WF-032/033)",
+   "sources": "WRS; SCF §47",
+   "status": "PARTIAL",
+   "evidence": "sticker_batches, sticker_stock, sticker_custody_events; POST sticker-batches",
+   "gap": "Allocation/handover/reconciliation APIs",
+   "deps": "REQ-TEN-002",
+   "owner": "app/Application/Logistics or Motor"
+  },
+  {
+   "id": "REQ-POL-008",
+   "wave": "W7",
+   "title": "Premium-to-cover rule per product/carrier (NO_COVER_UNTIL_PAID / GRACE / SUSPEND_ON_DEFAULT)",
+   "sources": "ICE gap 31; MPS §29–38",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "premium_cover_rules",
+   "deps": "REQ-TMP-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-POL-009",
+   "wave": "W7",
+   "title": "Portfolio transfer and policy portability export pack",
+   "sources": "ICE gaps 36, 42",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-POL-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-POL-010",
+   "wave": "W7",
+   "title": "Lapse/grace and expired policy recovery (WF-083)",
+   "sources": "WRS",
+   "status": "PARTIAL",
+   "evidence": "LAPSED state",
+   "gap": "Grace config + recovery flow",
+   "deps": "REQ-POL-008",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-END-001",
+   "wave": "W7",
+   "title": "Endorsement machine + rules per type; avenant; rerate; additional premium/refund (WF-035..038)",
+   "sources": "BP II; PRE §43–44; WRS; CIMA avenant",
+   "status": "PARTIAL",
+   "evidence": "policy_transactions + approve/reject/payment/payment-intents routes; mobile policy-service-requests",
+   "gap": "Endorsement-type rules; new policy_version",
+   "deps": "REQ-POL-002, REQ-RAT-001",
+   "owner": "PolicyServicingService"
+  },
+  {
+   "id": "REQ-REN-001",
+   "wave": "W7",
+   "title": "Renewal machine; windows 90/60/30/15/7; rerate on current version; continuity link; paid-renewal issuance failure (WF-039..043, WF-087)",
+   "sources": "BP II; WRS; PRE §45",
+   "status": "PARTIAL",
+   "evidence": "renewal_cases, renewal_work_items, policy_expiry_reminders, policies:notify-expiry, renewals routes",
+   "gap": "Renewal rule versions; exception queue (BRK-068)",
+   "deps": "REQ-POL-002",
+   "owner": "RenewalService"
+  },
+  {
+   "id": "REQ-CAN-001",
+   "wave": "W7",
+   "title": "Cancellation machine: request→review→approve; pro-rata/short-rate refund; notice; revoke documents (WF-044/045)",
+   "sources": "BP II; PRE §46; WRS",
+   "status": "PARTIAL",
+   "evidence": "CancellationCalculator + cancellation_rule_versions; CANCELLATION_PENDING",
+   "gap": "Approver queue (BRK-062); carrier/product scope",
+   "deps": "REQ-END-001",
+   "owner": "app/Application/Policies"
+  },
+  {
+   "id": "REQ-PRD-011",
+   "wave": "W7",
+   "title": "Life & special products: life rules, surrender, group master policy + members, fleet schedule, cargo declarations, construction, agriculture",
+   "sources": "PRE §66–73; DCP classes",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Schedules + life engine interface (actuarial values from carrier)",
+   "deps": "REQ-POL-002, REQ-CRM-004",
+   "owner": "app/Application/Policies/Special (new)"
+  },
+  {
+   "id": "REQ-DOC-001",
+   "wave": "W8",
+   "title": "220 canonical document types register",
+   "sources": "MPS §53, §102; DCP register; LOCK-012",
+   "status": "WIP",
+   "evidence": "document_types (2026_09_29_100001_create_document_catalogue, untracked) + document_register_220_2026.json + DocumentRegister (engine reads JSON)",
+   "gap": "Two parallel catalogue implementations — see DUP-004",
+   "deps": "—",
+   "owner": "app/Models/DocumentCatalogue, app/Application/Documents/Engine"
+  },
+  {
+   "id": "REQ-DOC-002",
+   "wave": "W8",
+   "title": "Templates + versions per product version; ownership PLATFORM/INSURER/BROKER/REGULATORY; DRAFT→REVIEW→APPROVED→PUBLISHED→RETIRED; EN/FR/bilingual",
+   "sources": "DCP; PRE §63–65; SCF §21",
+   "status": "WIP",
+   "evidence": "document_templates + DocumentTemplateService; POST document-templates/{t}/{action}; legacy certificate_templates",
+   "gap": "Merge certificate_templates (DUP-005)",
+   "deps": "REQ-DOC-001",
+   "owner": "app/Application/Documents/Engine"
+  },
+  {
+   "id": "REQ-DOC-003",
+   "wave": "W8",
+   "title": "Generated document record (template/product/policy version, hash, verification code, issuer, language); statuses VALID/SUPERSEDED/REPLACED/REVOKED/EXPIRED/CANCELLED; never delete",
+   "sources": "DCP; LOCK-011; WRS WF-031",
+   "status": "WIP",
+   "evidence": "documents, document_versions, document_status_changes, DocumentStatusService, documents/{d}/status-changes",
+   "gap": "—",
+   "deps": "REQ-DOC-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-004",
+   "wave": "W8",
+   "title": "Document packs (e.g. MOTOR_NEW_BUSINESS_PACK) and one Download Policy Pack action",
+   "sources": "DCP",
+   "status": "WIP",
+   "evidence": "document_packs/items (catalogue) and document_pack_manifests (engine); mobile/policies/{p}/documents/pack",
+   "gap": "Two pack models — see DUP-004",
+   "deps": "REQ-DOC-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-005",
+   "wave": "W8",
+   "title": "Requirement matrix per product version (M/C/O/I/T by class and stage) + 16-point product document gate",
+   "sources": "DRM §3–42; DCP gate",
+   "status": "WIP",
+   "evidence": "document_requirement_matrix + product_document_requirements (catalogue), product_document_rules + ProductDocumentGate (engine), legacy document_requirement_versions",
+   "gap": "Three requirement stores (DUP-004); DRM §42+ pending from owner",
+   "deps": "REQ-DOC-001, REQ-PRD-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-006",
+   "wave": "W8",
+   "title": "Per-tenant numbering families; CIMA continuous numbering policy→endorsement 001→renewal",
+   "sources": "DCP registry; SCF §59",
+   "status": "WIP",
+   "evidence": "document_numbering_families, document_number_counters",
+   "gap": "Policy/endorsement numbering not routed through allocator",
+   "deps": "REQ-SET-006",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-007",
+   "wave": "W8",
+   "title": "Motor attestation + certificate (Arts 213/214/221), QR public verification VALID/EXPIRED/REVOKED/REPLACED/NOT_FOUND, minimal disclosure (WF-031, WF-082)",
+   "sources": "DCP motor; WRS; MSR SHR-005/006",
+   "status": "PARTIAL",
+   "evidence": "policy_certificates, certificates API, public_verification_lookups, /verify page; PublicVerificationService (modified, WIP)",
+   "gap": "Certificate at issuance for all motor policies; DEMO_VALID",
+   "deps": "REQ-DOC-003",
+   "owner": "app/Application/Certificates"
+  },
+  {
+   "id": "REQ-DOC-008",
+   "wave": "W8",
+   "title": "Document origin (INSURER…SYSTEM) and stage; third-party evidence stored separately",
+   "sources": "DCP origin vs issuer",
+   "status": "PARTIAL",
+   "evidence": "documents, claim_documents, kyc_submission_documents, risk_asset_documents",
+   "gap": "No origin/stage columns; evidence tables fragmented",
+   "deps": "REQ-DOC-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-009",
+   "wave": "W8",
+   "title": "Security levels, access log, retention schedules, legal hold (any subject), destruction case",
+   "sources": "DCP; ICE gap 20; MPS §60–86",
+   "status": "PARTIAL",
+   "evidence": "document_access_log, document_retention_holds",
+   "gap": "Generalized legal_holds, retention_schedules",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-010",
+   "wave": "W8",
+   "title": "Incoming document intake & classification against the 220 register",
+   "sources": "ICE gap 22",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-DOC-001, REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DOC-011",
+   "wave": "W8",
+   "title": "Document admin screens DOC-ADM-001…020",
+   "sources": "DCP register",
+   "status": "PARTIAL",
+   "evidence": "Filament DocumentRequirements, CertificateTemplates",
+   "gap": "18 screens missing",
+   "deps": "REQ-DOC-001..005",
+   "owner": "app/Filament/Admin"
+  },
+  {
+   "id": "REQ-DOC-012",
+   "wave": "W8",
+   "title": "E-signature",
+   "sources": "REMAINING_WORKSTREAMS 6",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-DOC-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-OBL-001",
+   "wave": "W9",
+   "title": "Universal financial_obligations (receivables/payables, debtor, source, due, outstanding, aging, status)",
+   "sources": "BP I; FRP I; MPS §29–38",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Foundation of the money chain",
+   "deps": "REQ-ACC-001",
+   "owner": "app/Application/Finance/Obligations (new)"
+  },
+  {
+   "id": "REQ-PAY-001",
+   "wave": "W9",
+   "title": "Payment machine created→initiated→pending→successful→reconciled; failed, expired, cancelled, reversed, refunded",
+   "sources": "BP II; WRS WF-022",
+   "status": "PARTIAL",
+   "evidence": "payment_intents + PaymentStatus (10) + WebhookProcessingService TRANSITIONS; payment_events",
+   "gap": "CANCELLED missing; reconciled is a timestamp",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Domain/Payments"
+  },
+  {
+   "id": "REQ-PAY-002",
+   "wave": "W9",
+   "title": "Mobile money MTN/Orange with signed callback verification; client never authoritative (WF-023)",
+   "sources": "WRS WF-023",
+   "status": "EXISTS",
+   "evidence": "webhooks/payments/mtn-momo|orange-money|{provider}, HMAC verify, webhook_inbox, payments:poll-pending",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-003",
+   "wave": "W9",
+   "title": "Bank/card payments (WF-024)",
+   "sources": "WRS",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Adapter",
+   "deps": "REQ-AOM-002",
+   "owner": "app/Application/Payments/Adapters"
+  },
+  {
+   "id": "REQ-PAY-004",
+   "wave": "W9",
+   "title": "payment_allocations many-to-many + allocation engine (versioned order rule)",
+   "sources": "BP I; ICE gap 33; MPS §29",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-OBL-001",
+   "owner": "app/Application/Finance"
+  },
+  {
+   "id": "REQ-PAY-005",
+   "wave": "W9",
+   "title": "Premium components and premium status (NOT_DUE…WRITTEN_OFF) separate from payment status",
+   "sources": "FRP I",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-OBL-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-006",
+   "wave": "W9",
+   "title": "Instalment schedules and non-payment consequences",
+   "sources": "PRE §42; FRP I",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-OBL-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-007",
+   "wave": "W9",
+   "title": "Reconciliation: MATCHED/PARTIAL/UNMATCHED/DUPLICATE/OVER/UNDER, exceptions queue, unmatched workspace, duplicate payment (WF-026/027/086)",
+   "sources": "WRS; FRP I; MSR BRK-050/051",
+   "status": "PARTIAL",
+   "evidence": "reconciliation_imports/items, MatchEngine, reconciliation:run, items/{i}/resolve",
+   "gap": "Queue/list APIs and screens",
+   "deps": "REQ-PAY-004",
+   "owner": "app/Application/Reconciliation"
+  },
+  {
+   "id": "REQ-PAY-008",
+   "wave": "W9",
+   "title": "Failed payment retry linked to the same obligation (WF-025/085)",
+   "sources": "WRS",
+   "status": "PARTIAL",
+   "evidence": "payment_attempts; initiate route",
+   "gap": "Obligation link",
+   "deps": "REQ-OBL-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-009",
+   "wave": "W9",
+   "title": "Refund engine: candidate→calculate→review→approve→pay→reconcile, maker-checker (WF-063)",
+   "sources": "WRS; BP II Refund; FRP I",
+   "status": "PARTIAL",
+   "evidence": "refunds; payments/{p}/refunds; refunds/{r}/approve",
+   "gap": "Refund queue/list; sources (cancellation, duplicate, failed issuance)",
+   "deps": "REQ-OBL-001",
+   "owner": "app/Application/Payments"
+  },
+  {
+   "id": "REQ-PAY-010",
+   "wave": "W9",
+   "title": "Cashier sessions (open, collections, closing count, variance, supervisor approval)",
+   "sources": "FRP I; ICE gap 30",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-RBAC-005",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-011",
+   "wave": "W9",
+   "title": "Mobile-money clearing (provider success ≠ bank settlement) and suspense account",
+   "sources": "FRP I",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-ACC-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-012",
+   "wave": "W9",
+   "title": "Chargebacks",
+   "sources": "—",
+   "status": "EXISTS",
+   "evidence": "chargebacks; payments/{p}/chargebacks; chargebacks/{c}/resolve",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-013",
+   "wave": "W9",
+   "title": "Multi-currency & immutable FX rates",
+   "sources": "ICE gap 34; MPS §60–86",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "fx_rates",
+   "deps": "REQ-TMP-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-014",
+   "wave": "W9",
+   "title": "Payment execution modes BROKER_COLLECTION / INSURER_COLLECTION / MOBILE_MONEY / BANK / EXTERNAL",
+   "sources": "AOM",
+   "status": "PARTIAL",
+   "evidence": "PaymentAdapterRegistry, payment_provider_connections",
+   "gap": "Collection-mode semantics",
+   "deps": "REQ-AOM-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PAY-015",
+   "wave": "W9",
+   "title": "Customer/broker/carrier/agent account statements derived from transactions",
+   "sources": "FRP I; ESR FIN-009..012",
+   "status": "PARTIAL",
+   "evidence": "partner_statements(+items)",
+   "gap": "Customer/carrier statements",
+   "deps": "REQ-OBL-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-COM-001",
+   "wave": "W10",
+   "title": "Commission machine SALE→CALCULATED→ACCRUED→EARNED→APPROVED→PAYABLE→PAID (+REVERSED, CLAWED_BACK, ADJUSTED, DISPUTED)",
+   "sources": "BP II; FRP I; WRS WF-064..067",
+   "status": "PARTIAL",
+   "evidence": "commission_accruals, commission_movements; accrue/vest/clawback",
+   "gap": "Canonical states",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Application/FinancialDistribution"
+  },
+  {
+   "id": "REQ-COM-002",
+   "wave": "W10",
+   "title": "Commission rules per carrier+agreement+version+transaction type; tiers/volume/hybrid; internal split = 100%",
+   "sources": "PRE §57–60; SCF §25, §38",
+   "status": "PARTIAL",
+   "evidence": "commission_rule_versions (basis_points, holdback, conditions) + approve",
+   "gap": "Transaction type, tiers, split",
+   "deps": "REQ-SEED-004",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-COM-003",
+   "wave": "W10",
+   "title": "Commission statements, approval, payment, adjustments with maker-checker",
+   "sources": "WRS WF-066/067; FRP VI",
+   "status": "PARTIAL",
+   "evidence": "partner_statements(+approve/publish/payouts), partner_payout_* lifecycle",
+   "gap": "—",
+   "deps": "REQ-COM-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-STL-001",
+   "wave": "W10",
+   "title": "Broker–insurer settlement Draft→Calculated→Review→Approved→Processing→Settled→Reconciled, from ledger (WF-068/069)",
+   "sources": "WRS; SSR FIN-019; FRP I",
+   "status": "PARTIAL",
+   "evidence": "settlement_batches/items/approvals, carrier-settlements lifecycle routes, settlements:prepare",
+   "gap": "Reconciled step; ledger derivation",
+   "deps": "REQ-ACC-002",
+   "owner": "app/Application/Settlements"
+  },
+  {
+   "id": "REQ-STL-002",
+   "wave": "W10",
+   "title": "Bordereaux (prepare/submit/approve/acknowledge)",
+   "sources": "FRP II",
+   "status": "EXISTS",
+   "evidence": "bordereaux, bordereau_items; bordereaux routes",
+   "gap": "Duplicate route families (DUP-008)",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-ACC-001",
+   "wave": "W11",
+   "title": "Accounting events mapped to tenant GL (stable business events)",
+   "sources": "BP I; FRP I; SCF §73",
+   "status": "PARTIAL",
+   "evidence": "financial_posting_profiles, financial_distribution_events, ledger_accounts",
+   "gap": "Event catalogue + per-tenant mapping",
+   "deps": "REQ-ARC-004",
+   "owner": "app/Application/Ledger"
+  },
+  {
+   "id": "REQ-ACC-002",
+   "wave": "W11",
+   "title": "Journals debit=credit, DRAFT→VALIDATED→APPROVED→POSTED→REVERSED; manual journal maker-checker",
+   "sources": "FRP I; ESR FIN-014..016",
+   "status": "PARTIAL",
+   "evidence": "journals (status default POSTED), journal_lines, ledger/journals + reverse",
+   "gap": "Draft/approval states; trial balance",
+   "deps": "REQ-ACC-001",
+   "owner": "app/Domain/Ledger"
+  },
+  {
+   "id": "REQ-ACC-003",
+   "wave": "W11",
+   "title": "Period close with privileged reopening",
+   "sources": "FRP I; ESR FIN-023",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-ACC-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-ACC-004",
+   "wave": "W11",
+   "title": "Technical accounting (written/earned/unearned, claims incurred/paid/outstanding), UPR/IBNR stored/imported, life values from carrier actuarial engines",
+   "sources": "FRP I",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-ACC-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-ACC-005",
+   "wave": "W11",
+   "title": "Aging buckets, finance exception centre, 20 finance reports, FIN-001..024 & FIN-X-001..034",
+   "sources": "FRP I; ESR FIN",
+   "status": "PARTIAL",
+   "evidence": "Filament list/view (Journals, PaymentAttempts, Reconciliations, CarrierSettlements…)",
+   "gap": "Actions, reports, exception centre",
+   "deps": "REQ-OBL-001",
+   "owner": "app/Filament/Admin"
+  },
+  {
+   "id": "REQ-CLM-001",
+   "wave": "W12",
+   "title": "Claim machine per BP/WRS (draft→…→closed; information_required, investigating, partially_approved, rejected, appealed, reopened)",
+   "sources": "BP II Claim; WRS canonical; AUD A9",
+   "status": "PARTIAL",
+   "evidence": "ClaimStateMachine (12 states) + ClaimLifecycle (second definition) ; claims/{id}/transitions",
+   "gap": "DECLINED vs rejected, PAID vs settled naming; two definitions (DUP-006)",
+   "deps": "REQ-WFL-001",
+   "owner": "app/Domain/Claims"
+  },
+  {
+   "id": "REQ-CLM-002",
+   "wave": "W12",
+   "title": "FNOL incl. agent-assisted FNOL; immediate reference; snapshot (WF-048/049)",
+   "sources": "WRS; MSR AGT-052",
+   "status": "PARTIAL",
+   "evidence": "claims/fnol, mobile/claims (+incident, emergency-assistance)",
+   "gap": "Agent-scoped FNOL",
+   "deps": "REQ-RBAC-002",
+   "owner": "app/Application/Claims"
+  },
+  {
+   "id": "REQ-CLM-003",
+   "wave": "W12",
+   "title": "Coverage-at-loss engine + contract chronology; outcomes COVERAGE_CONFIRMED/REVIEW_REQUIRED/POTENTIAL_EXCLUSION/OUTSIDE_COVERAGE; POST /coverage/check",
+   "sources": "ICE E2.2; PRE §49; MPS §24; WRS WF-050; LOCK-017; STA coverage/check",
+   "status": "MISSING",
+   "evidence": "Coverage inferred from policy.status",
+   "gap": "CoverageAtLossService, claim_coverage_assessments",
+   "deps": "REQ-POL-002, REQ-TMP-001, REQ-ENG-001",
+   "owner": "app/Application/Claims/Coverage (new)"
+  },
+  {
+   "id": "REQ-CLM-004",
+   "wave": "W12",
+   "title": "Limit/aggregate exhaustion engine (policy_limits consumed/reserved/remaining + movement ledger, concurrency-safe)",
+   "sources": "ICE E2.3; MPS §25",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-POL-002, REQ-CLM-008",
+   "owner": "app/Application/Claims/Limits (new)"
+  },
+  {
+   "id": "REQ-CLM-005",
+   "wave": "W12",
+   "title": "Evidence rules per claim type; evidence metadata (uploader, MIME, hash, version); checklist; review (WF-051/052)",
+   "sources": "PRE §51; WRS",
+   "status": "PARTIAL",
+   "evidence": "claim_documents, claim_evidence_custody_events, evidence/{d}/verify, mobile evidence-requirements",
+   "gap": "Configurable evidence rules",
+   "deps": "REQ-RUL-002",
+   "owner": "ClaimEvidenceService"
+  },
+  {
+   "id": "REQ-CLM-006",
+   "wave": "W12",
+   "title": "Generic ClaimParty model",
+   "sources": "MPS §43; ICE gap 28; BP I claim_parties",
+   "status": "PARTIAL",
+   "evidence": "claim_involved_parties (+mobile parties)",
+   "gap": "Link to golden party",
+   "deps": "REQ-PTY-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-007",
+   "wave": "W12",
+   "title": "Claim types per product, reporting deadlines, late-claim approval",
+   "sources": "PRE §50, §52",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PRD-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-008",
+   "wave": "W12",
+   "title": "Event-based reserves (INITIAL/CURRENT/FINAL), movements, maker-checker",
+   "sources": "PRE §53; FRP I; BP I",
+   "status": "PARTIAL",
+   "evidence": "claim_reserve_changes; claims/{id}/reserves(+approve)",
+   "gap": "Reserve types",
+   "deps": "REQ-AUTH-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-009",
+   "wave": "W12",
+   "title": "Expert/adjuster assignment lifecycle assignment_pending→…→report_submitted; ADJUSTER role; CLP screens (WF-053)",
+   "sources": "WRS; ESR CLP",
+   "status": "PARTIAL",
+   "evidence": "claim_assignments; claims/{id}/assign; mobile inspection",
+   "gap": "Adjuster role + lifecycle",
+   "deps": "REQ-RBAC-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-010",
+   "wave": "W12",
+   "title": "Assessment (recommendation ≠ decision) and investigation preserving indicators (WF-054/055)",
+   "sources": "WRS; ESR CLP rule",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "claim_assessments",
+   "deps": "REQ-CLM-009",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-011",
+   "wave": "W12",
+   "title": "Claims execution modes (BROKER_ASSISTED, MANUAL_CARRIER, INSURER_PORTAL, API_SYNCHRONIZED, FULLY_DIGITAL)",
+   "sources": "AOM",
+   "status": "PARTIAL",
+   "evidence": "claims/{id}/carrier-messages, mobile partner carrier claim actions",
+   "gap": "ClaimProvider adapter",
+   "deps": "REQ-AOM-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CLM-012",
+   "wave": "W13",
+   "title": "Decision: approve/partial/reject with reason codes, rationale, authority, supervisor approval; appeal keeps both decisions (WF-056..058, WF-062)",
+   "sources": "WRS; LOCK-009",
+   "status": "PARTIAL",
+   "evidence": "claim_decisions + approve; claim_disputes + resolve; mobile appeals",
+   "gap": "Authority routing; broker appeal screen (BRK-087)",
+   "deps": "REQ-AUTH-002",
+   "owner": "app/Application/Claims"
+  },
+  {
+   "id": "REQ-CLM-013",
+   "wave": "W13",
+   "title": "Settlement calculator (covered − excluded − deductible − prior ± adj ≤ remaining limit); settlement lifecycle; discharge; payment via obligations (WF-059)",
+   "sources": "PRE §55; WRS; FRP I",
+   "status": "PARTIAL",
+   "evidence": "claim_payments lifecycle routes; mobile settlement decision (step-up)",
+   "gap": "Calculator + obligation link",
+   "deps": "REQ-CLM-004, REQ-OBL-001",
+   "owner": "ClaimPaymentService"
+  },
+  {
+   "id": "REQ-CLM-014",
+   "wave": "W13",
+   "title": "Closure rules and reopening (WF-060/061)",
+   "sources": "WRS",
+   "status": "PARTIAL",
+   "evidence": "CLOSED/REOPENED in ClaimLifecycle",
+   "gap": "Closure guard checklist",
+   "deps": "REQ-CLM-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REC-001",
+   "wave": "W14",
+   "title": "Recovery/subrogation/salvage EXPECTED/RECEIVED/OUTSTANDING/DISPUTED/CLOSED",
+   "sources": "MPS §46; PRE §56",
+   "status": "PARTIAL",
+   "evidence": "claim_recoveries + receipts",
+   "gap": "Salvage/subrogation types, statuses",
+   "deps": "REQ-CLM-013",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REC-002",
+   "wave": "W14",
+   "title": "Litigation/legal management",
+   "sources": "ICE gap 27; MPS §47",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Case type",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REC-003",
+   "wave": "W14",
+   "title": "Recovery & debt collection engine",
+   "sources": "ICE gap 29",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-OBL-001, REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PRV-001",
+   "wave": "W15",
+   "title": "Canonical provider→facility→specialty→service; credentialing PROSPECT…TERMINATED",
+   "sources": "FRP IV; MDC partners",
+   "status": "WIP",
+   "evidence": "health_providers (master data engine migration, untracked)",
+   "gap": "Facilities, credentialing machine",
+   "deps": "REQ-MDM-001",
+   "owner": "app/Application/Providers (new)"
+  },
+  {
+   "id": "REQ-PRV-002",
+   "wave": "W15",
+   "title": "Networks, memberships, contracts, medical service catalogue, versioned provider tariffs",
+   "sources": "FRP IV; BP I",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PRV-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PRV-003",
+   "wave": "W15",
+   "title": "Provider portal + roles (PROVIDER_ADMIN, FRONT_DESK, DOCTOR, BILLING, PHARMACY, LAB, FINANCE) PRV-001..030",
+   "sources": "FRP V",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PRV-002, REQ-RBAC-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-PRV-004",
+   "wave": "W15",
+   "title": "Garages/adjusters/experts as canonical partners with explicit relationships",
+   "sources": "MDC ownership; MPS §8",
+   "status": "PARTIAL",
+   "evidence": "partners (types), couriers",
+   "gap": "Relationship tables",
+   "deps": "REQ-PTY-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-HLT-001",
+   "wave": "W16",
+   "title": "Health eligibility (ELIGIBLE…REVIEW_REQUIRED) + digital health card QR",
+   "sources": "FRP IV",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PRV-002, REQ-CLM-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-HLT-002",
+   "wave": "W16",
+   "title": "Preauthorization + guarantee of payment; admission/outpatient/pharmacy/lab workflows",
+   "sources": "FRP IV; BP II Preauth",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-HLT-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-HLT-003",
+   "wave": "W16",
+   "title": "Provider claims DRAFT…DISPUTED, EOB, statements, disputes, provider settlement",
+   "sources": "FRP IV; BP II Provider claim",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-HLT-002, REQ-OBL-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-HLT-004",
+   "wave": "W16",
+   "title": "Benefit accumulator; cashless + reimbursement on one benefit engine",
+   "sources": "FRP IV; MPS §48–52",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-CLM-004",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REI-001",
+   "wave": "W17",
+   "title": "Reinsurer profiles; treaties (QS, surplus, XL layers, stop loss) with effective versions and participants",
+   "sources": "FRP II; BP I; MPS §39",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PTY-001",
+   "owner": "app/Application/Reinsurance (new)"
+  },
+  {
+   "id": "REQ-REI-002",
+   "wave": "W17",
+   "title": "Risk cessions, gross/net exposure, ceded premium/commission/brokerage/taxes, bordereaux",
+   "sources": "FRP II",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-REI-001, REQ-POL-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REI-003",
+   "wave": "W17",
+   "title": "Facultative placement (slip, participants, signed share validation)",
+   "sources": "FRP II; BP II Facultative",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-REI-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-REI-004",
+   "wave": "W17",
+   "title": "Reinsurance recoveries ESTIMATED…CLOSED, large-loss notification, reinstatement premium, settlement, accounting events; REI-001..026 screens",
+   "sources": "FRP II; BP II",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-REI-002, REQ-CLM-013",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-COI-001",
+   "wave": "W18",
+   "title": "Co-insurance arrangements (apériteur + participants = 100%), premium/claim/commission/reserve/settlement shares; never reinsurance; COI-001..008",
+   "sources": "FRP III; MPS §41",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-POL-002, REQ-OBL-001",
+   "owner": "app/Application/Coinsurance (new)"
+  },
+  {
+   "id": "REQ-AML-001",
+   "wave": "W19",
+   "title": "Screening (PEP/sanctions/watchlists), list sources/versions, hits disposition, ComplianceGate at bind/issue/payout",
+   "sources": "ICE E5.1; MPS §60",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-PTY-001, REQ-CAS-001",
+   "owner": "app/Application/Compliance/Aml (new)"
+  },
+  {
+   "id": "REQ-AML-002",
+   "wave": "W19",
+   "title": "Risk rating, EDD, source of funds/wealth, periodic rescreening, monitoring rules → alerts",
+   "sources": "ICE E5.2",
+   "status": "PARTIAL",
+   "evidence": "risk_alerts (+decision)",
+   "gap": "Rules/thresholds pending OQ-5.2",
+   "deps": "REQ-AML-001, REQ-PTY-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-AML-003",
+   "wave": "W19",
+   "title": "STR cases (restricted), tipping-off controls (Reg. 003-25)",
+   "sources": "ICE E5.3",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-AML-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CMP-001",
+   "wave": "W19",
+   "title": "Compliance cases, investigations, findings, corrective actions (CMP-001..020)",
+   "sources": "ESR CMP",
+   "status": "PARTIAL",
+   "evidence": "compliance_cases(+events), trust/compliance-cases(+transition); ComplianceCaseService is a 3-line stub",
+   "gap": "Service + screens",
+   "deps": "REQ-CAS-001",
+   "owner": "app/Application/Compliance"
+  },
+  {
+   "id": "REQ-CMP-002",
+   "wave": "W19",
+   "title": "Privacy DSR & privileged access",
+   "sources": "—",
+   "status": "EXISTS",
+   "evidence": "data_subject_requests, privileged_access_grants; trust/* routes",
+   "gap": "Duplicate route family (DUP-009)",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CMP-003",
+   "wave": "W19",
+   "title": "ICT governance (Reg. 010-24) and vendor/outsourcing governance",
+   "sources": "ICE gaps 39, 40",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "Owner input OQ-8.1",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CPL-001",
+   "wave": "W20",
+   "title": "Complaints separate from support: Submitted→Acknowledged→Classified→Assigned→Investigated→Resolution→Communicated→Closed/Escalated; regulatory escalation (WF-071/072, SHR-013/014)",
+   "sources": "WRS; BP II Complaint; ICE gap 4",
+   "status": "MISSING",
+   "evidence": "Support tickets only",
+   "gap": "Complaint case type + deadlines (OQ)",
+   "deps": "REQ-CAS-001",
+   "owner": "app/Application/Complaints (new)"
+  },
+  {
+   "id": "REQ-SUP-001",
+   "wave": "W20",
+   "title": "Support tickets OPEN→TRIAGED→…→CLOSED (WF-070)",
+   "sources": "WRS WF-070",
+   "status": "EXISTS",
+   "evidence": "TicketStateMachine, support_tickets(+events); support routes",
+   "gap": "Duplicate route family (DUP-001)",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CAS-002",
+   "wave": "W20",
+   "title": "Case UI + bridges (UW referral, claim dispute, compliance, ticket), operational queues",
+   "sources": "ICE E6.2; MPS §60–86",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-COR-001",
+   "wave": "W20",
+   "title": "Correspondence registry (direction, channel, counterparty, reference, proof of dispatch)",
+   "sources": "ICE gap 23; BP I correspondences",
+   "status": "PARTIAL",
+   "evidence": "communication_logs, notification_deliveries",
+   "gap": "Registry table",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-FRD-001",
+   "wave": "W21",
+   "title": "Fraud indicators → REVIEW_REQUIRED, never FRAUD_CONFIRMED; explainable; suspicious claim review (WF-089)",
+   "sources": "MPS §45; LOCK-010; ESR CMP rule",
+   "status": "PARTIAL",
+   "evidence": "fraud_rule_versions, risk_alerts, trust/fraud-alerts; app/Application/Fraud empty",
+   "gap": "Evaluator + review case",
+   "deps": "REQ-RUL-002, REQ-CAS-001",
+   "owner": "app/Application/Fraud"
+  },
+  {
+   "id": "REQ-FRD-002",
+   "wave": "W21",
+   "title": "Cash-fraud controls & SoD (collect vs reconcile vs refund)",
+   "sources": "ICE gap 30",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-RBAC-005, REQ-PAY-010",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CAT-001",
+   "wave": "W22",
+   "title": "Exposure zones, risk locations, accumulation gross/net of reinsurance, snapshots",
+   "sources": "ICE E7.1",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-POL-002, REQ-REI-002",
+   "owner": "app/Application/Accumulation (new)"
+  },
+  {
+   "id": "REQ-CAT-002",
+   "wave": "W22",
+   "title": "Capacity check at underwriting: WITHIN_RETENTION / TREATY_COVERED / CAPACITY_EXCEEDED / FACULTATIVE_REQUIRED",
+   "sources": "MPS §39–40; ICE E7.2; LOCK-019",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-CAT-001, REQ-AUTH-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-CAT-003",
+   "wave": "W22",
+   "title": "Catastrophe event management + large-loss notifier",
+   "sources": "ICE E7.2",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-CAT-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-RPT-001",
+   "wave": "W23",
+   "title": "Regulatory returns with lineage; report definitions/runs submit/approve/acknowledge; Art.411/557 mappings",
+   "sources": "MPS §87; ICE gap 37; CIMA",
+   "status": "PARTIAL",
+   "evidence": "regulatory_report_definitions/runs, trust/regulatory-report-* routes; regulatory_reporting_mappings (WIP)",
+   "gap": "Lineage; templates",
+   "deps": "REQ-CIMA-001",
+   "owner": "app/Application/Compliance/RegulatoryReportingService (stub)"
+  },
+  {
+   "id": "REQ-RPT-002",
+   "wave": "W23",
+   "title": "Regulatory change engine: regulatory_rules DRAFT→REVIEWED→APPROVED→EFFECTIVE→SUPERSEDED with impact analysis",
+   "sources": "ICE E4 (gap 2); BP I",
+   "status": "PARTIAL",
+   "evidence": "regulatory_reference_sets(+approve); RegulatoryVersioningService (WIP)",
+   "gap": "Impacts table + analyzer",
+   "deps": "REQ-CIMA-001, REQ-CAS-001",
+   "owner": "app/Application/Regulatory"
+  },
+  {
+   "id": "REQ-RPT-003",
+   "wave": "W23",
+   "title": "KPI governance (name, definition, formula, sources, date basis, filters, currency, owner, version)",
+   "sources": "MPS §88; FRP IX",
+   "status": "MISSING",
+   "evidence": "report_definitions",
+   "gap": "KPI catalogue",
+   "deps": "—",
+   "owner": "app/Application/Reporting (empty)"
+  },
+  {
+   "id": "REQ-RPT-004",
+   "wave": "W23",
+   "title": "26 dashboards with the 20-component framework and record drill-down",
+   "sources": "DSH; STA dashboards/*",
+   "status": "PARTIAL",
+   "evidence": "mobile/{agent,broker,carrier}/dashboard, web-experiences/{portal}/dashboard, dashboard_snapshots",
+   "gap": "Drill-down fails everywhere (MSG)",
+   "deps": "REQ-RPT-003, REQ-UI-002",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-RPT-005",
+   "wave": "W23",
+   "title": "Reporting families REG-001..008 + finance reports",
+   "sources": "ESR REG",
+   "status": "PARTIAL",
+   "evidence": "reports/insurance-portfolio, reports/renewals, report_exports",
+   "gap": "—",
+   "deps": "REQ-RPT-003",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-RPT-006",
+   "wave": "W23",
+   "title": "Regulatory inspection workspace (read-only over evaluations/audit); policy-level profitability",
+   "sources": "ICE gaps 38, 13",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-ENG-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-API-001",
+   "wave": "W24",
+   "title": "Versioned base /api/v1",
+   "sources": "BP IV",
+   "status": "EXISTS",
+   "evidence": "448 api routes under api/v1",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-API-002",
+   "wave": "W24",
+   "title": "Mutation headers: Idempotency-Key, Correlation-ID, If-Match/version (optimistic concurrency)",
+   "sources": "BP IV; STA rule 3; SSR stale state",
+   "status": "PARTIAL",
+   "evidence": "Idempotency middleware on some routes; no If-Match anywhere",
+   "gap": "Concurrency + correlation middleware",
+   "deps": "REQ-IDM-001",
+   "owner": "app/Http/Middleware"
+  },
+  {
+   "id": "REQ-API-003",
+   "wave": "W24",
+   "title": "RFC 9457 Problem Details errors (type, title, status, code, detail, field_errors, correlation_id)",
+   "sources": "BP IV; STA rule 3",
+   "status": "MISSING",
+   "evidence": "Laravel default validation JSON",
+   "gap": "Exception renderer",
+   "deps": "—",
+   "owner": "bootstrap/app.php"
+  },
+  {
+   "id": "REQ-API-004",
+   "wave": "W24",
+   "title": "Endpoint families BP §136–155 and owner product/runtime routes (see API delta)",
+   "sources": "BP IV; PRE §91; STA rule 5",
+   "status": "PARTIAL",
+   "evidence": "See API delta table",
+   "gap": "Missing families listed there",
+   "deps": "various",
+   "owner": "routes/*"
+  },
+  {
+   "id": "REQ-API-005",
+   "wave": "W24",
+   "title": "Webhooks: subscriptions, deliveries, retry, dead-letter, replay",
+   "sources": "BP IV §156–157; ESR DEV-009..011",
+   "status": "EXISTS",
+   "evidence": "integration_webhook_subscriptions, integration_delivery_attempts, delivery-attempts/{a}/replay",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-API-006",
+   "wave": "W24",
+   "title": "OpenAPI + developer portal DEV-001..014, sandbox, usage/rate limits, API consent & scoped delegated access",
+   "sources": "ESR DEV; ICE gap 41",
+   "status": "PARTIAL",
+   "evidence": "docs/api/openapi*.yaml (per wave, not generated), integration_clients lifecycle",
+   "gap": "Unified generated OpenAPI; portal",
+   "deps": "REQ-IAM-004",
+   "owner": "docs/api, app/Application/Integrations"
+  },
+  {
+   "id": "REQ-API-007",
+   "wave": "W24",
+   "title": "Carrier integration framework: connector config, signing, retries, manual fallback, external_record_mappings sync/conflicts",
+   "sources": "PREP C1–C3; AOM L4–5",
+   "status": "PARTIAL",
+   "evidence": "carrier_exchange_messages, external_record_mappings, partner/record-mappings",
+   "gap": "Connector config + fallback",
+   "deps": "REQ-AOM-002",
+   "owner": "app/Application/Integrations"
+  },
+  {
+   "id": "REQ-API-008",
+   "wave": "W24",
+   "title": "Pagination contract for lists",
+   "sources": "AUD §23",
+   "status": "PARTIAL",
+   "evidence": "Paginated responses on some lists; mobile expected arrays (AUD A6)",
+   "gap": "Uniform envelope",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-MOB-001",
+   "wave": "W25",
+   "title": "Customer mobile journey complete (home, categories, quote, compare, proposal, pay, wallet, renewals, claims) per checklist",
+   "sources": "AUD C; MSR CUST",
+   "status": "PARTIAL",
+   "evidence": "140 expo-router screens; audit verdict not production-ready",
+   "gap": "See AUD H order",
+   "deps": "many",
+   "owner": "mobile app/app"
+  },
+  {
+   "id": "REQ-MOB-002",
+   "wave": "W25",
+   "title": "Motor wizard with vehicle master cascading make→model",
+   "sources": "AUD C; MPS §16",
+   "status": "WIP",
+   "evidence": "mobile app assets/new.tsx modified (uncommitted in mobile repo)",
+   "gap": "—",
+   "deps": "REQ-VEH-001",
+   "owner": "mobile app/app/assets"
+  },
+  {
+   "id": "REQ-MOB-003",
+   "wave": "W25",
+   "title": "Offline: drafts for FNOL/evidence/inspection only; never finalize financial/regulatory actions offline; customer drafts sync",
+   "sources": "SSR offline; LOCK-016; AUD A11",
+   "status": "PARTIAL",
+   "evidence": "sync_operations, mobile/sync, offline queue",
+   "gap": "Customer sync permission",
+   "deps": "REQ-IDM-001",
+   "owner": "mobile app/src/offline"
+  },
+  {
+   "id": "REQ-MOB-004",
+   "wave": "W25",
+   "title": "EN/FR everywhere (titles, statuses, notifications, documents)",
+   "sources": "LOCK-004; SSR localization; AUD §21",
+   "status": "PARTIAL",
+   "evidence": "~4/121 app screens translated; backend lang files",
+   "gap": "Full i18n",
+   "deps": "REQ-CIMA-004",
+   "owner": "mobile app/src/i18n, resources/lang"
+  },
+  {
+   "id": "REQ-MOB-005",
+   "wave": "W25",
+   "title": "Partner role workspaces complete (agent, broker, insurer menus with actions)",
+   "sources": "AUD D; MSG",
+   "status": "PARTIAL",
+   "evidence": "mobile/agent, mobile/broker (read-only), mobile/carrier + mobile/partner/*",
+   "gap": "Broker actions, agent proposal/claims",
+   "deps": "REQ-RBAC-002",
+   "owner": "mobile app/app/{agent,broker,carrier}"
+  },
+  {
+   "id": "REQ-MOB-006",
+   "wave": "W25",
+   "title": "Route namespace decision (SSR /app/... vs Expo paths)",
+   "sources": "SSR open decision",
+   "status": "PARTIAL",
+   "evidence": "Deep links map /app/... to in-app paths",
+   "gap": "Owner decision",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-MOB-007",
+   "wave": "W25",
+   "title": "Release: app links/AASA, iOS, crash reporting, staging profile",
+   "sources": "AUD A3, A13, §25",
+   "status": "PARTIAL",
+   "evidence": "APK sideload; eas.json single target",
+   "gap": "—",
+   "deps": "REQ-SEC-002",
+   "owner": "mobile app/eas.json, public/.well-known"
+  },
+  {
+   "id": "REQ-IMP-001",
+   "wave": "W26",
+   "title": "Import framework CSV/XLSX/JSON/API: upload→map→validate→duplicates→preview→approve→import→audit for products, tariffs, portfolio, customers, vehicles, claims, renewals, commissions, agreements, agents (pull forward per AOM)",
+   "sources": "AOM Excel import; MPS §91; MDC operations; PREP A7; LOCK-015",
+   "status": "PARTIAL",
+   "evidence": "master_data_imports, reconciliation_imports (entity-specific)",
+   "gap": "Generic pipeline; XLSX",
+   "deps": "REQ-MDM-001",
+   "owner": "app/Application/Import (new)"
+  },
+  {
+   "id": "REQ-IMP-002",
+   "wave": "W26",
+   "title": "Legacy integration & data migration with reconciliation reports",
+   "sources": "BP W26; MPS §92",
+   "status": "MISSING",
+   "evidence": "—",
+   "gap": "—",
+   "deps": "REQ-IMP-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-OPS-001",
+   "wave": "W27",
+   "title": "Operations console OPS-001..020 (health, queues, failed jobs, integration/payment/webhook monitoring, correlation view, incidents)",
+   "sources": "ESR OPS",
+   "status": "PARTIAL",
+   "evidence": "IntegrationHealth page, failed_jobs, telemetry_events, mobile_issue_reports",
+   "gap": "Horizon not configured; most screens missing",
+   "deps": "REQ-NFR-001",
+   "owner": "app/Filament/Admin/Pages"
+  },
+  {
+   "id": "REQ-OPS-002",
+   "wave": "W27",
+   "title": "DR/backup with RPO/RTO and restore tests",
+   "sources": "BP XI; MPS §115",
+   "status": "PARTIAL",
+   "evidence": "recovery_exercises, release-assurance routes",
+   "gap": "Automated restore test",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-OPS-003",
+   "wave": "W27",
+   "title": "Release assurance gates",
+   "sources": "—",
+   "status": "EXISTS",
+   "evidence": "release_candidates, release_gate_results, certify route",
+   "gap": "—",
+   "deps": "—",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-OPS-004",
+   "wave": "W27",
+   "title": "Production-ready 17 criteria + acceptance rule (happy path…historical reproduction)",
+   "sources": "MPS §114–115; PRE §101 DoD (38 items)",
+   "status": "PARTIAL",
+   "evidence": "Partial per module",
+   "gap": "Tracked through this matrix",
+   "deps": "all",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-OPS-005",
+   "wave": "W27",
+   "title": "Failed-transaction recovery & operational exception queues",
+   "sources": "MPS §86; STA operations/exceptions",
+   "status": "PARTIAL",
+   "evidence": "integration delivery replay, webhook_inbox FAILED status",
+   "gap": "Unified exceptions API",
+   "deps": "REQ-CAS-001",
+   "owner": "—"
+  },
+  {
+   "id": "REQ-DUP-001",
+   "wave": "W20",
+   "title": "Support ticket routes registered twice",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "SupportController@store/@transition on POST support-tickets and POST support/tickets (+/{ticket}/transitions)",
+   "gap": "Canonical: Keep `support-tickets`; delete `support/tickets` after mobile client switch",
+   "deps": "—",
+   "owner": "routes/api.php (+ wave route files), mobile app/src/api"
+  },
+  {
+   "id": "REQ-DUP-002",
+   "wave": "W27",
+   "title": "Fulfilment routes registered twice",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "FulfilmentController@store/@transition on fulfilment-orders and fulfilments",
+   "gap": "Canonical: Keep `fulfilment-orders`",
+   "deps": "—",
+   "owner": "routes/*"
+  },
+  {
+   "id": "REQ-DUP-003",
+   "wave": "W1",
+   "title": "Communication preference routes registered twice",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "NotificationController@preference on PUT communication-preferences and PUT communications/preferences",
+   "gap": "Canonical: Keep `communication-preferences`",
+   "deps": "—",
+   "owner": "routes/*"
+  },
+  {
+   "id": "REQ-DUP-004",
+   "wave": "W8",
+   "title": "Three document catalogue / requirement / pack models being built in parallel",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "WIP: 2026_09_29_100001_create_document_catalogue (document_types, document_packs, document_pack_items, document_requirement_matrix, product_document_requirements; DocumentCatalogueServiceProvider not in bootstrap/providers.php) vs WIP 2026_09_29_110001_create_document_engine (product_document_rules, document_pack_manifests; DocumentRegister reads JSON) vs committed document_requirement_versions + DocumentRequirementService",
+   "gap": "Canonical: One catalogue: document_types + document_packs/items + product_document_requirements (definitions); document engine consumes them; document_pack_manifests only for generated pack instances; retire product_document_rules and document_requirement_versions via data migration",
+   "deps": "REQ-DOC-001, REQ-DOC-005",
+   "owner": "app/Application/Documents/*, app/Models/DocumentCatalogue, migrations"
+  },
+  {
+   "id": "REQ-DUP-005",
+   "wave": "W8",
+   "title": "Certificate subsystem parallel to the document engine",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "certificate_templates, policy_certificates, certificates API, CertificateController vs document_templates/documents (engine)",
+   "gap": "Canonical: Certificates/attestations become document types issued by the engine; certificate tables kept read-only for history",
+   "deps": "REQ-DOC-002, REQ-DOC-007",
+   "owner": "app/Application/Certificates, Documents/Engine"
+  },
+  {
+   "id": "REQ-DUP-006",
+   "wave": "W12",
+   "title": "Two claim state definitions",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "app/Domain/Claims/ClaimStateMachine.php and ClaimLifecycle.php",
+   "gap": "Canonical: Single ClaimStateMachine on the generic engine (REQ-WFL-001) using blueprint states; app status vocabulary aligned",
+   "deps": "REQ-CLM-001",
+   "owner": "app/Domain/Claims, mobile app claim screens"
+  },
+  {
+   "id": "REQ-DUP-007",
+   "wave": "W5",
+   "title": "Parallel mobile vs core application services",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "MobileQuoteService/QuoteService, MobileProposalService/ProposalService, MobileClaimService+MobileClaimEvidenceService/ClaimLifecycleService+ClaimEvidenceService, MobileKycService, MobileDocumentService, MobilePolicyServiceController on two routes",
+   "gap": "Canonical: Core services are canonical; mobile controllers become thin adapters/presenters (no business rules in Mobile* services)",
+   "deps": "REQ-ARC-002",
+   "owner": "app/Application/{Quotes,Underwriting,Claims,Kyc,Documents}"
+  },
+  {
+   "id": "REQ-DUP-008",
+   "wave": "W10",
+   "title": "Bordereaux handled by three controllers",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "bordereaux/* (FinancialDistributionController), broker/bordereaux/* (BrokerOperationsController), carrier/bordereaux/{b}/decision (CarrierOperationsController)",
+   "gap": "Canonical: One `bordereaux` resource; broker/carrier actions authorized by role/scope, not separate paths",
+   "deps": "REQ-STL-002",
+   "owner": "routes, app/Application/FinancialDistribution"
+  },
+  {
+   "id": "REQ-DUP-009",
+   "wave": "W19",
+   "title": "Compliance endpoints duplicated under trust/*",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "compliance/privileged-access vs trust/privileged-access; compliance/data-subject-requests vs trust/data-subject-requests; risk-alerts vs trust/fraud-alerts (ComplianceController, RiskAlertController, Wave9Controller)",
+   "gap": "Canonical: Keep `compliance/*` (+ `risk-alerts`); retire trust/* equivalents and Wave9Controller",
+   "deps": "REQ-CMP-002",
+   "owner": "routes, app/Interfaces/Http/Controllers/Api/V1/Trust"
+  },
+  {
+   "id": "REQ-DUP-010",
+   "wave": "W7",
+   "title": "Renewal seeding twice",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "POST renewals/seed (RenewalController) and POST broker/renewals/seed (BrokerOperationsController)",
+   "gap": "Canonical: Keep `renewals/seed` (scheduled job); remove broker variant",
+   "deps": "REQ-REN-001",
+   "owner": "routes, BrokerOperations"
+  },
+  {
+   "id": "REQ-DUP-011",
+   "wave": "W10",
+   "title": "Settlement data behind two controllers",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "GET settlements/{batch} (SettlementController) and carrier-settlements/* (FinancialDistributionController); partner_statements/payouts for commission",
+   "gap": "Canonical: carrier-settlements for carrier; partner-statements for commission; drop `settlements/{batch}` after verifying same table",
+   "deps": "REQ-STL-001",
+   "owner": "routes, app/Application/Settlements"
+  },
+  {
+   "id": "REQ-DUP-012",
+   "wave": "W25",
+   "title": "Three mobile partner route families",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "mobile/agent/* (wave14) + wave12_agentmode + mobile/partner/agent/* (wave16); mobile/broker/* vs mobile/partner/broker/*; mobile/carrier/* vs mobile/partner/carrier/*",
+   "gap": "Canonical: Single `mobile/partner/{role}/*` family; keep one controller per role",
+   "deps": "REQ-MOB-005",
+   "owner": "routes/wave12_*, wave14_mobile, wave16_partner; mobile app/src/api"
+  },
+  {
+   "id": "REQ-DUP-013",
+   "wave": "W2",
+   "title": "Master-data suggestion posted on two paths",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "MasterDataController@suggest on master-data/suggestions and mobile/master-data/review; mobile/vehicles/master-review separate",
+   "gap": "Canonical: Keep `master-data/suggestions` (vehicles as a domain)",
+   "deps": "REQ-MDM-003",
+   "owner": "routes/master_data.php, routes/vehicles.php"
+  },
+  {
+   "id": "REQ-DUP-014",
+   "wave": "W7",
+   "title": "Policy service request on two paths",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "MobilePolicyServiceController@store on mobile/policy-service-requests and policies/{policy}/service-requests",
+   "gap": "Canonical: Keep `policies/{policy}/service-requests`",
+   "deps": "REQ-END-001",
+   "owner": "routes"
+  },
+  {
+   "id": "REQ-DUP-015",
+   "wave": "W8",
+   "title": "Three public verification entry points",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "POST public/certificates/verify (CertificateController), POST public/insurance/verify, GET /verify (web)",
+   "gap": "Canonical: One PublicVerificationService + one API `public/verify` used by the web page",
+   "deps": "REQ-DOC-007",
+   "owner": "app/Application/Certificates, routes"
+  },
+  {
+   "id": "REQ-DUP-016",
+   "wave": "W0",
+   "title": "Audit store vs blueprint name",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "audit_log (hash chain) vs blueprint audit_events",
+   "gap": "Canonical: Keep audit_log physically (ADR), expose audit_events view; no second table",
+   "deps": "REQ-AUD-001",
+   "owner": "docs/adr, migrations"
+  },
+  {
+   "id": "REQ-DUP-017",
+   "wave": "W2",
+   "title": "Two insurer authorization models",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "insurer_authorizations (IARD/LIFE per register year, committed) vs insurer_regulatory_authorizations + insurer_authorized_branches (WIP)",
+   "gap": "Canonical: insurer_regulatory_authorizations + authorized_branches canonical; insurer_authorizations kept as register-year source feeding it",
+   "deps": "REQ-CIMA-002",
+   "owner": "app/Application/Regulatory, migrations"
+  },
+  {
+   "id": "REQ-DUP-018",
+   "wave": "W2",
+   "title": "Three classification taxonomies",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "insurance_lines (flat, product line_code), insurance_classes (register), regulatory_branches/regulatory_class_defaults (WIP); blueprint name insurance_branches",
+   "gap": "Canonical: ADR: regulatory_branches = blueprint insurance_branches; insurance_classes = platform class; insurance_lines mapped then retired",
+   "deps": "REQ-PRD-002",
+   "owner": "app/Application/Catalogue, Regulatory"
+  },
+  {
+   "id": "REQ-DUP-019",
+   "wave": "W0",
+   "title": "Tables declared in two migrations",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "support_tickets, notification_templates, notification_deliveries, couriers, communication_preferences (+ support_ticket_events, fulfilment_events, fulfilment_orders) created in batch_five and again in wave_eight/core behind hasTable guards",
+   "gap": "Canonical: Leave history; document single owner migration; add schema test",
+   "deps": "—",
+   "owner": "database/migrations (no edits to applied migrations)"
+  },
+  {
+   "id": "REQ-DUP-020",
+   "wave": "W4",
+   "title": "Four risk-question sources",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "RiskSchemaCatalogue (hard-coded, WIP edit), NonMotorRiskSchemas, MotorRiskSchema, insurance_lines.risk_schema, disclosure_schema_versions",
+   "gap": "Canonical: product_questions per product version (REQ-RUL-001); PHP schemas become seed data",
+   "deps": "REQ-RUL-001",
+   "owner": "app/Application/Catalogue, Vehicles"
+  },
+  {
+   "id": "REQ-DUP-021",
+   "wave": "W8",
+   "title": "Five evidence/document stores",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "documents vs claim_documents, kyc_submission_documents, risk_asset_documents, proposal_documents",
+   "gap": "Canonical: documents canonical (with origin/stage); others become subject link tables",
+   "deps": "REQ-DOC-008",
+   "owner": "app/Application/Documents"
+  },
+  {
+   "id": "REQ-DUP-022",
+   "wave": "W0",
+   "title": "Fragmented work items",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "underwriting_referral_tasks, renewal_work_items, compliance_cases, support_tickets, financial cases",
+   "gap": "Canonical: cases + tasks (REQ-CAS-001) with bridges; keep tables as projections during migration",
+   "deps": "REQ-CAS-001",
+   "owner": "app/Application/Cases"
+  },
+  {
+   "id": "REQ-DUP-023",
+   "wave": "W6",
+   "title": "Agreement/authority tables overlapping",
+   "sources": "Coordinator scope (zero duplication); code inspection",
+   "status": "DUPLICATE",
+   "evidence": "delegated_authority_agreements + AuthorityChecker vs seed-spec carrier_broker_agreements vs blueprint authority_profiles/limits",
+   "gap": "Canonical: delegated_authority_agreements → carrier_broker_agreements (distribution) + authority_limits (authority); one AuthorityService",
+   "deps": "REQ-AUTH-001, REQ-SEED-004",
+   "owner": "app/Application/CarrierOperations, Authority"
+  }
+ ],
+ "spec_duplicates": [
+  {
+   "topic": "Maker-checker action lists",
+   "sources": "WRS WF-081; FRP VI; AOM strict; SCF governing rules; MPS §97",
+   "merged_into": "REQ-RBAC-005",
+   "canonical": "Union of all lists, enforced via one approval matrix"
+  },
+  {
+   "topic": "Import pipeline",
+   "sources": "AOM; MDC operations; MPS §91; PREP A7",
+   "merged_into": "REQ-IMP-001 (+REQ-MDM-007)",
+   "canonical": "MDC flow (upload→map→validate→duplicates→preview→approve→import→audit)"
+  },
+  {
+   "topic": "Document statuses",
+   "sources": "DCP (VALID…CANCELLED); DCP register (DRAFT…CANCELLED); WRS WF-031 (requested/generated/active/revoked/replaced/expired)",
+   "merged_into": "REQ-DOC-003",
+   "canonical": "DCP register set; WRS names are UI labels"
+  },
+  {
+   "topic": "Claim / quote / proposal / payment / policy states",
+   "sources": "WRS canonical state models vs BP Part II §94–114",
+   "merged_into": "REQ-CLM-001, QUO-001, PRP-001, PAY-001, POL-001",
+   "canonical": "Blueprint states win (ICE §0.8)"
+  },
+  {
+   "topic": "Eligibility outcomes",
+   "sources": "PRE §19 (5 outcomes) vs SCF §11 (ELIGIBLE/INELIGIBLE/UNDERWRITING_REFERRAL/REQUIRES_DOCUMENT)",
+   "merged_into": "REQ-RUL-003",
+   "canonical": "PRE set; REQUIRES_DOCUMENT → MORE_INFORMATION_REQUIRED"
+  },
+  {
+   "topic": "Coverage validation outcomes",
+   "sources": "WRS WF-050 (coverage_confirmed/question/not_confirmed) vs PRE §49 / ICE E2",
+   "merged_into": "REQ-CLM-003",
+   "canonical": "PRE/ICE set (COVERAGE_CONFIRMED, REVIEW_REQUIRED, POTENTIAL_EXCLUSION, OUTSIDE_COVERAGE)"
+  },
+  {
+   "topic": "Reinsurance capacity check",
+   "sources": "MPS §39–40; ICE E7; LOCK-019",
+   "merged_into": "REQ-CAT-002",
+   "canonical": "Single CapacityCheckService"
+  },
+  {
+   "topic": "Commission lifecycle",
+   "sources": "FRP I (SALE…PAID) vs SSR AGT-055 (Accrued, Earned, Pending, Paid, Reversed)",
+   "merged_into": "REQ-COM-001",
+   "canonical": "FRP states; SSR tabs are filters"
+  },
+  {
+   "topic": "Settlement lifecycle",
+   "sources": "SSR FIN-019 vs WRS WF-068",
+   "merged_into": "REQ-STL-001",
+   "canonical": "SSR states"
+  },
+  {
+   "topic": "Product version vs governance states",
+   "sources": "MPS §11/PRE §8 (DRAFT…RETIRED) vs PRE §74 (7-step workflow) vs SCF (Draft→Review→Approved→Published)",
+   "merged_into": "REQ-PRD-001, REQ-PRD-007",
+   "canonical": "Version status = PRE §8; review steps = governance sub-status"
+  },
+  {
+   "topic": "Tariff workflow",
+   "sources": "PRE §75 vs SCF tariff rules",
+   "merged_into": "REQ-RAT-002",
+   "canonical": "PRE §75"
+  },
+  {
+   "topic": "Authority types",
+   "sources": "BP III (14 types) vs ICE E3 (+ENDORSE, BACKDATE, CANCEL, OVERRIDE; OQ-3.4) vs SCF (may_quote…may_override)",
+   "merged_into": "REQ-AUTH-001",
+   "canonical": "BP 14 until owner answers OQ-3.4"
+  },
+  {
+   "topic": "Case types",
+   "sources": "BP I (8 types) vs ICE §6.2 list",
+   "merged_into": "REQ-CAS-001",
+   "canonical": "BP 8 + sub-types (OQ-6.4)"
+  },
+  {
+   "topic": "Role profiles",
+   "sources": "BP III vs SCF §7 carrier roles vs FRP V provider roles vs ESR actors",
+   "merged_into": "REQ-RBAC-003",
+   "canonical": "One RoleCatalogue"
+  },
+  {
+   "topic": "Screen baselines",
+   "sources": "MSR 220 → ESR 428 → SCF 530 → CIMA 552 → MDC 572 → FRP 670 → DCP 690",
+   "merged_into": "REQ-UI-002",
+   "canonical": "ESR working total 690; MPS §101 \"~690\""
+  },
+  {
+   "topic": "Coverage-check endpoint",
+   "sources": "BP POST /coverage/check vs ICE POST /claims/{id}/coverage-evaluations vs PRE §91 POST /claims/coverage/evaluate",
+   "merged_into": "REQ-CLM-003",
+   "canonical": "POST /api/v1/coverage/check (others aliases only if needed)"
+  },
+  {
+   "topic": "Reserve endpoint",
+   "sources": "STA: /claims/{id}/set-reserve, POST /claims/{id}/reserves, /claim-reserves/{r}/increase|reduce",
+   "merged_into": "REQ-CLM-008",
+   "canonical": "Existing POST claims/{id}/reserves (+/approve) with movement type"
+  },
+  {
+   "topic": "Claim decision endpoint",
+   "sources": "STA POST /claims/{id}/decision vs existing claims/{id}/decisions",
+   "merged_into": "REQ-CLM-012",
+   "canonical": "Existing claims/{id}/decisions + /approve"
+  },
+  {
+   "topic": "Rating endpoint",
+   "sources": "PRE POST /insurance/rate vs existing POST quotes/{quote}/rate and mobile/quotes",
+   "merged_into": "REQ-RAT-001",
+   "canonical": "Existing quotes/{quote}/rate; /insurance/rate only as stateless preview"
+  },
+  {
+   "topic": "Underwriting evaluate",
+   "sources": "PRE POST /underwriting/evaluate vs underwriting/cases/{c}/decision",
+   "merged_into": "REQ-UW-002",
+   "canonical": "Add evaluate (system) ; decision stays human"
+  },
+  {
+   "topic": "Domain event names",
+   "sources": "WRS (PascalCase 26) vs PRE (15) vs ICE (<domain>.<noun>.<verb>) vs code (dotted)",
+   "merged_into": "REQ-ARC-004",
+   "canonical": "Dotted code names with WRS name as alias in catalogue"
+  },
+  {
+   "topic": "Renewal windows",
+   "sources": "WRS WF-039 vs SSR AGT-044 (90/60/30/15/7)",
+   "merged_into": "REQ-REN-001",
+   "canonical": "Same; configurable"
+  },
+  {
+   "topic": "Temporal / effective dating",
+   "sources": "MPS §23, LOCK-007/017; PRE; ICE E1; SCF",
+   "merged_into": "REQ-TMP-001",
+   "canonical": "ICE E1"
+  },
+  {
+   "topic": "Controlled override",
+   "sources": "AOM; ICE §0.4; PREP A6; SSR BRK-035",
+   "merged_into": "REQ-OVR-001",
+   "canonical": "engine_overrides/value_overrides single table"
+  }
+ ],
+ "api_delta": [
+  {
+   "family": "Auth / identity",
+   "spec": "BP §136; SSR CUST-003..007",
+   "existing": "auth/mobile/*, public/accounts, me/*",
+   "status": "EXISTS_AS auth/mobile/*",
+   "gap": "Web OAuth/OIDC flows"
+  },
+  {
+   "family": "Tenants / branches / memberships",
+   "spec": "BP",
+   "existing": "tenants*, branches, memberships, invitations",
+   "status": "EXISTS_AS",
+   "gap": "Departments, organizations"
+  },
+  {
+   "family": "Customers / parties / KYC",
+   "spec": "WRS WF-003 (/customers/{id}/kyc, /kyc/{id}/submit|review)",
+   "existing": "customers*, parties*, mobile/kyc/*, documents/{d}/review",
+   "status": "PARTIAL (EXISTS_AS mobile/kyc/*)",
+   "gap": "Staff KYC queue/review API; UBO; screenings"
+  },
+  {
+   "family": "Leads",
+   "spec": "WRS WF-005..007",
+   "existing": "mobile/partner/agent/leads*",
+   "status": "PARTIAL",
+   "gap": "Broker lead directory/assignment"
+  },
+  {
+   "family": "Master data",
+   "spec": "MDC",
+   "existing": "master-data/*, public/master-data/*, public/vehicles/*",
+   "status": "EXISTS_AS (WIP)",
+   "gap": "Admin CRUD/merge/import API"
+  },
+  {
+   "family": "Regulatory / CIMA",
+   "spec": "CIMA; BP",
+   "existing": "public/regulatory/cima/*, configuration/regulatory-reference-sets",
+   "status": "PARTIAL (WIP)",
+   "gap": "Authorization/mapping admin API; regulatory-rules impact"
+  },
+  {
+   "family": "Product admin",
+   "spec": "PRE §91 /carriers/{carrier}/products, /product-versions/{v}/…",
+   "existing": "catalogue/lines*, catalogue/products*(submit/publish), tariffs*, underwriting/disclosure-schemas, mobile/partner/carrier/products",
+   "status": "PARTIAL (EXISTS_AS catalogue/*)",
+   "gap": "Versions, plans, coverages v2, questions, rules"
+  },
+  {
+   "family": "Eligibility / rating runtime",
+   "spec": "PRE POST /insurance/eligibility/check, /insurance/rate",
+   "existing": "quotes, quotes/{q}/rate, mobile/quotes",
+   "status": "PARTIAL (EXISTS_AS quotes/{q}/rate)",
+   "gap": "Eligibility check with outcomes"
+  },
+  {
+   "family": "Quotes / comparisons",
+   "spec": "WRS WF-010 (/quotes, PATCH, /calculate, /generate, /accept); STA quote-comparisons",
+   "existing": "quotes, quotes/{q}/rate, quotes/{q}/offers/{o}/accept, web-experiences/marketplace/comparisons",
+   "status": "PARTIAL (EXISTS_AS)",
+   "gap": "PATCH, generate/PDF, send"
+  },
+  {
+   "family": "Proposals",
+   "spec": "WRS WF-016",
+   "existing": "proposals*, disclosure*, documents*, submit, terms",
+   "status": "EXISTS_AS proposals/*",
+   "gap": "info-request/resubmit"
+  },
+  {
+   "family": "Underwriting / authority",
+   "spec": "BP; STA authority-profiles/referrals; PRE /underwriting/evaluate",
+   "existing": "underwriting/cases/{c}/assign|decision, underwriting/referrals/{r}/resolve, carrier/delegated-authorities*",
+   "status": "PARTIAL",
+   "gap": "authority-profiles, referrals queue, evaluate"
+  },
+  {
+   "family": "Policies / servicing",
+   "spec": "WRS; BP",
+   "existing": "policies*, transactions*, service-requests, renewal-quote, policy-issuance-requests*, renewals*",
+   "status": "EXISTS_AS",
+   "gap": "Failed-issuance queue, cancellation/suspension queues"
+  },
+  {
+   "family": "Documents",
+   "spec": "DCP; BP",
+   "existing": "documents*, document-templates*, documents/{d}/status-changes, policies/{p}/carrier-documents, public/document-types, mobile/policies/{p}/documents(/pack)",
+   "status": "PARTIAL (WIP)",
+   "gap": "Intake, retention"
+  },
+  {
+   "family": "Coverage check",
+   "spec": "BP POST /coverage/check",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build"
+  },
+  {
+   "family": "Payments / refunds / reconciliation",
+   "spec": "WRS WF-022..027; STA reconciliation, refunds",
+   "existing": "payments*, payments/{p}/refunds, refunds/{r}/approve, reconciliation/imports*, reconciliation/items/{i}/resolve, chargebacks",
+   "status": "EXISTS_AS (partial)",
+   "gap": "Obligations, allocations, refund queue, unmatched list"
+  },
+  {
+   "family": "Commission / settlement",
+   "spec": "WRS WF-064..069",
+   "existing": "financial-distribution/*, partner-statements*, partner-payouts*, carrier-settlements*, bordereaux*",
+   "status": "EXISTS_AS",
+   "gap": "Duplicated families (DUP-008/011)"
+  },
+  {
+   "family": "Ledger / journals",
+   "spec": "STA journals/trial-balance",
+   "existing": "ledger/accounts, ledger/journals*, reverse",
+   "status": "PARTIAL (EXISTS_AS ledger/journals)",
+   "gap": "trial-balance, period close, manual journal approval"
+  },
+  {
+   "family": "Claims",
+   "spec": "WRS WF-048..062; STA set-reserve",
+   "existing": "claims/fnol, claims/{id}/(assign|decisions|evidence|disputes|payments|recoveries|reserves|transitions|carrier-messages), mobile/claims/*",
+   "status": "EXISTS_AS",
+   "gap": "coverage, assessments, limits"
+  },
+  {
+   "family": "Providers / networks / preauth",
+   "spec": "FRP IV; STA",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build (W15–W16)"
+  },
+  {
+   "family": "Reinsurance / co-insurance",
+   "spec": "FRP II–III; STA",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build (W17–W18)"
+  },
+  {
+   "family": "Screenings / UBO",
+   "spec": "ICE E5; STA",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build (W19)"
+  },
+  {
+   "family": "Compliance / fraud / privacy",
+   "spec": "ESR CMP",
+   "existing": "compliance/*, trust/*, risk-alerts*, fraud-rules, consents*",
+   "status": "EXISTS_AS (duplicated DUP-009)",
+   "gap": "Case API"
+  },
+  {
+   "family": "Complaints",
+   "spec": "WRS WF-071",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build (W20)"
+  },
+  {
+   "family": "Dashboards",
+   "spec": "DSH; STA dashboards/*",
+   "existing": "mobile/{agent,broker,carrier}/dashboard, web-experiences/{portal}/dashboard",
+   "status": "PARTIAL (EXISTS_AS)",
+   "gap": "Metric contract with drill-down"
+  },
+  {
+   "family": "Reports",
+   "spec": "ESR REG",
+   "existing": "reports/insurance-portfolio, reports/renewals, trust/regulatory-report-*",
+   "status": "PARTIAL",
+   "gap": "KPI catalogue"
+  },
+  {
+   "family": "Operations / exceptions",
+   "spec": "STA operations/exceptions",
+   "existing": "integrations/health, integrations/delivery-attempts/{a}/replay, release-assurance/*",
+   "status": "PARTIAL",
+   "gap": "Unified exceptions queue"
+  },
+  {
+   "family": "Developer / webhooks",
+   "spec": "BP §156–157; STA developer/clients/webhooks",
+   "existing": "integrations/clients*, integrations/clients/{c}/webhooks, webhooks/*",
+   "status": "EXISTS_AS integrations/*",
+   "gap": "Portal, OpenAPI, usage"
+  },
+  {
+   "family": "Search",
+   "spec": "MPS §94",
+   "existing": "—",
+   "status": "MISSING",
+   "gap": "Build (W3)"
+  }
+ ],
+ "state_machines": [
+  {
+   "machine": "Quote",
+   "spec": "draft…accepted/declined/expired/cancelled",
+   "code": "quotes.status strings (SUBMITTED, REFERRED, OFFERED, ACCEPTED…); no class",
+   "status": "PARTIAL",
+   "gap": "Formal machine + canonical states"
+  },
+  {
+   "machine": "Proposal",
+   "spec": "draft→submitted→reviewing→information_required→resubmitted→approved/declined",
+   "code": "app/Domain/Underwriting/ProposalStatus (9) + ProposalService",
+   "status": "PARTIAL",
+   "gap": "info_required/resubmitted/withdrawn"
+  },
+  {
+   "machine": "Underwriting (+referral)",
+   "spec": "referred→assigned→reviewing→decision_pending→approved/conditional/declined",
+   "code": "underwriting_cases.status, underwriting_referral_tasks",
+   "status": "PARTIAL",
+   "gap": "Authority + return to originator"
+  },
+  {
+   "machine": "Payment",
+   "spec": "created→initiated→pending→successful→reconciled; failed/expired/cancelled/reversed/refunded",
+   "code": "PaymentStatus (10) + WebhookProcessingService::TRANSITIONS",
+   "status": "PARTIAL",
+   "gap": "CANCELLED; reconciled as state"
+  },
+  {
+   "machine": "Policy",
+   "spec": "issuance_pending→issued→active→expired; amended/suspended/cancelled/renewed",
+   "code": "PolicyStateMachine (10)",
+   "status": "PARTIAL",
+   "gap": "Chronology; naming"
+  },
+  {
+   "machine": "Policy issuance failure",
+   "spec": "issuance_failed → retry/manual/refund",
+   "code": "policy_issuance_requests status; PAID_PENDING_ISSUANCE",
+   "status": "PARTIAL",
+   "gap": "Failure machine + queue"
+  },
+  {
+   "machine": "Endorsement",
+   "spec": "draft→submitted→review→approved(→additional_premium_required/refund_due)",
+   "code": "policy_transactions.status",
+   "status": "PARTIAL",
+   "gap": "Type rules, versions"
+  },
+  {
+   "machine": "Renewal",
+   "spec": "identified→assigned→contacted→quoted→accepted→payment_pending→renewed; lost/lapsed",
+   "code": "renewal_cases.status, renewal_work_items",
+   "status": "PARTIAL",
+   "gap": "Canonical states"
+  },
+  {
+   "machine": "Cancellation",
+   "spec": "requested→reviewing→approved→cancelled",
+   "code": "policy_transactions + CANCELLATION_PENDING",
+   "status": "PARTIAL",
+   "gap": "Approver queue"
+  },
+  {
+   "machine": "Claim",
+   "spec": "draft→…→closed (+info_required, investigating, partially_approved, rejected, appealed, reopened)",
+   "code": "ClaimStateMachine (12) + ClaimLifecycle (duplicate)",
+   "status": "PARTIAL",
+   "gap": "Unify (DUP-006)"
+  },
+  {
+   "machine": "Provider claim",
+   "spec": "DRAFT…DISPUTED",
+   "code": "—",
+   "status": "MISSING",
+   "gap": "W16"
+  },
+  {
+   "machine": "Preauthorization",
+   "spec": "request→decision→guarantee→utilised/expired",
+   "code": "—",
+   "status": "MISSING",
+   "gap": "W16"
+  },
+  {
+   "machine": "Commission",
+   "spec": "SALE→CALCULATED→ACCRUED→EARNED→APPROVED→PAYABLE→PAID (+reversal states)",
+   "code": "commission_accruals (accrue/vest/clawback)",
+   "status": "PARTIAL",
+   "gap": "Canonical states"
+  },
+  {
+   "machine": "Refund",
+   "spec": "candidate→calculated→review→approved→paid→reconciled",
+   "code": "refunds + approve",
+   "status": "PARTIAL",
+   "gap": "Full chain"
+  },
+  {
+   "machine": "Settlement",
+   "spec": "Draft→Calculated→Review→Approved→Processing→Settled→Reconciled",
+   "code": "settlement_batches + carrier-settlements submit/approve/paid/fail/reverse",
+   "status": "PARTIAL",
+   "gap": "Reconciled"
+  },
+  {
+   "machine": "Treaty",
+   "spec": "draft→active→expired/commuted (versions)",
+   "code": "—",
+   "status": "MISSING",
+   "gap": "W17"
+  },
+  {
+   "machine": "Facultative placement",
+   "spec": "draft→offered→signed→bound",
+   "code": "—",
+   "status": "MISSING",
+   "gap": "W17"
+  },
+  {
+   "machine": "Reinsurance recovery",
+   "spec": "ESTIMATED…CLOSED",
+   "code": "—",
+   "status": "MISSING",
+   "gap": "W17"
+  },
+  {
+   "machine": "Complaint",
+   "spec": "Submitted→Acknowledged→Classified→Assigned→Investigated→Resolution→Communicated→Closed/Escalated",
+   "code": "— (support TicketStateMachine is separate)",
+   "status": "MISSING",
+   "gap": "W20"
+  },
+  {
+   "machine": "KYC",
+   "spec": "not_started→draft→submitted→reviewing→approved; more_info/rejected/expired",
+   "code": "kyc_submissions.status",
+   "status": "PARTIAL",
+   "gap": "Machine + review"
+  },
+  {
+   "machine": "Document",
+   "spec": "DRAFT…VALID/SUPERSEDED/REPLACED/REVOKED/EXPIRED/CANCELLED",
+   "code": "DocumentStatusService + document_status_changes (WIP)",
+   "status": "WIP",
+   "gap": "Commit + maker-checker"
+  }
+ ],
+ "model_delta": [
+  {
+   "blueprint": "tenants",
+   "code": "tenants",
+   "verdict": "EXISTS (type not constrained)"
+  },
+  {
+   "blueprint": "organizations",
+   "code": "carriers, partners",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "branches",
+   "code": "tenant_branches",
+   "verdict": "DIFFERENT NAME (no hierarchy)"
+  },
+  {
+   "blueprint": "departments",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "users, memberships",
+   "code": "users, tenant_memberships, membership_roles",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "roles, permissions, role_permissions",
+   "code": "roles (permissions jsonb)",
+   "verdict": "PARTIAL (permissions, role_permissions MISSING)"
+  },
+  {
+   "blueprint": "authority_profiles, authority_limits",
+   "code": "delegated_authority_agreements",
+   "verdict": "DIFFERENT NAME / PARTIAL"
+  },
+  {
+   "blueprint": "parties, persons",
+   "code": "parties (+party_contacts)",
+   "verdict": "EXISTS (persons folded into parties)"
+  },
+  {
+   "blueprint": "party_roles",
+   "code": "tenant_customers, claim_involved_parties",
+   "verdict": "PARTIAL"
+  },
+  {
+   "blueprint": "party_relationships, ownership_interests",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "addresses, identity_documents",
+   "code": "party_addresses, party_identifiers",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "kyc_cases, screening_checks",
+   "code": "kyc_submissions / —",
+   "verdict": "DIFFERENT NAME / MISSING"
+  },
+  {
+   "blueprint": "master data tables (+vehicle tables)",
+   "code": "master_data_* (9), vehicle_* (10)",
+   "verdict": "WIP"
+  },
+  {
+   "blueprint": "vehicles, properties, business_risks",
+   "code": "risk_assets, risk_asset_vehicles",
+   "verdict": "DIFFERENT NAME (properties/business MISSING)"
+  },
+  {
+   "blueprint": "regulatory_regimes",
+   "code": "regulatory_regimes",
+   "verdict": "WIP"
+  },
+  {
+   "blueprint": "insurance_branches",
+   "code": "regulatory_branches (+subclasses, microinsurance_branches)",
+   "verdict": "WIP, DIFFERENT NAME (ADR)"
+  },
+  {
+   "blueprint": "insurer_authorizations (+branches)",
+   "code": "insurer_authorizations; insurer_regulatory_authorizations, insurer_authorized_branches",
+   "verdict": "EXISTS + WIP (DUP-017)"
+  },
+  {
+   "blueprint": "insurance_products",
+   "code": "insurance_products",
+   "verdict": "EXISTS (also acts as version)"
+  },
+  {
+   "blueprint": "product_versions",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "product_regulatory_mappings",
+   "code": "product_regulatory_mappings",
+   "verdict": "WIP"
+  },
+  {
+   "blueprint": "product_plans",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "coverages, product_coverages",
+   "code": "coverage_definitions, product_coverages",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "exclusions",
+   "code": "exclusion_definitions, product_exclusions",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "question_definitions, product_questions",
+   "code": "disclosure_schema_versions (+ PHP schemas)",
+   "verdict": "DIFFERENT NAME / PARTIAL"
+  },
+  {
+   "blueprint": "eligibility_rules",
+   "code": "insurance_products.eligibility_rules jsonb",
+   "verdict": "PARTIAL"
+  },
+  {
+   "blueprint": "tariff_versions, rating_rules",
+   "code": "tariff_versions (rules jsonb), tax_levy_versions, fee_schedule_versions",
+   "verdict": "EXISTS / PARTIAL"
+  },
+  {
+   "blueprint": "underwriting_rules",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "leads",
+   "code": "partner_leads",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "quotes, quote_risks",
+   "code": "quotes (risk_facts), quote_offers",
+   "verdict": "EXISTS / quote_risks MISSING"
+  },
+  {
+   "blueprint": "pricing_snapshots",
+   "code": "rating_runs, quote_offers.calculation_breakdown",
+   "verdict": "DIFFERENT NAME / PARTIAL"
+  },
+  {
+   "blueprint": "proposals",
+   "code": "proposals",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "underwriting_cases/referrals",
+   "code": "underwriting_cases, underwriting_referral_tasks, underwriting_decisions",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "policies",
+   "code": "policies",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "policy_versions",
+   "code": "policies.version + policy_transactions",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "policy_parties, policy_risks, policy_coverages, policy_limits",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "endorsements, policy_cancellations",
+   "code": "policy_transactions",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "renewals",
+   "code": "renewal_cases, renewal_work_items",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "financial_obligations",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "payments",
+   "code": "payment_intents, payment_attempts, payment_events",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "payment_allocations",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "refunds",
+   "code": "refunds",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "commission_entries",
+   "code": "commission_accruals, commission_movements",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "settlement_batches/lines",
+   "code": "settlement_batches, settlement_items",
+   "verdict": "DIFFERENT NAME (lines→items)"
+  },
+  {
+   "blueprint": "accounting_events",
+   "code": "financial_posting_profiles, financial_distribution_events",
+   "verdict": "PARTIAL"
+  },
+  {
+   "blueprint": "journals/lines",
+   "code": "journals, journal_lines, ledger_accounts",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "claims",
+   "code": "claims",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "claim_parties",
+   "code": "claim_involved_parties",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "claim_coverage_assessments",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "claim_reserves/movements",
+   "code": "claim_reserve_changes",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "claim_assessments",
+   "code": "— (claim_assignments only)",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "claim_decisions",
+   "code": "claim_decisions",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "recoveries",
+   "code": "claim_recoveries",
+   "verdict": "DIFFERENT NAME"
+  },
+  {
+   "blueprint": "provider profiles/facilities/networks/memberships/contracts",
+   "code": "health_providers (WIP)",
+   "verdict": "PARTIAL / MISSING"
+  },
+  {
+   "blueprint": "medical_services, provider_tariffs, health_eligibility_checks, preauthorizations, provider_claims",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "reinsurer_profiles, reinsurance_treaties/participants/layers, risk_cessions, facultative placements/participants",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "coinsurance arrangements/participants",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "document_types (220)",
+   "code": "document_types (WIP) + JSON register",
+   "verdict": "WIP (DUP-004)"
+  },
+  {
+   "blueprint": "document_templates/versions",
+   "code": "document_templates (WIP), certificate_templates",
+   "verdict": "WIP (DUP-005)"
+  },
+  {
+   "blueprint": "documents",
+   "code": "documents, document_versions",
+   "verdict": "EXISTS"
+  },
+  {
+   "blueprint": "cases (8 types), tasks, sla_definitions",
+   "code": "compliance_cases, support_tickets, underwriting_referral_tasks, renewal_work_items",
+   "verdict": "PARTIAL / MISSING (DUP-022)"
+  },
+  {
+   "blueprint": "correspondences",
+   "code": "communication_logs",
+   "verdict": "DIFFERENT NAME / PARTIAL"
+  },
+  {
+   "blueprint": "complaints",
+   "code": "—",
+   "verdict": "MISSING"
+  },
+  {
+   "blueprint": "fraud_indicators",
+   "code": "fraud_rule_versions, risk_alerts",
+   "verdict": "DIFFERENT NAME / PARTIAL"
+  },
+  {
+   "blueprint": "regulatory_rules/impacts",
+   "code": "regulatory_reference_sets",
+   "verdict": "PARTIAL"
+  },
+  {
+   "blueprint": "audit_events (append-only)",
+   "code": "audit_log (hash chain)",
+   "verdict": "DIFFERENT NAME (DUP-016)"
+  }
+ ]
+}

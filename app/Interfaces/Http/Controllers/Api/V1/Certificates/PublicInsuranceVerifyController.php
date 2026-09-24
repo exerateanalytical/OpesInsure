@@ -25,7 +25,7 @@ final class PublicInsuranceVerifyController
     {
         $data = $request->validate(['reference' => 'required|string|min:3|max:100']);
         $result = $verification->lookup($data['reference'], null, 'API', $request->ip().'|'.$request->userAgent());
-        if ($result['result'] === 'revoked') {
+        if ($result['result'] === 'revoked' && ! isset($result['document'])) {
             $result['result'] = 'invalid'; // API vocabulary predates "revoked"
         }
 

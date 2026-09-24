@@ -4,6 +4,8 @@
     'expired' => ['Expired', 'Expirée', '#b45309', '&#9888;'],
     'not_yet_active' => ['Not yet active', 'Pas encore active', '#155FCC', '&#8987;'],
     'revoked' => ['Revoked', 'Révoquée', '#b91c1c', '&#10006;'],
+    'superseded' => ['Superseded — a newer document exists', 'Remplacée par une version plus récente', '#b45309', '&#9888;'],
+    'replaced' => ['Replaced', 'Remplacée', '#b45309', '&#9888;'],
     'suspended' => ['Suspended', 'Suspendue', '#b91c1c', '&#10006;'],
     'cancelled' => ['Cancelled', 'Résiliée', '#b91c1c', '&#10006;'],
     'invalid' => ['Not valid', 'Non valide', '#b91c1c', '&#10006;'],
@@ -35,7 +37,19 @@
       </div>
       @if($r !== 'not_found')
       <table style="width:100%;border-collapse:collapse;margin-top:18px;font-size:.95rem">
+        @if(!empty($result['document']))
+        <tr><td style="padding:8px 0;color:var(--muted)">Document</td><td style="text-align:right;font-weight:700">{{ $result['document']['title_fr'] }} / {{ $result['document']['title_en'] }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Number / Numéro</td><td style="text-align:right">{{ $result['document']['document_number'] ?? '—' }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Status / Statut</td><td style="text-align:right">{{ $result['document']['status'] }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Issuer / Émetteur</td><td style="text-align:right">{{ $result['document']['issuer_name'] ?? '—' }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Issued / Émis</td><td style="text-align:right">{{ $fmt($result['document']['issued_at']) }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Policy / Police</td><td style="text-align:right">{{ $result['document']['policy_reference'] ?? '—' }}</td></tr>
+        @if($result['document']['vehicle'])<tr><td style="padding:8px 0;color:var(--muted)">Vehicle / Véhicule</td><td style="text-align:right">{{ $result['document']['vehicle'] }}</td></tr>@endif
+        @if($result['document']['replaced_by'])<tr><td style="padding:8px 0;color:var(--muted)">Replaced by / Remplacé par</td><td style="text-align:right">{{ $result['document']['replaced_by'] }}</td></tr>@endif
+        <tr><td style="padding:8px 0;color:var(--muted)">SHA-256</td><td style="text-align:right;font-size:.7rem;word-break:break-all">{{ $result['document']['sha256'] }}</td></tr>
+        @else
         <tr><td style="padding:8px 0;color:var(--muted)">Certificate / Attestation</td><td style="text-align:right;font-weight:700">{{ $result['reference'] }}</td></tr>
+        @endif
         <tr><td style="padding:8px 0;color:var(--muted)">Insurer / Assureur</td><td style="text-align:right">{{ $result['carrier_name'] ?? '—' }}</td></tr>
         <tr><td style="padding:8px 0;color:var(--muted)">Class / Branche</td><td style="text-align:right">{{ $result['product_class'] ?? '—' }}</td></tr>
         <tr><td style="padding:8px 0;color:var(--muted)">From / Du</td><td style="text-align:right">{{ $fmt($result['coverage_starts_at']) }}</td></tr>

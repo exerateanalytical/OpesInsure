@@ -244,6 +244,9 @@ final class PolicyServicingService
                 'type' => $transaction->type,
             ]);
 
+            // Document engine: avenant / cancellation / reinstatement pack (savepoint; never blocks servicing).
+            app(\App\Application\Documents\Engine\DocumentEngine::class)->fireQuietly($transaction->type.'_ISSUED', $policy->refresh(), ['transaction' => $transaction->refresh()], $actor);
+
             return $policy->refresh();
         });
     }

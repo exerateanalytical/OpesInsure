@@ -209,6 +209,16 @@ final class PolicyDocumentService
             'size_bytes' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
             // System-generated, never user-supplied: nothing to scan.
             'scan_status' => 'CLEAN', 'verification_status' => 'VERIFIED', 'ocr_data' => [],
+            // Document engine record: platform-rendered proof of cover / schedule (issuer PLATFORM, origin SYSTEM).
+            'document_type_code' => $category === self::CERTIFICATE ? 'PROOF_OF_COVER' : 'POLICY_SCHEDULE',
+            'document_type_id' => $category === self::CERTIFICATE ? 'DOC-028' : 'DOC-022', 'document_group' => 'CONTRACT',
+            'issuer_type' => 'PLATFORM', 'issuer_carrier_id' => $policy->carrier_id, 'issuer_tenant_id' => $policy->tenant_id,
+            'document_origin' => 'SYSTEM', 'document_stage' => 'POLICY', 'language' => 'BILINGUAL', 'policy_version' => (int) $policy->version,
+            'security_level' => $category === self::CERTIFICATE ? 'PUBLIC_VERIFIABLE' : 'CUSTOMER_PRIVATE',
+            'issued_at' => $certificate->issued_at ?? now(), 'generation_trigger' => 'POLICY_ISSUED',
+            'valid_from' => $category === self::CERTIFICATE ? $policy->coverage_starts_at : null,
+            'valid_until' => $category === self::CERTIFICATE ? $policy->coverage_ends_at : null,
+            'provenance' => ['rendered_by' => 'OPESINSURE', 'certificate_serial' => $certificate->serial_number],
         ];
 
         if ($existing) {
@@ -217,7 +227,10 @@ final class PolicyDocumentService
             return $existing->refresh();
         }
 
-        return Document::create($attributes);
+        $number = app(\App\Application\Documents\Engine\DocumentNumberAllocator::class)->allocate($policy->tenant_id, $attributes['document_type_code']);
+
+        return Document::create($attributes + ['status' => 'VALID', 'numbering_family' => $number['family'], 'document_number' => $number['number'], 'document_sequence' => $number['sequence'],
+            'verification_code' => \App\Application\Documents\Engine\DocumentEngine::newVerificationCode()]);
     }
 
     private function disk(): string

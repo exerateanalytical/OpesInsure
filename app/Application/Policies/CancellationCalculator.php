@@ -1,4 +1,58 @@
 <?php
-declare(strict_types=1);namespace App\Application\Policies;
-use App\Models\{CancellationRuleVersion,Policy};use Carbon\CarbonInterface;use Illuminate\Validation\ValidationException;
-final class CancellationCalculator{public function calculate(Policy$p,CarbonInterface$effective):array{if($effective->lessThan($p->coverage_starts_at)||$effective->greaterThan($p->coverage_ends_at))throw ValidationException::withMessages(['effective_at'=>__('wave5.cancellation_date_invalid')]);$line=$p->proposal->offer->quote->line_code;$r=CancellationRuleVersion::where(['line_code'=>$line,'status'=>'APPROVED'])->whereDate('effective_from','<=',$effective)->where(fn($q)=>$q->whereNull('effective_until')->orWhereDate('effective_until','>=',$effective))->latest('version')->first();if(!$r)throw ValidationException::withMessages(['rule'=>__('wave5.cancellation_rule_missing')]);$total=max(1,$p->coverage_starts_at->diffInDays($p->coverage_ends_at));$unused=max(0,$effective->diffInDays($p->coverage_ends_at));$proRata=(int)round($p->premium_minor*$unused/$total);$refund=$r->basis==='SHORT_RATE'?(int)round($proRata*$r->short_rate_basis_points/10000):$proRata;$refund=max(0,min($p->premium_minor,$refund-$r->admin_fee_minor));return['refund_minor'=>$refund,'rule_id'=>$r->id,'basis'=>$r->basis,'unused_days'=>$unused,'total_days'=>$total];}}
+
+declare(strict_types=1);
+
+namespace App\Application\Policies;
+
+use App\Application\Temporal\ReferenceDateResolver;
+use App\Application\Temporal\TemporalResolutionException;
+use App\Application\Temporal\VersionResolver;
+use App\Models\CancellationRuleVersion;
+use App\Models\Policy;
+use Carbon\CarbonInterface;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Cancellation refund calculation. The applicable cancellation_rule_versions
+ * row is resolved by the Temporal engine (REQ-TMP-001, ICE E1 §1.5): the CANCEL
+ * reference-date rule anchors on the cancellation effective_at, validity is
+ * closed-closed on the business date. Zero or overlapping approved rules block
+ * (INV-1.3) instead of silently falling back to the latest version.
+ */
+final class CancellationCalculator
+{
+    public function __construct(
+        private readonly VersionResolver $versions,
+        private readonly ReferenceDateResolver $referenceDates,
+    ) {}
+
+    public function calculate(Policy $p, CarbonInterface $effective): array
+    {
+        if ($effective->lessThan($p->coverage_starts_at) || $effective->greaterThan($p->coverage_ends_at)) {
+            throw ValidationException::withMessages(['effective_at' => __('wave5.cancellation_date_invalid')]);
+        }
+        $line = $p->proposal->offer->quote->line_code;
+        $r = $this->rule($line, $effective);
+
+        $total = max(1, $p->coverage_starts_at->diffInDays($p->coverage_ends_at));
+        $unused = max(0, $effective->diffInDays($p->coverage_ends_at));
+        $proRata = (int) round($p->premium_minor * $unused / $total);
+        $refund = $r->basis === 'SHORT_RATE' ? (int) round($proRata * $r->short_rate_basis_points / 10000) : $proRata;
+        $refund = max(0, min($p->premium_minor, $refund - $r->admin_fee_minor));
+
+        return ['refund_minor' => $refund, 'rule_id' => $r->id, 'basis' => $r->basis, 'unused_days' => $unused, 'total_days' => $total];
+    }
+
+    private function rule(string $line, CarbonInterface $effective): CancellationRuleVersion
+    {
+        try {
+            $at = $this->referenceDates->for('CANCEL', ['effective_at' => $effective], 'cancellation_rule', 'TERMS');
+            $resolved = $this->versions->resolve('cancellation_rule', ['line_code' => $line], $at);
+        } catch (TemporalResolutionException) {
+            throw ValidationException::withMessages(['rule' => __('wave5.cancellation_rule_missing')]);
+        }
+
+        // Only an APPROVED version may price a cancellation (registry filter, re-asserted here).
+        return CancellationRuleVersion::where(['id' => $resolved->id, 'status'=>'APPROVED'])->firstOrFail();
+    }
+}

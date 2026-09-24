@@ -1,0 +1,2480 @@
+openapi: 3.1.0
+info:
+  title: OpesInsure API
+  version: 1.0.0
+  description: CIMA-aligned adaptive insurance operating platform API baseline.
+servers:
+- url: https://api.example.com/api/v1
+  description: Replace with deployment URL
+security:
+- oauth2:
+  - opesinsure
+paths:
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Login
+      operationId: login
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /auth/me:
+    get:
+      tags:
+      - Auth
+      summary: Get authenticated user
+      operationId: get_authenticated_user
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /parties:
+    get:
+      tags:
+      - Customers
+      summary: List parties
+      operationId: list_parties
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /parties/person:
+    post:
+      tags:
+      - Customers
+      summary: Create person party
+      operationId: create_person_party
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /parties/organization:
+    post:
+      tags:
+      - Customers
+      summary: Create organization party
+      operationId: create_organization_party
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /kyc-cases/{id}:
+    get:
+      tags:
+      - KYC
+      summary: Get KYC case
+      operationId: get_kyc_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /kyc-cases/{id}/submit:
+    post:
+      tags:
+      - KYC
+      summary: Submit KYC case
+      operationId: submit_kyc_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /kyc-cases/{id}/approve:
+    post:
+      tags:
+      - KYC
+      summary: Approve KYC case
+      operationId: approve_kyc_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /master-data/{domain}:
+    get:
+      tags:
+      - MasterData
+      summary: List master data values
+      operationId: list_master_data_values
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: domain
+        in: path
+        required: true
+        schema:
+          type: string
+  /master-data/suggestions:
+    post:
+      tags:
+      - MasterData
+      summary: Submit master data suggestion
+      operationId: submit_master_data_suggestion
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /vehicle-makes:
+    get:
+      tags:
+      - Vehicles
+      summary: List vehicle makes
+      operationId: list_vehicle_makes
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /vehicle-makes/{make}/models:
+    get:
+      tags:
+      - Vehicles
+      summary: List models by make
+      operationId: list_models_by_make
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: make
+        in: path
+        required: true
+        schema:
+          type: string
+  /vehicles:
+    post:
+      tags:
+      - Vehicles
+      summary: Create vehicle
+      operationId: create_vehicle
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /products:
+    get:
+      tags:
+      - Products
+      summary: List products
+      operationId: list_products
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Products
+      summary: Create product
+      operationId: create_product
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /products/{id}:
+    get:
+      tags:
+      - Products
+      summary: Get product
+      operationId: get_product
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /product-versions/{id}/publish:
+    post:
+      tags:
+      - Products
+      summary: Publish product version
+      operationId: publish_product_version
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /quotes:
+    get:
+      tags:
+      - Quotes
+      summary: List quotes
+      operationId: list_quotes
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Quotes
+      summary: Create quote
+      operationId: create_quote
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /quotes/{id}:
+    get:
+      tags:
+      - Quotes
+      summary: Get quote
+      operationId: get_quote
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /quotes/{id}/calculate:
+    post:
+      tags:
+      - Quotes
+      summary: Calculate quote
+      operationId: calculate_quote
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /quotes/{id}/present:
+    post:
+      tags:
+      - Quotes
+      summary: Present quote
+      operationId: present_quote
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /quotes/{id}/accept:
+    post:
+      tags:
+      - Quotes
+      summary: Accept quote
+      operationId: accept_quote
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /quotes/{id}/convert-to-proposal:
+    post:
+      tags:
+      - Quotes
+      summary: Convert quote to proposal
+      operationId: convert_quote_to_proposal
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /proposals:
+    post:
+      tags:
+      - Proposals
+      summary: Create proposal
+      operationId: create_proposal
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /proposals/{id}/submit:
+    post:
+      tags:
+      - Proposals
+      summary: Submit proposal
+      operationId: submit_proposal
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /underwriting/cases:
+    get:
+      tags:
+      - Underwriting
+      summary: List underwriting cases
+      operationId: list_underwriting_cases
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /underwriting/cases/{id}:
+    get:
+      tags:
+      - Underwriting
+      summary: Get underwriting case
+      operationId: get_underwriting_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /underwriting/cases/{id}/accept:
+    post:
+      tags:
+      - Underwriting
+      summary: Accept underwriting case
+      operationId: accept_underwriting_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /underwriting/cases/{id}/decline:
+    post:
+      tags:
+      - Underwriting
+      summary: Decline underwriting case
+      operationId: decline_underwriting_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /underwriting/cases/{id}/refer:
+    post:
+      tags:
+      - Underwriting
+      summary: Refer underwriting case
+      operationId: refer_underwriting_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies:
+    get:
+      tags:
+      - Policies
+      summary: List policies
+      operationId: list_policies
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /policies/{id}:
+    get:
+      tags:
+      - Policies
+      summary: Get policy
+      operationId: get_policy
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies/issue:
+    post:
+      tags:
+      - Policies
+      summary: Issue policy
+      operationId: issue_policy
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /policies/{id}/timeline:
+    get:
+      tags:
+      - Policies
+      summary: Get policy timeline
+      operationId: get_policy_timeline
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies/{id}/suspend:
+    post:
+      tags:
+      - Policies
+      summary: Suspend policy
+      operationId: suspend_policy
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies/{id}/reinstate:
+    post:
+      tags:
+      - Policies
+      summary: Reinstate policy
+      operationId: reinstate_policy
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies/{id}/cancel:
+    post:
+      tags:
+      - Policies
+      summary: Cancel policy
+      operationId: cancel_policy
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /policies/{id}/endorsements:
+    post:
+      tags:
+      - Endorsements
+      summary: Create endorsement
+      operationId: create_endorsement
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /endorsements/{id}/submit:
+    post:
+      tags:
+      - Endorsements
+      summary: Submit endorsement
+      operationId: submit_endorsement
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /endorsements/{id}/issue:
+    post:
+      tags:
+      - Endorsements
+      summary: Issue endorsement
+      operationId: issue_endorsement
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /renewals:
+    get:
+      tags:
+      - Renewals
+      summary: List renewals
+      operationId: list_renewals
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /renewals/{id}/accept:
+    post:
+      tags:
+      - Renewals
+      summary: Accept renewal
+      operationId: accept_renewal
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /renewals/{id}/issue:
+    post:
+      tags:
+      - Renewals
+      summary: Issue renewal
+      operationId: issue_renewal
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /financial-obligations:
+    get:
+      tags:
+      - Billing
+      summary: List financial obligations
+      operationId: list_financial_obligations
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /payments:
+    get:
+      tags:
+      - Payments
+      summary: List payments
+      operationId: list_payments
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Payments
+      summary: Create payment
+      operationId: create_payment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /payments/{id}:
+    get:
+      tags:
+      - Payments
+      summary: Get payment
+      operationId: get_payment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /payments/{id}/allocate:
+    post:
+      tags:
+      - Payments
+      summary: Allocate payment
+      operationId: allocate_payment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /payments/{id}/reconcile:
+    post:
+      tags:
+      - Payments
+      summary: Reconcile payment
+      operationId: reconcile_payment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /refunds:
+    post:
+      tags:
+      - Payments
+      summary: Create refund
+      operationId: create_refund
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /refunds/{id}/approve:
+    post:
+      tags:
+      - Payments
+      summary: Approve refund
+      operationId: approve_refund
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims:
+    get:
+      tags:
+      - Claims
+      summary: List claims
+      operationId: list_claims
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Claims
+      summary: Create claim
+      operationId: create_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /claims/{id}:
+    get:
+      tags:
+      - Claims
+      summary: Get claim
+      operationId: get_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims/{id}/acknowledge:
+    post:
+      tags:
+      - Claims
+      summary: Acknowledge claim
+      operationId: acknowledge_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /coverage/check:
+    post:
+      tags:
+      - Claims
+      summary: Check coverage at loss
+      operationId: check_coverage_at_loss
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /claims/{id}/validate-coverage:
+    post:
+      tags:
+      - Claims
+      summary: Validate claim coverage
+      operationId: validate_claim_coverage
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims/{id}/set-reserve:
+    post:
+      tags:
+      - Claims
+      summary: Set claim reserve
+      operationId: set_claim_reserve
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims/{id}/decision:
+    post:
+      tags:
+      - Claims
+      summary: Record claim decision
+      operationId: record_claim_decision
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims/{id}/settle:
+    post:
+      tags:
+      - Claims
+      summary: Settle claim
+      operationId: settle_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /claims/{id}/close:
+    post:
+      tags:
+      - Claims
+      summary: Close claim
+      operationId: close_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /providers:
+    get:
+      tags:
+      - Providers
+      summary: List providers
+      operationId: list_providers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /providers/{id}:
+    get:
+      tags:
+      - Providers
+      summary: Get provider
+      operationId: get_provider
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /health/eligibility-checks:
+    post:
+      tags:
+      - Health
+      summary: Check member eligibility
+      operationId: check_member_eligibility
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /preauthorizations:
+    post:
+      tags:
+      - Health
+      summary: Create preauthorization
+      operationId: create_preauthorization
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /preauthorizations/{id}/approve:
+    post:
+      tags:
+      - Health
+      summary: Approve preauthorization
+      operationId: approve_preauthorization
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /provider-claims:
+    post:
+      tags:
+      - Health
+      summary: Create provider claim
+      operationId: create_provider_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /provider-claims/{id}/approve:
+    post:
+      tags:
+      - Health
+      summary: Approve provider claim
+      operationId: approve_provider_claim
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /reinsurance/treaties:
+    get:
+      tags:
+      - Reinsurance
+      summary: List reinsurance treaties
+      operationId: list_reinsurance_treaties
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Reinsurance
+      summary: Create reinsurance treaty
+      operationId: create_reinsurance_treaty
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /reinsurance/capacity/check:
+    post:
+      tags:
+      - Reinsurance
+      summary: Check reinsurance capacity
+      operationId: check_reinsurance_capacity
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /reinsurance/facultative-placements:
+    post:
+      tags:
+      - Reinsurance
+      summary: Create facultative placement
+      operationId: create_facultative_placement
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /reinsurance/recoveries:
+    post:
+      tags:
+      - Reinsurance
+      summary: Create reinsurance recovery
+      operationId: create_reinsurance_recovery
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /documents/{id}:
+    get:
+      tags:
+      - Documents
+      summary: Get document
+      operationId: get_document
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /documents/generate:
+    post:
+      tags:
+      - Documents
+      summary: Generate governed document
+      operationId: generate_governed_document
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /documents/{id}/revoke:
+    post:
+      tags:
+      - Documents
+      summary: Revoke document
+      operationId: revoke_document
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /public/verify-document/{token}:
+    get:
+      tags:
+      - Documents
+      summary: Verify public document
+      operationId: verify_public_document
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+  /cases:
+    get:
+      tags:
+      - Cases
+      summary: List cases
+      operationId: list_cases
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags:
+      - Cases
+      summary: Create case
+      operationId: create_case
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /tasks:
+    get:
+      tags:
+      - Tasks
+      summary: List tasks
+      operationId: list_tasks
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /tasks/{id}/complete:
+    post:
+      tags:
+      - Tasks
+      summary: Complete task
+      operationId: complete_task
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /complaints:
+    post:
+      tags:
+      - Complaints
+      summary: Create complaint
+      operationId: create_complaint
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /complaints/{id}/escalate:
+    post:
+      tags:
+      - Complaints
+      summary: Escalate complaint
+      operationId: escalate_complaint
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /reports/catalogue:
+    get:
+      tags:
+      - Reports
+      summary: List report catalogue
+      operationId: list_report_catalogue
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/{code}/run:
+    post:
+      tags:
+      - Reports
+      summary: Run report
+      operationId: run_report
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  /search:
+    get:
+      tags:
+      - Search
+      summary: Global search
+      operationId: global_search
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /audit-events:
+    get:
+      tags:
+      - Audit
+      summary: List audit events
+      operationId: list_audit_events
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.example.com/oauth/authorize
+          tokenUrl: https://identity.example.com/oauth/token
+          scopes:
+            opesinsure: OpesInsure API access
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 255
+    TenantHeader:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        data: {}
+        meta:
+          type: object
+          additionalProperties: true
+    Problem:
+      type: object
+      required:
+      - title
+      - status
+      - code
+      - correlation_id
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: true
+        correlation_id:
+          type: string
+  responses:
+    Unauthorized:
+      description: Authentication required
+    Forbidden:
+      description: Not authorized
+    ValidationError:
+      description: Validation or business-rule error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'

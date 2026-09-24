@@ -1,6 +1,6 @@
 # OpesInsure Enterprise Screen Register v1.0 — owner specification (2026-09-24)
 
-**Locked: 428 canonical screens (operations). Revised working total 552: + 102 setup screens (SETUP_CONFIGURATION_FRAMEWORK_V1.md) + 22 CIMA screens (CIMA_REGULATORY_DICTIONARY_V1.md).** Extends MASTER_SCREEN_REGISTER_V1.md (220: Customer 52, Agent 56, Broker 92, Shared 20) with 208 enterprise screens.
+**Locked: 428 canonical screens (operations). Revised working total 690: + 20 document-administration screens DOC-ADM-001…020 (DOCUMENT_CATALOGUE_BY_POLICY_TYPE_V1.md, document_register_220_2026.json) + 98 finance, reinsurance, co-insurance and provider screens (FINANCE_REINSURANCE_PROVIDER_EXPANSION_V1.md) + 102 setup screens (SETUP_CONFIGURATION_FRAMEWORK_V1.md) + 22 CIMA screens (CIMA_REGULATORY_DICTIONARY_V1.md) + 20 master-data screens (INSTITUTIONAL_MASTER_DATA_CATALOGUE_V1.md).** Extends MASTER_SCREEN_REGISTER_V1.md (220: Customer 52, Agent 56, Broker 92, Shared 20) with 208 enterprise screens.
 
 | Area | Prefix | Screens |
 |---|---|---|

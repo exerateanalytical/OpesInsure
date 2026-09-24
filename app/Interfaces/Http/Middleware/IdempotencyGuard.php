@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Middleware;
 
 use App\Domain\Tenancy\TenantContext;
+use App\Interfaces\Http\Errors\ErrorCode;
 use App\Models\IdempotencyKey;
 use Closure;
 use Illuminate\Database\QueryException;
@@ -68,19 +69,42 @@ final class IdempotencyGuard
 {
     private const DEFAULT_TTL_HOURS = 24;
 
-    public function handle(Request $request, Closure $next, string $operation): Response
+    /**
+     * $mode 'optional' + $operation 'auto' is the global /api/v1 coverage
+     * (REQ-IDM-001): every mutation that SENDS an Idempotency-Key is
+     * de-duplicated even if its route never opted in, while a mutation
+     * without the header behaves exactly as before (the mobile client only
+     * sends the header on operations it marks idempotent). Routes that
+     * already declare `idempotency:<op>` are left to that declaration.
+     */
+    public function handle(Request $request, Closure $next, string $operation, string $mode = 'required'): Response
     {
         $key = $request->header('Idempotency-Key');
+        $optional = $mode === 'optional';
+
+        if ($optional && (! $key || ! $this->shouldAutoGuard($request))) {
+            return $next($request);
+        }
+
+        if ($operation === 'auto') {
+            // Scoped to the concrete path (not the template) so one key reused
+            // across different records never replays the wrong response.
+            $operation = 'auto:'.sha1($request->getMethod().' '.$request->path());
+        }
 
         if (! $key) {
-            return response()->json(['errors' => ['idempotency_key' => [__('wave12.idempotency_key_required')]]], 422);
+            return response()->json(['message' => __('wave12.idempotency_key_required'), 'code' => ErrorCode::IDEMPOTENCY_KEY_REQUIRED, 'errors' => ['idempotency_key' => [__('wave12.idempotency_key_required')]]], 422);
+        }
+
+        if (strlen($key) > 255) {
+            return response()->json(['message' => __('api_errors.idempotency_key_invalid'), 'code' => ErrorCode::VALIDATION_FAILED, 'errors' => ['idempotency_key' => [__('api_errors.idempotency_key_invalid')]]], 422);
         }
 
         $tenantId = app()->bound(TenantContext::class) ? rescue(fn () => app(TenantContext::class)->id(), null, false) : null;
         $userId = $request->user()?->id;
-        $requestHash = self::hashPayload((array) $request->json()->all());
+        $requestHash = self::hashPayload(self::payloadOf($request));
 
-        $claim = $this->claim($tenantId, $userId, $key, $operation, $requestHash);
+        $claim = $this->claim($tenantId, $userId, $key, $operation, $requestHash, $optional);
 
         if ($claim instanceof Response) {
             return $claim; // Replay or conflict — short-circuit without touching the handler.
@@ -94,24 +118,102 @@ final class IdempotencyGuard
             throw $e;
         }
 
-        $claim->update(['response_status' => $response->getStatusCode(), 'response_body' => json_decode($response->getContent(), true)]);
+        // Exceptions thrown by the handler are rendered by the routing
+        // pipeline before they reach here, so "threw" shows up as a status.
+        // Transient / not-processed outcomes (5xx, 401, 419, 429) and
+        // non-JSON bodies (file streams) are never cached: release the claim
+        // so the client's same-key retry actually re-executes.
+        $status = $response->getStatusCode();
+        $decoded = json_decode((string) $response->getContent(), true);
+
+        if ($status >= 500 || in_array($status, [401, 419, 429], true) || ! $response instanceof \Illuminate\Http\JsonResponse) {
+            $claim->delete();
+
+            return $response;
+        }
+
+        $claim->update(['response_status' => $status, 'response_body' => $decoded]);
 
         return $response;
+    }
+
+    private function shouldAutoGuard(Request $request): bool
+    {
+        if (! in_array($request->getMethod(), ['POST', 'PUT', 'PATCH', 'DELETE'], true) || ! $request->is('api/v1/*') || $request->is('api/v1/*webhook*')) {
+            return false;
+        }
+
+        $route = $request->route();
+        if (! is_object($route)) {
+            return false;
+        }
+
+        foreach ($route->gatherMiddleware() as $middleware) {
+            if (is_string($middleware) && (str_starts_with($middleware, 'idempotency:') || str_starts_with($middleware, self::class.':'))) {
+                return false; // Route already declares its own operation name.
+            }
+        }
+
+        // Controllers that already consume Idempotency-Key themselves
+        // (service-level dedup with their own replay semantics, e.g. refunds
+        // returning 200 on replay) keep that behaviour untouched.
+        return ! self::controllerHandlesKey($route->getControllerClass());
+    }
+
+    /** @var array<string, bool> */
+    private static array $selfManaged = [];
+
+    private static function controllerHandlesKey(?string $class): bool
+    {
+        if ($class === null || ! class_exists($class)) {
+            return false;
+        }
+
+        return self::$selfManaged[$class] ??= (static function () use ($class): bool {
+            $file = (new \ReflectionClass($class))->getFileName();
+            $source = $file ? (string) @file_get_contents($file) : '';
+
+            return (bool) preg_match('/Idempotency-Key|idempotency_key|idempotencyKey/i', $source);
+        })();
+    }
+
+    /** JSON body, or form fields plus a content hash of each uploaded file
+     * (a multipart retry with a different file must not replay). */
+    private static function payloadOf(Request $request): array
+    {
+        if ($request->isJson()) {
+            return (array) $request->json()->all();
+        }
+
+        $files = [];
+        foreach ($request->allFiles() as $name => $file) {
+            foreach ((array) $file as $i => $f) {
+                $files[$name.'.'.$i] = $f instanceof \Illuminate\Http\UploadedFile && $f->isValid() ? hash_file('sha256', $f->getRealPath()) : null;
+            }
+        }
+
+        return ['input' => $request->except(array_keys($request->allFiles())), 'files' => $files];
     }
 
     /**
      * Returns either the freshly-claimed (still-pending) IdempotencyKey row
      * to proceed with, or a Response to short-circuit with (replay/conflict).
      */
-    private function claim(?string $tenantId, ?string $userId, string $key, string $operation, string $requestHash): IdempotencyKey|Response
+    private function claim(?string $tenantId, ?string $userId, string $key, string $operation, string $requestHash, bool $lenient = false): IdempotencyKey|Response
     {
         $existing = IdempotencyKey::where('tenant_id', $tenantId)->where('user_id', $userId)->where('key', $key)->where('operation', $operation)->first();
 
-        if ($existing && $existing->expires_at->isFuture()) {
+        // Lenient (auto/optional coverage): a completed record with a
+        // DIFFERENT body is treated as a new request, not a 409 — callers
+        // that never opted in may legitimately reuse a key; only exact
+        // duplicates are replayed.
+        $reusedForNewBody = $lenient && $existing && $existing->response_status !== null && $existing->request_hash !== $requestHash;
+
+        if ($existing && $existing->expires_at->isFuture() && ! $reusedForNewBody) {
             return $this->resolveExisting($existing, $requestHash);
         }
 
-        $existing?->delete(); // Past expiry: treat as unseen.
+        $existing?->delete(); // Past expiry (or lenient new body): treat as unseen.
 
         try {
             return IdempotencyKey::create([
@@ -129,18 +231,18 @@ final class IdempotencyGuard
 
             return $existing
                 ? $this->resolveExisting($existing, $requestHash)
-                : response()->json(['errors' => ['idempotency_key' => [__('wave12.idempotency_key_in_progress')]]], 409);
+                : response()->json(['message' => __('wave12.idempotency_key_in_progress'), 'code' => ErrorCode::DUPLICATE_SUBMISSION, 'errors' => ['idempotency_key' => [__('wave12.idempotency_key_in_progress')]]], 409);
         }
     }
 
     private function resolveExisting(IdempotencyKey $existing, string $requestHash): Response
     {
         if ($existing->response_status === null) {
-            return response()->json(['errors' => ['idempotency_key' => [__('wave12.idempotency_key_in_progress')]]], 409);
+            return response()->json(['message' => __('wave12.idempotency_key_in_progress'), 'code' => ErrorCode::DUPLICATE_SUBMISSION, 'errors' => ['idempotency_key' => [__('wave12.idempotency_key_in_progress')]]], 409);
         }
 
         if ($existing->request_hash !== $requestHash) {
-            return response()->json(['errors' => ['idempotency_key' => [__('wave12.idempotency_key_conflict')]]], 409);
+            return response()->json(['message' => __('wave12.idempotency_key_conflict'), 'code' => ErrorCode::IDEMPOTENCY_KEY_REUSED, 'errors' => ['idempotency_key' => [__('wave12.idempotency_key_conflict')]]], 409);
         }
 
         return response()->json($existing->response_body, $existing->response_status)->header('X-Idempotent-Replay', 'true');

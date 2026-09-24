@@ -237,21 +237,22 @@ it('serves the risk schema per line and rates MOTOR, BUSINESS and ACCIDENT quote
 
     $motor = $this->getJson('/api/v1/mobile/catalogue/lines/motor/risk-schema', tenantHeaderFor($f['tenant']))->assertOk();
     expect(collect($motor->json('data.steps'))->pluck('key')->all())->toBe(['vehicle', 'usage', 'owner', 'cover', 'history'])
-        ->and(collect($motor->json('data.fields'))->pluck('key')->all())->toContain('registration_number', 'make', 'model', 'year', 'vehicle_value', 'usage_type', 'zone', 'cover_type', 'fiscal_power', 'previous_insurer', 'claims_last_3_years')
+        ->and(collect($motor->json('data.fields'))->pluck('key')->all())->toContain('registration_number', 'make_code', 'model_code', 'year', 'vehicle_value', 'vehicle_usage', 'zone', 'cover_type', 'fiscal_power', 'previous_insurer', 'claims_last_3_years')
         ->and(collect($motor->json('data.fields'))->firstWhere('key', 'cover_type')['options'])->toHaveCount(3)
         ->and($motor->json('data.required'))->toContain('registration_number');
     foreach (['HEALTH', 'TRAVEL', 'HOME', 'LIFE', 'BUSINESS', 'ACCIDENT'] as $line) {
         $r = $this->getJson("/api/v1/mobile/catalogue/lines/{$line}/risk-schema", tenantHeaderFor($f['tenant']))->assertOk();
         expect($r->json('data.fields'))->not->toBeEmpty();
         foreach ($r->json('data.fields') as $field) {
-            expect(in_array($field['type'], ['text', 'number', 'select', 'date', 'boolean'], true))->toBeTrue();
+            expect(in_array($field['type'], ['text', 'number', 'money', 'select', 'date', 'boolean', 'select_master', 'multi_select_master', 'repeater', 'file'], true))->toBeTrue();
         }
     }
     $this->getJson('/api/v1/mobile/catalogue/lines/NOPE/risk-schema', tenantHeaderFor($f['tenant']))->assertNotFound();
 
     $quotes = app(QuoteService::class);
     $cases = [
-        'MOTOR' => ['registration_number' => 'LT-123-AB', 'make' => 'Toyota', 'model' => 'Corolla', 'year' => 2018, 'vehicle_value' => 6500000, 'usage_type' => 'PRIVATE', 'zone' => 'DOUALA', 'cover_type' => 'COMPREHENSIVE', 'fiscal_power' => 8, 'previous_insurer' => null, 'claims_last_3_years' => 1],
+        // Vehicle master: make/model codes + snapshot; usage_type is derived from vehicle_usage by QuoteService.
+        'MOTOR' => ['registration_number' => 'LT-123-AB', 'make_code' => 'TOYOTA', 'make' => 'Toyota', 'model_code' => 'TOYOTA_COROLLA', 'model' => 'Corolla', 'year' => 2018, 'vehicle_value' => 6500000, 'vehicle_usage' => 'PRIVATE_PERSONAL', 'zone' => 'DOUALA', 'cover_type' => 'COMPREHENSIVE', 'fiscal_power' => 8, 'previous_insurer' => null, 'claims_last_3_years' => 1],
         'BUSINESS' => ['business_type' => 'RETAIL', 'employee_count' => 12, 'annual_turnover' => 50000000, 'city' => 'Yaoundé', 'premises_value' => 30000000, 'cover_type' => 'MULTIRISK'],
         'ACCIDENT' => ['insured_count' => 3, 'oldest_age' => 45, 'occupation_class' => 'MANUAL', 'cover_amount' => 10000000],
     ];

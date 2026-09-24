@@ -18,8 +18,12 @@ final class PublicVerifyPageController
     public function __invoke(Request $request, PublicVerificationService $verification): View
     {
         $ref = trim((string) $request->query('ref', ''));
+        $code = trim((string) $request->query('code', ''));
         $result = null;
-        if ($ref !== '') {
+        if ($code !== '') {
+            // Document engine verification code (printed + in the QR of every issued document).
+            $result = $verification->lookup(mb_substr($code, 0, 40), null, 'QR_PAGE', $request->ip().'|'.$request->userAgent());
+        } elseif ($ref !== '') {
             $result = $verification->lookup(mb_substr($ref, 0, 100), mb_substr((string) $request->query('t', ''), 0, 128) ?: null, 'QR_PAGE', $request->ip().'|'.$request->userAgent());
         }
 

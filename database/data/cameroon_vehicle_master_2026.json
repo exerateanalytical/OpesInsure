@@ -1,0 +1,2515 @@
+{
+ "source": "Owner specification Cameroon Vehicle Institutional Master Data v1.0 (2026-09-24)",
+ "provenance_default": "MANUAL_VERIFIED",
+ "makes": [
+  {
+   "code": "TOYOTA",
+   "name": "Toyota",
+   "country_of_origin": "JP",
+   "manufacturer_group": "TOYOTA_MOTOR_CORPORATION",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Corolla",
+    "Corolla Cross",
+    "Camry",
+    "Yaris",
+    "Yaris Cross",
+    "Starlet",
+    "Avensis",
+    "Auris",
+    "Prius",
+    "RAV4",
+    "Highlander",
+    "Fortuner",
+    "4Runner",
+    "Land Cruiser",
+    "Land Cruiser Prado",
+    "Hilux",
+    "Hiace",
+    "Coaster",
+    "Rush",
+    "Raize",
+    "C-HR",
+    "Venza",
+    "Sienna",
+    "Tacoma",
+    "Tundra"
+   ]
+  },
+  {
+   "code": "MERCEDES_BENZ",
+   "name": "Mercedes-Benz",
+   "country_of_origin": "DE",
+   "manufacturer_group": "MERCEDES_BENZ_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [
+    "Mercedes",
+    "Mercedes Benz"
+   ],
+   "models": [
+    "A-Class",
+    "B-Class",
+    "C-Class",
+    "E-Class",
+    "S-Class",
+    "CLA",
+    "CLS",
+    "GLA",
+    "GLB",
+    "GLC",
+    "GLE",
+    "GLS",
+    "G-Class",
+    "V-Class",
+    "Vito",
+    "Sprinter",
+    "Actros",
+    "Atego"
+   ]
+  },
+  {
+   "code": "HYUNDAI",
+   "name": "Hyundai",
+   "country_of_origin": "KR",
+   "manufacturer_group": "HYUNDAI_MOTOR_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Accent",
+    "Elantra",
+    "Sonata",
+    "Grandeur",
+    "i10",
+    "i20",
+    "i30",
+    "Venue",
+    "Creta",
+    "Kona",
+    "Tucson",
+    "Santa Fe",
+    "Palisade",
+    "Staria",
+    "H1",
+    "H100",
+    "Porter",
+    "County",
+    "Ioniq 5",
+    "Ioniq 6"
+   ]
+  },
+  {
+   "code": "KIA",
+   "name": "Kia",
+   "country_of_origin": "KR",
+   "manufacturer_group": "HYUNDAI_MOTOR_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Picanto",
+    "Rio",
+    "Cerato",
+    "K3",
+    "K5",
+    "Optima",
+    "Sonet",
+    "Seltos",
+    "Sportage",
+    "Sorento",
+    "Telluride",
+    "Carens",
+    "Carnival",
+    "Bongo",
+    "EV3",
+    "EV5",
+    "EV6",
+    "EV9"
+   ]
+  },
+  {
+   "code": "NISSAN",
+   "name": "Nissan",
+   "country_of_origin": "JP",
+   "manufacturer_group": "RENAULT_NISSAN_MITSUBISHI",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Almera",
+    "Sunny",
+    "Sentra",
+    "Tiida",
+    "Altima",
+    "Maxima",
+    "Juke",
+    "Kicks",
+    "Qashqai",
+    "X-Trail",
+    "Pathfinder",
+    "Patrol",
+    "Murano",
+    "Navara",
+    "Frontier",
+    "Urvan",
+    "Civilian"
+   ]
+  },
+  {
+   "code": "MITSUBISHI",
+   "name": "Mitsubishi",
+   "country_of_origin": "JP",
+   "manufacturer_group": "RENAULT_NISSAN_MITSUBISHI",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Lancer",
+    "Attrage",
+    "ASX",
+    "Eclipse Cross",
+    "Outlander",
+    "Pajero",
+    "Pajero Sport",
+    "Montero",
+    "L200",
+    "Triton",
+    "Canter"
+   ]
+  },
+  {
+   "code": "RENAULT",
+   "name": "Renault",
+   "country_of_origin": "FR",
+   "manufacturer_group": "RENAULT_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Clio",
+    "Symbol",
+    "Logan",
+    "Kwid",
+    "Captur",
+    "Duster",
+    "Arkana",
+    "Koleos",
+    "Megane",
+    "Fluence",
+    "Kangoo",
+    "Express",
+    "Master",
+    "Trafic"
+   ]
+  },
+  {
+   "code": "PEUGEOT",
+   "name": "Peugeot",
+   "country_of_origin": "FR",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "206",
+    "207",
+    "208",
+    "301",
+    "307",
+    "308",
+    "407",
+    "508",
+    "2008",
+    "3008",
+    "4008",
+    "5008",
+    "Partner",
+    "Expert",
+    "Boxer",
+    "Landtrek"
+   ]
+  },
+  {
+   "code": "CITROEN",
+   "name": "Citroën",
+   "country_of_origin": "FR",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [
+    "Citroen"
+   ],
+   "models": [
+    "C1",
+    "C3",
+    "C4",
+    "C5",
+    "C-Elysée",
+    "C3 Aircross",
+    "C5 Aircross",
+    "Berlingo",
+    "Jumpy",
+    "Jumper"
+   ]
+  },
+  {
+   "code": "VOLKSWAGEN",
+   "name": "Volkswagen",
+   "country_of_origin": "DE",
+   "manufacturer_group": "VOLKSWAGEN_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [
+    "VW"
+   ],
+   "models": [
+    "Polo",
+    "Golf",
+    "Passat",
+    "Jetta",
+    "T-Cross",
+    "T-Roc",
+    "Tiguan",
+    "Touareg",
+    "Amarok",
+    "Caddy",
+    "Transporter",
+    "Crafter"
+   ]
+  },
+  {
+   "code": "FORD",
+   "name": "Ford",
+   "country_of_origin": "US",
+   "manufacturer_group": "FORD",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Ranger",
+    "Everest",
+    "Escape",
+    "Explorer",
+    "Edge",
+    "F-150"
+   ]
+  },
+  {
+   "code": "HONDA",
+   "name": "Honda",
+   "country_of_origin": "JP",
+   "manufacturer_group": "HONDA",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Civic",
+    "Accord",
+    "City",
+    "Jazz/Fit",
+    "CR-V",
+    "HR-V",
+    "Pilot",
+    "Odyssey",
+    "Ridgeline"
+   ]
+  },
+  {
+   "code": "SUZUKI",
+   "name": "Suzuki",
+   "country_of_origin": "JP",
+   "manufacturer_group": "SUZUKI",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Alto",
+    "Celerio",
+    "Swift",
+    "Dzire",
+    "Baleno",
+    "S-Presso",
+    "Vitara",
+    "Grand Vitara",
+    "Jimny",
+    "Ertiga",
+    "XL7",
+    "Carry"
+   ]
+  },
+  {
+   "code": "MAZDA",
+   "name": "Mazda",
+   "country_of_origin": "JP",
+   "manufacturer_group": "MAZDA",
+   "market_priority": "NORMAL",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Mazda2",
+    "Mazda3",
+    "Mazda6",
+    "CX-3",
+    "CX-30",
+    "CX-5",
+    "CX-60",
+    "CX-9",
+    "BT-50"
+   ]
+  },
+  {
+   "code": "BMW",
+   "name": "BMW",
+   "country_of_origin": "DE",
+   "manufacturer_group": "BMW_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "1 Series",
+    "2 Series",
+    "3 Series",
+    "4 Series",
+    "5 Series",
+    "7 Series",
+    "X1",
+    "X2",
+    "X3",
+    "X4",
+    "X5",
+    "X6",
+    "X7",
+    "iX"
+   ]
+  },
+  {
+   "code": "LEXUS",
+   "name": "Lexus",
+   "country_of_origin": "JP",
+   "manufacturer_group": "TOYOTA_MOTOR_CORPORATION",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LAND_ROVER",
+   "name": "Land Rover",
+   "country_of_origin": "GB",
+   "manufacturer_group": "JLR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [
+    "Range Rover"
+   ],
+   "models": [
+    "Defender",
+    "Discovery",
+    "Discovery Sport",
+    "Range Rover",
+    "Range Rover Sport",
+    "Range Rover Velar",
+    "Range Rover Evoque"
+   ]
+  },
+  {
+   "code": "JEEP",
+   "name": "Jeep",
+   "country_of_origin": "US",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Compass",
+    "Cherokee",
+    "Grand Cherokee",
+    "Wrangler"
+   ]
+  },
+  {
+   "code": "CHEVROLET",
+   "name": "Chevrolet",
+   "country_of_origin": "US",
+   "manufacturer_group": "GENERAL_MOTORS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [
+    "Chevy"
+   ],
+   "models": [
+    "Spark",
+    "Cruze",
+    "Malibu",
+    "Captiva",
+    "Equinox",
+    "Tahoe",
+    "Silverado"
+   ]
+  },
+  {
+   "code": "OPEL",
+   "name": "Opel",
+   "country_of_origin": "DE",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "FIAT",
+   "name": "Fiat",
+   "country_of_origin": "IT",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ISUZU",
+   "name": "Isuzu",
+   "country_of_origin": "JP",
+   "manufacturer_group": "ISUZU",
+   "market_priority": "HIGH",
+   "cameroon_status": "KNOWN_MARKET_PRESENCE",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SUBARU",
+   "name": "Subaru",
+   "country_of_origin": "JP",
+   "manufacturer_group": "SUBARU",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Impreza",
+    "Legacy",
+    "Forester",
+    "Outback",
+    "XV/Crosstrek",
+    "WRX",
+    "Ascent"
+   ]
+  },
+  {
+   "code": "AUDI",
+   "name": "Audi",
+   "country_of_origin": "DE",
+   "manufacturer_group": "VOLKSWAGEN_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "A1",
+    "A3",
+    "A4",
+    "A5",
+    "A6",
+    "A7",
+    "A8",
+    "Q2",
+    "Q3",
+    "Q5",
+    "Q7",
+    "Q8",
+    "e-tron"
+   ]
+  },
+  {
+   "code": "VOLVO",
+   "name": "Volvo",
+   "country_of_origin": "SE",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "S60",
+    "S90",
+    "V60",
+    "V90",
+    "XC40",
+    "XC60",
+    "XC90",
+    "EX30",
+    "EX90"
+   ]
+  },
+  {
+   "code": "TESLA",
+   "name": "Tesla",
+   "country_of_origin": "US",
+   "manufacturer_group": "TESLA",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Model 3",
+    "Model Y",
+    "Model S",
+    "Model X"
+   ]
+  },
+  {
+   "code": "CHERY",
+   "name": "Chery",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Tiggo 2",
+    "Tiggo 4",
+    "Tiggo 7",
+    "Tiggo 8",
+    "Himla"
+   ]
+  },
+  {
+   "code": "CHANGAN",
+   "name": "Changan",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHANGAN_AUTOMOBILE",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "CS35 Plus",
+    "CS55 Plus",
+    "CS75 Plus",
+    "CS95",
+    "UNI-T",
+    "UNI-K",
+    "UNI-V",
+    "X5 Plus",
+    "Honor S",
+    "Alsvin",
+    "Hunter"
+   ]
+  },
+  {
+   "code": "JAC",
+   "name": "JAC",
+   "country_of_origin": "CN",
+   "manufacturer_group": "JAC_MOTORS",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "JS2",
+    "JS3",
+    "JS4",
+    "JS6",
+    "JS8",
+    "J7",
+    "T6",
+    "T8",
+    "T8 Pro",
+    "T9",
+    "X200",
+    "Sunray",
+    "N-Series"
+   ]
+  },
+  {
+   "code": "GWM",
+   "name": "GWM / Great Wall Motor",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [
+    "Great Wall Motors"
+   ],
+   "models": []
+  },
+  {
+   "code": "GREAT_WALL",
+   "name": "Great Wall",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Wingle 5",
+    "Wingle 6",
+    "Wingle 7",
+    "Cannon"
+   ]
+  },
+  {
+   "code": "POER",
+   "name": "Poer",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Poer",
+    "Poer Commercial",
+    "Poer King Kong"
+   ]
+  },
+  {
+   "code": "HAVAL",
+   "name": "Haval",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "H1",
+    "H2",
+    "H5",
+    "H6",
+    "H6 GT",
+    "H7",
+    "H9",
+    "Jolion",
+    "Jolion Pro",
+    "Dargo"
+   ]
+  },
+  {
+   "code": "TANK",
+   "name": "Tank",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "HIGH",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Tank 300",
+    "Tank 400",
+    "Tank 500",
+    "Tank 700"
+   ]
+  },
+  {
+   "code": "ORA",
+   "name": "Ora",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GREAT_WALL_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "OFFICIALLY_DISTRIBUTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Good Cat",
+    "03",
+    "Coffee",
+    "Lightning Cat"
+   ]
+  },
+  {
+   "code": "BYD",
+   "name": "BYD",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BYD",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Seagull",
+    "Dolphin",
+    "Atto 3",
+    "Yuan Plus",
+    "Yuan Up",
+    "Song Plus",
+    "Song Pro",
+    "Seal",
+    "Seal U",
+    "Han",
+    "Tang",
+    "Qin Plus",
+    "Destroyer 05",
+    "Shark",
+    "M6",
+    "e2",
+    "e3"
+   ]
+  },
+  {
+   "code": "DENZA",
+   "name": "Denza",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BYD",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "FANGCHENGBAO",
+   "name": "Fang Cheng Bao",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BYD",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "YANGWANG",
+   "name": "Yangwang",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BYD",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "GEELY",
+   "name": "Geely",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Emgrand",
+    "Coolray",
+    "Azkarra",
+    "Monjaro",
+    "Okavango",
+    "Preface",
+    "Geometry C",
+    "Geometry E",
+    "EX5",
+    "GX3 Pro",
+    "Atlas",
+    "Tugella"
+   ]
+  },
+  {
+   "code": "GAC",
+   "name": "GAC Motor",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GAC_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "GS3",
+    "GS3 Emzoom",
+    "GS4",
+    "GS5",
+    "GS8",
+    "Empow",
+    "Emkoo",
+    "GN6",
+    "GN8",
+    "M8"
+   ]
+  },
+  {
+   "code": "AION",
+   "name": "Aion",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GAC_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Aion Y",
+    "Aion S",
+    "Aion V"
+   ]
+  },
+  {
+   "code": "DONGFENG",
+   "name": "Dongfeng",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DONGFENG_MOTOR",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Rich",
+    "Rich 6",
+    "Rich 7"
+   ]
+  },
+  {
+   "code": "AEOLUS",
+   "name": "Aeolus",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DONGFENG_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Aeolus Shine",
+    "Aeolus Yixuan",
+    "Aeolus Huge"
+   ]
+  },
+  {
+   "code": "FORTHING",
+   "name": "Forthing",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DONGFENG_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Forthing T5",
+    "Forthing T5 EVO",
+    "Forthing Friday",
+    "Forthing U-Tour"
+   ]
+  },
+  {
+   "code": "VOYAH",
+   "name": "Voyah",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DONGFENG_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DFSK",
+   "name": "DFSK",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DONGFENG_SOKON",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Glory 500",
+    "Glory 560",
+    "Glory 580",
+    "Glory i-Auto",
+    "Fengon 500",
+    "Fengon 580",
+    "Fengon 600",
+    "C31",
+    "C32",
+    "C35",
+    "C36",
+    "C37",
+    "EC35"
+   ]
+  },
+  {
+   "code": "FOTON",
+   "name": "Foton",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BAIC_GROUP",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "MIXED",
+   "aliases": [],
+   "models": [
+    "Tunland",
+    "Tunland G7",
+    "Tunland G9",
+    "View",
+    "Toano",
+    "Gratour",
+    "Aumark",
+    "Auman",
+    "Miler",
+    "TM",
+    "BJ Series"
+   ]
+  },
+  {
+   "code": "BAIC",
+   "name": "BAIC",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BAIC_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "BJ30",
+    "BJ40",
+    "BJ60",
+    "BJ80",
+    "U5",
+    "EU5",
+    "X35",
+    "X55"
+   ]
+  },
+  {
+   "code": "BEIJING",
+   "name": "Beijing",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BAIC_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Beijing X3",
+    "Beijing X5",
+    "Beijing X7"
+   ]
+  },
+  {
+   "code": "BJEV",
+   "name": "BAIC BJEV",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BAIC_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ARCFOX",
+   "name": "Arcfox",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BAIC_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "JMC",
+   "name": "JMC",
+   "country_of_origin": "CN",
+   "manufacturer_group": "JIANGLING_MOTORS",
+   "market_priority": "HIGH",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Vigus",
+    "Vigus Pro",
+    "Grand Avenue",
+    "Yuhu",
+    "Touring",
+    "Baodian",
+    "Carry",
+    "Conquer"
+   ]
+  },
+  {
+   "code": "JETOUR",
+   "name": "Jetour",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "X50",
+    "X70",
+    "X70 Plus",
+    "X90",
+    "X90 Plus",
+    "Dashing",
+    "T1",
+    "T2",
+    "Traveller"
+   ]
+  },
+  {
+   "code": "OMODA",
+   "name": "Omoda",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Omoda C5",
+    "Omoda C7",
+    "Omoda E5",
+    "Omoda 9"
+   ]
+  },
+  {
+   "code": "JAECOO",
+   "name": "Jaecoo",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "Jaecoo J5",
+    "Jaecoo J7",
+    "Jaecoo J8"
+   ]
+  },
+  {
+   "code": "EXEED",
+   "name": "Exeed",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "KARRY",
+   "name": "Karry",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MG",
+   "name": "MG",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": [
+    "MG3",
+    "MG4",
+    "MG5",
+    "MG6",
+    "ZS",
+    "HS",
+    "RX5",
+    "Marvel R",
+    "Cyberster"
+   ]
+  },
+  {
+   "code": "MAXUS",
+   "name": "Maxus",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "MIXED",
+   "aliases": [],
+   "models": [
+    "T60",
+    "T90",
+    "D60",
+    "D90",
+    "G10",
+    "G50",
+    "V80",
+    "V90",
+    "Deliver 9",
+    "eDeliver"
+   ]
+  },
+  {
+   "code": "WULING",
+   "name": "Wuling",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_GM_WULING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ROEWE",
+   "name": "Roewe",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "IM_MOTORS",
+   "name": "IM Motors",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "RISING_AUTO",
+   "name": "Rising Auto",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SAIC_MOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "HONGQI",
+   "name": "Hongqi",
+   "country_of_origin": "CN",
+   "manufacturer_group": "FAW_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "FAW",
+   "name": "FAW",
+   "country_of_origin": "CN",
+   "manufacturer_group": "FAW_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "MIXED",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "BESTUNE",
+   "name": "Bestune",
+   "country_of_origin": "CN",
+   "manufacturer_group": "FAW_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SERES",
+   "name": "Seres",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SERES_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "AITO",
+   "name": "AITO",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SERES_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LEAPMOTOR",
+   "name": "Leapmotor",
+   "country_of_origin": "CN",
+   "manufacturer_group": "LEAPMOTOR",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "XPENG",
+   "name": "XPeng",
+   "country_of_origin": "CN",
+   "manufacturer_group": "XPENG",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "NIO",
+   "name": "NIO",
+   "country_of_origin": "CN",
+   "manufacturer_group": "NIO",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ZEEKR",
+   "name": "Zeekr",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LYNK_CO",
+   "name": "Lynk & Co",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "POLESTAR",
+   "name": "Polestar",
+   "country_of_origin": "SE",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LI_AUTO",
+   "name": "Li Auto",
+   "country_of_origin": "CN",
+   "manufacturer_group": "LI_AUTO",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "NETA",
+   "name": "Neta",
+   "country_of_origin": "CN",
+   "manufacturer_group": "HOZON_AUTO",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "AVATR",
+   "name": "Avatr",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHANGAN_AUTOMOBILE",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DEEPAL",
+   "name": "Deepal",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHANGAN_AUTOMOBILE",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ZHIDOU",
+   "name": "Zhidou",
+   "country_of_origin": "CN",
+   "manufacturer_group": "ZHIDOU",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "KAIYI",
+   "name": "Kaiyi",
+   "country_of_origin": "CN",
+   "manufacturer_group": "KAIYI_AUTO",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SOUEAST",
+   "name": "Soueast",
+   "country_of_origin": "CN",
+   "manufacturer_group": "CHERY_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SWM",
+   "name": "SWM",
+   "country_of_origin": "CN",
+   "manufacturer_group": "SHINERAY",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "BAW",
+   "name": "BAW",
+   "country_of_origin": "CN",
+   "manufacturer_group": "BEIJING_AUTOMOBILE_WORKS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DAYUN",
+   "name": "Dayun",
+   "country_of_origin": "CN",
+   "manufacturer_group": "DAYUN_GROUP",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "MIXED",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "GEOME",
+   "name": "Geome / Geometry",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "RADAR",
+   "name": "Radar / Riddara",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LIVAN",
+   "name": "Livan",
+   "country_of_origin": "CN",
+   "manufacturer_group": "GEELY_HOLDING",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ROX",
+   "name": "Rox Motor",
+   "country_of_origin": "CN",
+   "manufacturer_group": "ROX",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "XIAOMI_AUTO",
+   "name": "Xiaomi Auto",
+   "country_of_origin": "CN",
+   "manufacturer_group": "XIAOMI",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DODGE",
+   "name": "Dodge",
+   "country_of_origin": "US",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "CHRYSLER",
+   "name": "Chrysler",
+   "country_of_origin": "US",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "CADILLAC",
+   "name": "Cadillac",
+   "country_of_origin": "US",
+   "manufacturer_group": "GENERAL_MOTORS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "GMC",
+   "name": "GMC",
+   "country_of_origin": "US",
+   "manufacturer_group": "GENERAL_MOTORS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LINCOLN",
+   "name": "Lincoln",
+   "country_of_origin": "US",
+   "manufacturer_group": "FORD",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "BUICK",
+   "name": "Buick",
+   "country_of_origin": "US",
+   "manufacturer_group": "GENERAL_MOTORS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "RAM",
+   "name": "Ram",
+   "country_of_origin": "US",
+   "manufacturer_group": "STELLANTIS",
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ACURA",
+   "name": "Acura",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ALFA_ROMEO",
+   "name": "Alfa Romeo",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ASTON_MARTIN",
+   "name": "Aston Martin",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "BENTLEY",
+   "name": "Bentley",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "CUPRA",
+   "name": "Cupra",
+   "country_of_origin": "ES",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DACIA",
+   "name": "Dacia",
+   "country_of_origin": "RO",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DAIHATSU",
+   "name": "Daihatsu",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DS",
+   "name": "DS Automobiles",
+   "country_of_origin": "FR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "FERRARI",
+   "name": "Ferrari",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "GENESIS",
+   "name": "Genesis",
+   "country_of_origin": "KR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "INFINITI",
+   "name": "Infiniti",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "JAGUAR",
+   "name": "Jaguar",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LAMBORGHINI",
+   "name": "Lamborghini",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LANCIA",
+   "name": "Lancia",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "LOTUS",
+   "name": "Lotus",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MASERATI",
+   "name": "Maserati",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MINI",
+   "name": "Mini",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "PORSCHE",
+   "name": "Porsche",
+   "country_of_origin": "DE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "PROTON",
+   "name": "Proton",
+   "country_of_origin": "MY",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ROLLS_ROYCE",
+   "name": "Rolls-Royce",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SAAB",
+   "name": "Saab",
+   "country_of_origin": "SE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SEAT",
+   "name": "Seat",
+   "country_of_origin": "ES",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SKODA",
+   "name": "Skoda",
+   "country_of_origin": "CZ",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SMART",
+   "name": "Smart",
+   "country_of_origin": "DE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "KGM",
+   "name": "SsangYong / KGM",
+   "country_of_origin": "KR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "TATA",
+   "name": "Tata",
+   "country_of_origin": "IN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "VAUXHALL",
+   "name": "Vauxhall",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DAEWOO",
+   "name": "Daewoo",
+   "country_of_origin": "KR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ROVER",
+   "name": "Rover",
+   "country_of_origin": "GB",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "PONTIAC",
+   "name": "Pontiac",
+   "country_of_origin": "US",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "OLDSMOBILE",
+   "name": "Oldsmobile",
+   "country_of_origin": "US",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MERCURY",
+   "name": "Mercury",
+   "country_of_origin": "US",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "HUMMER",
+   "name": "Hummer",
+   "country_of_origin": "US",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SATURN",
+   "name": "Saturn",
+   "country_of_origin": "US",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "HISTORICAL",
+   "segment": "PASSENGER",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MITSUBISHI_FUSO",
+   "name": "Mitsubishi Fuso",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "HINO",
+   "name": "Hino",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SINOTRUK",
+   "name": "Sinotruk / HOWO",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SHACMAN",
+   "name": "Shacman",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "IVECO",
+   "name": "Iveco",
+   "country_of_origin": "IT",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MAN",
+   "name": "MAN",
+   "country_of_origin": "DE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "DAF",
+   "name": "DAF",
+   "country_of_origin": "NL",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SCANIA",
+   "name": "Scania",
+   "country_of_origin": "SE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "VOLVO_TRUCKS",
+   "name": "Volvo Trucks",
+   "country_of_origin": "SE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "MERCEDES_BENZ_TRUCKS",
+   "name": "Mercedes-Benz Trucks",
+   "country_of_origin": "DE",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "RENAULT_TRUCKS",
+   "name": "Renault Trucks",
+   "country_of_origin": "FR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "ASHOK_LEYLAND",
+   "name": "Ashok Leyland",
+   "country_of_origin": "IN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "HYUNDAI_TRUCKS",
+   "name": "Hyundai Trucks",
+   "country_of_origin": "KR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "KIA_COMMERCIAL",
+   "name": "Kia Commercial",
+   "country_of_origin": "KR",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "UD_TRUCKS",
+   "name": "UD Trucks",
+   "country_of_origin": "JP",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SAIC_HONGYAN",
+   "name": "SAIC Hongyan",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "BEIBEN",
+   "name": "Beiben",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "CAMC",
+   "name": "CAMC",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "SANY",
+   "name": "Sany",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  },
+  {
+   "code": "XCMG",
+   "name": "XCMG",
+   "country_of_origin": "CN",
+   "manufacturer_group": null,
+   "market_priority": "NORMAL",
+   "cameroon_status": "IMPORTED",
+   "segment": "COMMERCIAL",
+   "aliases": [],
+   "models": []
+  }
+ ],
+ "model_aliases": [
+  {
+   "make": "TOYOTA",
+   "model": "Land Cruiser Prado",
+   "aliases": [
+    "Prado",
+    "LC Prado"
+   ]
+  },
+  {
+   "make": "TOYOTA",
+   "model": "Hilux",
+   "aliases": [
+    "Hi-Lux"
+   ]
+  },
+  {
+   "make": "HYUNDAI",
+   "model": "H1",
+   "aliases": [
+    "H-1",
+    "Starex",
+    "Grand Starex"
+   ],
+   "note": "Starex/Grand Starex may be separate generations"
+  }
+ ],
+ "enums": {
+  "body_types": [
+   [
+    "SEDAN",
+    "Sedan",
+    "Berline"
+   ],
+   [
+    "HATCHBACK",
+    "Hatchback",
+    "Berline à hayon"
+   ],
+   [
+    "COUPE",
+    "Coupe",
+    "Coupé"
+   ],
+   [
+    "CONVERTIBLE",
+    "Convertible",
+    "Cabriolet"
+   ],
+   [
+    "WAGON",
+    "Station Wagon",
+    "Break"
+   ],
+   [
+    "SUV",
+    "SUV",
+    "SUV"
+   ],
+   [
+    "CROSSOVER",
+    "Crossover",
+    "Crossover"
+   ],
+   [
+    "MPV",
+    "MPV/People Carrier",
+    "Monospace"
+   ],
+   [
+    "PICKUP",
+    "Pickup",
+    "Pick-up"
+   ],
+   [
+    "VAN",
+    "Van",
+    "Fourgonnette"
+   ],
+   [
+    "PANEL_VAN",
+    "Panel Van",
+    "Fourgon"
+   ],
+   [
+    "MINIBUS",
+    "Minibus",
+    "Minibus"
+   ],
+   [
+    "BUS",
+    "Bus",
+    "Autobus/Autocar"
+   ],
+   [
+    "LIGHT_TRUCK",
+    "Light Truck",
+    "Camion léger"
+   ],
+   [
+    "MEDIUM_TRUCK",
+    "Medium Truck",
+    "Camion moyen"
+   ],
+   [
+    "HEAVY_TRUCK",
+    "Heavy Truck",
+    "Poids lourd"
+   ],
+   [
+    "TRACTOR_HEAD",
+    "Tractor Unit",
+    "Tracteur routier"
+   ],
+   [
+    "DUMP_TRUCK",
+    "Dump Truck",
+    "Camion-benne"
+   ],
+   [
+    "TANKER",
+    "Tanker",
+    "Camion-citerne"
+   ],
+   [
+    "REFRIGERATED",
+    "Refrigerated Vehicle",
+    "Véhicule frigorifique"
+   ],
+   [
+    "AMBULANCE",
+    "Ambulance",
+    "Ambulance"
+   ],
+   [
+    "HEARSE",
+    "Hearse",
+    "Corbillard"
+   ],
+   [
+    "SPECIAL_PURPOSE",
+    "Special Purpose",
+    "Véhicule spécial"
+   ]
+  ],
+  "usage_types": [
+   "PRIVATE_PERSONAL",
+   "PRIVATE_FAMILY",
+   "COMMERCIAL",
+   "COMPANY",
+   "FLEET",
+   "TAXI",
+   "RIDE_HAILING",
+   "CAR_RENTAL",
+   "DRIVING_SCHOOL",
+   "PUBLIC_TRANSPORT",
+   "INTERCITY_TRANSPORT",
+   "GOODS_TRANSPORT",
+   "DELIVERY",
+   "COURIER",
+   "CONSTRUCTION",
+   "MINING",
+   "AGRICULTURE",
+   "GOVERNMENT",
+   "DIPLOMATIC",
+   "NGO",
+   "EMERGENCY",
+   "AMBULANCE",
+   "SECURITY",
+   "POLICE",
+   "SCHOOL_TRANSPORT",
+   "STAFF_TRANSPORT",
+   "HOTEL_SHUTTLE",
+   "TOURISM"
+  ],
+  "ownership_types": [
+   "INDIVIDUAL",
+   "COMPANY",
+   "GOVERNMENT",
+   "NGO",
+   "DIPLOMATIC",
+   "LEASED",
+   "FINANCED",
+   "RENTAL_COMPANY"
+  ],
+  "powertrains": [
+   "PETROL",
+   "DIESEL",
+   "LPG",
+   "CNG",
+   "HYBRID",
+   "MILD_HYBRID",
+   "PHEV",
+   "BEV",
+   "HYDROGEN",
+   "OTHER"
+  ],
+  "hybrid_subtypes": [
+   "HEV",
+   "MHEV",
+   "PHEV"
+  ],
+  "transmissions": [
+   "MANUAL",
+   "AUTOMATIC",
+   "CVT",
+   "DCT",
+   "AMT",
+   "SINGLE_SPEED_EV",
+   "OTHER"
+  ],
+  "drive_types": [
+   "FWD",
+   "RWD",
+   "AWD",
+   "4WD",
+   "PART_TIME_4WD",
+   "OTHER"
+  ],
+  "vehicle_classes": [
+   "PRIVATE_PASSENGER",
+   "COMMERCIAL_PASSENGER",
+   "TAXI",
+   "RIDE_HAILING",
+   "RENTAL",
+   "LIGHT_COMMERCIAL",
+   "PICKUP_COMMERCIAL",
+   "MINIBUS_COMMERCIAL",
+   "BUS",
+   "GOODS_VEHICLE_LIGHT",
+   "GOODS_VEHICLE_MEDIUM",
+   "GOODS_VEHICLE_HEAVY",
+   "TRACTOR_UNIT",
+   "TRAILER",
+   "SPECIAL_VEHICLE",
+   "GOVERNMENT_VEHICLE",
+   "DIPLOMATIC_VEHICLE",
+   "EMERGENCY_VEHICLE",
+   "FLEET_VEHICLE"
+  ],
+  "conditions": [
+   "NEW",
+   "USED",
+   "RECONDITIONED",
+   "SALVAGE_REBUILT"
+  ],
+  "value_types": [
+   "PURCHASE_PRICE",
+   "DECLARED_VALUE",
+   "MARKET_VALUE",
+   "ASSESSED_VALUE",
+   "SUM_INSURED"
+  ],
+  "provenance": [
+   "MANUFACTURER",
+   "CAMEROON_DISTRIBUTOR",
+   "REGULATORY",
+   "INDUSTRY_DATABASE",
+   "MANUAL_VERIFIED",
+   "CUSTOMER_SUBMITTED"
+  ],
+  "cameroon_status": [
+   "OFFICIALLY_DISTRIBUTED",
+   "KNOWN_MARKET_PRESENCE",
+   "IMPORTED",
+   "HISTORICAL",
+   "UNVERIFIED"
+  ],
+  "model_year_range": {
+   "min": 1950,
+   "max": "current_year+1"
+  }
+ },
+ "ui_priority_cameroon": [
+  "TOYOTA",
+  "MERCEDES_BENZ",
+  "HYUNDAI",
+  "KIA",
+  "NISSAN",
+  "MITSUBISHI",
+  "RENAULT",
+  "PEUGEOT",
+  "SUZUKI",
+  "HONDA",
+  "FORD",
+  "VOLKSWAGEN",
+  "LEXUS",
+  "BMW",
+  "ISUZU",
+  "CHERY",
+  "JAC",
+  "HAVAL",
+  "GREAT_WALL",
+  "CHANGAN",
+  "BYD",
+  "GAC",
+  "GEELY",
+  "FOTON",
+  "DONGFENG",
+  "DFSK"
+ ],
+ "ui_priority_chinese": [
+  "CHERY",
+  "CHANGAN",
+  "JAC",
+  "GREAT_WALL",
+  "HAVAL",
+  "TANK",
+  "ORA",
+  "BYD",
+  "GAC",
+  "GEELY",
+  "DONGFENG",
+  "DFSK",
+  "FOTON",
+  "JMC",
+  "BAIC",
+  "JETOUR",
+  "OMODA",
+  "JAECOO",
+  "MG",
+  "MAXUS",
+  "WULING",
+  "HONGQI",
+  "BESTUNE",
+  "FAW",
+  "SERES",
+  "AITO",
+  "DEEPAL",
+  "ZEEKR",
+  "XPENG",
+  "NIO",
+  "LEAPMOTOR",
+  "LI_AUTO"
+ ],
+ "notes": [
+  "Range Rover is a Land Rover model family alias, not a make",
+  "MG is SAIC-controlled",
+  "BYD models must record BEV vs PHEV per variant",
+  "Country of origin is never a risk factor",
+  "Priority ranking is UX only, not insurance risk"
+ ]
+}

@@ -153,6 +153,8 @@ final class CarrierWorkspaceActions
                 if (InsuranceProduct::where(['carrier_id' => $product->carrier_id, 'code' => $product->code, 'status' => 'ACTIVE'])->where('id', '!=', $product->id)->exists()) {
                     throw ValidationException::withMessages(['status' => ['A newer version of this product is already on sale.']]);
                 }
+                // CIMA publication guard; products on sale before the dictionary went live are grandfathered.
+                app(CimaPublicationGuard::class)->assertResumable($product);
             }
             $product->update(['status' => $to]);
             DB::table('product_status_history')->insert([

@@ -1,0 +1,2589 @@
+{
+ "source": "Owner specification: OpesInsure Canonical Insurance Document Register v1.0 — 220 document types (2026-09-24)",
+ "protected": true,
+ "document_types": [
+  {
+   "id": "DOC-001",
+   "canonical_code": "INSURANCE_QUOTE",
+   "name_en": "Insurance Quote",
+   "name_fr": "Devis d'assurance",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-002",
+   "canonical_code": "QUOTE_COMPARISON",
+   "name_en": "Quote Comparison",
+   "name_fr": "Comparatif des devis",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-003",
+   "canonical_code": "INSURANCE_PROPOSAL",
+   "name_en": "Insurance Proposal",
+   "name_fr": "Proposition d'assurance",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-004",
+   "canonical_code": "INSURANCE_APPLICATION_FORM",
+   "name_en": "Insurance Application Form",
+   "name_fr": "Formulaire de souscription",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-005",
+   "canonical_code": "PRODUCT_INFORMATION_SHEET",
+   "name_en": "Product Information Sheet",
+   "name_fr": "Fiche d'information produit",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-006",
+   "canonical_code": "PRODUCT_BENEFIT_SUMMARY",
+   "name_en": "Product Benefit Summary",
+   "name_fr": "Résumé des garanties",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-007",
+   "canonical_code": "COVERAGE_SELECTION_SCHEDULE",
+   "name_en": "Coverage Selection Schedule",
+   "name_fr": "Tableau de sélection des garanties",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-008",
+   "canonical_code": "PREMIUM_ILLUSTRATION",
+   "name_en": "Premium Illustration",
+   "name_fr": "Illustration de prime",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-009",
+   "canonical_code": "RISK_DECLARATION",
+   "name_en": "Risk Declaration",
+   "name_fr": "Déclaration du risque",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-010",
+   "canonical_code": "RISK_QUESTIONNAIRE",
+   "name_en": "Risk Questionnaire",
+   "name_fr": "Questionnaire de risque",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-011",
+   "canonical_code": "ADDITIONAL_INFORMATION_REQUEST",
+   "name_en": "Additional Information Request",
+   "name_fr": "Demande d'informations complémentaires",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-012",
+   "canonical_code": "UNDERWRITING_REQUIREMENTS_NOTICE",
+   "name_en": "Underwriting Requirements Notice",
+   "name_fr": "Avis d'exigences de souscription",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-013",
+   "canonical_code": "CONDITIONAL_OFFER",
+   "name_en": "Conditional Offer",
+   "name_fr": "Offre conditionnelle",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-014",
+   "canonical_code": "REVISED_OFFER",
+   "name_en": "Revised Offer",
+   "name_fr": "Offre révisée",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-015",
+   "canonical_code": "OFFER_ACCEPTANCE",
+   "name_en": "Offer Acceptance",
+   "name_fr": "Acceptation de l'offre",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-016",
+   "canonical_code": "OFFER_DECLINE_CONFIRMATION",
+   "name_en": "Offer Decline Confirmation",
+   "name_fr": "Confirmation de refus de l'offre",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-017",
+   "canonical_code": "QUOTE_EXPIRY_NOTICE",
+   "name_en": "Quote Expiry Notice",
+   "name_fr": "Avis d'expiration du devis",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-018",
+   "canonical_code": "PRE_CONTRACT_DISCLOSURE",
+   "name_en": "Pre-contract Disclosure",
+   "name_fr": "Information précontractuelle",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-019",
+   "canonical_code": "CUSTOMER_CONSENT_RECORD",
+   "name_en": "Customer Consent Record",
+   "name_fr": "Preuve de consentement client",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-020",
+   "canonical_code": "ELECTRONIC_CONTRACT_CONSENT",
+   "name_en": "Electronic Contract Consent",
+   "name_fr": "Consentement au contrat électronique",
+   "group": "A",
+   "group_code": "PRE_CONTRACT",
+   "group_name": "Pre-contract & Sales"
+  },
+  {
+   "id": "DOC-021",
+   "canonical_code": "INSURANCE_POLICY",
+   "name_en": "Insurance Policy",
+   "name_fr": "Police d'assurance",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-022",
+   "canonical_code": "POLICY_SCHEDULE",
+   "name_en": "Policy Schedule",
+   "name_fr": "Conditions particulières",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-023",
+   "canonical_code": "GENERAL_CONDITIONS",
+   "name_en": "General Conditions",
+   "name_fr": "Conditions générales",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-024",
+   "canonical_code": "SPECIAL_CONDITIONS",
+   "name_en": "Special Conditions",
+   "name_fr": "Conditions spéciales",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-025",
+   "canonical_code": "SPECIFIC_CLAUSES_SCHEDULE",
+   "name_en": "Specific Clauses Schedule",
+   "name_fr": "Tableau des clauses particulières",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-026",
+   "canonical_code": "COVER_NOTE",
+   "name_en": "Cover Note",
+   "name_fr": "Note de couverture",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-027",
+   "canonical_code": "CERTIFICATE_OF_INSURANCE",
+   "name_en": "Certificate of Insurance",
+   "name_fr": "Certificat d'assurance",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-028",
+   "canonical_code": "PROOF_OF_COVER",
+   "name_en": "Proof of Cover",
+   "name_fr": "Justificatif de couverture",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-029",
+   "canonical_code": "POLICY_SUMMARY",
+   "name_en": "Policy Summary",
+   "name_fr": "Résumé de police",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-030",
+   "canonical_code": "BENEFITS_SCHEDULE",
+   "name_en": "Benefits Schedule",
+   "name_fr": "Tableau des prestations",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-031",
+   "canonical_code": "COVERAGE_SCHEDULE",
+   "name_en": "Coverage Schedule",
+   "name_fr": "Tableau des garanties",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-032",
+   "canonical_code": "EXCLUSIONS_SCHEDULE",
+   "name_en": "Exclusions Schedule",
+   "name_fr": "Tableau des exclusions",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-033",
+   "canonical_code": "DEDUCTIBLES_SCHEDULE",
+   "name_en": "Deductibles Schedule",
+   "name_fr": "Tableau des franchises",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-034",
+   "canonical_code": "INSURED_ASSETS_SCHEDULE",
+   "name_en": "Insured Assets Schedule",
+   "name_fr": "État des biens assurés",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-035",
+   "canonical_code": "INSURED_PERSONS_SCHEDULE",
+   "name_en": "Insured Persons Schedule",
+   "name_fr": "État des personnes assurées",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-036",
+   "canonical_code": "PREMIUM_SCHEDULE",
+   "name_en": "Premium Schedule",
+   "name_fr": "Échéancier de prime",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-037",
+   "canonical_code": "PAYMENT_SCHEDULE",
+   "name_en": "Payment Schedule",
+   "name_fr": "Échéancier de paiement",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-038",
+   "canonical_code": "POLICY_ISSUE_CONFIRMATION",
+   "name_en": "Policy Issue Confirmation",
+   "name_fr": "Confirmation d'émission",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-039",
+   "canonical_code": "DUPLICATE_POLICY",
+   "name_en": "Duplicate Policy",
+   "name_fr": "Duplicata de police",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-040",
+   "canonical_code": "POLICY_REPLACEMENT_NOTICE",
+   "name_en": "Policy Replacement Notice",
+   "name_fr": "Avis de remplacement de police",
+   "group": "B",
+   "group_code": "CONTRACT",
+   "group_name": "Core Contract & Policy"
+  },
+  {
+   "id": "DOC-041",
+   "canonical_code": "MOTOR_INSURANCE_ATTESTATION",
+   "name_en": "Motor Insurance Attestation",
+   "name_fr": "Attestation d'assurance automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-042",
+   "canonical_code": "MOTOR_INSURANCE_CERTIFICATE",
+   "name_en": "Motor Insurance Certificate",
+   "name_fr": "Certificat d'assurance automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-043",
+   "canonical_code": "PROVISIONAL_MOTOR_ATTESTATION",
+   "name_en": "Provisional Motor Attestation",
+   "name_fr": "Attestation provisoire automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-044",
+   "canonical_code": "VEHICLE_SCHEDULE",
+   "name_en": "Vehicle Schedule",
+   "name_fr": "État des véhicules",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-045",
+   "canonical_code": "FLEET_VEHICLE_SCHEDULE",
+   "name_en": "Fleet Vehicle Schedule",
+   "name_fr": "État du parc automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-046",
+   "canonical_code": "MOTOR_RISK_QUESTIONNAIRE",
+   "name_en": "Motor Risk Questionnaire",
+   "name_fr": "Questionnaire de risque automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-047",
+   "canonical_code": "VEHICLE_INSPECTION_REQUEST",
+   "name_en": "Vehicle Inspection Request",
+   "name_fr": "Demande d'inspection du véhicule",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-048",
+   "canonical_code": "VEHICLE_INSPECTION_REPORT",
+   "name_en": "Vehicle Inspection Report",
+   "name_fr": "Rapport d'inspection automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-049",
+   "canonical_code": "VEHICLE_VALUATION_REPORT",
+   "name_en": "Vehicle Valuation Report",
+   "name_fr": "Rapport d'évaluation du véhicule",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-050",
+   "canonical_code": "ROADSIDE_ASSISTANCE_CERTIFICATE",
+   "name_en": "Roadside Assistance Certificate",
+   "name_fr": "Certificat d'assistance routière",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-051",
+   "canonical_code": "MOTOR_ASSISTANCE_CARD",
+   "name_en": "Motor Assistance Card",
+   "name_fr": "Carte d'assistance automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-052",
+   "canonical_code": "FLEET_CERTIFICATE",
+   "name_en": "Fleet Certificate",
+   "name_fr": "Certificat de flotte",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-053",
+   "canonical_code": "DRIVER_SCHEDULE",
+   "name_en": "Driver Schedule",
+   "name_fr": "Liste des conducteurs",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-054",
+   "canonical_code": "AUTHORIZED_DRIVER_ENDORSEMENT",
+   "name_en": "Authorized Driver Endorsement",
+   "name_fr": "Avenant conducteur autorisé",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-055",
+   "canonical_code": "VEHICLE_REPLACEMENT_ENDORSEMENT",
+   "name_en": "Vehicle Replacement Endorsement",
+   "name_fr": "Avenant de remplacement de véhicule",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-056",
+   "canonical_code": "MOTOR_COVERAGE_EXTENSION_CERTIFICATE",
+   "name_en": "Motor Coverage Extension Certificate",
+   "name_fr": "Certificat d'extension automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-057",
+   "canonical_code": "TERRITORIAL_EXTENSION_CERTIFICATE",
+   "name_en": "Territorial Extension Certificate",
+   "name_fr": "Certificat d'extension territoriale",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-058",
+   "canonical_code": "MOTOR_INSURANCE_CANCELLATION_CERTIFICATE",
+   "name_en": "Motor Insurance Cancellation Certificate",
+   "name_fr": "Certificat de résiliation automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-059",
+   "canonical_code": "MOTOR_POLICY_REINSTATEMENT_NOTICE",
+   "name_en": "Motor Policy Reinstatement Notice",
+   "name_fr": "Avis de remise en vigueur automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-060",
+   "canonical_code": "MOTOR_CERTIFICATE_REPLACEMENT",
+   "name_en": "Motor Certificate Replacement",
+   "name_fr": "Duplicata de certificat automobile",
+   "group": "C",
+   "group_code": "MOTOR",
+   "group_name": "Motor"
+  },
+  {
+   "id": "DOC-061",
+   "canonical_code": "HEALTH_ENROLLMENT_FORM",
+   "name_en": "Health Enrollment Form",
+   "name_fr": "Formulaire d'adhésion santé",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-062",
+   "canonical_code": "MEDICAL_DECLARATION",
+   "name_en": "Medical Declaration",
+   "name_fr": "Déclaration médicale",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-063",
+   "canonical_code": "DEPENDANT_ENROLLMENT_FORM",
+   "name_en": "Dependant Enrollment Form",
+   "name_fr": "Formulaire d'adhésion des ayants droit",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-064",
+   "canonical_code": "MEMBER_CERTIFICATE",
+   "name_en": "Member Certificate",
+   "name_fr": "Certificat d'adhésion",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-065",
+   "canonical_code": "HEALTH_MEMBERSHIP_CARD",
+   "name_en": "Health Membership Card",
+   "name_fr": "Carte d'assuré santé",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-066",
+   "canonical_code": "DIGITAL_HEALTH_CARD",
+   "name_en": "Digital Health Card",
+   "name_fr": "Carte santé numérique",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-067",
+   "canonical_code": "HEALTH_BENEFIT_SCHEDULE",
+   "name_en": "Health Benefit Schedule",
+   "name_fr": "Tableau des prestations santé",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-068",
+   "canonical_code": "PROVIDER_NETWORK_DIRECTORY",
+   "name_en": "Provider Network Directory",
+   "name_fr": "Répertoire du réseau de soins",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-069",
+   "canonical_code": "ELIGIBILITY_CONFIRMATION",
+   "name_en": "Eligibility Confirmation",
+   "name_fr": "Confirmation d'éligibilité",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-070",
+   "canonical_code": "PREAUTHORIZATION_REQUEST",
+   "name_en": "Preauthorization Request",
+   "name_fr": "Demande de prise en charge préalable",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-071",
+   "canonical_code": "PREAUTHORIZATION_APPROVAL",
+   "name_en": "Preauthorization Approval",
+   "name_fr": "Autorisation de prise en charge",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-072",
+   "canonical_code": "PARTIAL_PREAUTHORIZATION_APPROVAL",
+   "name_en": "Partial Preauthorization Approval",
+   "name_fr": "Autorisation partielle",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-073",
+   "canonical_code": "PREAUTHORIZATION_REJECTION",
+   "name_en": "Preauthorization Rejection",
+   "name_fr": "Refus de prise en charge",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-074",
+   "canonical_code": "GUARANTEE_OF_PAYMENT",
+   "name_en": "Guarantee of Payment",
+   "name_fr": "Prise en charge / Lettre de garantie",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-075",
+   "canonical_code": "HOSPITAL_ADMISSION_AUTHORIZATION",
+   "name_en": "Hospital Admission Authorization",
+   "name_fr": "Autorisation d'hospitalisation",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-076",
+   "canonical_code": "HOSPITAL_STAY_EXTENSION_AUTHORIZATION",
+   "name_en": "Hospital Stay Extension Authorization",
+   "name_fr": "Prolongation de prise en charge",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-077",
+   "canonical_code": "EXPLANATION_OF_BENEFITS",
+   "name_en": "Explanation of Benefits",
+   "name_fr": "Relevé des prestations",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-078",
+   "canonical_code": "MEMBER_REIMBURSEMENT_STATEMENT",
+   "name_en": "Member Reimbursement Statement",
+   "name_fr": "Décompte de remboursement",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-079",
+   "canonical_code": "BENEFIT_EXHAUSTION_NOTICE",
+   "name_en": "Benefit Exhaustion Notice",
+   "name_fr": "Avis d'épuisement de garantie",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-080",
+   "canonical_code": "HEALTH_COVERAGE_TERMINATION_CERTIFICATE",
+   "name_en": "Health Coverage Termination Certificate",
+   "name_fr": "Certificat de cessation de couverture santé",
+   "group": "D",
+   "group_code": "HEALTH",
+   "group_name": "Health"
+  },
+  {
+   "id": "DOC-081",
+   "canonical_code": "LIFE_INSURANCE_ILLUSTRATION",
+   "name_en": "Life Insurance Illustration",
+   "name_fr": "Illustration d'assurance vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-082",
+   "canonical_code": "LIFE_CONTRACT_SUMMARY",
+   "name_en": "Life Contract Summary",
+   "name_fr": "Encadré récapitulatif du contrat vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-083",
+   "canonical_code": "LIFE_PROPOSAL",
+   "name_en": "Life Proposal",
+   "name_fr": "Proposition d'assurance vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-084",
+   "canonical_code": "LIFE_MEDICAL_QUESTIONNAIRE",
+   "name_en": "Life Medical Questionnaire",
+   "name_fr": "Questionnaire médical vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-085",
+   "canonical_code": "MEDICAL_EXAMINATION_REQUEST",
+   "name_en": "Medical Examination Request",
+   "name_fr": "Demande d'examen médical",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-086",
+   "canonical_code": "FINANCIAL_NEEDS_DECLARATION",
+   "name_en": "Financial Needs Declaration",
+   "name_fr": "Déclaration des besoins financiers",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-087",
+   "canonical_code": "BENEFICIARY_NOMINATION",
+   "name_en": "Beneficiary Nomination",
+   "name_fr": "Désignation de bénéficiaire",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-088",
+   "canonical_code": "BENEFICIARY_ALLOCATION_SCHEDULE",
+   "name_en": "Beneficiary Allocation Schedule",
+   "name_fr": "Répartition des bénéficiaires",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-089",
+   "canonical_code": "BENEFICIARY_CHANGE_REQUEST",
+   "name_en": "Beneficiary Change Request",
+   "name_fr": "Demande de modification de bénéficiaire",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-090",
+   "canonical_code": "BENEFICIARY_CHANGE_CONFIRMATION",
+   "name_en": "Beneficiary Change Confirmation",
+   "name_fr": "Confirmation de modification de bénéficiaire",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-091",
+   "canonical_code": "LIFE_POLICY_SCHEDULE",
+   "name_en": "Life Policy Schedule",
+   "name_fr": "Conditions particulières vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-092",
+   "canonical_code": "LIFE_BENEFIT_SCHEDULE",
+   "name_en": "Life Benefit Schedule",
+   "name_fr": "Tableau des prestations vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-093",
+   "canonical_code": "CONTRIBUTION_SCHEDULE",
+   "name_en": "Contribution Schedule",
+   "name_fr": "Échéancier des cotisations",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-094",
+   "canonical_code": "SAVINGS_VALUE_STATEMENT",
+   "name_en": "Savings Value Statement",
+   "name_fr": "Relevé de valeur d'épargne",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-095",
+   "canonical_code": "ANNUAL_LIFE_STATEMENT",
+   "name_en": "Annual Life Statement",
+   "name_fr": "Relevé annuel assurance vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-096",
+   "canonical_code": "SURRENDER_REQUEST",
+   "name_en": "Surrender Request",
+   "name_fr": "Demande de rachat",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-097",
+   "canonical_code": "SURRENDER_VALUE_STATEMENT",
+   "name_en": "Surrender Value Statement",
+   "name_fr": "Relevé de valeur de rachat",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-098",
+   "canonical_code": "SURRENDER_APPROVAL",
+   "name_en": "Surrender Approval",
+   "name_fr": "Accord de rachat",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-099",
+   "canonical_code": "POLICY_ADVANCE_APPLICATION",
+   "name_en": "Policy Advance Application",
+   "name_fr": "Demande d'avance sur police",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-100",
+   "canonical_code": "POLICY_ADVANCE_AGREEMENT",
+   "name_en": "Policy Advance Agreement",
+   "name_fr": "Convention d'avance sur police",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-101",
+   "canonical_code": "POLICY_ADVANCE_REPAYMENT_SCHEDULE",
+   "name_en": "Policy Advance Repayment Schedule",
+   "name_fr": "Échéancier de remboursement d'avance",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-102",
+   "canonical_code": "MATURITY_NOTICE",
+   "name_en": "Maturity Notice",
+   "name_fr": "Avis d'échéance du contrat vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-103",
+   "canonical_code": "MATURITY_BENEFIT_STATEMENT",
+   "name_en": "Maturity Benefit Statement",
+   "name_fr": "Décompte de prestation à l'échéance",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-104",
+   "canonical_code": "ANNUITY_STATEMENT",
+   "name_en": "Annuity Statement",
+   "name_fr": "Relevé de rente",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-105",
+   "canonical_code": "LIFE_CONTRACT_CLOSURE_CONFIRMATION",
+   "name_en": "Life Contract Closure Confirmation",
+   "name_fr": "Confirmation de clôture du contrat vie",
+   "group": "E",
+   "group_code": "LIFE",
+   "group_name": "Life, Savings & Retirement"
+  },
+  {
+   "id": "DOC-106",
+   "canonical_code": "MASTER_GROUP_POLICY",
+   "name_en": "Master Group Policy",
+   "name_fr": "Police groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-107",
+   "canonical_code": "GROUP_MEMBERSHIP_FORM",
+   "name_en": "Group Membership Form",
+   "name_fr": "Bulletin d'adhésion groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-108",
+   "canonical_code": "EMPLOYEE_CENSUS",
+   "name_en": "Employee Census",
+   "name_fr": "État nominatif des employés",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-109",
+   "canonical_code": "DEPENDANT_CENSUS",
+   "name_en": "Dependant Census",
+   "name_fr": "État des ayants droit",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-110",
+   "canonical_code": "MEMBER_BENEFIT_CERTIFICATE",
+   "name_en": "Member Benefit Certificate",
+   "name_fr": "Certificat individuel de prestations",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-111",
+   "canonical_code": "GROUP_MEMBER_CERTIFICATE",
+   "name_en": "Group Member Certificate",
+   "name_fr": "Certificat d'adhésion groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-112",
+   "canonical_code": "EMPLOYEE_ADDITION_NOTICE",
+   "name_en": "Employee Addition Notice",
+   "name_fr": "Avis d'ajout d'employé",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-113",
+   "canonical_code": "EMPLOYEE_REMOVAL_NOTICE",
+   "name_en": "Employee Removal Notice",
+   "name_fr": "Avis de retrait d'employé",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-114",
+   "canonical_code": "GROUP_MOVEMENT_SCHEDULE",
+   "name_en": "Group Movement Schedule",
+   "name_fr": "État des mouvements du groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-115",
+   "canonical_code": "GROUP_PREMIUM_STATEMENT",
+   "name_en": "Group Premium Statement",
+   "name_fr": "État des primes groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-116",
+   "canonical_code": "GROUP_RENEWAL_CENSUS",
+   "name_en": "Group Renewal Census",
+   "name_fr": "État de renouvellement du groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-117",
+   "canonical_code": "CORPORATE_BENEFIT_SCHEDULE",
+   "name_en": "Corporate Benefit Schedule",
+   "name_fr": "Tableau des garanties entreprise",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-118",
+   "canonical_code": "CORPORATE_POLICY_SUMMARY",
+   "name_en": "Corporate Policy Summary",
+   "name_fr": "Résumé de police entreprise",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-119",
+   "canonical_code": "CORPORATE_INSURANCE_CERTIFICATE",
+   "name_en": "Corporate Insurance Certificate",
+   "name_fr": "Certificat d'assurance entreprise",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-120",
+   "canonical_code": "GROUP_COVERAGE_TERMINATION_NOTICE",
+   "name_en": "Group Coverage Termination Notice",
+   "name_fr": "Avis de cessation de couverture groupe",
+   "group": "F",
+   "group_code": "GROUP_CORPORATE",
+   "group_name": "Group & Corporate"
+  },
+  {
+   "id": "DOC-121",
+   "canonical_code": "PROPERTY_RISK_QUESTIONNAIRE",
+   "name_en": "Property Risk Questionnaire",
+   "name_fr": "Questionnaire de risque immobilier",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-122",
+   "canonical_code": "PROPERTY_SCHEDULE",
+   "name_en": "Property Schedule",
+   "name_fr": "État des biens immobiliers",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-123",
+   "canonical_code": "CONTENTS_SCHEDULE",
+   "name_en": "Contents Schedule",
+   "name_fr": "État du contenu assuré",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-124",
+   "canonical_code": "STOCK_SCHEDULE",
+   "name_en": "Stock Schedule",
+   "name_fr": "État des stocks",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-125",
+   "canonical_code": "PROPERTY_VALUATION",
+   "name_en": "Property Valuation",
+   "name_fr": "Rapport d'évaluation immobilière",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-126",
+   "canonical_code": "PROPERTY_RISK_SURVEY",
+   "name_en": "Property Risk Survey",
+   "name_fr": "Rapport de visite de risque",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-127",
+   "canonical_code": "FIRE_SAFETY_SURVEY",
+   "name_en": "Fire Safety Survey",
+   "name_fr": "Rapport de sécurité incendie",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-128",
+   "canonical_code": "RISK_IMPROVEMENT_NOTICE",
+   "name_en": "Risk Improvement Notice",
+   "name_fr": "Recommandations d'amélioration du risque",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-129",
+   "canonical_code": "BUILDING_INSURANCE_CERTIFICATE",
+   "name_en": "Building Insurance Certificate",
+   "name_fr": "Certificat d'assurance bâtiment",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-130",
+   "canonical_code": "HOME_INSURANCE_CERTIFICATE",
+   "name_en": "Home Insurance Certificate",
+   "name_fr": "Certificat multirisque habitation",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-131",
+   "canonical_code": "BUSINESS_MULTIRISK_SCHEDULE",
+   "name_en": "Business Multirisk Schedule",
+   "name_fr": "État multirisque entreprise",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-132",
+   "canonical_code": "BUSINESS_INTERRUPTION_SCHEDULE",
+   "name_en": "Business Interruption Schedule",
+   "name_fr": "Tableau pertes d'exploitation",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-133",
+   "canonical_code": "MACHINERY_SCHEDULE",
+   "name_en": "Machinery Schedule",
+   "name_fr": "État des machines",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-134",
+   "canonical_code": "HIGH_VALUE_ITEMS_SCHEDULE",
+   "name_en": "High-Value Items Schedule",
+   "name_fr": "État des objets de valeur",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-135",
+   "canonical_code": "PROPERTY_COVERAGE_EXTENSION",
+   "name_en": "Property Coverage Extension",
+   "name_fr": "Extension de garantie immobilière",
+   "group": "G",
+   "group_code": "PROPERTY",
+   "group_name": "Property & Multirisk"
+  },
+  {
+   "id": "DOC-136",
+   "canonical_code": "CARGO_INSURANCE_DECLARATION",
+   "name_en": "Cargo Insurance Declaration",
+   "name_fr": "Déclaration d'assurance marchandises",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-137",
+   "canonical_code": "MARINE_CARGO_POLICY",
+   "name_en": "Marine Cargo Policy",
+   "name_fr": "Police facultés",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-138",
+   "canonical_code": "OPEN_COVER_AGREEMENT",
+   "name_en": "Open Cover Agreement",
+   "name_fr": "Police flottante / Open Cover",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-139",
+   "canonical_code": "MARINE_CARGO_CERTIFICATE",
+   "name_en": "Marine Cargo Certificate",
+   "name_fr": "Certificat d'assurance marchandises",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-140",
+   "canonical_code": "SHIPMENT_INSURANCE_CERTIFICATE",
+   "name_en": "Shipment Insurance Certificate",
+   "name_fr": "Certificat d'assurance expédition",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-141",
+   "canonical_code": "SHIPMENT_DECLARATION",
+   "name_en": "Shipment Declaration",
+   "name_fr": "Déclaration d'expédition",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-142",
+   "canonical_code": "GOODS_SCHEDULE",
+   "name_en": "Goods Schedule",
+   "name_fr": "État des marchandises",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-143",
+   "canonical_code": "VOYAGE_SCHEDULE",
+   "name_en": "Voyage Schedule",
+   "name_fr": "Tableau des voyages",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-144",
+   "canonical_code": "MARINE_HULL_POLICY_SCHEDULE",
+   "name_en": "Marine Hull Policy Schedule",
+   "name_fr": "Conditions particulières corps maritime",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-145",
+   "canonical_code": "VESSEL_SCHEDULE",
+   "name_en": "Vessel Schedule",
+   "name_fr": "État des navires",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-146",
+   "canonical_code": "MARINE_SURVEY_REQUEST",
+   "name_en": "Marine Survey Request",
+   "name_fr": "Demande d'expertise maritime",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-147",
+   "canonical_code": "MARINE_SURVEY_REPORT",
+   "name_en": "Marine Survey Report",
+   "name_fr": "Rapport d'expertise maritime",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-148",
+   "canonical_code": "CARGO_DAMAGE_CERTIFICATE",
+   "name_en": "Cargo Damage Certificate",
+   "name_fr": "Certificat de dommages marchandises",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-149",
+   "canonical_code": "TRANSPORT_INSURANCE_CERTIFICATE",
+   "name_en": "Transport Insurance Certificate",
+   "name_fr": "Certificat d'assurance transport",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-150",
+   "canonical_code": "CARGO_COVERAGE_EXTENSION",
+   "name_en": "Cargo Coverage Extension",
+   "name_fr": "Extension de garantie transport",
+   "group": "H",
+   "group_code": "MARINE_TRANSPORT",
+   "group_name": "Marine, Cargo & Transport"
+  },
+  {
+   "id": "DOC-151",
+   "canonical_code": "CONSTRUCTION_RISK_QUESTIONNAIRE",
+   "name_en": "Construction Risk Questionnaire",
+   "name_fr": "Questionnaire risques chantier",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-152",
+   "canonical_code": "PROJECT_SCHEDULE",
+   "name_en": "Project Schedule",
+   "name_fr": "État du projet assuré",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-153",
+   "canonical_code": "ENGINEERING_SURVEY_REPORT",
+   "name_en": "Engineering Survey Report",
+   "name_fr": "Rapport d'expertise technique",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-154",
+   "canonical_code": "CONTRACTORS_ALL_RISKS_POLICY_SCHEDULE",
+   "name_en": "Contractors All Risks Policy Schedule",
+   "name_fr": "Conditions particulières Tous Risques Chantier",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-155",
+   "canonical_code": "ERECTION_ALL_RISKS_SCHEDULE",
+   "name_en": "Erection All Risks Schedule",
+   "name_fr": "Conditions particulières Tous Risques Montage",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-156",
+   "canonical_code": "MACHINERY_BREAKDOWN_SCHEDULE",
+   "name_en": "Machinery Breakdown Schedule",
+   "name_fr": "Tableau bris de machines",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-157",
+   "canonical_code": "ELECTRONIC_EQUIPMENT_SCHEDULE",
+   "name_en": "Electronic Equipment Schedule",
+   "name_fr": "État du matériel électronique",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-158",
+   "canonical_code": "CONTRACT_WORKS_CERTIFICATE",
+   "name_en": "Contract Works Certificate",
+   "name_fr": "Certificat d'assurance travaux",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-159",
+   "canonical_code": "CONSTRUCTION_LIABILITY_CERTIFICATE",
+   "name_en": "Construction Liability Certificate",
+   "name_fr": "Certificat RC chantier",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-160",
+   "canonical_code": "EQUIPMENT_INSPECTION_REPORT",
+   "name_en": "Equipment Inspection Report",
+   "name_fr": "Rapport d'inspection équipement",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-161",
+   "canonical_code": "EQUIPMENT_VALUATION_REPORT",
+   "name_en": "Equipment Valuation Report",
+   "name_fr": "Rapport d'évaluation équipement",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-162",
+   "canonical_code": "MAINTENANCE_COMPLIANCE_NOTICE",
+   "name_en": "Maintenance Compliance Notice",
+   "name_fr": "Avis de conformité maintenance",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-163",
+   "canonical_code": "PROJECT_EXTENSION_ENDORSEMENT",
+   "name_en": "Project Extension Endorsement",
+   "name_fr": "Avenant de prolongation chantier",
+   "group": "I",
+   "group_code": "CONSTRUCTION_ENGINEERING",
+   "group_name": "Construction, Engineering & Equipment"
+  },
+  {
+   "id": "DOC-164",
+   "canonical_code": "LIABILITY_RISK_QUESTIONNAIRE",
+   "name_en": "Liability Risk Questionnaire",
+   "name_fr": "Questionnaire responsabilité civile",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-165",
+   "canonical_code": "PROFESSIONAL_LIABILITY_QUESTIONNAIRE",
+   "name_en": "Professional Liability Questionnaire",
+   "name_fr": "Questionnaire RC professionnelle",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-166",
+   "canonical_code": "CLAIMS_HISTORY_DECLARATION",
+   "name_en": "Claims History Declaration",
+   "name_fr": "Déclaration d'antécédents de sinistres",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-167",
+   "canonical_code": "LIABILITY_INSURANCE_CERTIFICATE",
+   "name_en": "Liability Insurance Certificate",
+   "name_fr": "Attestation de responsabilité civile",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-168",
+   "canonical_code": "PROFESSIONAL_LIABILITY_CERTIFICATE",
+   "name_en": "Professional Liability Certificate",
+   "name_fr": "Attestation RC professionnelle",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-169",
+   "canonical_code": "EMPLOYER_LIABILITY_CERTIFICATE",
+   "name_en": "Employer Liability Certificate",
+   "name_fr": "Attestation responsabilité employeur",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-170",
+   "canonical_code": "PUBLIC_LIABILITY_CERTIFICATE",
+   "name_en": "Public Liability Certificate",
+   "name_fr": "Attestation responsabilité civile exploitation",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-171",
+   "canonical_code": "CYBER_RISK_QUESTIONNAIRE",
+   "name_en": "Cyber Risk Questionnaire",
+   "name_fr": "Questionnaire cyber-risque",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-172",
+   "canonical_code": "CYBERSECURITY_CONTROLS_DECLARATION",
+   "name_en": "Cybersecurity Controls Declaration",
+   "name_fr": "Déclaration des mesures cybersécurité",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-173",
+   "canonical_code": "CYBER_INSURANCE_CERTIFICATE",
+   "name_en": "Cyber Insurance Certificate",
+   "name_fr": "Certificat d'assurance cyber",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-174",
+   "canonical_code": "INCIDENT_RESPONSE_SERVICES_NOTICE",
+   "name_en": "Incident Response Services Notice",
+   "name_fr": "Notice des services de réponse aux incidents",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-175",
+   "canonical_code": "LIABILITY_COVERAGE_EXTENSION",
+   "name_en": "Liability Coverage Extension",
+   "name_fr": "Extension de garantie RC",
+   "group": "J",
+   "group_code": "LIABILITY_CYBER",
+   "group_name": "Liability, Professional & Cyber"
+  },
+  {
+   "id": "DOC-176",
+   "canonical_code": "FARM_RISK_DECLARATION",
+   "name_en": "Farm Risk Declaration",
+   "name_fr": "Déclaration de risque agricole",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-177",
+   "canonical_code": "CROP_SCHEDULE",
+   "name_en": "Crop Schedule",
+   "name_fr": "État des cultures",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-178",
+   "canonical_code": "FARM_INSPECTION_REPORT",
+   "name_en": "Farm Inspection Report",
+   "name_fr": "Rapport d'inspection agricole",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-179",
+   "canonical_code": "CROP_INSURANCE_CERTIFICATE",
+   "name_en": "Crop Insurance Certificate",
+   "name_fr": "Certificat d'assurance récolte",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-180",
+   "canonical_code": "YIELD_ASSESSMENT_REPORT",
+   "name_en": "Yield Assessment Report",
+   "name_fr": "Rapport d'évaluation du rendement",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-181",
+   "canonical_code": "LIVESTOCK_SCHEDULE",
+   "name_en": "Livestock Schedule",
+   "name_fr": "État du cheptel",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-182",
+   "canonical_code": "VETERINARY_DECLARATION",
+   "name_en": "Veterinary Declaration",
+   "name_fr": "Déclaration vétérinaire",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-183",
+   "canonical_code": "LIVESTOCK_INSPECTION_REPORT",
+   "name_en": "Livestock Inspection Report",
+   "name_fr": "Rapport d'inspection du cheptel",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-184",
+   "canonical_code": "LIVESTOCK_INSURANCE_CERTIFICATE",
+   "name_en": "Livestock Insurance Certificate",
+   "name_fr": "Certificat d'assurance bétail",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-185",
+   "canonical_code": "ANIMAL_IDENTIFICATION_SCHEDULE",
+   "name_en": "Animal Identification Schedule",
+   "name_fr": "État d'identification des animaux",
+   "group": "K",
+   "group_code": "AGRICULTURE_LIVESTOCK",
+   "group_name": "Agriculture & Livestock"
+  },
+  {
+   "id": "DOC-186",
+   "canonical_code": "SURETY_APPLICATION",
+   "name_en": "Surety Application",
+   "name_fr": "Demande de caution",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-187",
+   "canonical_code": "SURETY_FINANCIAL_QUESTIONNAIRE",
+   "name_en": "Surety Financial Questionnaire",
+   "name_fr": "Questionnaire financier de caution",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-188",
+   "canonical_code": "COUNTER_INDEMNITY",
+   "name_en": "Counter-Indemnity",
+   "name_fr": "Contre-garantie",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-189",
+   "canonical_code": "BID_BOND",
+   "name_en": "Bid Bond",
+   "name_fr": "Caution de soumission",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-190",
+   "canonical_code": "PERFORMANCE_BOND",
+   "name_en": "Performance Bond",
+   "name_fr": "Caution de bonne exécution",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-191",
+   "canonical_code": "ADVANCE_PAYMENT_BOND",
+   "name_en": "Advance Payment Bond",
+   "name_fr": "Caution d'avance de démarrage",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-192",
+   "canonical_code": "RETENTION_BOND",
+   "name_en": "Retention Bond",
+   "name_fr": "Caution de retenue de garantie",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-193",
+   "canonical_code": "CUSTOMS_BOND",
+   "name_en": "Customs Bond",
+   "name_fr": "Caution douanière",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-194",
+   "canonical_code": "BOND_RELEASE",
+   "name_en": "Bond Release",
+   "name_fr": "Mainlevée de caution",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-195",
+   "canonical_code": "CREDIT_INSURANCE_DEBTOR_SCHEDULE",
+   "name_en": "Credit Insurance Debtor Schedule",
+   "name_fr": "État des débiteurs assurés",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-196",
+   "canonical_code": "CREDIT_LIMIT_DECISION",
+   "name_en": "Credit Limit Decision",
+   "name_fr": "Décision de limite de crédit",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-197",
+   "canonical_code": "BORROWER_INSURANCE_CERTIFICATE",
+   "name_en": "Borrower Insurance Certificate",
+   "name_fr": "Certificat d'assurance emprunteur",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-198",
+   "canonical_code": "LOAN_INSURANCE_SCHEDULE",
+   "name_en": "Loan Insurance Schedule",
+   "name_fr": "Tableau d'assurance du crédit",
+   "group": "L",
+   "group_code": "SURETY_CREDIT",
+   "group_name": "Surety, Credit & Borrower"
+  },
+  {
+   "id": "DOC-199",
+   "canonical_code": "ENDORSEMENT_REQUEST",
+   "name_en": "Endorsement Request",
+   "name_fr": "Demande d'avenant",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-200",
+   "canonical_code": "POLICY_ENDORSEMENT",
+   "name_en": "Policy Endorsement",
+   "name_fr": "Avenant",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-201",
+   "canonical_code": "REVISED_POLICY_SCHEDULE",
+   "name_en": "Revised Policy Schedule",
+   "name_fr": "Conditions particulières révisées",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-202",
+   "canonical_code": "ADDITIONAL_PREMIUM_NOTICE",
+   "name_en": "Additional Premium Notice",
+   "name_fr": "Avis de prime complémentaire",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-203",
+   "canonical_code": "PREMIUM_REDUCTION_NOTICE",
+   "name_en": "Premium Reduction Notice",
+   "name_fr": "Avis de réduction de prime",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-204",
+   "canonical_code": "RENEWAL_NOTICE",
+   "name_en": "Renewal Notice",
+   "name_fr": "Avis d'échéance",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-205",
+   "canonical_code": "RENEWAL_QUOTE",
+   "name_en": "Renewal Quote",
+   "name_fr": "Devis de renouvellement",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-206",
+   "canonical_code": "RENEWAL_CONFIRMATION",
+   "name_en": "Renewal Confirmation",
+   "name_fr": "Confirmation de renouvellement",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-207",
+   "canonical_code": "NON_RENEWAL_NOTICE",
+   "name_en": "Non-Renewal Notice",
+   "name_fr": "Avis de non-renouvellement",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-208",
+   "canonical_code": "SUSPENSION_NOTICE",
+   "name_en": "Suspension Notice",
+   "name_fr": "Avis de suspension des garanties",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-209",
+   "canonical_code": "REINSTATEMENT_NOTICE",
+   "name_en": "Reinstatement Notice",
+   "name_fr": "Avis de remise en vigueur",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-210",
+   "canonical_code": "CANCELLATION_REQUEST",
+   "name_en": "Cancellation Request",
+   "name_fr": "Demande de résiliation",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-211",
+   "canonical_code": "CANCELLATION_TERMINATION_NOTICE",
+   "name_en": "Cancellation/Termination Notice",
+   "name_fr": "Avis de résiliation",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-212",
+   "canonical_code": "POLICY_EXPIRY_NOTICE",
+   "name_en": "Policy Expiry Notice",
+   "name_fr": "Avis d'expiration",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-213",
+   "canonical_code": "CHANGE_OF_RISK_DECLARATION",
+   "name_en": "Change of Risk Declaration",
+   "name_fr": "Déclaration de modification du risque",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-214",
+   "canonical_code": "AGGRAVATION_OF_RISK_NOTICE",
+   "name_en": "Aggravation of Risk Notice",
+   "name_fr": "Déclaration d'aggravation du risque",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-215",
+   "canonical_code": "POLICY_STATUS_CONFIRMATION",
+   "name_en": "Policy Status Confirmation",
+   "name_fr": "Attestation de situation du contrat",
+   "group": "M",
+   "group_code": "SERVICING_RENEWAL",
+   "group_name": "Policy Servicing & Renewal"
+  },
+  {
+   "id": "DOC-216",
+   "canonical_code": "CLAIM_INTAKE_DOCUMENT_FAMILY",
+   "name_en": "Claim Intake Document Family",
+   "name_fr": "Famille documentaire — déclaration de sinistre",
+   "group": "N",
+   "group_code": "CLAIMS",
+   "group_name": "Claims Families"
+  },
+  {
+   "id": "DOC-217",
+   "canonical_code": "CLAIM_INVESTIGATION_ASSESSMENT_FAMILY",
+   "name_en": "Claim Investigation & Assessment Family",
+   "name_fr": "Famille documentaire — enquête et expertise",
+   "group": "N",
+   "group_code": "CLAIMS",
+   "group_name": "Claims Families"
+  },
+  {
+   "id": "DOC-218",
+   "canonical_code": "CLAIM_DECISION_FAMILY",
+   "name_en": "Claim Decision Family",
+   "name_fr": "Famille documentaire — décision sur sinistre",
+   "group": "N",
+   "group_code": "CLAIMS",
+   "group_name": "Claims Families"
+  },
+  {
+   "id": "DOC-219",
+   "canonical_code": "CLAIM_SETTLEMENT_FAMILY",
+   "name_en": "Claim Settlement Family",
+   "name_fr": "Famille documentaire — indemnisation",
+   "group": "N",
+   "group_code": "CLAIMS",
+   "group_name": "Claims Families"
+  },
+  {
+   "id": "DOC-220",
+   "canonical_code": "CLAIM_APPEAL_RECOVERY_CLOSURE_FAMILY",
+   "name_en": "Claim Appeal, Recovery & Closure Family",
+   "name_fr": "Famille documentaire — recours, récupération et clôture",
+   "group": "N",
+   "group_code": "CLAIMS",
+   "group_name": "Claims Families"
+  }
+ ],
+ "claim_subtypes": [
+  {
+   "id": "CLM-01",
+   "canonical_code": "CLAIM_NOTIFICATION_FORM",
+   "name_en": "Claim Notification Form",
+   "name_fr": "Déclaration de sinistre",
+   "family": "DOC-216"
+  },
+  {
+   "id": "CLM-02",
+   "canonical_code": "CLAIM_ACKNOWLEDGEMENT",
+   "name_en": "Claim Acknowledgement",
+   "name_fr": "Accusé de réception de sinistre",
+   "family": "DOC-216"
+  },
+  {
+   "id": "CLM-03",
+   "canonical_code": "CLAIM_REFERENCE_CONFIRMATION",
+   "name_en": "Claim Reference Confirmation",
+   "name_fr": "Confirmation du numéro de sinistre",
+   "family": "DOC-216"
+  },
+  {
+   "id": "CLM-04",
+   "canonical_code": "CLAIM_REQUIREMENTS_LIST",
+   "name_en": "Claim Requirements List",
+   "name_fr": "Liste des pièces à fournir",
+   "family": "DOC-216"
+  },
+  {
+   "id": "CLM-05",
+   "canonical_code": "ADDITIONAL_EVIDENCE_REQUEST",
+   "name_en": "Additional Evidence Request",
+   "name_fr": "Demande de pièces complémentaires",
+   "family": "DOC-216"
+  },
+  {
+   "id": "CLM-06",
+   "canonical_code": "CLAIM_INVESTIGATION_NOTICE",
+   "name_en": "Claim Investigation Notice",
+   "name_fr": "Avis d'enquête sinistre",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-07",
+   "canonical_code": "EXPERT_APPOINTMENT",
+   "name_en": "Expert Appointment",
+   "name_fr": "Mandat d'expertise",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-08",
+   "canonical_code": "INSPECTION_APPOINTMENT",
+   "name_en": "Inspection Appointment",
+   "name_fr": "Convocation à expertise",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-09",
+   "canonical_code": "ASSESSMENT_REPORT",
+   "name_en": "Assessment Report",
+   "name_fr": "Rapport d'expertise",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-10",
+   "canonical_code": "CLAIM_VALUATION",
+   "name_en": "Claim Valuation",
+   "name_fr": "Évaluation du sinistre",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-11",
+   "canonical_code": "REPAIR_AUTHORIZATION",
+   "name_en": "Repair Authorization",
+   "name_fr": "Autorisation de réparation",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-12",
+   "canonical_code": "MEDICAL_ASSESSMENT_REQUEST",
+   "name_en": "Medical Assessment Request",
+   "name_fr": "Demande d'expertise médicale",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-13",
+   "canonical_code": "MEDICAL_ASSESSMENT_REPORT",
+   "name_en": "Medical Assessment Report",
+   "name_fr": "Rapport d'expertise médicale",
+   "family": "DOC-217"
+  },
+  {
+   "id": "CLM-14",
+   "canonical_code": "CLAIM_DECISION",
+   "name_en": "Claim Decision",
+   "name_fr": "Décision sur sinistre",
+   "family": "DOC-218"
+  },
+  {
+   "id": "CLM-15",
+   "canonical_code": "PARTIAL_APPROVAL_NOTICE",
+   "name_en": "Partial Approval Notice",
+   "name_fr": "Notification d'acceptation partielle",
+   "family": "DOC-218"
+  },
+  {
+   "id": "CLM-16",
+   "canonical_code": "CLAIM_REJECTION",
+   "name_en": "Claim Rejection",
+   "name_fr": "Lettre de rejet",
+   "family": "DOC-218"
+  },
+  {
+   "id": "CLM-17",
+   "canonical_code": "SETTLEMENT_OFFER",
+   "name_en": "Settlement Offer",
+   "name_fr": "Offre d'indemnisation",
+   "family": "DOC-219"
+  },
+  {
+   "id": "CLM-18",
+   "canonical_code": "SETTLEMENT_ACCEPTANCE",
+   "name_en": "Settlement Acceptance",
+   "name_fr": "Acceptation d'indemnisation",
+   "family": "DOC-219"
+  },
+  {
+   "id": "CLM-19",
+   "canonical_code": "DISCHARGE",
+   "name_en": "Discharge",
+   "name_fr": "Quittance de règlement / Décharge",
+   "family": "DOC-219"
+  },
+  {
+   "id": "CLM-20",
+   "canonical_code": "CLAIM_PAYMENT_ADVICE",
+   "name_en": "Claim Payment Advice",
+   "name_fr": "Avis de paiement sinistre",
+   "family": "DOC-219"
+  },
+  {
+   "id": "CLM-21",
+   "canonical_code": "CLAIM_CLOSURE_NOTICE",
+   "name_en": "Claim Closure Notice",
+   "name_fr": "Avis de clôture",
+   "family": "DOC-219"
+  },
+  {
+   "id": "CLM-22",
+   "canonical_code": "CLAIM_APPEAL",
+   "name_en": "Claim Appeal",
+   "name_fr": "Recours contre décision",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-23",
+   "canonical_code": "APPEAL_ACKNOWLEDGEMENT",
+   "name_en": "Appeal Acknowledgement",
+   "name_fr": "Accusé de réception du recours",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-24",
+   "canonical_code": "APPEAL_DECISION",
+   "name_en": "Appeal Decision",
+   "name_fr": "Décision sur recours",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-25",
+   "canonical_code": "CLAIM_REOPENING_NOTICE",
+   "name_en": "Claim Reopening Notice",
+   "name_fr": "Avis de réouverture",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-26",
+   "canonical_code": "SUBROGATION_NOTICE",
+   "name_en": "Subrogation Notice",
+   "name_fr": "Avis de subrogation",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-27",
+   "canonical_code": "RECOVERY_DEMAND",
+   "name_en": "Recovery Demand",
+   "name_fr": "Demande de recours",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-28",
+   "canonical_code": "SALVAGE_DISPOSAL_AUTHORIZATION",
+   "name_en": "Salvage Disposal Authorization",
+   "name_fr": "Autorisation de réalisation de sauvetage",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-29",
+   "canonical_code": "TOTAL_LOSS_DECLARATION",
+   "name_en": "Total Loss Declaration",
+   "name_fr": "Déclaration de perte totale",
+   "family": "DOC-220"
+  },
+  {
+   "id": "CLM-30",
+   "canonical_code": "CLAIM_SETTLEMENT_STATEMENT",
+   "name_en": "Claim Settlement Statement",
+   "name_fr": "Décompte d'indemnisation",
+   "family": "DOC-219"
+  }
+ ],
+ "subtype_families": {
+  "FINANCE": [
+   {
+    "canonical_code": "PREMIUM_INVOICE",
+    "name_en": "Premium Invoice"
+   },
+   {
+    "canonical_code": "PREMIUM_NOTICE",
+    "name_en": "Premium Notice"
+   },
+   {
+    "canonical_code": "DEBIT_NOTE",
+    "name_en": "Debit Note"
+   },
+   {
+    "canonical_code": "CREDIT_NOTE",
+    "name_en": "Credit Note"
+   },
+   {
+    "canonical_code": "PREMIUM_RECEIPT",
+    "name_en": "Premium Receipt"
+   },
+   {
+    "canonical_code": "PAYMENT_RECEIPT",
+    "name_en": "Payment Receipt"
+   },
+   {
+    "canonical_code": "REFUND_ADVICE",
+    "name_en": "Refund Advice"
+   },
+   {
+    "canonical_code": "CUSTOMER_STATEMENT",
+    "name_en": "Customer Statement"
+   },
+   {
+    "canonical_code": "BROKER_STATEMENT",
+    "name_en": "Broker Statement"
+   },
+   {
+    "canonical_code": "AGENT_COMMISSION_STATEMENT",
+    "name_en": "Agent Commission Statement"
+   },
+   {
+    "canonical_code": "CARRIER_SETTLEMENT_STATEMENT",
+    "name_en": "Carrier Settlement Statement"
+   },
+   {
+    "canonical_code": "PROVIDER_SETTLEMENT_STATEMENT",
+    "name_en": "Provider Settlement Statement"
+   },
+   {
+    "canonical_code": "TAX_FEE_STATEMENT",
+    "name_en": "Tax/Fee Statement"
+   }
+  ],
+  "REINSURANCE": [
+   {
+    "canonical_code": "REINSURANCE_SLIP",
+    "name_en": "Reinsurance Slip"
+   },
+   {
+    "canonical_code": "FACULTATIVE_PLACEMENT_REQUEST",
+    "name_en": "Facultative Placement Request"
+   },
+   {
+    "canonical_code": "FACULTATIVE_QUOTE",
+    "name_en": "Facultative Quote"
+   },
+   {
+    "canonical_code": "REINSURANCE_CONFIRMATION",
+    "name_en": "Reinsurance Confirmation"
+   },
+   {
+    "canonical_code": "TREATY_SUMMARY",
+    "name_en": "Treaty Summary"
+   },
+   {
+    "canonical_code": "RISK_BORDEREAU",
+    "name_en": "Risk Bordereau"
+   },
+   {
+    "canonical_code": "PREMIUM_BORDEREAU",
+    "name_en": "Premium Bordereau"
+   },
+   {
+    "canonical_code": "CLAIMS_BORDEREAU",
+    "name_en": "Claims Bordereau"
+   },
+   {
+    "canonical_code": "REINSURANCE_CLAIM_NOTIFICATION",
+    "name_en": "Reinsurance Claim Notification"
+   },
+   {
+    "canonical_code": "RECOVERY_REQUEST",
+    "name_en": "Recovery Request"
+   },
+   {
+    "canonical_code": "REINSURANCE_SETTLEMENT_STATEMENT",
+    "name_en": "Reinsurance Settlement Statement"
+   },
+   {
+    "canonical_code": "REINSURANCE_ACCOUNT_STATEMENT",
+    "name_en": "Reinsurance Account Statement"
+   }
+  ],
+  "COINSURANCE": [
+   {
+    "canonical_code": "CO_INSURANCE_PLACEMENT",
+    "name_en": "Co-insurance Placement"
+   },
+   {
+    "canonical_code": "CO_INSURANCE_PARTICIPATION_CONFIRMATION",
+    "name_en": "Co-insurance Participation Confirmation"
+   },
+   {
+    "canonical_code": "LEAD_INSURER_NOTICE",
+    "name_en": "Lead Insurer Notice"
+   },
+   {
+    "canonical_code": "PARTICIPANT_SCHEDULE",
+    "name_en": "Participant Schedule"
+   },
+   {
+    "canonical_code": "PREMIUM_ALLOCATION_STATEMENT",
+    "name_en": "Premium Allocation Statement"
+   },
+   {
+    "canonical_code": "CLAIM_ALLOCATION_STATEMENT",
+    "name_en": "Claim Allocation Statement"
+   },
+   {
+    "canonical_code": "CO_INSURANCE_SETTLEMENT_STATEMENT",
+    "name_en": "Co-insurance Settlement Statement"
+   }
+  ],
+  "PROVIDER_NETWORK": [
+   {
+    "canonical_code": "PROVIDER_APPLICATION",
+    "name_en": "Provider Application"
+   },
+   {
+    "canonical_code": "PROVIDER_CREDENTIALING_REQUEST",
+    "name_en": "Provider Credentialing Request"
+   },
+   {
+    "canonical_code": "PROVIDER_APPROVAL",
+    "name_en": "Provider Approval"
+   },
+   {
+    "canonical_code": "PROVIDER_CONTRACT",
+    "name_en": "Provider Contract"
+   },
+   {
+    "canonical_code": "NETWORK_ADMISSION_NOTICE",
+    "name_en": "Network Admission Notice"
+   },
+   {
+    "canonical_code": "PROVIDER_TARIFF_SCHEDULE",
+    "name_en": "Provider Tariff Schedule"
+   },
+   {
+    "canonical_code": "PREAUTHORIZATION_REQUEST",
+    "name_en": "Preauthorization Request"
+   },
+   {
+    "canonical_code": "PREAUTHORIZATION_DECISION",
+    "name_en": "Preauthorization Decision"
+   },
+   {
+    "canonical_code": "GUARANTEE_OF_PAYMENT",
+    "name_en": "Guarantee of Payment"
+   },
+   {
+    "canonical_code": "PROVIDER_CLAIM",
+    "name_en": "Provider Claim"
+   },
+   {
+    "canonical_code": "PROVIDER_CLAIM_DECISION",
+    "name_en": "Provider Claim Decision"
+   },
+   {
+    "canonical_code": "PROVIDER_SETTLEMENT_STATEMENT",
+    "name_en": "Provider Settlement Statement"
+   },
+   {
+    "canonical_code": "PROVIDER_DISPUTE",
+    "name_en": "Provider Dispute"
+   }
+  ],
+  "REGULATORY_COMPLIANCE": [
+   {
+    "canonical_code": "KYC_REQUEST",
+    "name_en": "KYC Request"
+   },
+   {
+    "canonical_code": "KYC_APPROVAL",
+    "name_en": "KYC Approval"
+   },
+   {
+    "canonical_code": "KYC_REMEDIATION_NOTICE",
+    "name_en": "KYC Remediation Notice"
+   },
+   {
+    "canonical_code": "COMPLIANCE_REQUEST",
+    "name_en": "Compliance Request"
+   },
+   {
+    "canonical_code": "REGULATORY_DECLARATION",
+    "name_en": "Regulatory Declaration"
+   },
+   {
+    "canonical_code": "REGULATORY_REPORT",
+    "name_en": "Regulatory Report"
+   },
+   {
+    "canonical_code": "AUDIT_CONFIRMATION",
+    "name_en": "Audit Confirmation"
+   },
+   {
+    "canonical_code": "SUSPICIOUS_ACTIVITY_REVIEW_RECORD",
+    "name_en": "Suspicious Activity Review Record"
+   },
+   {
+    "canonical_code": "DOCUMENT_VERIFICATION_REPORT",
+    "name_en": "Document Verification Report"
+   }
+  ]
+ },
+ "enums": {
+  "required_level": [
+   "REQUIRED",
+   "CONDITIONAL",
+   "OPTIONAL",
+   "INTERNAL",
+   "THIRD_PARTY"
+  ],
+  "document_origin": [
+   "INSURER",
+   "BROKER",
+   "CUSTOMER",
+   "PROVIDER",
+   "GARAGE",
+   "ADJUSTER",
+   "SURVEYOR",
+   "BANK",
+   "REGULATOR",
+   "REINSURER",
+   "SYSTEM"
+  ],
+  "security_level": [
+   "PUBLIC_VERIFIABLE",
+   "CUSTOMER_PRIVATE",
+   "INSURER_CONFIDENTIAL",
+   "MEDICAL_RESTRICTED",
+   "FINANCIAL_RESTRICTED",
+   "INTERNAL",
+   "REGULATORY"
+  ],
+  "document_status": [
+   "DRAFT",
+   "GENERATED",
+   "PENDING_SIGNATURE",
+   "ISSUED",
+   "VALID",
+   "SUPERSEDED",
+   "REPLACED",
+   "REVOKED",
+   "EXPIRED",
+   "CANCELLED"
+  ],
+  "template_workflow": [
+   "DRAFT",
+   "REVIEW",
+   "APPROVED",
+   "PUBLISHED",
+   "RETIRED"
+  ],
+  "generation_triggers_examples": {
+   "QUOTE_GENERATED": [
+    "INSURANCE_QUOTE"
+   ],
+   "POLICY_ISSUED": [
+    "INSURANCE_POLICY",
+    "POLICY_SCHEDULE",
+    "REQUIRED_CERTIFICATES"
+   ],
+   "PAYMENT_RECONCILED": [
+    "PREMIUM_RECEIPT"
+   ],
+   "ENDORSEMENT_ISSUED": [
+    "POLICY_ENDORSEMENT",
+    "REVISED_POLICY_SCHEDULE"
+   ],
+   "CLAIM_APPROVED": [
+    "CLAIM_DECISION",
+    "SETTLEMENT_OFFER"
+   ]
+  },
+  "numbering_examples": [
+   "POL-2026-000001",
+   "ATT-MOT-2026-000001",
+   "AVN-2026-000001",
+   "CLM-2026-000001",
+   "RCT-2026-000001",
+   "SET-2026-000001"
+  ]
+ },
+ "packs": {
+  "MOTOR_NEW_BUSINESS": [
+   "Insurance Quote",
+   "Insurance Proposal",
+   "Risk Declaration",
+   "Insurance Policy",
+   "Policy Schedule",
+   "General Conditions",
+   "Motor Insurance Attestation",
+   "Motor Insurance Certificate",
+   "Premium Receipt"
+  ],
+  "HEALTH_INDIVIDUAL": [
+   "Insurance Quote",
+   "Health Enrollment Form",
+   "Medical Declaration",
+   "Insurance Policy",
+   "Policy Schedule",
+   "Health Benefit Schedule",
+   "Health Membership Card",
+   "Provider Network Directory",
+   "Premium Receipt"
+  ],
+  "LIFE_NEW_BUSINESS": [
+   "Life Insurance Illustration",
+   "Life Contract Summary",
+   "Life Proposal",
+   "Life Medical Questionnaire",
+   "Beneficiary Nomination",
+   "Insurance Policy",
+   "Life Policy Schedule",
+   "General Conditions",
+   "Premium Schedule",
+   "Premium Receipt"
+  ],
+  "PROPERTY": [
+   "Insurance Quote",
+   "Property Risk Questionnaire",
+   "Property Risk Survey",
+   "Insurance Policy",
+   "Policy Schedule",
+   "General Conditions",
+   "Insured Assets Schedule",
+   "Premium Receipt"
+  ],
+  "TRAVEL": [
+   "Insurance Quote",
+   "Insurance Policy",
+   "Certificate of Insurance",
+   "Benefits Schedule",
+   "General Conditions",
+   "Premium Receipt"
+  ],
+  "CORPORATE_HEALTH_COMPANY": [
+   "Insurance Quote",
+   "Insurance Proposal",
+   "Employee Census",
+   "Master Group Policy",
+   "Corporate Benefit Schedule",
+   "Provider Network Directory",
+   "Group Premium Statement"
+  ],
+  "CORPORATE_HEALTH_MEMBER": [
+   "Member Certificate",
+   "Health Membership Card",
+   "Member Benefit Certificate"
+  ],
+  "FLEET_MASTER": [
+   "Master Group Policy",
+   "Fleet Vehicle Schedule",
+   "General Conditions",
+   "Group Premium Statement"
+  ],
+  "FLEET_PER_VEHICLE": [
+   "Motor Insurance Attestation",
+   "Motor Insurance Certificate"
+  ]
+ },
+ "notes": [
+  "Premium Receipt, Receipt etc. live in the FINANCE subtype family",
+  "Claims families DOC-216..220 contain CLM-01..30 subtypes",
+  "Life documents require life-specific templates (CIMA)",
+  "Broker sales documents must identify broker status and insurer (CIMA)"
+ ]
+}

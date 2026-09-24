@@ -1,0 +1,18 @@
+{
+    "_note": "Baseline of existing direct status writes in controllers (REQ-ARC-008, 2026-09-24). Counts may only go DOWN. Move transitions into Application services.",
+    "files": {
+        "app/Interfaces/Http/Controllers/Api/V1/BrokerOperations/BrokerOperationsController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/CarrierOperations/CarrierOperationsController.php": 2,
+        "app/Interfaces/Http/Controllers/Api/V1/Configuration/RegulatoryConfigurationController.php": 2,
+        "app/Interfaces/Http/Controllers/Api/V1/Fraud/RiskAlertController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileAgentPortalController.php": 2,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileBrokerOpsController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileCarrierOpsController.php": 4,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileClaimCompletionController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileCustomerAccountController.php": 2,
+        "app/Interfaces/Http/Controllers/Api/V1/MobileCompletion/MobileSupportController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/Notifications/EtechDeliveryReceiptController.php": 1,
+        "app/Interfaces/Http/Controllers/Api/V1/Notifications/NotificationController.php": 2,
+        "app/Interfaces/Http/Controllers/Api/V1/Notifications/TwilioDeliveryReceiptController.php": 1
+    }
+}

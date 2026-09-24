@@ -18,9 +18,12 @@ final class QuoteService
 
     public function submit(Tenant $tenant,string $partyId,array $data,?User $actor):Quote
     {
-        return DB::transaction(function()use($tenant,$partyId,$data):Quote{
+        return DB::transaction(function()use($tenant,$partyId,$data,$actor):Quote{
             if(!DB::table('tenant_customers')->where(['tenant_id'=>$tenant->id,'party_id'=>$partyId,'status'=>'ACTIVE'])->exists()) throw ValidationException::withMessages(['party_id'=>__('wave2.customer_not_active')]);
             $line=InsuranceLine::where(['code'=>$data['line_code'],'status'=>'ACTIVE'])->firstOrFail();
+            /* Master-data codes validated ("Other" filed for review) and legacy tariff facts derived (RiskFactsProcessor). */$data['risk_facts']=app(\App\Application\MasterData\RiskFactsProcessor::class)->process($line->code,$data['risk_facts'],$tenant->id,$actor?->id);
+            // Vehicle master: the 28-value vehicle_usage feeds the tariff's usage_type until tariffs rate on it directly.
+            if(strtoupper((string)$data['line_code'])==='MOTOR') $data['risk_facts']=\App\Application\Vehicles\VehicleUsageMapper::withDerivedFacts($data['risk_facts']);
             foreach($line->risk_schema['required']??[] as $key) if(!array_key_exists($key,$data['risk_facts'])) throw ValidationException::withMessages(["risk_facts.$key"=>__('wave2.risk_fact_required')]);
             if(isset($data['risk_asset_id'])&&!RiskAsset::where(['id'=>$data['risk_asset_id'],'tenant_id'=>$tenant->id,'party_id'=>$partyId,'status'=>'ACTIVE'])->exists()) throw ValidationException::withMessages(['risk_asset_id'=>__('wave2.asset_ownership')]);
             $quote=Quote::create(['tenant_id'=>$tenant->id,'party_id'=>$partyId,'risk_asset_id'=>$data['risk_asset_id']??null,'line_code'=>$data['line_code'],'channel'=>$data['channel'],'status'=>'SUBMITTED','currency'=>'XAF','risk_facts'=>$data['risk_facts'],'submitted_at'=>now(),'expires_at'=>now()->addDays(7),'version'=>1]);

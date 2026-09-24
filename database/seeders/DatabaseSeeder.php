@@ -46,7 +46,8 @@ final class DatabaseSeeder extends Seeder
         $this->call(CameroonInsuranceRegisterSeeder::class);
         $this->call(CanonicalEventSchemaSeeder::class);
         $this->call(NotificationTemplateSeeder::class);
-        $this->call(VehicleMakeReferenceSeeder::class);
+        // Vehicle master data (makes, models, aliases, enums) supersedes the legacy VEHICLE_MAKES reference set.
+        $this->call(VehicleMasterDataSeeder::class);
         $this->call(MobileOAuthClientSeeder::class);
 
         if (! app()->environment(['local', 'testing']) && ! config('demo.enabled')) {

@@ -61,7 +61,7 @@ final class PlatformCatalogueSeeder extends Seeder
                 'status' => 'ACTIVE',
                 // "required" drives QuoteService validation; steps/fields drive
                 // the app's quote wizard (GET /mobile/catalogue/lines/{code}/risk-schema).
-                'risk_schema' => ['required' => $required] + array_intersect_key(RiskSchemaCatalogue::for($code) ?? [], array_flip(['steps', 'fields'])),
+                'risk_schema' => ['required' => $required] + array_intersect_key(RiskSchemaCatalogue::for($code) ?? [], array_flip(['version', 'steps', 'fields'])),
             ]);
             foreach ($coverages as $i => [$cCode, $cEn, $cFr, $limitType, $mandatory]) {
                 $c = CoverageDefinition::updateOrCreate(['insurance_line_id' => $line->id, 'code' => $cCode], ['name' => ['en' => $cEn, 'fr' => $cFr], 'description' => ['en' => $cEn, 'fr' => $cFr], 'limit_type' => $limitType, 'mandatory' => $mandatory, 'status' => 'ACTIVE']);

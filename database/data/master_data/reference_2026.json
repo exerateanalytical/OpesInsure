@@ -1,0 +1,7077 @@
+{
+ "schema": "opesinsure.master_data.v1",
+ "file": "reference_2026",
+ "version": "2026.1",
+ "source": "Owner Institutional Master Data Catalogue v1.0 (docs/spec/INSTITUTIONAL_MASTER_DATA_CATALOGUE_V1.md), 2026-09-24",
+ "provenance_default": "PLATFORM_NORMALIZED",
+ "protected": true,
+ "notes": [
+  "Seeded values are protected: INACTIVE instead of delete.",
+  "Lists flagged structure_only carry no invented entries (only well-established public identifiers).",
+  "Charge types carry no rates."
+ ],
+ "domains": [
+  {
+   "code": "property",
+   "label_en": "Property",
+   "label_fr": "Biens immobiliers",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "property_type",
+     "label_en": "Property type",
+     "label_fr": "Type de bien",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "RESIDENTIAL_HOUSE",
+       "label_en": "Residential house",
+       "label_fr": "Maison d'habitation"
+      },
+      {
+       "code": "APARTMENT_BUILDING",
+       "label_en": "Apartment building",
+       "label_fr": "Immeuble d'habitation"
+      },
+      {
+       "code": "VILLA",
+       "label_en": "Villa",
+       "label_fr": "Villa"
+      },
+      {
+       "code": "OFFICE_BUILDING",
+       "label_en": "Office building",
+       "label_fr": "Immeuble de bureaux"
+      },
+      {
+       "code": "SHOP_RETAIL_PREMISES",
+       "label_en": "Shop / retail premises",
+       "label_fr": "Local commercial"
+      },
+      {
+       "code": "SHOPPING_CENTRE",
+       "label_en": "Shopping centre",
+       "label_fr": "Centre commercial"
+      },
+      {
+       "code": "WAREHOUSE",
+       "label_en": "Warehouse",
+       "label_fr": "Entrepôt"
+      },
+      {
+       "code": "FACTORY_INDUSTRIAL_PLANT",
+       "label_en": "Factory / industrial plant",
+       "label_fr": "Usine / site industriel"
+      },
+      {
+       "code": "HOTEL",
+       "label_en": "Hotel",
+       "label_fr": "Hôtel"
+      },
+      {
+       "code": "SCHOOL",
+       "label_en": "School",
+       "label_fr": "Établissement scolaire"
+      },
+      {
+       "code": "HOSPITAL_CLINIC",
+       "label_en": "Hospital / clinic",
+       "label_fr": "Hôpital / clinique"
+      },
+      {
+       "code": "PLACE_OF_WORSHIP",
+       "label_en": "Place of worship",
+       "label_fr": "Lieu de culte"
+      },
+      {
+       "code": "FARM_BUILDING",
+       "label_en": "Farm building",
+       "label_fr": "Bâtiment agricole"
+      },
+      {
+       "code": "MIXED_USE_BUILDING",
+       "label_en": "Mixed use building",
+       "label_fr": "Immeuble à usage mixte"
+      },
+      {
+       "code": "LAND_UNDEVELOPED",
+       "label_en": "Land (undeveloped)",
+       "label_fr": "Terrain nu"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "occupancy",
+     "label_en": "Occupancy",
+     "label_fr": "Occupation",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OWNER_OCCUPIED",
+       "label_en": "Owner-occupied",
+       "label_fr": "Occupé par le propriétaire"
+      },
+      {
+       "code": "TENANTED",
+       "label_en": "Tenanted",
+       "label_fr": "Loué"
+      },
+      {
+       "code": "VACANT",
+       "label_en": "Vacant",
+       "label_fr": "Vacant"
+      },
+      {
+       "code": "UNDER_CONSTRUCTION",
+       "label_en": "Under construction",
+       "label_fr": "En construction"
+      },
+      {
+       "code": "SEASONAL",
+       "label_en": "Seasonal",
+       "label_fr": "Saisonnier"
+      },
+      {
+       "code": "PARTLY_OCCUPIED",
+       "label_en": "Partly occupied",
+       "label_fr": "Partiellement occupé"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "construction_material",
+     "label_en": "Construction material",
+     "label_fr": "Matériau de construction",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CONCRETE",
+       "label_en": "Reinforced concrete",
+       "label_fr": "Béton armé"
+      },
+      {
+       "code": "CONCRETE_BLOCK",
+       "label_en": "Concrete block",
+       "label_fr": "Parpaing"
+      },
+      {
+       "code": "BRICK",
+       "label_en": "Fired brick",
+       "label_fr": "Brique cuite"
+      },
+      {
+       "code": "STONE",
+       "label_en": "Stone",
+       "label_fr": "Pierre"
+      },
+      {
+       "code": "EARTH",
+       "label_en": "Earth / mud brick",
+       "label_fr": "Terre / brique de terre"
+      },
+      {
+       "code": "TIMBER",
+       "label_en": "Timber",
+       "label_fr": "Bois"
+      },
+      {
+       "code": "STEEL",
+       "label_en": "Steel",
+       "label_fr": "Acier"
+      },
+      {
+       "code": "PREFABRICATED",
+       "label_en": "Prefabricated",
+       "label_fr": "Préfabriqué"
+      },
+      {
+       "code": "MIXED",
+       "label_en": "Mixed",
+       "label_fr": "Mixte"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "roof_type",
+     "label_en": "Roof type",
+     "label_fr": "Type de toiture",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CONCRETE_SLAB",
+       "label_en": "Concrete slab",
+       "label_fr": "Dalle en béton"
+      },
+      {
+       "code": "STEEL_SHEET",
+       "label_en": "Steel sheet",
+       "label_fr": "Tôle"
+      },
+      {
+       "code": "ALUMINIUM_SHEET",
+       "label_en": "Aluminium sheet",
+       "label_fr": "Tôle d'aluminium"
+      },
+      {
+       "code": "TILES",
+       "label_en": "Clay tiles",
+       "label_fr": "Tuiles"
+      },
+      {
+       "code": "THATCH",
+       "label_en": "Thatch",
+       "label_fr": "Chaume / paille"
+      },
+      {
+       "code": "ASBESTOS_CEMENT",
+       "label_en": "Asbestos cement",
+       "label_fr": "Fibrociment"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "security_measure",
+     "label_en": "Security measure",
+     "label_fr": "Mesure de sûreté",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PERIMETER_WALL_FENCE",
+       "label_en": "Perimeter wall / fence",
+       "label_fr": "Mur / clôture d'enceinte"
+      },
+      {
+       "code": "SECURITY_GUARD_24H",
+       "label_en": "Security guard 24h",
+       "label_fr": "Gardiennage 24 h/24"
+      },
+      {
+       "code": "ALARM_SYSTEM",
+       "label_en": "Alarm system",
+       "label_fr": "Système d'alarme"
+      },
+      {
+       "code": "CCTV",
+       "label_en": "CCTV",
+       "label_fr": "Vidéosurveillance"
+      },
+      {
+       "code": "BURGLAR_BARS",
+       "label_en": "Burglar bars",
+       "label_fr": "Barreaux anti-effraction"
+      },
+      {
+       "code": "SECURITY_DOORS",
+       "label_en": "Security doors",
+       "label_fr": "Portes blindées"
+      },
+      {
+       "code": "ACCESS_CONTROL",
+       "label_en": "Access control",
+       "label_fr": "Contrôle d'accès"
+      },
+      {
+       "code": "SAFE",
+       "label_en": "Safe",
+       "label_fr": "Coffre-fort"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "fire_protection",
+     "label_en": "Fire protection",
+     "label_fr": "Protection incendie",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "FIRE_EXTINGUISHERS",
+       "label_en": "Fire extinguishers",
+       "label_fr": "Extincteurs"
+      },
+      {
+       "code": "HOSE_REELS",
+       "label_en": "Hose reels",
+       "label_fr": "Robinets d'incendie armés"
+      },
+      {
+       "code": "HYDRANTS",
+       "label_en": "Hydrants",
+       "label_fr": "Poteaux d'incendie"
+      },
+      {
+       "code": "SPRINKLER_SYSTEM",
+       "label_en": "Sprinkler system",
+       "label_fr": "Installation de sprinkleurs"
+      },
+      {
+       "code": "SMOKE_DETECTORS",
+       "label_en": "Smoke detectors",
+       "label_fr": "Détecteurs de fumée"
+      },
+      {
+       "code": "FIRE_ALARM",
+       "label_en": "Fire alarm",
+       "label_fr": "Alarme incendie"
+      },
+      {
+       "code": "FIRE_BRIGADE_NEARBY",
+       "label_en": "Fire brigade nearby",
+       "label_fr": "Sapeurs-pompiers à proximité"
+      },
+      {
+       "code": "WATER_RESERVE",
+       "label_en": "Water reserve",
+       "label_fr": "Réserve d'eau"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "health",
+   "label_en": "Health",
+   "label_fr": "Santé",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "plan_type",
+     "label_en": "Plan type",
+     "label_fr": "Type de régime",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "INDIVIDUAL",
+       "label_en": "Individual",
+       "label_fr": "Individuel"
+      },
+      {
+       "code": "FAMILY",
+       "label_en": "Family",
+       "label_fr": "Famille"
+      },
+      {
+       "code": "GROUP_CORPORATE",
+       "label_en": "Group / corporate",
+       "label_fr": "Groupe / entreprise"
+      },
+      {
+       "code": "MICRO_HEALTH",
+       "label_en": "Micro-health",
+       "label_fr": "Micro-assurance santé"
+      },
+      {
+       "code": "INTERNATIONAL",
+       "label_en": "International",
+       "label_fr": "International"
+      },
+      {
+       "code": "TOP_UP",
+       "label_en": "Top-up",
+       "label_fr": "Complémentaire"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "benefit_category",
+     "label_en": "Benefit category",
+     "label_fr": "Catégorie de prestation",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "INPATIENT",
+       "label_en": "Inpatient / hospitalisation",
+       "label_fr": "Hospitalisation"
+      },
+      {
+       "code": "OUTPATIENT",
+       "label_en": "Outpatient consultation",
+       "label_fr": "Consultation externe"
+      },
+      {
+       "code": "PHARMACY",
+       "label_en": "Pharmacy",
+       "label_fr": "Pharmacie"
+      },
+      {
+       "code": "LABORATORY",
+       "label_en": "Laboratory",
+       "label_fr": "Analyses de laboratoire"
+      },
+      {
+       "code": "IMAGING",
+       "label_en": "Imaging",
+       "label_fr": "Imagerie médicale"
+      },
+      {
+       "code": "MATERNITY",
+       "label_en": "Maternity",
+       "label_fr": "Maternité"
+      },
+      {
+       "code": "DENTAL",
+       "label_en": "Dental",
+       "label_fr": "Dentaire"
+      },
+      {
+       "code": "OPTICAL",
+       "label_en": "Optical",
+       "label_fr": "Optique"
+      },
+      {
+       "code": "PHYSIOTHERAPY",
+       "label_en": "Physiotherapy",
+       "label_fr": "Kinésithérapie"
+      },
+      {
+       "code": "MENTAL_HEALTH",
+       "label_en": "Mental health",
+       "label_fr": "Santé mentale"
+      },
+      {
+       "code": "SURGERY",
+       "label_en": "Surgery",
+       "label_fr": "Chirurgie"
+      },
+      {
+       "code": "CHRONIC_DISEASE",
+       "label_en": "Chronic disease",
+       "label_fr": "Maladies chroniques"
+      },
+      {
+       "code": "EMERGENCY",
+       "label_en": "Emergency / ambulance",
+       "label_fr": "Urgences / ambulance"
+      },
+      {
+       "code": "EVACUATION",
+       "label_en": "Evacuation",
+       "label_fr": "Évacuation sanitaire"
+      },
+      {
+       "code": "PREVENTIVE",
+       "label_en": "Preventive care",
+       "label_fr": "Prévention"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "member_type",
+     "label_en": "Member type",
+     "label_fr": "Type de bénéficiaire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PRINCIPAL",
+       "label_en": "Principal",
+       "label_fr": "Assuré principal"
+      },
+      {
+       "code": "SPOUSE",
+       "label_en": "Spouse",
+       "label_fr": "Conjoint(e)"
+      },
+      {
+       "code": "CHILD",
+       "label_en": "Child",
+       "label_fr": "Enfant"
+      },
+      {
+       "code": "DEPENDENT_PARENT",
+       "label_en": "Dependent parent",
+       "label_fr": "Ascendant à charge"
+      },
+      {
+       "code": "OTHER_DEPENDENT",
+       "label_en": "Other dependent",
+       "label_fr": "Autre personne à charge"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "cost_sharing",
+     "label_en": "Cost sharing",
+     "label_fr": "Participation aux frais",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "COPAYMENT",
+       "label_en": "Co-payment",
+       "label_fr": "Ticket modérateur",
+       "description_en": "Percentage of cost paid by member",
+       "description_fr": "Pourcentage restant à la charge de l'assuré"
+      },
+      {
+       "code": "DEDUCTIBLE",
+       "label_en": "Deductible",
+       "label_fr": "Franchise",
+       "description_en": "Fixed amount paid before cover applies",
+       "description_fr": "Montant fixe à la charge de l'assuré"
+      },
+      {
+       "code": "FIXED_COPAY",
+       "label_en": "Fixed co-pay per visit",
+       "label_fr": "Forfait par acte",
+       "description_en": "Flat amount per consultation",
+       "description_fr": "Montant forfaitaire par acte"
+      },
+      {
+       "code": "ANNUAL_LIMIT",
+       "label_en": "Annual limit",
+       "label_fr": "Plafond annuel",
+       "description_en": "Maximum benefit per year",
+       "description_fr": "Prestation maximale par an"
+      },
+      {
+       "code": "SUB_LIMIT",
+       "label_en": "Sub-limit",
+       "label_fr": "Sous-plafond",
+       "description_en": "Limit for a benefit category",
+       "description_fr": "Plafond par catégorie de prestation"
+      }
+     ]
+    },
+    {
+     "code": "geographic_zone",
+     "label_en": "Geographic zone",
+     "label_fr": "Zone géographique",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CAMEROON",
+       "label_en": "Cameroon",
+       "label_fr": "Cameroun"
+      },
+      {
+       "code": "CEMAC_ZONE",
+       "label_en": "CEMAC zone",
+       "label_fr": "Zone CEMAC"
+      },
+      {
+       "code": "AFRICA",
+       "label_en": "Africa",
+       "label_fr": "Afrique"
+      },
+      {
+       "code": "WORLDWIDE_EXCLUDING_USA",
+       "label_en": "Worldwide excluding USA",
+       "label_fr": "Monde entier hors USA"
+      },
+      {
+       "code": "WORLDWIDE",
+       "label_en": "Worldwide",
+       "label_fr": "Monde entier"
+      }
+     ]
+    },
+    {
+     "code": "network_level",
+     "label_en": "Network level",
+     "label_fr": "Niveau de réseau",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PREFERRED_NETWORK",
+       "label_en": "Preferred network",
+       "label_fr": "Réseau privilégié"
+      },
+      {
+       "code": "STANDARD_NETWORK",
+       "label_en": "Standard network",
+       "label_fr": "Réseau standard"
+      },
+      {
+       "code": "OUT_OF_NETWORK",
+       "label_en": "Out of network",
+       "label_fr": "Hors réseau"
+      },
+      {
+       "code": "DIRECT_BILLING_TIERS_PAYANT",
+       "label_en": "Direct billing (tiers payant)",
+       "label_fr": "Tiers payant"
+      },
+      {
+       "code": "REIMBURSEMENT",
+       "label_en": "Reimbursement",
+       "label_fr": "Remboursement"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "life",
+   "label_en": "Life",
+   "label_fr": "Vie",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "product_type",
+     "label_en": "Product type",
+     "label_fr": "Type de produit",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "TERM_LIFE",
+       "label_en": "Term life",
+       "label_fr": "Temporaire décès"
+      },
+      {
+       "code": "WHOLE_LIFE",
+       "label_en": "Whole life",
+       "label_fr": "Vie entière"
+      },
+      {
+       "code": "ENDOWMENT",
+       "label_en": "Endowment",
+       "label_fr": "Mixte"
+      },
+      {
+       "code": "SAVINGS",
+       "label_en": "Savings",
+       "label_fr": "Épargne"
+      },
+      {
+       "code": "EDUCATION",
+       "label_en": "Education",
+       "label_fr": "Épargne éducation"
+      },
+      {
+       "code": "RETIREMENT",
+       "label_en": "Retirement",
+       "label_fr": "Retraite"
+      },
+      {
+       "code": "CREDIT_LIFE",
+       "label_en": "Credit life",
+       "label_fr": "Assurance emprunteur"
+      },
+      {
+       "code": "FUNERAL",
+       "label_en": "Funeral",
+       "label_fr": "Obsèques"
+      },
+      {
+       "code": "GROUP_LIFE",
+       "label_en": "Group life",
+       "label_fr": "Vie collective"
+      },
+      {
+       "code": "ANNUITY",
+       "label_en": "Annuity",
+       "label_fr": "Rente"
+      },
+      {
+       "code": "KEYMAN",
+       "label_en": "Keyman",
+       "label_fr": "Homme clé"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "benefit_type",
+     "label_en": "Benefit type",
+     "label_fr": "Type de prestation",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DEATH",
+       "label_en": "Death",
+       "label_fr": "Décès"
+      },
+      {
+       "code": "TOTAL_PERMANENT_DISABILITY",
+       "label_en": "Total permanent disability",
+       "label_fr": "Invalidité absolue et définitive"
+      },
+      {
+       "code": "CRITICAL_ILLNESS",
+       "label_en": "Critical illness",
+       "label_fr": "Maladies graves"
+      },
+      {
+       "code": "MATURITY",
+       "label_en": "Maturity",
+       "label_fr": "Terme / échéance"
+      },
+      {
+       "code": "SURRENDER",
+       "label_en": "Surrender",
+       "label_fr": "Rachat"
+      },
+      {
+       "code": "ANNUITY",
+       "label_en": "Annuity",
+       "label_fr": "Rente"
+      },
+      {
+       "code": "FUNERAL_EXPENSES",
+       "label_en": "Funeral expenses",
+       "label_fr": "Frais d'obsèques"
+      },
+      {
+       "code": "PREMIUM_WAIVER",
+       "label_en": "Premium waiver",
+       "label_fr": "Exonération des primes"
+      },
+      {
+       "code": "ACCIDENTAL_DEATH",
+       "label_en": "Accidental death",
+       "label_fr": "Décès accidentel"
+      }
+     ]
+    },
+    {
+     "code": "premium_frequency",
+     "label_en": "Premium frequency",
+     "label_fr": "Périodicité de prime",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MONTHLY",
+       "label_en": "Monthly",
+       "label_fr": "Mensuelle"
+      },
+      {
+       "code": "QUARTERLY",
+       "label_en": "Quarterly",
+       "label_fr": "Trimestrielle"
+      },
+      {
+       "code": "HALF_YEARLY",
+       "label_en": "Half-yearly",
+       "label_fr": "Semestrielle"
+      },
+      {
+       "code": "ANNUAL",
+       "label_en": "Annual",
+       "label_fr": "Annuelle"
+      },
+      {
+       "code": "SINGLE_PREMIUM",
+       "label_en": "Single premium",
+       "label_fr": "Prime unique"
+      }
+     ]
+    },
+    {
+     "code": "beneficiary_priority",
+     "label_en": "Beneficiary priority",
+     "label_fr": "Rang du bénéficiaire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PRIMARY",
+       "label_en": "Primary",
+       "label_fr": "Bénéficiaire de premier rang",
+       "description_en": "Receives benefit first",
+       "description_fr": "Perçoit la prestation en premier"
+      },
+      {
+       "code": "CONTINGENT",
+       "label_en": "Contingent",
+       "label_fr": "Bénéficiaire subsidiaire",
+       "description_en": "Receives benefit if primary predeceases",
+       "description_fr": "Perçoit si le bénéficiaire de premier rang est décédé"
+      },
+      {
+       "code": "IRREVOCABLE",
+       "label_en": "Irrevocable",
+       "label_fr": "Bénéficiaire acceptant",
+       "description_en": "Designation cannot be changed without consent",
+       "description_fr": "Désignation ne pouvant être modifiée sans son accord"
+      }
+     ]
+    },
+    {
+     "code": "life_event",
+     "label_en": "Life event",
+     "label_fr": "Événement de vie",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MARRIAGE",
+       "label_en": "Marriage",
+       "label_fr": "Mariage"
+      },
+      {
+       "code": "DIVORCE",
+       "label_en": "Divorce",
+       "label_fr": "Divorce"
+      },
+      {
+       "code": "BIRTH_OF_CHILD",
+       "label_en": "Birth of child",
+       "label_fr": "Naissance d'un enfant"
+      },
+      {
+       "code": "DEATH_OF_BENEFICIARY",
+       "label_en": "Death of beneficiary",
+       "label_fr": "Décès d'un bénéficiaire"
+      },
+      {
+       "code": "CHANGE_OF_OCCUPATION",
+       "label_en": "Change of occupation",
+       "label_fr": "Changement de profession"
+      },
+      {
+       "code": "RETIREMENT",
+       "label_en": "Retirement",
+       "label_fr": "Départ à la retraite"
+      },
+      {
+       "code": "NEW_LOAN",
+       "label_en": "New loan",
+       "label_fr": "Nouveau prêt"
+      },
+      {
+       "code": "CHANGE_OF_ADDRESS",
+       "label_en": "Change of address",
+       "label_fr": "Changement d'adresse"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "cargo",
+   "label_en": "Cargo",
+   "label_fr": "Facultés / marchandises transportées",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "cargo_category",
+     "label_en": "Cargo category",
+     "label_fr": "Catégorie de marchandises",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "GENERAL_MERCHANDISE",
+       "label_en": "General merchandise",
+       "label_fr": "Marchandises générales"
+      },
+      {
+       "code": "FOOD_PRODUCTS",
+       "label_en": "Food products",
+       "label_fr": "Produits alimentaires"
+      },
+      {
+       "code": "PERISHABLES_REFRIGERATED",
+       "label_en": "Perishables / refrigerated",
+       "label_fr": "Denrées périssables / réfrigérées"
+      },
+      {
+       "code": "COCOA",
+       "label_en": "Cocoa",
+       "label_fr": "Cacao"
+      },
+      {
+       "code": "COFFEE",
+       "label_en": "Coffee",
+       "label_fr": "Café"
+      },
+      {
+       "code": "TIMBER_LOGS",
+       "label_en": "Timber / logs",
+       "label_fr": "Bois / grumes"
+      },
+      {
+       "code": "COTTON",
+       "label_en": "Cotton",
+       "label_fr": "Coton"
+      },
+      {
+       "code": "RUBBER",
+       "label_en": "Rubber",
+       "label_fr": "Caoutchouc"
+      },
+      {
+       "code": "BANANAS",
+       "label_en": "Bananas",
+       "label_fr": "Bananes"
+      },
+      {
+       "code": "PETROLEUM_PRODUCTS",
+       "label_en": "Petroleum products",
+       "label_fr": "Produits pétroliers"
+      },
+      {
+       "code": "CHEMICALS",
+       "label_en": "Chemicals",
+       "label_fr": "Produits chimiques"
+      },
+      {
+       "code": "DANGEROUS_GOODS",
+       "label_en": "Dangerous goods",
+       "label_fr": "Marchandises dangereuses"
+      },
+      {
+       "code": "MACHINERY_EQUIPMENT",
+       "label_en": "Machinery / equipment",
+       "label_fr": "Machines / équipements"
+      },
+      {
+       "code": "VEHICLES",
+       "label_en": "Vehicles",
+       "label_fr": "Véhicules"
+      },
+      {
+       "code": "ELECTRONICS",
+       "label_en": "Electronics",
+       "label_fr": "Électronique"
+      },
+      {
+       "code": "PHARMACEUTICALS",
+       "label_en": "Pharmaceuticals",
+       "label_fr": "Produits pharmaceutiques"
+      },
+      {
+       "code": "BUILDING_MATERIALS",
+       "label_en": "Building materials",
+       "label_fr": "Matériaux de construction"
+      },
+      {
+       "code": "CEMENT_CLINKER",
+       "label_en": "Cement / clinker",
+       "label_fr": "Ciment / clinker"
+      },
+      {
+       "code": "TEXTILES_CLOTHING",
+       "label_en": "Textiles / clothing",
+       "label_fr": "Textiles / habillement"
+      },
+      {
+       "code": "BULK_GRAIN",
+       "label_en": "Bulk grain",
+       "label_fr": "Céréales en vrac"
+      },
+      {
+       "code": "LIVESTOCK",
+       "label_en": "Livestock",
+       "label_fr": "Bétail vivant"
+      },
+      {
+       "code": "PERSONAL_EFFECTS",
+       "label_en": "Personal effects",
+       "label_fr": "Effets personnels"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "packaging",
+     "label_en": "Packaging",
+     "label_fr": "Conditionnement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CARTON",
+       "label_en": "Carton",
+       "label_fr": "Carton"
+      },
+      {
+       "code": "CRATE",
+       "label_en": "Crate",
+       "label_fr": "Caisse"
+      },
+      {
+       "code": "PALLET",
+       "label_en": "Pallet",
+       "label_fr": "Palette"
+      },
+      {
+       "code": "BAG_SACK",
+       "label_en": "Bag / sack",
+       "label_fr": "Sac"
+      },
+      {
+       "code": "DRUM",
+       "label_en": "Drum",
+       "label_fr": "Fût"
+      },
+      {
+       "code": "BULK",
+       "label_en": "Bulk",
+       "label_fr": "Vrac"
+      },
+      {
+       "code": "BALE",
+       "label_en": "Bale",
+       "label_fr": "Balle"
+      },
+      {
+       "code": "ROLL",
+       "label_en": "Roll",
+       "label_fr": "Rouleau"
+      },
+      {
+       "code": "UNPACKED",
+       "label_en": "Unpacked",
+       "label_fr": "Non emballé"
+      },
+      {
+       "code": "FCL",
+       "label_en": "Container (FCL)",
+       "label_fr": "Conteneur complet (FCL)"
+      },
+      {
+       "code": "LCL",
+       "label_en": "Groupage (LCL)",
+       "label_fr": "Groupage (LCL)"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "transport_mode",
+     "label_en": "Transport mode",
+     "label_fr": "Mode de transport",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "SEA",
+       "label_en": "Sea",
+       "label_fr": "Maritime"
+      },
+      {
+       "code": "AIR",
+       "label_en": "Air",
+       "label_fr": "Aérien"
+      },
+      {
+       "code": "ROAD",
+       "label_en": "Road",
+       "label_fr": "Routier"
+      },
+      {
+       "code": "RAIL",
+       "label_en": "Rail",
+       "label_fr": "Ferroviaire"
+      },
+      {
+       "code": "INLAND_WATER",
+       "label_en": "Inland water",
+       "label_fr": "Fluvial"
+      },
+      {
+       "code": "MULTIMODAL",
+       "label_en": "Multimodal",
+       "label_fr": "Multimodal"
+      },
+      {
+       "code": "COURIER",
+       "label_en": "Postal / courier",
+       "label_fr": "Postal / messagerie"
+      }
+     ]
+    },
+    {
+     "code": "container_type",
+     "label_en": "Container type",
+     "label_fr": "Type de conteneur",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DRY_20",
+       "label_en": "20' dry",
+       "label_fr": "20' standard"
+      },
+      {
+       "code": "DRY_40",
+       "label_en": "40' dry",
+       "label_fr": "40' standard"
+      },
+      {
+       "code": "HC_40",
+       "label_en": "40' high cube",
+       "label_fr": "40' high cube"
+      },
+      {
+       "code": "REEFER_20",
+       "label_en": "20' reefer",
+       "label_fr": "20' frigorifique"
+      },
+      {
+       "code": "REEFER_40",
+       "label_en": "40' reefer",
+       "label_fr": "40' frigorifique"
+      },
+      {
+       "code": "OPEN_TOP",
+       "label_en": "Open top",
+       "label_fr": "Open top"
+      },
+      {
+       "code": "FLAT_RACK",
+       "label_en": "Flat rack",
+       "label_fr": "Flat rack"
+      },
+      {
+       "code": "TANK",
+       "label_en": "Tank container",
+       "label_fr": "Conteneur-citerne"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "incoterm",
+     "label_en": "Incoterm",
+     "label_fr": "Incoterm",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "EXW",
+       "label_en": "Ex Works",
+       "label_fr": "À l'usine",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "FCA",
+       "label_en": "Free Carrier",
+       "label_fr": "Franco transporteur",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "CPT",
+       "label_en": "Carriage Paid To",
+       "label_fr": "Port payé jusqu'à",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "CIP",
+       "label_en": "Carriage and Insurance Paid To",
+       "label_fr": "Port payé, assurance comprise, jusqu'à",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "DAP",
+       "label_en": "Delivered at Place",
+       "label_fr": "Rendu au lieu de destination",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "DPU",
+       "label_en": "Delivered at Place Unloaded",
+       "label_fr": "Rendu au lieu de destination déchargé",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "DDP",
+       "label_en": "Delivered Duty Paid",
+       "label_fr": "Rendu droits acquittés",
+       "attributes": {
+        "rule_class": "ANY_MODE"
+       }
+      },
+      {
+       "code": "FAS",
+       "label_en": "Free Alongside Ship",
+       "label_fr": "Franco le long du navire",
+       "attributes": {
+        "rule_class": "SEA_INLAND_WATERWAY"
+       }
+      },
+      {
+       "code": "FOB",
+       "label_en": "Free On Board",
+       "label_fr": "Franco à bord",
+       "attributes": {
+        "rule_class": "SEA_INLAND_WATERWAY"
+       }
+      },
+      {
+       "code": "CFR",
+       "label_en": "Cost and Freight",
+       "label_fr": "Coût et fret",
+       "attributes": {
+        "rule_class": "SEA_INLAND_WATERWAY"
+       }
+      },
+      {
+       "code": "CIF",
+       "label_en": "Cost, Insurance and Freight",
+       "label_fr": "Coût, assurance et fret",
+       "attributes": {
+        "rule_class": "SEA_INLAND_WATERWAY"
+       }
+      }
+     ],
+     "provenance": "INDUSTRY",
+     "source_reference": "ICC Incoterms® 2020",
+     "version": "2020"
+    },
+    {
+     "code": "port",
+     "label_en": "Port",
+     "label_fr": "Port",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CM_DOUALA",
+       "label_en": "Port of Douala",
+       "label_fr": "Port de Douala",
+       "attributes": {
+        "country": "CM"
+       }
+      },
+      {
+       "code": "CM_KRIBI",
+       "label_en": "Port of Kribi",
+       "label_fr": "Port de Kribi",
+       "attributes": {
+        "country": "CM"
+       }
+      },
+      {
+       "code": "CM_LIMBE",
+       "label_en": "Port of Limbe",
+       "label_fr": "Port de Limbé",
+       "attributes": {
+        "country": "CM"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true,
+     "note": "Only well-established Cameroon ports seeded; others via review queue."
+    },
+    {
+     "code": "airport",
+     "label_en": "Airport",
+     "label_fr": "Aéroport",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DLA",
+       "label_en": "Douala International Airport",
+       "label_fr": "Aéroport international de Douala",
+       "attributes": {
+        "iata": "DLA",
+        "country": "CM"
+       }
+      },
+      {
+       "code": "NSI",
+       "label_en": "Yaoundé Nsimalen International Airport",
+       "label_fr": "Aéroport international de Yaoundé-Nsimalen",
+       "attributes": {
+        "iata": "NSI",
+        "country": "CM"
+       }
+      },
+      {
+       "code": "GOU",
+       "label_en": "Garoua International Airport",
+       "label_fr": "Aéroport international de Garoua",
+       "attributes": {
+        "iata": "GOU",
+        "country": "CM"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true
+    },
+    {
+     "code": "shipping_line",
+     "label_en": "Shipping line",
+     "label_fr": "Compagnie maritime",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true,
+     "note": "No entries seeded; populated via verified import."
+    }
+   ]
+  },
+  {
+   "code": "construction",
+   "label_en": "Construction",
+   "label_fr": "Construction / BTP",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "project_type",
+     "label_en": "Project type",
+     "label_fr": "Type de projet",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "RESIDENTIAL_BUILDING",
+       "label_en": "Residential building",
+       "label_fr": "Bâtiment résidentiel"
+      },
+      {
+       "code": "COMMERCIAL_BUILDING",
+       "label_en": "Commercial building",
+       "label_fr": "Bâtiment commercial"
+      },
+      {
+       "code": "INDUSTRIAL_BUILDING",
+       "label_en": "Industrial building",
+       "label_fr": "Bâtiment industriel"
+      },
+      {
+       "code": "ROAD",
+       "label_en": "Road",
+       "label_fr": "Route"
+      },
+      {
+       "code": "BRIDGE",
+       "label_en": "Bridge",
+       "label_fr": "Pont"
+      },
+      {
+       "code": "DAM",
+       "label_en": "Dam",
+       "label_fr": "Barrage"
+      },
+      {
+       "code": "WATER_SUPPLY_SANITATION",
+       "label_en": "Water supply / sanitation",
+       "label_fr": "Adduction d'eau / assainissement"
+      },
+      {
+       "code": "POWER_PLANT",
+       "label_en": "Power plant",
+       "label_fr": "Centrale électrique"
+      },
+      {
+       "code": "POWER_LINES",
+       "label_en": "Power lines",
+       "label_fr": "Lignes électriques"
+      },
+      {
+       "code": "PORT_MARINE_WORKS",
+       "label_en": "Port / marine works",
+       "label_fr": "Travaux portuaires / maritimes"
+      },
+      {
+       "code": "AIRPORT_WORKS",
+       "label_en": "Airport works",
+       "label_fr": "Travaux aéroportuaires"
+      },
+      {
+       "code": "RAILWAY",
+       "label_en": "Railway",
+       "label_fr": "Voie ferrée"
+      },
+      {
+       "code": "PIPELINE",
+       "label_en": "Pipeline",
+       "label_fr": "Pipeline"
+      },
+      {
+       "code": "TELECOM_INFRASTRUCTURE",
+       "label_en": "Telecom infrastructure",
+       "label_fr": "Infrastructure télécoms"
+      },
+      {
+       "code": "RENOVATION_EXTENSION",
+       "label_en": "Renovation / extension",
+       "label_fr": "Rénovation / extension"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "project_phase",
+     "label_en": "Project phase",
+     "label_fr": "Phase du projet",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DESIGN_PLANNING",
+       "label_en": "Design / planning",
+       "label_fr": "Conception / études"
+      },
+      {
+       "code": "SITE_PREPARATION",
+       "label_en": "Site preparation",
+       "label_fr": "Préparation du site"
+      },
+      {
+       "code": "FOUNDATIONS",
+       "label_en": "Foundations",
+       "label_fr": "Fondations"
+      },
+      {
+       "code": "STRUCTURAL_WORKS",
+       "label_en": "Structural works",
+       "label_fr": "Gros œuvre"
+      },
+      {
+       "code": "FINISHING_WORKS",
+       "label_en": "Finishing works",
+       "label_fr": "Second œuvre / finitions"
+      },
+      {
+       "code": "INSTALLATION_ERECTION",
+       "label_en": "Installation / erection",
+       "label_fr": "Montage / installation"
+      },
+      {
+       "code": "TESTING_AND_COMMISSIONING",
+       "label_en": "Testing and commissioning",
+       "label_fr": "Essais et mise en service"
+      },
+      {
+       "code": "MAINTENANCE_PERIOD",
+       "label_en": "Maintenance period",
+       "label_fr": "Période de maintenance"
+      },
+      {
+       "code": "COMPLETED",
+       "label_en": "Completed",
+       "label_fr": "Réceptionné"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "equipment",
+   "label_en": "Equipment / machinery",
+   "label_fr": "Équipements / engins",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "category",
+     "label_en": "Equipment category",
+     "label_fr": "Catégorie d'engin",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "EXCAVATOR",
+       "label_en": "Excavator",
+       "label_fr": "Pelle hydraulique"
+      },
+      {
+       "code": "WHEEL_LOADER",
+       "label_en": "Wheel loader",
+       "label_fr": "Chargeuse sur pneus"
+      },
+      {
+       "code": "BACKHOE_LOADER",
+       "label_en": "Backhoe loader",
+       "label_fr": "Tractopelle"
+      },
+      {
+       "code": "BULLDOZER",
+       "label_en": "Bulldozer",
+       "label_fr": "Bouteur"
+      },
+      {
+       "code": "MOTOR_GRADER",
+       "label_en": "Motor grader",
+       "label_fr": "Niveleuse"
+      },
+      {
+       "code": "ROAD_ROLLER",
+       "label_en": "Road roller",
+       "label_fr": "Compacteur"
+      },
+      {
+       "code": "CRANE",
+       "label_en": "Crane",
+       "label_fr": "Grue"
+      },
+      {
+       "code": "FORKLIFT",
+       "label_en": "Forklift",
+       "label_fr": "Chariot élévateur"
+      },
+      {
+       "code": "DUMP_TRUCK",
+       "label_en": "Dump truck",
+       "label_fr": "Tombereau"
+      },
+      {
+       "code": "TRACTOR",
+       "label_en": "Tractor",
+       "label_fr": "Tracteur"
+      },
+      {
+       "code": "COMBINE_HARVESTER",
+       "label_en": "Combine harvester",
+       "label_fr": "Moissonneuse-batteuse"
+      },
+      {
+       "code": "GENERATOR",
+       "label_en": "Generator",
+       "label_fr": "Groupe électrogène"
+      },
+      {
+       "code": "COMPRESSOR",
+       "label_en": "Compressor",
+       "label_fr": "Compresseur"
+      },
+      {
+       "code": "ENGINE",
+       "label_en": "Engine",
+       "label_fr": "Moteur"
+      },
+      {
+       "code": "TELEHANDLER",
+       "label_en": "Telehandler",
+       "label_fr": "Chariot télescopique"
+      },
+      {
+       "code": "SKID_STEER_LOADER",
+       "label_en": "Skid steer loader",
+       "label_fr": "Chargeuse compacte"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "manufacturer",
+     "label_en": "Manufacturer",
+     "label_fr": "Constructeur",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CATERPILLAR",
+       "label_en": "Caterpillar",
+       "label_fr": "Caterpillar",
+       "attributes": {
+        "categories": [
+         "EXCAVATOR",
+         "WHEEL_LOADER",
+         "BULLDOZER",
+         "MOTOR_GRADER",
+         "BACKHOE_LOADER",
+         "DUMP_TRUCK",
+         "GENERATOR"
+        ]
+       }
+      },
+      {
+       "code": "KOMATSU",
+       "label_en": "Komatsu",
+       "label_fr": "Komatsu",
+       "attributes": {
+        "categories": [
+         "EXCAVATOR",
+         "WHEEL_LOADER",
+         "BULLDOZER",
+         "MOTOR_GRADER",
+         "DUMP_TRUCK"
+        ]
+       }
+      },
+      {
+       "code": "JCB",
+       "label_en": "JCB",
+       "label_fr": "JCB",
+       "attributes": {
+        "categories": [
+         "BACKHOE_LOADER",
+         "EXCAVATOR",
+         "TELEHANDLER",
+         "SKID_STEER_LOADER"
+        ]
+       }
+      },
+      {
+       "code": "HITACHI",
+       "label_en": "Hitachi",
+       "label_fr": "Hitachi",
+       "attributes": {
+        "categories": [
+         "EXCAVATOR",
+         "WHEEL_LOADER"
+        ]
+       }
+      },
+      {
+       "code": "VOLVO_CE",
+       "label_en": "Volvo CE",
+       "label_fr": "Volvo CE",
+       "attributes": {
+        "categories": [
+         "EXCAVATOR",
+         "WHEEL_LOADER",
+         "DUMP_TRUCK"
+        ]
+       }
+      },
+      {
+       "code": "SANY",
+       "label_en": "Sany",
+       "label_fr": "Sany",
+       "attributes": {
+        "categories": [
+         "EXCAVATOR",
+         "CRANE"
+        ]
+       }
+      },
+      {
+       "code": "XCMG",
+       "label_en": "XCMG",
+       "label_fr": "XCMG",
+       "attributes": {
+        "categories": [
+         "WHEEL_LOADER",
+         "CRANE",
+         "MOTOR_GRADER"
+        ]
+       }
+      },
+      {
+       "code": "LIEBHERR",
+       "label_en": "Liebherr",
+       "label_fr": "Liebherr",
+       "attributes": {
+        "categories": [
+         "CRANE",
+         "EXCAVATOR"
+        ]
+       }
+      },
+      {
+       "code": "JOHN_DEERE",
+       "label_en": "John Deere",
+       "label_fr": "John Deere",
+       "attributes": {
+        "categories": [
+         "TRACTOR",
+         "COMBINE_HARVESTER",
+         "BACKHOE_LOADER"
+        ]
+       }
+      },
+      {
+       "code": "KUBOTA",
+       "label_en": "Kubota",
+       "label_fr": "Kubota",
+       "attributes": {
+        "categories": [
+         "TRACTOR",
+         "EXCAVATOR"
+        ]
+       }
+      },
+      {
+       "code": "PERKINS",
+       "label_en": "Perkins",
+       "label_fr": "Perkins",
+       "attributes": {
+        "categories": [
+         "ENGINE",
+         "GENERATOR"
+        ]
+       }
+      },
+      {
+       "code": "CUMMINS",
+       "label_en": "Cummins",
+       "label_fr": "Cummins",
+       "attributes": {
+        "categories": [
+         "ENGINE",
+         "GENERATOR"
+        ]
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "model",
+     "label_en": "Model",
+     "label_fr": "Modèle",
+     "hierarchical": true,
+     "values": [
+      {
+       "code": "CATERPILLAR__320",
+       "label_en": "320",
+       "label_fr": "320",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "CATERPILLAR__330",
+       "label_en": "330",
+       "label_fr": "330",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "CATERPILLAR__336",
+       "label_en": "336",
+       "label_fr": "336",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "CATERPILLAR__950",
+       "label_en": "950",
+       "label_fr": "950",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__966",
+       "label_en": "966",
+       "label_fr": "966",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__980",
+       "label_en": "980",
+       "label_fr": "980",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__D6",
+       "label_en": "D6",
+       "label_fr": "D6",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "BULLDOZER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__D8",
+       "label_en": "D8",
+       "label_fr": "D8",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "BULLDOZER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__D9",
+       "label_en": "D9",
+       "label_fr": "D9",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "BULLDOZER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__140",
+       "label_en": "140",
+       "label_fr": "140",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "MOTOR_GRADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__120",
+       "label_en": "120",
+       "label_fr": "120",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "MOTOR_GRADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__432",
+       "label_en": "432",
+       "label_fr": "432",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "BACKHOE_LOADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__428",
+       "label_en": "428",
+       "label_fr": "428",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "BACKHOE_LOADER"
+       }
+      },
+      {
+       "code": "CATERPILLAR__745",
+       "label_en": "745",
+       "label_fr": "745",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "DUMP_TRUCK"
+       }
+      },
+      {
+       "code": "CATERPILLAR__777",
+       "label_en": "777",
+       "label_fr": "777",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "DUMP_TRUCK"
+       }
+      },
+      {
+       "code": "CATERPILLAR__C15",
+       "label_en": "C15",
+       "label_fr": "C15",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "GENERATOR"
+       }
+      },
+      {
+       "code": "CATERPILLAR__C18",
+       "label_en": "C18",
+       "label_fr": "C18",
+       "parent_code": "CATERPILLAR",
+       "attributes": {
+        "category": "GENERATOR"
+       }
+      },
+      {
+       "code": "KOMATSU__PC200",
+       "label_en": "PC200",
+       "label_fr": "PC200",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "KOMATSU__PC210",
+       "label_en": "PC210",
+       "label_fr": "PC210",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "KOMATSU__PC300",
+       "label_en": "PC300",
+       "label_fr": "PC300",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "KOMATSU__WA380",
+       "label_en": "WA380",
+       "label_fr": "WA380",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "KOMATSU__WA470",
+       "label_en": "WA470",
+       "label_fr": "WA470",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "KOMATSU__D65",
+       "label_en": "D65",
+       "label_fr": "D65",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "BULLDOZER"
+       }
+      },
+      {
+       "code": "KOMATSU__D85",
+       "label_en": "D85",
+       "label_fr": "D85",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "BULLDOZER"
+       }
+      },
+      {
+       "code": "KOMATSU__GD655",
+       "label_en": "GD655",
+       "label_fr": "GD655",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "MOTOR_GRADER"
+       }
+      },
+      {
+       "code": "KOMATSU__HD785",
+       "label_en": "HD785",
+       "label_fr": "HD785",
+       "parent_code": "KOMATSU",
+       "attributes": {
+        "category": "DUMP_TRUCK"
+       }
+      },
+      {
+       "code": "JCB__3CX",
+       "label_en": "3CX",
+       "label_fr": "3CX",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "BACKHOE_LOADER"
+       }
+      },
+      {
+       "code": "JCB__4CX",
+       "label_en": "4CX",
+       "label_fr": "4CX",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "BACKHOE_LOADER"
+       }
+      },
+      {
+       "code": "JCB__JS220",
+       "label_en": "JS220",
+       "label_fr": "JS220",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "JCB__540_170",
+       "label_en": "540-170",
+       "label_fr": "540-170",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "TELEHANDLER"
+       }
+      },
+      {
+       "code": "JCB__531_70",
+       "label_en": "531-70",
+       "label_fr": "531-70",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "TELEHANDLER"
+       }
+      },
+      {
+       "code": "JCB__155",
+       "label_en": "155",
+       "label_fr": "155",
+       "parent_code": "JCB",
+       "attributes": {
+        "category": "SKID_STEER_LOADER"
+       }
+      },
+      {
+       "code": "HITACHI__ZX200",
+       "label_en": "ZX200",
+       "label_fr": "ZX200",
+       "parent_code": "HITACHI",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "HITACHI__ZX350",
+       "label_en": "ZX350",
+       "label_fr": "ZX350",
+       "parent_code": "HITACHI",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "HITACHI__ZW220",
+       "label_en": "ZW220",
+       "label_fr": "ZW220",
+       "parent_code": "HITACHI",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "VOLVO_CE__EC220",
+       "label_en": "EC220",
+       "label_fr": "EC220",
+       "parent_code": "VOLVO_CE",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "VOLVO_CE__EC380",
+       "label_en": "EC380",
+       "label_fr": "EC380",
+       "parent_code": "VOLVO_CE",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "VOLVO_CE__L120",
+       "label_en": "L120",
+       "label_fr": "L120",
+       "parent_code": "VOLVO_CE",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "VOLVO_CE__L150",
+       "label_en": "L150",
+       "label_fr": "L150",
+       "parent_code": "VOLVO_CE",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "VOLVO_CE__A40G",
+       "label_en": "A40G",
+       "label_fr": "A40G",
+       "parent_code": "VOLVO_CE",
+       "attributes": {
+        "category": "DUMP_TRUCK"
+       }
+      },
+      {
+       "code": "SANY__SY215",
+       "label_en": "SY215",
+       "label_fr": "SY215",
+       "parent_code": "SANY",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "SANY__SY365",
+       "label_en": "SY365",
+       "label_fr": "SY365",
+       "parent_code": "SANY",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "SANY__STC250",
+       "label_en": "STC250",
+       "label_fr": "STC250",
+       "parent_code": "SANY",
+       "attributes": {
+        "category": "CRANE"
+       }
+      },
+      {
+       "code": "XCMG__LW500",
+       "label_en": "LW500",
+       "label_fr": "LW500",
+       "parent_code": "XCMG",
+       "attributes": {
+        "category": "WHEEL_LOADER"
+       }
+      },
+      {
+       "code": "XCMG__QY25K",
+       "label_en": "QY25K",
+       "label_fr": "QY25K",
+       "parent_code": "XCMG",
+       "attributes": {
+        "category": "CRANE"
+       }
+      },
+      {
+       "code": "XCMG__GR215",
+       "label_en": "GR215",
+       "label_fr": "GR215",
+       "parent_code": "XCMG",
+       "attributes": {
+        "category": "MOTOR_GRADER"
+       }
+      },
+      {
+       "code": "LIEBHERR__LTM_1100",
+       "label_en": "LTM 1100",
+       "label_fr": "LTM 1100",
+       "parent_code": "LIEBHERR",
+       "attributes": {
+        "category": "CRANE"
+       }
+      },
+      {
+       "code": "LIEBHERR__LTM_1060",
+       "label_en": "LTM 1060",
+       "label_fr": "LTM 1060",
+       "parent_code": "LIEBHERR",
+       "attributes": {
+        "category": "CRANE"
+       }
+      },
+      {
+       "code": "LIEBHERR__R_936",
+       "label_en": "R 936",
+       "label_fr": "R 936",
+       "parent_code": "LIEBHERR",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "JOHN_DEERE__5075E",
+       "label_en": "5075E",
+       "label_fr": "5075E",
+       "parent_code": "JOHN_DEERE",
+       "attributes": {
+        "category": "TRACTOR"
+       }
+      },
+      {
+       "code": "JOHN_DEERE__6120M",
+       "label_en": "6120M",
+       "label_fr": "6120M",
+       "parent_code": "JOHN_DEERE",
+       "attributes": {
+        "category": "TRACTOR"
+       }
+      },
+      {
+       "code": "JOHN_DEERE__S780",
+       "label_en": "S780",
+       "label_fr": "S780",
+       "parent_code": "JOHN_DEERE",
+       "attributes": {
+        "category": "COMBINE_HARVESTER"
+       }
+      },
+      {
+       "code": "JOHN_DEERE__310L",
+       "label_en": "310L",
+       "label_fr": "310L",
+       "parent_code": "JOHN_DEERE",
+       "attributes": {
+        "category": "BACKHOE_LOADER"
+       }
+      },
+      {
+       "code": "KUBOTA__M7040",
+       "label_en": "M7040",
+       "label_fr": "M7040",
+       "parent_code": "KUBOTA",
+       "attributes": {
+        "category": "TRACTOR"
+       }
+      },
+      {
+       "code": "KUBOTA__L4508",
+       "label_en": "L4508",
+       "label_fr": "L4508",
+       "parent_code": "KUBOTA",
+       "attributes": {
+        "category": "TRACTOR"
+       }
+      },
+      {
+       "code": "KUBOTA__KX080",
+       "label_en": "KX080",
+       "label_fr": "KX080",
+       "parent_code": "KUBOTA",
+       "attributes": {
+        "category": "EXCAVATOR"
+       }
+      },
+      {
+       "code": "PERKINS__1100_SERIES",
+       "label_en": "1100 Series",
+       "label_fr": "1100 Series",
+       "parent_code": "PERKINS",
+       "attributes": {
+        "category": "ENGINE"
+       }
+      },
+      {
+       "code": "PERKINS__1200_SERIES",
+       "label_en": "1200 Series",
+       "label_fr": "1200 Series",
+       "parent_code": "PERKINS",
+       "attributes": {
+        "category": "ENGINE"
+       }
+      },
+      {
+       "code": "CUMMINS__QSB6_7",
+       "label_en": "QSB6.7",
+       "label_fr": "QSB6.7",
+       "parent_code": "CUMMINS",
+       "attributes": {
+        "category": "ENGINE"
+       }
+      },
+      {
+       "code": "CUMMINS__QSX15",
+       "label_en": "QSX15",
+       "label_fr": "QSX15",
+       "parent_code": "CUMMINS",
+       "attributes": {
+        "category": "ENGINE"
+       }
+      },
+      {
+       "code": "CUMMINS__C150D5",
+       "label_en": "C150D5",
+       "label_fr": "C150D5",
+       "parent_code": "CUMMINS",
+       "attributes": {
+        "category": "GENERATOR"
+       }
+      },
+      {
+       "code": "CUMMINS__C500D5",
+       "label_en": "C500D5",
+       "label_fr": "C500D5",
+       "parent_code": "CUMMINS",
+       "attributes": {
+        "category": "GENERATOR"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "parent_list": "manufacturer"
+    }
+   ]
+  },
+  {
+   "code": "agriculture",
+   "label_en": "Agriculture",
+   "label_fr": "Agriculture",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "crop",
+     "label_en": "Crop",
+     "label_fr": "Culture",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "COCOA",
+       "label_en": "Cocoa",
+       "label_fr": "Cacao"
+      },
+      {
+       "code": "COFFEE_ARABICA",
+       "label_en": "Coffee (Arabica)",
+       "label_fr": "Café arabica"
+      },
+      {
+       "code": "COFFEE_ROBUSTA",
+       "label_en": "Coffee (Robusta)",
+       "label_fr": "Café robusta"
+      },
+      {
+       "code": "MAIZE",
+       "label_en": "Maize",
+       "label_fr": "Maïs"
+      },
+      {
+       "code": "CASSAVA",
+       "label_en": "Cassava",
+       "label_fr": "Manioc"
+      },
+      {
+       "code": "PLANTAIN",
+       "label_en": "Plantain",
+       "label_fr": "Plantain"
+      },
+      {
+       "code": "BANANA",
+       "label_en": "Banana",
+       "label_fr": "Banane"
+      },
+      {
+       "code": "OIL_PALM",
+       "label_en": "Oil palm",
+       "label_fr": "Palmier à huile"
+      },
+      {
+       "code": "RUBBER",
+       "label_en": "Rubber",
+       "label_fr": "Hévéa"
+      },
+      {
+       "code": "COTTON",
+       "label_en": "Cotton",
+       "label_fr": "Coton"
+      },
+      {
+       "code": "RICE",
+       "label_en": "Rice",
+       "label_fr": "Riz"
+      },
+      {
+       "code": "SORGHUM",
+       "label_en": "Sorghum",
+       "label_fr": "Sorgho"
+      },
+      {
+       "code": "MILLET",
+       "label_en": "Millet",
+       "label_fr": "Mil"
+      },
+      {
+       "code": "GROUNDNUT",
+       "label_en": "Groundnut",
+       "label_fr": "Arachide"
+      },
+      {
+       "code": "BEANS",
+       "label_en": "Beans",
+       "label_fr": "Haricot"
+      },
+      {
+       "code": "SOYBEAN",
+       "label_en": "Soybean",
+       "label_fr": "Soja"
+      },
+      {
+       "code": "SUGARCANE",
+       "label_en": "Sugarcane",
+       "label_fr": "Canne à sucre"
+      },
+      {
+       "code": "YAM",
+       "label_en": "Yam",
+       "label_fr": "Igname"
+      },
+      {
+       "code": "COCOYAM",
+       "label_en": "Cocoyam",
+       "label_fr": "Macabo / taro"
+      },
+      {
+       "code": "IRISH_POTATO",
+       "label_en": "Irish potato",
+       "label_fr": "Pomme de terre"
+      },
+      {
+       "code": "SWEET_POTATO",
+       "label_en": "Sweet potato",
+       "label_fr": "Patate douce"
+      },
+      {
+       "code": "TOMATO",
+       "label_en": "Tomato",
+       "label_fr": "Tomate"
+      },
+      {
+       "code": "ONION",
+       "label_en": "Onion",
+       "label_fr": "Oignon"
+      },
+      {
+       "code": "PINEAPPLE",
+       "label_en": "Pineapple",
+       "label_fr": "Ananas"
+      },
+      {
+       "code": "TEA",
+       "label_en": "Tea",
+       "label_fr": "Thé"
+      },
+      {
+       "code": "PEPPER",
+       "label_en": "Pepper (Penja)",
+       "label_fr": "Poivre (Penja)"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "farming_system",
+     "label_en": "Farming system",
+     "label_fr": "Système de production",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "SMALLHOLDER",
+       "label_en": "Smallholder",
+       "label_fr": "Petite exploitation familiale"
+      },
+      {
+       "code": "COMMERCIAL_PLANTATION",
+       "label_en": "Commercial plantation",
+       "label_fr": "Plantation commerciale"
+      },
+      {
+       "code": "AGROFORESTRY",
+       "label_en": "Agroforestry",
+       "label_fr": "Agroforesterie"
+      },
+      {
+       "code": "IRRIGATED",
+       "label_en": "Irrigated",
+       "label_fr": "Irrigué"
+      },
+      {
+       "code": "RAIN_FED",
+       "label_en": "Rain-fed",
+       "label_fr": "Pluvial"
+      },
+      {
+       "code": "GREENHOUSE",
+       "label_en": "Greenhouse",
+       "label_fr": "Sous serre"
+      },
+      {
+       "code": "COOPERATIVE",
+       "label_en": "Cooperative",
+       "label_fr": "Coopérative"
+      },
+      {
+       "code": "ORGANIC",
+       "label_en": "Organic",
+       "label_fr": "Biologique"
+      },
+      {
+       "code": "MIXED_CROP_LIVESTOCK",
+       "label_en": "Mixed crop-livestock",
+       "label_fr": "Polyculture-élevage"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "livestock",
+   "label_en": "Livestock",
+   "label_fr": "Élevage",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "animal_type",
+     "label_en": "Animal type",
+     "label_fr": "Espèce animale",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CATTLE",
+       "label_en": "Cattle",
+       "label_fr": "Bovins"
+      },
+      {
+       "code": "GOAT",
+       "label_en": "Goat",
+       "label_fr": "Caprins"
+      },
+      {
+       "code": "SHEEP",
+       "label_en": "Sheep",
+       "label_fr": "Ovins"
+      },
+      {
+       "code": "PIG",
+       "label_en": "Pig",
+       "label_fr": "Porcins"
+      },
+      {
+       "code": "POULTRY",
+       "label_en": "Poultry",
+       "label_fr": "Volailles"
+      },
+      {
+       "code": "FISH",
+       "label_en": "Fish (aquaculture)",
+       "label_fr": "Poissons (aquaculture)"
+      },
+      {
+       "code": "HORSE",
+       "label_en": "Horse",
+       "label_fr": "Équins"
+      },
+      {
+       "code": "RABBIT",
+       "label_en": "Rabbit",
+       "label_fr": "Lapins"
+      },
+      {
+       "code": "BEES",
+       "label_en": "Bees",
+       "label_fr": "Abeilles"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "production_purpose",
+     "label_en": "Production purpose",
+     "label_fr": "Finalité de production",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MEAT",
+       "label_en": "Meat",
+       "label_fr": "Viande"
+      },
+      {
+       "code": "DAIRY",
+       "label_en": "Dairy",
+       "label_fr": "Lait"
+      },
+      {
+       "code": "EGGS",
+       "label_en": "Eggs",
+       "label_fr": "Œufs"
+      },
+      {
+       "code": "BREEDING",
+       "label_en": "Breeding",
+       "label_fr": "Reproduction"
+      },
+      {
+       "code": "DRAUGHT_TRACTION",
+       "label_en": "Draught / traction",
+       "label_fr": "Traction animale"
+      },
+      {
+       "code": "MIXED",
+       "label_en": "Mixed",
+       "label_fr": "Mixte"
+      },
+      {
+       "code": "HONEY",
+       "label_en": "Honey",
+       "label_fr": "Miel"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "breed",
+     "label_en": "Breed",
+     "label_fr": "Race",
+     "hierarchical": true,
+     "values": [
+      {
+       "code": "CATTLE__GUDALI",
+       "label_en": "Gudali",
+       "label_fr": "Gudali",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__WHITE_FULANI_MBORORO",
+       "label_en": "White Fulani (Mbororo)",
+       "label_fr": "White Fulani (Mbororo)",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__RED_FULANI_MBORORO",
+       "label_en": "Red Fulani (Mbororo)",
+       "label_fr": "Red Fulani (Mbororo)",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__HOLSTEIN",
+       "label_en": "Holstein",
+       "label_fr": "Holstein",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__MONTB_LIARDE",
+       "label_en": "Montbéliarde",
+       "label_fr": "Montbéliarde",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__BRAHMAN",
+       "label_en": "Brahman",
+       "label_fr": "Brahman",
+       "parent_code": "CATTLE"
+      },
+      {
+       "code": "CATTLE__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "CATTLE",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "GOAT__WEST_AFRICAN_DWARF",
+       "label_en": "West African Dwarf",
+       "label_fr": "West African Dwarf",
+       "parent_code": "GOAT"
+      },
+      {
+       "code": "GOAT__SAHELIAN",
+       "label_en": "Sahelian",
+       "label_fr": "Sahelian",
+       "parent_code": "GOAT"
+      },
+      {
+       "code": "GOAT__BOER",
+       "label_en": "Boer",
+       "label_fr": "Boer",
+       "parent_code": "GOAT"
+      },
+      {
+       "code": "GOAT__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "GOAT",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "SHEEP__WEST_AFRICAN_DWARF",
+       "label_en": "West African Dwarf",
+       "label_fr": "West African Dwarf",
+       "parent_code": "SHEEP"
+      },
+      {
+       "code": "SHEEP__FULANI_OUDAH",
+       "label_en": "Fulani (Oudah)",
+       "label_fr": "Fulani (Oudah)",
+       "parent_code": "SHEEP"
+      },
+      {
+       "code": "SHEEP__DJALLONK",
+       "label_en": "Djallonké",
+       "label_fr": "Djallonké",
+       "parent_code": "SHEEP"
+      },
+      {
+       "code": "SHEEP__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "SHEEP",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "PIG__LARGE_WHITE",
+       "label_en": "Large White",
+       "label_fr": "Large White",
+       "parent_code": "PIG"
+      },
+      {
+       "code": "PIG__LANDRACE",
+       "label_en": "Landrace",
+       "label_fr": "Landrace",
+       "parent_code": "PIG"
+      },
+      {
+       "code": "PIG__DUROC",
+       "label_en": "Duroc",
+       "label_fr": "Duroc",
+       "parent_code": "PIG"
+      },
+      {
+       "code": "PIG__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "PIG",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "POULTRY__BROILER_COBB_500",
+       "label_en": "Broiler (Cobb 500)",
+       "label_fr": "Broiler (Cobb 500)",
+       "parent_code": "POULTRY"
+      },
+      {
+       "code": "POULTRY__BROILER_ROSS_308",
+       "label_en": "Broiler (Ross 308)",
+       "label_fr": "Broiler (Ross 308)",
+       "parent_code": "POULTRY"
+      },
+      {
+       "code": "POULTRY__LAYER_ISA_BROWN",
+       "label_en": "Layer (ISA Brown)",
+       "label_fr": "Layer (ISA Brown)",
+       "parent_code": "POULTRY"
+      },
+      {
+       "code": "POULTRY__LAYER_LOHMANN_BROWN",
+       "label_en": "Layer (Lohmann Brown)",
+       "label_fr": "Layer (Lohmann Brown)",
+       "parent_code": "POULTRY"
+      },
+      {
+       "code": "POULTRY__INDIGENOUS_CHICKEN",
+       "label_en": "Indigenous chicken",
+       "label_fr": "Indigenous chicken",
+       "parent_code": "POULTRY"
+      },
+      {
+       "code": "POULTRY__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "POULTRY",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "FISH__NILE_TILAPIA",
+       "label_en": "Nile tilapia",
+       "label_fr": "Nile tilapia",
+       "parent_code": "FISH"
+      },
+      {
+       "code": "FISH__AFRICAN_CATFISH_CLARIAS",
+       "label_en": "African catfish (Clarias)",
+       "label_fr": "African catfish (Clarias)",
+       "parent_code": "FISH"
+      },
+      {
+       "code": "FISH__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "FISH",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "HORSE__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "HORSE",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "RABBIT__NEW_ZEALAND_WHITE",
+       "label_en": "New Zealand White",
+       "label_fr": "New Zealand White",
+       "parent_code": "RABBIT"
+      },
+      {
+       "code": "RABBIT__CALIFORNIAN",
+       "label_en": "Californian",
+       "label_fr": "Californian",
+       "parent_code": "RABBIT"
+      },
+      {
+       "code": "RABBIT__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "RABBIT",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "BEES__LOCAL",
+       "label_en": "Other / Local Breed",
+       "label_fr": "Autre / race locale",
+       "parent_code": "BEES",
+       "attributes": {
+        "review_queue": true
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "parent_list": "animal_type"
+    }
+   ]
+  },
+  {
+   "code": "marine",
+   "label_en": "Marine",
+   "label_fr": "Maritime",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "vessel_type",
+     "label_en": "Vessel type",
+     "label_fr": "Type de navire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "FISHING_VESSEL",
+       "label_en": "Fishing vessel",
+       "label_fr": "Navire de pêche"
+      },
+      {
+       "code": "PIROGUE",
+       "label_en": "Pirogue",
+       "label_fr": "Pirogue"
+      },
+      {
+       "code": "PASSENGER_FERRY",
+       "label_en": "Passenger ferry",
+       "label_fr": "Transbordeur de passagers"
+      },
+      {
+       "code": "TUG",
+       "label_en": "Tug",
+       "label_fr": "Remorqueur"
+      },
+      {
+       "code": "OFFSHORE_SUPPLY_VESSEL",
+       "label_en": "Offshore supply vessel",
+       "label_fr": "Navire de ravitaillement offshore"
+      },
+      {
+       "code": "GENERAL_CARGO",
+       "label_en": "General cargo",
+       "label_fr": "Cargo polyvalent"
+      },
+      {
+       "code": "BULK_CARRIER",
+       "label_en": "Bulk carrier",
+       "label_fr": "Vraquier"
+      },
+      {
+       "code": "TANKER",
+       "label_en": "Tanker",
+       "label_fr": "Navire-citerne"
+      },
+      {
+       "code": "CONTAINER_SHIP",
+       "label_en": "Container ship",
+       "label_fr": "Porte-conteneurs"
+      },
+      {
+       "code": "BARGE",
+       "label_en": "Barge",
+       "label_fr": "Barge"
+      },
+      {
+       "code": "DREDGER",
+       "label_en": "Dredger",
+       "label_fr": "Drague"
+      },
+      {
+       "code": "YACHT_PLEASURE_CRAFT",
+       "label_en": "Yacht / pleasure craft",
+       "label_fr": "Yacht / plaisance"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "vessel_use",
+     "label_en": "Vessel use",
+     "label_fr": "Usage du navire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "COMMERCIAL_FISHING",
+       "label_en": "Commercial fishing",
+       "label_fr": "Pêche commerciale"
+      },
+      {
+       "code": "ARTISANAL_FISHING",
+       "label_en": "Artisanal fishing",
+       "label_fr": "Pêche artisanale"
+      },
+      {
+       "code": "PASSENGER_TRANSPORT",
+       "label_en": "Passenger transport",
+       "label_fr": "Transport de passagers"
+      },
+      {
+       "code": "CARGO_TRANSPORT",
+       "label_en": "Cargo transport",
+       "label_fr": "Transport de marchandises"
+      },
+      {
+       "code": "OFFSHORE_SUPPORT",
+       "label_en": "Offshore support",
+       "label_fr": "Soutien offshore"
+      },
+      {
+       "code": "HARBOUR_SERVICE",
+       "label_en": "Harbour service",
+       "label_fr": "Service portuaire"
+      },
+      {
+       "code": "PLEASURE",
+       "label_en": "Pleasure",
+       "label_fr": "Plaisance"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "aviation",
+   "label_en": "Aviation",
+   "label_fr": "Aviation",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "aircraft_type",
+     "label_en": "Aircraft type",
+     "label_fr": "Type d'aéronef",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "JET",
+       "label_en": "Fixed-wing jet",
+       "label_fr": "Avion à réaction"
+      },
+      {
+       "code": "TURBOPROP",
+       "label_en": "Turboprop",
+       "label_fr": "Turbopropulseur"
+      },
+      {
+       "code": "PISTON",
+       "label_en": "Piston aircraft",
+       "label_fr": "Avion à pistons"
+      },
+      {
+       "code": "HELICOPTER",
+       "label_en": "Helicopter",
+       "label_fr": "Hélicoptère"
+      },
+      {
+       "code": "DRONE",
+       "label_en": "Drone / UAS",
+       "label_fr": "Drone / aéronef sans pilote"
+      },
+      {
+       "code": "GLIDER",
+       "label_en": "Glider",
+       "label_fr": "Planeur"
+      },
+      {
+       "code": "MICROLIGHT",
+       "label_en": "Microlight",
+       "label_fr": "ULM"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "manufacturer",
+     "label_en": "Manufacturer",
+     "label_fr": "Constructeur",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "AIRBUS",
+       "label_en": "Airbus",
+       "label_fr": "Airbus"
+      },
+      {
+       "code": "BOEING",
+       "label_en": "Boeing",
+       "label_fr": "Boeing"
+      },
+      {
+       "code": "CESSNA",
+       "label_en": "Cessna",
+       "label_fr": "Cessna"
+      },
+      {
+       "code": "EMBRAER",
+       "label_en": "Embraer",
+       "label_fr": "Embraer"
+      },
+      {
+       "code": "BOMBARDIER",
+       "label_en": "Bombardier",
+       "label_fr": "Bombardier"
+      },
+      {
+       "code": "ATR",
+       "label_en": "ATR",
+       "label_fr": "ATR"
+      },
+      {
+       "code": "DASSAULT",
+       "label_en": "Dassault",
+       "label_fr": "Dassault"
+      },
+      {
+       "code": "GULFSTREAM",
+       "label_en": "Gulfstream",
+       "label_fr": "Gulfstream"
+      },
+      {
+       "code": "BEECHCRAFT",
+       "label_en": "Beechcraft",
+       "label_fr": "Beechcraft"
+      },
+      {
+       "code": "PIPER",
+       "label_en": "Piper",
+       "label_fr": "Piper"
+      },
+      {
+       "code": "BELL",
+       "label_en": "Bell",
+       "label_fr": "Bell"
+      },
+      {
+       "code": "AIRBUS_HELICOPTERS",
+       "label_en": "Airbus Helicopters",
+       "label_fr": "Airbus Helicopters"
+      },
+      {
+       "code": "LEONARDO",
+       "label_en": "Leonardo",
+       "label_fr": "Leonardo"
+      },
+      {
+       "code": "ROBINSON",
+       "label_en": "Robinson",
+       "label_fr": "Robinson"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "partners",
+   "label_en": "Partners / providers",
+   "label_fr": "Partenaires / prestataires",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "provider_category",
+     "label_en": "Provider category",
+     "label_fr": "Catégorie de prestataire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "GARAGE_REPAIRER",
+       "label_en": "Garage / repairer",
+       "label_fr": "Garage / réparateur"
+      },
+      {
+       "code": "LOSS_ADJUSTER",
+       "label_en": "Loss adjuster",
+       "label_fr": "Expert / régleur"
+      },
+      {
+       "code": "MEDICAL_PROVIDER",
+       "label_en": "Medical provider",
+       "label_fr": "Prestataire médical"
+      },
+      {
+       "code": "TOWING_SERVICE",
+       "label_en": "Towing service",
+       "label_fr": "Dépannage / remorquage"
+      },
+      {
+       "code": "GLASS_REPAIR",
+       "label_en": "Glass repair",
+       "label_fr": "Réparation de vitrage"
+      },
+      {
+       "code": "LEGAL_COUNSEL",
+       "label_en": "Legal counsel",
+       "label_fr": "Avocat / conseil juridique"
+      },
+      {
+       "code": "BAILIFF",
+       "label_en": "Bailiff",
+       "label_fr": "Huissier de justice"
+      },
+      {
+       "code": "SURVEYOR",
+       "label_en": "Surveyor",
+       "label_fr": "Géomètre / surveyor"
+      },
+      {
+       "code": "SECURITY_COMPANY",
+       "label_en": "Security company",
+       "label_fr": "Société de sécurité"
+      },
+      {
+       "code": "SALVAGE_BUYER",
+       "label_en": "Salvage buyer",
+       "label_fr": "Acheteur d'épaves"
+      },
+      {
+       "code": "FUNERAL_SERVICES",
+       "label_en": "Funeral services",
+       "label_fr": "Pompes funèbres"
+      },
+      {
+       "code": "CAR_RENTAL",
+       "label_en": "Car rental",
+       "label_fr": "Location de véhicules"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "garage_service",
+     "label_en": "Garage service",
+     "label_fr": "Prestation garage",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MECHANICAL_REPAIR",
+       "label_en": "Mechanical repair",
+       "label_fr": "Mécanique"
+      },
+      {
+       "code": "BODYWORK",
+       "label_en": "Bodywork",
+       "label_fr": "Carrosserie"
+      },
+      {
+       "code": "PAINTING",
+       "label_en": "Painting",
+       "label_fr": "Peinture"
+      },
+      {
+       "code": "ELECTRICAL",
+       "label_en": "Electrical",
+       "label_fr": "Électricité automobile"
+      },
+      {
+       "code": "WINDSCREEN",
+       "label_en": "Windscreen",
+       "label_fr": "Pare-brise"
+      },
+      {
+       "code": "TYRES",
+       "label_en": "Tyres",
+       "label_fr": "Pneumatiques"
+      },
+      {
+       "code": "DIAGNOSTICS",
+       "label_en": "Diagnostics",
+       "label_fr": "Diagnostic"
+      },
+      {
+       "code": "TOWING",
+       "label_en": "Towing",
+       "label_fr": "Remorquage"
+      },
+      {
+       "code": "PARTS_SUPPLY",
+       "label_en": "Parts supply",
+       "label_fr": "Fourniture de pièces"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "garage",
+     "label_en": "Garage",
+     "label_fr": "Garage",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true
+    },
+    {
+     "code": "hospital",
+     "label_en": "Hospital / medical facility",
+     "label_fr": "Hôpital / établissement de santé",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true
+    },
+    {
+     "code": "adjuster_type",
+     "label_en": "Adjuster / expert type",
+     "label_fr": "Type d'expert",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MOTOR_EXPERT",
+       "label_en": "Motor expert",
+       "label_fr": "Expert automobile"
+      },
+      {
+       "code": "PROPERTY_FIRE_EXPERT",
+       "label_en": "Property / fire expert",
+       "label_fr": "Expert incendie / dommages aux biens"
+      },
+      {
+       "code": "MARINE_SURVEYOR",
+       "label_en": "Marine surveyor",
+       "label_fr": "Commissaire d'avaries"
+      },
+      {
+       "code": "ENGINEERING_EXPERT",
+       "label_en": "Engineering expert",
+       "label_fr": "Expert construction / bris de machine"
+      },
+      {
+       "code": "MEDICAL_EXPERT",
+       "label_en": "Medical expert",
+       "label_fr": "Médecin-expert"
+      },
+      {
+       "code": "AGRICULTURAL_EXPERT",
+       "label_en": "Agricultural expert",
+       "label_fr": "Expert agricole"
+      },
+      {
+       "code": "FORENSIC_ACCOUNTANT",
+       "label_en": "Forensic accountant",
+       "label_fr": "Expert-comptable judiciaire"
+      },
+      {
+       "code": "LIABILITY_ADJUSTER",
+       "label_en": "Liability adjuster",
+       "label_fr": "Expert responsabilité civile"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "financial_institutions",
+   "label_en": "Financial institutions",
+   "label_fr": "Institutions financières",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "institution_type",
+     "label_en": "Institution type",
+     "label_fr": "Type d'établissement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "COMMERCIAL_BANK",
+       "label_en": "Commercial bank",
+       "label_fr": "Banque commerciale"
+      },
+      {
+       "code": "MFI_CAT1",
+       "label_en": "Microfinance institution (category 1)",
+       "label_fr": "EMF de 1re catégorie"
+      },
+      {
+       "code": "MFI_CAT2",
+       "label_en": "Microfinance institution (category 2)",
+       "label_fr": "EMF de 2e catégorie"
+      },
+      {
+       "code": "MFI_CAT3",
+       "label_en": "Microfinance institution (category 3)",
+       "label_fr": "EMF de 3e catégorie"
+      },
+      {
+       "code": "MOBILE_MONEY_OPERATOR",
+       "label_en": "Mobile money operator",
+       "label_fr": "Opérateur de monnaie mobile"
+      },
+      {
+       "code": "PAYMENT_INSTITUTION",
+       "label_en": "Payment institution",
+       "label_fr": "Établissement de paiement"
+      },
+      {
+       "code": "FINANCE_COMPANY",
+       "label_en": "Finance company",
+       "label_fr": "Établissement financier"
+      },
+      {
+       "code": "DEVELOPMENT_BANK",
+       "label_en": "Development bank",
+       "label_fr": "Banque de développement"
+      },
+      {
+       "code": "CENTRAL_BANK",
+       "label_en": "Central bank",
+       "label_fr": "Banque centrale"
+      },
+      {
+       "code": "POSTAL_FINANCIAL_SERVICES",
+       "label_en": "Postal financial services",
+       "label_fr": "Services financiers postaux"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "payments",
+   "label_en": "Payments",
+   "label_fr": "Paiements",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "payment_method",
+     "label_en": "Payment method",
+     "label_fr": "Mode de paiement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MTN_MOMO",
+       "label_en": "Mobile money (MTN MoMo)",
+       "label_fr": "Mobile money (MTN MoMo)"
+      },
+      {
+       "code": "ORANGE_MONEY",
+       "label_en": "Mobile money (Orange Money)",
+       "label_fr": "Mobile money (Orange Money)"
+      },
+      {
+       "code": "BANK_TRANSFER",
+       "label_en": "Bank transfer",
+       "label_fr": "Virement bancaire"
+      },
+      {
+       "code": "CHEQUE",
+       "label_en": "Cheque",
+       "label_fr": "Chèque"
+      },
+      {
+       "code": "CASH",
+       "label_en": "Cash",
+       "label_fr": "Espèces"
+      },
+      {
+       "code": "CARD",
+       "label_en": "Debit / credit card",
+       "label_fr": "Carte bancaire"
+      },
+      {
+       "code": "DIRECT_DEBIT",
+       "label_en": "Direct debit",
+       "label_fr": "Prélèvement automatique"
+      },
+      {
+       "code": "PAYROLL_DEDUCTION",
+       "label_en": "Payroll deduction",
+       "label_fr": "Précompte sur salaire"
+      },
+      {
+       "code": "AGENT_COLLECTION",
+       "label_en": "Agent collection",
+       "label_fr": "Encaissement par agent"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "payment_status",
+     "label_en": "Payment status",
+     "label_fr": "Statut de paiement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PENDING",
+       "label_en": "Pending",
+       "label_fr": "En attente"
+      },
+      {
+       "code": "INITIATED",
+       "label_en": "Initiated",
+       "label_fr": "Initié"
+      },
+      {
+       "code": "PROCESSING",
+       "label_en": "Processing",
+       "label_fr": "En cours de traitement"
+      },
+      {
+       "code": "SUCCEEDED",
+       "label_en": "Succeeded",
+       "label_fr": "Réussi"
+      },
+      {
+       "code": "FAILED",
+       "label_en": "Failed",
+       "label_fr": "Échoué"
+      },
+      {
+       "code": "CANCELLED",
+       "label_en": "Cancelled",
+       "label_fr": "Annulé"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré"
+      },
+      {
+       "code": "REFUNDED",
+       "label_en": "Refunded",
+       "label_fr": "Remboursé"
+      },
+      {
+       "code": "PARTIALLY_REFUNDED",
+       "label_en": "Partially refunded",
+       "label_fr": "Partiellement remboursé"
+      },
+      {
+       "code": "REVERSED",
+       "label_en": "Reversed",
+       "label_fr": "Contrepassé"
+      },
+      {
+       "code": "DISPUTED",
+       "label_en": "Disputed",
+       "label_fr": "Contesté"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "documents",
+   "label_en": "Documents",
+   "label_fr": "Documents",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "identity_document",
+     "label_en": "Identity document",
+     "label_fr": "Pièce d'identité",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CNI",
+       "label_en": "National ID card",
+       "label_fr": "Carte nationale d'identité"
+      },
+      {
+       "code": "PASSPORT",
+       "label_en": "Passport",
+       "label_fr": "Passeport"
+      },
+      {
+       "code": "RESIDENCE_PERMIT",
+       "label_en": "Residence permit",
+       "label_fr": "Carte de séjour"
+      },
+      {
+       "code": "REFUGEE_CARD",
+       "label_en": "Refugee card",
+       "label_fr": "Carte de réfugié"
+      },
+      {
+       "code": "BIRTH_CERTIFICATE",
+       "label_en": "Birth certificate",
+       "label_fr": "Acte de naissance"
+      },
+      {
+       "code": "DRIVING_LICENCE",
+       "label_en": "Driving licence",
+       "label_fr": "Permis de conduire"
+      },
+      {
+       "code": "VOTER_CARD",
+       "label_en": "Voter card",
+       "label_fr": "Carte d'électeur"
+      },
+      {
+       "code": "RCCM",
+       "label_en": "Trade register extract (RCCM)",
+       "label_fr": "Extrait du RCCM"
+      },
+      {
+       "code": "NIU",
+       "label_en": "Taxpayer card (NIU)",
+       "label_fr": "Carte de contribuable (NIU)"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "insurance_document",
+     "label_en": "Insurance document",
+     "label_fr": "Document d'assurance",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PROPOSAL_FORM",
+       "label_en": "Proposal form",
+       "label_fr": "Proposition d'assurance"
+      },
+      {
+       "code": "QUOTATION",
+       "label_en": "Quotation",
+       "label_fr": "Devis"
+      },
+      {
+       "code": "POLICY_SCHEDULE",
+       "label_en": "Policy schedule",
+       "label_fr": "Conditions particulières"
+      },
+      {
+       "code": "GENERAL_CONDITIONS",
+       "label_en": "General conditions",
+       "label_fr": "Conditions générales"
+      },
+      {
+       "code": "ENDORSEMENT",
+       "label_en": "Endorsement",
+       "label_fr": "Avenant"
+      },
+      {
+       "code": "CERTIFICATE_OF_INSURANCE",
+       "label_en": "Certificate of insurance",
+       "label_fr": "Attestation d'assurance"
+      },
+      {
+       "code": "PREMIUM_RECEIPT",
+       "label_en": "Premium receipt",
+       "label_fr": "Quittance de prime"
+      },
+      {
+       "code": "DEBIT_NOTE",
+       "label_en": "Debit note",
+       "label_fr": "Note de débit"
+      },
+      {
+       "code": "CREDIT_NOTE",
+       "label_en": "Credit note",
+       "label_fr": "Note de crédit"
+      },
+      {
+       "code": "CLAIM_FORM",
+       "label_en": "Claim form",
+       "label_fr": "Déclaration de sinistre"
+      },
+      {
+       "code": "DISCHARGE_SETTLEMENT_RECEIPT",
+       "label_en": "Discharge / settlement receipt",
+       "label_fr": "Quittance de règlement"
+      },
+      {
+       "code": "EXPERT_REPORT",
+       "label_en": "Expert report",
+       "label_fr": "Rapport d'expertise"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "vehicle_document",
+     "label_en": "Vehicle document",
+     "label_fr": "Document du véhicule",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CARTE_GRISE",
+       "label_en": "Registration certificate (carte grise)",
+       "label_fr": "Carte grise"
+      },
+      {
+       "code": "VISITE_TECHNIQUE",
+       "label_en": "Roadworthiness certificate",
+       "label_fr": "Visite technique"
+      },
+      {
+       "code": "PURCHASE_INVOICE",
+       "label_en": "Purchase invoice",
+       "label_fr": "Facture d'achat"
+      },
+      {
+       "code": "CUSTOMS_CLEARANCE",
+       "label_en": "Customs clearance",
+       "label_fr": "Dédouanement"
+      },
+      {
+       "code": "TRANSPORT_LICENCE",
+       "label_en": "Transport licence",
+       "label_fr": "Licence de transport"
+      },
+      {
+       "code": "VEHICLE_PHOTOS",
+       "label_en": "Vehicle photos",
+       "label_fr": "Photos du véhicule"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "property_document",
+     "label_en": "Property document",
+     "label_fr": "Document du bien",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "LAND_TITLE",
+       "label_en": "Land title",
+       "label_fr": "Titre foncier"
+      },
+      {
+       "code": "LEASE_AGREEMENT",
+       "label_en": "Lease agreement",
+       "label_fr": "Contrat de bail"
+      },
+      {
+       "code": "BUILDING_PERMIT",
+       "label_en": "Building permit",
+       "label_fr": "Permis de bâtir"
+      },
+      {
+       "code": "VALUATION_REPORT",
+       "label_en": "Valuation report",
+       "label_fr": "Rapport d'évaluation"
+      },
+      {
+       "code": "FLOOR_PLAN",
+       "label_en": "Floor plan",
+       "label_fr": "Plan"
+      },
+      {
+       "code": "PROPERTY_PHOTOS",
+       "label_en": "Property photos",
+       "label_fr": "Photos du bien"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "claims",
+   "label_en": "Claims",
+   "label_fr": "Sinistres",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "claim_category",
+     "label_en": "Claim category",
+     "label_fr": "Catégorie de sinistre",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MOTOR",
+       "label_en": "Motor",
+       "label_fr": "Automobile"
+      },
+      {
+       "code": "PROPERTY",
+       "label_en": "Property / fire",
+       "label_fr": "Incendie / dommages aux biens"
+      },
+      {
+       "code": "HEALTH",
+       "label_en": "Health",
+       "label_fr": "Santé"
+      },
+      {
+       "code": "LIFE",
+       "label_en": "Life",
+       "label_fr": "Vie"
+      },
+      {
+       "code": "MARINE",
+       "label_en": "Marine / cargo",
+       "label_fr": "Transport / facultés"
+      },
+      {
+       "code": "LIABILITY",
+       "label_en": "Liability",
+       "label_fr": "Responsabilité civile"
+      },
+      {
+       "code": "ENGINEERING",
+       "label_en": "Engineering",
+       "label_fr": "Risques techniques"
+      },
+      {
+       "code": "AGRICULTURE",
+       "label_en": "Agriculture",
+       "label_fr": "Agricole"
+      },
+      {
+       "code": "PERSONAL_ACCIDENT",
+       "label_en": "Personal accident",
+       "label_fr": "Individuelle accident"
+      },
+      {
+       "code": "TRAVEL",
+       "label_en": "Travel",
+       "label_fr": "Voyage"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "cause_of_loss",
+     "label_en": "Cause of loss",
+     "label_fr": "Cause du sinistre",
+     "hierarchical": true,
+     "values": [
+      {
+       "code": "MOTOR__COLLISION",
+       "label_en": "Collision",
+       "label_fr": "Collision",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__THEFT",
+       "label_en": "Theft",
+       "label_fr": "Vol",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__FIRE",
+       "label_en": "Fire",
+       "label_fr": "Incendie",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__GLASS_BREAKAGE",
+       "label_en": "Glass breakage",
+       "label_fr": "Bris de glace",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__VANDALISM",
+       "label_en": "Vandalism",
+       "label_fr": "Vandalisme",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__FLOOD",
+       "label_en": "Flood",
+       "label_fr": "Inondation",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__THIRD_PARTY_INJURY",
+       "label_en": "Third-party injury",
+       "label_fr": "Dommages corporels aux tiers",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "MOTOR__THIRD_PARTY_PROPERTY_DAMAGE",
+       "label_en": "Third-party property damage",
+       "label_fr": "Dommages matériels aux tiers",
+       "parent_code": "MOTOR"
+      },
+      {
+       "code": "PROPERTY__FIRE",
+       "label_en": "Fire",
+       "label_fr": "Incendie",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__LIGHTNING",
+       "label_en": "Lightning",
+       "label_fr": "Foudre",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__EXPLOSION",
+       "label_en": "Explosion",
+       "label_fr": "Explosion",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__FLOOD",
+       "label_en": "Flood",
+       "label_fr": "Inondation",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__STORM",
+       "label_en": "Storm",
+       "label_fr": "Tempête",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__WATER_DAMAGE",
+       "label_en": "Water damage",
+       "label_fr": "Dégâts des eaux",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__BURGLARY",
+       "label_en": "Burglary",
+       "label_fr": "Vol avec effraction",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__RIOT_AND_STRIKE",
+       "label_en": "Riot and strike",
+       "label_fr": "Émeutes et mouvements populaires",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "PROPERTY__ELECTRICAL_DAMAGE",
+       "label_en": "Electrical damage",
+       "label_fr": "Dommages électriques",
+       "parent_code": "PROPERTY"
+      },
+      {
+       "code": "HEALTH__ILLNESS",
+       "label_en": "Illness",
+       "label_fr": "Maladie",
+       "parent_code": "HEALTH"
+      },
+      {
+       "code": "HEALTH__ACCIDENT",
+       "label_en": "Accident",
+       "label_fr": "Accident",
+       "parent_code": "HEALTH"
+      },
+      {
+       "code": "HEALTH__MATERNITY",
+       "label_en": "Maternity",
+       "label_fr": "Maternité",
+       "parent_code": "HEALTH"
+      },
+      {
+       "code": "HEALTH__CHRONIC_CONDITION",
+       "label_en": "Chronic condition",
+       "label_fr": "Affection chronique",
+       "parent_code": "HEALTH"
+      },
+      {
+       "code": "LIFE__NATURAL_DEATH",
+       "label_en": "Natural death",
+       "label_fr": "Décès naturel",
+       "parent_code": "LIFE"
+      },
+      {
+       "code": "LIFE__ACCIDENTAL_DEATH",
+       "label_en": "Accidental death",
+       "label_fr": "Décès accidentel",
+       "parent_code": "LIFE"
+      },
+      {
+       "code": "LIFE__DISABILITY",
+       "label_en": "Disability",
+       "label_fr": "Invalidité",
+       "parent_code": "LIFE"
+      },
+      {
+       "code": "LIFE__CRITICAL_ILLNESS",
+       "label_en": "Critical illness",
+       "label_fr": "Maladie grave",
+       "parent_code": "LIFE"
+      },
+      {
+       "code": "LIFE__MATURITY",
+       "label_en": "Maturity",
+       "label_fr": "Échéance du contrat",
+       "parent_code": "LIFE"
+      },
+      {
+       "code": "MARINE__SINKING",
+       "label_en": "Sinking",
+       "label_fr": "Naufrage",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__STRANDING",
+       "label_en": "Stranding",
+       "label_fr": "Échouement",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__COLLISION",
+       "label_en": "Collision",
+       "label_fr": "Abordage",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__THEFT_PILFERAGE",
+       "label_en": "Theft / pilferage",
+       "label_fr": "Vol / pillage",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__WATER_INGRESS",
+       "label_en": "Water ingress",
+       "label_fr": "Mouille",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__HANDLING_DAMAGE",
+       "label_en": "Handling damage",
+       "label_fr": "Dommages de manutention",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__GENERAL_AVERAGE",
+       "label_en": "General average",
+       "label_fr": "Avarie commune",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "MARINE__NON_DELIVERY",
+       "label_en": "Non-delivery",
+       "label_fr": "Non-livraison",
+       "parent_code": "MARINE"
+      },
+      {
+       "code": "LIABILITY__BODILY_INJURY",
+       "label_en": "Bodily injury",
+       "label_fr": "Dommages corporels",
+       "parent_code": "LIABILITY"
+      },
+      {
+       "code": "LIABILITY__PROPERTY_DAMAGE",
+       "label_en": "Property damage",
+       "label_fr": "Dommages matériels",
+       "parent_code": "LIABILITY"
+      },
+      {
+       "code": "LIABILITY__PRODUCT_DEFECT",
+       "label_en": "Product defect",
+       "label_fr": "Défaut de produit",
+       "parent_code": "LIABILITY"
+      },
+      {
+       "code": "LIABILITY__PROFESSIONAL_ERROR",
+       "label_en": "Professional error",
+       "label_fr": "Faute professionnelle",
+       "parent_code": "LIABILITY"
+      },
+      {
+       "code": "ENGINEERING__MACHINERY_BREAKDOWN",
+       "label_en": "Machinery breakdown",
+       "label_fr": "Bris de machine",
+       "parent_code": "ENGINEERING"
+      },
+      {
+       "code": "ENGINEERING__COLLAPSE",
+       "label_en": "Collapse",
+       "label_fr": "Effondrement",
+       "parent_code": "ENGINEERING"
+      },
+      {
+       "code": "ENGINEERING__DESIGN_DEFECT",
+       "label_en": "Design defect",
+       "label_fr": "Vice de conception",
+       "parent_code": "ENGINEERING"
+      },
+      {
+       "code": "ENGINEERING__FAULTY_WORKMANSHIP",
+       "label_en": "Faulty workmanship",
+       "label_fr": "Malfaçon",
+       "parent_code": "ENGINEERING"
+      },
+      {
+       "code": "AGRICULTURE__DROUGHT",
+       "label_en": "Drought",
+       "label_fr": "Sécheresse",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "AGRICULTURE__EXCESS_RAINFALL",
+       "label_en": "Excess rainfall",
+       "label_fr": "Excès de pluie",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "AGRICULTURE__PESTS",
+       "label_en": "Pests",
+       "label_fr": "Ravageurs",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "AGRICULTURE__DISEASE",
+       "label_en": "Disease",
+       "label_fr": "Maladie",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "AGRICULTURE__ANIMAL_MORTALITY",
+       "label_en": "Animal mortality",
+       "label_fr": "Mortalité du bétail",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "AGRICULTURE__BUSHFIRE",
+       "label_en": "Bushfire",
+       "label_fr": "Feu de brousse",
+       "parent_code": "AGRICULTURE"
+      },
+      {
+       "code": "PERSONAL_ACCIDENT__ACCIDENTAL_INJURY",
+       "label_en": "Accidental injury",
+       "label_fr": "Blessure accidentelle",
+       "parent_code": "PERSONAL_ACCIDENT"
+      },
+      {
+       "code": "PERSONAL_ACCIDENT__ACCIDENTAL_DEATH",
+       "label_en": "Accidental death",
+       "label_fr": "Décès accidentel",
+       "parent_code": "PERSONAL_ACCIDENT"
+      },
+      {
+       "code": "PERSONAL_ACCIDENT__PERMANENT_DISABILITY",
+       "label_en": "Permanent disability",
+       "label_fr": "Invalidité permanente",
+       "parent_code": "PERSONAL_ACCIDENT"
+      },
+      {
+       "code": "TRAVEL__MEDICAL_EMERGENCY_ABROAD",
+       "label_en": "Medical emergency abroad",
+       "label_fr": "Urgence médicale à l'étranger",
+       "parent_code": "TRAVEL"
+      },
+      {
+       "code": "TRAVEL__TRIP_CANCELLATION",
+       "label_en": "Trip cancellation",
+       "label_fr": "Annulation de voyage",
+       "parent_code": "TRAVEL"
+      },
+      {
+       "code": "TRAVEL__LOST_BAGGAGE",
+       "label_en": "Lost baggage",
+       "label_fr": "Perte de bagages",
+       "parent_code": "TRAVEL"
+      },
+      {
+       "code": "TRAVEL__FLIGHT_DELAY",
+       "label_en": "Flight delay",
+       "label_fr": "Retard de vol",
+       "parent_code": "TRAVEL"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "parent_list": "claim_category"
+    },
+    {
+     "code": "severity",
+     "label_en": "Claim severity",
+     "label_fr": "Gravité du sinistre",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MINOR",
+       "label_en": "Minor",
+       "label_fr": "Mineur",
+       "description_en": "Low value, simple handling",
+       "description_fr": "Faible montant, traitement simple"
+      },
+      {
+       "code": "MODERATE",
+       "label_en": "Moderate",
+       "label_fr": "Modéré",
+       "description_en": "Standard handling",
+       "description_fr": "Traitement standard"
+      },
+      {
+       "code": "MAJOR",
+       "label_en": "Major",
+       "label_fr": "Majeur",
+       "description_en": "Senior handler / expert required",
+       "description_fr": "Gestionnaire senior / expert requis"
+      },
+      {
+       "code": "CATASTROPHIC",
+       "label_en": "Catastrophic",
+       "label_fr": "Catastrophique",
+       "description_en": "Large loss or multiple victims",
+       "description_fr": "Sinistre majeur ou victimes multiples"
+      }
+     ]
+    },
+    {
+     "code": "decision_type",
+     "label_en": "Claim decision",
+     "label_fr": "Décision sur sinistre",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "ACCEPTED_IN_FULL",
+       "label_en": "Accepted in full",
+       "label_fr": "Accepté intégralement"
+      },
+      {
+       "code": "ACCEPTED_PARTIALLY",
+       "label_en": "Accepted partially",
+       "label_fr": "Accepté partiellement"
+      },
+      {
+       "code": "DECLINED",
+       "label_en": "Declined",
+       "label_fr": "Refusé"
+      },
+      {
+       "code": "EX_GRATIA",
+       "label_en": "Ex-gratia",
+       "label_fr": "À titre gracieux"
+      },
+      {
+       "code": "REFERRED_FOR_INVESTIGATION",
+       "label_en": "Referred for investigation",
+       "label_fr": "Transmis pour enquête"
+      },
+      {
+       "code": "PENDING_DOCUMENTS",
+       "label_en": "Pending documents",
+       "label_fr": "En attente de pièces"
+      },
+      {
+       "code": "WITHDRAWN",
+       "label_en": "Withdrawn",
+       "label_fr": "Retiré par le déclarant"
+      },
+      {
+       "code": "CLOSED_WITHOUT_PAYMENT",
+       "label_en": "Closed without payment",
+       "label_fr": "Clôturé sans suite"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "fraud_indicators",
+   "label_en": "Fraud indicators",
+   "label_fr": "Indicateurs de fraude",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "indicator_category",
+     "label_en": "Indicator category",
+     "label_fr": "Catégorie d'indicateur",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "IDENTITY",
+       "label_en": "Identity inconsistencies",
+       "label_fr": "Incohérences d'identité"
+      },
+      {
+       "code": "TIMING",
+       "label_en": "Timing patterns",
+       "label_fr": "Chronologie"
+      },
+      {
+       "code": "HISTORY",
+       "label_en": "Claims history",
+       "label_fr": "Antécédents"
+      },
+      {
+       "code": "DOCUMENTS",
+       "label_en": "Documentation",
+       "label_fr": "Pièces justificatives"
+      },
+      {
+       "code": "BEHAVIOUR",
+       "label_en": "Behaviour",
+       "label_fr": "Comportement"
+      },
+      {
+       "code": "PROVIDER",
+       "label_en": "Provider patterns",
+       "label_fr": "Prestataires"
+      }
+     ]
+    },
+    {
+     "code": "indicator",
+     "label_en": "Indicator (not a determination)",
+     "label_fr": "Indicateur (ne constitue pas une conclusion)",
+     "hierarchical": true,
+     "values": [
+      {
+       "code": "IDENTITY__DOCUMENTS_APPEAR_ALTERED",
+       "label_en": "Documents appear altered",
+       "label_fr": "Documents semblant altérés",
+       "parent_code": "IDENTITY",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "IDENTITY__IDENTITY_DETAILS_DIFFER_BETWEEN_DOCUMENTS",
+       "label_en": "Identity details differ between documents",
+       "label_fr": "Données d'identité divergentes entre documents",
+       "parent_code": "IDENTITY",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "TIMING__CLAIM_SHORTLY_AFTER_INCEPTION",
+       "label_en": "Claim shortly after inception",
+       "label_fr": "Sinistre peu après la prise d'effet",
+       "parent_code": "TIMING",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "TIMING__CLAIM_SHORTLY_AFTER_COVER_INCREASE",
+       "label_en": "Claim shortly after cover increase",
+       "label_fr": "Sinistre peu après une augmentation de garantie",
+       "parent_code": "TIMING",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "TIMING__LATE_NOTIFICATION",
+       "label_en": "Late notification",
+       "label_fr": "Déclaration tardive",
+       "parent_code": "TIMING",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "HISTORY__FREQUENT_PRIOR_CLAIMS",
+       "label_en": "Frequent prior claims",
+       "label_fr": "Sinistres antérieurs fréquents",
+       "parent_code": "HISTORY",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "HISTORY__SAME_PARTIES_IN_MULTIPLE_CLAIMS",
+       "label_en": "Same parties in multiple claims",
+       "label_fr": "Mêmes intervenants dans plusieurs sinistres",
+       "parent_code": "HISTORY",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "DOCUMENTS__INVOICES_FROM_UNVERIFIABLE_SUPPLIER",
+       "label_en": "Invoices from unverifiable supplier",
+       "label_fr": "Factures d'un fournisseur non vérifiable",
+       "parent_code": "DOCUMENTS",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "DOCUMENTS__DUPLICATE_INVOICE_NUMBERS",
+       "label_en": "Duplicate invoice numbers",
+       "label_fr": "Numéros de facture en double",
+       "parent_code": "DOCUMENTS",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "DOCUMENTS__PHOTOS_INCONSISTENT_WITH_DESCRIPTION",
+       "label_en": "Photos inconsistent with description",
+       "label_fr": "Photos incohérentes avec la déclaration",
+       "parent_code": "DOCUMENTS",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "BEHAVIOUR__PRESSURE_FOR_QUICK_SETTLEMENT",
+       "label_en": "Pressure for quick settlement",
+       "label_fr": "Pression pour un règlement rapide",
+       "parent_code": "BEHAVIOUR",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "BEHAVIOUR__RELUCTANCE_TO_PROVIDE_INFORMATION",
+       "label_en": "Reluctance to provide information",
+       "label_fr": "Réticence à fournir des informations",
+       "parent_code": "BEHAVIOUR",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "PROVIDER__BILLING_FOR_SERVICES_NOT_RENDERED",
+       "label_en": "Billing for services not rendered",
+       "label_fr": "Facturation d'actes non réalisés",
+       "parent_code": "PROVIDER",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "PROVIDER__UNUSUALLY_HIGH_CHARGES",
+       "label_en": "Unusually high charges",
+       "label_fr": "Montants anormalement élevés",
+       "parent_code": "PROVIDER",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "parent_list": "indicator_category"
+    }
+   ],
+   "disclaimer_en": "These are risk indicators that prompt review. They are not findings or determinations of fraud.",
+   "disclaimer_fr": "Il s'agit d'indicateurs de risque déclenchant un examen. Ils ne constituent ni un constat ni une conclusion de fraude."
+  },
+  {
+   "code": "accounting",
+   "label_en": "Accounting",
+   "label_fr": "Comptabilité",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "event_type",
+     "label_en": "Accounting event type",
+     "label_fr": "Type d'événement comptable",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PREMIUM_ISSUED",
+       "label_en": "Premium issued",
+       "label_fr": "Émission de prime"
+      },
+      {
+       "code": "PREMIUM_CANCELLED",
+       "label_en": "Premium cancelled",
+       "label_fr": "Annulation de prime"
+      },
+      {
+       "code": "PREMIUM_RECEIVED",
+       "label_en": "Premium received",
+       "label_fr": "Encaissement de prime"
+      },
+      {
+       "code": "COMMISSION_EARNED",
+       "label_en": "Commission earned",
+       "label_fr": "Commission acquise"
+      },
+      {
+       "code": "COMMISSION_PAID",
+       "label_en": "Commission paid",
+       "label_fr": "Commission versée"
+      },
+      {
+       "code": "CLAIM_RESERVE_OPENED",
+       "label_en": "Claim reserve opened",
+       "label_fr": "Ouverture de provision pour sinistre"
+      },
+      {
+       "code": "CLAIM_RESERVE_ADJUSTED",
+       "label_en": "Claim reserve adjusted",
+       "label_fr": "Ajustement de provision pour sinistre"
+      },
+      {
+       "code": "CLAIM_PAID",
+       "label_en": "Claim paid",
+       "label_fr": "Règlement de sinistre"
+      },
+      {
+       "code": "RECOVERY_RECEIVED",
+       "label_en": "Recovery received",
+       "label_fr": "Recours encaissé"
+      },
+      {
+       "code": "REFUND_ISSUED",
+       "label_en": "Refund issued",
+       "label_fr": "Remboursement émis"
+      },
+      {
+       "code": "REINSURANCE_CEDED",
+       "label_en": "Reinsurance ceded",
+       "label_fr": "Cession en réassurance"
+      },
+      {
+       "code": "REINSURANCE_RECOVERY",
+       "label_en": "Reinsurance recovery",
+       "label_fr": "Récupération de réassurance"
+      },
+      {
+       "code": "FEE_CHARGED",
+       "label_en": "Fee charged",
+       "label_fr": "Frais facturés"
+      },
+      {
+       "code": "TAX_COLLECTED",
+       "label_en": "Tax collected",
+       "label_fr": "Taxe collectée"
+      },
+      {
+       "code": "WRITE_OFF",
+       "label_en": "Write-off",
+       "label_fr": "Passage en perte"
+      }
+     ]
+    },
+    {
+     "code": "ledger_category",
+     "label_en": "Ledger category",
+     "label_fr": "Catégorie de compte",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PREMIUM_INCOME",
+       "label_en": "Premium income",
+       "label_fr": "Primes émises"
+      },
+      {
+       "code": "PREMIUM_RECEIVABLE",
+       "label_en": "Premium receivable",
+       "label_fr": "Primes à encaisser"
+      },
+      {
+       "code": "COMMISSION_EXPENSE",
+       "label_en": "Commission expense",
+       "label_fr": "Commissions"
+      },
+      {
+       "code": "COMMISSION_PAYABLE",
+       "label_en": "Commission payable",
+       "label_fr": "Commissions à payer"
+      },
+      {
+       "code": "CLAIMS_PAID",
+       "label_en": "Claims paid",
+       "label_fr": "Sinistres payés"
+      },
+      {
+       "code": "CLAIMS_RESERVES",
+       "label_en": "Claims reserves",
+       "label_fr": "Provisions pour sinistres"
+      },
+      {
+       "code": "UNEARNED_PREMIUM_RESERVE",
+       "label_en": "Unearned premium reserve",
+       "label_fr": "Provision pour primes non acquises"
+      },
+      {
+       "code": "REINSURANCE_PAYABLE",
+       "label_en": "Reinsurance payable",
+       "label_fr": "Réassureurs créditeurs"
+      },
+      {
+       "code": "REINSURANCE_RECEIVABLE",
+       "label_en": "Reinsurance receivable",
+       "label_fr": "Réassureurs débiteurs"
+      },
+      {
+       "code": "TAXES_PAYABLE",
+       "label_en": "Taxes payable",
+       "label_fr": "Taxes à reverser"
+      },
+      {
+       "code": "CASH_AND_BANK",
+       "label_en": "Cash and bank",
+       "label_fr": "Trésorerie"
+      },
+      {
+       "code": "SUSPENSE",
+       "label_en": "Suspense",
+       "label_fr": "Compte d'attente"
+      }
+     ]
+    },
+    {
+     "code": "reconciliation_category",
+     "label_en": "Reconciliation category",
+     "label_fr": "Catégorie de rapprochement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "MATCHED",
+       "label_en": "Matched",
+       "label_fr": "Rapproché"
+      },
+      {
+       "code": "UNMATCHED_PAYMENT",
+       "label_en": "Unmatched payment",
+       "label_fr": "Paiement non rapproché"
+      },
+      {
+       "code": "UNMATCHED_STATEMENT_LINE",
+       "label_en": "Unmatched statement line",
+       "label_fr": "Ligne de relevé non rapprochée"
+      },
+      {
+       "code": "AMOUNT_DIFFERENCE",
+       "label_en": "Amount difference",
+       "label_fr": "Écart de montant"
+      },
+      {
+       "code": "DUPLICATE_PAYMENT",
+       "label_en": "Duplicate payment",
+       "label_fr": "Paiement en double"
+      },
+      {
+       "code": "TIMING_DIFFERENCE",
+       "label_en": "Timing difference",
+       "label_fr": "Décalage temporel"
+      },
+      {
+       "code": "FEE_DIFFERENCE",
+       "label_en": "Fee difference",
+       "label_fr": "Écart de frais"
+      }
+     ]
+    },
+    {
+     "code": "charge_type",
+     "label_en": "Charge type",
+     "label_fr": "Type de frais",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "POLICY_FEE",
+       "label_en": "Policy fee",
+       "label_fr": "Frais d'avenant / accessoires"
+      },
+      {
+       "code": "REGISTRATION_TAX",
+       "label_en": "Registration tax",
+       "label_fr": "Taxe d'enregistrement"
+      },
+      {
+       "code": "VAT",
+       "label_en": "VAT",
+       "label_fr": "TVA"
+      },
+      {
+       "code": "STAMP_DUTY",
+       "label_en": "Stamp duty",
+       "label_fr": "Droit de timbre"
+      },
+      {
+       "code": "BROWN_CARD",
+       "label_en": "Brown card contribution",
+       "label_fr": "Contribution carte brune"
+      },
+      {
+       "code": "PROCESSING_FEE",
+       "label_en": "Payment processing fee",
+       "label_fr": "Frais de traitement du paiement"
+      },
+      {
+       "code": "LATE_FEE",
+       "label_en": "Late payment fee",
+       "label_fr": "Frais de retard"
+      },
+      {
+       "code": "CERTIFICATE_FEE",
+       "label_en": "Certificate fee",
+       "label_fr": "Frais d'attestation"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "note": "Structure only - no rates. Rates must be verified against official sources before production."
+    }
+   ]
+  },
+  {
+   "code": "communications",
+   "label_en": "Communications",
+   "label_fr": "Communications",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "channel",
+     "label_en": "Channel",
+     "label_fr": "Canal",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "SMS",
+       "label_en": "SMS",
+       "label_fr": "SMS"
+      },
+      {
+       "code": "WHATSAPP",
+       "label_en": "WhatsApp",
+       "label_fr": "WhatsApp"
+      },
+      {
+       "code": "EMAIL",
+       "label_en": "Email",
+       "label_fr": "E-mail"
+      },
+      {
+       "code": "PUSH",
+       "label_en": "Push notification",
+       "label_fr": "Notification push"
+      },
+      {
+       "code": "IN_APP",
+       "label_en": "In-app",
+       "label_fr": "Dans l'application"
+      },
+      {
+       "code": "PHONE",
+       "label_en": "Phone call",
+       "label_fr": "Appel téléphonique"
+      },
+      {
+       "code": "LETTER",
+       "label_en": "Letter",
+       "label_fr": "Courrier"
+      }
+     ]
+    },
+    {
+     "code": "category",
+     "label_en": "Communication category",
+     "label_fr": "Catégorie de communication",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "TRANSACTIONAL",
+       "label_en": "Transactional",
+       "label_fr": "Transactionnel"
+      },
+      {
+       "code": "SECURITY",
+       "label_en": "OTP / security",
+       "label_fr": "OTP / sécurité"
+      },
+      {
+       "code": "PAYMENT_REMINDER",
+       "label_en": "Payment reminder",
+       "label_fr": "Relance de paiement"
+      },
+      {
+       "code": "RENEWAL_REMINDER",
+       "label_en": "Renewal reminder",
+       "label_fr": "Rappel de renouvellement"
+      },
+      {
+       "code": "CLAIM_UPDATE",
+       "label_en": "Claim update",
+       "label_fr": "Suivi de sinistre"
+      },
+      {
+       "code": "POLICY_DOCUMENT",
+       "label_en": "Policy document",
+       "label_fr": "Document de contrat"
+      },
+      {
+       "code": "MARKETING",
+       "label_en": "Marketing",
+       "label_fr": "Marketing"
+      },
+      {
+       "code": "REGULATORY_NOTICE",
+       "label_en": "Regulatory notice",
+       "label_fr": "Information réglementaire"
+      },
+      {
+       "code": "SUPPORT",
+       "label_en": "Support",
+       "label_fr": "Assistance"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "customers",
+   "label_en": "Customers & KYC",
+   "label_fr": "Clients et KYC",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "customer_type",
+     "label_en": "Customer type",
+     "label_fr": "Type de client",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "INDIVIDUAL",
+       "label_en": "Individual",
+       "label_fr": "Personne physique"
+      },
+      {
+       "code": "SOLE_PROPRIETOR",
+       "label_en": "Sole proprietor",
+       "label_fr": "Entreprise individuelle"
+      },
+      {
+       "code": "COMPANY",
+       "label_en": "Company",
+       "label_fr": "Société"
+      },
+      {
+       "code": "ASSOCIATION_NGO",
+       "label_en": "Association / NGO",
+       "label_fr": "Association / ONG"
+      },
+      {
+       "code": "PUBLIC_ENTITY",
+       "label_en": "Public entity",
+       "label_fr": "Organisme public"
+      },
+      {
+       "code": "COOPERATIVE",
+       "label_en": "Cooperative",
+       "label_fr": "Coopérative"
+      },
+      {
+       "code": "RELIGIOUS_ORGANISATION",
+       "label_en": "Religious organisation",
+       "label_fr": "Organisation religieuse"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "kyc_status",
+     "label_en": "KYC status",
+     "label_fr": "Statut KYC",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "NOT_STARTED",
+       "label_en": "Not started",
+       "label_fr": "Non commencé"
+      },
+      {
+       "code": "PENDING",
+       "label_en": "Pending",
+       "label_fr": "En attente"
+      },
+      {
+       "code": "UNDER_REVIEW",
+       "label_en": "Under review",
+       "label_fr": "En cours d'examen"
+      },
+      {
+       "code": "VERIFIED",
+       "label_en": "Verified",
+       "label_fr": "Vérifié"
+      },
+      {
+       "code": "REJECTED",
+       "label_en": "Rejected",
+       "label_fr": "Rejeté"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré"
+      },
+      {
+       "code": "EDD_REQUIRED",
+       "label_en": "Enhanced due diligence required",
+       "label_fr": "Vigilance renforcée requise"
+      }
+     ]
+    },
+    {
+     "code": "kyc_document_status",
+     "label_en": "KYC document status",
+     "label_fr": "Statut du document KYC",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "UPLOADED",
+       "label_en": "Uploaded",
+       "label_fr": "Téléversé"
+      },
+      {
+       "code": "PENDING_REVIEW",
+       "label_en": "Pending review",
+       "label_fr": "En attente d'examen"
+      },
+      {
+       "code": "ACCEPTED",
+       "label_en": "Accepted",
+       "label_fr": "Accepté"
+      },
+      {
+       "code": "REJECTED_UNREADABLE",
+       "label_en": "Rejected - unreadable",
+       "label_fr": "Rejeté - illisible"
+      },
+      {
+       "code": "REJECTED_MISMATCH",
+       "label_en": "Rejected - mismatch",
+       "label_fr": "Rejeté - incohérent"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "distribution",
+   "label_en": "Distribution",
+   "label_fr": "Distribution",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "channel",
+     "label_en": "Distribution channel",
+     "label_fr": "Canal de distribution",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DIRECT",
+       "label_en": "Direct (insurer)",
+       "label_fr": "Direct (assureur)"
+      },
+      {
+       "code": "BROKER",
+       "label_en": "Broker",
+       "label_fr": "Courtier"
+      },
+      {
+       "code": "GENERAL_AGENT",
+       "label_en": "General agent",
+       "label_fr": "Agent général"
+      },
+      {
+       "code": "BANCASSURANCE",
+       "label_en": "Bancassurance",
+       "label_fr": "Bancassurance"
+      },
+      {
+       "code": "DIGITAL",
+       "label_en": "Mobile / digital",
+       "label_fr": "Mobile / digital"
+      },
+      {
+       "code": "AFFINITY_PARTNER",
+       "label_en": "Affinity partner",
+       "label_fr": "Partenaire affinitaire"
+      },
+      {
+       "code": "EMPLOYER",
+       "label_en": "Employer / group",
+       "label_fr": "Employeur / groupe"
+      },
+      {
+       "code": "MICROINSURANCE_AGENT",
+       "label_en": "Microinsurance agent",
+       "label_fr": "Agent de micro-assurance"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "intermediary_type",
+     "label_en": "Intermediary type",
+     "label_fr": "Type d'intermédiaire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "BROKER_COMPANY",
+       "label_en": "Broker (company)",
+       "label_fr": "Société de courtage"
+      },
+      {
+       "code": "GENERAL_AGENT",
+       "label_en": "General agent",
+       "label_fr": "Agent général"
+      },
+      {
+       "code": "SUB_AGENT",
+       "label_en": "Sub-agent",
+       "label_fr": "Sous-agent"
+      },
+      {
+       "code": "BANCASSURANCE_PARTNER",
+       "label_en": "Bancassurance partner",
+       "label_fr": "Partenaire bancassurance"
+      },
+      {
+       "code": "TIED_AGENT",
+       "label_en": "Tied agent",
+       "label_fr": "Agent exclusif"
+      },
+      {
+       "code": "REFERRAL_PARTNER",
+       "label_en": "Referral partner",
+       "label_fr": "Apporteur d'affaires"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "policy_admin",
+   "label_en": "Policy administration",
+   "label_fr": "Gestion des contrats",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "policy_status",
+     "label_en": "Policy status",
+     "label_fr": "Statut du contrat",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DRAFT",
+       "label_en": "Draft",
+       "label_fr": "Brouillon"
+      },
+      {
+       "code": "QUOTED",
+       "label_en": "Quoted",
+       "label_fr": "Devis émis"
+      },
+      {
+       "code": "PENDING_PAYMENT",
+       "label_en": "Pending payment",
+       "label_fr": "En attente de paiement"
+      },
+      {
+       "code": "ACTIVE",
+       "label_en": "Active",
+       "label_fr": "En vigueur"
+      },
+      {
+       "code": "SUSPENDED",
+       "label_en": "Suspended",
+       "label_fr": "Suspendu"
+      },
+      {
+       "code": "LAPSED",
+       "label_en": "Lapsed",
+       "label_fr": "Déchu / en déchéance"
+      },
+      {
+       "code": "CANCELLED",
+       "label_en": "Cancelled",
+       "label_fr": "Résilié"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré"
+      },
+      {
+       "code": "RENEWED",
+       "label_en": "Renewed",
+       "label_fr": "Renouvelé"
+      },
+      {
+       "code": "MATURED",
+       "label_en": "Matured",
+       "label_fr": "Arrivé à terme"
+      }
+     ]
+    },
+    {
+     "code": "endorsement_type",
+     "label_en": "Endorsement type",
+     "label_fr": "Type d'avenant",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CHANGE_OF_INSURED_DETAILS",
+       "label_en": "Change of insured details",
+       "label_fr": "Modification des données de l'assuré"
+      },
+      {
+       "code": "CHANGE_OF_SUM_INSURED",
+       "label_en": "Change of sum insured",
+       "label_fr": "Modification du capital"
+      },
+      {
+       "code": "ADDITION_OF_COVER",
+       "label_en": "Addition of cover",
+       "label_fr": "Ajout de garantie"
+      },
+      {
+       "code": "REMOVAL_OF_COVER",
+       "label_en": "Removal of cover",
+       "label_fr": "Retrait de garantie"
+      },
+      {
+       "code": "ADDITION_OF_RISK_VEHICLE",
+       "label_en": "Addition of risk / vehicle",
+       "label_fr": "Ajout de risque / véhicule"
+      },
+      {
+       "code": "REMOVAL_OF_RISK_VEHICLE",
+       "label_en": "Removal of risk / vehicle",
+       "label_fr": "Retrait de risque / véhicule"
+      },
+      {
+       "code": "CHANGE_OF_BENEFICIARY",
+       "label_en": "Change of beneficiary",
+       "label_fr": "Changement de bénéficiaire"
+      },
+      {
+       "code": "CHANGE_OF_ADDRESS",
+       "label_en": "Change of address",
+       "label_fr": "Changement d'adresse"
+      },
+      {
+       "code": "SUSPENSION",
+       "label_en": "Suspension",
+       "label_fr": "Suspension"
+      },
+      {
+       "code": "REINSTATEMENT",
+       "label_en": "Reinstatement",
+       "label_fr": "Remise en vigueur"
+      },
+      {
+       "code": "CANCELLATION",
+       "label_en": "Cancellation",
+       "label_fr": "Résiliation"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "renewal_status",
+     "label_en": "Renewal status",
+     "label_fr": "Statut de renouvellement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "NOT_DUE",
+       "label_en": "Not due",
+       "label_fr": "Non échu"
+      },
+      {
+       "code": "DUE_SOON",
+       "label_en": "Due soon",
+       "label_fr": "Échéance proche"
+      },
+      {
+       "code": "INVITED",
+       "label_en": "Invited",
+       "label_fr": "Avis d'échéance envoyé"
+      },
+      {
+       "code": "QUOTED",
+       "label_en": "Quoted",
+       "label_fr": "Devis de renouvellement émis"
+      },
+      {
+       "code": "ACCEPTED",
+       "label_en": "Accepted",
+       "label_fr": "Accepté"
+      },
+      {
+       "code": "PAID",
+       "label_en": "Paid",
+       "label_fr": "Payé"
+      },
+      {
+       "code": "DECLINED_BY_CUSTOMER",
+       "label_en": "Declined by customer",
+       "label_fr": "Refusé par le client"
+      },
+      {
+       "code": "DECLINED_BY_INSURER",
+       "label_en": "Declined by insurer",
+       "label_fr": "Refusé par l'assureur"
+      },
+      {
+       "code": "LAPSED",
+       "label_en": "Lapsed",
+       "label_fr": "Non renouvelé"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "finance",
+   "label_en": "Finance",
+   "label_fr": "Finances",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "bank_account_type",
+     "label_en": "Bank account type",
+     "label_fr": "Type de compte bancaire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CURRENT",
+       "label_en": "Current account",
+       "label_fr": "Compte courant"
+      },
+      {
+       "code": "SAVINGS",
+       "label_en": "Savings account",
+       "label_fr": "Compte d'épargne"
+      },
+      {
+       "code": "TERM_DEPOSIT",
+       "label_en": "Term deposit",
+       "label_fr": "Dépôt à terme"
+      },
+      {
+       "code": "PREMIUM_COLLECTION",
+       "label_en": "Premium collection account",
+       "label_fr": "Compte d'encaissement des primes"
+      },
+      {
+       "code": "CLAIMS_PAYMENT",
+       "label_en": "Claims payment account",
+       "label_fr": "Compte de règlement des sinistres"
+      },
+      {
+       "code": "ESCROW",
+       "label_en": "Escrow / trust account",
+       "label_fr": "Compte séquestre"
+      },
+      {
+       "code": "MOBILE_MONEY_WALLET",
+       "label_en": "Mobile money wallet",
+       "label_fr": "Portefeuille de monnaie mobile"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "payment_clearing_type",
+     "label_en": "Payment clearing type",
+     "label_fr": "Type de compensation",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "REAL_TIME",
+       "label_en": "Real-time",
+       "label_fr": "Temps réel"
+      },
+      {
+       "code": "SAME_DAY",
+       "label_en": "Same day",
+       "label_fr": "Jour même"
+      },
+      {
+       "code": "NEXT_DAY",
+       "label_en": "Next business day",
+       "label_fr": "Jour ouvré suivant"
+      },
+      {
+       "code": "BATCH",
+       "label_en": "Batch settlement",
+       "label_fr": "Règlement par lot"
+      },
+      {
+       "code": "CHEQUE_CLEARING",
+       "label_en": "Cheque clearing",
+       "label_fr": "Compensation de chèques"
+      },
+      {
+       "code": "MANUAL",
+       "label_en": "Manual confirmation",
+       "label_fr": "Confirmation manuelle"
+      }
+     ]
+    },
+    {
+     "code": "settlement_frequency",
+     "label_en": "Settlement frequency",
+     "label_fr": "Fréquence de règlement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DAILY",
+       "label_en": "Daily",
+       "label_fr": "Quotidienne"
+      },
+      {
+       "code": "WEEKLY",
+       "label_en": "Weekly",
+       "label_fr": "Hebdomadaire"
+      },
+      {
+       "code": "FORTNIGHTLY",
+       "label_en": "Fortnightly",
+       "label_fr": "Bimensuelle"
+      },
+      {
+       "code": "MONTHLY",
+       "label_en": "Monthly",
+       "label_fr": "Mensuelle"
+      },
+      {
+       "code": "QUARTERLY",
+       "label_en": "Quarterly",
+       "label_fr": "Trimestrielle"
+      },
+      {
+       "code": "ON_DEMAND",
+       "label_en": "On demand",
+       "label_fr": "À la demande"
+      }
+     ]
+    },
+    {
+     "code": "aging_bucket",
+     "label_en": "Aging bucket",
+     "label_fr": "Tranche d'ancienneté",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CURRENT",
+       "label_en": "Current",
+       "label_fr": "Non échu",
+       "attributes": {
+        "min_days": 0,
+        "max_days": 0
+       }
+      },
+      {
+       "code": "1_30_DAYS",
+       "label_en": "1-30 days",
+       "label_fr": "1 à 30 jours",
+       "attributes": {
+        "min_days": 1,
+        "max_days": 30
+       }
+      },
+      {
+       "code": "31_60_DAYS",
+       "label_en": "31-60 days",
+       "label_fr": "31 à 60 jours",
+       "attributes": {
+        "min_days": 31,
+        "max_days": 60
+       }
+      },
+      {
+       "code": "61_90_DAYS",
+       "label_en": "61-90 days",
+       "label_fr": "61 à 90 jours",
+       "attributes": {
+        "min_days": 61,
+        "max_days": 90
+       }
+      },
+      {
+       "code": "90_PLUS",
+       "label_en": "Over 90 days",
+       "label_fr": "Plus de 90 jours",
+       "attributes": {
+        "min_days": 91
+       }
+      }
+     ]
+    },
+    {
+     "code": "financial_adjustment_reason",
+     "label_en": "Financial adjustment reason",
+     "label_fr": "Motif d'ajustement financier",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "ROUNDING",
+       "label_en": "Rounding difference",
+       "label_fr": "Écart d'arrondi"
+      },
+      {
+       "code": "FX_DIFFERENCE",
+       "label_en": "Exchange difference",
+       "label_fr": "Écart de change"
+      },
+      {
+       "code": "BANK_CHARGES",
+       "label_en": "Bank charges",
+       "label_fr": "Frais bancaires"
+      },
+      {
+       "code": "PREMIUM_CORRECTION",
+       "label_en": "Premium correction",
+       "label_fr": "Correction de prime"
+      },
+      {
+       "code": "COMMISSION_CORRECTION",
+       "label_en": "Commission correction",
+       "label_fr": "Correction de commission"
+      },
+      {
+       "code": "POSTING_ERROR",
+       "label_en": "Posting error",
+       "label_fr": "Erreur d'imputation"
+      },
+      {
+       "code": "RECLASSIFICATION",
+       "label_en": "Reclassification",
+       "label_fr": "Reclassement"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "refund_reason",
+     "label_en": "Refund reason",
+     "label_fr": "Motif de remboursement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CANCELLATION",
+       "label_en": "Policy cancellation",
+       "label_fr": "Résiliation du contrat"
+      },
+      {
+       "code": "ENDORSEMENT_REDUCTION",
+       "label_en": "Endorsement reduction",
+       "label_fr": "Avenant en diminution"
+      },
+      {
+       "code": "DUPLICATE_PAYMENT",
+       "label_en": "Duplicate payment",
+       "label_fr": "Paiement en double"
+      },
+      {
+       "code": "OVERPAYMENT",
+       "label_en": "Overpayment",
+       "label_fr": "Trop-perçu"
+      },
+      {
+       "code": "FAILED_ISSUANCE",
+       "label_en": "Failed issuance",
+       "label_fr": "Échec d'émission"
+      },
+      {
+       "code": "REVERSED_TRANSACTION",
+       "label_en": "Reversed transaction",
+       "label_fr": "Transaction contrepassée"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "write_off_reason",
+     "label_en": "Write-off reason",
+     "label_fr": "Motif de passage en perte",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "UNCOLLECTIBLE",
+       "label_en": "Uncollectible debt",
+       "label_fr": "Créance irrécouvrable"
+      },
+      {
+       "code": "SMALL_BALANCE",
+       "label_en": "Small residual balance",
+       "label_fr": "Solde résiduel minime"
+      },
+      {
+       "code": "DEBTOR_INSOLVENT",
+       "label_en": "Debtor insolvent",
+       "label_fr": "Débiteur insolvable"
+      },
+      {
+       "code": "TIME_BARRED",
+       "label_en": "Time-barred",
+       "label_fr": "Prescrit"
+      },
+      {
+       "code": "MANAGEMENT_DECISION",
+       "label_en": "Management decision",
+       "label_fr": "Décision de la direction"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "journal_type",
+     "label_en": "Journal type",
+     "label_fr": "Type de journal",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "SALES",
+       "label_en": "Premium / sales journal",
+       "label_fr": "Journal des émissions"
+      },
+      {
+       "code": "CASH_RECEIPTS",
+       "label_en": "Cash receipts journal",
+       "label_fr": "Journal des encaissements"
+      },
+      {
+       "code": "CASH_PAYMENTS",
+       "label_en": "Cash payments journal",
+       "label_fr": "Journal des décaissements"
+      },
+      {
+       "code": "CLAIMS",
+       "label_en": "Claims journal",
+       "label_fr": "Journal des sinistres"
+      },
+      {
+       "code": "COMMISSIONS",
+       "label_en": "Commissions journal",
+       "label_fr": "Journal des commissions"
+      },
+      {
+       "code": "REINSURANCE",
+       "label_en": "Reinsurance journal",
+       "label_fr": "Journal de réassurance"
+      },
+      {
+       "code": "GENERAL",
+       "label_en": "General journal",
+       "label_fr": "Journal des opérations diverses"
+      },
+      {
+       "code": "ADJUSTMENT",
+       "label_en": "Adjustment journal",
+       "label_fr": "Journal des régularisations"
+      },
+      {
+       "code": "OPENING",
+       "label_en": "Opening balances",
+       "label_fr": "À-nouveaux"
+      }
+     ]
+    },
+    {
+     "code": "cost_centre",
+     "label_en": "Cost centre",
+     "label_fr": "Centre de coûts",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ],
+     "structure_only": true,
+     "note": "Tenant-defined; no platform entries."
+    },
+    {
+     "code": "premium_status",
+     "label_en": "Premium status",
+     "label_fr": "Statut de prime",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "NOT_DUE",
+       "label_en": "Not due",
+       "label_fr": "Non échue"
+      },
+      {
+       "code": "DUE",
+       "label_en": "Due",
+       "label_fr": "Échue"
+      },
+      {
+       "code": "PARTIALLY_PAID",
+       "label_en": "Partially paid",
+       "label_fr": "Partiellement payée"
+      },
+      {
+       "code": "PAID",
+       "label_en": "Paid",
+       "label_fr": "Payée"
+      },
+      {
+       "code": "OVERPAID",
+       "label_en": "Overpaid",
+       "label_fr": "Payée en excédent"
+      },
+      {
+       "code": "OVERDUE",
+       "label_en": "Overdue",
+       "label_fr": "En retard"
+      },
+      {
+       "code": "CANCELLED",
+       "label_en": "Cancelled",
+       "label_fr": "Annulée"
+      },
+      {
+       "code": "REFUNDED",
+       "label_en": "Refunded",
+       "label_fr": "Remboursée"
+      },
+      {
+       "code": "PARTIALLY_REFUNDED",
+       "label_en": "Partially refunded",
+       "label_fr": "Partiellement remboursée"
+      },
+      {
+       "code": "WRITTEN_OFF",
+       "label_en": "Written off",
+       "label_fr": "Passée en perte"
+      }
+     ]
+    },
+    {
+     "code": "premium_component",
+     "label_en": "Premium component",
+     "label_fr": "Composante de prime",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "BASE_PREMIUM",
+       "label_en": "Base premium",
+       "label_fr": "Prime de base",
+       "attributes": {
+        "sequence": 1
+       }
+      },
+      {
+       "code": "LOADINGS",
+       "label_en": "Loadings",
+       "label_fr": "Surprimes",
+       "attributes": {
+        "sequence": 2
+       }
+      },
+      {
+       "code": "DISCOUNTS",
+       "label_en": "Discounts",
+       "label_fr": "Réductions",
+       "attributes": {
+        "sequence": 3
+       }
+      },
+      {
+       "code": "NET_PREMIUM",
+       "label_en": "Net premium",
+       "label_fr": "Prime nette",
+       "attributes": {
+        "sequence": 4
+       }
+      },
+      {
+       "code": "POLICY_FEES",
+       "label_en": "Policy fees / accessories",
+       "label_fr": "Accessoires / coût de police",
+       "attributes": {
+        "sequence": 5
+       }
+      },
+      {
+       "code": "TAXES",
+       "label_en": "Taxes",
+       "label_fr": "Taxes",
+       "attributes": {
+        "sequence": 6
+       }
+      },
+      {
+       "code": "GROSS_PREMIUM",
+       "label_en": "Gross premium",
+       "label_fr": "Prime totale TTC",
+       "attributes": {
+        "sequence": 7
+       }
+      }
+     ]
+    },
+    {
+     "code": "commission_status",
+     "label_en": "Commission status",
+     "label_fr": "Statut de commission",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CALCULATED",
+       "label_en": "Calculated",
+       "label_fr": "Calculée"
+      },
+      {
+       "code": "EARNED",
+       "label_en": "Earned",
+       "label_fr": "Acquise"
+      },
+      {
+       "code": "APPROVED",
+       "label_en": "Approved",
+       "label_fr": "Approuvée"
+      },
+      {
+       "code": "PAYABLE",
+       "label_en": "Payable",
+       "label_fr": "Exigible"
+      },
+      {
+       "code": "PAID",
+       "label_en": "Paid",
+       "label_fr": "Payée"
+      },
+      {
+       "code": "REVERSED",
+       "label_en": "Reversed",
+       "label_fr": "Contrepassée"
+      },
+      {
+       "code": "CLAWED_BACK",
+       "label_en": "Clawed back",
+       "label_fr": "Reprise"
+      },
+      {
+       "code": "ADJUSTED",
+       "label_en": "Adjusted",
+       "label_fr": "Ajustée"
+      },
+      {
+       "code": "DISPUTED",
+       "label_en": "Disputed",
+       "label_fr": "Contestée"
+      }
+     ]
+    },
+    {
+     "code": "journal_state",
+     "label_en": "Journal state",
+     "label_fr": "État de l'écriture",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DRAFT",
+       "label_en": "Draft",
+       "label_fr": "Brouillon"
+      },
+      {
+       "code": "PENDING_APPROVAL",
+       "label_en": "Pending approval",
+       "label_fr": "En attente de validation"
+      },
+      {
+       "code": "APPROVED",
+       "label_en": "Approved",
+       "label_fr": "Validée"
+      },
+      {
+       "code": "POSTED",
+       "label_en": "Posted",
+       "label_fr": "Comptabilisée"
+      },
+      {
+       "code": "REVERSED",
+       "label_en": "Reversed",
+       "label_fr": "Contrepassée"
+      },
+      {
+       "code": "REJECTED",
+       "label_en": "Rejected",
+       "label_fr": "Rejetée"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "reinsurance",
+   "label_en": "Reinsurance & co-insurance",
+   "label_fr": "Réassurance et coassurance",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "reinsurance_type",
+     "label_en": "Reinsurance type",
+     "label_fr": "Type de réassurance",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "TREATY",
+       "label_en": "Treaty",
+       "label_fr": "Traité"
+      },
+      {
+       "code": "FACULTATIVE",
+       "label_en": "Facultative",
+       "label_fr": "Facultative"
+      },
+      {
+       "code": "FACULTATIVE_OBLIGATORY",
+       "label_en": "Facultative-obligatory",
+       "label_fr": "Facultative-obligatoire"
+      }
+     ]
+    },
+    {
+     "code": "treaty_type",
+     "label_en": "Treaty type",
+     "label_fr": "Type de traité",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "QUOTA_SHARE",
+       "label_en": "Quota share",
+       "label_fr": "Quote-part"
+      },
+      {
+       "code": "SURPLUS",
+       "label_en": "Surplus",
+       "label_fr": "Excédent de plein"
+      },
+      {
+       "code": "EXCESS_OF_LOSS",
+       "label_en": "Excess of loss",
+       "label_fr": "Excédent de sinistre"
+      },
+      {
+       "code": "STOP_LOSS",
+       "label_en": "Stop loss",
+       "label_fr": "Excédent de perte annuelle"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "cession_type",
+     "label_en": "Cession type",
+     "label_fr": "Type de cession",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PROPORTIONAL",
+       "label_en": "Proportional",
+       "label_fr": "Proportionnelle"
+      },
+      {
+       "code": "NON_PROPORTIONAL",
+       "label_en": "Non-proportional",
+       "label_fr": "Non proportionnelle"
+      },
+      {
+       "code": "AUTOMATIC",
+       "label_en": "Automatic (treaty)",
+       "label_fr": "Automatique (traité)"
+      },
+      {
+       "code": "FACULTATIVE",
+       "label_en": "Facultative (case by case)",
+       "label_fr": "Facultative (au cas par cas)"
+      }
+     ]
+    },
+    {
+     "code": "recovery_status",
+     "label_en": "Recovery status",
+     "label_fr": "Statut de recouvrement",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "ESTIMATED",
+       "label_en": "Estimated",
+       "label_fr": "Estimé"
+      },
+      {
+       "code": "NOTIFIED",
+       "label_en": "Notified",
+       "label_fr": "Notifié"
+      },
+      {
+       "code": "SUBMITTED",
+       "label_en": "Submitted",
+       "label_fr": "Soumis"
+      },
+      {
+       "code": "ACCEPTED",
+       "label_en": "Accepted",
+       "label_fr": "Accepté"
+      },
+      {
+       "code": "PARTIALLY_ACCEPTED",
+       "label_en": "Partially accepted",
+       "label_fr": "Partiellement accepté"
+      },
+      {
+       "code": "DISPUTED",
+       "label_en": "Disputed",
+       "label_fr": "Contesté"
+      },
+      {
+       "code": "RECEIVED",
+       "label_en": "Received",
+       "label_fr": "Encaissé"
+      },
+      {
+       "code": "RECONCILED",
+       "label_en": "Reconciled",
+       "label_fr": "Rapproché"
+      },
+      {
+       "code": "CLOSED",
+       "label_en": "Closed",
+       "label_fr": "Clôturé"
+      }
+     ]
+    },
+    {
+     "code": "bordereau_type",
+     "label_en": "Bordereau type",
+     "label_fr": "Type de bordereau",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PREMIUM",
+       "label_en": "Premium bordereau",
+       "label_fr": "Bordereau de primes"
+      },
+      {
+       "code": "CLAIM",
+       "label_en": "Claims bordereau",
+       "label_fr": "Bordereau de sinistres"
+      },
+      {
+       "code": "RISK",
+       "label_en": "Risk bordereau",
+       "label_fr": "Bordereau de risques"
+      }
+     ]
+    },
+    {
+     "code": "reinsurer_role",
+     "label_en": "Reinsurance party role",
+     "label_fr": "Rôle en réassurance",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CEDANT",
+       "label_en": "Cedant",
+       "label_fr": "Cédante"
+      },
+      {
+       "code": "REINSURER",
+       "label_en": "Reinsurer",
+       "label_fr": "Réassureur"
+      },
+      {
+       "code": "REINSURANCE_BROKER",
+       "label_en": "Reinsurance broker",
+       "label_fr": "Courtier de réassurance"
+      },
+      {
+       "code": "RETROCESSIONAIRE",
+       "label_en": "Retrocessionaire",
+       "label_fr": "Rétrocessionnaire"
+      }
+     ]
+    },
+    {
+     "code": "layer_type",
+     "label_en": "Layer type",
+     "label_fr": "Type de tranche",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "WORKING",
+       "label_en": "Working layer",
+       "label_fr": "Tranche travaillante"
+      },
+      {
+       "code": "MIDDLE",
+       "label_en": "Middle layer",
+       "label_fr": "Tranche intermédiaire"
+      },
+      {
+       "code": "CATASTROPHE",
+       "label_en": "Catastrophe layer",
+       "label_fr": "Tranche catastrophe"
+      },
+      {
+       "code": "TOP",
+       "label_en": "Top layer",
+       "label_fr": "Tranche haute"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "coinsurance_role",
+     "label_en": "Co-insurance role",
+     "label_fr": "Rôle en coassurance",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "LEAD",
+       "label_en": "Lead insurer",
+       "label_fr": "Apériteur",
+       "description_en": "Manages the policy on behalf of co-insurers",
+       "description_fr": "Gère le contrat pour le compte des coassureurs"
+      },
+      {
+       "code": "FOLLOWER",
+       "label_en": "Follower",
+       "label_fr": "Coassureur suiveur",
+       "description_en": "Takes a share without managing the policy",
+       "description_fr": "Prend une part sans gérer le contrat"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "provider",
+   "label_en": "Health provider ecosystem",
+   "label_fr": "Réseau de prestataires de santé",
+   "provenance": "PLATFORM_NORMALIZED",
+   "protected": true,
+   "lists": [
+    {
+     "code": "provider_type",
+     "label_en": "Provider type",
+     "label_fr": "Type de prestataire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "HOSPITAL",
+       "label_en": "Hospital",
+       "label_fr": "Hôpital"
+      },
+      {
+       "code": "CLINIC",
+       "label_en": "Clinic",
+       "label_fr": "Clinique"
+      },
+      {
+       "code": "MEDICAL_CENTRE",
+       "label_en": "Medical centre",
+       "label_fr": "Centre médical"
+      },
+      {
+       "code": "HEALTH_CENTRE",
+       "label_en": "Health centre",
+       "label_fr": "Centre de santé"
+      },
+      {
+       "code": "PHARMACY",
+       "label_en": "Pharmacy",
+       "label_fr": "Pharmacie"
+      },
+      {
+       "code": "LABORATORY",
+       "label_en": "Laboratory",
+       "label_fr": "Laboratoire"
+      },
+      {
+       "code": "IMAGING_CENTRE",
+       "label_en": "Imaging centre",
+       "label_fr": "Centre d'imagerie"
+      },
+      {
+       "code": "DENTAL",
+       "label_en": "Dental practice",
+       "label_fr": "Cabinet dentaire"
+      },
+      {
+       "code": "OPTICAL",
+       "label_en": "Optician",
+       "label_fr": "Opticien"
+      },
+      {
+       "code": "PHYSIOTHERAPY",
+       "label_en": "Physiotherapy practice",
+       "label_fr": "Cabinet de kinésithérapie"
+      },
+      {
+       "code": "AMBULANCE_PROVIDER",
+       "label_en": "Ambulance provider",
+       "label_fr": "Service d'ambulance"
+      },
+      {
+       "code": "INDIVIDUAL_PRACTITIONER",
+       "label_en": "Individual practitioner",
+       "label_fr": "Praticien libéral"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "medical_specialty",
+     "label_en": "Medical specialty",
+     "label_fr": "Spécialité médicale",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "GENERAL_PRACTICE",
+       "label_en": "General practice",
+       "label_fr": "Médecine générale"
+      },
+      {
+       "code": "INTERNAL_MEDICINE",
+       "label_en": "Internal medicine",
+       "label_fr": "Médecine interne"
+      },
+      {
+       "code": "PAEDIATRICS",
+       "label_en": "Paediatrics",
+       "label_fr": "Pédiatrie"
+      },
+      {
+       "code": "GYNAECOLOGY_OBSTETRICS",
+       "label_en": "Gynaecology / obstetrics",
+       "label_fr": "Gynécologie / obstétrique"
+      },
+      {
+       "code": "GENERAL_SURGERY",
+       "label_en": "General surgery",
+       "label_fr": "Chirurgie générale"
+      },
+      {
+       "code": "ORTHOPAEDICS",
+       "label_en": "Orthopaedics",
+       "label_fr": "Orthopédie"
+      },
+      {
+       "code": "CARDIOLOGY",
+       "label_en": "Cardiology",
+       "label_fr": "Cardiologie"
+      },
+      {
+       "code": "OPHTHALMOLOGY",
+       "label_en": "Ophthalmology",
+       "label_fr": "Ophtalmologie"
+      },
+      {
+       "code": "ENT",
+       "label_en": "ENT",
+       "label_fr": "ORL"
+      },
+      {
+       "code": "DERMATOLOGY",
+       "label_en": "Dermatology",
+       "label_fr": "Dermatologie"
+      },
+      {
+       "code": "PSYCHIATRY",
+       "label_en": "Psychiatry",
+       "label_fr": "Psychiatrie"
+      },
+      {
+       "code": "NEUROLOGY",
+       "label_en": "Neurology",
+       "label_fr": "Neurologie"
+      },
+      {
+       "code": "UROLOGY",
+       "label_en": "Urology",
+       "label_fr": "Urologie"
+      },
+      {
+       "code": "NEPHROLOGY",
+       "label_en": "Nephrology",
+       "label_fr": "Néphrologie"
+      },
+      {
+       "code": "ONCOLOGY",
+       "label_en": "Oncology",
+       "label_fr": "Oncologie"
+      },
+      {
+       "code": "RADIOLOGY",
+       "label_en": "Radiology",
+       "label_fr": "Radiologie"
+      },
+      {
+       "code": "ANAESTHESIOLOGY",
+       "label_en": "Anaesthesiology",
+       "label_fr": "Anesthésiologie"
+      },
+      {
+       "code": "DENTISTRY",
+       "label_en": "Dentistry",
+       "label_fr": "Chirurgie dentaire"
+      },
+      {
+       "code": "PHYSIOTHERAPY",
+       "label_en": "Physiotherapy",
+       "label_fr": "Kinésithérapie"
+      },
+      {
+       "code": "PHARMACY",
+       "label_en": "Pharmacy",
+       "label_fr": "Pharmacie"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "medical_service_category",
+     "label_en": "Medical service category",
+     "label_fr": "Catégorie d'acte médical",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "CONSULTATION",
+       "label_en": "Consultation",
+       "label_fr": "Consultation"
+      },
+      {
+       "code": "SPECIALIST_CONSULTATION",
+       "label_en": "Specialist consultation",
+       "label_fr": "Consultation spécialisée"
+      },
+      {
+       "code": "EMERGENCY_VISIT",
+       "label_en": "Emergency visit",
+       "label_fr": "Passage aux urgences"
+      },
+      {
+       "code": "HOSPITAL_DAY",
+       "label_en": "Hospital day",
+       "label_fr": "Journée d'hospitalisation"
+      },
+      {
+       "code": "ICU_DAY",
+       "label_en": "ICU day",
+       "label_fr": "Journée en réanimation"
+      },
+      {
+       "code": "SURGERY",
+       "label_en": "Surgery",
+       "label_fr": "Chirurgie"
+      },
+      {
+       "code": "LAB_TEST",
+       "label_en": "Laboratory test",
+       "label_fr": "Analyse de laboratoire"
+      },
+      {
+       "code": "IMAGING",
+       "label_en": "Imaging",
+       "label_fr": "Imagerie"
+      },
+      {
+       "code": "PHARMACY_ITEM",
+       "label_en": "Pharmacy item",
+       "label_fr": "Produit pharmaceutique"
+      },
+      {
+       "code": "DENTAL_SERVICE",
+       "label_en": "Dental service",
+       "label_fr": "Soin dentaire"
+      },
+      {
+       "code": "OPTICAL_SERVICE",
+       "label_en": "Optical service",
+       "label_fr": "Prestation optique"
+      },
+      {
+       "code": "MATERNITY_SERVICE",
+       "label_en": "Maternity service",
+       "label_fr": "Prestation de maternité"
+      },
+      {
+       "code": "PHYSIOTHERAPY",
+       "label_en": "Physiotherapy",
+       "label_fr": "Kinésithérapie"
+      },
+      {
+       "code": "AMBULANCE",
+       "label_en": "Ambulance",
+       "label_fr": "Ambulance"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "network_type",
+     "label_en": "Network type",
+     "label_fr": "Type de réseau",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "OPEN",
+       "label_en": "Open network",
+       "label_fr": "Réseau ouvert"
+      },
+      {
+       "code": "PREFERRED",
+       "label_en": "Preferred provider network",
+       "label_fr": "Réseau de prestataires privilégiés"
+      },
+      {
+       "code": "EXCLUSIVE",
+       "label_en": "Exclusive network",
+       "label_fr": "Réseau exclusif"
+      },
+      {
+       "code": "TIERED",
+       "label_en": "Tiered network",
+       "label_fr": "Réseau à niveaux"
+      }
+     ]
+    },
+    {
+     "code": "preauthorization_decision",
+     "label_en": "Pre-authorisation decision",
+     "label_fr": "Décision d'entente préalable",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "APPROVED",
+       "label_en": "Approved",
+       "label_fr": "Accordée"
+      },
+      {
+       "code": "PARTIALLY_APPROVED",
+       "label_en": "Partially approved",
+       "label_fr": "Partiellement accordée"
+      },
+      {
+       "code": "DECLINED",
+       "label_en": "Declined",
+       "label_fr": "Refusée"
+      },
+      {
+       "code": "PENDING_INFORMATION",
+       "label_en": "Pending information",
+       "label_fr": "En attente d'informations"
+      },
+      {
+       "code": "REFERRED_MEDICAL_ADVISER",
+       "label_en": "Referred to medical adviser",
+       "label_fr": "Transmise au médecin-conseil"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expirée"
+      }
+     ]
+    },
+    {
+     "code": "provider_claim_decision",
+     "label_en": "Provider claim decision",
+     "label_fr": "Décision sur facture prestataire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "APPROVED",
+       "label_en": "Approved",
+       "label_fr": "Approuvée"
+      },
+      {
+       "code": "PARTIALLY_APPROVED",
+       "label_en": "Partially approved",
+       "label_fr": "Partiellement approuvée"
+      },
+      {
+       "code": "REJECTED",
+       "label_en": "Rejected",
+       "label_fr": "Rejetée"
+      },
+      {
+       "code": "PENDING_INFORMATION",
+       "label_en": "Pending information",
+       "label_fr": "En attente d'informations"
+      },
+      {
+       "code": "REFERRED_REVIEW",
+       "label_en": "Referred for review",
+       "label_fr": "Transmise pour examen"
+      }
+     ]
+    },
+    {
+     "code": "provider_claim_state",
+     "label_en": "Provider claim state",
+     "label_fr": "État de la facture prestataire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "DRAFT",
+       "label_en": "Draft",
+       "label_fr": "Brouillon"
+      },
+      {
+       "code": "SUBMITTED",
+       "label_en": "Submitted",
+       "label_fr": "Soumise"
+      },
+      {
+       "code": "RECEIVED",
+       "label_en": "Received",
+       "label_fr": "Reçue"
+      },
+      {
+       "code": "UNDER_REVIEW",
+       "label_en": "Under review",
+       "label_fr": "En cours d'examen"
+      },
+      {
+       "code": "ADJUDICATED",
+       "label_en": "Adjudicated",
+       "label_fr": "Liquidée"
+      },
+      {
+       "code": "APPROVED_FOR_PAYMENT",
+       "label_en": "Approved for payment",
+       "label_fr": "Bon à payer"
+      },
+      {
+       "code": "PAID",
+       "label_en": "Paid",
+       "label_fr": "Payée"
+      },
+      {
+       "code": "DISPUTED",
+       "label_en": "Disputed",
+       "label_fr": "Contestée"
+      },
+      {
+       "code": "CLOSED",
+       "label_en": "Closed",
+       "label_fr": "Clôturée"
+      }
+     ]
+    },
+    {
+     "code": "credentialing_status",
+     "label_en": "Credentialing status",
+     "label_fr": "Statut d'agrément",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "APPLIED",
+       "label_en": "Applied",
+       "label_fr": "Candidature déposée"
+      },
+      {
+       "code": "UNDER_REVIEW",
+       "label_en": "Under review",
+       "label_fr": "En cours d'examen"
+      },
+      {
+       "code": "APPROVED",
+       "label_en": "Approved",
+       "label_fr": "Agréé"
+      },
+      {
+       "code": "CONDITIONALLY_APPROVED",
+       "label_en": "Conditionally approved",
+       "label_fr": "Agréé sous conditions"
+      },
+      {
+       "code": "REJECTED",
+       "label_en": "Rejected",
+       "label_fr": "Refusé"
+      },
+      {
+       "code": "SUSPENDED",
+       "label_en": "Suspended",
+       "label_fr": "Suspendu"
+      },
+      {
+       "code": "TERMINATED",
+       "label_en": "Terminated",
+       "label_fr": "Résilié"
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré"
+      }
+     ]
+    },
+    {
+     "code": "eligibility_result",
+     "label_en": "Eligibility result",
+     "label_fr": "Résultat d'éligibilité",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "ELIGIBLE",
+       "label_en": "Eligible",
+       "label_fr": "Éligible"
+      },
+      {
+       "code": "NOT_ELIGIBLE",
+       "label_en": "Not eligible",
+       "label_fr": "Non éligible"
+      },
+      {
+       "code": "POLICY_INACTIVE",
+       "label_en": "Policy inactive",
+       "label_fr": "Contrat non en vigueur"
+      },
+      {
+       "code": "MEMBER_NOT_FOUND",
+       "label_en": "Member not found",
+       "label_fr": "Bénéficiaire introuvable"
+      },
+      {
+       "code": "BENEFIT_EXHAUSTED",
+       "label_en": "Benefit limit reached",
+       "label_fr": "Plafond atteint"
+      },
+      {
+       "code": "WAITING_PERIOD",
+       "label_en": "In waiting period",
+       "label_fr": "En délai de carence"
+      },
+      {
+       "code": "OUT_OF_NETWORK",
+       "label_en": "Out of network",
+       "label_fr": "Hors réseau"
+      },
+      {
+       "code": "PREAUTH_REQUIRED",
+       "label_en": "Pre-authorisation required",
+       "label_fr": "Entente préalable requise"
+      }
+     ]
+    },
+    {
+     "code": "dispute_reason",
+     "label_en": "Dispute reason",
+     "label_fr": "Motif de contestation",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "TARIFF_DIFFERENCE",
+       "label_en": "Tariff difference",
+       "label_fr": "Écart de tarif"
+      },
+      {
+       "code": "SERVICE_NOT_COVERED",
+       "label_en": "Service not covered",
+       "label_fr": "Acte non couvert"
+      },
+      {
+       "code": "MISSING_PREAUTH",
+       "label_en": "Missing pre-authorisation",
+       "label_fr": "Absence d'entente préalable"
+      },
+      {
+       "code": "DUPLICATE_BILLING",
+       "label_en": "Duplicate billing",
+       "label_fr": "Double facturation"
+      },
+      {
+       "code": "INCORRECT_CODING",
+       "label_en": "Incorrect coding",
+       "label_fr": "Codification erronée"
+      },
+      {
+       "code": "LATE_SUBMISSION",
+       "label_en": "Late submission",
+       "label_fr": "Transmission tardive"
+      },
+      {
+       "code": "PAYMENT_DELAY",
+       "label_en": "Payment delay",
+       "label_fr": "Retard de paiement"
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not Listed",
+       "label_fr": "Autre / Non répertorié",
+       "attributes": {
+        "review_queue": true
+       }
+      }
+     ]
+    },
+    {
+     "code": "admission_type",
+     "label_en": "Admission type",
+     "label_fr": "Type d'admission",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "EMERGENCY",
+       "label_en": "Emergency",
+       "label_fr": "Urgence"
+      },
+      {
+       "code": "ELECTIVE",
+       "label_en": "Elective / planned",
+       "label_fr": "Programmée"
+      },
+      {
+       "code": "MATERNITY",
+       "label_en": "Maternity",
+       "label_fr": "Maternité"
+      },
+      {
+       "code": "DAY_CASE",
+       "label_en": "Day case",
+       "label_fr": "Ambulatoire"
+      },
+      {
+       "code": "TRANSFER",
+       "label_en": "Transfer",
+       "label_fr": "Transfert"
+      }
+     ]
+    },
+    {
+     "code": "provider_user_role",
+     "label_en": "Provider user role",
+     "label_fr": "Rôle utilisateur prestataire",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "PROVIDER_ADMIN",
+       "label_en": "Provider administrator",
+       "label_fr": "Administrateur prestataire"
+      },
+      {
+       "code": "FRONT_DESK",
+       "label_en": "Front desk / reception",
+       "label_fr": "Accueil"
+      },
+      {
+       "code": "PRACTITIONER",
+       "label_en": "Practitioner",
+       "label_fr": "Praticien"
+      },
+      {
+       "code": "BILLING_OFFICER",
+       "label_en": "Billing officer",
+       "label_fr": "Agent de facturation"
+      },
+      {
+       "code": "PHARMACIST",
+       "label_en": "Pharmacist",
+       "label_fr": "Pharmacien"
+      },
+      {
+       "code": "LAB_TECHNICIAN",
+       "label_en": "Laboratory technician",
+       "label_fr": "Technicien de laboratoire"
+      }
+     ]
+    },
+    {
+     "code": "health_anomaly_indicator",
+     "label_en": "Health anomaly indicator (review trigger)",
+     "label_fr": "Indicateur d'anomalie santé (déclencheur d'examen)",
+     "hierarchical": false,
+     "values": [
+      {
+       "code": "HIGH_FREQUENCY_VISITS",
+       "label_en": "Unusually frequent visits",
+       "label_fr": "Fréquence de consultations inhabituelle",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "SERVICE_GENDER_MISMATCH",
+       "label_en": "Service inconsistent with gender",
+       "label_fr": "Acte incohérent avec le sexe",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "SERVICE_AGE_MISMATCH",
+       "label_en": "Service inconsistent with age",
+       "label_fr": "Acte incohérent avec l'âge",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "DUPLICATE_SERVICE",
+       "label_en": "Same service billed twice",
+       "label_fr": "Même acte facturé deux fois",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "ABOVE_TARIFF",
+       "label_en": "Amount above agreed tariff",
+       "label_fr": "Montant supérieur au tarif conventionné",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "UNBUNDLING",
+       "label_en": "Unbundled billing",
+       "label_fr": "Facturation fractionnée",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "AFTER_POLICY_END",
+       "label_en": "Service after cover end",
+       "label_fr": "Acte après fin de garantie",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      },
+      {
+       "code": "PHARMACY_QUANTITY",
+       "label_en": "Unusual pharmacy quantities",
+       "label_fr": "Quantités pharmaceutiques inhabituelles",
+       "attributes": {
+        "is_indicator_only": true
+       }
+      }
+     ]
+    }
+   ],
+   "disclaimer_en": "Anomaly indicators trigger review only; they are not determinations.",
+   "disclaimer_fr": "Les indicateurs d'anomalie déclenchent uniquement un examen ; ils ne constituent pas une conclusion."
+  }
+ ]
+}

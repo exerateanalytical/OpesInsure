@@ -1,0 +1,22 @@
+{
+  "name": "OpesInsure Laravel Starter",
+  "version": "1.0.0",
+  "generated_date": "2026-09-24",
+  "migration_files": [
+    "2026_09_24_000001_create_identity_and_tenancy_tables.php",
+    "2026_09_24_000002_create_party_and_organization_tables.php",
+    "2026_09_24_000003_create_authority_compliance_and_master_data_tables.php",
+    "2026_09_24_000004_create_vehicle_property_and_regulatory_tables.php",
+    "2026_09_24_000005_create_product_distribution_quote_tables.php",
+    "2026_09_24_000006_create_proposal_policy_tables.php",
+    "2026_09_24_000007_create_finance_accounting_tables.php",
+    "2026_09_24_000008_create_claim_provider_reinsurance_tables.php",
+    "2026_09_24_000009_create_document_case_audit_integration_tables.php"
+  ],
+  "model_count": 15,
+  "openapi_paths": 82,
+  "notes": [
+    "Scaffold, not production-complete application",
+    "Insurer/regulatory values remain configurable and verified externally"
+  ]
+}
