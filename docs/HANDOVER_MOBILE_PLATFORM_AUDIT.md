@@ -132,4 +132,5 @@ below was verified against the live server, not inferred.
 - Nightly `pg_dump` cron at 02:30 UTC via `/srv/opesinsure/backup.sh`, 14-day retention.
 - `node docs/audit/verify-live.mjs` on production: 75 passed, 1 failed — the failure is a probe of legacy `GET /claims` (403 for customers); the app uses `/mobile/claims`, which passes.
 - APK: EAS build `54f28e91` (1.2.0, versionCode 7), MD5 `8c29465f0ad7d4dd852af4352fb72a49`, served at `/download/android` as `application/vnd.android.package-archive`, checksum verified end to end. Previous APK kept at `/srv/opesinsure/backups/opesinsure-1.2.0-build6.apk`.
+- Superseded same day: build 7 would not start (DEMO_MODE_FORBIDDEN). Now 1.2.1 (versionCode 8, EAS `db8a6dc9`), MD5 `b1dc5fc40bba3bb46317d46e37e0c5af`, served as `OpesInsure-1.2.1.apk`; `MOBILE_APP_VERSION=1.2.1`.
 - Still open: mail server (deploy user has no root; SMTP settings live in admin Platform settings, verification is lifted), ETECH/Twilio credentials (owner enters them in admin), `/.well-known/assetlinks.json` for app links, on-device pass (keyboard, 360px layout).
