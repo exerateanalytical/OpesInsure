@@ -5,7 +5,7 @@ module.exports = () => {
   const production = environment === "production";
   return {
     ...base.expo,
-    version: "1.2.1",
+    version: "1.2.2",
     runtimeVersion: { policy: "appVersion" },
     ios: {
       ...base.expo.ios,
