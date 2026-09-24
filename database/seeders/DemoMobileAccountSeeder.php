@@ -52,7 +52,9 @@ final class DemoMobileAccountSeeder extends Seeder
      */
     public static function otpPhones(): array
     {
-        return array_values(array_unique(array_merge(self::phones(), array_column(DatabaseSeeder::DEMO_ACCOUNTS, 'phone'))));
+        $personas = array_filter(DatabaseSeeder::DEMO_ACCOUNTS, static fn (array $a) => in_array($a['role_code'], (array) config('demo.persona_roles', []), true));
+
+        return array_values(array_unique(array_merge(self::phones(), array_column($personas, 'phone'))));
     }
 
     public function run(): void
@@ -86,13 +88,18 @@ final class DemoMobileAccountSeeder extends Seeder
                     'full_name' => $account['name'],
                     'phone_e164' => $account['phone'],
                     'party_id' => $party->id,
-                    'password' => Hash::make(config('demo.password')),
+                    'password' => Hash::make(filled(config('demo.password')) ? config('demo.password') : Str::random(40)),
                     'locale' => 'en',
                     'status' => 'ACTIVE',
                     'email_verified_at' => now(),
                     'phone_verified_at' => now(),
                 ],
             );
+
+            // Keep the documented demo password working on re-seed.
+            if (filled(config('demo.password')) && ! Hash::check(config('demo.password'), (string) $user->password)) {
+                $user->forceFill(['password' => Hash::make(config('demo.password'))])->save();
+            }
 
             // Existing rows from an earlier seed may predate the party link.
             if (blank($user->party_id)) {

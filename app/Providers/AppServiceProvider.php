@@ -29,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(TenantContext::class, fn () => new TenantContext);
 
+        // Admin-editable platform settings (Filament "Platform settings").
+        $this->app->singleton(\App\Application\Settings\PlatformSettings::class);
+
+        // Admin SMTP settings take effect the moment anything first builds a
+        // mailer (web request or queue worker) — never baked into config:cache.
+        $this->app->resolving('mail.manager', fn () => $this->app->make(\App\Application\Settings\PlatformSettings::class)->applyMailConfig(purge: false));
+
         // Picks the real S3 adapter only when this app is actually configured
         // for cloud storage; today FILESYSTEM_DISK=local, so the local
         // signed-route adapter is what's active (see LocalSignedUrlAdapter).

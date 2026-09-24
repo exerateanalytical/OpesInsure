@@ -5,6 +5,9 @@ use App\Interfaces\Http\Controllers\Api\V1\Payments\MtnMomoCallbackController;
 use App\Interfaces\Http\Controllers\Api\V1\Payments\OrangeMoneyCallbackController;
 use App\Interfaces\Http\Controllers\Api\V1\Notifications\TwilioDeliveryReceiptController;
 use App\Interfaces\Http\Controllers\Api\V1\Identity\MobileAuthController;
+use App\Interfaces\Http\Controllers\Api\V1\Identity\EmailVerificationController;
+use App\Interfaces\Http\Controllers\Api\V1\Notifications\EtechDeliveryReceiptController;
+use App\Interfaces\Http\Controllers\Api\V1\Settings\SupportContactsController;
 use App\Interfaces\Http\Controllers\Api\V1\Payments\MobilePurchaseController;
 use App\Interfaces\Http\Controllers\Api\V1\Payments\MobilePaymentController;
 use App\Interfaces\Http\Controllers\Api\V1\Policies\MobileWalletController;
@@ -61,7 +64,10 @@ use App\Interfaces\Http\Controllers\Api\V1\Tenancy\TenantLifecycleController;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('public/capabilities', [SystemController::class, 'capabilities']);
-    Route::post('public/accounts', [AccountController::class, 'register'])->middleware('throttle:5,1');
+    Route::post('public/accounts', [AccountController::class, 'register']);
+    Route::get('public/support-contacts', SupportContactsController::class);
+    Route::match(['get', 'post'], 'webhooks/etech/dlr', EtechDeliveryReceiptController::class)->name('notifications.etech.dlr');
+    Route::get('email/verify/{user}/{hash}', [EmailVerificationController::class, 'verify'])->middleware('signed')->name('email.verify');
     // Public runtime surface (CLAUDE_MERGE_GUIDE.md, Patch 7): cold-start
     // bootstrap and telemetry both intentionally run before any session
     // exists, so they live alongside public/capabilities rather than inside
@@ -83,6 +89,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('public/demo-accounts', function () {
             return response()->json(['data' => [
                 'otp' => (string) config('demo.otp'),
+                // Shared password for these personas (POST auth/mobile/password-login),
+                // served from config so the APK never hardcodes it.
+                'password' => filled(config('demo.password')) ? (string) config('demo.password') : null,
                 'accounts' => array_map(static fn (array $a) => [
                     'label' => $a['label'],
                     'full_name' => $a['name'],
@@ -102,17 +111,24 @@ Route::prefix('v1')->group(function (): void {
     // authorization here, exactly like Laravel's own signed
     // email-verification links — see MobileDocumentDownloadController.
     Route::get('mobile/documents/{document}/download', MobileDocumentDownloadController::class)->middleware(['signed', 'throttle:60,1'])->name('mobile.documents.download');
-    // Demo mode relaxes the per-IP throttles: testers usually share one NAT IP.
+    // Login endpoints are deliberately not rate limited (owner decision 2026-09-24);
+    // the per-code 5-wrong-guesses lock in MobileAuthService still applies.
     // Per-phone limits in MobileAuthService stay the same.
-    Route::post('auth/mobile/otp/request', [MobileAuthController::class, 'requestOtp'])->middleware(config('demo.enabled') ? 'throttle:60,1' : 'throttle:5,1');
-    Route::post('auth/mobile/otp/verify', [MobileAuthController::class, 'verifyOtp'])->middleware(config('demo.enabled') ? 'throttle:60,1' : 'throttle:10,1');
-    Route::post('auth/mobile/refresh', [MobileAuthController::class, 'refresh'])->middleware('throttle:20,1');
+    Route::post('auth/mobile/otp/request', [MobileAuthController::class, 'requestOtp']);
+    Route::post('auth/mobile/otp/verify', [MobileAuthController::class, 'verifyOtp']);
+    Route::post('auth/mobile/password-login', [MobileAuthController::class, 'passwordLogin']);
+    Route::post('auth/mobile/password/forgot', [MobileAuthController::class, 'forgotPassword']);
+    Route::post('auth/mobile/password/reset', [MobileAuthController::class, 'resetPassword']);
+    Route::post('auth/mobile/refresh', [MobileAuthController::class, 'refresh']);
     // Not tenant-scoped: the whole point of session/logout is to work before
     // (session, to discover workspaces) or independently of (logout) any
     // single tenant selection — unlike every route in the group below.
     Route::middleware(['auth:api', 'json.api'])->group(function (): void {
         Route::get('auth/mobile/session', [MobileAuthController::class, 'session']);
         Route::post('auth/mobile/logout', [MobileAuthController::class, 'logout'])->middleware('throttle:20,1');
+        Route::post('me/email/verification', [EmailVerificationController::class, 'send'])->middleware('throttle:5,60');
+        Route::post('me/phone/verification', [AccountController::class, 'requestPhoneVerification']);
+        Route::post('me/phone/verification/confirm', [AccountController::class, 'confirmPhoneVerification']);
     });
     Route::middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
         Route::get('me', [AccountController::class, 'me']);
@@ -248,6 +264,7 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave12_agentmode.php';
         require __DIR__.'/wave12_brokercarrier.php';
         require __DIR__.'/wave14_mobile.php';
+        require __DIR__.'/wave15_mobile.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);
@@ -292,7 +309,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
     });
     Route::middleware('auth:api')->group(function (): void {
-        Route::post('invitations/accept', [InvitationController::class, 'accept'])->middleware('throttle:5,10');
+        Route::post('invitations/accept', [InvitationController::class, 'accept']);
         Route::get('tenants', [TenantController::class, 'index']);
         Route::post('tenants', [TenantController::class, 'store'])->middleware('throttle:10,60');
     });

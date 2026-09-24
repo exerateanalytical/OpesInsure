@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Security;
 
 use App\Application\Audit\AuditWriter;
-use App\Application\Notifications\Adapters\NotificationAdapterRegistry;
+use App\Application\Notifications\Otp\SendOtpJob;
 use App\Models\StepUpGrant;
 use App\Models\User;
 use App\Models\VerificationChallenge;
@@ -48,7 +48,6 @@ final class MobileStepUpService
     private const CHALLENGE_PURPOSE_PREFIX = 'SU:';
 
     public function __construct(
-        private NotificationAdapterRegistry $adapters,
         private AuditWriter $audit,
     ) {
     }
@@ -220,18 +219,7 @@ final class MobileStepUpService
             return;
         }
 
-        try {
-            $this->adapters->for('SMS')->send(
-                $user->phone_e164,
-                '',
-                "Your OpesInsure security code is {$code}. It expires in 5 minutes. Never share this code with anyone.",
-                (string) Str::uuid(),
-            );
-        } catch (Throwable $e) {
-            // Never let a provider failure change response shape/timing —
-            // ops visibility only, same discipline as MobileAuthService.
-            \Illuminate\Support\Facades\Log::critical('mobile.step_up.sms_delivery_failed', ['reason' => $e->getMessage()]);
-            report($e);
-        }
+        // Queued; OtpDeliveryService logs critical when every provider fails.
+        SendOtpJob::send($user->phone_e164, $code, "Your OpesInsure security code is {$code}. It expires in 5 minutes. Never share this code with anyone.");
     }
 }

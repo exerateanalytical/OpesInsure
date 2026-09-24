@@ -10,7 +10,11 @@ use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
-beforeEach(fn () => $this->seed(MobileOAuthClientSeeder::class));
+// These cover the verification-required path (admin setting on).
+beforeEach(function () {
+    $this->seed(MobileOAuthClientSeeder::class);
+    App\Models\PlatformSetting::create(['require_contact_verification' => true]);
+});
 
 require_once __DIR__.'/Concerns/mobile_auth_helpers.php';
 

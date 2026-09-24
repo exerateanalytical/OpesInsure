@@ -3,6 +3,10 @@
 return [
     'otp_invalid' => 'That code is invalid or has expired. Request a new one.',
     'otp_rate_limited' => 'Too many attempts. Try again later.',
+    'auth_rate_limited' => 'Too many attempts. Try again in :minutes minute(s).',
+    'demo_password_locked' => 'Demo accounts use the shared demo password; it cannot be changed or reset.',
+    'password_reset_required' => 'Set a new password with Forgot password.',
+    'password_login_invalid' => 'The phone number or password is incorrect.',
     'refresh_invalid' => 'Your session has expired. Sign in again.',
     'payment_not_retryable' => 'Only a failed payment can be retried.',
     'delivery_otp_invalid' => 'That delivery code is invalid.',

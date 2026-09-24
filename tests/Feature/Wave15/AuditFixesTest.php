@@ -58,21 +58,17 @@ it('logs a critical error when SMS delivery is not configured', function () {
 
     $this->postJson('/api/v1/auth/mobile/otp/request', ['phone_e164' => '+237670009001'])->assertSuccessful();
 
-    Log::shouldHaveReceived('critical')->withArgs(fn ($message) => $message === 'mobile.otp.sms_delivery_failed')->once();
+    Log::shouldHaveReceived('critical')->withArgs(fn ($message) => $message === 'otp.delivery_failed')->once();
 });
 
-it('raises the per-IP OTP ceiling in demo mode but not otherwise', function () {
-    $service = app(App\Application\Identity\MobileAuthService::class);
-    $method = new ReflectionMethod($service, 'assertWithinRateLimits');
-
+it('has no route throttle on OTP requests: a demo persona can request 30 codes from one IP', function () {
     config(['demo.enabled' => true]);
-    for ($i = 0; $i < 25; $i++) {
-        $method->invoke($service, '+23767001'.str_pad((string) $i, 4, '0', STR_PAD_LEFT), '10.0.0.9');
-    }
+    Http::fake();
+    makeMobileTestUser('+237600000102');
 
-    config(['demo.enabled' => false]);
-    expect(fn () => $method->invoke($service, '+237670019999', '10.0.0.9'))
-        ->toThrow(Illuminate\Validation\ValidationException::class);
+    for ($i = 0; $i < 30; $i++) {
+        $this->postJson('/api/v1/auth/mobile/otp/request', ['phone_e164' => '+237600000102'])->assertSuccessful();
+    }
 });
 
 // ----------------------------------------------------------------- 3: step-up
@@ -191,8 +187,16 @@ it('scopes a carrier-linked insurer to its own carrier\'s referrals', function (
     TenantMembership::where('user_id', $insurer->id)->update(['carrier_id' => $a['carrier']->id]);
     Passport::actingAs($insurer);
 
-    $ids = collect($this->getJson('/api/v1/mobile/carrier/referrals', tenantHeaderFor($tenant))->assertStatus(200)->json('data'))->pluck('id');
-    expect($ids->all())->toBe([$mine->id]);
+    $rows = collect($this->getJson('/api/v1/mobile/carrier/referrals', tenantHeaderFor($tenant))->assertStatus(200)->json('data'));
+    expect($rows->pluck('id')->all())->toBe([$mine->id]);
+    // Each row names its carrier so live checks can prove the scoping.
+    expect($rows->pluck('carrier_id')->unique()->all())->toBe([$a['carrier']->id]);
+    expect($rows->first())->toHaveKey('carrier_name');
+    foreach (['issuance', 'claims'] as $list) {
+        foreach ($this->getJson("/api/v1/mobile/carrier/{$list}", tenantHeaderFor($tenant))->assertStatus(200)->json('data') as $row) {
+            expect($row['carrier_id'])->toBe($a['carrier']->id);
+        }
+    }
     $this->getJson('/api/v1/mobile/carrier/referrals/'.$theirs->id, tenantHeaderFor($tenant))->assertStatus(404);
 });
 
@@ -293,12 +297,9 @@ it('demo:seed is a no-op with demo mode off', function () {
 
 // ------------------------------------------------------------ public accounts
 
-it('registers a public account without a password (the app signs in by OTP)', function () {
-    $response = $this->postJson('/api/v1/public/accounts', ['full_name' => 'No Password', 'phone_e164' => '+237670009900', 'locale' => 'en', 'terms_version' => '2026-01']);
-
-    $response->assertStatus(201);
-    $user = User::where('phone_e164', '+237670009900')->firstOrFail();
-    expect($user->password)->not->toBeEmpty()->and(strlen($user->password))->toBeGreaterThan(40);
+it('refuses a public account without a password (phone + password sign-up)', function () {
+    $this->postJson('/api/v1/public/accounts', ['full_name' => 'No Password', 'phone_e164' => '+237670009900', 'locale' => 'en', 'terms_version' => '2026-01'])
+        ->assertStatus(422)->assertJsonValidationErrors('password');
 });
 
 it('still validates a password when one is supplied', function () {

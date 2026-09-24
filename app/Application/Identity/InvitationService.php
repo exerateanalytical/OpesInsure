@@ -61,8 +61,14 @@ final class InvitationService
             if (! $invitation || $invitation->status !== 'PENDING' || $invitation->expires_at->isPast()) {
                 throw ValidationException::withMessages(['token'=>__('wave0.invitation_invalid')]);
             }
-            $matches = ($invitation->recipient_email && hash_equals($invitation->recipient_email, mb_strtolower((string)$user->email)))
-                || ($invitation->recipient_phone_e164 && $user->phone_e164 && hash_equals($invitation->recipient_phone_e164, $user->phone_e164));
+            // Only a VERIFIED contact proves identity: self-registration no longer
+            // verifies phone/email up front, so an unverified match could be
+            // someone who typed another person's number or address.
+            $matches = ($invitation->recipient_email && $user->email_verified_at !== null && hash_equals($invitation->recipient_email, mb_strtolower((string)$user->email)))
+                || ($invitation->recipient_phone_e164 && $user->phone_e164 && $user->phone_verified_at !== null && hash_equals($invitation->recipient_phone_e164, $user->phone_e164));
+            if (! $matches && $user->phone_verified_at === null && $user->email_verified_at === null) {
+                throw ValidationException::withMessages(['token'=>__('wave0.invitation_contact_unverified')]);
+            }
             if (! $matches) throw ValidationException::withMessages(['token'=>__('wave0.invitation_wrong_identity')]);
 
             $membership = TenantMembership::firstOrCreate(

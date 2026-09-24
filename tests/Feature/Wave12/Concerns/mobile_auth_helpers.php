@@ -39,13 +39,19 @@ if (! function_exists('extractMobileOtpCode')) {
 if (! function_exists('makeMobileTestUser')) {
     function makeMobileTestUser(string $phone = '+237670000000', string $status = 'ACTIVE'): User
     {
-        return User::create([
+        $user = User::create([
             'full_name' => 'Mobile Test User',
             'phone_e164' => $phone,
             'password' => 'not-used-for-otp-login',
             'locale' => 'en',
             'status' => $status,
         ]);
+
+        // An established account: phone already proven (so OTP login keeps
+        // its password and invitations can match on it).
+        $user->forceFill(['phone_verified_at' => now()])->save();
+
+        return $user;
     }
 
     /** @return array{0: Tenant, 1: TenantMembership} */

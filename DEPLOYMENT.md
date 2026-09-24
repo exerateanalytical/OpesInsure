@@ -110,6 +110,44 @@ Set already: `APP_ENV=production`, `APP_DEBUG=false`,
 - `MAIL_MAILER=log` — no SMTP configured, so no mail actually leaves the box.
 - `FILESYSTEM_DISK=local` — object storage (`AWS_*`) is not configured.
 
+### Platform settings (admin panel), OTP delivery and demo accounts
+
+**Admin → Integrations → Platform settings** (`/admin/platform-settings`,
+SYSTEM_ADMIN / PLATFORM_ADMIN only) holds, in the `platform_settings` table
+(secrets encrypted with `APP_KEY`, cached in Redis, shared by web and queue
+workers). A filled-in admin value overrides `.env`; a blank one falls back to it.
+
+| Section | Fields | `.env` fallback |
+|---|---|---|
+| Support contacts | support email, phone, WhatsApp number, partner email | `SUPPORT_EMAIL`, `SUPPORT_PHONE`, `SUPPORT_WHATSAPP`, `PARTNER_EMAIL` |
+| Twilio | SID, auth token, SMS from, WhatsApp from, enabled | `TWILIO_*` |
+| ETECH KEYS | SMS login/password/sender (≤ 11 chars), REST bearer token, WhatsApp template name + language, SMS/WhatsApp enabled | `ETECH_SMS_LOGIN`, `ETECH_SMS_PASSWORD`, `ETECH_SMS_SENDER`, `ETECH_REST_TOKEN`, `ETECH_WHATSAPP_TEMPLATE`, `ETECH_WHATSAPP_TEMPLATE_LANGUAGE` |
+| One-time codes | channel priority (default WhatsApp → SMS), provider priority (default ETECH → Twilio), *require contact verification* (default **off**) | `OTP_CHANNEL_PRIORITY`, `OTP_PROVIDER_PRIORITY` |
+| Mail (SMTP) | host, port, user, password, encryption, from address/name, enabled | `MAIL_*` |
+
+- The app reads support contacts from `GET /api/v1/public/support-contacts`.
+- OTP codes are sent by a **queued** job (`SendOtpJob`) — a queue worker must
+  run (`php artisan queue:work redis`). Without one, set
+  `OTP_DELIVERY_MODE=after_response` so codes are sent by the web process
+  right after the response. When every provider fails, `otp.delivery_failed`
+  is logged at CRITICAL.
+- ETECH delivery reports: set the DLR callback URL in the ETECH dashboard to
+  `https://insurance.opesdatacenter.tech/api/v1/webhooks/etech/dlr`.
+- Login is not route-throttled. Built-in ceilings (demo personas exempt):
+  10 failed password logins / phone / 15 min, 6 code sends / phone / hour,
+  300 auth requests / IP / hour, 5 wrong guesses per code (then the code is dead).
+
+**Demo accounts.** Set `DEMO_PASSWORD=Demo@12345` in the shared `.env`
+(there is no default outside `APP_ENV=local`). With `DEMO_MODE_ENABLED=true`,
+every deploy (`demo:seed`) re-applies it to the demo **personas** — customer
+`+237600000100`, agent `…101`, broker `…102`, insurer `…103`, web broker staff
+`…007`, web agent `…008` — who sign in with phone + `Demo@12345`
+(`POST /api/v1/auth/mobile/password-login`) or OTP `123456`. Persona passwords
+cannot be changed or reset. Admin/finance/compliance/claims demo accounts
+(`…000`–`…006`) get neither the fixed OTP nor a password reset on re-seed;
+their initial password is `LOCAL_ADMIN_PASSWORD` (else `DEMO_PASSWORD`).
+`GET /api/v1/public/demo-accounts` returns the password to the app in demo mode.
+
 ---
 
 ## 4. Database
@@ -192,7 +230,7 @@ Honest list of what is *not* set up, so nothing here is a surprise later:
   `supervisor`/systemd unit running `queue:work`. Queued jobs will pile up
   unprocessed until one is set up.
 - **No scheduler.** No cron entry runs `artisan schedule:run`.
-- **No SMTP**, no payment credentials, no object storage (see §3).
+- **No SMTP** (fill *Mail (SMTP)* in Platform settings once a server exists), no payment credentials, no object storage (see §3).
 - **No CI/CD** — deploys are the manual tarball path in §2.
 - **IPv6**: the A record points at IPv4 only. The server has an IPv6 address
   (`2a02:4780:c:d048::1`) and the inspectorate has an `AAAA` record; this

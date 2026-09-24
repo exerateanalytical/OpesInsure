@@ -148,7 +148,8 @@ final class MobileBrokerOpsController
 
         return [
             'id' => $c->id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
-            'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city') ?? '—', 'origin_locked' => true,
+            'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city'),
+            'origin_locked' => DB::table('customer_attributions')->where('party_id', $c->party_id)->where('status', 'ACTIVE')->exists(),
             'policies' => (clone $policies)->where('status', 'ACTIVE')->count(), 'outstanding_minor' => $outstanding,
             'renewal_due_at' => ($min = (clone $policies)->where('status', 'ACTIVE')->min('coverage_ends_at')) ? \Carbon\Carbon::parse($min)->toIso8601String() : null,
         ];

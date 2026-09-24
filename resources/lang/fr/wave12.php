@@ -3,6 +3,10 @@
 return [
     'otp_invalid' => 'Ce code est invalide ou a expiré. Demandez-en un nouveau.',
     'otp_rate_limited' => 'Trop de tentatives. Réessayez plus tard.',
+    'auth_rate_limited' => 'Trop de tentatives. Réessayez dans :minutes minute(s).',
+    'demo_password_locked' => 'Les comptes de démonstration utilisent le mot de passe partagé ; il ne peut pas être modifié.',
+    'password_reset_required' => 'Définissez un nouveau mot de passe via Mot de passe oublié.',
+    'password_login_invalid' => 'Numéro de téléphone ou mot de passe incorrect.',
     'refresh_invalid' => 'Votre session a expiré. Reconnectez-vous.',
     'payment_not_retryable' => 'Seul un paiement échoué peut être réessayé.',
     'delivery_otp_invalid' => 'Ce code de livraison est invalide.',

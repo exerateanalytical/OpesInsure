@@ -51,7 +51,7 @@ final class DatabaseSeeder extends Seeder
             return;
         }
 
-        $password = env('LOCAL_ADMIN_PASSWORD') ?: (config('demo.enabled') ? config('demo.password') : null);
+        $password = config('demo.local_admin_password') ?: (config('demo.enabled') ? config('demo.password') : null);
 
         if (blank($password)) {
             if (app()->environment('testing')) {
@@ -69,10 +69,17 @@ final class DatabaseSeeder extends Seeder
         );
 
         foreach (self::DEMO_ACCOUNTS as $account) {
+            $isPersona = config('demo.enabled') && in_array($account['role_code'], (array) config('demo.persona_roles', []), true);
             $user = User::firstOrCreate(
                 ['email' => $account['email']],
-                ['id' => (string) Str::uuid(), 'full_name' => $account['name'], 'phone_e164' => $account['phone'], 'password' => Hash::make($password), 'locale' => 'en', 'status' => 'ACTIVE', 'email_verified_at' => now(), 'phone_verified_at' => now()],
+                ['id' => (string) Str::uuid(), 'full_name' => $account['name'], 'phone_e164' => $account['phone'], 'password' => Hash::make($isPersona && filled(config('demo.password')) ? config('demo.password') : $password), 'locale' => 'en', 'status' => 'ACTIVE', 'email_verified_at' => now(), 'phone_verified_at' => now()],
             );
+
+            // Demo personas (agent/broker/...) keep the documented demo password
+            // on re-seed. Admin/finance/compliance/claims passwords are never reset.
+            if ($isPersona && filled(config('demo.password')) && ! Hash::check(config('demo.password'), (string) $user->password)) {
+                $user->forceFill(['password' => Hash::make(config('demo.password'))])->save();
+            }
 
             $membership = TenantMembership::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $account['role_code']],

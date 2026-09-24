@@ -103,7 +103,7 @@ final class MobileAgentPortalController
         ], $request->user(), $t);
         $customerId = $result['customer']->id ?? $result['customer_id'] ?? ($result['id'] ?? null);
         $customer = TenantCustomer::with('party.contacts')->findOrFail($customerId);
-        DB::table('party_addresses')->updateOrInsert(['party_id' => $customer->party_id, 'type' => 'HOME'], ['id' => DB::table('party_addresses')->where(['party_id' => $customer->party_id, 'type' => 'HOME'])->value('id') ?? (string) Str::uuid(), 'city' => $data['city'], 'country_code' => 'CM', 'line1' => 'Not provided', 'is_primary' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('party_addresses')->updateOrInsert(['party_id' => $customer->party_id, 'type' => 'HOME'], ['id' => DB::table('party_addresses')->where(['party_id' => $customer->party_id, 'type' => 'HOME'])->value('id') ?? (string) Str::uuid(), 'city' => $data['city'], 'country_code' => 'CM', 'is_primary' => true, 'created_at' => now(), 'updated_at' => now()]);
 
         return response()->json(['data' => $this->clientOf($customer, $t)], 201);
     }
@@ -245,7 +245,7 @@ final class MobileAgentPortalController
 
         return [
             'id' => $c->id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
-            'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city') ?? '—',
+            'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city'),
             'kyc_status' => DB::table('kyc_submissions')->where('party_id', $c->party_id)->orderByDesc('created_at')->value('status') ?? 'NOT_STARTED',
             'origin_locked' => DB::table('customer_attributions')->where('party_id', $c->party_id)->where('status', 'ACTIVE')->exists(),
             'active_policies' => (clone $policies)->count(), 'renewal_due_at' => (clone $policies)->min('coverage_ends_at') ? \Carbon\Carbon::parse((clone $policies)->min('coverage_ends_at'))->toIso8601String() : null,

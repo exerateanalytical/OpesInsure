@@ -23,7 +23,20 @@ return [
     'otp_ip_limit_per_hour' => (int) env('DEMO_OTP_IP_LIMIT', 200),
 
     /*
-     * Shared password for the seeded demo staff accounts on the web panel.
+     * Shared password for every seeded demo account: web panel staff and the
+     * mobile personas (POST auth/mobile/password-login). Re-applied to
+     * existing demo users on every demo:seed, so a deploy keeps it current.
      */
-    'password' => (string) env('DEMO_PASSWORD', 'OpesDemo!2026'),
+    'password' => (string) env('DEMO_PASSWORD', env('APP_ENV') === 'local' ? 'Demo@12345' : ''),
+
+    /*
+     * Roles whose demo accounts get the fixed demo OTP and the shared demo
+     * password re-applied on every seed. Admin/finance/compliance/claims
+     * accounts are deliberately excluded: they never get 123456 and their
+     * passwords are never reset by demo:seed.
+     */
+    'persona_roles' => ['CUSTOMER', 'AGENT', 'BROKER_STAFF', 'CARRIER_STAFF'],
+
+    // Initial password for seeded admin accounts (read via config so config:cache works).
+    'local_admin_password' => env('LOCAL_ADMIN_PASSWORD'),
 ];
