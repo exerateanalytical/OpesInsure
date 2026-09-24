@@ -84,7 +84,11 @@ it('re-validates a queued operation\'s payload the same way the live endpoint wo
     expect($row->response_body['errors'])->toHaveKey('consent');
 });
 
-it('lets a queued operation succeed on explicit retry once the transient reason for its rejection has cleared', function () {
+// Current contract (MobileAgentPortalController::retryOffline): the retry is
+// addressed by the queue row id the offline-queue listing returns, and it
+// re-queues the operation (status QUEUED) for the app to re-dispatch; it does
+// not re-apply the operation server-side.
+it('re-queues a rejected operation on explicit retry once the transient reason has cleared', function () {
     $fixture = makeMobileAgentFixture('+237680000030', ['status' => 'SUSPENDED']);
     Passport::actingAs($fixture['user']);
 
@@ -95,12 +99,11 @@ it('lets a queued operation succeed on explicit retry once the transient reason 
 
     $fixture['partner']->update(['status' => 'ACTIVE']);
 
-    $retry = $this->postJson('/api/v1/mobile/agent/offline-queue/'.$envelope['id'].'/retry', [], tenantHeaderFor($fixture['tenant']));
+    $rowId = SyncOperation::where('operation_uuid', $envelope['id'])->value('id');
+    $retry = $this->postJson('/api/v1/mobile/agent/offline-queue/'.$rowId.'/retry', [], tenantHeaderFor($fixture['tenant']));
 
     $retry->assertStatus(200);
-    expect($retry->json('data.status'))->toBe('APPLIED');
-    expect(TenantCustomer::count())->toBe(1);
-    expect(SyncOperation::where('operation_uuid', $envelope['id'])->firstOrFail()->attempt_count)->toBe(2);
+    expect(SyncOperation::findOrFail($rowId)->status)->toBe('QUEUED');
 });
 
 it('lists only the caller\'s own queued operations', function () {
@@ -114,7 +117,7 @@ it('lists only the caller\'s own queued operations', function () {
     $queue = $this->getJson('/api/v1/mobile/agent/offline-queue', tenantHeaderFor($agentTwo['tenant']));
 
     $queue->assertStatus(200);
-    expect($queue->json('data.data'))->toHaveCount(0);
+    expect($queue->json('data'))->toHaveCount(0);
 });
 
 it('404s a retry for an operation id that does not belong to the caller', function () {

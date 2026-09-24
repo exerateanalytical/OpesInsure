@@ -83,6 +83,10 @@ if (! function_exists('makeMobileCustomerFixture')) {
             'notice_version' => 'privacy-2026-01',
             'evidence_reference' => 'field-visit-2026-09-22',
             'consent' => true,
+            // Current app-shaped contract (MobileAgentPortalController::createClient).
+            'full_name' => $overrides['display_name'] ?? 'New Client Kamga',
+            'city' => 'Douala',
+            'consent_reference' => 'field-visit-2026-09-22',
         ], $overrides);
     }
 
@@ -337,7 +341,12 @@ if (! function_exists('makeMobileCustomerFixture')) {
         PartyContact::create(['party_id' => $party->id, 'type' => 'PHONE', 'normalized_value' => $phone, 'is_primary' => true]);
         $partner = Partner::create(['tenant_id' => $tenant->id, 'party_id' => $party->id, 'type' => $type, 'status' => 'ACTIVE', 'compliance' => []]);
         $user = User::create(['full_name' => 'Mobile '.$type.' Test User', 'phone_e164' => $phone, 'party_id' => $party->id, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
-        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $type === 'CARRIER' ? 'CARRIER_STAFF' : 'BROKER_STAFF', 'status' => 'ACTIVE']);
+        $roleCode = $type === 'CARRIER' ? 'CARRIER_STAFF' : 'BROKER_STAFF';
+        $membership = TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $roleCode, 'status' => 'ACTIVE']);
+        // /mobile/broker/* and /mobile/carrier/* are permission-gated: give the
+        // fixture the same default permission set a real role of this code has.
+        $role = Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $roleCode], ['permissions' => \App\Application\Identity\RoleCatalogue::defaultPermissions($roleCode), 'is_system' => true]);
+        $membership->roles()->attach($role->id);
 
         return ['tenant' => $tenant, 'user' => $user, 'party' => $party, 'partner' => $partner];
     }
@@ -345,7 +354,9 @@ if (! function_exists('makeMobileCustomerFixture')) {
     function makeMobileTenantStaffUser(Tenant $tenant, string $phone, string $roleCode = 'FINANCE_STAFF'): User
     {
         $user = User::create(['full_name' => 'Mobile Tenant Staff', 'phone_e164' => $phone, 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
-        TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $roleCode, 'status' => 'ACTIVE']);
+        $membership = TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'role_code' => $roleCode, 'status' => 'ACTIVE']);
+        $role = Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $roleCode], ['permissions' => \App\Application\Identity\RoleCatalogue::defaultPermissions($roleCode), 'is_system' => true]);
+        $membership->roles()->attach($role->id);
 
         return $user;
     }

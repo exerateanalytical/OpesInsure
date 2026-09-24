@@ -93,14 +93,19 @@ Route::prefix('v1')->group(function (): void {
         })->middleware('throttle:30,1');
     }
     Route::post('public/certificates/verify', [CertificateController::class, 'verify'])->middleware('throttle:30,1');
+    // Reference-only insurance check (no token): discloses validity, insurer and
+    // product class only. Tighter limit than certificate verify to deter enumeration.
+    Route::post('public/insurance/verify', \App\Interfaces\Http\Controllers\Api\V1\Certificates\PublicInsuranceVerifyController::class)->middleware('throttle:20,1');
     // The signed-URL target MobileDocumentService's LocalSignedUrlAdapter
     // points to. Outside auth:api/tenant/json.api on purpose: a valid,
     // unexpired signature (see the 'signed' middleware) IS the
     // authorization here, exactly like Laravel's own signed
     // email-verification links — see MobileDocumentDownloadController.
     Route::get('mobile/documents/{document}/download', MobileDocumentDownloadController::class)->middleware(['signed', 'throttle:60,1'])->name('mobile.documents.download');
-    Route::post('auth/mobile/otp/request', [MobileAuthController::class, 'requestOtp'])->middleware('throttle:5,1');
-    Route::post('auth/mobile/otp/verify', [MobileAuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
+    // Demo mode relaxes the per-IP throttles: testers usually share one NAT IP.
+    // Per-phone limits in MobileAuthService stay the same.
+    Route::post('auth/mobile/otp/request', [MobileAuthController::class, 'requestOtp'])->middleware(config('demo.enabled') ? 'throttle:60,1' : 'throttle:5,1');
+    Route::post('auth/mobile/otp/verify', [MobileAuthController::class, 'verifyOtp'])->middleware(config('demo.enabled') ? 'throttle:60,1' : 'throttle:10,1');
     Route::post('auth/mobile/refresh', [MobileAuthController::class, 'refresh'])->middleware('throttle:20,1');
     // Not tenant-scoped: the whole point of session/logout is to work before
     // (session, to discover workspaces) or independently of (logout) any
@@ -131,6 +136,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('partners', [PartnerController::class, 'index'])->middleware('permission:partners.read');
         Route::get('partners/{partner}', [PartnerController::class, 'show'])->middleware('permission:partners.read');
         Route::post('partners', [PartnerController::class, 'store'])->middleware('permission:partners.manage');
+        Route::post('partners/{partner}/status', [PartnerController::class, 'changeStatus'])->middleware('permission:partners.manage');
         Route::post('partners/{partner}/licences', [PartnerController::class, 'addLicence'])->middleware('permission:partner.licence.manage');
         Route::post('partners/{partner}/licences/{licence}/decision', [PartnerController::class, 'verifyLicence'])->middleware('permission:partner.licence.verify');
         Route::post('attributions', [AttributionController::class, 'store'])->middleware('permission:attribution.create');

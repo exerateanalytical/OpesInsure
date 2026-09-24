@@ -10,8 +10,8 @@ use Illuminate\Support\Str;
 final class AccountController
 {
     public function register(Request $r) {
-        $d=$r->validate(['full_name'=>'required|string|max:120','phone_e164'=>['required','regex:/^\+[1-9]\d{7,14}$/','unique:users,phone_e164'],'email'=>'nullable|email:rfc,dns|max:190|unique:users,email','password'=>'required|string|min:12|max:128|confirmed','locale'=>'required|in:en,fr','terms_version'=>'required|string|max:32']);
-        $user=DB::transaction(function()use($d){$u=User::create(['id'=>(string)Str::uuid(),'full_name'=>$d['full_name'],'phone_e164'=>$d['phone_e164'],'email'=>$d['email']??null,'password'=>$d['password'],'locale'=>$d['locale'],'status'=>'PENDING_VERIFICATION']); return $u;});
+        $d=$r->validate(['full_name'=>'required|string|max:120','phone_e164'=>['required','regex:/^\+[1-9]\d{7,14}$/','unique:users,phone_e164'],'email'=>'nullable|email:rfc,dns|max:190|unique:users,email','password'=>'nullable|string|min:12|max:128|confirmed','locale'=>'required|in:en,fr','terms_version'=>'required|string|max:32']);
+        $user=DB::transaction(function()use($d){$u=User::create(['id'=>(string)Str::uuid(),'full_name'=>$d['full_name'],'phone_e164'=>$d['phone_e164'],'email'=>$d['email']??null,'password'=>$d['password']??Str::random(64),'locale'=>$d['locale'],'status'=>'PENDING_VERIFICATION']); return $u;});
         return response()->json(['data'=>['id'=>$user->id,'status'=>$user->status,'verification_required'=>true]],201);
     }
     public function me(Request $r) { return response()->json(['data'=>$r->user()->only(['id','full_name','email','phone_e164','locale','status','email_verified_at','phone_verified_at'])]); }

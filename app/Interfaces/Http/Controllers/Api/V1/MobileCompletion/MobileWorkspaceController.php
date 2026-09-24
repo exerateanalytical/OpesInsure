@@ -34,8 +34,12 @@ final class MobileWorkspaceController
         $count = fn (string $table, array $where = []) => (string) DB::table($table)->where('tenant_id', $t)->where($where)->count();
         $xaf = fn ($minor) => number_format(((int) $minor) / 100, 0, '.', ' ').' FCFA';
 
+        $heading = (string) Str::of($role)->replace('_', ' ')->lower()->ucfirst().' workspace';
+
+        // The app reads `label`; `title` is kept for older clients.
         return response()->json(['data' => [
-            'title' => Str::of($role)->replace('_', ' ')->lower()->ucfirst().' workspace',
+            'label' => $heading,
+            'title' => $heading,
             'subtitle' => 'Live platform operations · '.now()->format('d M Y'),
             'metrics' => [
                 ['key' => 'policies', 'label' => 'Policies in force', 'value' => $count('policies', ['status' => 'ACTIVE']), 'tone' => 'success'],
@@ -45,7 +49,7 @@ final class MobileWorkspaceController
                 ['key' => 'support', 'label' => 'Open support cases', 'value' => $count('support_tickets', ['status' => 'OPEN']), 'tone' => 'neutral'],
                 ['key' => 'issues', 'label' => 'App issues reported', 'value' => (string) DB::table('mobile_issue_reports')->where('status', 'OPEN')->count(), 'tone' => 'danger'],
             ],
-            'modules' => collect(self::MODULES)->filter(fn ($m) => ! $m['permission'] || $user->hasPermission($m['permission']))->map(fn ($m) => ['key' => $m['key'], 'title' => $m['title'], 'description' => 'Server read model', 'icon' => $m['icon'], 'permission' => $m['permission']])->values(),
+            'modules' => collect(self::MODULES)->filter(fn ($m) => ! $m['permission'] || $user->hasPermission($m['permission']))->map(fn ($m) => ['key' => $m['key'], 'label' => $m['title'], 'title' => $m['title'], 'description' => 'Server read model', 'icon' => $m['icon'], 'permission' => $m['permission']])->values(),
         ]]);
     }
 
@@ -66,6 +70,6 @@ final class MobileWorkspaceController
             'issue-reports' => [['Screen', 'Note', 'Status', 'Reported'], DB::table('mobile_issue_reports')->orderByDesc('created_at')->limit(50)->get()->map(fn ($r) => ['Screen' => $r->route, 'Note' => Str::limit($r->note, 80), 'Status' => $r->status, 'Reported' => $d($r->created_at)])],
         };
 
-        return response()->json(['data' => ['title' => $module['title'], 'columns' => $columns, 'rows' => $rows->values(), 'next_cursor' => null]]);
+        return response()->json(['data' => ['label' => $module['title'], 'title' => $module['title'], 'columns' => $columns, 'rows' => $rows->values(), 'next_cursor' => null]]);
     }
 }

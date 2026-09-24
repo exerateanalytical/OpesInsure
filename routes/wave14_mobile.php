@@ -79,24 +79,24 @@ Route::get('mobile/agent/sales/{id}', [MobileAgentPortalController::class, 'sale
 Route::post('mobile/agent/sales/{id}/payment-request', [MobileAgentPortalController::class, 'requestPayment'])->middleware(['permission:agent.clients.manage', 'throttle:20,1']);
 
 // broker/*
-Route::get('mobile/broker/clients', [MobileBrokerOpsController::class, 'clients']);
-Route::get('mobile/broker/clients/{customer}', [MobileBrokerOpsController::class, 'client']);
-Route::get('mobile/broker/production', [MobileBrokerOpsController::class, 'production']);
-Route::get('mobile/broker/renewals', [MobileBrokerOpsController::class, 'renewals']);
-Route::get('mobile/broker/compliance', [MobileBrokerOpsController::class, 'compliance']);
-Route::get('mobile/broker/marketplace-publications', [MobileBrokerOpsController::class, 'publications']);
-Route::patch('mobile/broker/marketplace-publications/{id}', [MobileBrokerOpsController::class, 'togglePublication'])->middleware('throttle:20,1');
+Route::get('mobile/broker/clients', [MobileBrokerOpsController::class, 'clients'])->middleware('permission:broker.portal.read');
+Route::get('mobile/broker/clients/{customer}', [MobileBrokerOpsController::class, 'client'])->middleware('permission:broker.portal.read');
+Route::get('mobile/broker/production', [MobileBrokerOpsController::class, 'production'])->middleware('permission:broker.portal.read');
+Route::get('mobile/broker/renewals', [MobileBrokerOpsController::class, 'renewals'])->middleware('permission:broker.portal.read');
+Route::get('mobile/broker/compliance', [MobileBrokerOpsController::class, 'compliance'])->middleware('permission:broker.portal.read');
+Route::get('mobile/broker/marketplace-publications', [MobileBrokerOpsController::class, 'publications'])->middleware('permission:broker.portal.read');
+Route::patch('mobile/broker/marketplace-publications/{id}', [MobileBrokerOpsController::class, 'togglePublication'])->middleware(['permission:broker.marketplace.manage', 'throttle:20,1']);
 
 // carrier/*
-Route::get('mobile/carrier/referrals', [MobileCarrierOpsController::class, 'referrals']);
-Route::get('mobile/carrier/referrals/{id}', [MobileCarrierOpsController::class, 'referral']);
+Route::get('mobile/carrier/referrals', [MobileCarrierOpsController::class, 'referrals'])->middleware('permission:carrier.referrals.read');
+Route::get('mobile/carrier/referrals/{id}', [MobileCarrierOpsController::class, 'referral'])->middleware('permission:carrier.referrals.read');
 Route::post('mobile/carrier/referrals/{id}/decision', [MobileCarrierOpsController::class, 'decideReferral'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
-Route::get('mobile/carrier/issuance', [MobileCarrierOpsController::class, 'issuance']);
-Route::get('mobile/carrier/claims', [MobileCarrierOpsController::class, 'claims']);
+Route::get('mobile/carrier/issuance', [MobileCarrierOpsController::class, 'issuance'])->middleware('permission:carrier.issuance.read');
+Route::get('mobile/carrier/claims', [MobileCarrierOpsController::class, 'claims'])->middleware('permission:carrier.claims.read');
 
 // workspace/[role]
-Route::get('mobile/workspace/dashboard', [MobileWorkspaceController::class, 'dashboard']);
-Route::get('mobile/workspace/modules/{key}', [MobileWorkspaceController::class, 'module']);
+Route::get('mobile/workspace/dashboard', [MobileWorkspaceController::class, 'dashboard'])->middleware('permission:workspace.read');
+Route::get('mobile/workspace/modules/{key}', [MobileWorkspaceController::class, 'module'])->middleware('permission:workspace.read');
 
 // security/device-status
 Route::post('mobile/security/device-attestation/nonce', [MobileDeviceAttestationController::class, 'nonce'])->middleware('throttle:20,1');

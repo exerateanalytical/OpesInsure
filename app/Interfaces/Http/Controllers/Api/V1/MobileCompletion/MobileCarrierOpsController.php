@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Identity\CarrierScopeResolver;
 use App\Application\FinancialDistribution\MobileCarrierFinanceService;
 use App\Application\Underwriting\UnderwritingService;
 use App\Domain\Tenancy\TenantContext;
@@ -18,23 +19,43 @@ use Illuminate\Support\Facades\DB;
 /** The insurer/carrier portal (app/carrier/*) in the shapes the app renders. */
 final class MobileCarrierOpsController
 {
-    public function __construct(private MobileCarrierFinanceService $finance, private AuditWriter $audit) {}
+    public function __construct(private MobileCarrierFinanceService $finance, private AuditWriter $audit, private CarrierScopeResolver $scope) {}
+
+    /** The caller's carrier id (null = tenant-wide, platform staff only). */
+    private function carrierId(Request $request): ?string
+    {
+        return $this->scope->carrierIdFor($request->user(), app(TenantContext::class)->id());
+    }
+
+    /** Restricts $query to the caller's carrier when one applies. */
+    private function scoped($query, ?string $carrierId, string $column = 'carrier_id')
+    {
+        return $carrierId === null ? $query : $query->where($column, $carrierId);
+    }
+
+    private function scopedClaims(?string $carrierId)
+    {
+        $q = Claim::query();
+
+        return $carrierId === null ? $q : $q->whereHas('policy', fn ($p) => $p->where('carrier_id', $carrierId));
+    }
 
     public function dashboard(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $base = $this->finance->dashboard($t);
+        $cid = $this->carrierId($request);
+        $base = $this->finance->dashboard($t, $cid);
         $xaf = fn ($minor) => number_format(((int) $minor) / 100, 0, '.', ' ').' FCFA';
-        $referrals = UnderwritingCase::where('tenant_id', $t)->whereIn('status', ['QUEUED', 'IN_REVIEW', 'AWAITING_INFORMATION'])->count();
-        $issuance = DB::table('policy_issuance_requests')->where('tenant_id', $t)->whereIn('status', ['REQUESTED', 'CARRIER_REVIEW', 'PENDING'])->count();
-        $claims = Claim::where('tenant_id', $t)->whereIn('status', ['SUBMITTED', 'ACKNOWLEDGED', 'EVIDENCE_PENDING', 'ASSESSMENT', 'CARRIER_REVIEW', 'DISPUTED'])->count();
+        $referrals = $this->scoped(UnderwritingCase::where('tenant_id', $t), $cid)->whereIn('status', ['QUEUED', 'IN_REVIEW', 'AWAITING_INFORMATION'])->count();
+        $issuance = $this->scoped(DB::table('policy_issuance_requests')->where('tenant_id', $t), $cid)->whereIn('status', ['REQUESTED', 'CARRIER_REVIEW', 'PENDING'])->count();
+        $claims = $this->scopedClaims($cid)->where('tenant_id', $t)->whereIn('status', ['SUBMITTED', 'ACKNOWLEDGED', 'EVIDENCE_PENDING', 'ASSESSMENT', 'CARRIER_REVIEW', 'DISPUTED'])->count();
         $net = (int) collect($base['settlements_net_by_currency'] ?? [])->sum('net_amount_minor');
 
         return response()->json(['data' => $base + ['metrics' => [
             ['label' => 'Underwriting referrals', 'value' => (string) $referrals, 'tone' => $referrals > 0 ? 'warning' : 'success'],
             ['label' => 'Issuance queue', 'value' => (string) $issuance, 'tone' => $issuance > 0 ? 'warning' : 'success'],
             ['label' => 'Open claims', 'value' => (string) $claims, 'tone' => 'info'],
-            ['label' => 'Policies in force', 'value' => (string) DB::table('policies')->where('tenant_id', $t)->where('status', 'ACTIVE')->count(), 'tone' => 'success'],
+            ['label' => 'Policies in force', 'value' => (string) $this->scoped(DB::table('policies')->where('tenant_id', $t), $cid)->where('status', 'ACTIVE')->count(), 'tone' => 'success'],
             ['label' => 'Settlements (net)', 'value' => $xaf($net), 'tone' => 'neutral'],
         ]]]);
     }
@@ -42,14 +63,14 @@ final class MobileCarrierOpsController
     public function referrals(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $cases = UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals'])->where('tenant_id', $t)->orderByRaw("CASE status WHEN 'QUEUED' THEN 0 WHEN 'IN_REVIEW' THEN 1 WHEN 'AWAITING_INFORMATION' THEN 2 ELSE 3 END")->orderByDesc('created_at')->limit(100)->get();
+        $cases = $this->scoped(UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals'])->where('tenant_id', $t), $this->carrierId($request))->orderByRaw("CASE status WHEN 'QUEUED' THEN 0 WHEN 'IN_REVIEW' THEN 1 WHEN 'AWAITING_INFORMATION' THEN 2 ELSE 3 END")->orderByDesc('created_at')->limit(100)->get();
 
         return response()->json(['data' => $cases->map(fn ($c) => $this->referralOf($c))->values()]);
     }
 
     public function referral(string $id, Request $request): JsonResponse
     {
-        $c = UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals', 'decisions'])->where('tenant_id', app(TenantContext::class)->id())->findOrFail($id);
+        $c = $this->scoped(UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals', 'decisions'])->where('tenant_id', app(TenantContext::class)->id()), $this->carrierId($request))->findOrFail($id);
 
         return response()->json(['data' => $this->referralOf($c)]);
     }
@@ -57,7 +78,7 @@ final class MobileCarrierOpsController
     public function decideReferral(string $id, Request $request, UnderwritingService $underwriting): JsonResponse
     {
         $data = $request->validate(['decision' => 'required|in:APPROVE,DECLINE,MORE_INFORMATION', 'note' => 'required|string|min:5|max:4000']);
-        $c = UnderwritingCase::with('referrals')->where('tenant_id', app(TenantContext::class)->id())->findOrFail($id);
+        $c = $this->scoped(UnderwritingCase::with('referrals')->where('tenant_id', app(TenantContext::class)->id()), $this->carrierId($request))->findOrFail($id);
         if ($data['decision'] === 'MORE_INFORMATION') {
             $c->update(['status' => 'AWAITING_INFORMATION', 'assigned_to' => $c->assigned_to ?? $request->user()->id]);
             $c->referrals()->where('status', 'OPEN')->update(['status' => 'WAITING', 'resolution_notes' => $data['note']]);
@@ -79,7 +100,7 @@ final class MobileCarrierOpsController
     {
         $t = app(TenantContext::class)->id();
         $rows = DB::table('policy_issuance_requests')->join('proposals', 'proposals.id', '=', 'policy_issuance_requests.proposal_id')->leftJoin('parties', 'parties.id', '=', 'proposals.party_id')
-            ->where('policy_issuance_requests.tenant_id', $t)->select('policy_issuance_requests.*', 'proposals.proposal_number', 'parties.display_name')->orderByDesc('policy_issuance_requests.created_at')->limit(100)->get();
+            ->where('policy_issuance_requests.tenant_id', $t)->when($this->carrierId($request), fn ($q, $cid) => $q->where('policy_issuance_requests.carrier_id', $cid))->select('policy_issuance_requests.*', 'proposals.proposal_number', 'parties.display_name')->orderByDesc('policy_issuance_requests.created_at')->limit(100)->get();
 
         return response()->json(['data' => $rows->map(fn ($r) => [
             'id' => $r->id, 'reference' => $r->proposal_number ?? substr($r->id, 0, 8), 'subject' => ($r->display_name ?? 'Customer').' · issuance', 'status' => $r->status,
@@ -90,7 +111,7 @@ final class MobileCarrierOpsController
     public function claims(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $rows = Claim::with('claimant')->where('tenant_id', $t)->orderByRaw("CASE WHEN status IN ('CARRIER_REVIEW','DISPUTED') THEN 0 WHEN status IN ('SUBMITTED','ACKNOWLEDGED','EVIDENCE_PENDING','ASSESSMENT') THEN 1 ELSE 2 END")->orderByDesc('submitted_at')->limit(100)->get();
+        $rows = $this->scopedClaims($this->carrierId($request))->with('claimant')->where('tenant_id', $t)->orderByRaw("CASE WHEN status IN ('CARRIER_REVIEW','DISPUTED') THEN 0 WHEN status IN ('SUBMITTED','ACKNOWLEDGED','EVIDENCE_PENDING','ASSESSMENT') THEN 1 ELSE 2 END")->orderByDesc('submitted_at')->limit(100)->get();
 
         return response()->json(['data' => $rows->map(fn (Claim $c) => [
             'id' => $c->id, 'reference' => $c->claim_number, 'subject' => ($c->claimant?->display_name ?? 'Claimant').' · '.($c->loss_details['incident']['incident_type'] ?? 'claim'), 'status' => $c->status,
@@ -101,7 +122,7 @@ final class MobileCarrierOpsController
     public function settlements(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $rows = $this->finance->settlements($t, 100)->getCollection();
+        $rows = $this->finance->settlements($t, 100, $this->carrierId($request))->getCollection();
 
         return response()->json(['data' => $rows->map(fn ($s) => [
             'id' => $s->id, 'period' => \Carbon\Carbon::parse($s->period_start)->format('M Y'), 'gross_premium_minor' => (int) DB::table('settlement_items')->where('settlement_batch_id', $s->id)->sum('gross_premium_minor'),

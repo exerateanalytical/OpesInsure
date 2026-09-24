@@ -10,7 +10,7 @@ final class TenantInvitation extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['tenant_id', 'recipient_email', 'recipient_phone_e164', 'role_code', 'token_hash', 'status', 'expires_at', 'invited_by', 'accepted_at'];
+    protected $fillable = ['tenant_id', 'recipient_email', 'recipient_phone_e164', 'role_code', 'carrier_id', 'token_hash', 'status', 'expires_at', 'invited_by', 'accepted_at'];
     protected $hidden = ['token_hash'];
     protected function casts(): array { return ['expires_at' => 'datetime', 'accepted_at' => 'datetime']; }
     public function tenant(): BelongsTo { return $this->belongsTo(Tenant::class); }

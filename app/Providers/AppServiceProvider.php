@@ -50,6 +50,11 @@ class AppServiceProvider extends ServiceProvider
         $this->registerMobileTokenExpiry();
         $this->registerPortalShellRoute();
 
+        // deploy.sh runs `migrate --force` then `optimize`; hooking demo:seed
+        // into optimize keeps demo data current on every deploy (no-op when
+        // demo mode is off).
+        $this->optimizes(optimize: 'demo:seed', key: 'demo-seed');
+
         if ($this->app->environment('local')) {
             $this->registerLocalDemoLogin();
         }

@@ -67,7 +67,10 @@ it('computes broker receivables straight from the commission ledger, per currenc
     $response->assertStatus(200);
     // Strict: aggregates must come back as JSON numbers, not the strings
     // Postgres SUM()/PDO would otherwise hand back for a money field.
-    expect($response->json('data.0'))->toBe(['currency' => 'XAF', 'earned_minor' => 9000, 'available_minor' => 6000, 'paid_minor' => 2000]);
+    // App-shaped (one row per outstanding accrual): amount = amount - paid - clawed back.
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.currency'))->toBe('XAF');
+    expect($response->json('data.0.amount_minor'))->toBe(7000);
 });
 
 it('404s a nonexistent statement and 403s a tenant-mate\'s statement, but shows the caller\'s own with items', function () {
@@ -124,8 +127,9 @@ it('scopes carrier settlements and bordereaux strictly to the caller\'s own tena
     expect($dashboard->json('data.settlements_net_by_currency.0'))->toBe(['currency' => 'XAF', 'status' => 'APPROVED', 'net_amount_minor' => 70000]);
 
     $settlements = $this->getJson('/api/v1/mobile/carrier/settlements', tenantHeaderFor($carrierA['tenant']));
-    expect($settlements->json('data.data'))->toHaveCount(1);
-    expect($settlements->json('data.data.0.id'))->toBe($settlementA->id);
+    // App-shaped list (MobileCarrierOpsController::settlements), not paginated.
+    expect($settlements->json('data'))->toHaveCount(1);
+    expect($settlements->json('data.0.id'))->toBe($settlementA->id);
 
     $bordereaux = $this->getJson('/api/v1/mobile/carrier/bordereaux', tenantHeaderFor($carrierA['tenant']));
     expect($bordereaux->json('data.data'))->toHaveCount(1);

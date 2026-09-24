@@ -19,6 +19,9 @@ return [
      */
     'otp' => (string) env('DEMO_OTP', '123456'),
 
+    // Per-IP mobile OTP request ceiling per hour while demo mode is on.
+    'otp_ip_limit_per_hour' => (int) env('DEMO_OTP_IP_LIMIT', 200),
+
     /*
      * Shared password for the seeded demo staff accounts on the web panel.
      */

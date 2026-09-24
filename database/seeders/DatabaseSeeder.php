@@ -2,6 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Application\Identity\RoleCatalogue;
+use App\Models\Partner;
+use App\Models\Party;
+use App\Models\PartyContact;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
@@ -28,12 +32,12 @@ final class DatabaseSeeder extends Seeder
         // 'never_grant_to' list names both explicitly. Core quote/proposal/policy
         // creation needs no permission string at all (see routes/api.php), so
         // these only need the broker-specific back-office actions on top of that.
-        ['role_code' => 'BROKER_STAFF', 'label' => 'Broker staff', 'name' => 'Demo Broker Staff', 'email' => 'demo-broker-staff@opesinsure.local', 'phone' => '+237600000007', 'permissions' => ['broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage']],
+        ['role_code' => 'BROKER_STAFF', 'label' => 'Broker staff', 'name' => 'Demo Broker Staff', 'email' => 'demo-broker-staff@opesinsure.local', 'phone' => '+237600000007', 'permissions' => RoleCatalogue::BROKER_STAFF_PERMISSIONS],
         // Wave 12 Agent Mode grants: config/permissions.php's 'agent' category is the
         // deliberate exception to 'never_grant_to' — these exist specifically to be
         // granted to AGENT, scoped by AgentPartnerResolver ownership checks rather
         // than by withholding the permission itself.
-        ['role_code' => 'AGENT', 'label' => 'Commercial agent', 'name' => 'Demo Commercial Agent', 'email' => 'demo-agent@opesinsure.local', 'phone' => '+237600000008', 'permissions' => ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch']],
+        ['role_code' => 'AGENT', 'label' => 'Commercial agent', 'name' => 'Demo Commercial Agent', 'email' => 'demo-agent@opesinsure.local', 'phone' => '+237600000008', 'permissions' => RoleCatalogue::AGENT_PERMISSIONS],
     ];
 
     public function run(): void
@@ -75,14 +79,43 @@ final class DatabaseSeeder extends Seeder
                 ['id' => (string) Str::uuid(), 'status' => 'ACTIVE'],
             );
 
-            $role = Role::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'code' => $account['role_code']],
-                ['id' => (string) Str::uuid(), 'permissions' => $account['permissions'] ?? ['*'], 'is_system' => true],
-            );
+            // Explicit permission lists are re-applied on every seed so newly
+            // introduced gates (e.g. broker.portal.read) reach existing rows;
+            // wildcard staff roles are left alone once created.
+            $role = isset($account['permissions'])
+                ? Role::updateOrCreate(['tenant_id' => $tenant->id, 'code' => $account['role_code']], ['permissions' => $account['permissions'], 'is_system' => true])
+                : Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $account['role_code']], ['id' => (string) Str::uuid(), 'permissions' => ['*'], 'is_system' => true]);
 
             $membership->roles()->syncWithoutDetaching([$role->id]);
+
+            // The web AGENT / BROKER_STAFF demo users can also sign in to the
+            // mobile app (demo OTP), where every agent/broker screen resolves
+            // the caller through users.party_id -> Partner. Give them that chain.
+            if (in_array($account['role_code'], ['AGENT', 'BROKER_STAFF'], true)) {
+                $this->ensureDemoPartner($user, $tenant, $account['role_code'] === 'AGENT' ? 'AGENT' : 'BROKER');
+            }
+        }
+
+        // Insurer roles exist in the platform tenant even before anyone holds
+        // them, so memberships created in the admin panel pick them up.
+        foreach (RoleCatalogue::CARRIER_ROLES as $code) {
+            Role::updateOrCreate(['tenant_id' => $tenant->id, 'code' => $code], ['permissions' => RoleCatalogue::defaultPermissions($code), 'is_system' => true]);
         }
 
         $this->call(DemoMobileAccountSeeder::class);
+    }
+
+    private function ensureDemoPartner(User $user, Tenant $tenant, string $type): void
+    {
+        $party = $user->party_id ? Party::find($user->party_id) : null;
+        $party ??= Party::firstOrCreate(['display_name' => $user->full_name], ['id' => (string) Str::uuid(), 'type' => 'INDIVIDUAL', 'status' => 'ACTIVE']);
+        PartyContact::firstOrCreate(
+            ['party_id' => $party->id, 'type' => 'PHONE', 'normalized_value' => $user->phone_e164],
+            ['id' => (string) Str::uuid(), 'is_primary' => true],
+        );
+        if ($user->party_id !== $party->id) {
+            $user->forceFill(['party_id' => $party->id])->save();
+        }
+        Partner::firstOrCreate(['party_id' => $party->id], ['tenant_id' => $tenant->id, 'type' => $type, 'status' => 'ACTIVE', 'compliance' => []]);
     }
 }

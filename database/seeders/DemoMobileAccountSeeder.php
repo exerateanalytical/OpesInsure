@@ -43,6 +43,18 @@ final class DemoMobileAccountSeeder extends Seeder
         return array_column(self::ACCOUNTS, 'phone');
     }
 
+    /**
+     * Every phone eligible for the fixed demo OTP (login and step-up): the
+     * mobile personas above plus the web demo business users in
+     * DatabaseSeeder::DEMO_ACCOUNTS (+237600000000..008).
+     *
+     * @return list<string>
+     */
+    public static function otpPhones(): array
+    {
+        return array_values(array_unique(array_merge(self::phones(), array_column(DatabaseSeeder::DEMO_ACCOUNTS, 'phone'))));
+    }
+
     public function run(): void
     {
         if (! config('demo.enabled')) {
@@ -118,11 +130,9 @@ final class DemoMobileAccountSeeder extends Seeder
             // endpoints authorise by Party ownership, never by permission.
             // quotes.rate is the one staff-style gate on the customer purchase
             // path (POST quotes/{id}/rate); everything else is Party-owned.
-            'CUSTOMER' => ['quotes.rate'],
-            'AGENT' => ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch'],
-            'BROKER_STAFF' => ['broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate'],
-            'CARRIER_STAFF' => ['carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read'],
-            default => [],
+            // Everything else follows the one catalogue the invitation flow and
+            // admin panel use, so demo personas can never drift from real roles.
+            default => \App\Application\Identity\RoleCatalogue::defaultPermissions($roleCode),
         };
     }
 }

@@ -27,7 +27,7 @@ Route::post('mobile/agent/clients', [MobileAgentPortalController::class, 'create
 Route::get('mobile/agent/commissions', [MobileAgentPortalController::class, 'commissions'])->middleware('permission:agent.commissions.read');
 Route::get('mobile/agent/withdrawals', [MobileAgentPortalController::class, 'withdrawals'])->middleware('permission:agent.withdrawals.read');
 Route::post('mobile/agent/withdrawals', [MobileAgentPortalController::class, 'requestWithdrawal'])
-    ->middleware(['permission:agent.withdrawals.request', 'idempotency:mobile.agent.withdrawals.store', 'throttle:5,1']);
+    ->middleware(['permission:agent.withdrawals.request', 'step-up:COMMISSION_WITHDRAWAL', 'idempotency:mobile.agent.withdrawals.store', 'throttle:5,1']);
 
 // Offline queue — the agent app's own view of what it queued via
 // POST /mobile/sync/operations below, plus an explicit retry.

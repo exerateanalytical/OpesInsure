@@ -60,7 +60,11 @@ final class MobileStepUpService
         $this->assertWithinRateLimits($user, $purpose, $ip);
 
         $ttl = (int) config('mobile_runtime.step_up.otp_ttl_seconds');
-        $code = (string) random_int(100000, 999999);
+        // Same demo affordance as login (MobileAuthService::issueCode()): a
+        // fixed code only for seeded demo phones and only in demo mode.
+        $code = (config('demo.enabled') && $user->phone_e164 && in_array($user->phone_e164, \Database\Seeders\DemoMobileAccountSeeder::otpPhones(), true))
+            ? (string) config('demo.otp')
+            : (string) random_int(100000, 999999);
 
         $challenge = VerificationChallenge::create([
             'user_id' => $user->id,
@@ -226,6 +230,7 @@ final class MobileStepUpService
         } catch (Throwable $e) {
             // Never let a provider failure change response shape/timing —
             // ops visibility only, same discipline as MobileAuthService.
+            \Illuminate\Support\Facades\Log::critical('mobile.step_up.sms_delivery_failed', ['reason' => $e->getMessage()]);
             report($e);
         }
     }

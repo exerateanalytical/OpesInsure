@@ -32,30 +32,30 @@ use Illuminate\Pagination\LengthAwarePaginator;
 final class MobileCarrierFinanceService
 {
     /** @return array<string, mixed> */
-    public function dashboard(string $tenantId): array
+    public function dashboard(string $tenantId, ?string $carrierId = null): array
     {
         return [
-            'settlements_status_counts' => SettlementBatch::where('tenant_id', $tenantId)
+            'settlements_status_counts' => SettlementBatch::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))
                 ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status')->all(),
             // SUM() over a bigint is numeric in Postgres, which PDO returns as
             // a string — cast so the mobile client sees a JSON number here,
             // exactly as it does for a plain net_amount_minor column.
-            'settlements_net_by_currency' => SettlementBatch::where('tenant_id', $tenantId)
+            'settlements_net_by_currency' => SettlementBatch::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))
                 ->selectRaw('currency, status, SUM(net_amount_minor) as net_amount_minor')->groupBy('currency', 'status')->get()
                 ->map(fn (SettlementBatch $row) => ['currency' => $row->currency, 'status' => $row->status, 'net_amount_minor' => (int) $row->getAttribute('net_amount_minor')]),
-            'bordereaux_status_counts' => Bordereau::where('tenant_id', $tenantId)
+            'bordereaux_status_counts' => Bordereau::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))
                 ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status')->all(),
         ];
     }
 
-    public function settlements(string $tenantId, int $perPage = 20): LengthAwarePaginator
+    public function settlements(string $tenantId, int $perPage = 20, ?string $carrierId = null): LengthAwarePaginator
     {
-        return SettlementBatch::where('tenant_id', $tenantId)->orderByDesc('created_at')->paginate($perPage);
+        return SettlementBatch::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function settlement(string $settlementId, string $tenantId): SettlementBatch
+    public function settlement(string $settlementId, string $tenantId, ?string $carrierId = null): SettlementBatch
     {
-        $settlement = SettlementBatch::where('tenant_id', $tenantId)->find($settlementId);
+        $settlement = SettlementBatch::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->find($settlementId);
 
         if (! $settlement) {
             $exists = SettlementBatch::where('id', $settlementId)->exists();
@@ -66,14 +66,14 @@ final class MobileCarrierFinanceService
         return $settlement->load('items');
     }
 
-    public function bordereaux(string $tenantId, int $perPage = 20): LengthAwarePaginator
+    public function bordereaux(string $tenantId, int $perPage = 20, ?string $carrierId = null): LengthAwarePaginator
     {
-        return Bordereau::where('tenant_id', $tenantId)->orderByDesc('created_at')->paginate($perPage);
+        return Bordereau::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function bordereau(string $bordereauId, string $tenantId): Bordereau
+    public function bordereau(string $bordereauId, string $tenantId, ?string $carrierId = null): Bordereau
     {
-        $bordereau = Bordereau::where('tenant_id', $tenantId)->find($bordereauId);
+        $bordereau = Bordereau::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->find($bordereauId);
 
         if (! $bordereau) {
             $exists = Bordereau::where('id', $bordereauId)->exists();

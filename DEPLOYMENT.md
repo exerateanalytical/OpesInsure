@@ -70,6 +70,14 @@ checks, and **only then** flips the `current` symlink and reloads PHP-FPM. The
 flip is atomic and last, so a failed deploy leaves the previous release serving
 untouched. It keeps the last 5 releases and prunes the rest.
 
+**Demo data on deploy.** `optimize` also runs `php artisan demo:seed`
+(registered in `AppServiceProvider` via `optimizes()`). When
+`DEMO_MODE_ENABLED=true` it idempotently re-runs `DatabaseSeeder` and
+`DemoScenarioSeeder` (demo accounts, roles/permissions, the demo scenario);
+when demo mode is off it does nothing. A seeding error is reported and
+logged but never fails the deploy. Run it by hand with
+`php artisan demo:seed` if needed.
+
 ### Rolling back
 
 ```bash

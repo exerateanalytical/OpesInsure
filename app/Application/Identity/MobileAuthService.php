@@ -231,7 +231,10 @@ final class MobileAuthService
     private function assertWithinRateLimits(string $phone, string $ip): void
     {
         $phoneOk = RateLimiter::attempt('mobile-otp:phone:'.hash('sha256', $phone), 5, fn () => true, 3600);
-        $ipOk = RateLimiter::attempt('mobile-otp:ip:'.hash('sha256', $ip), 20, fn () => true, 3600);
+        // Demo mode: testers typically share one office/NAT IP, so the per-IP
+        // ceiling is raised; the per-phone limit is unchanged.
+        $ipLimit = config('demo.enabled') ? (int) config('demo.otp_ip_limit_per_hour', 200) : 20;
+        $ipOk = RateLimiter::attempt('mobile-otp:ip:'.hash('sha256', $ip), $ipLimit, fn () => true, 3600);
 
         if (! $phoneOk || ! $ipOk) {
             throw ValidationException::withMessages(['phone_e164' => __('wave12.otp_rate_limited')]);
@@ -312,7 +315,9 @@ final class MobileAuthService
             );
         } catch (Throwable $e) {
             // Never let a provider failure change the response shape/timing
-            // (enumeration-safety) — ops visibility only.
+            // (enumeration-safety) — ops visibility only, but loudly: a missing
+            // Twilio config means NO real user can sign in.
+            \Illuminate\Support\Facades\Log::critical('mobile.otp.sms_delivery_failed', ['reason' => $e->getMessage()]);
             report($e);
         }
     }
@@ -331,7 +336,7 @@ final class MobileAuthService
      */
     private function issueCode(string $phoneE164): string
     {
-        if (config('demo.enabled') && in_array($phoneE164, \Database\Seeders\DemoMobileAccountSeeder::phones(), true)) {
+        if (config('demo.enabled') && in_array($phoneE164, \Database\Seeders\DemoMobileAccountSeeder::otpPhones(), true)) {
             return (string) config('demo.otp');
         }
 

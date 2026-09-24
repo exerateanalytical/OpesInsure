@@ -270,6 +270,8 @@ final class DemoScenarioSeeder extends Seeder
     {
         $t = $this->tenant->id;
         Partner::updateOrCreate(['tenant_id' => $t, 'party_id' => $insurer->party_id], ['type' => 'CARRIER', 'status' => 'ACTIVE', 'compliance' => ['carrier_id' => $chanas->id, 'carrier_cima_code' => $chanas->cima_code]]);
+        // Scope the demo insurer's /mobile/carrier/* reads to Chanas (CarrierScopeResolver).
+        \App\Models\TenantMembership::where('tenant_id', $t)->where('user_id', $insurer->id)->whereIn('role_code', ['CARRIER_ADMIN', 'CARRIER_STAFF'])->update(['carrier_id' => $chanas->id]);
 
         $motor = InsuranceProduct::where('code', 'CHANAS-AUTO')->firstOrFail();
         $referrals = [

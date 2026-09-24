@@ -96,7 +96,11 @@ final class MobileBrokerOpsController
     {
         $t = app(TenantContext::class)->id();
         $partner = $this->parties->partnerForUser($request->user());
-        $cases = DB::table('compliance_cases')->where('tenant_id', $t)->where('status', '!=', 'CLOSED')->orderBy('review_due_on')->get()->map(fn ($c) => [
+        // Only the caller's own partner's cases — never the tenant's whole
+        // compliance book (other brokers, customers, staff investigations).
+        $cases = ($partner
+            ? DB::table('compliance_cases')->where('tenant_id', $t)->where('subject_type', 'partner')->where('subject_id', $partner->id)->where('status', '!=', 'CLOSED')->orderBy('review_due_on')->get()
+            : collect())->map(fn ($c) => [
             'id' => $c->id, 'label' => ucfirst(strtolower(str_replace('_', ' ', $c->type))).' · '.$c->case_number, 'status' => $c->status, 'due_at' => \Carbon\Carbon::parse($c->review_due_on ?? now())->toIso8601String(), 'severity' => $c->severity,
         ]);
         $licences = $partner ? DB::table('partner_licences')->where('partner_id', $partner->id)->get()->map(fn ($l) => [

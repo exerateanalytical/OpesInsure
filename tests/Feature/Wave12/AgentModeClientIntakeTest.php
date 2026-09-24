@@ -22,10 +22,11 @@ it('registers a new client and origin-locks it to the agent\'s own partner', fun
 
     $response->assertStatus(201);
 
-    $attribution = CustomerAttribution::findOrFail($response->json('data.attribution_id'));
+    $customer = TenantCustomer::findOrFail($response->json('data.id'));
+    $attribution = CustomerAttribution::where('party_id', $customer->party_id)->firstOrFail();
+    expect($response->json('data.origin_locked'))->toBeTrue();
     expect($attribution->partner_id)->toBe($fixture['partner']->id)->and($attribution->origin_type)->toBe('AGENT');
 
-    $customer = TenantCustomer::findOrFail($response->json('data.id'));
     expect($customer->tenant_id)->toBe($fixture['tenant']->id);
     expect(Consent::where('party_id', $customer->party_id)->where('status', 'GRANTED')->exists())->toBeTrue();
 });
@@ -37,7 +38,7 @@ it('normalizes a local 9-digit Cameroon number to E.164 before storing it', func
     $response = $this->postJson('/api/v1/mobile/agent/clients', agentClientIntakePayload(['phone_e164' => '671112244']), agentHeaders($fixture));
 
     $response->assertStatus(201);
-    $party = Party::findOrFail($response->json('data.party_id'));
+    $party = TenantCustomer::findOrFail($response->json('data.id'))->party;
     expect($party->contacts()->where('type', 'PHONE')->value('normalized_value'))->toBe('+237671112244');
 });
 
@@ -102,7 +103,6 @@ it('is safe for the same agent to re-register their own client: one attribution,
 
     $first->assertStatus(201);
     $second->assertStatus(201);
-    expect($second->json('data.attribution_id'))->toBe($first->json('data.attribution_id'));
     expect($second->json('data.id'))->toBe($first->json('data.id'));
     expect(TenantCustomer::count())->toBe(1);
     expect(CustomerAttribution::count())->toBe(1);
@@ -128,8 +128,8 @@ it('lists and shows only clients attributed to the caller\'s own agent partner',
 
     $index = $this->getJson('/api/v1/mobile/agent/clients', tenantHeaderFor($agentTwo['tenant']));
     $index->assertStatus(200);
-    expect($index->json('data.data'))->toHaveCount(1);
-    expect($index->json('data.data.0.id'))->toBe($ownResponse->json('data.id'));
+    expect($index->json('data'))->toHaveCount(1);
+    expect($index->json('data.0.id'))->toBe($ownResponse->json('data.id'));
 
     $this->getJson('/api/v1/mobile/agent/clients/'.$ownResponse->json('data.id'), tenantHeaderFor($agentTwo['tenant']))->assertStatus(200);
 
