@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { LoadingState } from '@/components/StatePanel';
 import { Text } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import {
@@ -20,7 +21,7 @@ export default function Kyc() {
     return (
       <Screen>
         <AppHeader title="Identity verification" back />
-        <Text>Loading secure profile…</Text>
+        <LoadingState label="Loading secure profile…" />
       </Screen>
     );
   return (

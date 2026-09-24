@@ -13,7 +13,7 @@ const required = [
 ];
 for (const path of required) if (!existsSync(path)) errors.push(`MISSING:${path}`);
 const eas = readJson("eas.json");
-if (eas.build.production.env.EXPO_PUBLIC_DEMO_MODE !== "false")
+if (eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN !== "false")
   errors.push("PRODUCTION_DEMO_MODE_NOT_FALSE");
 if (eas.build.production.channel !== "production")
   errors.push("PRODUCTION_CHANNEL_INVALID");

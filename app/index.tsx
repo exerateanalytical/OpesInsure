@@ -4,34 +4,23 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { BrandMark } from "@/components/BrandMark";
 import { colors, space, type } from "@/theme/tokens";
-import { roleToPortal, useSession } from "@/store/session";
+import { sessionHome, useSession } from "@/store/session";
 
 export default function SplashOne() {
   const status = useSession((s) => s.status);
+  const bootstrap = useSession((s) => s.bootstrap);
   const workspace = useSession((s) => s.activeWorkspace);
   useEffect(() => {
     if (status === "booting") return;
     const timer = setTimeout(() => {
-      if (status === "authenticated" && workspace) {
-        const portal = roleToPortal(workspace.role_code);
-        router.replace(
-          portal === "customer"
-            ? "/(customer)/(tabs)"
-            : portal === "agent"
-              ? "/agent"
-              : portal === "broker_admin" || portal === "broker_staff"
-                ? "/broker"
-                : portal === "carrier"
-                  ? "/carrier"
-            : {
-                pathname: "/workspace/[role]",
-                params: { role: portal ?? "denied" },
-              },
-        );
-      } else router.replace("/welcome");
+      // A token-holding (authenticated) user never lands on welcome: they go
+      // to their portal, or to the role picker when several workspaces exist
+      // and none (or a stale one) is stored.
+      const home = sessionHome({ status, bootstrap, activeWorkspace: workspace });
+      router.replace(home ?? "/welcome");
     }, 900);
     return () => clearTimeout(timer);
-  }, [status, workspace]);
+  }, [status, bootstrap, workspace]);
   return (
     <LinearGradient
       colors={[colors.navy950, colors.navy900]}

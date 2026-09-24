@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
-import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
 
 export type AccountType = { key: string; label: string; icon: LucideIcon };
 

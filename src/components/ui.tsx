@@ -1,6 +1,8 @@
 import React, { ReactNode } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -11,7 +13,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, LucideIcon } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -20,25 +22,43 @@ export function Screen({
   children,
   scroll = true,
   style,
+  footer,
 }: {
   children: ReactNode;
   scroll?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Pinned below the scroll area (e.g. a portal bottom bar). */
+  footer?: ReactNode;
 }) {
+  const insets = useSafeAreaInsets();
+  // Without a footer the screen owns the bottom inset so the last button is
+  // never hidden under the Android nav bar / iOS home indicator.
+  const bottom = footer ? 0 : insets.bottom;
   const body = <View style={[styles.screenBody, style]}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {body}
-        </ScrollView>
-      ) : (
-        body
-      )}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        {scroll ? (
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingBottom: space.x16 + bottom },
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
+            {body}
+          </ScrollView>
+        ) : (
+          <View style={[styles.flex, { paddingBottom: bottom }]}>{body}</View>
+        )}
+        {footer}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -228,7 +248,8 @@ export function Money({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.neutral50 },
-  scroll: { paddingBottom: space.x16 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1 },
   screenBody: { paddingHorizontal: space.x5, gap: space.x6 },
   header: {
     minHeight: 56,

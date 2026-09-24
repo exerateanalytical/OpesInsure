@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Eye, EyeOff, LucideIcon } from "lucide-react-native";
-import { authColors, authGradients, authIcon, authRadius, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authGradients, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
 
 export function AuthTextField({
   icon: Icon,
@@ -135,15 +135,15 @@ const styles = StyleSheet.create({
     borderRadius: authRadius.lg,
     paddingHorizontal: authSpace[4],
   },
-  fieldError: { borderColor: "#C9363E" },
+  fieldError: { borderColor: authColors.danger },
   input: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "Manrope_400Regular",
+    fontFamily: "Inter_400Regular",
     color: authColors.navy950,
     paddingVertical: authSpace[3],
   },
-  error: { ...authType.label, fontSize: 12, color: "#C9363E" },
+  error: { ...authType.label, fontSize: 12, color: authColors.dangerText },
   primaryWrap: { borderRadius: authRadius.button, overflow: "hidden" },
   primaryButton: {
     minHeight: 56,

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Text } from "react-native";
+import React from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { StatePanel } from "@/components/StatePanel";
 import {
   AppHeader,
   Button,
@@ -8,18 +9,19 @@ import {
   StatusChip,
   TextField,
 } from "@/components/ui";
-import { AgentApi, AgentProfile } from "@/api/client";
+import { AgentApi } from "@/api/client";
 import { Step } from "@/components/FlowPrimitives";
 export default function AgentOnboarding() {
-  const [x, setX] = useState<AgentProfile>();
-  useEffect(() => {
-    AgentApi.profile().then(setX);
-  }, []);
+  const q = useLoad(() => AgentApi.profile(), []);
+  const x = q.data;
+  const setX = q.setData;
   if (!x)
     return (
       <Screen>
         <AppHeader title="Agent verification" back />
-        <Text>Loading profile…</Text>
+        <StatePanel {...q} onRetry={q.reload} loadingLabel="Loading profile…">
+          {() => null}
+        </StatePanel>
       </Screen>
     );
   return (

@@ -9,14 +9,8 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import {
-  Manrope_400Regular,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from "@expo-google-fonts/manrope";
 import { colors } from "@/theme/tokens";
-import { roleToPortal, useSession } from "@/store/session";
+import { roleToPortal, useSession, WORKSPACE_PORTALS } from "@/store/session";
 import { AppRuntime } from "@/components/AppRuntime";
 import { ProductionErrorBoundary } from "@/components/ProductionErrorBoundary";
 
@@ -28,10 +22,6 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    Manrope_400Regular,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
   });
   const hydrate = useSession((s) => s.hydrate);
   const status = useSession((s) => s.status);
@@ -43,26 +33,13 @@ export default function RootLayout() {
     if (loaded) SplashScreen.hideAsync();
   }, [loaded]);
   if (!loaded) return null;
-  const customer =
-    status === "authenticated" &&
-    roleToPortal(workspace?.role_code ?? "") === "customer";
-  const agent =
-    status === "authenticated" &&
-    roleToPortal(workspace?.role_code ?? "") === "agent";
-  const broker =
-    status === "authenticated" &&
-    ["broker_admin", "broker_staff"].includes(
-      roleToPortal(workspace?.role_code ?? "") ?? "",
-    );
-  const carrier =
-    status === "authenticated" &&
-    roleToPortal(workspace?.role_code ?? "") === "carrier";
-  const partner =
-    status === "authenticated" &&
-    !!workspace &&
-    !["customer", "agent", "broker_admin", "broker_staff", "carrier"].includes(
-      roleToPortal(workspace.role_code) ?? "",
-    );
+  const portal =
+    status === "authenticated" ? roleToPortal(workspace?.role_code) : null;
+  const customer = portal === "customer";
+  const agent = portal === "agent";
+  const broker = portal === "broker_admin" || portal === "broker_staff";
+  const carrier = portal === "carrier";
+  const partner = !!portal && WORKSPACE_PORTALS.includes(portal);
   const authenticated = status === "authenticated";
   return (
     <ProductionErrorBoundary>
@@ -75,7 +52,17 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       >
+        {/* Signed-in users never see welcome or the sign-in/up/OTP screens:
+            the guard sends them back to index, which routes to their portal
+            (or the role picker). */}
+        <Stack.Protected guard={status !== "authenticated"}>
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="(auth)/sign-in" />
+          <Stack.Screen name="(auth)/sign-up" />
+          <Stack.Screen name="(auth)/verify" />
+        </Stack.Protected>
         <Stack.Protected guard={authenticated}>
+          <Stack.Screen name="(auth)/role" />
           <Stack.Screen name="sync/index" />
           <Stack.Screen name="account/data-usage" />
           <Stack.Screen name="security/step-up" />
@@ -141,6 +128,8 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={agent}>
           <Stack.Screen name="agent/index" />
+          <Stack.Screen name="agent/account" />
+          <Stack.Screen name="agent/notifications" />
           <Stack.Screen name="agent/onboarding" />
           <Stack.Screen name="agent/clients/index" />
           <Stack.Screen name="agent/clients/new" />
@@ -154,6 +143,8 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={broker}>
           <Stack.Screen name="broker/index" />
+          <Stack.Screen name="broker/account" />
+          <Stack.Screen name="broker/notifications" />
           <Stack.Screen name="broker/clients" />
           <Stack.Screen name="broker/clients/[id]" />
           <Stack.Screen name="broker/production" />
@@ -164,6 +155,8 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={carrier}>
           <Stack.Screen name="carrier/index" />
+          <Stack.Screen name="carrier/account" />
+          <Stack.Screen name="carrier/notifications" />
           <Stack.Screen name="carrier/referrals/index" />
           <Stack.Screen name="carrier/referrals/[id]" />
           <Stack.Screen name="carrier/issuance" />

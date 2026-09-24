@@ -31,7 +31,7 @@ import {
   PaginationDots,
 } from "@/components/onboarding/OnboardingParts";
 import { AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthField";
-import { authColors, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authSpace, authType } from "@/theme/tokens";
 
 const slides = [
   {
@@ -151,6 +151,14 @@ export default function Onboarding() {
         ) : (
           <AuthPrimaryButton label="Next" icon={ArrowRight} onPress={() => goTo(page + 1)} />
         )}
+        <View style={styles.links}>
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/verify")}>
+            <Text style={styles.link}>Verify a certificate</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/(auth)/invitation")}>
+            <Text style={styles.link}>Partners: join by invitation</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -178,5 +186,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: authSpace[2],
   },
+  links: { flexDirection: "row", justifyContent: "space-between", paddingVertical: authSpace[2] },
+  link: { ...authType.label, fontSize: 13, color: authColors.blue500 },
   actions: { paddingHorizontal: authSpace[5], paddingTop: authSpace[2], gap: authSpace[2] },
 });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { LoadingState } from '@/components/StatePanel';
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
@@ -16,7 +17,7 @@ export default function Incident() {
     return (
       <Screen>
         <AppHeader title="Incident details" back />
-        <Text>Loading incident…</Text>
+        <LoadingState label="Loading incident…" />
       </Screen>
     );
   const toggle = (

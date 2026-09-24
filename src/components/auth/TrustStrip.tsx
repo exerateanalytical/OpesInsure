@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
-import { authColors, authIcon, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authIcon, authSpace, authType } from "@/theme/tokens";
 
-export type TrustItem = { icon: LucideIcon; label: string };
+export type TrustItem = { icon: LucideIcon; label: string; onPress?: () => void };
 
 export function TrustStrip({ items }: { items: TrustItem[] }) {
   return (
@@ -13,10 +13,15 @@ export function TrustStrip({ items }: { items: TrustItem[] }) {
         return (
           <React.Fragment key={item.label}>
             {index > 0 ? <View style={styles.divider} /> : null}
-            <View style={styles.item}>
+            <Pressable
+              accessibilityRole={item.onPress ? "button" : undefined}
+              disabled={!item.onPress}
+              onPress={item.onPress}
+              style={styles.item}
+            >
               <Icon size={authIcon.feature - 4} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
               <Text style={styles.label}>{item.label}</Text>
-            </View>
+            </Pressable>
           </React.Fragment>
         );
       })}

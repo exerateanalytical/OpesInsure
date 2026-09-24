@@ -1,31 +1,38 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { PortalScreen } from "@/components/portal/PortalShell";
+import { carrierTabs } from "@/components/portal/tabs";
+import { StatePanel } from "@/components/StatePanel";
 import { router } from "expo-router";
 import { ClipboardCheck } from "lucide-react-native";
-import { AppHeader, Screen } from "@/components/ui";
+import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { CarrierApi, CarrierReferral } from "@/api/client";
+import { CarrierApi } from "@/api/client";
 export default function Referrals() {
-  const [x, setX] = useState<CarrierReferral[]>([]);
-  useEffect(() => {
-    CarrierApi.referrals().then(setX);
-  }, []);
+  const q = useLoad(() => CarrierApi.referrals(), []);
+  const x = q.data ?? [];
   return (
-    <Screen>
+    <PortalScreen tabs={carrierTabs}>
       <AppHeader
         title="Underwriting referrals"
         subtitle="Decisions are recorded against delegated authority"
-        back
       />
-      <OperationsList
-        icon={ClipboardCheck}
-        rows={x.map((r) => ({
-          id: r.id,
-          title: r.customer_name,
-          subtitle: `${r.product} · ${r.reason}`,
-          status: r.status,
-        }))}
-        onPress={(id) => router.push(`/carrier/referrals/${id}`)}
-      />
-    </Screen>
+      <StatePanel {...q} onRetry={q.reload}>
+        {() => (
+          <>
+          <OperationsList
+            icon={ClipboardCheck}
+            rows={x.map((r) => ({
+              id: r.id,
+              title: r.customer_name,
+              subtitle: `${r.product} · ${r.reason}`,
+              status: r.status,
+            }))}
+            onPress={(id) => router.push(`/carrier/referrals/${id}`)}
+          />
+          </>
+        )}
+      </StatePanel>
+    </PortalScreen>
   );
 }

@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { StatePanel } from "@/components/StatePanel";
 import { HandCoins } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { CarrierApi, CarrierSettlement } from "@/api/client";
+import { CarrierApi } from "@/api/client";
 export default function CarrierSettlements() {
-  const [x, setX] = useState<CarrierSettlement[]>([]);
-  useEffect(() => {
-    CarrierApi.settlements().then(setX);
-  }, []);
+  const q = useLoad(() => CarrierApi.settlements(), []);
+  const x = q.data ?? [];
   return (
     <Screen>
       <AppHeader
@@ -15,15 +15,21 @@ export default function CarrierSettlements() {
         subtitle="Read-only until finance reconciliation is complete"
         back
       />
-      <OperationsList
-        icon={HandCoins}
-        rows={x.map((i) => ({
-          id: i.id,
-          title: i.period,
-          subtitle: `Net payable ${new Intl.NumberFormat("fr-CM").format(i.net_payable_minor / 100)} FCFA`,
-          status: i.status,
-        }))}
-      />
+      <StatePanel {...q} onRetry={q.reload}>
+        {() => (
+          <>
+          <OperationsList
+            icon={HandCoins}
+            rows={x.map((i) => ({
+              id: i.id,
+              title: i.period,
+              subtitle: `Net payable ${new Intl.NumberFormat("fr-CM").format(i.net_payable_minor / 100)} FCFA`,
+              status: i.status,
+            }))}
+          />
+          </>
+        )}
+      </StatePanel>
     </Screen>
   );
 }

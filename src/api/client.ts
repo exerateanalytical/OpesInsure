@@ -1,7 +1,6 @@
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import { demoApi } from "@/demo/api";
 import { OfflineOperation } from "@/offline/types";
 import { environmentConfig } from "@/config/environment";
 
@@ -160,18 +159,6 @@ async function rotate() {
   return refreshPromise;
 }
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
-  if (
-    process.env.EXPO_PUBLIC_DEMO_MODE === "true" &&
-    options.stepUpPurpose &&
-    !(await StepUpVault.valid(options.stepUpPurpose))
-  )
-    throw new ApiError(
-      401,
-      "STEP_UP_REQUIRED",
-      "Verify this sensitive action before continuing.",
-    );
-  if (process.env.EXPO_PUBLIC_DEMO_MODE === "true")
-    return demoApi<T>(path, options);
   if (!API_URL)
     throw new ApiConfigurationError(
       "EXPO_PUBLIC_API_BASE_URL is required for production builds.",
@@ -308,15 +295,18 @@ export type Workspace = {
 };
 export type WorkspaceMetric = {
   key: string;
-  label: string;
+  label?: string;
+  title?: string;
   value: string;
   tone?: "neutral" | "success" | "warning" | "danger";
 };
 export type WorkspaceModule = {
   key: string;
-  label: string;
-  description: string;
-  permission: string;
+  label?: string;
+  title?: string;
+  description?: string;
+  /** "*" in workspace.permissions grants every module. */
+  permission?: string;
 };
 export type WorkspaceDashboard = {
   title: string;
@@ -325,7 +315,8 @@ export type WorkspaceDashboard = {
   modules: WorkspaceModule[];
 };
 export type WorkspaceModuleData = {
-  title: string;
+  title?: string;
+  label?: string;
   columns: string[];
   rows: Record<string, string | number | null>[];
   next_cursor?: string | null;
@@ -563,6 +554,16 @@ export type PublicVerification = {
   coverage_starts_at?: string;
   coverage_ends_at?: string;
   verified_at: string;
+};
+export const InvitationApi = {
+  /** POST /invitations/accept — bearer-authenticated; the invitation must be
+   * addressed to the signed-in user's phone or email. */
+  accept: (token: string) =>
+    api<{ membership_id: string; tenant_id: string; role_code: string }>("/invitations/accept", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+      idempotent: true,
+    }),
 };
 export const PublicApi = {
   verify: (reference: string) =>

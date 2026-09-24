@@ -4,10 +4,12 @@ import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { DisclosureApi } from "@/api/client";
 export default function Terms() {
-  const { proposalId = "proposal-001" } = useLocalSearchParams<{
-    proposalId: string;
+  const { proposalId = "" } = useLocalSearchParams<{
+    proposalId?: string;
   }>();
   const [accepted, setAccepted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
     <Screen>
       <AppHeader
@@ -29,12 +31,22 @@ export default function Terms() {
       </Card>
       <Button
         label="Continue to payment"
-        disabled={!accepted}
+        disabled={!accepted || !proposalId}
+        loading={busy}
         onPress={async () => {
-          await DisclosureApi.acceptTerms(proposalId, true);
-          router.push("/checkout");
+          setBusy(true);
+          setError(null);
+          try {
+            await DisclosureApi.acceptTerms(proposalId, true);
+            router.push("/checkout");
+          } catch {
+            setError("Your acceptance could not be recorded. Try again.");
+          } finally {
+            setBusy(false);
+          }
         }}
       />
+      {error ? <Text accessibilityRole="alert">{error}</Text> : null}
     </Screen>
   );
 }

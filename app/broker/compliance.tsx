@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { StatePanel } from "@/components/StatePanel";
 import { BadgeCheck } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { BrokerApi, BrokerComplianceItem } from "@/api/client";
+import { BrokerApi } from "@/api/client";
 export default function BrokerCompliance() {
-  const [x, setX] = useState<BrokerComplianceItem[]>([]);
-  useEffect(() => {
-    BrokerApi.compliance().then(setX);
-  }, []);
+  const q = useLoad(() => BrokerApi.compliance(), []);
+  const x = q.data ?? [];
   return (
     <Screen>
       <AppHeader
@@ -15,15 +15,21 @@ export default function BrokerCompliance() {
         subtitle="Deadlines and documentary obligations"
         back
       />
-      <OperationsList
-        icon={BadgeCheck}
-        rows={x.map((c) => ({
-          id: c.id,
-          title: c.label,
-          subtitle: `Due ${c.due_at} · ${c.severity}`,
-          status: c.status,
-        }))}
-      />
+      <StatePanel {...q} onRetry={q.reload}>
+        {() => (
+          <>
+          <OperationsList
+            icon={BadgeCheck}
+            rows={x.map((c) => ({
+              id: c.id,
+              title: c.label,
+              subtitle: `Due ${c.due_at} · ${c.severity}`,
+              status: c.status,
+            }))}
+          />
+          </>
+        )}
+      </StatePanel>
     </Screen>
   );
 }

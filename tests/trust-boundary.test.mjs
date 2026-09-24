@@ -56,7 +56,7 @@ test("public verification and claims use API contracts", () => {
   const client = read("src/api/client.ts");
   assert.match(client, /\/public\/insurance\/verify/);
   assert.match(client, /ClaimsApi/);
-  assert.match(client, /api<Claim>\(\s*["']\/claims/);
+  assert.match(client, /api<Claim>\(\s*["'`]\/mobile\/claims/);
 });
 test("every insurance product has a dedicated risk schema", () => {
   const risk = read("app/quote/risk.tsx");
@@ -84,7 +84,7 @@ test("runtime protects offline, notification and biometric boundaries", () => {
 });
 test("partner workspace modules require server permissions", () => {
   const workspace = read("app/workspace/[role].tsx");
-  assert.match(workspace, /workspace\.permissions\.includes/);
+  assert.match(workspace, /perms\.includes\(module\.permission\)/);
   assert.match(workspace, /WorkspaceApi\.dashboard/);
 });
 test("Cameroon demo dataset covers every mobile persona", () => {
@@ -110,12 +110,10 @@ test("Cameroon demo dataset covers every mobile persona", () => {
   ])
     assert.ok(demo[key], `missing ${key}`);
 });
-test("demo mode is explicit and separate from production API mode", () => {
+test("there is no in-app fake API: every build talks to the real server", () => {
   const client = read("src/api/client.ts");
-  const adapter = read("src/demo/api.ts");
-  assert.match(client, /EXPO_PUBLIC_DEMO_MODE === "true"/);
-  assert.match(adapter, /fixed_otp/);
-  assert.match(adapter, /Demo adapter has no fixture/);
+  assert.doesNotMatch(client, /demoApi|EXPO_PUBLIC_DEMO_MODE/);
+  assert.ok(!existsSync(new URL("../src/demo/api.ts", import.meta.url)));
 });
 test("customer core completion routes are protected and API backed", () => {
   const layout = read("app/_layout.tsx");
@@ -260,7 +258,7 @@ test("patch four agent routes use a dedicated role guard", () => {
     "agent/offline",
   ])
     assert.match(layout, new RegExp(route));
-  assert.match(role, /portal === "agent"/);
+  assert.match(layout, /portal === "agent"/);
 });
 test("agent operations are typed and server mediated", () => {
   const client = read("src/api/client.ts");
@@ -309,8 +307,10 @@ test("patch five isolates broker and carrier routes with dedicated guards", () =
     "carrier/settlements",
   ])
     assert.match(layout, new RegExp(route.replace(/[\[\]]/g, "\\$&")));
-  assert.match(role, /router\.replace\("\/broker"\)/);
-  assert.match(role, /router\.replace\("\/carrier"\)/);
+  assert.match(role, /router\.replace\(portalRoute\(/);
+  const session = read("src/store/session.ts");
+  assert.match(session, /return "\/broker"/);
+  assert.match(session, /return "\/carrier"/);
 });
 test("broker and carrier mobile operations use typed API contracts", () => {
   const client = read("src/api/client.ts");
@@ -441,7 +441,7 @@ test("patch eight defines production EAS profiles and dynamic native configurati
   const eas = JSON.parse(read("eas.json"));
   const config = read("app.config.js");
   assert.equal(eas.build.production.channel, "production");
-  assert.equal(eas.build.production.env.EXPO_PUBLIC_DEMO_MODE, "false");
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN, "false");
   assert.match(config, /runtimeVersion/);
   assert.match(config, /associatedDomains/);
   assert.match(config, /autoVerify:\s*true/);

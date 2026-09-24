@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
   Building2,
@@ -16,27 +16,33 @@ import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { TrustStrip } from "@/components/auth/TrustStrip";
-import { authColors, authSpace, authType } from "@/theme/authTokens";
-import { AuthApi, type DemoAccount } from "@/api/client";
+import { authColors, authSpace, authType } from "@/theme/tokens";
+import { AuthApi, InvitationApi, type DemoAccount } from "@/api/client";
 import { useSession } from "@/store/session";
 
+const toInvitation = () => router.push("/(auth)/invitation");
 const audiences = [
   { icon: UsersRound, label: "Individuals & Families" },
   { icon: Building2, label: "Businesses & Organizations" },
-  { icon: Handshake, label: "Brokers & Agents" },
-  { icon: ShieldCheck, label: "Insurance Companies" },
+  { icon: Handshake, label: "Brokers & Agents", onPress: toInvitation },
+  { icon: ShieldCheck, label: "Insurance Companies", onPress: toInvitation },
 ];
 
 export default function SignIn() {
+  // Set when arriving from the partner invitation screen: carried through the
+  // OTP step so the invitation is accepted right after sign-in.
+  const { invite } = useLocalSearchParams<{ invite?: string }>();
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [demo, setDemo] = useState<{ otp: string; accounts: DemoAccount[] } | null>(null);
 
-  // Ask the API it is actually pointed at. Returns null in a real deployment,
-  // where the endpoint does not exist, so nothing renders.
+  // Demo phones come from the real server (GET /public/demo-accounts), which
+  // only answers while its demo mode is on; everywhere else this is null and
+  // the block does not render. Sign-in still goes through the real OTP API.
   useEffect(() => {
     let live = true;
+    if (process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "false") return;
     void AuthApi.demoAccounts().then((d) => {
       if (live) setDemo(d);
     });
@@ -62,7 +68,12 @@ export default function SignIn() {
         account.phone_e164,
         demo.otp,
       );
-      await completeAuth(auth);
+      let session: Awaited<ReturnType<typeof AuthApi.session>> = auth;
+      if (invite) {
+        await InvitationApi.accept(invite);
+        session = await AuthApi.session();
+      }
+      await completeAuth(session);
       router.replace("/(auth)/role");
     } catch (e) {
       setError(
@@ -89,6 +100,7 @@ export default function SignIn() {
           challengeId: result.challenge_id,
           phone: normalized,
           expiresIn: String(result.expires_in),
+          ...(invite ? { invite } : {}),
         },
       });
     } catch (e) {
@@ -140,6 +152,27 @@ export default function SignIn() {
             >
               <Text style={styles.link}>Browse insurers without signing in</Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/institutions/brokers")}
+              style={styles.linkRow}
+            >
+              <Text style={styles.link}>Browse brokers</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/verify")}
+              style={styles.linkRow}
+            >
+              <Text style={styles.link}>Verify a certificate</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={toInvitation}
+              style={styles.linkRow}
+            >
+              <Text style={styles.link}>Insurer, broker or agent? Join by invitation</Text>
+            </Pressable>
 
             <View style={styles.divider} />
             <Text style={styles.audienceCaption}>For customers, insurers, brokers and agents.</Text>
@@ -150,7 +183,7 @@ export default function SignIn() {
             <View style={styles.demoCard}>
               <Text style={styles.demoTitle}>Demo accounts</Text>
               <Text style={styles.demoHint}>
-                Tap a role to sign in. The code {demo.otp} is filled in for you.
+                Tap an account to sign in against the live server with code {demo.otp}, or long-press to prefill its number above.
               </Text>
               {demo.accounts.map((account) => (
                 <Pressable
@@ -158,6 +191,7 @@ export default function SignIn() {
                   disabled={busy}
                   key={account.phone_e164}
                   onPress={() => void signInAsDemoAccount(account)}
+                  onLongPress={() => setPhone(account.phone_e164)}
                   style={styles.demoRow}
                 >
                   <View style={styles.demoFlex}>
@@ -172,11 +206,6 @@ export default function SignIn() {
                 </Pressable>
               ))}
             </View>
-          ) : null}
-          {process.env.EXPO_PUBLIC_DEMO_MODE === "true" ? (
-            <Pressable style={styles.linkRow} onPress={() => router.push("/demo-accounts")}>
-              <Text style={styles.link}>Browse bundled demo personas</Text>
-            </Pressable>
           ) : null}
           <AuthFooterBranding />
         </ScrollView>

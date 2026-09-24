@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { authColors, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authSpace, authType } from "@/theme/tokens";
 
 const bottomWave = require("../../../assets/auth/bottom_wave_dark.png");
 

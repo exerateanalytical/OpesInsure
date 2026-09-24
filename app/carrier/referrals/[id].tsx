@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { StatePanel } from "@/components/StatePanel";
 import { Alert, Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import {
@@ -13,11 +15,10 @@ import {
 import { CarrierApi, CarrierReferral } from "@/api/client";
 export default function ReferralDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [x, setX] = useState<CarrierReferral>();
+  const q = useLoad(() => CarrierApi.referral(id), [id]);
+  const x: CarrierReferral | undefined = q.data;
+  const setX = q.setData;
   const [note, setNote] = useState("");
-  useEffect(() => {
-    CarrierApi.referral(id).then(setX);
-  }, [id]);
   const decide = (d: "APPROVE" | "DECLINE" | "MORE_INFORMATION") =>
     Alert.alert(
       "Record underwriting decision?",
@@ -26,14 +27,25 @@ export default function ReferralDetail() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Confirm",
-          onPress: async () =>
-            setX(await CarrierApi.decideReferral(id, d, note)),
+          onPress: async () => {
+            try {
+              setX(await CarrierApi.decideReferral(id, d, note));
+            } catch {
+              Alert.alert("Decision not recorded", "Check the connection and try again.");
+            }
+          },
         },
       ],
     );
   return (
     <Screen>
       <AppHeader title="Referral review" subtitle={x?.quote_id} back />
+      {!x ? (
+        <StatePanel {...q} onRetry={q.reload} loadingLabel="Loading referral…">
+          {() => null}
+        </StatePanel>
+      ) : null}
+      {x ? (
       <Card feature>
         <StatusChip label={x?.status ?? "LOADING"} tone="warning" />
         <Text>
@@ -48,6 +60,7 @@ export default function ReferralDetail() {
           onChangeText={setNote}
         />
       </Card>
+      ) : null}
       {x?.status === "PENDING_REVIEW" ? (
         <>
           <Button

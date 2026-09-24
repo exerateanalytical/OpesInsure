@@ -1,29 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useLoad } from "@/hooks/useLoad";
+import { PortalScreen } from "@/components/portal/PortalShell";
+import { carrierTabs } from "@/components/portal/tabs";
+import { StatePanel } from "@/components/StatePanel";
 import { ShieldAlert } from "lucide-react-native";
-import { AppHeader, Screen } from "@/components/ui";
+import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { CarrierApi, CarrierQueueItem } from "@/api/client";
+import { CarrierApi } from "@/api/client";
 export default function CarrierClaims() {
-  const [x, setX] = useState<CarrierQueueItem[]>([]);
-  useEffect(() => {
-    CarrierApi.claims().then(setX);
-  }, []);
+  const q = useLoad(() => CarrierApi.claims(), []);
+  const x = q.data ?? [];
   return (
-    <Screen>
+    <PortalScreen tabs={carrierTabs}>
       <AppHeader
         title="Carrier claims queue"
         subtitle="Permission-scoped assessment work"
-        back
       />
-      <OperationsList
-        icon={ShieldAlert}
-        rows={x.map((i) => ({
-          id: i.id,
-          title: i.reference,
-          subtitle: `${i.subject} · ${i.priority}`,
-          status: i.status,
-        }))}
-      />
-    </Screen>
+      <StatePanel {...q} onRetry={q.reload}>
+        {() => (
+          <>
+          <OperationsList
+            icon={ShieldAlert}
+            rows={x.map((i) => ({
+              id: i.id,
+              title: i.reference,
+              subtitle: `${i.subject} · ${i.priority}`,
+              status: i.status,
+            }))}
+          />
+          </>
+        )}
+      </StatePanel>
+    </PortalScreen>
   );
 }

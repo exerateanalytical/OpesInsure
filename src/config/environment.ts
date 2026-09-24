@@ -4,7 +4,9 @@ export type AppEnvironment = "demo" | "staging" | "production";
 
 const environment = (process.env.EXPO_PUBLIC_APP_ENV ?? (__DEV__ ? "demo" : "production")) as AppEnvironment;
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
-const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "true";
+// Only controls whether sign-in lists the server's demo accounts. There is no
+// in-app fake API any more: every build talks to the real backend.
+const demoMode = process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "true";
 const releaseChannel = process.env.EXPO_PUBLIC_RELEASE_CHANNEL ?? "development";
 
 export const environmentConfig = {

@@ -14,6 +14,7 @@ type SessionState = {
   hydrate: () => Promise<void>;
   completeAuthentication: (bootstrap: SessionBootstrap) => Promise<void>;
   selectWorkspace: (workspace: Workspace) => Promise<void>;
+  refreshWorkspaces: (preferTenant?: string) => Promise<SessionBootstrap>;
   setLanguage: (language: Language) => void;
   signOut: () => Promise<void>;
   invalidate: () => Promise<void>;
@@ -36,8 +37,12 @@ export const useSession = create<SessionState>((set, get) => ({
     try {
       const bootstrap = await AuthApi.session();
       const tenant = await TokenVault.tenant();
-      const activeWorkspace =
+      let activeWorkspace =
         bootstrap.workspaces.find((w) => w.tenant_id === tenant) ?? null;
+      if (!activeWorkspace && bootstrap.workspaces.length === 1) {
+        activeWorkspace = bootstrap.workspaces[0] ?? null;
+        if (activeWorkspace) await TokenVault.setTenant(activeWorkspace.tenant_id);
+      }
       set({
         status: "authenticated",
         bootstrap,
@@ -77,6 +82,22 @@ export const useSession = create<SessionState>((set, get) => ({
     await TokenVault.setTenant(workspace.tenant_id);
     set({ activeWorkspace: workspace });
   },
+  async refreshWorkspaces(preferTenant) {
+    const bootstrap = await AuthApi.session();
+    const current = get().activeWorkspace;
+    const next =
+      (preferTenant
+        ? bootstrap.workspaces.find((w) => w.tenant_id === preferTenant)
+        : undefined) ??
+      bootstrap.workspaces.find(
+        (w) => w.membership_id === current?.membership_id,
+      ) ??
+      (bootstrap.workspaces.length === 1 ? bootstrap.workspaces[0] : null) ??
+      null;
+    if (next) await TokenVault.setTenant(next.tenant_id);
+    set({ bootstrap, activeWorkspace: next, status: "authenticated" });
+    return bootstrap;
+  },
   setLanguage: (language) => set({ language }),
   async signOut() {
     try {
@@ -103,21 +124,89 @@ export const useSession = create<SessionState>((set, get) => ({
   clearError: () => set({ error: null }),
 }));
 
-export const roleToPortal = (role: string) => {
-  if (role === "CUSTOMER") return "customer";
-  if (["FREELANCE_AGENT", "AGENT"].includes(role)) return "agent";
-  if (role === "BROKER_STAFF") return "broker_staff";
-  if (role === "BROKER_ADMIN") return "broker_admin";
-  if (role.includes("CARRIER")) return "carrier";
-  if (
-    [
-      "SYSTEM_ADMIN",
-      "PLATFORM_ADMIN",
-      "FINANCE_OPERATOR",
-      "COMPLIANCE_OFFICER",
-      "SUPPORT_OPERATOR",
-    ].includes(role)
-  )
-    return "platform_admin";
-  return null;
+export type Portal =
+  | "customer"
+  | "agent"
+  | "broker_admin"
+  | "broker_staff"
+  | "carrier"
+  | "platform_admin"
+  | "compliance"
+  | "finance"
+  | "claims";
+
+/** Maps the backend's tenant_memberships.role_code values (see
+ * database/seeders) to a mobile portal. Unknown codes return null, which the
+ * app renders as the "Access not available" screen — never a blank page. */
+export const roleToPortal = (role: string | null | undefined): Portal | null => {
+  switch ((role ?? "").toUpperCase()) {
+    case "CUSTOMER":
+      return "customer";
+    case "AGENT":
+    case "FREELANCE_AGENT":
+      return "agent";
+    case "BROKER_ADMIN":
+    case "BROKER":
+      return "broker_admin";
+    case "BROKER_STAFF":
+      return "broker_staff";
+    case "CARRIER_ADMIN":
+    case "CARRIER_STAFF":
+    case "CARRIER":
+      return "carrier";
+    case "PLATFORM_ADMIN":
+    case "SYSTEM_ADMIN":
+      return "platform_admin";
+    case "COMPLIANCE_ADMIN":
+    case "COMPLIANCE_OFFICER":
+      return "compliance";
+    case "FINANCE_ADMIN":
+    case "FINANCE_MANAGER":
+    case "FINANCE_OPERATOR":
+      return "finance";
+    case "CLAIMS_MANAGER":
+    case "CLAIMS_OFFICER":
+      return "claims";
+    default:
+      return null;
+  }
+};
+
+export const WORKSPACE_PORTALS: Portal[] = [
+  "platform_admin",
+  "compliance",
+  "finance",
+  "claims",
+];
+
+/** The route a workspace lands on. Unknown roles go to the access screen. */
+export const portalRoute = (workspace: Workspace | null | undefined) => {
+  const portal = roleToPortal(workspace?.role_code);
+  switch (portal) {
+    case "customer":
+      return "/(customer)/(tabs)" as const;
+    case "agent":
+      return "/agent" as const;
+    case "broker_admin":
+    case "broker_staff":
+      return "/broker" as const;
+    case "carrier":
+      return "/carrier" as const;
+    case null:
+      return "/access-denied" as const;
+    default:
+      return { pathname: "/workspace/[role]" as const, params: { role: portal } };
+  }
+};
+
+/** Where a session should land: sign-in when anonymous, the role picker when
+ * several workspaces exist and none is chosen, otherwise the portal. */
+export const sessionHome = (state: {
+  status: SessionStatus;
+  bootstrap: SessionBootstrap | null;
+  activeWorkspace: Workspace | null;
+}) => {
+  if (state.status !== "authenticated") return null;
+  if (state.activeWorkspace) return portalRoute(state.activeWorkspace);
+  return "/(auth)/role" as const;
 };

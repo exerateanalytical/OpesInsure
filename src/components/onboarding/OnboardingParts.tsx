@@ -1,7 +1,7 @@
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
-import { authColors, authIcon, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authIcon, authSpace, authType } from "@/theme/tokens";
 
 const icon = require("../../../assets/icon.png");
 const map = require("../../../assets/auth/splash_map.png");
@@ -13,13 +13,27 @@ const bottomWave = require("../../../assets/auth/splash_bottom_wave.png");
 
 /** Icon + wordmark + tagline + dotted-Africa/network accent, on a white/ice background. */
 export function OnboardingHero() {
+  // Decorations scale with the viewport so they never sit on the centred
+  // 108px icon on 320-360dp phones; the badge moves to the opposite corner
+  // (top-left) so it can no longer stack on top of the map/arcs art.
+  const { width } = useWindowDimensions();
+  const artSize = Math.max(96, Math.min(160, width / 2 - 58));
+  const badgeSize = width < 360 ? 56 : 78;
+  const showBadge = width >= 330;
+  const art = { width: artSize, height: artSize };
   return (
     <View style={styles.heroWrap}>
       <Image source={tribalLeft} style={styles.tribalLeft} resizeMode="contain" />
       <Image source={tribalRight} style={styles.tribalRight} resizeMode="contain" />
-      <Image source={map} style={styles.map} resizeMode="contain" />
-      <Image source={arcs} style={styles.map} resizeMode="contain" />
-      <Image source={safer} style={styles.safer} resizeMode="contain" />
+      <Image source={map} style={[styles.map, art]} resizeMode="contain" />
+      <Image source={arcs} style={[styles.map, art]} resizeMode="contain" />
+      {showBadge ? (
+        <Image
+          source={safer}
+          style={[styles.safer, { width: badgeSize, height: badgeSize }]}
+          resizeMode="contain"
+        />
+      ) : null}
       <View style={styles.brandBlock}>
         <Image source={icon} style={styles.icon} resizeMode="contain" />
         <Text style={styles.wordmark}>
@@ -102,8 +116,8 @@ const styles = StyleSheet.create({
   heroWrap: { alignItems: "center", paddingTop: authSpace[5], overflow: "hidden" },
   tribalLeft: { position: "absolute", left: -30, top: 0, width: 80, height: 320, opacity: 0.5 },
   tribalRight: { position: "absolute", right: -30, top: 60, width: 80, height: 320, opacity: 0.5 },
-  map: { position: "absolute", right: 0, top: 0, width: 160, height: 160, opacity: 0.9 },
-  safer: { position: "absolute", right: 4, top: -4, width: 78, height: 78 },
+  map: { position: "absolute", right: 0, top: 0, opacity: 0.9 },
+  safer: { position: "absolute", left: authSpace[2], top: authSpace[1] },
   brandBlock: { alignItems: "center", gap: authSpace[2] },
   icon: { width: 108, height: 108, borderRadius: 26 },
   wordmark: { ...authType.h2, color: authColors.navy950, marginTop: authSpace[1] },

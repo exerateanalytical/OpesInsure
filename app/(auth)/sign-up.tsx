@@ -18,8 +18,15 @@ import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthPrimaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
 import { TrustStrip } from "@/components/auth/TrustStrip";
-import { authColors, authRadius, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authRadius, authSpace, authType } from "@/theme/tokens";
+import * as Crypto from "expo-crypto";
 import { AuthApi } from "@/api/client";
+
+/** Sign-in is OTP-only, but POST /public/accounts still requires a password
+ * (min 12). Send a random one the user never needs; drop this once the
+ * backend makes the field optional. */
+const throwawayPassword = () =>
+  Array.from(Crypto.getRandomBytes(24), (b) => b.toString(16).padStart(2, "0")).join("");
 
 const TERMS_VERSION = "2026-01-01";
 
@@ -41,8 +48,6 @@ export default function SignUp() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -58,10 +63,6 @@ export default function SignUp() {
       errors.fullName = "Enter your full name.";
     if (!/^\+2376\d{8}$/.test(normalizedPhone))
       errors.phone = "Enter a valid Cameroon mobile number.";
-    if (password.length < 12)
-      errors.password = "At least 12 characters.";
-    if (password !== confirmPassword)
-      errors.confirmPassword = "Passwords do not match.";
     if (!agreed) errors.agreed = "Required to continue.";
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -69,13 +70,14 @@ export default function SignUp() {
     }
 
     setBusy(true);
+    const password = throwawayPassword();
     try {
       await AuthApi.register({
         full_name: fullName.trim(),
         phone_e164: normalizedPhone,
         email: email.trim() || undefined,
         password,
-        password_confirmation: confirmPassword,
+        password_confirmation: password,
         locale: "en",
         terms_version: TERMS_VERSION,
       });
@@ -99,7 +101,6 @@ export default function SignUp() {
         if (fields.full_name?.[0]) serverErrors.fullName = fields.full_name[0];
         if (fields.phone_e164?.[0]) serverErrors.phone = fields.phone_e164[0];
         if (fields.email?.[0]) serverErrors.email = fields.email[0];
-        if (fields.password?.[0]) serverErrors.password = fields.password[0];
         setFieldErrors(serverErrors);
       }
       setError(e instanceof Error ? e.message : "Could not create your account.");
@@ -124,21 +125,19 @@ export default function SignUp() {
 
             {accountType !== "CUSTOMER" ? (
               <View style={styles.comingSoon}>
-                <Text style={styles.comingSoonTitle}>
-                  {accountType === "INSURER"
-                    ? "Insurer onboarding"
-                    : accountType === "BROKER"
-                      ? "Broker onboarding"
-                      : "Agent onboarding"}{" "}
-                  isn't open here yet
-                </Text>
+                <Text style={styles.comingSoonTitle}>Partners join by invitation</Text>
                 <Text style={styles.comingSoonBody}>
-                  This marketplace role needs a licence and verification step
-                  we haven't wired into self-signup yet. Create a customer
-                  account for now, or reach out to our team to be onboarded
-                  as {accountType === "INSURER" ? "an insurer" : accountType === "BROKER" ? "a broker" : "an agent"}.
+                  {accountType === "INSURER" ? "Insurance companies" : accountType === "BROKER" ? "Brokers" : "Agents"}{" "}
+                  are licensed and verified before they can sell on
+                  OpesInsure, so partner accounts are created by invitation
+                  from your institution or the OpesInsure partnerships team.
+                  If you have an invitation code, enter it to open your
+                  workspace.
                 </Text>
-                <Pressable onPress={() => setAccountType("CUSTOMER")}>
+                <Pressable accessibilityRole="button" onPress={() => router.push("/(auth)/invitation")}>
+                  <Text style={styles.comingSoonLink}>I have an invitation code</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => setAccountType("CUSTOMER")}>
                   <Text style={styles.comingSoonLink}>Continue as a customer instead</Text>
                 </Pressable>
               </View>
@@ -170,24 +169,6 @@ export default function SignUp() {
                   error={fieldErrors.phone}
                 />
                 <Text style={styles.hint}>Country code +237 · e.g. 6 70 00 00 00</Text>
-                <AuthTextField
-                  icon={ShieldCheck}
-                  placeholder="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureToggle
-                  textContentType="newPassword"
-                  error={fieldErrors.password}
-                />
-                <AuthTextField
-                  icon={ShieldCheck}
-                  placeholder="Confirm password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureToggle
-                  textContentType="newPassword"
-                  error={fieldErrors.confirmPassword}
-                />
                 <Pressable
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: agreed }}
@@ -198,7 +179,15 @@ export default function SignUp() {
                     {agreed ? <Check size={14} color={authColors.white} /> : null}
                   </View>
                   <Text style={styles.termsText}>
-                    I agree to the <Text style={styles.termsLink}>Terms & Privacy Policy</Text>.
+                    I agree to the{" "}
+                    <Text
+                      accessibilityRole="link"
+                      style={styles.termsLink}
+                      onPress={() => router.push("/terms")}
+                    >
+                      Terms & Privacy Policy
+                    </Text>
+                    .
                   </Text>
                 </Pressable>
                 {fieldErrors.agreed ? <Text style={styles.error}>{fieldErrors.agreed}</Text> : null}
@@ -254,11 +243,11 @@ const styles = StyleSheet.create({
   },
   checkboxChecked: { backgroundColor: authColors.blue500, borderColor: authColors.blue500 },
   termsText: { ...authType.body, fontSize: 14, color: authColors.textSecondary, flex: 1 },
-  termsLink: { color: authColors.blue500, fontFamily: "Manrope_600SemiBold" },
-  error: { ...authType.label, fontSize: 12, color: "#C9363E" },
+  termsLink: { color: authColors.blue500, fontFamily: "Inter_600SemiBold" },
+  error: { ...authType.label, fontSize: 12, color: authColors.dangerText },
   signInRow: { alignItems: "center", paddingVertical: authSpace[2] },
   signInText: { ...authType.body, fontSize: 14, color: authColors.textSecondary },
-  signInLink: { color: authColors.blue500, fontFamily: "Manrope_700Bold" },
+  signInLink: { color: authColors.blue500, fontFamily: "Inter_700Bold" },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: authSpace[2] },
   comingSoon: {
     backgroundColor: authColors.ice50,

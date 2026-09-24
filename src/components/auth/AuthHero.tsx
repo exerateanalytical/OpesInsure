@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { authColors, authGradients, authSpace, authType } from "@/theme/authTokens";
+import { authColors, authGradients, authSpace, authType } from "@/theme/tokens";
 
 const icon = require("../../../assets/icon.png");
 const africaNetwork = require("../../../assets/auth/africa_network_composite.png");
@@ -20,6 +20,13 @@ export function AuthHero({
   heading: string;
   subheading: string;
 }) {
+  // Keep the decorative art clear of the centred brand block (92px icon)
+  // on narrow 320-360dp phones: the network graphic may extend to at most
+  // the icon's right edge, and the badge sits top-left, never on the network.
+  const { width } = useWindowDimensions();
+  const networkSize = Math.max(110, Math.min(200, width / 2 - 18));
+  const badgeSize = width < 360 ? 60 : 84;
+  const showBadge = width >= 330;
   return (
     <LinearGradient
       colors={authGradients.navySurface}
@@ -28,8 +35,22 @@ export function AuthHero({
       style={styles.hero}
     >
       <Image source={tribalCorner} style={styles.tribalCorner} resizeMode="contain" />
-      <Image source={africaNetwork} style={styles.network} resizeMode="contain" />
-      <Image source={saferBrighterAfrica} style={styles.safer} resizeMode="contain" />
+      <Image
+        source={africaNetwork}
+        style={[styles.network, { width: networkSize, height: networkSize }]}
+        resizeMode="contain"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+      {showBadge ? (
+        <Image
+          source={saferBrighterAfrica}
+          style={[styles.safer, { width: badgeSize, height: badgeSize }]}
+          resizeMode="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
+      ) : null}
 
       <View style={styles.brandBlock}>
         <Image source={icon} style={styles.icon} resizeMode="contain" />
@@ -71,16 +92,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: -28,
     top: authSpace[4],
-    width: 200,
-    height: 200,
-    opacity: 0.95,
+    opacity: 0.9,
   },
   safer: {
     position: "absolute",
-    right: 6,
+    left: authSpace[3],
     top: authSpace[3],
-    width: 92,
-    height: 92,
   },
   brandBlock: { alignItems: "center", gap: authSpace[2] },
   icon: { width: 92, height: 92, borderRadius: 22 },
