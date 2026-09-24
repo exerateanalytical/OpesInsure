@@ -36,6 +36,20 @@ final class UserNotification extends Model
     /** Convenience for domain code: drop a notification for a user. */
     public static function notify(User $user, string $type, string $title, string $body, string $severity = 'INFO', ?string $path = null, ?string $tenantId = null): self
     {
+        // De-duplicate the same event reaching a user twice within a few
+        // minutes (e.g. issuance notified by PolicyIssuanceService and again
+        // by a demo/ops path, or a webhook replay). A POLICY notification is
+        // one-per-policy, so any title counts as the same event.
+        if ($path !== null) {
+            $existing = self::where('user_id', $user->id)->where('type', $type)->where('path', $path)
+                ->where('created_at', '>=', now()->subMinutes(10))
+                ->when($type !== 'POLICY', fn ($q) => $q->where('title', $title))
+                ->first();
+            if ($existing) {
+                return $existing;
+            }
+        }
+
         return self::create(compact('type', 'title', 'body', 'severity', 'path') + ['user_id' => $user->id, 'tenant_id' => $tenantId]);
     }
 }

@@ -40,19 +40,10 @@ final class MobileClaimCompletionController
 
     public function saveIncident(string $claim, Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'incident_type' => 'sometimes|string|max:64', 'police_report_number' => 'nullable|string|max:120', 'latitude' => 'nullable|numeric', 'longitude' => 'nullable|numeric',
-            'injuries_reported' => 'sometimes|boolean', 'vehicle_drivable' => 'sometimes|boolean', 'towing_required' => 'sometimes|boolean', 'declaration_confirmed' => 'sometimes|boolean',
-        ]);
-        $c = $this->owned($claim, $request);
-        $details = $c->loss_details ?? [];
-        $details['incident'] = array_merge(self::INCIDENT_DEFAULTS, $details['incident'] ?? [], $data);
-        $c->update(['loss_details' => $details, 'version' => $c->version + 1]);
-        if (! empty($data['declaration_confirmed'])) {
-            $this->audit->record('claim.declaration.confirmed', 'claim', $c->id, []);
-        }
+        $data = $request->validate(\App\Application\Claims\ClaimIncidentService::rules());
+        $c = app(\App\Application\Claims\ClaimIncidentService::class)->save($claim, $data, $request->user(), app(TenantContext::class)->id());
 
-        return response()->json(['data' => $this->incidentOf($c->refresh())]);
+        return response()->json(['data' => $this->incidentOf($c)]);
     }
 
     public function evidenceRequirements(string $claim, Request $request): JsonResponse

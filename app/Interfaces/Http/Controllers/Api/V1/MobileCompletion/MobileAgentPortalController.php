@@ -113,7 +113,7 @@ final class MobileAgentPortalController
         $t = app(TenantContext::class)->id();
         $partner = $this->partners->resolve($request->user());
         $clientIds = $this->clientPartyIds($partner, $t);
-        $policies = Policy::with('party')->where('tenant_id', $t)->whereIn('party_id', $clientIds)->where('status', 'ACTIVE')->where('coverage_ends_at', '<=', now()->addDays(60))->orderBy('coverage_ends_at')->get();
+        $policies = Policy::with('party')->where('tenant_id', $t)->whereIn('party_id', $clientIds)->whereIn('status', ['ACTIVE', 'EXPIRING'])->where('coverage_ends_at', '<=', now()->addDays(60))->orderBy('coverage_ends_at')->get();
 
         return response()->json(['data' => $policies->map(fn (Policy $p) => [
             'id' => $p->id, 'customer_id' => TenantCustomer::where(['tenant_id' => $t, 'party_id' => $p->party_id])->value('id') ?? $p->party_id, 'customer_name' => $p->party?->display_name ?? 'Customer',

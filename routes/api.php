@@ -265,6 +265,8 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave12_brokercarrier.php';
         require __DIR__.'/wave14_mobile.php';
         require __DIR__.'/wave15_mobile.php';
+        require __DIR__.'/wave16_partner.php';
+        require __DIR__.'/wave16_lifecycle.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);

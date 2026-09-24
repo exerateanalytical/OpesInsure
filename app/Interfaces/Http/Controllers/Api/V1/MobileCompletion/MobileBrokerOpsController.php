@@ -69,7 +69,7 @@ final class MobileBrokerOpsController
     {
         $t = app(TenantContext::class)->id();
         $ids = $this->clientQuery($request, $t)->pluck('tenant_customers.party_id');
-        $policies = Policy::with('party')->where('tenant_id', $t)->whereIn('party_id', $ids)->where('status', 'ACTIVE')->where('coverage_ends_at', '<=', now()->addDays(60))->orderBy('coverage_ends_at')->get();
+        $policies = Policy::with('party')->where('tenant_id', $t)->whereIn('party_id', $ids)->whereIn('status', ['ACTIVE', 'EXPIRING'])->where('coverage_ends_at', '<=', now()->addDays(60))->orderBy('coverage_ends_at')->get();
 
         return response()->json(['data' => $policies->map(fn (Policy $p) => [
             'id' => $p->id, 'customer_id' => TenantCustomer::where(['tenant_id' => $t, 'party_id' => $p->party_id])->value('id') ?? $p->party_id, 'customer_name' => $p->party?->display_name ?? 'Client',
@@ -151,7 +151,7 @@ final class MobileBrokerOpsController
             'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city'),
             'origin_locked' => DB::table('customer_attributions')->where('party_id', $c->party_id)->where('status', 'ACTIVE')->exists(),
             'policies' => (clone $policies)->where('status', 'ACTIVE')->count(), 'outstanding_minor' => $outstanding,
-            'renewal_due_at' => ($min = (clone $policies)->where('status', 'ACTIVE')->min('coverage_ends_at')) ? \Carbon\Carbon::parse($min)->toIso8601String() : null,
+            'renewal_due_at' => ($min = (clone $policies)->whereIn('status', ['ACTIVE', 'EXPIRING'])->min('coverage_ends_at')) ? \Carbon\Carbon::parse($min)->toIso8601String() : null,
         ];
     }
 

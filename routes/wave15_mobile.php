@@ -14,4 +14,5 @@ use Illuminate\Support\Facades\Route;
 Route::withoutMiddleware(['auth:api', 'tenant'])->group(function (): void {
     Route::get('public/institutions', [PublicInstitutionController::class, 'index'])->middleware('throttle:60,1');
     Route::get('public/institutions/{institution}', [PublicInstitutionController::class, 'show'])->middleware('throttle:60,1');
+    Route::get('public/insurance-classes', [PublicInstitutionController::class, 'classes'])->middleware('throttle:60,1');
 });

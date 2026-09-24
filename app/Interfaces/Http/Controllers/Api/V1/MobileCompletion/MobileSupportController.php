@@ -40,22 +40,26 @@ final class MobileSupportController
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate(['category' => 'required|string|max:64', 'subject' => 'required|string|min:3|max:200', 'description' => 'required|string|min:10|max:10000']);
+        $data = $request->validate([
+            'category' => 'required|string|max:64', 'subject' => 'required|string|min:3|max:200', 'description' => 'required|string|min:10|max:10000',
+            'claim_id' => 'nullable|uuid', 'payment_id' => 'nullable|uuid', 'policy_id' => 'nullable|uuid', 'parent_case_id' => 'nullable|uuid',
+        ]);
         $party = $this->parties->forUser($request->user());
         abort_unless($party, 422, 'No customer identity is linked to this account.');
         $tenant = app(TenantContext::class)->id();
+        $links = $this->ownedLinks($data, $party->id, $tenant, $request);
         $key = $request->header('Idempotency-Key') ?: (string) Str::uuid();
         if ($existing = DB::table('support_tickets')->where(['tenant_id' => $tenant, 'idempotency_key' => $key])->first()) {
             return response()->json(['data' => $this->present($existing, true)]);
         }
         $id = (string) Str::uuid();
         $priority = in_array(strtoupper($data['category']), ['PAYMENT', 'CLAIM', 'FRAUD', 'SECURITY'], true) ? 'HIGH' : 'NORMAL';
-        DB::transaction(function () use ($data, $id, $tenant, $party, $request, $key, $priority) {
+        DB::transaction(function () use ($data, $id, $tenant, $party, $request, $key, $priority, $links) {
             DB::table('support_tickets')->insert([
                 'id' => $id, 'tenant_id' => $tenant, 'party_id' => $party->id, 'ticket_number' => 'TKT-'.now()->format('Ym').'-'.strtoupper(Str::random(8)),
                 'type' => 'SUPPORT', 'category' => strtoupper($data['category']), 'priority' => $priority, 'status' => 'OPEN', 'subject' => $data['subject'], 'description' => $data['description'],
                 'sla_due_at' => now()->addHours($priority === 'HIGH' ? 12 : 48), 'idempotency_key' => $key, 'created_at' => now(), 'updated_at' => now(),
-            ]);
+            ] + $links);
             $this->event($id, 'CREATED', $data['description'], $request->user()->id, 'CUSTOMER', null, 'OPEN');
             $this->audit->record('support.ticket.created', 'support_ticket', $id, ['channel' => 'MOBILE']);
         });
@@ -92,6 +96,56 @@ final class MobileSupportController
         return response()->json(['data' => $this->present(DB::table('support_tickets')->find($ticket->id), true)], 201);
     }
 
+    /**
+     * POST /mobile/support/cases/{case}/escalate { reason? } — raises priority
+     * to URGENT, tightens the SLA and flags the case for a supervisor.
+     * Idempotent: an already-escalated case is returned unchanged.
+     */
+    public function escalate(string $case, Request $request): JsonResponse
+    {
+        $data = $request->validate(['reason' => 'nullable|string|max:2000']);
+        $ticket = $this->owned($case, $request);
+        abort_if(in_array($ticket->status, ['CLOSED', 'CANCELLED', 'RESOLVED'], true), 422, 'This case is closed.');
+        if (! $ticket->escalated_at) {
+            DB::transaction(function () use ($ticket, $data, $request) {
+                DB::table('support_tickets')->where('id', $ticket->id)->update([
+                    'priority' => 'URGENT', 'escalated_at' => now(), 'updated_at' => now(),
+                    'sla_due_at' => min(\Carbon\Carbon::parse($ticket->sla_due_at), now()->addHours(4)),
+                ]);
+                $this->event($ticket->id, 'ESCALATED', $data['reason'] ?? 'Escalated by the customer.', $request->user()->id, 'CUSTOMER');
+                $this->audit->record('support.ticket.escalated', 'support_ticket', $ticket->id, ['channel' => 'MOBILE']);
+            });
+        }
+
+        return response()->json(['data' => $this->present(DB::table('support_tickets')->find($ticket->id), true)]);
+    }
+
+    /** Only the caller's own claim/payment/policy/case may be linked; anything else is a 422. */
+    private function ownedLinks(array $data, string $partyId, string $tenant, Request $request): array
+    {
+        $links = [];
+        $fail = fn (string $field) => throw \Illuminate\Validation\ValidationException::withMessages([$field => 'Not found among your records.']);
+        if (! empty($data['claim_id'])) {
+            DB::table('claims as c')->leftJoin('policies as p', 'p.id', '=', 'c.policy_id')->where('c.id', $data['claim_id'])->where('c.tenant_id', $tenant)
+                ->where(fn ($q) => $q->where('c.claimant_party_id', $partyId)->orWhere('p.party_id', $partyId))->exists() || $fail('claim_id');
+            $links['claim_id'] = $data['claim_id'];
+        }
+        if (! empty($data['payment_id'])) {
+            DB::table('payment_intents as i')->join('proposals as pr', 'pr.id', '=', 'i.proposal_id')->where('i.id', $data['payment_id'])->where('i.tenant_id', $tenant)->where('pr.party_id', $partyId)->exists() || $fail('payment_id');
+            $links['payment_intent_id'] = $data['payment_id'];
+        }
+        if (! empty($data['policy_id'])) {
+            DB::table('policies')->where(['id' => $data['policy_id'], 'tenant_id' => $tenant, 'party_id' => $partyId])->exists() || $fail('policy_id');
+            $links['policy_id'] = $data['policy_id'];
+        }
+        if (! empty($data['parent_case_id'])) {
+            DB::table('support_tickets')->where(['id' => $data['parent_case_id'], 'tenant_id' => $tenant, 'party_id' => $partyId])->exists() || $fail('parent_case_id');
+            $links['related_ticket_id'] = $data['parent_case_id'];
+        }
+
+        return $links;
+    }
+
     private function owned(string $id, Request $request): object
     {
         $party = $this->parties->forUser($request->user());
@@ -124,6 +178,9 @@ final class MobileSupportController
             'id' => $t->id, 'reference' => $t->ticket_number, 'category' => $t->category, 'subject' => $t->subject, 'description' => $t->description,
             'status' => $t->status, 'priority' => $t->priority, 'created_at' => \Carbon\Carbon::parse($t->created_at)->toIso8601String(), 'updated_at' => \Carbon\Carbon::parse($t->updated_at)->toIso8601String(),
             'messages' => $messages, 'attachments' => $attachments,
+            'claim_id' => $t->claim_id ?? null, 'payment_id' => $t->payment_intent_id ?? null, 'policy_id' => $t->policy_id ?? null,
+            'parent_case_id' => $t->related_ticket_id ?? null, 'escalated' => ! empty($t->escalated_at),
+            'escalated_at' => ! empty($t->escalated_at) ? \Carbon\Carbon::parse($t->escalated_at)->toIso8601String() : null,
         ];
     }
 }

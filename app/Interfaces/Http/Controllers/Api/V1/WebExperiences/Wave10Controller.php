@@ -9,12 +9,21 @@ use Illuminate\Support\Facades\Gate;
 
 final class Wave10Controller
 {
+    private const DASHBOARD_PERMISSIONS = ['ADMIN' => 'tenant.manage', 'BROKER' => 'broker.portal.read', 'CARRIER' => 'carrier.dashboard.read', 'AGENT' => 'agent.clients.read', 'CUSTOMER' => 'customers.read'];
+
     private function tenant(): ?string { return app(TenantContext::class)->id(); }
     private function owns(MarketplacePublication $item): void { if ($item->tenant_id !== $this->tenant()) abort(404); }
 
     public function dashboard(Request $request, string $portal, PortalDashboardQuery $query): JsonResponse
     {
         abort_unless(in_array(strtoupper($portal), PortalWorkspaceService::PORTALS, true), 404);
+        // The dashboard is tenant-wide counts, so every portal needs a staff/
+        // partner read permission — including CUSTOMER, whose own view is the
+        // owner-scoped mobile API, not these tenant totals (audit A1).
+        $permission = self::DASHBOARD_PERMISSIONS[strtoupper($portal)];
+        if (! $request->user()->hasPermission($permission)) {
+            abort(403, 'Permission denied.');
+        }
         return response()->json($query->handle($this->tenant(), strtoupper($portal)));
     }
 

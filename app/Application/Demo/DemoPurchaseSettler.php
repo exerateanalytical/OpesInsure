@@ -23,7 +23,9 @@ use Illuminate\Support\Str;
  * been waiting on the "customer" for ~20 seconds is confirmed, reconciled,
  * and the policy issued through the real PolicyIssuanceService, exactly as
  * a carrier approval would. Polled from the purchase-status endpoint the
- * app already hits while it waits.
+ * app already hits while it waits (mobile/purchases/{id}/status and
+ * payments/{id}). Only ever for proposals owned by a seeded demo persona
+ * (DemoPersonas); real users always wait for the real provider.
  */
 final class DemoPurchaseSettler
 {
@@ -33,7 +35,10 @@ final class DemoPurchaseSettler
 
     public function settleIfDue(Proposal $proposal, User $customer): void
     {
-        if (! config('demo.enabled')) {
+        // Fake outcomes are for the seeded demo personas only (audit A2): a
+        // real user on a demo-mode server must never get a payment marked
+        // paid or a policy self-issued without a real provider confirmation.
+        if (! config('demo.enabled') || ! DemoPersonas::ownsProposal($proposal) || $proposal->party_id !== $customer->party_id) {
             return;
         }
         $payment = PaymentIntentRecord::where('proposal_id', $proposal->id)->latest('created_at')->first();

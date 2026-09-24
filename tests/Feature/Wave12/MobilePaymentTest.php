@@ -23,8 +23,8 @@ it('lists only the authenticated customer\'s own payments, newest first', functi
     $response = $this->getJson('/api/v1/mobile/payments', tenantHeaderFor($fixture['tenant']));
 
     $response->assertStatus(200);
-    expect($response->json('data.data'))->toHaveCount(1);
-    expect($response->json('data.data.0.id'))->toBe($mine->id);
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.id'))->toBe($mine->id);
 });
 
 it('shows a single owned payment, and 403s (not 404) for one that exists but belongs to someone else', function () {

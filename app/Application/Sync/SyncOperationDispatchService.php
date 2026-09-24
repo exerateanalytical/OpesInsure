@@ -6,8 +6,10 @@ namespace App\Application\Sync;
 
 use App\Application\Agents\AgentClientIntakeService;
 use App\Application\Audit\AuditWriter;
+use App\Application\Claims\ClaimIncidentService;
 use App\Models\SyncOperation;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
@@ -48,14 +50,35 @@ final class SyncOperationDispatchService
 {
     private const MINIMUM_CLIENT_VERSION = '1.0.0';
 
-    /** @var array<string, string> "METHOD path" (relative, no leading slash, no /api/v1 prefix) => operation type */
+    /**
+     * "METHOD path-regex" (relative, no leading slash, no /api/v1 prefix) =>
+     * operation type. Path parameters are matched as UUIDs only.
+     *
+     * @var array<string, string>
+     */
     private const ALLOWLIST = [
-        'POST mobile/agent/clients' => 'AGENT_CLIENT_INTAKE',
+        'POST #^mobile/agent/clients$#' => 'AGENT_CLIENT_INTAKE',
+        // A11: a customer's own offline claim-incident draft (claim/[id]/incident.tsx).
+        'PUT #^mobile/claims/([0-9a-fA-F-]{36})/incident$#' => 'CUSTOMER_CLAIM_INCIDENT',
+    ];
+
+    /**
+     * Permission each operation type requires. Customer-safe operations need
+     * none: they are scoped to the caller's own records by the handler
+     * (ClaimIncidentService -> MobileClaimService::owned), exactly like the
+     * live endpoint.
+     *
+     * @var array<string, string|null>
+     */
+    private const REQUIRED_PERMISSION = [
+        'AGENT_CLIENT_INTAKE' => 'agent.sync.dispatch',
+        'CUSTOMER_CLAIM_INCIDENT' => null,
     ];
 
     public function __construct(
         private readonly AgentClientIntakeService $clients,
         private readonly AuditWriter $audit,
+        private readonly ClaimIncidentService $incidents,
     ) {
     }
 
@@ -82,7 +105,11 @@ final class SyncOperationDispatchService
             return $this->finish($existing);
         }
 
-        $type = $this->allowlisted($envelope);
+        [$type, $params] = $this->match($envelope['method'], $envelope['path']);
+
+        if ($type && ! $this->permitted($type, $user)) {
+            throw new AuthorizationException('Permission denied.');
+        }
 
         if (! $type) {
             $row = $this->persist($envelope, $user, $tenantId, 'REJECTED', null, 'OPERATION_NOT_ALLOWLISTED');
@@ -92,7 +119,7 @@ final class SyncOperationDispatchService
         }
 
         try {
-            $result = $this->apply($type, $envelope['payload'], $user, $tenantId);
+            $result = $this->apply($type, $envelope['payload'], $user, $tenantId, $params);
         } catch (ValidationException $e) {
             $status = ($e->status ?? 422) === 409 ? 'CONFLICT' : 'REJECTED';
             $row = $this->persist($envelope, $user, $tenantId, $status, ['errors' => $e->errors()], 'VALIDATION_FAILED');
@@ -125,14 +152,17 @@ final class SyncOperationDispatchService
             return $this->outcome($row);
         }
 
-        $type = self::ALLOWLIST[strtoupper($row->method).' '.ltrim($row->path, '/')] ?? null;
+        [$type, $params] = $this->match($row->method, $row->path);
 
         if (! $type) {
             throw ValidationException::withMessages(['path' => [__('wave12.sync_operation_not_allowlisted')]]);
         }
+        if (! $this->permitted($type, $user)) {
+            throw new AuthorizationException('Permission denied.');
+        }
 
         try {
-            $result = $this->apply($type, $row->payload ?? [], $user, $tenantId);
+            $result = $this->apply($type, $row->payload ?? [], $user, $tenantId, $params);
         } catch (ValidationException $e) {
             $status = ($e->status ?? 422) === 409 ? 'CONFLICT' : 'REJECTED';
             $row->update(['status' => $status, 'response_body' => ['errors' => $e->errors()], 'attempt_count' => $row->attempt_count + 1]);
@@ -148,11 +178,43 @@ final class SyncOperationDispatchService
     }
 
     /** @return array<string, mixed> */
-    private function apply(string $type, array $payload, User $user, string $tenantId): array
+    private function apply(string $type, array $payload, User $user, string $tenantId, array $params = []): array
     {
         return match ($type) {
             'AGENT_CLIENT_INTAKE' => $this->applyAgentClientIntake($payload, $user, $tenantId),
+            'CUSTOMER_CLAIM_INCIDENT' => $this->applyClaimIncident($params[0] ?? '', $payload, $user, $tenantId),
         };
+    }
+
+    /** @return array<string, mixed> */
+    private function applyClaimIncident(string $claimId, array $payload, User $user, string $tenantId): array
+    {
+        $data = Validator::make($payload, ClaimIncidentService::rules())->validate();
+
+        // Ownership: MobileClaimService::owned() -> 403 for someone else's claim, 404 for none.
+        return ClaimIncidentService::present($this->incidents->save($claimId, $data, $user, $tenantId));
+    }
+
+    /** @return array{0: ?string, 1: array<int, string>} */
+    private function match(string $method, string $path): array
+    {
+        $path = ltrim((string) parse_url($path, PHP_URL_PATH), '/');
+        $path = (string) preg_replace('#^api/v1/#', '', $path);
+        foreach (self::ALLOWLIST as $key => $type) {
+            [$allowedMethod, $pattern] = explode(' ', $key, 2);
+            if (strtoupper($method) === $allowedMethod && preg_match($pattern, $path, $m)) {
+                return [$type, array_slice($m, 1)];
+            }
+        }
+
+        return [null, []];
+    }
+
+    private function permitted(string $type, User $user): bool
+    {
+        $permission = self::REQUIRED_PERMISSION[$type] ?? null;
+
+        return $permission === null || $user->hasPermission($permission);
     }
 
     /** @return array<string, mixed> */
@@ -161,11 +223,6 @@ final class SyncOperationDispatchService
         Validator::make($payload, AgentClientIntakeService::rules())->validate();
 
         return $this->clients->register($payload, $user, $tenantId);
-    }
-
-    private function allowlisted(array $envelope): ?string
-    {
-        return self::ALLOWLIST[strtoupper($envelope['method']).' '.ltrim($envelope['path'], '/')] ?? null;
     }
 
     private function persist(array $envelope, User $user, string $tenantId, string $status, ?array $responseBody, ?string $errorCode): SyncOperation

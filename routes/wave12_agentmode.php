@@ -42,5 +42,9 @@ Route::post('mobile/agent/offline-queue/{operation}/retry', [MobileAgentPortalCo
 // authenticated mobile client may poll it before deciding whether to queue
 // operations at all.
 Route::get('mobile/sync/status', [SyncController::class, 'status']);
+// No route-level permission: each allowlisted operation type carries its own
+// (agent client intake still requires agent.sync.dispatch), and customer-safe
+// types (their own claim-incident drafts, audit A11) are ownership-scoped —
+// see SyncOperationDispatchService::REQUIRED_PERMISSION.
 Route::post('mobile/sync/operations', [SyncController::class, 'dispatch'])
-    ->middleware(['permission:agent.sync.dispatch', 'idempotency:mobile.sync.operations.dispatch', 'throttle:30,1']);
+    ->middleware(['idempotency:mobile.sync.operations.dispatch', 'throttle:30,1']);

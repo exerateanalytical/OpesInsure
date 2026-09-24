@@ -6,7 +6,11 @@ namespace App\Application\Payments;
 
 use App\Application\Identity\PartyResolver;
 use App\Models\PaymentIntentRecord;
+use App\Models\Policy;
 use App\Models\Refund;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\URL;
+use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -50,30 +54,94 @@ final class MobilePaymentService
         return $this->initiation->initiate($intent);
     }
 
-    /** @return array<string, mixed> A JSON receipt — no PDF renderer exists anywhere in this app; see the batch report. */
+    /**
+     * JSON receipt. receipt_number/issued_at are what receipt.tsx renders;
+     * reference/confirmed_at are kept for older app builds. download_url is
+     * a short-lived signed link to the PDF version.
+     *
+     * @return array<string, mixed>
+     */
     public function receipt(string $paymentId, User $user, string $tenantId): array
     {
-        $intent = $this->owned($paymentId, $user, $tenantId);
+        return $this->receiptData($this->owned($paymentId, $user, $tenantId), true);
+    }
+
+    /** @return array<string, mixed> */
+    private function receiptData(PaymentIntentRecord $intent, bool $withUrl): array
+    {
+        $intent->loadMissing('proposal.offer.product', 'proposal.offer.carrier.party', 'proposal.party');
+        $confirmedAt = $intent->status === 'SUCCEEDED' ? ($intent->reconciled_at ?? $intent->updated_at) : null;
+        $policy = $intent->proposal_id ? Policy::where('proposal_id', $intent->proposal_id)->first() : null;
 
         return [
             'id' => $intent->id,
+            'receipt_number' => self::receiptNumber($intent),
+            'issued_at' => $confirmedAt?->toIso8601String(),
             'reference' => $intent->provider_reference,
             'provider' => $intent->provider,
             'amount_minor' => $intent->amount_minor,
             'currency' => $intent->currency,
             'status' => $intent->status,
             'payer_phone_e164' => $intent->payer_phone_e164,
+            'payer_name' => $intent->proposal?->party?->display_name,
             'proposal_id' => $intent->proposal_id,
+            'product_name' => $intent->proposal?->offer?->product?->name,
+            'carrier_name' => $intent->proposal?->offer?->carrier?->party?->display_name,
+            'policy_id' => $policy?->id,
+            'policy_number' => $policy?->policy_number,
             'requested_at' => $intent->created_at?->toIso8601String(),
-            'confirmed_at' => $intent->status === 'SUCCEEDED' ? $intent->updated_at?->toIso8601String() : null,
+            'confirmed_at' => $confirmedAt?->toIso8601String(),
+            'download_url' => $withUrl ? URL::temporarySignedRoute('mobile.payments.receipt.pdf', now()->addMinutes((int) config('lifecycle.download_ttl_minutes', 30)), ['payment' => $intent->id]) : null,
         ];
     }
 
+    public static function receiptNumber(PaymentIntentRecord $intent): string
+    {
+        return 'RCT-'.($intent->created_at?->format('Ymd') ?? now()->format('Ymd')).'-'.strtoupper(substr(str_replace('-', '', $intent->id), -8));
+    }
+
+    /** Rendered on demand behind a signed URL — nothing to store or leak. */
+    public function receiptPdf(string $paymentId): Response
+    {
+        $intent = PaymentIntentRecord::findOrFail($paymentId);
+        $receipt = $this->receiptData($intent, false);
+        $bytes = Pdf::loadView('pdf.payment-receipt', ['r' => $receipt])->setPaper('a5')->output();
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$receipt['receipt_number'].'.pdf"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    /**
+     * A7: the app sends only {reason}. Defaults: amount = refundable balance
+     * (the full amount when nothing is refunded yet), reason_code =
+     * CUSTOMER_REQUEST, idempotency key = supplied header/body key or a
+     * deterministic per-payment/user/day key so a double tap can't open two.
+     */
     public function requestRefund(string $paymentId, array $data, User $user, string $tenantId): Refund
     {
         $intent = $this->owned($paymentId, $user, $tenantId);
 
-        return $this->financialCases->requestRefund($intent, $data, $user);
+        $alreadyRefunding = (int) Refund::where('payment_intent_id', $intent->id)->whereIn('status', ['REQUESTED', 'APPROVED', 'PROCESSING', 'COMPLETED'])->sum('amount_minor');
+        $key = $data['idempotency_key'] ?? hash('sha256', 'mobile-refund|'.$intent->id.'|'.$user->id.'|'.now()->toDateString());
+        $existing = Refund::where('tenant_id', $intent->tenant_id)->where('idempotency_key', $key)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $payload = [
+            'amount_minor' => (int) ($data['amount_minor'] ?? max(0, (int) $intent->amount_minor - $alreadyRefunding)),
+            'reason_code' => $data['reason_code'] ?? 'CUSTOMER_REQUEST',
+            'notes' => $data['notes'] ?? $data['reason'] ?? null,
+            'idempotency_key' => $key,
+        ];
+        if ($payload['amount_minor'] < 1) {
+            throw ValidationException::withMessages(['amount_minor' => __('wave4.refund_exceeds_balance')]);
+        }
+
+        return $this->financialCases->requestRefund($intent, $payload, $user);
     }
 
     private function owned(string $paymentId, User $user, string $tenantId): PaymentIntentRecord

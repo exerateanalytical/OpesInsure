@@ -114,6 +114,25 @@ return [
      * ownership scoping each service already enforces, never as a
      * substitute for it.
      */
+    // Tenant-wide core reads (security remediation, A1): without the permission a
+    // caller only sees its own records via App\Application\Identity\OwnershipScope.
+    // Staff roles only — customers/agents/brokers/carriers read through their
+    // own ownership-scoped mobile endpoints instead.
+    'core_read' => [
+        'customers.read' => [
+            'description' => 'List/read every tenant customer (CustomerController::index/show) instead of only owned records.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER'],
+        ],
+        'policies.read' => [
+            'description' => 'List/read every tenant policy (PolicyController::index/show) instead of only owned records.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER'],
+        ],
+        'risk_assets.read' => [
+            'description' => 'List/read every tenant risk asset (RiskAssetController::index/show) instead of only owned records.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER'],
+        ],
+    ],
+
     'agent' => [
         'agent.clients.read' => [
             'description' => 'List/view the agent\'s own registered clients (AgentClientController::index/show).',
@@ -144,7 +163,7 @@ return [
             'suggested_roles' => ['AGENT'],
         ],
         'agent.sync.dispatch' => [
-            'description' => 'Replay an allowlisted queued offline operation (SyncController::dispatch — see SyncOperationDispatchService::ALLOWLIST).',
+            'description' => 'Replay an allowlisted AGENT offline operation (agent client intake); customer-safe types such as the customer\'s own claim-incident drafts need no permission and are ownership-scoped per SyncOperationDispatchService::REQUIRED_PERMISSION (SyncController::dispatch — see SyncOperationDispatchService::ALLOWLIST).',
             'suggested_roles' => ['AGENT'],
         ],
     ],

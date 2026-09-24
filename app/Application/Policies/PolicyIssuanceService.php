@@ -12,6 +12,8 @@ use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\PolicyIssuanceRequest;
 use App\Models\Proposal;
+use App\Models\RenewalCase;
+use App\Application\Notifications\CustomerNotifier;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,8 @@ final class PolicyIssuanceService
         private AuthorityChecker $authority,
         private AuditWriter $audit,
         private OutboxWriter $outbox,
+        private PolicyDocumentService $documents,
+        private CustomerNotifier $notifier,
     ) {}
 
     public function request(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
@@ -150,6 +154,13 @@ final class PolicyIssuanceService
                 throw ValidationException::withMessages(['terms' => __('wave5.terms_changed')]);
             }
 
+            // Renewals: when the proposal's quote came from a renewal case,
+            // link the successor to the policy it renews (B14).
+            $renewalCase = RenewalCase::where('renewal_quote_id', $proposal->offer?->quote_id)->first();
+            if (! isset($data['previous_policy_id']) && $renewalCase) {
+                $data['previous_policy_id'] = $renewalCase->policy_id;
+            }
+
             if (isset($data['previous_policy_id']) && ! Policy::where([
                 'id' => $data['previous_policy_id'],
                 'tenant_id' => $request->tenant_id,
@@ -204,6 +215,27 @@ final class PolicyIssuanceService
                 'carrier_id' => $policy->carrier_id,
             ]);
 
+            // A6/B12: certificate + schedule PDFs with QR at issuance. Never
+            // blocks issuance: ensure() self-heals on first wallet view.
+            try {
+                $this->documents->ensure($policy, $actor);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            if ($renewalCase && $renewalCase->status === 'QUOTED') {
+                try {
+                    app(RenewalService::class)->complete($renewalCase, $policy);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            $product = $proposal->offer?->product?->name ?? 'Your policy';
+            $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY', "You're covered",
+                "{$product} policy {$policy->policy_number} is active from ".$policy->coverage_starts_at->format('d M Y').'. Your certificate is in your wallet.',
+                'SUCCESS', "/policy/{$policy->id}");
+
             return $policy;
         });
     }
@@ -232,6 +264,11 @@ final class PolicyIssuanceService
                 'issuance_request_id' => $request->id,
                 'carrier_id' => $request->carrier_id,
             ]);
+
+            $proposal = $request->proposal;
+            $this->notifier->toParty($proposal?->party_id, $request->tenant_id, 'POLICY', 'Issuance could not be completed',
+                'The insurer could not issue your policy. Our team will contact you about next steps, including a refund if applicable.',
+                'WARNING', $proposal ? "/proposals/{$proposal->id}" : null);
 
             return $request->refresh();
         });

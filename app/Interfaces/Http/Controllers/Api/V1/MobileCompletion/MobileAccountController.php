@@ -77,12 +77,18 @@ final class MobileAccountController
 
     public function registerPush(Request $request): JsonResponse
     {
-        $data = $request->validate(['token' => 'required|string|max:255', 'platform' => 'required|string|max:16']);
+        $data = $request->validate(['token' => 'required|string|max:255', 'provider' => 'nullable|in:expo,fcm', 'platform' => 'required|string|max:16']);
+        // An Expo token looks like ExponentPushToken[...]; default by shape
+        // when the (older) app omits provider.
+        $provider = $data['provider'] ?? (str_starts_with($data['token'], 'ExponentPushToken[') || str_starts_with($data['token'], 'ExpoPushToken[') ? 'expo' : 'fcm');
+        $existing = DB::table('user_push_tokens')->where('token', $data['token'])->first();
         DB::table('user_push_tokens')->updateOrInsert(['token' => $data['token']], [
-            'id' => DB::table('user_push_tokens')->where('token', $data['token'])->value('id') ?? (string) Str::uuid(),
-            'user_id' => $request->user()->id, 'platform' => $data['platform'], 'last_seen_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+            'id' => $existing->id ?? (string) Str::uuid(),
+            'user_id' => $request->user()->id, 'platform' => $data['platform'], 'provider' => $provider,
+            'last_seen_at' => now(), 'last_failure_at' => null, 'last_failure_reason' => null,
+            'created_at' => $existing->created_at ?? now(), 'updated_at' => now(),
         ]);
 
-        return response()->json(['data' => ['registered' => true]], 201);
+        return response()->json(['data' => ['registered' => true, 'provider' => $provider, 'platform' => $data['platform']]], 201);
     }
 }

@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Filament panel, partner integration calls and webhooks today —
         // see that middleware's docblock for why it's global rather than
         // per-route.
-        $middleware->api(prepend: [SecurityHeaders::class, EnforceMinimumAppVersion::class]);
+        $middleware->api(prepend: [\App\Interfaces\Http\Middleware\ForceJsonResponse::class, SecurityHeaders::class, EnforceMinimumAppVersion::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());

@@ -43,3 +43,6 @@ if (config('demo.enabled')) {
         'otp' => config('demo.otp'),
     ]))->name('demo');
 }
+
+// Certificate QR target (public, minimal disclosure, token required).
+Route::get('/verify', \App\Interfaces\Http\Controllers\Web\PublicVerifyPageController::class)->middleware('throttle:30,1')->name('public.verify');

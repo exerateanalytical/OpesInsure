@@ -42,6 +42,8 @@ final class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Official DGTCFM/MINFI register first, in every environment (owner: "seed this first, never delete").
+        $this->call(CameroonInsuranceRegisterSeeder::class);
         $this->call(CanonicalEventSchemaSeeder::class);
         $this->call(NotificationTemplateSeeder::class);
         $this->call(VehicleMakeReferenceSeeder::class);

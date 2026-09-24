@@ -25,7 +25,7 @@ final class RenewalService
     public function seed(Tenant $tenant, int $days, ?User $actor): int
     {
         $count = 0;
-        Policy::where(['tenant_id' => $tenant->id, 'status' => 'ACTIVE'])
+        Policy::where('tenant_id', $tenant->id)->whereIn('status', ['ACTIVE', 'EXPIRING'])
             ->whereBetween('coverage_ends_at', [now(), now()->addDays($days)])
             ->each(function (Policy $policy) use ($tenant, &$count): void {
                 $attributionId = $policy->proposal->offer->quote->attribution_id;

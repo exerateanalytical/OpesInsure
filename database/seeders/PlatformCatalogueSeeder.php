@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Application\Catalogue\RiskSchemaCatalogue;
 use App\Models\Carrier;
 use App\Models\CoverageDefinition;
 use App\Models\ExclusionDefinition;
@@ -43,6 +44,12 @@ final class PlatformCatalogueSeeder extends Seeder
             'LIFE' => ['Life', 'Vie', ['insured_age', 'cover_amount_minor', 'term_years', 'purpose'],
                 [['DEATH', 'Death benefit', 'Capital décès', 'AMOUNT', true], ['DISABILITY', 'Permanent disability', 'Invalidité permanente', 'AMOUNT', false]],
                 [['SUICIDE_FIRST_YEAR', 'Suicide within the first year', 'Suicide la première année']]],
+            'BUSINESS' => ['Business', 'Entreprise', RiskSchemaCatalogue::for('BUSINESS')['required'],
+                [['PUBLIC_LIABILITY', 'Public liability', 'Responsabilité civile exploitation', 'AMOUNT', true], ['PREMISES_FIRE', 'Fire and explosion of premises', 'Incendie et explosion des locaux', 'AMOUNT', false], ['STOCK_THEFT', 'Theft of stock and equipment', 'Vol du stock et du matériel', 'AMOUNT', false], ['BUSINESS_INTERRUPTION', 'Business interruption', "Perte d'exploitation", 'AMOUNT', false]],
+                [['WILFUL_ACT', 'Wilful or fraudulent acts', 'Actes intentionnels ou frauduleux'], ['WAR_RIOT', 'War and riot', 'Guerre et émeutes']]],
+            'ACCIDENT' => ['Personal accident', 'Individuelle accident', RiskSchemaCatalogue::for('ACCIDENT')['required'],
+                [['ACCIDENTAL_DEATH', 'Accidental death', 'Décès accidentel', 'AMOUNT', true], ['PERMANENT_DISABILITY', 'Permanent disability', 'Invalidité permanente', 'AMOUNT', true], ['MEDICAL_EXPENSES', 'Medical expenses after an accident', 'Frais médicaux suite à accident', 'AMOUNT', false]],
+                [['INTOXICATION', 'Accidents under intoxication', "Accidents en état d'ivresse"], ['MOTOR_RACING', 'Motor racing', 'Courses motorisées']]],
         ];
 
         $coverageIds = [];
@@ -52,7 +59,9 @@ final class PlatformCatalogueSeeder extends Seeder
                 'name' => ['en' => $en, 'fr' => $fr],
                 'description' => ['en' => "$en insurance from licensed Cameroon carriers", 'fr' => "Assurance $fr auprès d'assureurs agréés au Cameroun"],
                 'status' => 'ACTIVE',
-                'risk_schema' => ['required' => $required],
+                // "required" drives QuoteService validation; steps/fields drive
+                // the app's quote wizard (GET /mobile/catalogue/lines/{code}/risk-schema).
+                'risk_schema' => ['required' => $required] + array_intersect_key(RiskSchemaCatalogue::for($code) ?? [], array_flip(['steps', 'fields'])),
             ]);
             foreach ($coverages as $i => [$cCode, $cEn, $cFr, $limitType, $mandatory]) {
                 $c = CoverageDefinition::updateOrCreate(['insurance_line_id' => $line->id, 'code' => $cCode], ['name' => ['en' => $cEn, 'fr' => $cFr], 'description' => ['en' => $cEn, 'fr' => $cFr], 'limit_type' => $limitType, 'mandatory' => $mandatory, 'status' => 'ACTIVE']);
@@ -94,6 +103,23 @@ final class PlatformCatalogueSeeder extends Seeder
             ['code' => 'USAGE_COMMERCIAL', 'fact' => 'usage_type', 'operator' => 'IN', 'value' => ['COMMERCIAL', 'TAXI', 'TRANSPORT'], 'basis_points' => 4500],
             ['code' => 'POWER_9_12', 'fact' => 'fiscal_power', 'operator' => 'BETWEEN', 'value' => [9, 12], 'basis_points' => 2000],
             ['code' => 'POWER_13_PLUS', 'fact' => 'fiscal_power', 'operator' => 'BETWEEN', 'value' => [13, 60], 'basis_points' => 5000],
+            ['code' => 'COVER_TPFT', 'fact' => 'cover_type', 'operator' => 'EQUALS', 'value' => 'THIRD_PARTY_FIRE_THEFT', 'basis_points' => 3500],
+            ['code' => 'COVER_COMPREHENSIVE', 'fact' => 'cover_type', 'operator' => 'EQUALS', 'value' => 'COMPREHENSIVE', 'basis_points' => 9000],
+            ['code' => 'CLAIMS_1_2', 'fact' => 'claims_last_3_years', 'operator' => 'BETWEEN', 'value' => [1, 2], 'basis_points' => 2000],
+            ['code' => 'CLAIMS_3_PLUS', 'fact' => 'claims_last_3_years', 'operator' => 'BETWEEN', 'value' => [3, 20], 'basis_points' => 5000],
+            ['code' => 'ZONE_DOUALA_YAOUNDE', 'fact' => 'zone', 'operator' => 'IN', 'value' => ['DOUALA', 'YAOUNDE'], 'basis_points' => 1000],
+        ];
+        $businessFactors = [
+            ['code' => 'RESTAURANT_WORKSHOP', 'fact' => 'business_type', 'operator' => 'IN', 'value' => ['RESTAURANT', 'WORKSHOP'], 'basis_points' => 4000],
+            ['code' => 'STAFF_11_50', 'fact' => 'employee_count', 'operator' => 'BETWEEN', 'value' => [11, 50], 'basis_points' => 5000],
+            ['code' => 'STAFF_51_PLUS', 'fact' => 'employee_count', 'operator' => 'BETWEEN', 'value' => [51, 5000], 'basis_points' => 15000],
+            ['code' => 'MULTIRISK', 'fact' => 'cover_type', 'operator' => 'EQUALS', 'value' => 'MULTIRISK', 'basis_points' => 6000],
+        ];
+        $accidentFactors = [
+            ['code' => 'GROUP_2_5', 'fact' => 'insured_count', 'operator' => 'BETWEEN', 'value' => [2, 5], 'basis_points' => 8000],
+            ['code' => 'GROUP_6_PLUS', 'fact' => 'insured_count', 'operator' => 'BETWEEN', 'value' => [6, 50], 'basis_points' => 25000],
+            ['code' => 'MANUAL_WORK', 'fact' => 'occupation_class', 'operator' => 'EQUALS', 'value' => 'MANUAL', 'basis_points' => 3000],
+            ['code' => 'HIGH_RISK_WORK', 'fact' => 'occupation_class', 'operator' => 'EQUALS', 'value' => 'HIGH_RISK', 'basis_points' => 8000],
         ];
         $travelFactors = [
             ['code' => 'GROUP_2_4', 'fact' => 'traveller_count', 'operator' => 'BETWEEN', 'value' => [2, 4], 'basis_points' => 7000],
@@ -132,6 +158,12 @@ final class PlatformCatalogueSeeder extends Seeder
             ['AXA', 'HEALTH', 'AXA-ELITE', 'Elite Voyage', 125000, $healthFactors, ['OUTPATIENT', 'MATERNITY', 'DENTAL_OPTICAL']],
             ['SANLAMALLIANZ_VIE', 'LIFE', 'SAV-FAMILLE', 'Protection familiale', 60000, $lifeFactors, ['DISABILITY']],
             ['ACTIVA_VIE', 'LIFE', 'ACTIVA-VIE', 'Activa Prévoyance', 58000, $lifeFactors, ['DISABILITY']],
+            ['CHANAS', 'BUSINESS', 'CHANAS-PRO', 'Chanas Multirisque Professionnelle', 145000, $businessFactors, ['PREMISES_FIRE', 'STOCK_THEFT', 'BUSINESS_INTERRUPTION']],
+            ['AXA', 'BUSINESS', 'AXA-PRO', 'AXA Pro Commerce', 158000, $businessFactors, ['PREMISES_FIRE', 'STOCK_THEFT']],
+            ['ACTIVA', 'BUSINESS', 'ACTIVA-PRO', 'Activa Entreprise', 139000, $businessFactors, ['PREMISES_FIRE']],
+            ['SANLAMALLIANZ', 'ACCIDENT', 'SA-ACCIDENT', 'Individuelle Accident', 24000, $accidentFactors, ['MEDICAL_EXPENSES']],
+            ['NSIA', 'ACCIDENT', 'NSIA-ACCIDENT', 'NSIA Individuelle Accident', 22500, $accidentFactors, ['MEDICAL_EXPENSES']],
+            ['CHANAS', 'ACCIDENT', 'CHANAS-IA', 'Chanas Assur Accident', 25500, $accidentFactors, []],
         ];
 
         foreach ($products as [$carrierKey, $line, $code, $name, $baseXaf, $factors, $optional]) {
@@ -196,6 +228,14 @@ final class PlatformCatalogueSeeder extends Seeder
             'HEALTH' => [
                 ['code' => 'chronic_condition', 'label' => ['en' => 'Is any member being treated for a chronic condition?', 'fr' => 'Un membre est-il suivi pour une maladie chronique ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'CHRONIC_CONDITION'],
                 ['code' => 'hospitalised_recently', 'label' => ['en' => 'Has any member been hospitalised in the last 12 months?', 'fr' => 'Un membre a-t-il été hospitalisé ces 12 derniers mois ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'RECENT_HOSPITALISATION'],
+            ],
+            'BUSINESS' => [
+                ['code' => 'prior_losses', 'label' => ['en' => 'Has the business suffered fire, theft or a liability claim in the last 5 years?', 'fr' => "L'entreprise a-t-elle subi un incendie, un vol ou une réclamation en responsabilité ces 5 dernières années ?"], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'PRIOR_LOSSES'],
+                ['code' => 'hazardous_materials', 'label' => ['en' => 'Are flammable or hazardous materials stored on the premises?', 'fr' => 'Des matières inflammables ou dangereuses sont-elles stockées sur place ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'HAZARDOUS_MATERIALS'],
+            ],
+            'ACCIDENT' => [
+                ['code' => 'dangerous_sports', 'label' => ['en' => 'Does anyone covered practise dangerous sports?', 'fr' => 'Une personne assurée pratique-t-elle des sports dangereux ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'DANGEROUS_SPORTS'],
+                ['code' => 'existing_disability', 'label' => ['en' => 'Does anyone covered have an existing disability?', 'fr' => 'Une personne assurée a-t-elle un handicap existant ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [true], 'referral_code' => 'EXISTING_DISABILITY'],
             ],
             'LIFE' => [
                 ['code' => 'smoker', 'label' => ['en' => 'Does the insured person smoke?', 'fr' => 'La personne assurée fume-t-elle ?'], 'type' => 'boolean', 'required' => true, 'referral_values' => [], 'referral_code' => 'SMOKER'],

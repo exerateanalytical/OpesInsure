@@ -23,8 +23,8 @@ it('lists only the authenticated customer\'s own policies', function () {
     $response = $this->getJson('/api/v1/mobile/wallet', tenantHeaderFor($fixture['tenant']));
 
     $response->assertStatus(200);
-    expect($response->json('data.data'))->toHaveCount(1);
-    expect($response->json('data.data.0.id'))->toBe($mine->id);
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.id'))->toBe($mine->id);
 });
 
 it('shows a single owned policy with certificates and delivery loaded, 403s for someone else\'s', function () {
