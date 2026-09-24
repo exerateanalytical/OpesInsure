@@ -1,40 +1,58 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
+import { Phone } from "lucide-react-native";
+import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi } from "@/api/extra";
-import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
+import { REGISTER_SOURCE_KEY } from "@/lib/institutions";
+import { colors, space, type } from "@/theme/tokens";
 
 export default function BrokerDetail() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => InstitutionsApi.show(id), [id]);
   return (
     <Screen>
-      <AppHeader title="Broker profile" back />
-      <StatePanel {...q} onRetry={q.reload} isEmpty={() => false}>
+      <AppHeader title={t("brokerProfile")} back />
+      <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loadingBrokers")}>
         {(broker) => (
           <>
             <Card feature>
               <Text style={styles.title}>{broker.name}</Text>
-              {broker.city ? (
-                <Text style={styles.body}>{broker.city}, Cameroon</Text>
-              ) : null}
-              {broker.licence_number ? (
-                <StatusChip label={`Licence ${broker.licence_number}`} tone="info" />
+              <View style={styles.badges}>
+                {broker.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
+                {broker.regulator_number ? (
+                  <StatusChip label={t("regulatorNumber", { number: broker.regulator_number })} tone="info" />
+                ) : null}
+                {broker.licence_number ? (
+                  <StatusChip label={`Licence ${broker.licence_number}`} tone="info" />
+                ) : null}
+              </View>
+              {broker.city ? <Text style={styles.body}>{broker.city}, Cameroon</Text> : null}
+              {broker.canonical_id ? (
+                <Text style={styles.canonical}>{t("canonicalId", { id: broker.canonical_id })}</Text>
               ) : null}
               {broker.licence_expires_on ? (
                 <Text style={styles.body}>
-                  Licence valid until{" "}
                   {new Date(broker.licence_expires_on).toLocaleDateString()}
                 </Text>
               ) : null}
+              {broker.phone ? (
+                <Button
+                  label={broker.phone}
+                  icon={Phone}
+                  variant="secondary"
+                  onPress={() => void Linking.openURL(`tel:${broker.phone}`)}
+                />
+              ) : null}
             </Card>
-            <Text style={styles.source}>
-              Verify a broker&apos;s current licence with MINFI before
-              transacting.
-            </Text>
+            <Text style={styles.source}>{t("brokerVerifyNote")}</Text>
+            {broker.is_official_register ? (
+              <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text>
+            ) : null}
           </>
         )}
       </StatePanel>
@@ -43,6 +61,8 @@ export default function BrokerDetail() {
 }
 const styles = StyleSheet.create({
   title: { ...type.pageTitle, color: colors.navy950 },
+  badges: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   body: { ...type.body, color: colors.neutral600 },
+  canonical: { ...type.meta, color: colors.neutral500, fontVariant: ["tabular-nums"] },
   source: { ...type.meta, color: colors.neutral500 },
 });

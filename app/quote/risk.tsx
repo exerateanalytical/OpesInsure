@@ -9,7 +9,12 @@ import { AssetsApi, CatalogueApi, RiskAsset } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { unwrapPage } from "@/lib/purchase";
-import { buildFacts, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
+import { buildFacts, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
+import { VehiclePicker, useVehicleReference } from "@/components/vehicles/VehiclePicker";
+import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
+import { MasterSelectField } from "@/components/masterData/MasterSelectField";
+import { RepeaterField } from "@/components/masterData/RepeaterField";
+import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const ASSET_LINES: Record<string, string[]> = { MOTOR: ["VEHICLE", "MOTOR", "CAR", "MOTORCYCLE"], HOME: ["PROPERTY", "HOME", "BUILDING"] };
@@ -50,6 +55,7 @@ export default function Risk() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const [submitError, setSubmitError] = useState<unknown>(null);
+  const { reference } = useVehicleReference();
 
   const loadSchema = useCallback(async () => {
     if (!line) return setSchemaLoading(false);
@@ -73,7 +79,9 @@ export default function Risk() {
   }, [line, loadSchema]);
 
   // Step 0 is "who / what is insured"; schema steps follow.
-  const steps = useMemo(() => ["Insured", ...(schema?.steps.map((s) => s.title) ?? [])], [schema]);
+  const { language } = useTranslation();
+  const stepTitle = (s?: { title: string; titleFr?: string }) => (s ? (language === "fr" && s.titleFr ? s.titleFr : s.title) : undefined);
+  const steps = useMemo(() => ["Insured", ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language]);
   const current = step > 0 ? schema?.steps[step - 1] : undefined;
   const isLast = step === steps.length - 1;
 
@@ -125,7 +133,7 @@ export default function Risk() {
 
   return (
     <Screen>
-      <AppHeader title={current?.title ?? "Who is insured?"} subtitle={`Step 2 of 5 · ${schema?.source === "server" ? "Insurer questionnaire" : "Used for live rating"}`} back />
+      <AppHeader title={stepTitle(current) ?? "Who is insured?"} subtitle={`Step 2 of 5 · ${schema?.source === "server" ? "Insurer questionnaire" : "Used for live rating"}`} back />
       {schemaLoading ? (
         <LoadingState label="Loading questions…" />
       ) : (
@@ -191,7 +199,24 @@ export default function Risk() {
           ) : current ? (
             <Card>
               {current.fields.map((f) => (
-                <FieldInput key={f.key} field={f} value={values[f.key]} error={errors[f.key] || undefined} onChange={(v) => setValue(f.key, v)} />
+                isFieldVisible(f, values) ? (
+                  <FieldInput
+                    key={f.key}
+                    field={withReferenceOptions(f, reference)}
+                    value={values[f.key]}
+                    values={values}
+                    error={(f.type === "vehicle_make" ? errors[f.key] || errors.model_code : errors[f.key]) || undefined}
+                    riskAssetId={riskAssetId}
+                    onChange={(v) => setValue(f.key, v)}
+                    setAny={setValue}
+                    lineCode={line}
+                    onVehicle={(sel) => {
+                      // Clear the previous vehicle's keys, then apply the new selection (codes + snapshot text).
+                      setValues((x) => ({ ...x, make_code: "", model_code: "", make: "", model: "", vehicle_review_id: "", ...(sel ? selectionToValues(sel) : {}) }));
+                      setErrors((x) => ({ ...x, make_code: "", model_code: "" }));
+                    }}
+                  />
+                ) : null
               ))}
             </Card>
           ) : null}
@@ -210,9 +235,49 @@ export default function Risk() {
   );
 }
 
-function FieldInput({ field, value, error, onChange }: { field: RiskField; value?: string; error?: string; onChange: (v: string) => void }) {
-  const label = field.required ? field.label : `${field.label} (optional)`;
+/** Localized options from the vehicle reference (EN/FR) for body type, fuel, usage, … */
+function withReferenceOptions(field: RiskField, reference: VehicleReference | null): RiskField {
+  const rows = field.reference && reference ? (reference as unknown as Record<string, { code: string; label: string }[]>)[field.reference] : undefined;
+  return rows?.length ? { ...field, options: rows.map((r) => ({ value: r.code, label: r.label })) } : field;
+}
+
+function selectionFromValues(values: Record<string, string>): VehicleSelection | null {
+  if (!values.make) return null;
+  return {
+    make_code: values.make_code || undefined,
+    make: values.make,
+    model_code: values.model_code || undefined,
+    model: values.model ?? "",
+    year: values.year || undefined,
+    manual: !values.make_code || !values.model_code,
+    review_id: values.vehicle_review_id || undefined,
+  };
+}
+
+function FieldInput({ field, value, values, error, riskAssetId, onChange, onVehicle, setAny, lineCode }: { field: RiskField; value?: string; values: Record<string, string>; error?: string; riskAssetId?: string | null; onChange: (v: string) => void; onVehicle: (s: VehicleSelection | null) => void; setAny?: (key: string, v: string) => void; lineCode?: string }) {
+  const { language } = useTranslation();
+  const text = language === "fr" && field.labelFr ? field.labelFr : field.label;
+  const label = field.required ? text : `${text} (${language === "fr" ? "facultatif" : "optional"})`;
   switch (field.type) {
+    // Institutional master data: searchable controlled lists and member/beneficiary builders.
+    case "select_master":
+    case "multi_select_master":
+      return field.master ? (
+        <MasterSelectField
+          label={text} required={field.required} domain={field.master.domain} list={field.master.list} value={value}
+          multiple={field.type === "multi_select_master"} parent={field.parentField ? values[field.parentField] : field.parentCode}
+          otherAllowed={field.otherAllowed} otherText={values[`${field.key}_other`]} error={error} lineCode={lineCode} fieldKey={field.key}
+          onChange={(v, other) => { onChange(v); if (other !== undefined) setAny?.(`${field.key}_other`, other); }}
+        />
+      ) : null;
+    case "repeater":
+      return <RepeaterField field={field} value={value} onChange={onChange} error={error} lineCode={lineCode} />;
+    case "file":
+      return <Text style={ps.meta}>{`${text} — ${language === "fr" ? "vous pourrez envoyer ce fichier après le devis." : "you can upload this file after the quote."}`}</Text>;
+    case "vehicle_make":
+      return <VehiclePicker value={selectionFromValues(values)} onChange={onVehicle} error={error} riskAssetId={riskAssetId} />;
+    case "vehicle_model":
+      return null; // chosen inside the make picker
     case "select":
       return <PickerField label={label} value={value} options={field.options ?? []} onChange={onChange} error={error} />;
     case "date": {

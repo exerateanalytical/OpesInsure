@@ -161,7 +161,9 @@ test("risk schema: server shape normalizes, local fallback validates and builds 
   const motor = localRiskSchema("motor");
   assert.deepEqual(motor.steps.map((s) => s.key), ["vehicle", "usage", "owner", "cover", "history"]);
   const required = motor.steps.flatMap((s) => s.fields.filter((f) => f.required).map((f) => f.key));
-  for (const k of ["registration_number", "fiscal_power", "usage_type", "zone"]) assert.ok(required.includes(k), k);
+  // usage_type (tariff fact) is derived from the 28-value vehicle_usage by buildFacts / the server.
+  for (const k of ["registration_number", "fiscal_power", "vehicle_usage", "zone"]) assert.ok(required.includes(k), k);
+  assert.equal(buildFacts(motor, { vehicle_usage: "PRIVATE_PERSONAL" }).usage_type, "PRIVATE");
   assert.ok(localRiskSchema("BUSINESS") && localRiskSchema("ACCIDENT"));
 
   const errors = validateStep(motor.steps[0], { registration_number: "", fiscal_power: "abc" });

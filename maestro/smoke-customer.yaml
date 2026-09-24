@@ -7,7 +7,7 @@ appId: com.opesware.opesinsure
 - assertVisible: "Sign in"
 - tapOn: "Choose a demo account"
 - tapOn: "Customer"
-- inputText: "246810"
+- inputText: "123456"
 - tapOn: "Verify"
 - assertVisible: "Protection, without the confusion."
 - tapOn: "Account"

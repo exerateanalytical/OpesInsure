@@ -13,7 +13,7 @@
     "notice": "All persons, organisations, identifiers and transactions in this dataset are fictional demonstration records."
   },
   "demo_auth": {
-    "fixed_otp": "246810",
+    "fixed_otp": "123456",
     "accounts": [
       {
         "id": "usr-customer",

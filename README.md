@@ -6,7 +6,7 @@ For Claude/backend implementation, read `docs/OPESINSURE_BACKEND_INTEGRATION_SEE
 
 ## Run the complete Cameroon demo
 
-Copy `.env.demo.example` to `.env`, start Expo, select **Choose a demo account**, and use OTP `246810`. Demo mode uses `src/data/demo/opesinsure-cameroon-demo.v1.json` through the in-app demo adapter; it never calls Laravel. Never enable demo mode in a production build.
+Copy `.env.demo.example` to `.env`, start Expo, select **Choose a demo account**, and use OTP `123456`. Demo mode uses `src/data/demo/opesinsure-cameroon-demo.v1.json` through the in-app demo adapter; it never calls Laravel. Never enable demo mode in a production build.
 
 ## What is included
 

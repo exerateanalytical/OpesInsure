@@ -1325,6 +1325,27 @@ export const CatalogueApi = {
     ),
 };
 
+/** Cameroon vehicle master data (public read, authenticated manual-entry review). */
+export const VehiclesApi = {
+  makes: (q: string, opts: { chinese?: boolean; segment?: string; limit?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (opts.chinese) params.set("chinese", "1");
+    if (opts.segment) params.set("segment", opts.segment);
+    params.set("limit", String(opts.limit ?? 30));
+    return api<unknown>(`/public/vehicles/makes?${params.toString()}`, { anonymous: true, envelope: true, timeoutMs: 8000 });
+  },
+  models: (makeCode: string, q = "") =>
+    api<unknown>(`/public/vehicles/makes/${encodeURIComponent(makeCode)}/models${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`, { anonymous: true, envelope: true, timeoutMs: 8000 }),
+  reference: () => api<unknown>("/public/vehicles/reference", { anonymous: true, envelope: true, timeoutMs: 8000 }),
+  submitReview: (payload: Record<string, string | number>) =>
+    api<{ id: string; status: string; make: string; model: string }>("/mobile/vehicles/master-review", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+};
+
 export type KycProfile = {
   status: string;
   legal_name: string;
@@ -1446,6 +1467,18 @@ export const AssetsApi = {
     api<RiskAsset>("/mobile/assets", {
       method: "POST",
       body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  /** POST /mobile/assets with the server contract {type, display_name, external_reference, facts}. */
+  createVehicle: (payload: { display_name: string; registration_number?: string; facts: Record<string, unknown> }) =>
+    api<RiskAsset>("/mobile/assets", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "VEHICLE",
+        display_name: payload.display_name,
+        external_reference: payload.registration_number || null,
+        facts: payload.facts,
+      }),
       idempotent: true,
     }),
   uploadDocument: (id: string, form: FormData) =>

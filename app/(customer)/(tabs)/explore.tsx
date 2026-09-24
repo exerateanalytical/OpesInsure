@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Building2, ChevronRight, Handshake, Scale } from "lucide-react-native";
+import { Building2, ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react-native";
 import { AppHeader, Screen, StatusChip } from "@/components/ui";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
@@ -33,12 +33,20 @@ export default function Explore() {
   const categories = CATEGORIES.filter(
     (c) => c.id !== "more" && matchesQuery(query, t(c.label), t(c.caption), c.id),
   );
+  // Official DGTCFM/MINFI register counts (29 insurers / 123 brokers when seeded).
+  const registerTotals = useMemo(() => {
+    const official = (providers.data ?? []).filter((p: Institution) => p.is_official_register);
+    return {
+      insurers: official.filter((p) => p.type === "insurer").length,
+      brokers: official.filter((p) => p.type === "broker").length,
+    };
+  }, [providers.data]);
   const shown = useMemo(
     () =>
       (providers.data ?? []).filter(
         (p: Institution) =>
           (filter === "all" || p.type === filter) &&
-          matchesQuery(query, p.name, p.city, p.code, ...(p.products ?? []).map((x) => `${x.name} ${x.line_code}`)),
+          matchesQuery(query, p.name, p.short_name, p.city, p.code, ...(p.products ?? []).map((x) => `${x.name} ${x.line_code}`)),
       ),
     [providers.data, filter, query],
   );
@@ -59,6 +67,23 @@ export default function Explore() {
         </View>
         <ChevronRight size={22} color={colors.white} />
       </Pressable>
+      {registerTotals.insurers > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("exploreRegisterEntry", { insurers: registerTotals.insurers, brokers: registerTotals.brokers })}. ${t("exploreRegisterEntryBody")}`}
+          onPress={() => router.push("/institutions/insurers")}
+          style={({ pressed }) => [styles.register, pressed && styles.pressed]}
+        >
+          <ShieldCheck size={24} color={colors.navy800} />
+          <View style={styles.flex}>
+            <Text style={styles.label}>
+              {t("exploreRegisterEntry", { insurers: registerTotals.insurers, brokers: registerTotals.brokers })}
+            </Text>
+            <Text style={styles.meta}>{t("exploreRegisterEntryBody")}</Text>
+          </View>
+          <ChevronRight size={20} color={colors.neutral500} />
+        </Pressable>
+      ) : null}
       <SearchBar
         value={query}
         onChangeText={setQuery}
@@ -168,6 +193,17 @@ const styles = StyleSheet.create({
     padding: space.x4,
     borderRadius: radius.feature,
     backgroundColor: colors.blue600,
+  },
+  register: {
+    minHeight: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.x3,
+    padding: space.x4,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.neutral200,
+    backgroundColor: colors.white,
   },
   ctaTitle: { ...type.cardTitle, color: colors.white },
   ctaBody: { ...type.meta, color: colors.blue50 },

@@ -29,9 +29,9 @@
     }
   },
   "step_up_scenarios": [
-    { "purpose": "PAYMENT_REFUND_REQUEST", "code": "246810", "result": "GRANTED" },
-    { "purpose": "COMMISSION_WITHDRAWAL", "code": "246810", "result": "GRANTED" },
-    { "purpose": "CLAIM_SETTLEMENT_DECISION", "code": "246810", "result": "GRANTED" }
+    { "purpose": "PAYMENT_REFUND_REQUEST", "code": "123456", "result": "GRANTED" },
+    { "purpose": "COMMISSION_WITHDRAWAL", "code": "123456", "result": "GRANTED" },
+    { "purpose": "CLAIM_SETTLEMENT_DECISION", "code": "123456", "result": "GRANTED" }
   ],
   "release_gates": [
     "production_https_configuration",

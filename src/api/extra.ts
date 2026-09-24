@@ -131,12 +131,38 @@ export type Institution = {
   products?: InstitutionProduct[];
   licence_number?: string | null;
   licence_expires_on?: string | null;
+  // Official DGTCFM/MINFI register fields (null for non-register rows).
+  canonical_id?: string | null;
+  legal_name?: string | null;
+  short_name?: string | null;
+  insurer_code?: string | null;
+  branch?: "IARD" | "LIFE" | null;
+  regulator_sequence?: number | null;
+  regulator_number?: number | null;
+  product_families?: string[];
+  product_families_status?: string | null;
+  is_official_register?: boolean;
+  is_demo?: boolean;
+  data_origin?: string | null;
+  source_authority?: string | null;
+  reference_year?: number | null;
+  regulatory_status?: string | null;
+  licensed?: boolean;
+};
+export type InsuranceClassRow = {
+  id: string;
+  code: string;
+  branch: "IARD" | "LIFE";
+  name: { en: string; fr: string };
+  sub_classes: { id: string; code: string; name: { en: string; fr: string } }[];
 };
 export const InstitutionsApi = {
   list: (type: "insurer" | "broker") =>
     api<Institution[]>(`/public/institutions?type=${type}`, { anonymous: true }),
   show: (id: string) =>
     api<Institution>(`/public/institutions/${id}`, { anonymous: true }),
+  classes: () =>
+    api<InsuranceClassRow[]>("/public/insurance-classes", { anonymous: true }),
 };
 
 /** Minor units → "12 345 FCFA". */

@@ -8,8 +8,11 @@ import { FlowRow } from "@/components/FlowPrimitives";
 import { ErrorCard, InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { Claim, ClaimsApi, Payment, PaymentsApi, PolicyApi, SupportContactsApi, WalletApi, WalletPolicy } from "@/api/client";
 import { InstitutionsApi } from "@/api/extra";
+import { RegulatoryApi } from "@/api/regulatory";
+import { policyHeaderLabels, RegulatoryTerm } from "@/lib/regulatoryTerms";
 import { humanize, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo, unwrapPage } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
+import { PolicyDocumentsSection } from "@/components/policies/PolicyDocumentsSection";
 import { colors } from "@/theme/tokens";
 
 function insuredLabel(p: WalletPolicy): string | null {
@@ -47,6 +50,17 @@ export function PolicyDetailView({ id }: { id: string }) {
   const [certBusy, setCertBusy] = useState(false);
   const [certMessage, setCertMessage] = useState<string | null>(null);
   const [contactBusy, setContactBusy] = useState(false);
+  const [terms, setTerms] = useState<RegulatoryTerm[] | null>(null);
+  // CIMA contract vocabulary (Police d'assurance, Souscripteur, Assuré, Prime totale); fallbacks until it loads.
+  useEffect(() => {
+    if (f.language !== "fr") return;
+    let live = true;
+    RegulatoryApi.terms("fr").then((t) => live && setTerms(t)).catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [f.language]);
+  const labels = policyHeaderLabels(f.language, terms);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -122,16 +136,16 @@ export function PolicyDetailView({ id }: { id: string }) {
       {error ? <ErrorCard error={error} fallback="Showing the last loaded details; refresh failed." onRetry={() => void load()} /> : null}
       <Card feature>
         <StatusChip label={info.label} tone={info.tone} />
-        <Text style={ps.meta}>{provider}</Text>
-        <Text style={ps.title}>{p.product_name ?? "Insurance policy"}</Text>
+        <Text style={ps.meta}>{labels.policy} · {provider}</Text>
+        <Text style={ps.title}>{p.product_name ?? labels.policy}</Text>
         {info.note ? <Text style={ps.body}>{info.note}</Text> : null}
         <Rule />
         <InfoRow label="Policy number" value={p.policy_number} />
         {p.certificate_number ? <InfoRow label="Certificate" value={p.certificate_number} /> : null}
         <InfoRow label="Cover" value={f.range(p.coverage_starts_at, p.coverage_ends_at)} />
-        <InfoRow label="Premium" value={premium === null ? "—" : f.xaf(premium)} />
+        <InfoRow label={labels.totalPremium} value={premium === null ? "—" : f.xaf(premium)} />
         {p.issued_at ? <InfoRow label="Issued" value={f.date(p.issued_at)} /> : null}
-        {insured ? <InfoRow label="Insured" value={insured} /> : null}
+        {insured ? <InfoRow label={labels.insured} value={insured} /> : null}
         {cover.excessMinor !== null ? <InfoRow label="Excess" value={f.xaf(cover.excessMinor)} /> : null}
       </Card>
 
@@ -173,6 +187,8 @@ export function PolicyDetailView({ id }: { id: string }) {
         })}
         {!(p.documents ?? []).length ? <Text style={ps.meta}>Policy documents appear here once issued.</Text> : null}
       </Card>
+
+      <PolicyDocumentsSection policyId={id} />
 
       {delivery ? (
         <Card>
