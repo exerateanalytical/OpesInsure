@@ -124,3 +124,12 @@ below was verified against the live server, not inferred.
 - OTP limiters: route `throttle:5,1` per IP plus `RateLimiter` keys `mobile-otp:phone:<sha256>`
   and `mobile-otp:ip:<sha256>` (5/hour). Clear with `RateLimiter::clear(...)` in tinker when
   re-running the audit scripts.
+
+## Update 2026-09-24 — audit remediation shipped
+
+- Plan and finding matrix: `docs/superpowers/plans/2026-09-24-mobile-audit-remediation.md`.
+- Backend deployed as release `r20260924-142023` (migrations: carrier_id on memberships, platform_settings + otp_deliveries). Queue worker restarted. `DEMO_PASSWORD=Demo@12345` added to shared `.env` (backup of previous `.env` in `/srv/opesinsure/backups/env-*.bak`).
+- Nightly `pg_dump` cron at 02:30 UTC via `/srv/opesinsure/backup.sh`, 14-day retention.
+- `node docs/audit/verify-live.mjs` on production: 75 passed, 1 failed — the failure is a probe of legacy `GET /claims` (403 for customers); the app uses `/mobile/claims`, which passes.
+- APK: EAS build `54f28e91` (1.2.0, versionCode 7), MD5 `8c29465f0ad7d4dd852af4352fb72a49`, served at `/download/android` as `application/vnd.android.package-archive`, checksum verified end to end. Previous APK kept at `/srv/opesinsure/backups/opesinsure-1.2.0-build6.apk`.
+- Still open: mail server (deploy user has no root; SMTP settings live in admin Platform settings, verification is lifted), ETECH/Twilio credentials (owner enters them in admin), `/.well-known/assetlinks.json` for app links, on-device pass (keyboard, 360px layout).
