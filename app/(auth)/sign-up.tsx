@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -20,23 +20,28 @@ import { AuthPrimaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
 import { TrustStrip } from "@/components/auth/TrustStrip";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
+import { Preferences } from "@/store/preferences";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
+import { useTranslation } from "@/i18n";
+import type { CopyKey } from "@/i18n/strings";
+import { isLockout, lockoutSeconds } from "@/lib/customerLogic";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authRadius, authSpace, authType } from "@/theme/tokens";
 import { AuthApi, hasTokens, type VerificationChannel } from "@/api/client";
 
 const TERMS_VERSION = "2026-01-01";
 
-const accountTypes = [
-  { key: "CUSTOMER", label: "Customer", icon: UsersRound },
-  { key: "INSURER", label: "Insurer", icon: Building2 },
-  { key: "BROKER", label: "Broker", icon: Handshake },
-  { key: "AGENT", label: "Agent", icon: UserRound },
+const accountTypes: { key: string; label: CopyKey; icon: typeof UsersRound }[] = [
+  { key: "CUSTOMER", label: "customer", icon: UsersRound },
+  { key: "INSURER", label: "insurer", icon: Building2 },
+  { key: "BROKER", label: "broker", icon: Handshake },
+  { key: "AGENT", label: "agent", icon: UserRound },
 ];
 
-const trustItems = [
-  { icon: ShieldCheck, label: "Licensed providers" },
-  { icon: Check, label: "Secure payments" },
-  { icon: Check, label: "Verified products" },
+const trustItems: { icon: typeof Check; label: CopyKey }[] = [
+  { icon: ShieldCheck, label: "welcomeLicensed" },
+  { icon: Check, label: "welcomeSecurePayments" },
+  { icon: Check, label: "welcomeVerifiedProducts" },
 ];
 
 export default function SignUp() {
@@ -51,6 +56,9 @@ export default function SignUp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const { t } = useTranslation();
+  const [locked, setLocked] = useState<number | null>(null);
+  const unlock = useCallback(() => setLocked(null), []);
 
   const hasEmail = /^\S+@\S+\.\S+$/.test(email.trim());
   const channelOptions: { key: VerificationChannel; label: string }[] = [
@@ -69,12 +77,12 @@ export default function SignUp() {
 
     const normalizedPhone = normalizeCameroonPhone(phone);
     const errors: Record<string, string> = {};
-    if (fullName.trim().length < 3) errors.fullName = "Enter your full name.";
-    if (!isCameroonMobile(normalizedPhone)) errors.phone = "Enter a valid Cameroon mobile number.";
-    if (email.trim() && !hasEmail) errors.email = "Enter a valid email address or leave it empty.";
-    if (password.length < 8) errors.password = "Use at least 8 characters.";
-    else if (password !== confirm) errors.confirm = "The passwords do not match.";
-    if (!agreed) errors.agreed = "Required to continue.";
+    if (fullName.trim().length < 3) errors.fullName = t("fullNameRequired");
+    if (!isCameroonMobile(normalizedPhone)) errors.phone = t("phoneInvalid");
+    if (email.trim() && !hasEmail) errors.email = t("emailInvalidOptional");
+    if (password.length < 8) errors.password = t("passwordMin");
+    else if (password !== confirm) errors.confirm = t("passwordMismatch");
+    if (!agreed) errors.agreed = t("requiredToContinue");
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -92,6 +100,8 @@ export default function SignUp() {
         terms_version: TERMS_VERSION,
         verification_channel: channel,
       });
+      // New customers get the short profile/KYC step on first landing.
+      await Preferences.setPendingOnboarding(true);
       // Verification lifted (server default): the account is active and the
       // response already signed us in.
       if (hasTokens(result)) {
@@ -122,6 +132,10 @@ export default function SignUp() {
         },
       });
     } catch (e) {
+      if (isLockout(e)) {
+        setLocked(lockoutSeconds(e));
+        return;
+      }
       if (e && typeof e === "object" && "fields" in e && e.fields) {
         const serverErrors: Record<string, string> = {};
         const fields = e.fields as Record<string, string[]>;
@@ -132,7 +146,7 @@ export default function SignUp() {
         if (fields.password?.[0]) serverErrors.password = fields.password[0];
         setFieldErrors(serverErrors);
       }
-      setError(e instanceof Error ? e.message : "Could not create your account.");
+      setError(e instanceof Error ? e.message : t("signUpFailed"));
     } finally {
       setBusy(false);
     }
@@ -146,35 +160,31 @@ export default function SignUp() {
       >
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <AuthHero
-            heading="Create your account"
-            subheading="Join the marketplace to compare, buy and manage insurance from trusted insurers, brokers and agents."
+            heading={t("signUpHeading")}
+            subheading={t("signUpSubheading")}
           />
           <AuthCard>
-            <AccountTypeSelector options={accountTypes} value={accountType} onChange={setAccountType} />
+            {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
+            <AccountTypeSelector options={accountTypes.map((a) => ({ ...a, label: t(a.label) }))} value={accountType} onChange={setAccountType} />
 
             {accountType !== "CUSTOMER" ? (
               <View style={styles.comingSoon}>
-                <Text style={styles.comingSoonTitle}>Partners join by invitation</Text>
+                <Text style={styles.comingSoonTitle}>{t("partnersByInvitation")}</Text>
                 <Text style={styles.comingSoonBody}>
-                  {accountType === "INSURER" ? "Insurance companies" : accountType === "BROKER" ? "Brokers" : "Agents"}{" "}
-                  are licensed and verified before they can sell on
-                  OpesInsure, so partner accounts are created by invitation
-                  from your institution or the OpesInsure partnerships team.
-                  If you have an invitation code, enter it to open your
-                  workspace.
+                  {t(accountType === "INSURER" ? "partnersInvitationInsurers" : accountType === "BROKER" ? "partnersInvitationBrokers" : "partnersInvitationAgents")}
                 </Text>
                 <Pressable accessibilityRole="button" onPress={() => router.push("/(auth)/invitation")}>
-                  <Text style={styles.comingSoonLink}>I have an invitation code</Text>
+                  <Text style={styles.comingSoonLink}>{t("haveInvitationCode")}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => setAccountType("CUSTOMER")}>
-                  <Text style={styles.comingSoonLink}>Continue as a customer instead</Text>
+                  <Text style={styles.comingSoonLink}>{t("continueAsCustomer")}</Text>
                 </Pressable>
               </View>
             ) : (
               <>
                 <AuthTextField
                   icon={UserRound}
-                  placeholder="Full name"
+                  placeholder={t("fullName")}
                   value={fullName}
                   onChangeText={setFullName}
                   autoCapitalize="words"
@@ -182,17 +192,17 @@ export default function SignUp() {
                 />
                 <AuthTextField
                   icon={Phone}
-                  placeholder="Phone number"
+                  placeholder={t("mobileNumber")}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
                   autoComplete="tel"
                   error={fieldErrors.phone}
                 />
-                <Text style={styles.hint}>Country code +237 · e.g. 6 70 00 00 00. You sign in with this number.</Text>
+                <Text style={styles.hint}>{t("signUpPhoneHint")}</Text>
                 <AuthTextField
                   icon={KeyRound}
-                  placeholder="Password (min 8 characters)"
+                  placeholder={t("passwordMinPlaceholder")}
                   value={password}
                   onChangeText={setPassword}
                   secureToggle
@@ -202,7 +212,7 @@ export default function SignUp() {
                 />
                 <AuthTextField
                   icon={KeyRound}
-                  placeholder="Confirm password"
+                  placeholder={t("confirmPassword")}
                   value={confirm}
                   onChangeText={setConfirm}
                   secureToggle
@@ -212,7 +222,7 @@ export default function SignUp() {
                 />
                 <AuthTextField
                   icon={Mail}
-                  placeholder="Email address (optional)"
+                  placeholder={t("emailOptional")}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -221,10 +231,10 @@ export default function SignUp() {
                   error={fieldErrors.email}
                 />
                 <Text style={styles.hint}>
-                  <Text style={styles.recommended}>Recommended</Text> · helps you recover your account and receive documents.
+                  <Text style={styles.recommended}>{t("recommended")}</Text> · {t("emailRecommendedHint")}
                 </Text>
                 <ChannelPicker
-                  label="Send my verification code by"
+                  label={t("sendVerificationBy")}
                   options={channelOptions}
                   value={channel}
                   onChange={setChannel}
@@ -239,13 +249,13 @@ export default function SignUp() {
                     {agreed ? <Check size={14} color={authColors.white} /> : null}
                   </View>
                   <Text style={styles.termsText}>
-                    I agree to the{" "}
+                    {t("agreeTo")}{" "}
                     <Text
                       accessibilityRole="link"
                       style={styles.termsLink}
                       onPress={() => router.push("/terms")}
                     >
-                      Terms & Privacy Policy
+                      {t("termsAndPrivacy")}
                     </Text>
                     .
                   </Text>
@@ -253,9 +263,10 @@ export default function SignUp() {
                 {fieldErrors.agreed ? <Text style={styles.error}>{fieldErrors.agreed}</Text> : null}
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <AuthPrimaryButton
-                  label={busy ? "Creating…" : "Create Account"}
+                  label={busy ? t("creating") : t("createAccount")}
                   icon={ArrowRight}
                   loading={busy}
+                  disabled={!!locked}
                   onPress={() => void submit()}
                 />
               </>
@@ -267,12 +278,12 @@ export default function SignUp() {
               onPress={() => router.replace("/(auth)/sign-in")}
             >
               <Text style={styles.signInText}>
-                Already have an account? <Text style={styles.signInLink}>Sign In</Text>
+                {t("alreadyHaveAccount")} <Text style={styles.signInLink}>{t("signIn")}</Text>
               </Text>
             </Pressable>
 
             <View style={styles.divider} />
-            <TrustStrip items={trustItems} />
+            <TrustStrip items={trustItems.map((i) => ({ ...i, label: t(i.label) }))} />
           </AuthCard>
           <AuthFooterBranding />
         </ScrollView>

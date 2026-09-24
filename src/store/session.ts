@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { AuthApi, SessionBootstrap, TokenVault, Workspace } from "@/api/client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Localization from "expo-localization";
+import { ApiError, AuthApi, SessionBootstrap, TokenVault, Workspace } from "@/api/client";
+import { CustomerApi } from "@/api/customer";
+import { Preferences } from "@/store/preferences";
 import { Language } from "@/i18n/strings";
 import { OfflineVault } from "@/offline/vault";
 
@@ -7,6 +11,9 @@ export type SessionStatus =
   "booting" | "anonymous" | "authenticating" | "authenticated" | "error";
 type SessionState = {
   status: SessionStatus;
+  /** True when the session was restored from the device cache while the
+   * server was unreachable (offline launch). */
+  offline: boolean;
   bootstrap: SessionBootstrap | null;
   activeWorkspace: Workspace | null;
   language: Language;
@@ -17,46 +24,116 @@ type SessionState = {
   refreshWorkspaces: (preferTenant?: string) => Promise<SessionBootstrap>;
   setLanguage: (language: Language) => void;
   signOut: () => Promise<void>;
+  signOutEverywhere: () => Promise<void>;
   invalidate: () => Promise<void>;
   clearError: () => void;
 };
 
-export const useSession = create<SessionState>((set, get) => ({
-  status: "booting",
+/** Last good bootstrap, so an offline cold start keeps the user signed in. */
+const CACHE_KEY = "opesinsure.session_cache";
+const cacheBootstrap = async (bootstrap: SessionBootstrap | null) => {
+  try {
+    if (bootstrap) await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(bootstrap));
+    else await AsyncStorage.removeItem(CACHE_KEY);
+  } catch {
+    // Cache is best effort.
+  }
+};
+const cachedBootstrap = async (): Promise<SessionBootstrap | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as SessionBootstrap) : null;
+    return parsed?.user && Array.isArray(parsed.workspaces) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Only a rejected credential ends the session; timeouts, DNS failures and
+ * 5xx answers leave the stored tokens alone. api() has already attempted a
+ * refresh-token rotation before it reports 401. */
+export const isCredentialFailure = (error: unknown) =>
+  error instanceof ApiError && (error.status === 401 || error.code === "SESSION_EXPIRED");
+
+const deviceLanguage = (): Language => {
+  try {
+    return Localization.getLocales()[0]?.languageCode === "fr" ? "fr" : "en";
+  } catch {
+    return "en";
+  }
+};
+
+const pickWorkspace = async (bootstrap: SessionBootstrap) => {
+  const tenant = await TokenVault.tenant();
+  let activeWorkspace =
+    bootstrap.workspaces.find((w) => w.tenant_id === tenant) ?? null;
+  if (!activeWorkspace && bootstrap.workspaces.length === 1) {
+    activeWorkspace = bootstrap.workspaces[0] ?? null;
+    if (activeWorkspace) await TokenVault.setTenant(activeWorkspace.tenant_id);
+  }
+  return activeWorkspace;
+};
+
+const anonymousState = {
+  status: "anonymous" as const,
+  offline: false,
   bootstrap: null,
   activeWorkspace: null,
-  language: "en",
+};
+
+export const useSession = create<SessionState>((set, get) => ({
+  status: "booting",
+  offline: false,
+  bootstrap: null,
+  activeWorkspace: null,
+  language: deviceLanguage(),
   error: null,
   async hydrate() {
     set({ status: "booting", error: null });
-    const token = await TokenVault.access();
-    if (!token) {
-      set({ status: "anonymous" });
+    const [token, refresh] = await Promise.all([TokenVault.access(), TokenVault.refresh()]);
+    if (!token && !refresh) {
+      set({ ...anonymousState });
       return;
     }
     try {
       const bootstrap = await AuthApi.session();
-      const tenant = await TokenVault.tenant();
-      let activeWorkspace =
-        bootstrap.workspaces.find((w) => w.tenant_id === tenant) ?? null;
-      if (!activeWorkspace && bootstrap.workspaces.length === 1) {
-        activeWorkspace = bootstrap.workspaces[0] ?? null;
-        if (activeWorkspace) await TokenVault.setTenant(activeWorkspace.tenant_id);
-      }
+      const activeWorkspace = await pickWorkspace(bootstrap);
+      await cacheBootstrap(bootstrap);
       set({
         status: "authenticated",
+        offline: false,
         bootstrap,
         activeWorkspace,
         language: bootstrap.user.locale,
         error: null,
       });
     } catch (error) {
-      await TokenVault.clear();
+      if (isCredentialFailure(error)) {
+        await TokenVault.clear();
+        await cacheBootstrap(null);
+        set({ ...anonymousState, error: "SESSION_EXPIRED" });
+        return;
+      }
+      // Network / timeout / server error: keep the tokens and restore the
+      // last known session so an offline launch stays signed in.
+      const cached = await cachedBootstrap();
+      if (cached) {
+        set({
+          status: "authenticated",
+          offline: true,
+          bootstrap: cached,
+          activeWorkspace: await pickWorkspace(cached),
+          language: cached.user.locale,
+          error: null,
+        });
+        return;
+      }
       set({
-        status: "anonymous",
+        status: "error",
+        offline: true,
         bootstrap: null,
         activeWorkspace: null,
-        error: error instanceof Error ? error.message : null,
+        error: error instanceof Error ? error.message : "NETWORK_UNAVAILABLE",
       });
     }
   },
@@ -66,8 +143,10 @@ export const useSession = create<SessionState>((set, get) => ({
         ? (bootstrap.workspaces[0] ?? null)
         : null;
     if (first) await TokenVault.setTenant(first.tenant_id);
+    await cacheBootstrap(bootstrap);
     set({
       status: "authenticated",
+      offline: false,
       bootstrap,
       activeWorkspace: first,
       language: bootstrap.user.locale,
@@ -95,7 +174,8 @@ export const useSession = create<SessionState>((set, get) => ({
       (bootstrap.workspaces.length === 1 ? bootstrap.workspaces[0] : null) ??
       null;
     if (next) await TokenVault.setTenant(next.tenant_id);
-    set({ bootstrap, activeWorkspace: next, status: "authenticated" });
+    await cacheBootstrap(bootstrap);
+    set({ bootstrap, activeWorkspace: next, status: "authenticated", offline: false });
     return bootstrap;
   },
   setLanguage: (language) => set({ language }),
@@ -104,22 +184,25 @@ export const useSession = create<SessionState>((set, get) => ({
       await AuthApi.logout();
     } finally {
       await OfflineVault.clearSensitiveData();
-      set({
-        status: "anonymous",
-        bootstrap: null,
-        activeWorkspace: null,
-        error: null,
-      });
+      await cacheBootstrap(null);
+      await Preferences.clearPersonal();
+      set({ ...anonymousState, error: null });
     }
+  },
+  /** POST /auth/mobile/logout-all, then the normal local sign-out. Throws
+   * (without signing out) when the server could not revoke the sessions. */
+  async signOutEverywhere() {
+    await CustomerApi.logoutAll();
+    await TokenVault.clear();
+    await OfflineVault.clearSensitiveData();
+    await cacheBootstrap(null);
+    await Preferences.clearPersonal();
+    set({ ...anonymousState, error: null });
   },
   async invalidate() {
     await TokenVault.clear();
-    set({
-      status: "anonymous",
-      bootstrap: null,
-      activeWorkspace: null,
-      error: "SESSION_EXPIRED",
-    });
+    await cacheBootstrap(null);
+    set({ ...anonymousState, error: "SESSION_EXPIRED" });
   },
   clearError: () => set({ error: null }),
 }));

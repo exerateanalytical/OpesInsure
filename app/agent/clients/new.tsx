@@ -1,14 +1,20 @@
 import React, { useState } from "react";
 import { router } from "expo-router";
-import { Alert, Text } from "react-native";
+import { Alert, StyleSheet, Text } from "react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
-import { AgentApi, ApiError } from "@/api/client";
+import { ConsentCheckbox, errorMessage, Notice } from "@/components/portal/Workspace";
+import { ApiError } from "@/api/client";
+import { AgentWorkspaceApi } from "@/api/partner";
 import { OfflineVault } from "@/offline/vault";
+import { colors, type } from "@/theme/tokens";
+
 export default function NewAgentClient() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+237");
   const [city, setCity] = useState("");
   const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
     <Screen>
       <AppHeader
@@ -25,18 +31,25 @@ export default function NewAgentClient() {
           onChangeText={setPhone}
         />
         <TextField label="City" value={city} onChangeText={setCity} />
-        <Button
-          label={consent ? "Consent recorded" : "Record client consent"}
-          variant={consent ? "secondary" : "primary"}
-          onPress={() => setConsent(true)}
+        <Text style={s.body}>
+          Read the privacy notice to the client and ask for their agreement.
+          The consent record and its reference are issued by the server — you
+          never type or invent one.
+        </Text>
+        <ConsentCheckbox
+          checked={consent}
+          onChange={setConsent}
+          label="The client agreed to OpesInsure processing their data to arrange insurance."
         />
-        <Text>
-          The backend must detect existing customers and apply the permanent
-          origin-lock rules. The agent cannot overwrite another partner’s
+        <Text style={s.body}>
+          The backend detects existing customers and applies the permanent
+          origin-lock rules. An agent cannot overwrite another partner’s
           ownership.
         </Text>
+        <Notice text={error} tone="error" />
         <Button
           label="Create protected client"
+          loading={busy}
           disabled={
             !consent ||
             name.trim().length < 3 ||
@@ -45,21 +58,23 @@ export default function NewAgentClient() {
           }
           onPress={async () => {
             const payload = {
-              full_name: name,
-              phone_e164: phone,
-              city,
-              consent_reference: `CONSENT-${Date.now()}`,
+              full_name: name.trim(),
+              phone_e164: phone.trim(),
+              city: city.trim(),
+              consent_confirmed: true as const,
             };
+            setBusy(true);
+            setError(null);
             try {
-              const c = await AgentApi.createClient(payload);
+              const c = await AgentWorkspaceApi.createClient(payload);
               router.replace(`/agent/clients/${c.id}`);
-            } catch (error) {
-              if (error instanceof ApiError && error.status === 0) {
+            } catch (e) {
+              if (e instanceof ApiError && e.status === 0) {
                 await OfflineVault.enqueue({
                   kind: "MUTATION",
                   resource: "Consented agent client registration",
                   method: "POST",
-                  path: "/mobile/agent/clients",
+                  path: "/mobile/partner/agent/clients",
                   payload,
                 });
                 Alert.alert(
@@ -72,7 +87,9 @@ export default function NewAgentClient() {
                 );
                 return;
               }
-              throw error;
+              setError(errorMessage(e));
+            } finally {
+              setBusy(false);
             }
           }}
         />
@@ -80,3 +97,7 @@ export default function NewAgentClient() {
     </Screen>
   );
 }
+
+const s = StyleSheet.create({
+  body: { ...type.body, color: colors.neutral600 },
+});

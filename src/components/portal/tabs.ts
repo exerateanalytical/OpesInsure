@@ -1,33 +1,42 @@
 import {
   CircleDollarSign,
-  CircleUserRound,
   ClipboardCheck,
   ContactRound,
-  FileCheck2,
+  FileText,
+  HandCoins,
   House,
-  ReceiptText,
   ShieldAlert,
+  UserPlus,
+  Wallet,
 } from "lucide-react-native";
 import type { PortalTab } from "./PortalShell";
 
+/*
+ * Max five tabs per portal. Everything else on the owner's menu lives on
+ * the portal's dashboard grid (see app/{agent,broker,carrier}/index.tsx);
+ * Account and Notifications stay in the PortalHeader icons.
+ */
+
 export const agentTabs: PortalTab[] = [
   { label: "Home", icon: House, href: "/agent" },
-  { label: "Clients", icon: ContactRound, href: "/agent/clients" },
-  { label: "Wallet", icon: CircleDollarSign, href: "/agent/wallet" },
-  { label: "Account", icon: CircleUserRound, href: "/agent/account" },
+  { label: "Leads", icon: UserPlus, href: "/agent/leads" },
+  { label: "Customers", icon: ContactRound, href: "/agent/clients" },
+  { label: "Policies", icon: FileText, href: "/agent/policies" },
+  { label: "Earnings", icon: CircleDollarSign, href: "/agent/wallet" },
 ];
 
 export const brokerTabs: PortalTab[] = [
   { label: "Home", icon: House, href: "/broker" },
-  { label: "Clients", icon: ContactRound, href: "/broker/clients" },
-  { label: "Receivables", icon: ReceiptText, href: "/broker/receivables" },
-  { label: "Account", icon: CircleUserRound, href: "/broker/account" },
+  { label: "Customers", icon: ContactRound, href: "/broker/clients" },
+  { label: "Policies", icon: FileText, href: "/broker/policies" },
+  { label: "Claims", icon: ShieldAlert, href: "/broker/claims" },
+  { label: "Earnings", icon: Wallet, href: "/broker/commissions" },
 ];
 
 export const carrierTabs: PortalTab[] = [
   { label: "Home", icon: House, href: "/carrier" },
-  { label: "Referrals", icon: ClipboardCheck, href: "/carrier/referrals" },
-  { label: "Issuance", icon: FileCheck2, href: "/carrier/issuance" },
+  { label: "Underwriting", icon: ClipboardCheck, href: "/carrier/referrals" },
   { label: "Claims", icon: ShieldAlert, href: "/carrier/claims" },
-  { label: "Account", icon: CircleUserRound, href: "/carrier/account" },
+  { label: "Policies", icon: FileText, href: "/carrier/policies" },
+  { label: "Payments", icon: HandCoins, href: "/carrier/payments" },
 ];

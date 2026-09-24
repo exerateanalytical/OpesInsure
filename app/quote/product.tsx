@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  Briefcase,
   Car,
   ChevronRight,
+  HardHat,
   HeartPulse,
   Home,
   Plane,
@@ -19,6 +21,8 @@ const products = [
   ["travel", "Travel insurance", "Medical assistance and trip protection", Plane],
   ["home", "Home insurance", "Building, contents and liability", Home],
   ["life", "Life protection", "Family protection, savings or education", ShieldPlus],
+  ["business", "Business insurance", "Premises, stock and liability for your company", Briefcase],
+  ["accident", "Personal accident", "Lump sum for accidental injury or disability", HardHat],
 ] as const;
 type ProductId = (typeof products)[number][0];
 const isProduct = (v: unknown): v is ProductId =>

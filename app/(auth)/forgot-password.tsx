@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { KeyRound, Phone, ShieldCheck } from "lucide-react-native";
@@ -8,6 +8,9 @@ import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { AuthApi, type OtpChannel } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
+import { useTranslation } from "@/i18n";
+import { isLockout, lockoutSeconds } from "@/lib/customerLogic";
 
 const channels: { key: OtpChannel; label: string }[] = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -28,10 +31,17 @@ export default function ForgotPassword() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const normalized = normalizeCameroonPhone(phone);
+  const { t } = useTranslation();
+  const [locked, setLocked] = useState<number | null>(null);
+  const unlock = useCallback(() => setLocked(null), []);
+  const fail = (e: unknown, fallback: string) => {
+    if (isLockout(e)) setLocked(lockoutSeconds(e));
+    else setError(e instanceof Error ? e.message : fallback);
+  };
 
   const request = async () => {
     if (!isCameroonMobile(normalized)) {
-      setError("Enter a valid Cameroon mobile number.");
+      setError(t("phoneInvalid"));
       return;
     }
     setBusy(true);
@@ -42,24 +52,24 @@ export default function ForgotPassword() {
       setCode("");
       setStep("reset");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The code could not be sent.");
+      fail(e, t("otpRequestFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   const reset = async () => {
-    if (!challengeId) return setError("Request a new code first.");
-    if (code.length !== 6) return setError("Enter the 6-digit code.");
-    if (password.length < 8) return setError("Use at least 8 characters.");
-    if (password !== confirm) return setError("The passwords do not match.");
+    if (!challengeId) return setError(t("resetRequestFirst"));
+    if (code.length !== 6) return setError(t("resetEnterCode"));
+    if (password.length < 8) return setError(t("passwordMin"));
+    if (password !== confirm) return setError(t("passwordMismatch"));
     setBusy(true);
     setError(undefined);
     try {
       const auth = await AuthApi.resetPassword(normalized, challengeId, code, password);
       await finishSignIn(auth);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The password could not be reset.");
+      fail(e, t("resetFailed"));
     } finally {
       setBusy(false);
     }
@@ -67,27 +77,28 @@ export default function ForgotPassword() {
 
   return (
     <Screen>
-      <AppHeader title="Reset your password" subtitle="We will send a code to your phone" back />
+      <AppHeader title={t("resetTitle")} subtitle={t("resetSubtitle")} back />
+      {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
       <Card feature>
         {step === "request" ? (
           <>
             <AuthTextField
               icon={Phone}
-              placeholder="Mobile number"
+              placeholder={t("mobileNumber")}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
               error={error}
             />
-            <ChannelPicker label="Send my code by" options={channels} value={channel} onChange={setChannel} />
-            <AuthPrimaryButton label="Send code" loading={busy} onPress={() => void request()} />
+            <ChannelPicker label={t("sendCodeBy")} options={channels} value={channel} onChange={setChannel} />
+            <AuthPrimaryButton label={t("sendCode")} loading={busy} disabled={!!locked} onPress={() => void request()} />
           </>
         ) : (
           <>
-            <Text style={styles.body}>Enter the code sent to {normalized} and choose a new password.</Text>
+            <Text style={styles.body}>{t("resetEnterBody", { phone: normalized })}</Text>
             <AuthTextField
               icon={ShieldCheck}
-              placeholder="6-digit code"
+              placeholder={t("sixDigitCode")}
               value={code}
               onChangeText={(v) => setCode(v.replace(/\D/g, ""))}
               keyboardType="number-pad"
@@ -97,7 +108,7 @@ export default function ForgotPassword() {
             />
             <AuthTextField
               icon={KeyRound}
-              placeholder="New password (min 8 characters)"
+              placeholder={t("newPassword")}
               value={password}
               onChangeText={setPassword}
               secureToggle
@@ -106,7 +117,7 @@ export default function ForgotPassword() {
             />
             <AuthTextField
               icon={KeyRound}
-              placeholder="Confirm new password"
+              placeholder={t("confirmNewPassword")}
               value={confirm}
               onChangeText={setConfirm}
               secureToggle
@@ -114,8 +125,8 @@ export default function ForgotPassword() {
               autoComplete="new-password"
               error={error}
             />
-            <AuthPrimaryButton label="Save and sign in" loading={busy} onPress={() => void reset()} />
-            <AuthSecondaryButton label="Send a new code" disabled={busy} onPress={() => void request()} />
+            <AuthPrimaryButton label={t("saveAndSignIn")} loading={busy} disabled={!!locked} onPress={() => void reset()} />
+            <AuthSecondaryButton label={t("sendNewCode")} disabled={busy || !!locked} onPress={() => void request()} />
           </>
         )}
       </Card>

@@ -3,10 +3,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { DisclosureApi } from "@/api/client";
+import { useInsurance } from "@/store/insurance";
 export default function Terms() {
-  const { proposalId = "" } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     proposalId?: string;
   }>();
+  const storeProposalId = useInsurance((s) => s.proposal?.id);
+  const proposalId = params.proposalId ?? storeProposalId ?? "";
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +37,12 @@ export default function Terms() {
         disabled={!accepted || !proposalId}
         loading={busy}
         onPress={async () => {
+          if (busy) return;
           setBusy(true);
           setError(null);
           try {
             await DisclosureApi.acceptTerms(proposalId, true);
-            router.push("/checkout");
+            router.push({ pathname: "/checkout", params: { proposalId } });
           } catch {
             setError("Your acceptance could not be recorded. Try again.");
           } finally {

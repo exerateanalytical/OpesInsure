@@ -1,12 +1,17 @@
 import React from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
-import { router } from "expo-router";
 import {
+  CircleUserRound,
   ClipboardCheck,
   FileCheck2,
+  FileSignature,
   FileSpreadsheet,
+  FileText,
   HandCoins,
+  Handshake,
+  Landmark,
+  Package,
   ShieldAlert,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
@@ -14,7 +19,7 @@ import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { useColumns } from "@/components/responsive";
-import { FlowRow } from "@/components/FlowPrimitives";
+import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { CarrierApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
 export default function CarrierHome() {
@@ -46,38 +51,21 @@ export default function CarrierHome() {
           </View>
         )}
       </StatePanel>
-      <Card>
-        <FlowRow
-          icon={ClipboardCheck}
-          title="Underwriting referrals"
-          subtitle="Review risks outside automatic authority"
-          onPress={() => router.push("/carrier/referrals")}
-        />
-        <FlowRow
-          icon={FileCheck2}
-          title="Issuance queue"
-          subtitle="Paid proposals awaiting policy issuance"
-          onPress={() => router.push("/carrier/issuance")}
-        />
-        <FlowRow
-          icon={ShieldAlert}
-          title="Claims queue"
-          subtitle="Evidence and decision work"
-          onPress={() => router.push("/carrier/claims")}
-        />
-        <FlowRow
-          icon={HandCoins}
-          title="Settlements"
-          subtitle="Reconciled premium statements"
-          onPress={() => router.push("/carrier/settlements")}
-        />
-        <FlowRow
-          icon={FileSpreadsheet}
-          title="Bordereaux"
-          subtitle="Premium and commission bordereaux from brokers"
-          onPress={() => router.push("/carrier/bordereaux")}
-        />
-      </Card>
+      <WorkspaceMenu
+        items={[
+          { label: "Products", subtitle: "Products and tariffs", icon: Package, href: "/carrier/products" },
+          { label: "Quotes & proposals", subtitle: "Proposals for your products", icon: FileSignature, href: "/carrier/proposals" },
+          { label: "Underwriting", subtitle: "Referrals to decide", icon: ClipboardCheck, href: "/carrier/referrals" },
+          { label: "Issuance", subtitle: "Approve or reject issuance", icon: FileCheck2, href: "/carrier/issuance" },
+          { label: "Policies", subtitle: "Your policies in force", icon: FileText, href: "/carrier/policies" },
+          { label: "Claims", subtitle: "Acknowledge and decide", icon: ShieldAlert, href: "/carrier/claims" },
+          { label: "Payments", subtitle: "Premiums and reconciliation", icon: HandCoins, href: "/carrier/payments" },
+          { label: "Distribution partners", subtitle: "Brokers and agents selling", icon: Handshake, href: "/carrier/partners" },
+          { label: "Settlements", subtitle: "Premium settlements", icon: Landmark, href: "/carrier/settlements" },
+          { label: "Bordereaux", subtitle: "Broker bordereaux", icon: FileSpreadsheet, href: "/carrier/bordereaux" },
+          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/carrier/account" },
+        ]}
+      />
     </PortalScreen>
   );
 }

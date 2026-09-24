@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -21,13 +21,17 @@ import { TrustStrip } from "@/components/auth/TrustStrip";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authSpace, authType } from "@/theme/tokens";
 import { AuthApi, type AuthTokens, type DemoAccount, type OtpChannel } from "@/api/client";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
+import { useTranslation } from "@/i18n";
+import type { CopyKey } from "@/i18n/strings";
+import { isLockout, lockoutSeconds } from "@/lib/customerLogic";
 
 const toInvitation = () => router.push("/(auth)/invitation");
-const audiences = [
-  { icon: UsersRound, label: "Individuals & Families" },
-  { icon: Building2, label: "Businesses & Organizations" },
-  { icon: Handshake, label: "Brokers & Agents", onPress: toInvitation },
-  { icon: ShieldCheck, label: "Insurance Companies", onPress: toInvitation },
+const audiences: { icon: typeof UsersRound; label: CopyKey; onPress?: () => void }[] = [
+  { icon: UsersRound, label: "audienceIndividuals" },
+  { icon: Building2, label: "audienceBusinesses" },
+  { icon: Handshake, label: "audienceIntermediaries", onPress: toInvitation },
+  { icon: ShieldCheck, label: "audienceInsurers", onPress: toInvitation },
 ];
 const otpChannels: { key: OtpChannel; label: string }[] = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -45,6 +49,10 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [demo, setDemo] = useState<{ otp: string; accounts: DemoAccount[] } | null>(null);
+  const { t } = useTranslation();
+  // Server lockout (429 / 423): a dedicated countdown state, not a red line.
+  const [locked, setLocked] = useState<number | null>(null);
+  const unlock = useCallback(() => setLocked(null), []);
 
   // Demo phones come from the real server (GET /public/demo-accounts), which
   // only answers while its demo mode is on; everywhere else this is null and
@@ -80,7 +88,8 @@ export default function SignIn() {
       }
       await finishSignIn(auth, invite);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Demo account is unavailable.");
+      if (isLockout(e)) setLocked(lockoutSeconds(e));
+      else setError(e instanceof Error ? e.message : t("demoUnavailable"));
     } finally {
       setBusy(false);
       setDemoAccountId(null);
@@ -90,11 +99,11 @@ export default function SignIn() {
   const submit = async () => {
     const normalized = normalizeCameroonPhone(phone);
     if (!isCameroonMobile(normalized)) {
-      setError("Enter a valid Cameroon mobile number.");
+      setError(t("phoneInvalid"));
       return;
     }
     if (mode === "password" && !password) {
-      setError("Enter your password.");
+      setError(t("passwordRequired"));
       return;
     }
     setBusy(true);
@@ -117,12 +126,16 @@ export default function SignIn() {
         },
       });
     } catch (e) {
+      if (isLockout(e)) {
+        setLocked(lockoutSeconds(e));
+        return;
+      }
       setError(
         e instanceof Error
           ? e.message
           : mode === "password"
-            ? "Unable to sign in."
-            : "Unable to request a security code.",
+            ? t("signInFailed")
+            : t("otpRequestFailed"),
       );
     } finally {
       setBusy(false);
@@ -136,25 +149,26 @@ export default function SignIn() {
       >
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <AuthHero
-            heading="Welcome back"
-            subheading="Compare, buy and manage insurance from trusted insurers, brokers and agents."
+            heading={t("welcomeBack")}
+            subheading={t("signInSubheading")}
           />
           <AuthCard>
+            {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
             <AuthTextField
               icon={Phone}
-              placeholder="Mobile number"
+              placeholder={t("mobileNumber")}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
               autoComplete="tel"
               error={mode === "otp" ? error : undefined}
             />
-            <Text style={styles.hint}>Country code +237 · e.g. 6 70 00 00 00</Text>
+            <Text style={styles.hint}>{t("phoneHint")}</Text>
             {mode === "password" ? (
               <>
                 <AuthTextField
                   icon={KeyRound}
-                  placeholder="Password"
+                  placeholder={t("password")}
                   value={password}
                   onChangeText={setPassword}
                   secureToggle
@@ -172,12 +186,12 @@ export default function SignIn() {
                   }
                   style={styles.forgotRow}
                 >
-                  <Text style={styles.link}>Forgot password?</Text>
+                  <Text style={styles.link}>{t("forgotPassword")}</Text>
                 </Pressable>
               </>
             ) : (
               <ChannelPicker
-                label="Send my code by"
+                label={t("sendCodeBy")}
                 options={otpChannels}
                 value={channel}
                 onChange={setChannel}
@@ -186,11 +200,12 @@ export default function SignIn() {
             <AuthPrimaryButton
               label={
                 busy
-                  ? mode === "password" ? "Signing in…" : "Sending…"
-                  : mode === "password" ? "Sign In" : "Send code"
+                  ? mode === "password" ? t("signingIn") : t("sending")
+                  : mode === "password" ? t("signIn") : t("sendCode")
               }
               icon={ArrowRight}
               loading={busy}
+              disabled={!!locked}
               onPress={() => void submit()}
             />
             <Pressable
@@ -202,14 +217,14 @@ export default function SignIn() {
               style={styles.linkRow}
             >
               <Text style={styles.link}>
-                {mode === "password" ? "Use a one-time code instead" : "Use my password instead"}
+                {mode === "password" ? t("useOtpInstead") : t("usePasswordInstead")}
               </Text>
             </Pressable>
-            <AuthSecondaryButton label="Create Account" onPress={() => router.push("/(auth)/sign-up")} />
+            <AuthSecondaryButton label={t("createAccount")} onPress={() => router.push("/(auth)/sign-up")} />
             <View style={styles.trustRow}>
               <LockKeyhole size={16} color={authColors.slate500} />
               <Text style={styles.trustText}>
-                Protected with encrypted authentication and role-based access.
+                {t("authTrust")}
               </Text>
             </View>
             <Pressable
@@ -217,40 +232,40 @@ export default function SignIn() {
               onPress={() => router.push("/institutions/insurers")}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>Browse insurers without signing in</Text>
+              <Text style={styles.link}>{t("browseInsurers")}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/institutions/brokers")}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>Browse brokers</Text>
+              <Text style={styles.link}>{t("browseBrokers")}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/verify")}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>Verify a certificate</Text>
+              <Text style={styles.link}>{t("verifyCertificate")}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={toInvitation}
               style={styles.linkRow}
             >
-              <Text style={styles.link}>Insurer, broker or agent? Join by invitation</Text>
+              <Text style={styles.link}>{t("partnerJoinInvitation")}</Text>
             </Pressable>
 
             <View style={styles.divider} />
-            <Text style={styles.audienceCaption}>For customers, insurers, brokers and agents.</Text>
-            <TrustStrip items={audiences} />
+            <Text style={styles.audienceCaption}>{t("audienceCaption")}</Text>
+            <TrustStrip items={audiences.map((a) => ({ ...a, label: t(a.label) }))} />
           </AuthCard>
 
           {demo && demo.accounts.length > 0 ? (
             <View style={styles.demoCard}>
-              <Text style={styles.demoTitle}>Demo accounts</Text>
+              <Text style={styles.demoTitle}>{t("demoAccounts")}</Text>
               <Text style={styles.demoHint}>
-                Tap an account to sign in against the live server (code {demo.otp} where no password is listed), or long-press to prefill it above.
+                {t("demoHint", { otp: demo.otp })}
               </Text>
               {demo.accounts.map((account) => (
                 <Pressable
@@ -272,7 +287,7 @@ export default function SignIn() {
                     <Text style={styles.demoPhone}>{account.phone_e164}</Text>
                   </View>
                   {demoAccountId === account.phone_e164 ? (
-                    <Text style={styles.demoBusy}>Signing in…</Text>
+                    <Text style={styles.demoBusy}>{t("signingIn")}</Text>
                   ) : (
                     <ChevronRight size={20} color={authColors.slate500} />
                   )}

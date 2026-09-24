@@ -3,6 +3,8 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { OfflineOperation } from "@/offline/types";
 import { environmentConfig } from "@/config/environment";
+import { PageResult, unwrapPage } from "@/lib/purchase";
+export type { PageResult } from "@/lib/purchase";
 
 const configuredUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const API_URL = configuredUrl ?? (__DEV__ ? "http://10.0.2.2:8000/api/v1" : "");
@@ -35,6 +37,12 @@ type Options = RequestInit & {
   anonymous?: boolean;
   retryAuth?: boolean;
   stepUpPurpose?: string;
+  /** Reuse a caller-owned key (e.g. one per payment attempt). */
+  idempotencyKey?: string;
+  /** Return the whole JSON body instead of `data` (for list meta). */
+  envelope?: boolean;
+  /** Extra same-key attempts after a network/timeout failure (default 1). */
+  networkRetries?: number;
 };
 let refreshPromise: Promise<boolean> | null = null;
 const sessionExpiredListeners = new Set<() => void>();
@@ -162,7 +170,42 @@ async function rotate() {
   })();
   return refreshPromise;
 }
+/** Transient failures worth one automatic, same-key retry. */
+const RETRYABLE_STATUS = new Set([0, 408, 502, 504]);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * One Idempotency-Key per user operation: it is resolved ONCE here (or
+ * supplied by the caller via `idempotencyKey`) and reused verbatim for the
+ * automatic transient-failure retry and for the retry after a 401 token
+ * rotation. Previously each attempt minted a fresh key, so a timeout
+ * followed by a retry could create a duplicate payment or claim.
+ */
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const idempotencyKey =
+    options.idempotencyKey ??
+    (options.idempotent ? Crypto.randomUUID() : undefined);
+  const resolved: Options = { ...options, idempotencyKey };
+  // Retrying a write is only safe when the server can de-duplicate it.
+  const canRetry = method === "GET" || !!idempotencyKey;
+  const attempts = canRetry ? 1 + (options.networkRetries ?? 1) : 1;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await attemptRequest<T>(path, resolved);
+    } catch (error) {
+      lastError = error;
+      const retryable =
+        error instanceof ApiError && RETRYABLE_STATUS.has(error.status);
+      if (!retryable || attempt === attempts - 1) throw error;
+      await sleep(600 * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
+async function attemptRequest<T>(path: string, options: Options): Promise<T> {
   if (!API_URL)
     throw new ApiConfigurationError(
       "EXPO_PUBLIC_API_BASE_URL is required for production builds.",
@@ -188,16 +231,25 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       );
     const multipart =
       typeof FormData !== "undefined" && options.body instanceof FormData;
+    const {
+      idempotent: _idempotent,
+      idempotencyKey,
+      envelope: _envelope,
+      networkRetries: _networkRetries,
+      timeoutMs: _timeoutMs,
+      anonymous: _anonymous,
+      retryAuth: _retryAuth,
+      stepUpPurpose: _stepUpPurpose,
+      ...init
+    } = options;
     const response = await fetch(`${API_URL}${path}`, {
-      ...options,
+      ...init,
       signal: controller.signal,
       headers: {
         Accept: "application/json",
         ...(!multipart ? { "Content-Type": "application/json" } : {}),
         "X-Request-ID": Crypto.randomUUID(),
-        ...(options.idempotent
-          ? { "Idempotency-Key": Crypto.randomUUID() }
-          : {}),
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
         ...(!options.anonymous && token
           ? { Authorization: `Bearer ${token}` }
           : {}),
@@ -208,7 +260,8 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     });
     if (response.status === 401 && !options.anonymous) {
       if ((options.retryAuth ?? true) && (await rotate()))
-        return api<T>(path, { ...options, retryAuth: false });
+        // Same options object -> same Idempotency-Key on the replay.
+        return attemptRequest<T>(path, { ...options, retryAuth: false });
       await TokenVault.clear();
       sessionExpiredListeners.forEach((listener) => listener());
       throw new ApiError(
@@ -219,7 +272,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw toError(response.status, payload, response);
-    return (payload as Envelope<T>).data;
+    return (options.envelope ? payload : (payload as Envelope<T>).data) as T;
   } catch (error) {
     if (error instanceof ApiError || error instanceof ApiConfigurationError)
       throw error;
@@ -237,6 +290,15 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** GET a list endpoint and normalize every pagination shape it has used. */
+export async function apiPage<T>(path: string, page = 1): Promise<PageResult<T>> {
+  const sep = path.includes("?") ? "&" : "?";
+  const payload = await api<unknown>(`${path}${sep}page=${page}`, {
+    envelope: true,
+  });
+  return unwrapPage<T>(payload);
 }
 
 export type DeviceSession = {
@@ -550,8 +612,9 @@ export type QuoteOffer = {
   valid_until: string;
   coverage_snapshot: Record<string, unknown>;
   ranking_reasons: string[];
-  carrier?: { party?: { display_name?: string } };
-  product?: { name?: string };
+  carrier?: { id?: string; party?: { display_name?: string } } | null;
+  product?: { id?: string; name?: string; line_code?: string } | null;
+  decline_reason_code?: string | null;
 };
 export type Quote = {
   id: string;
@@ -562,6 +625,8 @@ export type Quote = {
   risk_facts: Record<string, unknown>;
   expires_at: string;
   version: number;
+  risk_asset_id?: string | null;
+  referral_reason?: string | null;
 };
 export type QuoteResult = { quote: Quote; offers: QuoteOffer[] };
 export type Proposal = {
@@ -574,8 +639,45 @@ export type Proposal = {
     fee_minor: number;
     total_minor: number;
     currency: "XAF";
+    offer_id?: string;
+    coverage_snapshot?: Record<string, unknown>;
+    coverage_starts_at?: string;
+    coverage_ends_at?: string;
   };
   disclosure_schema?: { questions?: unknown[] };
+  quote_offer_id?: string;
+  submitted_at?: string | null;
+  decided_at?: string | null;
+  created_at?: string;
+  offer?: (QuoteOffer & { quote?: Quote }) | null;
+  documents?: ProposalDocumentLink[];
+  /** Server-listed requirements (when exposed). */
+  required_documents?: ProposalRequirement[];
+  underwriting_case?: {
+    status?: string;
+    decisions?: {
+      decision: string;
+      reason_code?: string;
+      notes?: string;
+      decided_at?: string;
+    }[];
+  } | null;
+  payments?: Payment[];
+  /** Counter-offer terms, when the insurer revised the premium. */
+  counteroffer?: { total_minor?: number; premium_minor?: number; notes?: string } | null;
+};
+export type ProposalRequirement = {
+  code: string;
+  label?: string;
+  name?: unknown;
+  mandatory?: boolean;
+};
+export type ProposalDocumentLink = {
+  id: string;
+  document_id: string;
+  requirement_code: string;
+  status: string;
+  review_notes?: string | null;
 };
 export type Payment = {
   id: string;
@@ -587,6 +689,10 @@ export type Payment = {
   status: string;
   expires_at: string;
   attempts?: unknown[];
+  created_at?: string;
+  updated_at?: string;
+  provider_reference?: string | null;
+  policy_id?: string | null;
 };
 export type Policy = {
   id: string;
@@ -596,12 +702,25 @@ export type Policy = {
   coverage_ends_at: string;
   carrier_id: string;
   certificates?: unknown[];
+  proposal_id?: string | null;
+  party_id?: string;
+  premium_minor?: number | null;
+  currency?: string;
+  issued_at?: string | null;
+  certificate_number?: string | null;
+  previous_policy_id?: string | null;
+  terms_snapshot?: Proposal["terms_snapshot"] | null;
+  carrier?: { id?: string; party?: { display_name?: string } } | null;
 };
+/** download_url is absent until a signed PDF exists - never open blindly. */
 export type PolicyCertificate = {
   id: string;
-  label: string;
-  download_url: string;
-  expires_at: string;
+  label?: string;
+  serial_number?: string;
+  status?: string;
+  issued_at?: string;
+  download_url?: string | null;
+  expires_at?: string;
 };
 export type PolicyServiceRequest = {
   id: string;
@@ -635,8 +754,15 @@ export type PurchaseStatus = {
     | "PAYMENT_FAILED"
     | "ISSUANCE_PENDING"
     | "POLICY_ISSUED";
-  payment: Payment;
-  policy: Policy | null;
+  payment: Pick<Payment, "id" | "proposal_id" | "status"> | null;
+  policy:
+    | (Pick<Policy, "id" | "policy_number" | "status"> &
+        Partial<Pick<Policy, "coverage_starts_at" | "coverage_ends_at" | "issued_at" | "certificate_number">>)
+    | null;
+  coverage_starts_at?: string | null;
+  coverage_ends_at?: string | null;
+  carrier_name?: string | null;
+  product_name?: string | null;
 };
 export type PublicVerification = {
   reference: string;
@@ -1136,18 +1262,67 @@ export const InsuranceApi = {
     api<Payment>("/payments", {
       method: "POST",
       body: JSON.stringify(payload),
-      idempotent: true,
+      idempotencyKey: payload.idempotency_key,
     }),
-  initiatePayment: (id: string) =>
+  initiatePayment: (id: string, idempotencyKey?: string) =>
     api<Payment>(`/payments/${id}/initiate`, {
       method: "POST",
       idempotent: true,
+      idempotencyKey,
     }),
   payment: (id: string) => api<Payment>(`/payments/${id}`),
   purchaseStatus: (proposalId: string) =>
     api<PurchaseStatus>(`/mobile/purchases/${proposalId}/status`),
+  /** @deprecated tenant-wide staff list - use WalletApi (owned policies). */
   policies: () => api<any>("/policies"),
   policy: (id: string) => api<Policy>(`/policies/${id}`),
+};
+
+export type ProposalSummary = Pick<Proposal, "id" | "proposal_number" | "status"> &
+  Partial<Proposal> & { product_name?: string; carrier_name?: string };
+export const ProposalsApi = {
+  /** GET /mobile/proposals when the backend exposes it; callers fall back. */
+  list: (page = 1) => apiPage<ProposalSummary>("/mobile/proposals", page),
+  show: (id: string) => api<Proposal>(`/proposals/${id}`),
+  /**
+   * Two steps: register the file (POST /mobile/documents), then link it to
+   * the proposal requirement (POST /proposals/{id}/documents).
+   */
+  async uploadDocument(
+    id: string,
+    input: { requirement_code: string; mime_type: string; file_base64: string },
+  ) {
+    const doc = await api<{ id: string }>("/mobile/documents", {
+      method: "POST",
+      body: JSON.stringify({
+        category: `PROPOSAL_${input.requirement_code}`.slice(0, 48),
+        mime_type: input.mime_type,
+        file_base64: input.file_base64,
+      }),
+      timeoutMs: 60000,
+      idempotent: true,
+    });
+    return api<ProposalDocumentLink>(`/proposals/${id}/documents`, {
+      method: "POST",
+      body: JSON.stringify({
+        document_id: doc.id,
+        requirement_code: input.requirement_code,
+      }),
+      idempotent: true,
+    });
+  },
+};
+
+export type RiskSchemaPayload = {
+  line_code: string;
+  steps: { key: string; title: string; fields: unknown[] }[];
+};
+export const CatalogueApi = {
+  riskSchema: (lineCode: string) =>
+    api<RiskSchemaPayload>(
+      `/mobile/catalogue/lines/${encodeURIComponent(lineCode.toUpperCase())}/risk-schema`,
+      { networkRetries: 0, timeoutMs: 8000 },
+    ),
 };
 
 export type KycProfile = {
@@ -1190,27 +1365,46 @@ export type DisclosureSession = {
   }[];
   referral_reason?: string | null;
 };
+/** Old shape used reference/confirmed_at; new adds receipt_number/issued_at/download_url. */
 export type PaymentReceipt = {
   id: string;
-  payment_id: string;
-  receipt_number: string;
-  issued_at: string;
+  payment_id?: string;
+  receipt_number?: string;
+  issued_at?: string;
+  reference?: string | null;
+  confirmed_at?: string | null;
+  requested_at?: string | null;
+  provider?: string;
+  payer_phone_e164?: string;
+  status?: string;
   amount_minor: number;
   currency: "XAF";
-  download_url: string;
+  download_url?: string | null;
 };
 export type RefundRequest = {
   id: string;
-  payment_id: string;
-  reason: string;
+  payment_id?: string;
+  reason?: string;
+  reason_code?: string;
+  amount_minor?: number;
   status: string;
-  created_at: string;
+  created_at?: string;
+};
+export type WalletDocument = {
+  id: string;
+  label?: string;
+  type?: string;
+  status?: string;
+  issued_at?: string;
+  download_url?: string | null;
 };
 export type WalletPolicy = Policy & {
-  carrier_name?: string;
-  product_name?: string;
-  documents?: PolicyCertificate[];
+  carrier_name?: string | null;
+  product_name?: string | null;
+  documents?: WalletDocument[];
   delivery?: StickerDelivery | null;
+  insured_object?: string | Record<string, unknown> | null;
+  risk_asset?: { id?: string; label?: string; registration_number?: string } | null;
 };
 export type StickerDelivery = {
   id: string;
@@ -1301,7 +1495,7 @@ export const DisclosureApi = {
     ),
 };
 export const PaymentsApi = {
-  list: () => api<Payment[]>("/mobile/payments"),
+  list: (page = 1) => apiPage<Payment>("/mobile/payments", page),
   show: (id: string) => api<Payment>(`/mobile/payments/${id}`),
   retry: (id: string) =>
     api<Payment>(`/mobile/payments/${id}/retry`, {
@@ -1310,16 +1504,40 @@ export const PaymentsApi = {
     }),
   receipt: (id: string) =>
     api<PaymentReceipt>(`/mobile/payments/${id}/receipt`),
-  refund: (id: string, reason: string) =>
+  /**
+   * New contract: {reason, amount_minor?, reason_code?}. notes and
+   * idempotency_key are still sent for the older validator. The same key
+   * goes in the header so a retried submit cannot open two refunds.
+   */
+  refund: (
+    id: string,
+    payload: {
+      reason: string;
+      notes: string;
+      reason_code: string;
+      amount_minor: number;
+      idempotency_key: string;
+    },
+  ) =>
     api<RefundRequest>(`/mobile/payments/${id}/refunds`, {
       method: "POST",
-      body: JSON.stringify({ reason }),
-      idempotent: true,
+      body: JSON.stringify(payload),
+      idempotencyKey: payload.idempotency_key,
       stepUpPurpose: "PAYMENT_REFUND_REQUEST",
     }),
 };
 export const WalletApi = {
-  list: () => api<WalletPolicy[]>("/mobile/wallet"),
+  list: (page = 1) => apiPage<WalletPolicy>("/mobile/wallet", page),
+  /** Every owned policy (walks pages; capped to keep the app responsive). */
+  async all(maxPages = 5) {
+    const items: WalletPolicy[] = [];
+    for (let page = 1; page <= maxPages; page++) {
+      const result = await apiPage<WalletPolicy>("/mobile/wallet", page);
+      items.push(...result.items);
+      if (!result.info.hasMore) break;
+    }
+    return items;
+  },
   policy: (id: string) => api<WalletPolicy>(`/mobile/wallet/policies/${id}`),
   delivery: (id: string) => api<StickerDelivery>(`/mobile/deliveries/${id}`),
   updateAddress: (
@@ -1408,13 +1626,14 @@ export type SupportCase = {
   attachments?: { id: string; file_name: string; status: string }[];
 };
 export const QuotesApi = {
-  history: () => api<CustomerQuoteSummary[]>("/mobile/quotes"),
+  history: (page = 1) => apiPage<CustomerQuoteSummary>("/mobile/quotes", page),
   show: (id: string) =>
-    api<QuoteResult & { summary: CustomerQuoteSummary }>(
+    api<QuoteResult & { summary?: CustomerQuoteSummary }>(
       `/mobile/quotes/${id}`,
     ),
+  /** Returns {quote, offers} today; {quote_id, next_path} in older builds. */
   resume: (id: string) =>
-    api<{ quote_id: string; next_path: string }>(
+    api<Partial<QuoteResult> & { quote_id?: string; next_path?: string | null }>(
       `/mobile/quotes/${id}/resume`,
       { method: "POST", idempotent: true },
     ),

@@ -79,6 +79,9 @@ export default function RootLayout() {
           <Stack.Screen name="quote/risk" />
           <Stack.Screen name="quote/offers" />
           <Stack.Screen name="quote/disclosure" />
+          <Stack.Screen name="quote/compare" />
+          <Stack.Screen name="proposals/index" />
+          <Stack.Screen name="proposals/[id]" />
           <Stack.Screen name="checkout" />
           <Stack.Screen name="payment" />
           <Stack.Screen name="confirmation" />
@@ -102,6 +105,7 @@ export default function RootLayout() {
           <Stack.Screen name="account/devices" />
           <Stack.Screen name="account/notifications" />
           <Stack.Screen name="account/security" />
+          <Stack.Screen name="account/privacy" />
           <Stack.Screen name="onboarding/kyc" />
           <Stack.Screen name="assets/index" />
           <Stack.Screen name="assets/new" />
@@ -130,6 +134,7 @@ export default function RootLayout() {
           <Stack.Screen name="support/index" />
           <Stack.Screen name="support/new" />
           <Stack.Screen name="support/[id]" />
+          <Stack.Screen name="support/faq" />
         </Stack.Protected>
         <Stack.Protected guard={agent}>
           <Stack.Screen name="agent/index" />
@@ -145,6 +150,11 @@ export default function RootLayout() {
           <Stack.Screen name="agent/wallet" />
           <Stack.Screen name="agent/withdrawal" />
           <Stack.Screen name="agent/offline" />
+          <Stack.Screen name="agent/leads/index" />
+          <Stack.Screen name="agent/leads/new" />
+          <Stack.Screen name="agent/leads/[id]" />
+          <Stack.Screen name="agent/quotes" />
+          <Stack.Screen name="agent/policies" />
         </Stack.Protected>
         <Stack.Protected guard={broker}>
           <Stack.Screen name="broker/index" />
@@ -157,6 +167,11 @@ export default function RootLayout() {
           <Stack.Screen name="broker/receivables" />
           <Stack.Screen name="broker/compliance" />
           <Stack.Screen name="broker/publications" />
+          <Stack.Screen name="broker/quotes" />
+          <Stack.Screen name="broker/policies" />
+          <Stack.Screen name="broker/claims" />
+          <Stack.Screen name="broker/staff" />
+          <Stack.Screen name="broker/commissions" />
         </Stack.Protected>
         <Stack.Protected guard={carrier}>
           <Stack.Screen name="carrier/index" />
@@ -169,6 +184,12 @@ export default function RootLayout() {
           <Stack.Screen name="carrier/settlements" />
           <Stack.Screen name="carrier/settlement/[id]" />
           <Stack.Screen name="carrier/bordereaux" />
+          <Stack.Screen name="carrier/products" />
+          <Stack.Screen name="carrier/proposals" />
+          <Stack.Screen name="carrier/policies" />
+          <Stack.Screen name="carrier/claims/[id]" />
+          <Stack.Screen name="carrier/payments" />
+          <Stack.Screen name="carrier/partners" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

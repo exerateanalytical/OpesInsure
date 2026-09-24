@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
@@ -14,13 +14,27 @@ import { useRuntime } from "@/store/runtime";
 import { RuntimeGateView } from "@/components/RuntimeGate";
 import { IssueReportButton } from "@/components/IssueReportButton";
 import { UpdateNotice } from "@/components/UpdateNotice";
+import { resolveNotificationTarget } from "@/lib/customerLogic";
+import { registerForPush, resetPushRegistration } from "@/notifications/push";
 const biometricKey = "opesinsure.biometric_enabled";
-const safePaths = [
-  "/(customer)/(tabs)/policies",
-  "/(customer)/(tabs)/claims",
-  "/payment",
-  "/confirmation",
-];
+
+// Foreground notifications still show a banner (the inbox badge updates on
+// focus); taps are routed below.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: true,
+  }),
+});
+
+/** Opens a notification's target, but only a validated in-app route and
+ * only for a signed-in user (the guard would bounce anything else). */
+const openFromNotification = (data: unknown) => {
+  const target = resolveNotificationTarget(data);
+  if (target && useSession.getState().status === "authenticated") router.push(target as never);
+};
 export function AppRuntime({ children }: { children: ReactNode }) {
   const status = useSession((s) => s.status);
   const invalidate = useSession((s) => s.invalidate);
@@ -30,6 +44,9 @@ export function AppRuntime({ children }: { children: ReactNode }) {
   const refreshNetwork = useResilience((s) => s.refreshNetwork);
   const syncNow = useResilience((s) => s.syncNow);
   const [locked, setLocked] = useState(false);
+  const coldStartChecked = useRef(false);
+  const previousStatus = useRef(status);
+  const pendingTap = useRef<unknown>(null);
   const [privacyCovered, setPrivacyCovered] = useState(false);
   const gate = useRuntime((s) => s.gate);
   const runtime = useRuntime((s) => s.bootstrap);
@@ -41,13 +58,47 @@ export function AppRuntime({ children }: { children: ReactNode }) {
       setLocked(false);
       return;
     }
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Unlock OpesInsure",
-      fallbackLabel: "Use device credential",
-      disableDeviceFallback: false,
-    });
-    setLocked(!result.success);
+    setLocked(true);
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: t("unlockPrompt"),
+        fallbackLabel: t("unlockFallback"),
+        disableDeviceFallback: false,
+      });
+      setLocked(!result.success);
+    } catch {
+      setLocked(true);
+    }
   };
+
+  // Cold start: a restored session is locked behind biometrics before any
+  // insurance data renders (resume is handled by the AppState listener).
+  // Push registration and a notification that launched the app run after.
+  useEffect(() => {
+    const previous = previousStatus.current;
+    previousStatus.current = status;
+    if (status !== "authenticated") {
+      if (status === "anonymous") {
+        coldStartChecked.current = false;
+        resetPushRegistration();
+      }
+      return;
+    }
+    void registerForPush();
+    if (coldStartChecked.current) return;
+    coldStartChecked.current = true;
+    // Restored from storage (booting → authenticated) = cold start: lock.
+    // A fresh sign-in has just proven the user, so no second prompt.
+    const restored = previous === "booting" || previous === "error";
+    void (async () => {
+      if (restored) await unlock();
+      const launch = await Notifications.getLastNotificationResponseAsync().catch(() => null);
+      const data = launch?.notification.request.content.data ?? pendingTap.current;
+      pendingTap.current = null;
+      if (data) openFromNotification(data);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
   useEffect(() => {
     void checkRuntime();
     const removeSessionListener = onSessionExpired(() => {
@@ -66,9 +117,10 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     });
     const notification = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const path = response.notification.request.content.data?.path;
-        if (typeof path === "string" && safePaths.includes(path))
-          router.push(path as never);
+        const data = response.notification.request.content.data;
+        // A tap before sign-in completes is replayed once the session is up.
+        if (useSession.getState().status !== "authenticated") pendingTap.current = data;
+        else openFromNotification(data);
       },
     );
     return () => {
@@ -77,6 +129,9 @@ export function AppRuntime({ children }: { children: ReactNode }) {
       notification.remove();
       removeSessionListener();
     };
+    // `unlock` is recreated each render; the listener only needs the latest
+    // status, which is already a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, hydrateResilience, refreshNetwork, syncNow, checkRuntime, invalidate]);
   if (gate !== "ready" && gate !== "checking")
     return (
@@ -91,19 +146,16 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     return (
       <View style={styles.privacy}>
         <Text style={styles.privacyTitle}>OpesInsure</Text>
-        <Text style={styles.privacyBody}>Sensitive information is hidden while the app is inactive.</Text>
+        <Text style={styles.privacyBody}>{t("privacyCover")}</Text>
       </View>
     );
   if (locked)
     return (
       <View style={styles.lock}>
         <Card feature>
-          <Text style={styles.title}>OpesInsure is locked</Text>
-          <Text style={styles.body}>
-            Authenticate with this device before accessing insurance and
-            financial information.
-          </Text>
-          <Button label="Unlock securely" onPress={() => void unlock()} />
+          <Text accessibilityRole="header" style={styles.title}>{t("lockedAppTitle")}</Text>
+          <Text style={styles.body}>{t("lockedAppBody")}</Text>
+          <Button label={t("unlockSecurely")} onPress={() => void unlock()} />
         </Card>
       </View>
     );
@@ -148,8 +200,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: space.x5,
-    backgroundColor: colors.navy950,
+    backgroundColor: colors.white,
   },
-  privacyTitle: { ...type.pageTitle, color: colors.white },
-  privacyBody: { ...type.body, color: colors.neutral200, textAlign: "center" },
+  privacyTitle: { ...type.pageTitle, color: colors.navy950 },
+  privacyBody: { ...type.body, color: colors.neutral600, textAlign: "center" },
 });

@@ -59,9 +59,11 @@ test("public verification and claims use API contracts", () => {
   assert.match(client, /api<Claim>\(\s*["'`]\/mobile\/claims/);
 });
 test("every insurance product has a dedicated risk schema", () => {
-  const risk = read("app/quote/risk.tsx");
-  for (const product of ["motor", "health", "travel", "home", "life"])
-    assert.match(risk, new RegExp(`${product}:`));
+  // Local fallback schemas (the server risk-schema endpoint wins when present).
+  const risk = read("src/lib/riskSchema.ts");
+  for (const product of ["MOTOR", "HEALTH", "TRAVEL", "HOME", "LIFE", "BUSINESS", "ACCIDENT"])
+    assert.match(risk, new RegExp(`${product}: \\[`));
+  assert.match(read("app/quote/risk.tsx"), /CatalogueApi\.riskSchema/);
 });
 test("claim evidence and policy servicing are API backed", () => {
   const client = read("src/api/client.ts");
@@ -80,7 +82,9 @@ test("runtime protects offline, notification and biometric boundaries", () => {
   const resilience = read("src/store/resilience.ts");
   assert.match(resilience, /getNetworkStateAsync/);
   assert.match(runtime, /LocalAuthentication/);
-  assert.match(runtime, /safePaths/);
+  // Notification taps only open validated in-app routes (allow-list).
+  assert.match(runtime, /resolveNotificationTarget/);
+  assert.match(read("src/lib/customerLogic.ts"), /ALLOWED_PREFIXES/);
 });
 test("partner workspace modules require server permissions", () => {
   const workspace = read("app/workspace/[role].tsx");
@@ -376,7 +380,7 @@ test("patch six exposes protected sync and low-data controls", () => {
   assert.match(sync, /transactionsPaused/);
 });
 test("patch six has bilingual resilience copy and accessibility semantics", () => {
-  const strings = read("src/i18n/strings.ts");
+  const strings = read("src/i18n/fr.ts");
   const ui = read("src/components/ui.tsx");
   const fixtures = JSON.parse(read("src/data/demo/resilience.v1.json"));
   assert.match(strings, /Centre de synchronisation/);
@@ -421,7 +425,8 @@ test("patch seven expires invalid sessions and hides inactive-app content", () =
   assert.match(client, /SESSION_EXPIRED/);
   assert.match(client, /sessionExpiredListeners/);
   assert.match(runtime, /privacyCovered/);
-  assert.match(runtime, /Sensitive information is hidden/);
+  assert.match(runtime, /t\("privacyCover"\)/);
+  assert.match(read("src/i18n/en.ts"), /Sensitive information is hidden/);
 });
 test("patch seven telemetry rejects common PII fields", () => {
   const telemetry = read("src/security/telemetry.ts");

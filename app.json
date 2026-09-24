@@ -50,6 +50,19 @@
         },
         "plugins": [
             "expo-router",
+            [
+                "expo-splash-screen",
+                {
+                    "backgroundColor": "#FFFFFF",
+                    "image": "./assets/icon.png",
+                    "imageWidth": 160,
+                    "resizeMode": "contain",
+                    "dark": {
+                        "backgroundColor": "#FFFFFF",
+                        "image": "./assets/icon.png"
+                    }
+                }
+            ],
             "expo-secure-store",
             "expo-font",
             "expo-localization",
@@ -85,6 +98,11 @@
         "platforms": [
             "ios",
             "android"
-        ]
+        ],
+        "splash": {
+            "image": "./assets/icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#FFFFFF"
+        }
     }
 }

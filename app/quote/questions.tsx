@@ -77,15 +77,18 @@ export default function Questions() {
           label="Review underwriting result"
           loading={busy}
           onPress={async () => {
+            if (busy) return;
             setBusy(true);
             setError(null);
             try {
               await DisclosureApi.saveAnswers(proposalId, a);
               const x = await DisclosureApi.submit(proposalId);
-              router.push(
+              // Straight-through proposals become payable; flagged ones wait
+              // for an underwriter; others need documents. The hub routes each.
+              router.replace(
                 x.status === "REFERRED"
-                  ? `/quote/referral?proposalId=${proposalId}`
-                  : `/quote/terms?proposalId=${proposalId}`,
+                  ? { pathname: "/quote/referral", params: { proposalId } }
+                  : { pathname: "/proposals/[id]", params: { id: proposalId } },
               );
             } catch {
               setError("Your answers could not be submitted. Try again.");

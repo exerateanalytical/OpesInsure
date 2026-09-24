@@ -4,6 +4,7 @@ import { PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { ShieldAlert } from "lucide-react-native";
+import { router } from "expo-router";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierApi } from "@/api/client";
@@ -13,14 +14,21 @@ export default function CarrierClaims() {
   return (
     <PortalScreen tabs={carrierTabs}>
       <AppHeader
-        title="Carrier claims queue"
-        subtitle="Permission-scoped assessment work"
+        title="Claims"
+        subtitle="Acknowledge, request information and decide"
       />
-      <StatePanel {...q} onRetry={q.reload}>
+      <StatePanel
+        {...q}
+        onRetry={q.reload}
+        loadingLabel="Loading claims…"
+        emptyTitle="No claims in your queue"
+        emptyMessage="Claims on your policies will appear here for acknowledgement and decision."
+      >
         {() => (
           <>
           <OperationsList
             icon={ShieldAlert}
+            onPress={(id) => router.push(`/carrier/claims/${id}`)}
             rows={x.map((i) => ({
               id: i.id,
               title: i.reference,

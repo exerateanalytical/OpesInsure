@@ -1,21 +1,26 @@
 import React from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
-import { router } from "expo-router";
 import {
   BadgeCheck,
   BookOpenCheck,
+  CircleUserRound,
   ContactRound,
+  FileSignature,
+  FileText,
   ReceiptText,
   RefreshCw,
+  ShieldAlert,
   Store,
+  Users,
+  Wallet,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { brokerTabs } from "@/components/portal/tabs";
 import { useColumns } from "@/components/responsive";
-import { FlowRow } from "@/components/FlowPrimitives";
+import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { BrokerApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
 export default function BrokerHome() {
@@ -47,44 +52,22 @@ export default function BrokerHome() {
           </View>
         )}
       </StatePanel>
-      <Card>
-        <FlowRow
-          icon={ContactRound}
-          title="Client ledger"
-          subtitle="Origin-protected corporate clients"
-          onPress={() => router.push("/broker/clients")}
-        />
-        <FlowRow
-          icon={BookOpenCheck}
-          title="Production"
-          subtitle="Policies issued through the brokerage"
-          onPress={() => router.push("/broker/production")}
-        />
-        <FlowRow
-          icon={RefreshCw}
-          title="Renewals"
-          subtitle="Upcoming expiry work queue"
-          onPress={() => router.push("/broker/renewals")}
-        />
-        <FlowRow
-          icon={ReceiptText}
-          title="Receivables"
-          subtitle="Amounts due and overdue"
-          onPress={() => router.push("/broker/receivables")}
-        />
-        <FlowRow
-          icon={BadgeCheck}
-          title="Compliance"
-          subtitle="Licence and regulatory obligations"
-          onPress={() => router.push("/broker/compliance")}
-        />
-        <FlowRow
-          icon={Store}
-          title="Marketplace publications"
-          subtitle="Broker products proposed for public sale"
-          onPress={() => router.push("/broker/publications")}
-        />
-      </Card>
+      <WorkspaceMenu
+        items={[
+          { label: "Customers", subtitle: "Private client ledger", icon: ContactRound, href: "/broker/clients" },
+          { label: "Sales", subtitle: "Production register", icon: BookOpenCheck, href: "/broker/production" },
+          { label: "Quotes", subtitle: "Quotes for your clients", icon: FileSignature, href: "/broker/quotes" },
+          { label: "Policies", subtitle: "Policies you placed", icon: FileText, href: "/broker/policies" },
+          { label: "Claims", subtitle: "Claims on your book", icon: ShieldAlert, href: "/broker/claims" },
+          { label: "Staff", subtitle: "Team and invitations", icon: Users, href: "/broker/staff" },
+          { label: "Commissions", subtitle: "Accruals and statements", icon: Wallet, href: "/broker/commissions" },
+          { label: "Renewals", subtitle: "Policies due soon", icon: RefreshCw, href: "/broker/renewals" },
+          { label: "Receivables", subtitle: "Amounts due to you", icon: ReceiptText, href: "/broker/receivables" },
+          { label: "Compliance", subtitle: "Licences and cases", icon: BadgeCheck, href: "/broker/compliance" },
+          { label: "Publications", subtitle: "Marketplace listings", icon: Store, href: "/broker/publications" },
+          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/broker/account" },
+        ]}
+      />
     </PortalScreen>
   );
 }

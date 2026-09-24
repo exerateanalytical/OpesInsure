@@ -13,6 +13,10 @@ import {
   LockKeyhole,
   LogOut,
   LifeBuoy,
+  LucideIcon,
+  CircleHelp,
+  Eye,
+  BellRing,
   ShieldCheck,
   UserRound,
   WalletCards,
@@ -25,30 +29,56 @@ import {
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
 import { AuthApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
+import type { CopyKey } from "@/i18n/strings";
+import Constants from "expo-constants";
 import { colors, radius, space, type } from "@/theme/tokens";
-const links = [
-  ["Saved quotes", Clock3, "/quotes"],
-  ["Identity verification", ShieldCheck, "/onboarding/kyc"],
-  ["My vehicles & assets", CarFront, "/assets"],
-  ["Policy wallet", WalletCards, "/wallet"],
-  ["Payments & receipts", CreditCard, "/payments"],
-  ["Policy service requests", FileCog, "/services"],
-  ["Notification centre", Bell, "/notifications"],
-  ["Help & complaints", LifeBuoy, "/support"],
-  ["Personal information", UserRound, "/account/profile"],
-  ["Security and devices", LockKeyhole, "/account/security"],
-  ["Notifications", Bell, "/account/notifications"],
-  ["Language", Languages, "/account/language"],
-  ["Synchronization", CloudCog, "/sync"],
-  ["Data and uploads", Gauge, "/account/data-usage"],
-  ["Service status", Activity, "/system/status"],
-  ["Device security", ShieldAlert, "/security/device-status"],
-  ["Insurance companies", Building2, "/institutions/insurers"],
-] as const;
-export default function Account() {
+const groups: { title: CopyKey; links: [CopyKey, LucideIcon, string][] }[] = [
+  {
+    title: "profileGroupYou",
+    links: [
+      ["personalInformation", UserRound, "/account/profile"],
+      ["identityVerification", ShieldCheck, "/onboarding/kyc"],
+      ["myAssets", CarFront, "/assets"],
+    ],
+  },
+  {
+    title: "profileGroupInsurance",
+    links: [
+      ["savedQuotes", Clock3, "/quotes"],
+      ["policyWallet", WalletCards, "/wallet"],
+      ["paymentsReceipts", CreditCard, "/payments"],
+      ["policyServiceRequests", FileCog, "/services"],
+      ["insuranceCompanies", Building2, "/institutions/insurers"],
+    ],
+  },
+  {
+    title: "profileGroupHelp",
+    links: [
+      ["notificationCentre", Bell, "/notifications"],
+      ["faqTitle", CircleHelp, "/support/faq"],
+      ["helpComplaints", LifeBuoy, "/support"],
+    ],
+  },
+  {
+    title: "profileGroupSettings",
+    links: [
+      ["securityDevices", LockKeyhole, "/account/security"],
+      ["privacyConsent", Eye, "/account/privacy"],
+      ["notificationSettings", BellRing, "/account/notifications"],
+      ["language", Languages, "/account/language"],
+      ["syncCentre", CloudCog, "/sync"],
+      ["dataUsage", Gauge, "/account/data-usage"],
+      ["serviceStatus", Activity, "/system/status"],
+      ["deviceSecurity", ShieldAlert, "/security/device-status"],
+    ],
+  },
+];
+export default function Profile() {
   const user = useSession((s) => s.bootstrap?.user);
   const workspace = useSession((s) => s.activeWorkspace);
   const signOut = useSession((s) => s.signOut);
+  const { t, td } = useTranslation();
   // Only when the server reports it (field present and null / flag false);
   // older payloads without the field show nothing.
   const emailUnverified =
@@ -67,13 +97,15 @@ export default function Account() {
   return (
     <Screen>
       <AppHeader
-        title="Account"
-        subtitle={`${user?.full_name ?? "Account"} · ${workspace?.role_code ?? ""}`}
+        title={t("profile")}
+        subtitle={[user?.full_name, workspace?.role_code ? td(`role_${workspace.role_code}`, workspace.role_code) : null]
+          .filter(Boolean)
+          .join(" · ")}
       />
       <Card>
-        <Text style={styles.title}>Contact details</Text>
+        <Text style={styles.title}>{t("contactDetails")}</Text>
         <Text style={styles.body}>{user?.phone_e164}</Text>
-        <Text style={styles.body}>{user?.email ?? "No email supplied"}</Text>
+        <Text style={styles.body}>{user?.email ?? t("noEmail")}</Text>
         {emailUnverified ? (
           <Pressable
             accessibilityRole="button"
@@ -84,32 +116,35 @@ export default function Account() {
             <MailCheck size={20} color={colors.warningText} />
             <Text style={styles.verifyText}>
               {verifyState === "sent"
-                ? "Verification email sent. Check your inbox."
+                ? t("emailVerifySent")
                 : verifyState === "busy"
-                  ? "Sending…"
+                  ? t("sending")
                   : verifyState === "error"
-                    ? "Could not send. Tap to try again."
-                    : "Verify your email"}
+                    ? t("emailVerifyError")
+                    : t("emailVerify")}
             </Text>
           </Pressable>
         ) : null}
       </Card>
-      <Card>
-        {links.map(([label, Icon, path]) => (
-          <Pressable
-            accessibilityRole="button"
-            key={label}
-            style={styles.item}
-            onPress={() => router.push(path)}
-          >
-            <View style={styles.icon}>
-              <Icon size={20} color={colors.navy800} />
-            </View>
-            <Text style={styles.label}>{label}</Text>
-            <ChevronRight size={19} color={colors.neutral500} />
-          </Pressable>
-        ))}
-      </Card>
+      {groups.map((group) => (
+        <Card key={group.title}>
+          <Text accessibilityRole="header" style={styles.group}>{t(group.title)}</Text>
+          {group.links.map(([label, Icon, path]) => (
+            <Pressable
+              accessibilityRole="button"
+              key={label}
+              style={styles.item}
+              onPress={() => router.push(path as never)}
+            >
+              <View style={styles.icon}>
+                <Icon size={20} color={colors.navy800} />
+              </View>
+              <Text style={styles.label}>{t(label)}</Text>
+              <ChevronRight size={19} color={colors.neutral500} />
+            </Pressable>
+          ))}
+        </Card>
+      ))}
       <Pressable
         accessibilityRole="button"
         style={styles.logout}
@@ -119,16 +154,17 @@ export default function Account() {
         }}
       >
         <LogOut size={20} color={colors.danger} />
-        <Text style={styles.logoutText}>Sign out securely</Text>
+        <Text style={styles.logoutText}>{t("signOutSecurely")}</Text>
       </Pressable>
       <Text style={styles.version}>
-        OpesInsure 1.2.0 · Opesware Technologies
+        OpesInsure {Constants.expoConfig?.version ?? ""} · Opesware Technologies
       </Text>
     </Screen>
   );
 }
 const styles = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
+  group: { ...type.caption, color: colors.neutral600, letterSpacing: 1, textTransform: "uppercase" },
   body: { ...type.body, color: colors.neutral600 },
   verify: {
     flexDirection: "row",

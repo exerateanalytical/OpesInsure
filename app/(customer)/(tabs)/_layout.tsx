@@ -2,9 +2,9 @@ import React from "react";
 import { Tabs } from "expo-router";
 import {
   CircleUserRound,
+  Compass,
   FileText,
   House,
-  Scale,
   ShieldAlert,
 } from "lucide-react-native";
 import { colors } from "@/theme/tokens";
@@ -17,6 +17,8 @@ const icon = (Icon: any) => {
   }
   return TabIcon;
 };
+
+/** Customer bottom navigation: Home | Explore | Policies | Claims | Profile. */
 export default function CustomerTabs() {
   const { t } = useTranslation();
   // SDK 54 is edge-to-edge on Android: without the bottom inset the tab bar
@@ -36,28 +38,32 @@ export default function CustomerTabs() {
           backgroundColor: colors.white,
         },
         tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+        tabBarAllowFontScaling: false,
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ title: t("home"), tabBarIcon: icon(House) }}
+        options={{ title: t("home"), tabBarAccessibilityLabel: t("home"), tabBarIcon: icon(House) }}
       />
       <Tabs.Screen
-        name="compare"
-        options={{ title: t("compare"), tabBarIcon: icon(Scale) }}
+        name="explore"
+        options={{ title: t("explore"), tabBarAccessibilityLabel: t("explore"), tabBarIcon: icon(Compass) }}
       />
       <Tabs.Screen
         name="policies"
-        options={{ title: t("policies"), tabBarIcon: icon(FileText) }}
+        options={{ title: t("policies"), tabBarAccessibilityLabel: t("policies"), tabBarIcon: icon(FileText) }}
       />
       <Tabs.Screen
         name="claims"
-        options={{ title: t("claims"), tabBarIcon: icon(ShieldAlert) }}
+        options={{ title: t("claims"), tabBarAccessibilityLabel: t("claims"), tabBarIcon: icon(ShieldAlert) }}
       />
       <Tabs.Screen
-        name="account"
-        options={{ title: t("account"), tabBarIcon: icon(CircleUserRound) }}
+        name="profile"
+        options={{ title: t("profile"), tabBarAccessibilityLabel: t("profile"), tabBarIcon: icon(CircleUserRound) }}
       />
+      {/* The comparison screen (purchase flow) stays routable, reached from
+          Home / Explore "Compare Insurance", but is no longer a tab. */}
+      <Tabs.Screen name="compare" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -1,33 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { router } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
+import { EmptyState, LoadingState } from "@/components/StatePanel";
+import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
 import { WalletApi, WalletPolicy } from "@/api/client";
+import { usePagedList } from "@/hooks/usePagedList";
+import { useFormatters } from "@/hooks/useFormatters";
+import { policyStatusInfo } from "@/lib/purchase";
+
 export default function Wallet() {
-  const [x, setX] = useState<WalletPolicy[]>([]);
-  useEffect(() => {
-    WalletApi.list().then(setX);
-  }, []);
+  const f = useFormatters();
+  const list = usePagedList<WalletPolicy>((page) => WalletApi.list(page));
   return (
     <Screen>
-      <AppHeader
-        title="Policy wallet"
-        subtitle="Cover, documents and physical sticker delivery"
-        back
-      />
-      <Card>
-        {x.map((p) => (
-          <FlowRow
-            key={p.id}
-            icon={ShieldCheck}
-            title={p.policy_number}
-            subtitle={p.product_name ?? p.carrier_name}
-            status={p.status}
-            onPress={() => router.push(`/wallet/policy/${p.id}`)}
-          />
-        ))}
-      </Card>
+      <AppHeader title="Policy wallet" subtitle="Cover, documents and physical sticker delivery" back />
+      {list.loading && !list.items.length ? <LoadingState label="Loading your wallet…" /> : null}
+      {list.error && !list.items.length ? <ErrorCard error={list.error} fallback="Your wallet could not be loaded." onRetry={() => void list.reload()} /> : null}
+      {!list.loading && !list.error && !list.items.length ? (
+        <EmptyState title="Your wallet is empty" message="Issued policies and their documents will appear here." action="Compare insurance" onPress={() => router.push("/quote/product")} />
+      ) : null}
+      {list.items.length ? (
+        <Card>
+          {list.items.map((p) => (
+            <FlowRow
+              key={p.id}
+              icon={ShieldCheck}
+              title={p.product_name ?? p.policy_number}
+              subtitle={[p.carrier_name ?? p.carrier?.party?.display_name, p.policy_number, f.range(p.coverage_starts_at, p.coverage_ends_at)].filter(Boolean).join(" · ")}
+              status={policyStatusInfo(p.status).label}
+              onPress={() => router.push({ pathname: "/wallet/policy/[id]", params: { id: p.id } })}
+            />
+          ))}
+        </Card>
+      ) : null}
+      <LoadMore hasMore={list.hasMore} loading={list.loadingMore} error={list.moreError} onPress={() => void list.loadMore()} />
     </Screen>
   );
 }

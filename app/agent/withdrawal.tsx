@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text } from "react-native";
 import {
   AppHeader,
@@ -10,9 +10,26 @@ import {
 } from "@/components/ui";
 import { AgentApi, AgentWithdrawal } from "@/api/client";
 import { handleStepUpRequired } from "@/security/step-up";
+import { useSession } from "@/store/session";
 export default function AgentWithdrawalScreen() {
   const [amount, setAmount] = useState("");
-  const [phone, setPhone] = useState("+237690000002");
+  // Prefilled from the agent's registered mobile-money number (server
+  // profile), falling back to the signed-in user's own phone. Never a
+  // hard-coded default: a wrong prefill would pay someone else.
+  const userPhone = useSession((st) => st.bootstrap?.user?.phone_e164) ?? "";
+  const [phone, setPhone] = useState(userPhone);
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    AgentApi.profile()
+      .then((p) => {
+        if (alive && !touched && p.momo_phone_e164) setPhone(p.momo_phone_e164);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [touched]);
   const [result, setResult] = useState<AgentWithdrawal>();
   return (
     <Screen>
@@ -32,7 +49,10 @@ export default function AgentWithdrawalScreen() {
           label="Verified MTN MoMo phone"
           keyboardType="phone-pad"
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(v) => {
+            setTouched(true);
+            setPhone(v);
+          }}
         />
         <Button
           label="Request withdrawal"

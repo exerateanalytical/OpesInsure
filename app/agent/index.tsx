@@ -1,21 +1,24 @@
 import React from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
-import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import {
   CircleDollarSign,
+  CircleUserRound,
   CloudUpload,
   ContactRound,
+  FileSignature,
+  FileText,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
+  UserPlus,
 } from "lucide-react-native";
 import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { agentTabs } from "@/components/portal/tabs";
 import { useColumns } from "@/components/responsive";
-import { FlowRow } from "@/components/FlowPrimitives";
+import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { AgentApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
 export default function AgentHome() {
@@ -47,44 +50,20 @@ export default function AgentHome() {
           </View>
         )}
       </StatePanel>
-      <Card>
-        <FlowRow
-          icon={ShieldCheck}
-          title="Agent verification"
-          subtitle="Identity, mandate and compliance"
-          onPress={() => router.push("/agent/onboarding")}
-        />
-        <FlowRow
-          icon={ContactRound}
-          title="Client portfolio"
-          subtitle="Register and serve origin-protected clients"
-          onPress={() => router.push("/agent/clients")}
-        />
-        <FlowRow
-          icon={ShoppingBag}
-          title="New assisted sale"
-          subtitle="Quote and request payment from the client"
-          onPress={() => router.push("/agent/sales/new")}
-        />
-        <FlowRow
-          icon={RefreshCw}
-          title="Renewals"
-          subtitle="Policies requiring field follow-up"
-          onPress={() => router.push("/agent/renewals")}
-        />
-        <FlowRow
-          icon={CircleDollarSign}
-          title="Commission wallet"
-          subtitle="Available, pending and reversed earnings"
-          onPress={() => router.push("/agent/wallet")}
-        />
-        <FlowRow
-          icon={CloudUpload}
-          title="Offline activity"
-          subtitle="Review and retry field records"
-          onPress={() => router.push("/agent/offline")}
-        />
-      </Card>
+      <WorkspaceMenu
+        items={[
+          { label: "Leads", subtitle: "Prospects to follow up", icon: UserPlus, href: "/agent/leads" },
+          { label: "Quotes", subtitle: "Quotes you prepared", icon: FileSignature, href: "/agent/quotes" },
+          { label: "Customers", subtitle: "Origin-protected clients", icon: ContactRound, href: "/agent/clients" },
+          { label: "Policies", subtitle: "Your clients' cover", icon: FileText, href: "/agent/policies" },
+          { label: "Renewals", subtitle: "Policies due soon", icon: RefreshCw, href: "/agent/renewals" },
+          { label: "Commissions", subtitle: "Earnings and withdrawals", icon: CircleDollarSign, href: "/agent/wallet" },
+          { label: "New sale", subtitle: "Quote and request payment", icon: ShoppingBag, href: "/agent/sales/new" },
+          { label: "Verification", subtitle: "Identity and mandate", icon: ShieldCheck, href: "/agent/onboarding" },
+          { label: "Offline activity", subtitle: "Review and retry records", icon: CloudUpload, href: "/agent/offline" },
+          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/agent/account" },
+        ]}
+      />
     </PortalScreen>
   );
 }

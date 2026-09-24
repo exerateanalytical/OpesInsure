@@ -32,55 +32,62 @@ import {
 } from "@/components/onboarding/OnboardingParts";
 import { AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthField";
 import { authColors, authSpace, authType } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
+import { Preferences } from "@/store/preferences";
 
-const slides = [
+/** Leaving the slides by any route marks first run as done, so a returning
+ * signed-out user lands on sign-in instead of the marketing pager. */
+const leave = (to: "/(auth)/sign-in" | "/(auth)/sign-up") => {
+  void Preferences.markOnboardingSeen();
+  router.replace(to);
+};
+
+const buildSlides = (t: ReturnType<typeof useTranslation>["t"]) => [
   {
     key: "compare",
-    headingTop: "Compare insurance",
-    headingBottom: "with confidence",
-    subheading: "Access cover from trusted insurers, brokers and agents in one place.",
-    footer: "PEOPLE · PROTECTION · A BRIGHTER TOMORROW",
+    headingTop: t("welcome1Top"),
+    headingBottom: t("welcome1Bottom"),
+    subheading: t("welcome1Body"),
+    footer: t("welcomeFooter"),
     body: (
       <OnboardingFeatureRow
         items={[
-          { icon: ShieldCheck, label: "Licensed Providers" },
-          { icon: LockKeyhole, label: "Secure Payments" },
-          { icon: FileCheck2, label: "Verified Products" },
+          { icon: ShieldCheck, label: t("welcomeLicensed") },
+          { icon: LockKeyhole, label: t("welcomeSecurePayments") },
+          { icon: FileCheck2, label: t("welcomeVerifiedProducts") },
         ]}
       />
     ),
   },
   {
     key: "lifecycle",
-    headingTop: "Buy, renew and",
-    headingBottom: "claim anywhere",
-    subheading:
-      "Manage your policies from one app — compare offers, get covered, renew on time, and follow claims with ease.",
-    footer: "PEOPLE · PROTECTION · A BRIGHTER TOMORROW",
+    headingTop: t("welcome2Top"),
+    headingBottom: t("welcome2Bottom"),
+    subheading: t("welcome2Body"),
+    footer: t("welcomeFooter"),
     body: (
       <OnboardingFeatureRow
         items={[
-          { icon: Search, label: "Compare", caption: "Find the right\ncover for you" },
-          { icon: ShieldPlus, label: "Buy", caption: "Get covered\nin minutes" },
-          { icon: ClipboardCheck, label: "Claim", caption: "Track claims\nwith ease" },
+          { icon: Search, label: t("welcomeCompare"), caption: t("welcomeCompareCaption") },
+          { icon: ShieldPlus, label: t("welcomeBuy"), caption: t("welcomeBuyCaption") },
+          { icon: ClipboardCheck, label: t("welcomeClaim"), caption: t("welcomeClaimCaption") },
         ]}
       />
     ),
   },
   {
     key: "marketplace",
-    headingTop: "One marketplace.",
-    headingBottom: "Every insurance player.",
-    subheading:
-      "Built for customers, insurers, brokers and agents — connecting cover, payments and protection across Africa.",
-    footer: "PROTECTION FOR A BRIGHTER TOMORROW.",
+    headingTop: t("welcome3Top"),
+    headingBottom: t("welcome3Bottom"),
+    subheading: t("welcome3Body"),
+    footer: t("welcomeFooter3"),
     body: (
       <OnboardingNodeGrid
         items={[
-          { icon: UsersRound, label: "Individuals & Families", caption: "MORE SECURITY" },
-          { icon: Building2, label: "Businesses & Organizations", caption: "GREATER RESILIENCE" },
-          { icon: Handshake, label: "Brokers & Agents", caption: "BIGGER OPPORTUNITIES" },
-          { icon: ShieldCheck, label: "Insurance Companies", caption: "A STRONGER AFRICA" },
+          { icon: UsersRound, label: t("audienceIndividuals"), caption: t("audienceIndividualsCaption") },
+          { icon: Building2, label: t("audienceBusinesses"), caption: t("audienceBusinessesCaption") },
+          { icon: Handshake, label: t("audienceIntermediaries"), caption: t("audienceIntermediariesCaption") },
+          { icon: ShieldCheck, label: t("audienceInsurers"), caption: t("audienceInsurersCaption") },
         ]}
       />
     ),
@@ -88,6 +95,8 @@ const slides = [
 ];
 
 export default function Onboarding() {
+  const { t } = useTranslation();
+  const slides = buildSlides(t);
   const { width } = useWindowDimensions();
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -115,9 +124,10 @@ export default function Onboarding() {
       <Pressable
         accessibilityRole="button"
         style={styles.skip}
-        onPress={() => router.replace("/(auth)/sign-in")}
+        accessibilityLabel={t("skip")}
+        onPress={() => leave("/(auth)/sign-in")}
       >
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>{t("skip")}</Text>
       </Pressable>
       <ScrollView
         ref={scrollRef}
@@ -150,21 +160,21 @@ export default function Onboarding() {
         {last ? (
           <>
             <AuthPrimaryButton
-              label="Get Started"
+              label={t("getStarted")}
               icon={ArrowRight}
-              onPress={() => router.replace("/(auth)/sign-in")}
+              onPress={() => leave("/(auth)/sign-up")}
             />
-            <AuthSecondaryButton label="Create Account" onPress={() => router.push("/(auth)/sign-up")} />
+            <AuthSecondaryButton label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
           </>
         ) : (
-          <AuthPrimaryButton label="Next" icon={ArrowRight} onPress={() => goTo(page + 1)} />
+          <AuthPrimaryButton label={t("next")} icon={ArrowRight} onPress={() => goTo(page + 1)} />
         )}
         <View style={styles.links}>
           <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/verify")}>
-            <Text style={styles.link}>Verify a certificate</Text>
+            <Text style={styles.link}>{t("verifyCertificate")}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/(auth)/invitation")}>
-            <Text style={styles.link}>Partners: join by invitation</Text>
+            <Text style={styles.link}>{t("partnersJoin")}</Text>
           </Pressable>
         </View>
       </View>

@@ -1,9 +1,114 @@
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
-import { Smartphone } from 'lucide-react-native';
-import { AppHeader, Button, Card, Money, Screen, TextField } from '@/components/ui';
-import { useInsurance } from '@/store/insurance';import { useSession } from '@/store/session';import { colors, radius, space, type } from '@/theme/tokens';
-const major=(n:number)=>n/100;
-export default function Checkout(){const proposal=useInsurance(s=>s.proposal);const request=useInsurance(s=>s.requestPayment);const busy=useInsurance(s=>s.busy);const error=useInsurance(s=>s.error);const defaultPhone=useSession(s=>s.bootstrap?.user.phone_e164??'');const[phone,setPhone]=useState(defaultPhone);const[provider,setProvider]=useState<'mtn_momo'|'orange_money'>('mtn_momo');if(!proposal)return <Screen><AppHeader title="Review and pay" back/><Card><Text style={styles.title}>No payable proposal found.</Text></Card></Screen>;const t=proposal.terms_snapshot;const pay=async()=>{try{await request(provider,phone);router.replace('/payment');}catch{}};return <Screen><AppHeader title="Review and pay" subtitle="Step 5 of 5 · Nothing is charged yet" back/><Card><Text style={styles.title}>Proposal {proposal.proposal_number}</Text><Row label="Gross premium" amount={major(t.premium_minor)}/><Row label="Tax" amount={major(t.tax_minor)}/><Row label="Fees" amount={major(t.fee_minor)}/><View style={styles.rule}/><Text style={styles.title}>Total to authorize</Text><Money amount={major(t.total_minor)} size="large"/></Card><Card><Text style={styles.title}>Mobile Money network</Text><View style={styles.networks}>{(['mtn_momo','orange_money'] as const).map(v=><Pressable accessibilityRole="radio" accessibilityState={{selected:provider===v}} key={v} style={[styles.network,provider===v&&styles.selected]} onPress={()=>setProvider(v)}><Text style={styles.networkText}>{v==='mtn_momo'?'MTN MoMo':'Orange Money'}</Text></Pressable>)}</View><TextField label="Phone authorizing payment" value={phone} onChangeText={setPhone} keyboardType="phone-pad"/><Text style={styles.meta}>Your PIN is entered only in the operator prompt—never inside OpesInsure.</Text></Card>{error?<Text style={styles.error}>{error}</Text>:null}<Button label={`Request ${major(t.total_minor).toLocaleString()} FCFA payment`} icon={Smartphone} loading={busy} disabled={!/^\+237[26]\d{8}$/.test(phone)} onPress={()=>void pay()}/></Screen>}
-function Row({label,amount}:{label:string;amount:number}){return <View style={styles.row}><Text style={styles.meta}>{label}</Text><Money amount={amount}/></View>};const styles=StyleSheet.create({title:{...type.cardTitle,color:colors.navy950},meta:{...type.meta,color:colors.neutral600},error:{...type.meta,color:colors.dangerText},row:{flexDirection:'row',justifyContent:'space-between'},rule:{height:1,backgroundColor:colors.neutral200},networks:{flexDirection:'row',gap:space.x2},network:{flex:1,minHeight:48,borderWidth:1,borderColor:colors.neutral300,borderRadius:radius.control,alignItems:'center',justifyContent:'center'},selected:{borderColor:colors.blue600,backgroundColor:colors.blue50},networkText:{...type.label,color:colors.navy950}});
+import React, { useCallback, useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Smartphone } from "lucide-react-native";
+import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { LoadingState } from "@/components/StatePanel";
+import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ProposalSummary } from "@/components/purchase/ProposalSummary";
+import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
+import { useInsurance } from "@/store/insurance";
+import { useSession } from "@/store/session";
+import { isProviderNotConfigured, proposalStatusInfo } from "@/lib/purchase";
+import { useFormatters } from "@/hooks/useFormatters";
+import { colors, radius, space, type } from "@/theme/tokens";
+
+export default function Checkout() {
+  const { proposalId } = useLocalSearchParams<{ proposalId?: string }>();
+  const proposal = useInsurance((s) => s.proposal);
+  const selectedOffer = useInsurance((s) => s.selectedOffer);
+  const loadProposal = useInsurance((s) => s.loadProposal);
+  const request = useInsurance((s) => s.requestPayment);
+  const busy = useInsurance((s) => s.busy);
+  const defaultPhone = useSession((s) => s.bootstrap?.user.phone_e164 ?? "");
+  const f = useFormatters();
+  const [phone, setPhone] = useState(defaultPhone);
+  const [provider, setProvider] = useState<"mtn_momo" | "orange_money">("mtn_momo");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [payError, setPayError] = useState<unknown>(null);
+  const id = proposalId ?? proposal?.id;
+
+  // Always re-read the proposal: the price and status on screen must be the server's current ones.
+  const load = useCallback(async () => {
+    if (!id) return setLoading(false);
+    setLoading(true);
+    setLoadError(null);
+    try {
+      await loadProposal(id);
+    } catch (e) {
+      setLoadError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, loadProposal]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (!id)
+    return (
+      <Screen>
+        <AppHeader title="Review and pay" back />
+        <Card>
+          <Text style={ps.title}>No payable application found.</Text>
+          <Button label="My applications" variant="secondary" onPress={() => router.replace("/proposals")} />
+        </Card>
+      </Screen>
+    );
+  if (loading && !proposal) return <Screen><AppHeader title="Review and pay" back /><LoadingState label="Loading your application…" /></Screen>;
+  if (!proposal) return <Screen><AppHeader title="Review and pay" back /><ErrorCard error={loadError} fallback="Your application could not be loaded." onRetry={() => void load()} /></Screen>;
+
+  const info = proposalStatusInfo(proposal.status);
+  const payable = info.stage === "payable";
+  const phoneValid = /^\+237[26]\d{8}$/.test(phone);
+  const pay = async () => {
+    if (busy) return;
+    setPayError(null);
+    try {
+      await request(provider, phone);
+      router.replace({ pathname: "/payment", params: { proposalId: proposal.id } });
+    } catch (e) {
+      setPayError(e);
+    }
+  };
+
+  return (
+    <Screen>
+      <AppHeader title="Review and pay" subtitle="Step 5 of 5 · Nothing is charged until you approve on your phone" back />
+      {loadError ? <ErrorCard error={loadError} fallback="Showing the last known terms; refresh failed." onRetry={() => void load()} /> : null}
+      <ProposalSummary proposal={proposal} offer={selectedOffer} />
+      {!payable ? (
+        <Card>
+          <StatusChip label={info.label} tone={info.tone} />
+          <Text style={ps.body}>{info.message}</Text>
+          <Button label="Open application" onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id: proposal.id } })} />
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <Text style={ps.title}>Mobile Money network</Text>
+            <View style={st.networks}>
+              {(["mtn_momo", "orange_money"] as const).map((v) => (
+                <Pressable accessibilityRole="radio" accessibilityState={{ selected: provider === v }} key={v} style={[st.network, provider === v && st.selected]} onPress={() => setProvider(v)} disabled={busy}>
+                  <Text style={st.networkText}>{v === "mtn_momo" ? "MTN MoMo" : "Orange Money"}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextField label="Phone authorizing payment" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!busy} error={phone && !phoneValid ? "Use a Cameroon mobile number: +2376XXXXXXXX" : undefined} />
+            <Text style={ps.meta}>Your PIN is entered only in the operator prompt — never inside OpesInsure.</Text>
+          </Card>
+          {payError ? isProviderNotConfigured(payError) ? <ProviderNotConfigured error={payError} /> : <ErrorCard error={payError} fallback="The payment request failed. Nothing was charged." onRetry={() => void pay()} /> : null}
+          <Button label={`Request ${f.xaf(proposal.terms_snapshot?.total_minor)} payment`} icon={Smartphone} loading={busy} disabled={busy || !phoneValid} onPress={() => void pay()} />
+        </>
+      )}
+    </Screen>
+  );
+}
+
+const st = StyleSheet.create({
+  networks: { flexDirection: "row", gap: space.x2 },
+  network: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
+  selected: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
+  networkText: { ...type.label, color: colors.navy950 },
+});

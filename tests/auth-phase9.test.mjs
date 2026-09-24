@@ -8,7 +8,10 @@ test("sign-in uses phone + password with OTP and forgot-password alternatives", 
   const signIn = read("app/(auth)/sign-in.tsx");
   assert.match(client, /\/auth\/mobile\/password-login/);
   assert.match(signIn, /AuthApi\.passwordLogin\(/);
-  assert.match(signIn, /Use a one-time code instead/);
+  // Copy lives in the i18n catalogue (EN + FR).
+  assert.match(signIn, /t\("useOtpInstead"\)/);
+  assert.match(read("src/i18n/en.ts"), /Use a one-time code instead/);
+  assert.match(read("src/i18n/fr.ts"), /useOtpInstead: "Utiliser un code/);
   assert.match(signIn, /forgot-password/);
 });
 
@@ -38,11 +41,35 @@ test("sign-up takes a real password and optional recommended email", () => {
   assert.match(signUp, /hasTokens\(result\)/);
 });
 
-test("no 429 lockout countdown in auth screens", () => {
-  for (const f of ["app/(auth)/sign-in.tsx", "app/(auth)/verify.tsx", "app/(auth)/sign-up.tsx"]) {
+test("auth screens show a dedicated lockout state with the Retry-After countdown", () => {
+  // Checklist §3: a locked / too-many-attempts state instead of a generic error.
+  assert.match(read("src/api/client.ts"), /Retry-After/);
+  const logic = read("src/lib/customerLogic.ts");
+  assert.match(logic, /export function isLockout/);
+  assert.match(logic, /status === 429/);
+  assert.match(logic, /retryAfter/);
+  const notice = read("src/components/auth/LockoutNotice.tsx");
+  assert.match(notice, /formatCountdown/);
+  assert.match(notice, /onDone\(\)/);
+  for (const f of [
+    "app/(auth)/sign-in.tsx",
+    "app/(auth)/verify.tsx",
+    "app/(auth)/sign-up.tsx",
+    "app/(auth)/forgot-password.tsx",
+  ]) {
     const src = read(f);
-    assert.doesNotMatch(src, /retryAfter|429|Send another code in/);
+    assert.match(src, /isLockout\(e\)/, f);
+    assert.match(src, /<LockoutNotice seconds=\{locked\}/, f);
   }
+});
+
+test("OTP screen counts down expiry from expires_in and rate-limits resend", () => {
+  const verify = read("app/(auth)/verify.tsx");
+  assert.match(verify, /params\.expiresIn/);
+  assert.match(verify, /next\.expires_in/);
+  assert.match(verify, /RESEND_COOLDOWN = 60/);
+  assert.match(verify, /disabled=\{resendIn > 0/);
+  assert.match(verify, /disabled=\{code\.length !== 6 \|\| expired/);
 });
 
 test("support contacts come from /public/support-contacts, not hardcoded", () => {
@@ -65,7 +92,8 @@ test("support contacts come from /public/support-contacts, not hardcoded", () =>
 
 test("customer account offers email verification", () => {
   assert.match(read("src/api/client.ts"), /\/me\/email\/verification/);
-  assert.match(read("app/(customer)/(tabs)/account.tsx"), /requestEmailVerification/);
+  // Account tab renamed to Profile (Home | Explore | Policies | Claims | Profile).
+  assert.match(read("app/(customer)/(tabs)/profile.tsx"), /requestEmailVerification/);
 });
 
 test("review follow-ups: demo password from server, challenge on reset, email resend", () => {
