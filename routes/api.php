@@ -675,3 +675,10 @@ Route::prefix('v1/claims/{claim}/parties')->middleware(['auth:api', 'tenant', 'j
     Route::delete('{party}', [$c, 'destroy'])->middleware('permission:claims.parties.manage')->whereUuid('party');
 });
 // End Agent C7
+// Batch 11 C4 — REQ-CLM-004 limit / aggregate exhaustion ledger (App\Application\Claims\Limits), read API.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $l = \App\Application\Claims\Limits\Http\LimitLedgerController::class;
+    Route::get('policies/{policy}/limits', [$l, 'policy'])->middleware('permission:claims.view')->whereUuid('policy');
+    Route::get('claims/{claim}/limits', [$l, 'claim'])->middleware('permission:claims.view')->whereUuid('claim');
+});
+// End Batch 11 C4
