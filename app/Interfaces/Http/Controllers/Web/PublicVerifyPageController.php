@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Web;
 
-use App\Application\Certificates\PublicVerificationService;
+use App\Application\Documents\Verification\PublicVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
