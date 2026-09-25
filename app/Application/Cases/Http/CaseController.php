@@ -169,6 +169,12 @@ final class CaseController
         return response()->json(['data' => WorkQueue::where('tenant_id', $this->tenant())->where('active', true)->orderBy('code')->get()]);
     }
 
+    /** REQ-CAS-002 operational queue board (supervisor view). */
+    public function queueBoard(\App\Application\Cases\Bridges\OperationalQueueBoard $board): JsonResponse
+    {
+        return response()->json(['data' => $board->for($this->tenant())]);
+    }
+
     public function next(Request $r, string $queue): JsonResponse
     {
         $q = WorkQueue::where('tenant_id', $this->tenant())->where('active', true)->findOrFail($queue);
@@ -185,7 +191,14 @@ final class CaseController
     public function link(Request $r, LegacyWorkItemBridge $bridge): JsonResponse
     {
         $d = $r->validate(['source' => ['required', Rule::in(LegacyWorkItemBridge::SOURCES)], 'id' => 'required|uuid']);
-        $out = $bridge->link($d['source'], $d['id'], $this->tenant(), $r->user());
+        if ($d['source'] === 'support_tickets') {
+            // REQ-DUP-022 / REQ-CPL-001: a complaint ticket is consolidated as a complaint (case + complaint facts), one path.
+            $linked = DB::table('support_tickets')->where('id', $d['id'])->where('tenant_id', $this->tenant())->value('case_id');
+            $c = app(\App\Application\Complaints\ComplaintService::class)->fromSupportTicket($this->tenant(), $d['id'], $r->user());
+            $out = ['case' => WorkCase::withoutGlobalScopes()->findOrFail($c->case_id), 'task' => null, 'created' => $linked === null];
+        } else {
+            $out = $bridge->link($d['source'], $d['id'], $this->tenant(), $r->user());
+        }
 
         return response()->json(['data' => ['case_id' => $out['case']->id, 'case_number' => $out['case']->case_number, 'case_task_id' => $out['task']?->id, 'created' => $out['created']]], $out['created'] ? 201 : 200);
     }

@@ -43,6 +43,8 @@ final class CaseMachine
 
             return $ok ? GuardResult::pass() : GuardResult::fail('A decision must be recorded before this transition.');
         });
+        // Batch 12C bridge: complaint facts (REQ-CPL-001) gate COMPLAINT v2 transitions on every path.
+        \App\Application\Complaints\ComplaintLifecycle::registerGuards($this->engine);
     }
 
     public function applyCase(CaseType $type, string $event, TransitionContext $ctx): TransitionResult

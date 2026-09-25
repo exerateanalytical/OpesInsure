@@ -190,6 +190,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('underwriting/cases/{case}/assign', [ProposalController::class, 'assign'])->middleware('permission:underwriting.assign');
         Route::post('underwriting/referrals/{referral}/resolve', [ProposalController::class, 'resolveReferral'])->middleware('permission:underwriting.decide');
         Route::post('underwriting/cases/{case}/decision', [ProposalController::class, 'decide'])->middleware('permission:underwriting.decide');
+        // Batch 7B — REQ-UW-001…005 underwriter workspace (queue, case file, system evaluate, review steps, WF-019 info request).
+        Route::get('underwriting/cases', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'index'])->middleware('permission:underwriting.decide');
+        Route::get('underwriting/cases/{case}', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'show'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/evaluate', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'evaluate'])->middleware(['permission:underwriting.decide', 'throttle:30,1']);
+        Route::post('underwriting/cases/{case}/start-review', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'startReview'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/ready-for-decision', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'readyForDecision'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/information-requests', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'requestInformation'])->middleware('permission:underwriting.decide');
         Route::get('policies', [PolicyController::class, 'index']);
         Route::post('policy-issuance-requests', [PolicyController::class, 'requestIssuance'])->middleware('permission:policies.issue.request');
         Route::post('policy-issuance-requests/{issuance}/approve', [PolicyController::class, 'approveIssuance'])->middleware('permission:policies.issue.approve');
@@ -312,6 +319,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);
         Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
+
+        // Batch 13D — REQ-COI-001 co-insurance (apériteur + followers, share apportionment)
+        Route::get('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'index'])->middleware('permission:coinsurance.view');
+        Route::post('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'store'])->middleware('permission:coinsurance.manage');
+        Route::get('coinsurance/arrangements/{arrangement}', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'show'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/activate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'activate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/terminate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'terminate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/preview', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'preview'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportion'])->middleware('permission:coinsurance.apportion')->whereUuid('arrangement');
+        Route::get('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportionments'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        // End Batch 13D
     });
     Route::middleware('auth:api')->group(function (): void {
         Route::post('invitations/accept', [InvitationController::class, 'accept']);
@@ -333,3 +351,46 @@ Route::prefix('v1')->group(function (): void {
 });
 
 require __DIR__.'/wave6.php';
+
+// Batch 13A — REQ-PRV-001 / REQ-PRV-002 / REQ-PRV-004: provider master + network.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $p = \App\Application\Providers\Http\ProviderController::class;
+    $n = \App\Application\Providers\Http\ProviderNetworkController::class;
+    Route::get('providers', [$p, 'index'])->middleware('permission:providers.view');
+    Route::post('providers', [$p, 'store'])->middleware('permission:providers.manage');
+    Route::get('providers/{provider}', [$p, 'show'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::get('providers/{provider}/credentialing', [$p, 'history'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::post('providers/{provider}/credentialing', [$p, 'transition'])->middleware('permission:providers.credential')->whereUuid('provider');
+    Route::post('providers/{provider}/facilities', [$p, 'addFacility'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('provider-facilities/{facility}/services', [$p, 'addFacilityService'])->middleware('permission:providers.manage')->whereUuid('facility');
+    Route::post('providers/{provider}/code-mappings', [$p, 'mapCode'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('providers/{provider}/relationships', [$p, 'relate'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::get('medical-services', [$n, 'services'])->middleware('permission:providers.view');
+    Route::post('medical-services', [$n, 'addService'])->middleware('permission:providers.manage');
+    Route::get('provider-networks', [$n, 'index'])->middleware('permission:provider_networks.view');
+    Route::post('provider-networks', [$n, 'store'])->middleware('permission:provider_networks.manage');
+    Route::get('provider-networks/{network}/members', [$n, 'members'])->middleware('permission:provider_networks.view')->whereUuid('network');
+    Route::post('provider-networks/{network}/members', [$n, 'addMember'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-network-memberships/{membership}/end', [$n, 'endMember'])->middleware('permission:provider_networks.manage')->whereUuid('membership');
+    Route::post('provider-networks/{network}/contracts', [$n, 'addContract'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-contracts/{contract}/tariffs', [$n, 'draftTariff'])->middleware('permission:provider_networks.manage')->whereUuid('contract');
+    Route::get('provider-contracts/{contract}/price', [$n, 'price'])->middleware('permission:provider_networks.view')->whereUuid('contract');
+    Route::post('provider-tariffs/{tariff}/approve', [$n, 'approveTariff'])->middleware('permission:provider_tariffs.approve')->whereUuid('tariff');
+});
+
+// Batch 13C — REQ-REI-001 treaties + REQ-REI-002 cessions / bordereaux.
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Reinsurance\Http\ReinsuranceController::class;
+    Route::get('reinsurers', [$c, 'reinsurers'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('reinsurers', [$c, 'createReinsurer'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::post('reinsurers/{reinsurer}/status', [$c, 'reinsurerStatus'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::get('treaties', [$c, 'treatiesIndex'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties', [$c, 'createTreaty'])->middleware('permission:reinsurance.treaties.manage');
+    Route::get('treaties/{treaty}', [$c, 'showTreaty'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties/{treaty}/versions', [$c, 'addVersion'])->middleware('permission:reinsurance.treaties.manage');
+    Route::post('treaty-versions/{version}/activate', [$c, 'activateVersion'])->middleware('permission:reinsurance.treaties.approve');
+    Route::get('treaties/{treaty}/bordereau', [$c, 'bordereau'])->middleware('permission:reinsurance.cessions.view');
+    Route::get('policies/{policy}/cessions', [$c, 'policyCessions'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
+});

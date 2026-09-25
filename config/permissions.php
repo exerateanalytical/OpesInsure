@@ -481,6 +481,20 @@ return [
         'data_readiness.view' => ['description' => 'View the Data Readiness registry: every data-master domain with its status, owner, source and what is missing.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
+    // Batch 7D — issuance operations (routes/issuance_ops.php): REQ-POL-004 issuance exception queue, REQ-POL-007 sticker custody chain.
+    'issuance_ops' => [
+        'policies.issuance_queue.view' => ['description' => 'List failed / paid-not-issued issuance exceptions and their trail.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE_MANAGER']],
+        'policies.issuance_queue.manage' => ['description' => 'Scan for paid-not-issued payments, retry the issuance request, escalate an exception.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'OPERATIONS_MANAGER']],
+        'policies.issuance_queue.resolve' => ['description' => 'Close an issuance exception (refund requested / resolved manually) with notes.', 'suggested_roles' => ['CARRIER_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE_MANAGER']],
+        'stickers.view' => ['description' => 'Sticker inventory by custody level, custody history, handovers.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
+        'stickers.handover' => ['description' => 'Initiate, accept, reject or cancel a sticker handover (receiver acknowledges; never the initiator).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
+        'stickers.allocate' => ['description' => 'Allocate stickers down the chain broker → branch → agent (agents may only return their own).', 'suggested_roles' => ['BROKER_ADMIN', 'BRANCH_MANAGER']],
+        'stickers.allocate.carrier' => ['description' => 'Release carrier sticker stock to a broker, or take it back.', 'suggested_roles' => ['CARRIER_ADMIN']],
+        'stickers.reconcile' => ['description' => 'Record a physical sticker count against the custody ledger (missing / damaged).', 'suggested_roles' => ['BROKER_ADMIN', 'BRANCH_MANAGER', 'CARRIER_ADMIN']],
+        'stickers.assign' => ['description' => 'Assign an in-stock sticker to an in-force motor policy.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
+        'stickers.assign.any' => ['description' => 'Assign a sticker held by another agent.', 'suggested_roles' => ['BROKER_ADMIN']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
