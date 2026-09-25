@@ -25,6 +25,8 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 5/6 rules-engine follow-ups | cloud | DONE (on branch) |
 | Duplicate master-data lists + bordereau type set + test baseline triage | cloud | DONE (on branch) |
 | Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud | DONE (on branch) |
+| **Deploy release acedff7 (Batch 7 + cloud work)**: see docs/RELEASE_HANDOVER_BATCH7.md | local | TODO |
+| Batch 8 (10 agents: endorsements, cancellation, suspension, renewals, premium-to-cover/lapse, special products, portability, certificates/verification, document governance, roles+wiring) | cloud | IN PROGRESS. Don't start Batch 8 locally. |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
