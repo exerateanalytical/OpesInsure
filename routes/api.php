@@ -1027,3 +1027,31 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
 });
 // End Agent E3
+// Agent B3 — REQ-API-006 developer portal / REQ-API-007 carrier connectors / REQ-IAM-004 scopes
+// (/.well-known/openid-configuration + /.well-known/jwks.json are registered un-prefixed by IntegrationsDeveloperPlatformServiceProvider).
+Route::prefix('v1')->middleware(['json.api'])->group(function (): void {
+    $dp = \App\Application\Integrations\Developer\Http\DeveloperPortalController::class;
+    Route::get('developer/openapi.json', [$dp, 'openapi']);
+    Route::get('developer/scopes', [$dp, 'scopes']);
+    Route::get('partner/usage', [$dp, 'partnerUsage'])->middleware('integration.client:*');
+});
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $dp = \App\Application\Integrations\Developer\Http\DeveloperPortalController::class;
+    Route::get('developer/clients', [$dp, 'clients'])->middleware('permission:integrations.manage');
+    Route::post('developer/clients/{client}/keys', [$dp, 'issueKey'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::post('developer/clients/{client}/keys/{key}/revoke', [$dp, 'revokeKey'])->middleware('permission:integrations.revoke')->whereUuid(['client', 'key']);
+    Route::put('developer/clients/{client}/rate-limits', [$dp, 'rateLimits'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::get('developer/clients/{client}/usage', [$dp, 'usage'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::get('developer/consents', [$dp, 'consents'])->middleware('permission:integrations.consent.manage');
+    Route::post('developer/consents', [$dp, 'grantConsent'])->middleware('permission:integrations.consent.manage');
+    Route::post('developer/consents/{consent}/revoke', [$dp, 'revokeConsent'])->middleware('permission:integrations.consent.manage')->whereUuid('consent');
+    $cc = \App\Application\Integrations\Carriers\Http\CarrierConnectorController::class;
+    Route::get('carrier-connectors/fallback-queue', [$cc, 'fallbackQueue'])->middleware('permission:integrations.carrier_connectors.manage');
+    Route::get('carrier-connectors/{carrier}', [$cc, 'show'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::put('carrier-connectors/{carrier}', [$cc, 'configure'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::post('carrier-connectors/{carrier}/sync', [$cc, 'sync'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::post('carrier-connectors/messages/{message}/dispatch', [$cc, 'dispatch'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('message');
+    Route::post('carrier-connectors/messages/{message}/resolve', [$cc, 'resolveFallback'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('message');
+    Route::post('carrier-connectors/mappings/{mapping}/resolve-conflict', [$cc, 'resolveConflict'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('mapping');
+});
+// End Agent B3

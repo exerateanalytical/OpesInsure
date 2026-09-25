@@ -464,6 +464,18 @@ final class DomainEventCatalogue
             $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
             $d('commission.reopened', 'commission', 'Paid commission reopened to PAYABLE after its payout was reversed (D10).', [], [$C], true),
 
+            // Agent B3 — REQ-API-006 developer portal / REQ-API-007 carrier connectors (App\Application\Integrations)
+            $d('integration.client_key.issued', 'integration_client', 'Additional (sandbox/production) API key issued to an integration client.', [], [$C], true),
+            $d('integration.client_key.revoked', 'integration_client', 'Integration client API key revoked.', [], [$C], true),
+            $d('integration.consent.granted', 'integration_client', 'Tenant granted an integration client scoped delegated access.', [], [$C], true),
+            $d('integration.consent.revoked', 'integration_client', 'Tenant revoked an integration client consent.', [], [$C], true),
+            $d('integration.carrier_connector.configured', 'carrier', 'Carrier connector configuration created or changed.', [], [$C], true),
+            $d('integration.carrier_message.sent', 'carrier', 'Outbound carrier message delivered through the carrier connector.', [], [$C], true),
+            $d('integration.carrier_message.fallback_queued', 'carrier', 'Outbound carrier message moved to the manual fallback queue.', [], [$C], true),
+            $d('integration.carrier_message.fallback_resolved', 'carrier', 'Manual fallback carrier message resolved (sent manually, requeued or cancelled).', [], [$C], true),
+            $d('integration.record_mapping.conflict_detected', 'integration_client', 'Carrier sync changed a record OpesInsure owns; conflict queued for review.', [], [$C], true),
+            $d('integration.record_mapping.conflict_resolved', 'integration_client', 'External record mapping conflict resolved.', [], [$C], true),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),
