@@ -129,6 +129,8 @@ final class DomainEventCatalogue
             $d('claim.reopened', 'claim', 'Claim reopening approved (checker); reserve restored as a new movement.', [], [], true),
             $d('claim.reopen.rejected', 'claim', 'Claim reopening request rejected.', [], [], true),
             $d('claim.recovery.transferred', 'claim', 'Claim recovery transferred to another owner.', [], [], true),
+            $d('claim.coverage.checked', 'claim', 'Coverage-at-loss check stored on a claim (REQ-CLM-003).', [], [], true),
+            $d('claim.coverage.resolved', 'claim', 'Coverage review resolved by a handler (REQ-CLM-003).', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
