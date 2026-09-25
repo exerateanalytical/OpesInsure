@@ -370,3 +370,20 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::get('provider-contracts/{contract}/price', [$n, 'price'])->middleware('permission:provider_networks.view')->whereUuid('contract');
     Route::post('provider-tariffs/{tariff}/approve', [$n, 'approveTariff'])->middleware('permission:provider_tariffs.approve')->whereUuid('tariff');
 });
+
+// Batch 13C — REQ-REI-001 treaties + REQ-REI-002 cessions / bordereaux.
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Reinsurance\Http\ReinsuranceController::class;
+    Route::get('reinsurers', [$c, 'reinsurers'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('reinsurers', [$c, 'createReinsurer'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::post('reinsurers/{reinsurer}/status', [$c, 'reinsurerStatus'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::get('treaties', [$c, 'treatiesIndex'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties', [$c, 'createTreaty'])->middleware('permission:reinsurance.treaties.manage');
+    Route::get('treaties/{treaty}', [$c, 'showTreaty'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties/{treaty}/versions', [$c, 'addVersion'])->middleware('permission:reinsurance.treaties.manage');
+    Route::post('treaty-versions/{version}/activate', [$c, 'activateVersion'])->middleware('permission:reinsurance.treaties.approve');
+    Route::get('treaties/{treaty}/bordereau', [$c, 'bordereau'])->middleware('permission:reinsurance.cessions.view');
+    Route::get('policies/{policy}/cessions', [$c, 'policyCessions'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
+});
