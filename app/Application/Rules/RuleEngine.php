@@ -118,6 +118,41 @@ final class RuleEngine
         }
     }
 
+    /**
+     * DOCUMENTS domain (REQ-RUL-002): which document requirement codes the fired rules REQUIRE or WAIVE for this risk.
+     * A rule that cannot be decided (missing facts) still requires (conservative) but never waives.
+     * `applies` is false when no DOCUMENTS rule set is in force — callers then keep their legacy behaviour.
+     *
+     * @return array{applies: bool, require: list<string>, waive: list<string>, trace: list<array<string, mixed>>, versions: array<string, string>}
+     */
+    public function documents(string $lineCode, ?InsuranceProduct $product, array $facts, ?\DateTimeInterface $at = null): array
+    {
+        $at = $this->at($at);
+        $facts = $this->withContext($facts, $at, $lineCode, $product);
+        $require = [];
+        $waive = [];
+        $trace = [];
+        $versions = [];
+        $sets = $this->resolver->resolve('DOCUMENTS', $product?->id, $lineCode, $at);
+        foreach ($sets as $set) {
+            $ev = $this->evaluator->evaluate($this->sets->toDefinition($set), $facts);
+            $trace = [...$trace, ...$ev['trace']];
+            $versions['rule_set:'.$set->code] = (string) $set->version;
+            foreach ($ev['fired'] as $f) {
+                $codes = array_map('strval', (array) ($f['rule']->outcome['document_codes'] ?? []));
+                if (strtoupper((string) ($f['rule']->outcome['result'] ?? 'REQUIRE')) === 'WAIVE') {
+                    if (! $f['unknown']) {
+                        $waive = [...$waive, ...$codes];
+                    }
+                } else {
+                    $require = [...$require, ...$codes];
+                }
+            }
+        }
+
+        return ['applies' => $sets->isNotEmpty(), 'require' => array_values(array_unique($require)), 'waive' => array_values(array_unique($waive)), 'trace' => $trace, 'versions' => $versions];
+    }
+
     /** Sandbox evaluation of one rule set version (any status) — no persistence (PRE §76 test sandbox). */
     public function simulate(RuleSet $set, array $facts, ?\DateTimeInterface $at = null): array
     {
