@@ -65,3 +65,29 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
         });
     });
 });
+
+// Batch 12C — REQ-CAS-002 queue board, REQ-CPL-001 complaints, REQ-COR-001 correspondence register (all on the case engine).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $complaints = \App\Application\Complaints\Http\ComplaintController::class;
+    $correspondence = \App\Application\Correspondence\Http\CorrespondenceController::class;
+
+    Route::middleware('permission:cases.view')->group(function () use ($complaints, $correspondence): void {
+        Route::get('queues/board', [CaseController::class, 'queueBoard']);
+        Route::get('complaints', [$complaints, 'index']);
+        Route::get('complaints/{complaint}', [$complaints, 'show'])->whereUuid('complaint');
+        Route::get('correspondence', [$correspondence, 'index']);
+        Route::get('correspondence/{id}', [$correspondence, 'show'])->whereUuid('id');
+    });
+    Route::middleware('permission:cases.manage')->group(function () use ($complaints, $correspondence): void {
+        Route::post('complaints', [$complaints, 'store']);
+        Route::post('complaints/from-ticket', [$complaints, 'fromTicket']);
+        foreach (['acknowledge', 'classify', 'investigate', 'communicate', 'escalate', 'transition'] as $action) {
+            Route::post("complaints/{complaint}/{$action}", [$complaints, $action])->whereUuid('complaint');
+        }
+        Route::post('correspondence', [$correspondence, 'store']);
+        Route::post('correspondence/{id}/dispatch', [$correspondence, 'dispatch'])->whereUuid('id');
+        Route::post('correspondence/{id}/outcome', [$correspondence, 'outcome'])->whereUuid('id');
+    });
+    Route::post('complaints/{complaint}/assign', [$complaints, 'assign'])->whereUuid('complaint')->middleware('permission:cases.assign');
+    Route::post('complaints/{complaint}/resolution', [$complaints, 'resolution'])->whereUuid('complaint')->middleware('permission:cases.decide');
+});
