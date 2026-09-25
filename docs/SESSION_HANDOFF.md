@@ -30,8 +30,8 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 8 wiring | cloud | DONE (on branch) |
 | Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH9.md |
 | Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
-| Owner decisions D10 (retire instant manual journals + weekly POLICY settlement job, CASHIER role, report list doc, commission payout reopen, Batch 10 roles) | cloud | IN PROGRESS |
-| Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | IN PROGRESS. Don't start locally. |
+| Owner decisions D10 | cloud | MERGED (ships with Batch 11/12) |
+| Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | MERGED, NOT DEPLOYABLE YET (6 integration test failures being fixed). Deploy only up to 891355a (Batch 10) until RELEASE_HANDOVER_BATCH11_12.md exists. |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
