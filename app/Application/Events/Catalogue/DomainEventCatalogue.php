@@ -99,6 +99,13 @@ final class DomainEventCatalogue
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             $d('customer.attribution.changed', 'customer', 'Customer attribution changed.', [], [], true),
             $d('partner.portfolio.transferred', 'partner', 'Portfolio transferred between intermediaries (REQ-CRM-003).', [], [], true),
+            // REQ-POL-009 (Batch 8-7) policy portfolio transfer + portability export
+            $d('policy.portfolio_transfer.requested', 'policy_portfolio_transfer', 'Policy portfolio transfer requested (maker).', [], [], true),
+            $d('policy.portfolio_transfer.approved', 'policy_portfolio_transfer', 'Policy portfolio transfer approved (checker).', [], [], true),
+            $d('policy.portfolio_transfer.rejected', 'policy_portfolio_transfer', 'Policy portfolio transfer rejected (checker).', [], [], true),
+            $d('policy.portfolio_transfer.consent_requested', 'policy', 'Policyholder consent requested for a policy transfer.', [], [], true),
+            $d('policy.servicing.transferred', 'policy', 'Policy servicing intermediary/carrier changed; customer notice due.', [], [], true),
+            $d('policy.portability.exported', 'policy', 'Policy portability export pack produced.', [], [], true),
             $d('policy.beneficiaries.changed', 'policy', 'Policy beneficiary set replaced (REQ-CRM-004).', [], [], true),
             $d('customer.attribution.locked', 'customer', 'Customer attribution locked.', [], [], true),
             $d('customer.status.changed', 'customer', 'Customer status changed.', [], [], true),
