@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Stickers;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Identity\CarrierScopeResolver;
 use App\Models\Policy;
 use App\Models\StickerStock;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,6 +25,9 @@ use Illuminate\Validation\ValidationException;
  * sticker_custody_events. Reconciliation compares a physical count against the ledger for one holder and marks
  * missing / damaged stickers. A sticker is assigned to a motor policy from the issuing tenant's stock; an
  * agent-held sticker only by that agent (or a holder of stickers.assign.any).
+ *
+ * Owner decision (Batch 7 wiring): staff linked to one insurer (CarrierScopeResolver) move, reconcile and assign
+ * stickers of their own carrier only; broker / tenant staff are not carrier-scoped.
  */
 final class StickerCustodyService
 {
@@ -30,7 +35,16 @@ final class StickerCustodyService
 
     public const MOTOR_LINES = ['AUTO', 'AUTOMOBILE', 'MOTOR'];
 
-    public function __construct(private readonly AuditWriter $audit) {}
+    public function __construct(private readonly AuditWriter $audit, private readonly CarrierScopeResolver $carrierScope) {}
+
+    /** Carrier staff act on their own carrier's stickers only (owner decision). */
+    public function assertCarrierScope(User $actor, string $carrierId, string $tenantId): void
+    {
+        $own = $this->carrierScope->carrierIdFor($actor, $tenantId);
+        if ($own !== null && $own !== $carrierId) {
+            throw new AuthorizationException('You can only handle stickers of your own insurer.');
+        }
+    }
 
     /**
      * @param  array{level: string, tenant_id?: ?string, branch_id?: ?string, user_id?: ?string}  $holder
@@ -76,6 +90,7 @@ final class StickerCustodyService
         if ($from === $to) {
             throw ValidationException::withMessages(['to' => 'The receiver must differ from the giver.']);
         }
+        $this->assertCarrierScope($actor, $carrierId, (string) ($from['tenant_id'] ?? $to['tenant_id']));
 
         return DB::transaction(function () use ($carrierId, $from, $to, $serials, $actor, $notes, $diff): object {
             $stock = $this->heldBy($carrierId, $from)->whereIn('serial_number', $serials)->where('status', 'IN_STOCK')->lockForUpdate()->get();
@@ -103,6 +118,7 @@ final class StickerCustodyService
     {
         return DB::transaction(function () use ($handoverId, $actor, $contextTenantId): object {
             $h = $this->pending($handoverId, $contextTenantId);
+            $this->assertCarrierScope($actor, (string) $h->carrier_id, $contextTenantId);
             if ($h->initiated_by === $actor->id) {
                 throw ValidationException::withMessages(['handover' => 'The receiver must acknowledge the handover; the initiator cannot accept it.']);
             }
@@ -123,6 +139,7 @@ final class StickerCustodyService
     {
         return DB::transaction(function () use ($handoverId, $actor, $contextTenantId, $reason, $cancel): object {
             $h = $this->pending($handoverId, $contextTenantId);
+            $this->assertCarrierScope($actor, (string) $h->carrier_id, $contextTenantId);
             if ($cancel && $h->initiated_by !== $actor->id) {
                 throw ValidationException::withMessages(['handover' => 'Only the initiator can cancel a handover.']);
             }
@@ -143,6 +160,7 @@ final class StickerCustodyService
      */
     public function reconcile(string $carrierId, array $holder, array $counted, array $damaged, User $actor, ?string $notes = null): object
     {
+        $this->assertCarrierScope($actor, $carrierId, (string) $holder['tenant_id']);
         return DB::transaction(function () use ($carrierId, $holder, $counted, $damaged, $actor, $notes): object {
             $expected = $this->heldBy($carrierId, $holder)->where('status', 'IN_STOCK')->lockForUpdate()->get();
             $expectedSerials = $expected->pluck('serial_number')->all();
@@ -173,6 +191,7 @@ final class StickerCustodyService
     /** Assigns an in-stock sticker of the policy's carrier and tenant to a motor policy (custody level POLICY). */
     public function assignToPolicy(Policy $policy, string $serial, User $actor): StickerStock
     {
+        $this->assertCarrierScope($actor, (string) $policy->carrier_id, (string) $policy->tenant_id);
         return DB::transaction(function () use ($policy, $serial, $actor): StickerStock {
             $policy->loadMissing('proposal.offer.quote');
             $line = strtoupper((string) $policy->proposal?->offer?->quote?->line_code);
