@@ -121,6 +121,12 @@ const open = (url: string | null) => {
   if (url) void Linking.openURL(url).catch(() => undefined);
 };
 
+/** Approved letterhead legal footer lines (public display only); [] when absent. */
+const legalFooter = (row: unknown): string[] => {
+  const v = (row as { legal_footer?: unknown } | null)?.legal_footer;
+  return Array.isArray(v) ? v.filter((l): l is string => typeof l === "string" && !!l.trim()) : [];
+};
+
 function DirectorySections({ insurer }: { insurer: Parameters<typeof readDirectory>[0] }) {
   const { t } = useTranslation();
   const d = readDirectory(insurer);
@@ -200,9 +206,9 @@ function DirectorySections({ insurer }: { insurer: Parameters<typeof readDirecto
           ))}
         </>
       ) : null}
-      {(insurer.legal_footer ?? []).filter((l) => typeof l === "string" && l.trim()).length ? (
+      {legalFooter(insurer).length ? (
         <Card>
-          {(insurer.legal_footer ?? []).filter((l) => typeof l === "string" && l.trim()).map((line, i) => (
+          {legalFooter(insurer).map((line, i) => (
             <Text key={i} style={styles.legal}>{line}</Text>
           ))}
         </Card>
