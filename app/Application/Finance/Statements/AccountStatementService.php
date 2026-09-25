@@ -106,7 +106,7 @@ final class AccountStatementService
         $s->loadMissing('items');
         $partner = Partner::with('party')->find($s->partner_id);
         $running = (int) $s->opening_balance_minor;
-        $lines = $s->items->sortBy('occurred_at')->values()->map(function ($i) use (&$running) {
+        $lines = $s->items->filter(fn ($i) => $i->adjustment_status === null || $i->adjustment_status === 'APPROVED')->sortBy('occurred_at')->values()->map(function ($i) use (&$running) {
             $running += (int) $i->amount_minor;
 
             return ['occurred_at' => $i->occurred_at?->toIso8601String(), 'line_type' => $i->entry_type === 'COMMISSION' ? 'COMMISSION' : $i->entry_type,
@@ -120,7 +120,7 @@ final class AccountStatementService
             'balance_meaning' => 'OWED_TO_SUBJECT',
             'period_start' => $s->period_start->toDateString(), 'period_end' => $s->period_end->toDateString(), 'currency' => $s->currency,
             'opening_balance_minor' => (int) $s->opening_balance_minor, 'lines' => $lines->all(),
-            'totals_by_type' => ['COMMISSION' => (int) $s->earned_minor, 'ADJUSTMENT' => -(int) $s->clawed_back_minor, 'PAYMENT' => -(int) $s->paid_minor],
+            'totals_by_type' => ['COMMISSION' => (int) $s->earned_minor, 'ADJUSTMENT' => (int) ($s->adjustments_minor ?? 0) - (int) $s->clawed_back_minor, 'PAYMENT' => -(int) $s->paid_minor],
             'closing_balance_minor' => (int) $s->closing_balance_minor,
             'source' => 'PARTNER_STATEMENT', 'status' => $s->status, 'persisted_statement_id' => $s->id,
             'content_hash' => $s->content_hash, 'generated_at' => now()->toIso8601String(),

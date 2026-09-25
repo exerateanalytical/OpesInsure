@@ -107,6 +107,13 @@ final class DomainEventCatalogue
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
+            // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
+            $d('commission.statement.adjustment_proposed', 'partner_statement', 'Commission statement adjustment proposed (maker).', [], [], true),
+            $d('commission.statement.adjustment_approved', 'partner_statement', 'Commission statement adjustment approved (checker).', [], [], true),
+            $d('commission.statement.adjustment_rejected', 'partner_statement', 'Commission statement adjustment rejected (checker).', [], [], true),
+            $d('commission.statement.disputed', 'partner_statement', 'Commission statement disputed; dispute case opened.', [], [], true),
+            $d('commission.statement.dispute_resolved', 'partner_statement', 'Commission statement dispute resolved; statement back to DRAFT.', [], [], true),
+            $d('commission.payable.opened', 'partner_statement', 'Commission PAYABLE obligation opened for an approved statement.', [], [], true),
             $d('customer.attribution.changed', 'customer', 'Customer attribution changed.', [], [], true),
             $d('partner.portfolio.transferred', 'partner', 'Portfolio transferred between intermediaries (REQ-CRM-003).', [], [], true),
             // REQ-POL-009 (Batch 8-7) policy portfolio transfer + portability export
