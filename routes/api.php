@@ -778,3 +778,34 @@ Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->grou
 Route::get('v1/claim-decision-reason-codes', [\App\Application\Claims\Decisions\Http\ClaimDecisionController::class, 'reasonCodes'])
     ->middleware(['auth:api', 'tenant', 'json.api', 'permission:claims.view']);
 // End Agent C12
+// Agent C15 — REQ-REC-001 claim recoveries (receivables), REQ-REC-002 litigation, REQ-REC-003 collections.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rc = \App\Application\Claims\Recovery\Http\ClaimRecoveryController::class;
+    Route::get('claim-recoveries', [$rc, 'index'])->middleware('permission:claims.view');
+    Route::post('claim-recoveries', [$rc, 'store'])->middleware('permission:claims.recovery');
+    Route::get('claim-recoveries/{recovery}', [$rc, 'show'])->middleware('permission:claims.view')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/receive', [$rc, 'receive'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/dispute', [$rc, 'dispute'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/resolve-dispute', [$rc, 'resolveDispute'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/close', [$rc, 'close'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    $lm = \App\Application\Claims\Recovery\Http\LegalMatterController::class;
+    Route::get('legal-matters', [$lm, 'index'])->middleware('permission:legal.matters.view');
+    Route::post('legal-matters', [$lm, 'store'])->middleware('permission:legal.matters.manage');
+    Route::get('legal-matters/{matter}', [$lm, 'show'])->middleware('permission:legal.matters.view')->whereUuid('matter');
+    Route::post('legal-matters/{matter}/hearings', [$lm, 'hearing'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-hearings/{hearing}/record', [$lm, 'recordHearing'])->middleware('permission:legal.matters.manage')->whereUuid('hearing');
+    Route::post('legal-matters/{matter}/deadlines', [$lm, 'deadline'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-deadlines/{deadline}/complete', [$lm, 'completeDeadline'])->middleware('permission:legal.matters.manage')->whereUuid('deadline');
+    Route::post('legal-matters/{matter}/costs', [$lm, 'cost'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-matters/{matter}/outcome', [$lm, 'outcome'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    $cc = \App\Application\Collections\Http\CollectionController::class;
+    Route::get('collections', [$cc, 'index'])->middleware('permission:collections.view');
+    Route::post('collections/run', [$cc, 'run'])->middleware('permission:collections.manage');
+    Route::get('collections/{obligation}', [$cc, 'show'])->middleware('permission:collections.view')->whereUuid('obligation');
+    Route::post('collections/{obligation}/promises', [$cc, 'promise'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/{obligation}/escalate', [$cc, 'escalate'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/{obligation}/write-off-requests', [$cc, 'requestWriteOff'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/write-off-requests/{request}/approve', [$cc, 'approveWriteOff'])->middleware('permission:collections.write_off.approve')->whereUuid('request');
+    Route::post('collections/write-off-requests/{request}/reject', [$cc, 'rejectWriteOff'])->middleware('permission:collections.write_off.approve')->whereUuid('request');
+});
+// End Agent C15

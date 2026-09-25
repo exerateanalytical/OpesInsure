@@ -52,6 +52,7 @@ final class DefaultChartOfAccounts
         'coinsurance.apportioned' => ['COINSURANCE', '702000', '401300', 'Co-insurer share of premium apportioned.'],
         'claim.settlement.approved' => ['CLAIMS', '601000', '481000', 'Claim settlement approved (claims payable).'],
         'claim.settlement.paid' => ['CLAIMS', '481000', '521000', 'Claim settlement paid.'],
+        'claim.recovery.received' => ['CLAIMS', '521000', '601000', 'Claim recovery (subrogation / salvage / contribution) received.'],
         'premium.tax.assessed' => ['TAX', '411000', '443000', 'Tax on premium assessed.'],
     ];
 }

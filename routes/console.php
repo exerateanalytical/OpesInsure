@@ -41,3 +41,11 @@ Artisan::command('claims:auto-close {--days=30 : inactivity window in days}', fu
     $this->info("Evaluated: {$s['evaluated']}. Closed: {$s['closed']}. Blocked: {$s['blocked']}. Skipped: {$s['skipped']}.");
 })->purpose('Close inactive settled claims whose closure checklist passes.');
 Schedule::command('claims:auto-close')->dailyAt('02:40')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+// Agent C15 — REQ-REC-003 dunning run (+ REQ-REC-002 legal deadline sweep).
+Artisan::command('collections:run', function (App\Application\Collections\CollectionService $service, App\Application\Claims\Recovery\Litigation\LegalMatterService $legal) {
+    $s = $service->run();
+    $missed = $legal->sweepDeadlines();
+    $this->info("Notices: {$s['notices']}. Escalated: {$s['escalated']}. Promises kept/broken: {$s['promises_kept']}/{$s['promises_broken']}. Closed: {$s['closed']}. Legal deadlines missed: {$missed}.");
+})->purpose('Advance overdue receivables through the dunning stages, evaluate promises-to-pay, escalate, and flag missed legal deadlines.');
+Schedule::command('collections:run')->dailyAt('03:20')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
