@@ -78,6 +78,11 @@ final class MasterDataSeeder extends Seeder
         'fleet.usage' => 'vehicle.usage',
         // 12 coarse occupations duplicated the core ISCO-08 catalogue; flows now point at occupations.occupation.
         'life_insurance.occupation' => 'occupations.occupation',
+        // Life beneficiary relationships were a subset of persons.relationship (LEGAL_HEIRS is an alias of ESTATE).
+        'life_insurance.relationship' => 'persons.relationship',
+        // Flat brand list duplicated the category-scoped aviation_insurance.manufacturer used by the aviation flow;
+        // each flat code is a seeded alias of its brand in the canonical list.
+        'aviation.manufacturer' => 'aviation_insurance.manufacturer',
     ];
 
     /** @return array<int, array<string, mixed>> */
@@ -95,10 +100,30 @@ final class MasterDataSeeder extends Seeder
                 throw new RuntimeException('Invalid master data file '.basename($file).': '.$e->getMessage(), previous: $e);
             }
             $doc['__file'] = pathinfo($file, PATHINFO_FILENAME);
-            $docs[] = $doc;
+            $docs[] = self::expandValuesFrom($doc);
         }
 
         return $docs;
+    }
+
+    /**
+     * A list may take its values from a code registry instead of repeating them
+     * ("values_from": {"source": "party_roles", "codes": [...]}), so there is one canonical definition.
+     */
+    public static function expandValuesFrom(array $doc): array
+    {
+        foreach ($doc['domains'] ?? [] as $di => $d) {
+            foreach ($d['lists'] ?? [] as $li => $l) {
+                if (($l['values_from']['source'] ?? null) !== 'party_roles') {
+                    continue;
+                }
+                $roles = \App\Application\Customers\Roles\PartyRoleService::ROLES;
+                $doc['domains'][$di]['lists'][$li]['values'] = array_map(fn (string $c) => ['code' => $c, 'label_en' => $roles[$c]['en'], 'label_fr' => $roles[$c]['fr']],
+                    array_values(array_filter((array) $l['values_from']['codes'], fn ($c) => isset($roles[$c]))));
+            }
+        }
+
+        return $doc;
     }
 
     /** Domains with the same code across files are merged (lists united; values united by code). */

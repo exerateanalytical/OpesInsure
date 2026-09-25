@@ -59,8 +59,25 @@ final class MasterDataCatalogue
     public function list(string $domain, string $list): ?array
     {
         $d = $this->domain($domain);
+        $hit = $d ? collect($d['lists'])->firstWhere('code', $list) : null;
+        if ($hit) {
+            return $hit;
+        }
+        // Superseded (duplicate) lists keep answering: served from their canonical list.
+        [$cd, $cl] = MasterDataFlows::resolveSource($domain, $list);
 
-        return $d ? (collect($d['lists'])->firstWhere('code', $list)) : null;
+        return [$cd, $cl] !== [$domain, $list] ? $this->list($cd, $cl) : null;
+    }
+
+    /** Canonical [domain, list] for a request: the list itself while active, else its redirect target. */
+    public function canonical(string $domain, string $list): array
+    {
+        $d = $this->domain($domain);
+        if ($d && collect($d['lists'])->contains('code', $list)) {
+            return [$domain, $list];
+        }
+
+        return MasterDataFlows::resolveSource($domain, $list);
     }
 
     /** Active value by code (merged codes redirect to the surviving value). */
@@ -73,6 +90,15 @@ final class MasterDataCatalogue
         $hit = collect($l['values'])->firstWhere('code', $code);
         if ($hit) {
             return $hit;
+        }
+        [$cd, $cl] = $this->canonical($domain, $list);
+        if ([$cd, $cl] !== [$domain, $list]) {
+            // Code stored against a superseded list: the canonical list carries it as a seeded alias.
+            $norm = MasterDataNormalizer::normalize($code);
+            $alias = collect($l['values'])->first(fn ($v) => collect($v['aliases'] ?? [])->contains(fn ($a) => MasterDataNormalizer::normalize($a) === $norm));
+            if ($alias) {
+                return $alias;
+            }
         }
         $redirect = DB::table('master_data_values as old')->join('master_data_values as new', 'new.id', '=', 'old.merged_into_id')
             ->where(['old.domain_code' => $domain, 'old.list_code' => $list, 'old.code' => $code])->value('new.code');

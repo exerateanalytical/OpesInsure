@@ -24,6 +24,7 @@ final class MasterDataSearch
         if (! $l) {
             return null;
         }
+        [$domain] = $this->catalogue->canonical($domain, $list);
         $l = $this->catalogue->forTenant($l, $tenantId, $domain);
         $values = collect($l['values']);
         if ($parent !== null && $parent !== '') {

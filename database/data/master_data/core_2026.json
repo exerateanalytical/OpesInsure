@@ -8385,7 +8385,10 @@
                         {
                             "code": "ESTATE",
                             "label_en": "Estate (legal heirs)",
-                            "label_fr": "Succession (ayants droit)"
+                            "label_fr": "Succession (ayants droit)",
+                            "aliases": [
+                                "LEGAL_HEIRS"
+                            ]
                         },
                         {
                             "code": "FRIEND",
@@ -8407,7 +8410,16 @@
                     "label_en": "Role in the contract",
                     "label_fr": "Rôle dans le contrat",
                     "hierarchical": false,
-                    "note": "Independent roles: never assume policyholder, life assured, payer and beneficiary are the same person.",
+                    "note": "Independent roles: never assume policyholder, life assured, payer and beneficiary are the same person. Codes, labels and order come from PartyRoleService::ROLES (canonical party role registry); the seeder re-derives these values from it (kept here for file readers).",
+                    "values_from": {
+                        "source": "party_roles",
+                        "codes": [
+                            "POLICYHOLDER",
+                            "LIFE_ASSURED",
+                            "BENEFICIARY",
+                            "PAYER"
+                        ]
+                    },
                     "values": [
                         {
                             "code": "POLICYHOLDER",
@@ -8417,7 +8429,7 @@
                         {
                             "code": "LIFE_ASSURED",
                             "label_en": "Life assured",
-                            "label_fr": "Assuré"
+                            "label_fr": "Assuré (vie)"
                         },
                         {
                             "code": "BENEFICIARY",
