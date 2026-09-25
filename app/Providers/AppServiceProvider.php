@@ -80,16 +80,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function registerPassportScopes(): void
     {
-        Passport::tokensCan([
-            'quotes.read' => 'Read quote requests and offers',
-            'quotes.write' => 'Submit quote requests',
-            'policies.read' => 'Read policy and certificate data',
-            'policies.write' => 'Submit issuance, endorsement and cancellation requests',
-            'claims.read' => 'Read claim status',
-            'claims.write' => 'Submit FNOL and claim updates',
-            'settlements.read' => 'Read settlement and bordereau data',
-            'webhooks.manage' => 'Manage webhook subscriptions',
-        ]);
+        Passport::tokensCan(\App\Application\Integrations\Developer\OAuthScopeCatalogue::descriptions());
     }
 
     /**

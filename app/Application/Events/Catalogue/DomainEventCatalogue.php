@@ -43,6 +43,13 @@ final class DomainEventCatalogue
             $d('kyc_submission.expired', 'kyc_submission', 'Approved KYC reached its expiry.', [], [$C], true),
             $d('kyc_submission.rescreen_started', 'kyc_submission', 'Manual (audited) rescreening round opened on an approved KYC.', [], [$C], true),
             $d('kyc_submission.rescreen_match', 'kyc_submission', 'Rescreening of an approved KYC recorded a possible / confirmed match.', [], [$C], true),
+            // Agent E8 — REQ-AML-001 / REQ-KYC-004 list screening (App\Application\Compliance\Aml\Screening).
+            $d('aml.screening.list_version_imported', 'screening_list_version', 'Screening list version imported; awaiting approval (maker-checker).', [], [$C], true),
+            $d('aml.screening.list_version_activated', 'screening_list_version', 'Screening list version approved and made active; the previous version is superseded.', [], [$C], true),
+            $d('aml.screening.list_version_rejected', 'screening_list_version', 'Screening list version rejected by the checker.', [], [$C], true),
+            $d('aml.screening.hit_raised', 'screening_hit', 'Party name matched a screening list entry at or above the match threshold.', [], [$C], true),
+            $d('aml.screening.hit_disposition_proposed', 'screening_hit', 'Maker proposed a disposition (FALSE_POSITIVE / TRUE_MATCH / ESCALATED) for a screening hit.', [], [$C], true),
+            $d('aml.screening.hit_disposed', 'screening_hit', 'Checker approved (or rejected) the proposed disposition of a screening hit.', [], [$C], true),
             $d('quote.rated', 'quote', 'Quote premium calculated by the rating engine.', ['QuoteCalculated', 'QuoteRated'], [$W, $P], true),
             $d('quote.offer.accepted', 'quote', 'Customer accepted the quote offer.', ['QuoteAccepted'], [$W], true),
             $d('proposal.submitted', 'proposal', 'Proposal submitted for underwriting.', ['ProposalSubmitted'], [$W], true),
@@ -59,9 +66,11 @@ final class DomainEventCatalogue
             $d('renewal.completed', 'policy', 'Policy renewed.', ['PolicyRenewed'], [$W], true),
             $d('claim.fnol.submitted', 'claim', 'Claim reported (FNOL).', ['ClaimReported'], [$W], true),
             $d('claim.evidence.attached', 'claim', 'Claim evidence received.', ['ClaimEvidenceReceived'], [$W], true),
+            // REQ-CLM-005 (App\Application\Claims\Evidence\ClaimEvidenceReviewService)
+            $d('claim.evidence.reviewed', 'claim', 'Claim evidence accepted or rejected with a reason (WF-051/052).', [], [$C], true),
             $d('claim.assigned', 'claim', 'Claim assigned to a handler.', ['ClaimAssigned'], [$W], true),
             $d('claim.decision.approved', 'claim', 'Claim approved.', ['ClaimApproved'], [$W], true),
-            $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W]),
+            $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W], true),
             $d('claim.payment.paid', 'claim', 'Claim settlement paid.', ['ClaimSettled'], [$W], true),
             $d('refund.approved', 'refund', 'Refund approved.', ['RefundApproved'], [$W], true),
             // Batch 9-6 REQ-PAY-009 / WF-063 refund engine (App\Application\Finance\Refunds\RefundEngine)
@@ -71,6 +80,14 @@ final class DomainEventCatalogue
             $d('refund.rejected', 'refund', 'Refund rejected before payout.', [], [$C], true),
             $d('refund.paid', 'refund', 'Approved refund paid out to the customer.', [], [$C], true),
             $d('refund.reconciled', 'refund', 'Refund payout matched to the bank / provider statement.', [], [$C], true),
+            // Agent C16 REQ-FRD-001 / WF-089 claim fraud review (App\Application\Fraud\ClaimFraudIndicatorService)
+            $d('fraud.claim.review_required', 'claim', 'Fraud indicators fired; claim flagged REVIEW_REQUIRED and a suspicious-claim case opened (never auto-confirmed).', [], [$C], true),
+            $d('fraud.claim.review_decided', 'claim', 'Human reviewer recorded the suspicious-claim review outcome.', [], [$C], true),
+            // Agent C8 — REQ-CLM-007 claim types + late-claim approval (App\Application\Claims\Types)
+            $d('claim.reported_late', 'claim', 'Claim reported after its configured (platform default / insurer) reporting period; flagged and a late-report case opened.', [], [$C], true),
+            $d('claim.late_report.recommended', 'claim', 'Handler (maker) recommended accepting or rejecting a late claim report.', [], [$C], true),
+            $d('claim.late_report.decided', 'claim', 'Checker approved or rejected a late claim report.', [], [$C], true),
+            $d('claim_type.version.approved', 'claim_type_version', 'Insurer claim type override version activated (maker-checker).', [], [$C], true),
             // Batch 9-6 REQ-PAY-011 mobile-money clearing (App\Application\Finance\Clearing\ClearingService)
             $d('payment.clearing.settled', 'clearing_batch', 'Provider settlement batch credited by the bank.', [], [$C], true),
             $d('payment.clearing.reconciled', 'clearing_batch', 'Provider settlement batch reconciled (matched or variance).', [], [$C], true),
@@ -94,19 +111,85 @@ final class DomainEventCatalogue
             $d('rules.eligibility.evaluated', 'eligibility', 'Eligibility evaluated.', ['EligibilityEvaluated'], [$P]),
             $d('policy.snapshot.created', 'policy', 'Immutable policy product snapshot created.', ['PolicySnapshotCreated'], [$P]),
             $d('claim.coverage.evaluated', 'claim', 'Claim coverage evaluated.', ['ClaimCoverageEvaluated'], [$P]),
-            $d('claim.settlement.calculated', 'claim', 'Claim settlement amount calculated.', ['ClaimSettlementCalculated'], [$P]),
-            $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P]),
+            $d('claim.settlement.calculated', 'claim', 'Claim settlement amount calculated.', ['ClaimSettlementCalculated'], [$P], true),
+            // Batch 12 C13 — REQ-CLM-013 settlement lifecycle (App\Application\Claims\Settlement\ClaimSettlementService)
+            $d('claim.settlement.offered', 'claim', 'Claim settlement offered to the payee.', [], [$C], true),
+            $d('claim.settlement.accepted', 'claim', 'Claim settlement offer accepted.', [], [$C], true),
+            $d('claim.settlement.disputed', 'claim', 'Claim settlement offer disputed.', [], [$C], true),
+            $d('claim.settlement.discharge_requested', 'claim', 'Settlement discharge (quittance) generated and sent for signature.', [], [$C], true),
+            $d('claim.settlement.discharge_signed', 'claim', 'Settlement discharge signed by the payee.', [], [$C], true),
+            $d('claim.settlement.payment_requested', 'claim', 'Settlement payment, payable obligation and approval posting raised.', [], [$C], true),
+            $d('claim.settlement.paid', 'claim', 'Claim settlement paid (obligation settled, paid posting).', [], [$C], true),
+            // Batch 14 E5 — REQ-HLT-004 (App\Application\Health\Benefits\BenefitAccumulator)
+            $d('health.benefit.overrun', 'claim', 'Paid health claim consumed benefits beyond the remaining limit (recorded as overrun).', [], [$C], true),
+            $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P], true),
 
             // --- Already emitted by code, no spec alias ---
             $d('chargeback.resolved', 'chargeback', 'Payment chargeback resolved.', [], [], true),
             $d('claim.carrier_message.queued', 'claim', 'Message to carrier queued for a claim.', [], [], true),
+            $d('claim.carrier_message.received', 'claim', 'Inbound carrier message (signed API or approved manual entry) recorded for a claim.', [], [], true),
+            $d('claim.carrier_decision.received', 'claim', 'Carrier claim decision received through the claims execution mode.', [], [], true),
+            $d('claim.carrier_entry.proposed', 'claim', 'Manual entry of a carrier claim response proposed (maker).', [], [], true),
+            $d('claim.carrier_entry.approved', 'claim', 'Manual entry of a carrier claim response approved (checker).', [], [], true),
+            $d('claim.carrier_entry.rejected', 'claim', 'Manual entry of a carrier claim response rejected (checker).', [], [], true),
             $d('claim.dispute.resolved', 'claim', 'Claim dispute resolved.', [], [], true),
+            // REQ-CLM-010 (App\Application\Claims\Assessment)
+            $d('claim.assessment.recorded', 'claim', 'Claim assessment (recommendation) recorded.', [], [], true),
+            $d('claim.assessment.accepted', 'claim', 'Claim assessment accepted by a reviewer.', [], [], true),
+            $d('claim.assessment.rejected', 'claim', 'Claim assessment rejected by a reviewer.', [], [], true),
+            $d('claim.investigation.opened', 'claim', 'Claim investigation opened (case engine).', [], [], true),
+            $d('claim.investigation.indicators_attached', 'claim', 'Fraud indicators attached to a claim investigation.', [], [], true),
+            $d('claim.investigation.concluded', 'claim', 'Claim investigation concluded with an outcome.', [], [], true),
             $d('claim.payment.approved', 'claim', 'Claim payment approved.', [], [], true),
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
+            // REQ-CLM-008 (Batch 11 C5) event-based reserves.
+            $d('claim.reserve.requested', 'claim', 'Claim reserve movement requested (maker).', [], [], true),
+            $d('claim.reserve.referred', 'claim', 'Claim reserve approval referred: approver RESERVE_APPROVE limit exceeded.', [], [], true),
+            $d('claim.reserve.changed', 'claim', 'Claim reserve movement approved and posted.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
+            // REQ-CLM-006 (App\Application\Claims\Parties\ClaimPartyService)
+            $d('claim.party.added', 'claim', 'Party (claimant, third party, payee, expert…) added to a claim.', [], [], true),
+            $d('claim.party.updated', 'claim', 'Claim party details changed.', [], [], true),
+            $d('claim.party.removed', 'claim', 'Claim party removed (dated, soft).', [], [], true),
+            // REQ-CLM-014 (agent C14) closure + reopening
+            $d('claim.closed', 'claim', 'Claim closed after the closure checklist passed (manual or auto).', [], [], true),
+            $d('claim.reopen.requested', 'claim', 'Claim reopening requested (maker).', [], [], true),
+            $d('claim.reopened', 'claim', 'Claim reopening approved (checker); reserve restored as a new movement.', [], [], true),
+            $d('claim.reopen.rejected', 'claim', 'Claim reopening request rejected.', [], [], true),
+            $d('claim.recovery.transferred', 'claim', 'Claim recovery transferred to another owner.', [], [], true),
+            $d('claim.coverage.checked', 'claim', 'Coverage-at-loss check stored on a claim (REQ-CLM-003).', [], [], true),
+            $d('claim.coverage.resolved', 'claim', 'Coverage review resolved by a handler (REQ-CLM-003).', [], [], true),
+            // REQ-CLM-012 (App\Application\Claims\Decisions)
+            $d('claim.decision.proposed', 'claim', 'Claim decision proposed (maker).', [], [], true),
+            $d('claim.decision.referred', 'claim', 'Claim decision over CLAIM_SETTLE authority referred to a supervisor.', [], [], true),
+            $d('claim.decision.returned', 'claim', 'Claim decision proposal returned to the maker by the checker.', [], [], true),
+            $d('claim.decision.appealed', 'claim', 'Appeal lodged against a claim decision.', [], [], true),
+            $d('claim.decision.notified', 'claim', 'Customer notified of a claim decision with its reasons.', [], [], true),
+            // Agent C15 — REQ-REC-001..003 (App\Application\Claims\Recovery, App\Application\Collections)
+            $d('claim.recovery.expected', 'claim_recovery', 'Claim recovery raised as a receivable obligation.', [], [], true),
+            $d('claim.recovery.received', 'claim_recovery', 'Claim recovery money received (obligation settled, ledger posted).', [], [], true),
+            $d('claim.recovery.disputed', 'claim_recovery', 'Claim recovery disputed by the counterparty.', [], [], true),
+            $d('claim.recovery.closed', 'claim_recovery', 'Claim recovery closed (received or abandoned).', [], [], true),
+            $d('legal.matter.opened', 'legal_matter', 'Litigation matter opened on a LITIGATION case.', [], [], true),
+            $d('legal.hearing.scheduled', 'legal_matter', 'Court hearing scheduled for a legal matter.', [], [], true),
+            $d('legal.deadline.missed', 'legal_matter', 'A legal deadline passed without being met.', [], [], true),
+            $d('legal.outcome.recorded', 'legal_matter', 'Litigation outcome recorded; matter concluded.', [], [], true),
+            $d('collections.notice.issued', 'financial_obligation', 'Dunning notice issued for an overdue receivable.', [], [], true),
+            $d('collections.promise.recorded', 'financial_obligation', 'Promise-to-pay recorded for an overdue receivable.', [], [], true),
+            $d('collections.promise.broken', 'financial_obligation', 'Promise-to-pay broken.', [], [], true),
+            $d('collections.escalated', 'financial_obligation', 'Overdue receivable escalated to a RECOVERY collection case.', [], [], true),
+            $d('collections.write_off.requested', 'financial_obligation', 'Write-off of a receivable requested (maker).', [], [], true),
+            $d('collections.write_off.approved', 'financial_obligation', 'Write-off of a receivable approved (checker).', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
+            // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
+            $d('commission.statement.adjustment_proposed', 'partner_statement', 'Commission statement adjustment proposed (maker).', [], [], true),
+            $d('commission.statement.adjustment_approved', 'partner_statement', 'Commission statement adjustment approved (checker).', [], [], true),
+            $d('commission.statement.adjustment_rejected', 'partner_statement', 'Commission statement adjustment rejected (checker).', [], [], true),
+            $d('commission.statement.disputed', 'partner_statement', 'Commission statement disputed; dispute case opened.', [], [], true),
+            $d('commission.statement.dispute_resolved', 'partner_statement', 'Commission statement dispute resolved; statement back to DRAFT.', [], [], true),
+            $d('commission.payable.opened', 'partner_statement', 'Commission PAYABLE obligation opened for an approved statement.', [], [], true),
             $d('customer.attribution.changed', 'customer', 'Customer attribution changed.', [], [], true),
             $d('partner.portfolio.transferred', 'partner', 'Portfolio transferred between intermediaries (REQ-CRM-003).', [], [], true),
             // REQ-POL-009 (Batch 8-7) policy portfolio transfer + portability export
@@ -143,6 +226,13 @@ final class DomainEventCatalogue
             $d('document.signature.completed', 'signature_request', 'All signers signed.', [], [], true),
             $d('document.signature.declined', 'signature_request', 'A signer declined; request ended.', [], [], true),
             $d('ledger.event.posted', 'ledger', 'Ledger journal posted.', [], [], true),
+            // Batch 10-7 REQ-ACC-002 (App\Application\Ledger\Journals\ManualJournalService)
+            $d('ledger.journal.drafted', 'journal', 'Manual journal drafted.', [], [], true),
+            $d('ledger.journal.validated', 'journal', 'Manual journal validated (balanced, active accounts, open period).', [], [], true),
+            $d('ledger.journal.approved', 'journal', 'Manual journal approved by a checker other than the maker.', [], [], true),
+            $d('ledger.journal.rejected', 'journal', 'Manual journal sent back to DRAFT.', [], [], true),
+            $d('ledger.journal.posted', 'journal', 'Approved manual journal posted.', [], [], true),
+            $d('ledger.journal.reversed', 'journal', 'Journal reversed by a mirror journal.', [], [], true),
             $d('notification.delivery.requested', 'notification', 'Notification delivery requested.', [], [], true),
             $d('notification.delivery.sent', 'notification', 'Notification delivered to provider.', [], [], true),
             $d('partner.licence.decided', 'partner', 'Partner licence decision recorded.', [], [], true),
@@ -150,6 +240,12 @@ final class DomainEventCatalogue
             $d('partner.payout.paid', 'partner_payout', 'Partner payout paid.', [], [], true),
             $d('partner.payout.reversed', 'partner_payout', 'Partner payout reversed.', [], [], true),
             $d('partner.statement.approved', 'partner_statement', 'Partner statement approved.', [], [], true),
+            // REQ-STL-002 / REQ-DUP-008 carrier bordereau (App\Application\FinancialDistribution\BordereauService)
+            $d('bordereau.prepared', 'bordereau', 'Carrier bordereau prepared with per-type items for a period.', [], [], true),
+            $d('bordereau.approved', 'bordereau', 'Carrier bordereau approved (checker).', [], [], true),
+            $d('bordereau.submitted', 'bordereau', 'Carrier bordereau submitted to the carrier.', [], [], true),
+            $d('bordereau.acknowledged', 'bordereau', 'Carrier acknowledged the bordereau.', [], [], true),
+            $d('bordereau.rejected', 'bordereau', 'Carrier rejected the bordereau.', [], [], true),
             $d('party.created', 'party', 'Party created.', [], [], true),
             // REQ-PTY-002/003/004 golden record (App\Application\Customers\Roles|Relationships|Matching)
             $d('party.role_assigned', 'party', 'Explicit bitemporal party role recorded (LOCK-006).', [], [], true),
@@ -189,14 +285,43 @@ final class DomainEventCatalogue
             $d('policy.premium.suspended', 'policy', 'Policy suspended on premium default (SUSPEND_ON_DEFAULT).', [], [], true),
             $d('policy.premium.lapsed', 'policy', 'Defaulted instalment lapsed after the rule lapse_after_days.', [], [], true),
             $d('policy.premium.instalment_settled', 'policy', 'Instalment paid in full or waived.', [], [], true),
+            // Batch 10-9 — REQ-ACC-004 (App\Application\Ledger\Technical)
+            $d('technical.actuarial_import.created', 'technical_actuarial_import', 'IBNR / life actuarial values imported as a new version awaiting approval (REQ-ACC-004).', [], [], true),
+            $d('technical.actuarial_import.approved', 'technical_actuarial_import', 'Actuarial import approved (maker-checker); previous approved version superseded.', [], [], true),
+            $d('technical.actuarial_import.rejected', 'technical_actuarial_import', 'Actuarial import rejected.', [], [], true),
+            $d('technical.upr.posted', 'technical_upr_posting', 'Period-end UPR computed and its movement posted to the ledger (REQ-ACC-004).', [], [], true),
             // Batch 9-1 — REQ-OBL-001 (App\Application\Finance\Obligations\ObligationService)
+            // Batch 17 B5 — REQ-IMP-002 legacy migration (App\Application\Import\Legacy\LegacyMigrationPipeline)
+            $d('legacy_migration.committed', 'import_batch', 'Approved legacy migration batch committed (records created, opening balances posted or CONFIG_REQUIRED).', [], [], true),
+            $d('legacy_migration.rolled_back', 'import_batch', 'Uncommitted legacy migration batch discarded.', [], [], true),
             $d('finance.obligation.created', 'financial_obligation', 'Financial obligation (receivable / payable) raised.', [], [], true),
             $d('finance.obligation.settled', 'financial_obligation', 'Financial obligation fully settled.', [], [], true),
             $d('finance.obligation.reopened', 'financial_obligation', 'A settlement on a financial obligation was reversed (obligation reopened).', [], [], true),
+            // Batch 10-4 — REQ-STL-001 broker–insurer settlement (App\Application\Settlements\SettlementService)
+            $d('settlement.drafted', 'settlement_batch', 'Ledger-calculated carrier settlement drafted.', [], [], true),
+            $d('settlement.calculated', 'settlement_batch', 'Settlement calculated from collected premium minus retained commission (carrier payables opened).', [], [], true),
+            $d('settlement.review_requested', 'settlement_batch', 'Calculated settlement sent for review.', [], [], true),
+            $d('settlement.approved', 'settlement_batch', 'Settlement approved by an independent reviewer (posted to the ledger).', [], [], true),
+            $d('settlement.rejected', 'settlement_batch', 'Settlement sent back to draft by the reviewer.', [], [], true),
+            $d('settlement.cancelled', 'settlement_batch', 'Settlement cancelled before approval; its payables cancelled.', [], [], true),
+            $d('settlement.processing', 'settlement_batch', 'Settlement payment to the carrier submitted.', [], [], true),
+            $d('settlement.processing_failed', 'settlement_batch', 'Settlement payment failed; batch returned to approved.', [], [], true),
+            $d('settlement.settled', 'settlement_batch', 'Settlement paid; carrier payables settled (posted to the ledger).', [], [], true),
+            $d('settlement.reconciled', 'settlement_batch', 'Settled batch reconciled against the bank / carrier statement.', [], [], true),
             $d('policy.recovery.requested', 'policy', 'Recovery opened for a suspended / expired / lapsed policy.', [], [], true),
             $d('policy.recovery.approved', 'policy', 'Recovery approved (maker-checker); policy active again.', [], [], true),
             $d('policy.recovery.rejected', 'policy', 'Recovery case rejected.', [], [], true),
             $d('privacy.consent.changed', 'consent', 'Privacy consent changed.', [], [], true),
+            // Agent B7 — REQ-SEC-001 security centre (App\Application\Security)
+            $d('security.login.anomaly_detected', 'user', 'Sign-in flagged (new device / impossible travel).', [], [$C], true),
+            $d('security.privileged_access.expired', 'privileged_access_grant', 'Privileged-access grant window closed; grant expired.', [], [$C], true),
+            $d('security.finding.status_changed', 'security_finding', 'Security finding reported or moved in its lifecycle.', [], [$C], true),
+            // REQ-CMP-001 compliance cases on the case engine (App\Application\Compliance\Cases\ComplianceCaseService, agent E10)
+            $d('compliance.case.opened', 'compliance_case', 'Compliance case opened and linked to its COMPLIANCE_INVESTIGATION work case.', [], [$C], true),
+            $d('compliance.case.transitioned', 'compliance_case', 'Compliance case status changed (work case driven in the same transaction).', [], [$C], true),
+            $d('compliance.finding.recorded', 'compliance_finding', 'Compliance finding recorded with a severity.', [], [$C], true),
+            $d('compliance.corrective_action.planned', 'compliance_corrective_action', 'Corrective action planned for a finding (owner, due date; case task created).', [], [$C], true),
+            $d('compliance.corrective_action.verified', 'compliance_corrective_action', 'Corrective action verified by someone other than the completer.', [], [$C], true),
             $d('proposal.created', 'proposal', 'Proposal created.', [], [], true),
             // REQ-PRP-001 proposal machine (App\Application\Underwriting\ProposalMachine, published by the StateMachineEngine)
             $d('proposal.referred', 'proposal', 'Submitted proposal referred to an underwriter.', [], [$C], true),
@@ -254,6 +379,52 @@ final class DomainEventCatalogue
             // Batch 13C — REQ-REI-001/002 reinsurance (App\Application\Reinsurance)
             $d('reinsurance.treaty_version.activated', 'reinsurance_treaty', 'Treaty version activated (maker-checker).', [], [], true),
             $d('reinsurance.policy.ceded', 'policy', 'Policy cession calculated against treaties in force.', [], [], true),
+            // Batch 14C — REQ-REI-003 facultative placements (App\Application\Reinsurance\Facultative\FacultativePlacementService)
+            $d('reinsurance.facultative.submitted', 'facultative_placement', 'Facultative slip submitted for approval with signed lines.', [], [], true),
+            $d('reinsurance.facultative.bound', 'facultative_placement', 'Facultative placement approved (maker-checker, FACULTATIVE_APPROVE) and bound; cession recorded.', [], [], true),
+            $d('reinsurance.facultative.rejected', 'facultative_placement', 'Facultative placement rejected by the checker.', [], [], true),
+            // Batch 14C / E7 — REQ-REI-004 reinsurance recoveries (App\Application\Reinsurance\Recoveries)
+            $d('reinsurance.recovery.estimated', 'reinsurance_recovery', 'Reinsurance recovery estimated from claim reserves/payments against cessions in force.', [], [], true),
+            $d('reinsurance.recovery.notified', 'reinsurance_recovery', 'Reinsurance recovery notified to reinsurers.', [], [], true),
+            $d('reinsurance.recovery.large_loss_notified', 'reinsurance_recovery', 'Claim crossed the treaty large-loss threshold; reinsurers notified.', [], [], true),
+            $d('reinsurance.recovery.agreed', 'reinsurance_recovery', 'Reinsurance recovery amount agreed with reinsurers.', [], [], true),
+            $d('reinsurance.recovery.billed', 'reinsurance_recovery', 'Reinsurance recovery billed (receivable obligations raised, ledger posted).', [], [], true),
+            $d('reinsurance.recovery.settled', 'reinsurance_recovery', 'Reinsurance recovery cash received from a reinsurer (obligation settled, ledger posted).', [], [], true),
+            $d('reinsurance.recovery.disputed', 'reinsurance_recovery', 'Reinsurance recovery disputed.', [], [], true),
+            $d('reinsurance.recovery.closed', 'reinsurance_recovery', 'Reinsurance recovery closed.', [], [], true),
+            // Agent E11 — REQ-CAT-001/002/003 accumulation + catastrophe events (App\Application\Accumulation)
+            $d('accumulation.snapshot.taken', 'accumulation_snapshot', 'Point-in-time accumulation snapshot per zone / peril (gross and net of reinsurance).', [], [], true),
+            $d('accumulation.capacity.breached', 'accumulation_capacity_check', 'Capacity check returned CAPACITY_EXCEEDED or FACULTATIVE_REQUIRED (LOCK-019).', [], [], true),
+            $d('catastrophe.event.declared', 'catastrophe_event', 'Catastrophe event declared (peril, zones, date window).', [], [], true),
+            $d('catastrophe.event.claim_linked', 'catastrophe_event', 'Claim linked to a catastrophe event.', [], [], true),
+            $d('catastrophe.event.losses_aggregated', 'catastrophe_event', 'Catastrophe event losses aggregated; carries the event id for reinsurance recoveries.', [], [], true),
+            $d('catastrophe.event.closed', 'catastrophe_event', 'Catastrophe event closed.', [], [], true),
+            $d('claim.large_loss.detected', 'claim', 'Claim loss reached the configured large-loss threshold; recipients notified.', [], [], true),
+            // Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters)
+            $d('claim.expert.assigned', 'claim', 'Expert / adjuster appointed on a claim.', [], [], true),
+            $d('claim.expert.accepted', 'claim', 'Expert accepted the assignment.', [], [], true),
+            $d('claim.expert.declined', 'claim', 'Expert declined the assignment.', [], [], true),
+            $d('claim.expert.inspection_scheduled', 'claim', 'Expert scheduled the inspection.', [], [], true),
+            $d('claim.expert.inspected', 'claim', 'Expert recorded the inspection.', [], [], true),
+            $d('claim.expert.report_submitted', 'claim', 'Expert submitted the assessment report.', [], [], true),
+            $d('claim.expert.report_accepted', 'claim', 'Insurer accepted the expert report.', [], [], true),
+            $d('claim.expert.report_returned', 'claim', 'Insurer returned the expert report for rework.', [], [], true),
+            $d('claim.expert.cancelled', 'claim', 'Insurer cancelled the expert assignment.', [], [], true),
+            // Agent E3 — REQ-HLT-002 health preauthorization / guarantee of payment (App\Application\Health\Preauth)
+            $d('health.preauth.requested', 'health_preauthorization', 'Provider requested a health preauthorization (lines priced from the contract tariff).', [], [], true),
+            $d('health.preauth.info_requested', 'health_preauthorization', 'Reviewer requested more information on a preauthorization.', [], [], true),
+            $d('health.preauth.info_provided', 'health_preauthorization', 'Provider answered a preauthorization information request.', [], [], true),
+            $d('health.preauth.proposed', 'health_preauthorization', 'Reviewer proposed a preauthorization decision within authority (awaiting checker).', [], [], true),
+            $d('health.preauth.referred', 'health_preauthorization', 'Preauthorization proposal exceeded the maker authority and was referred.', [], [], true),
+            $d('health.preauth.returned', 'health_preauthorization', 'Checker returned a preauthorization proposal to review.', [], [], true),
+            $d('health.preauth.approved', 'health_preauthorization', 'Preauthorization approved; guarantee of payment issued.', [], [], true),
+            $d('health.preauth.partially_approved', 'health_preauthorization', 'Preauthorization partially approved; guarantee of payment issued for the approved lines.', [], [], true),
+            $d('health.preauth.declined', 'health_preauthorization', 'Preauthorization declined.', [], [], true),
+            $d('health.preauth.admitted', 'health_preauthorization', 'Patient admitted under an approved admission preauthorization.', [], [], true),
+            $d('health.preauth.discharged', 'health_preauthorization', 'Patient discharged; admission preauthorization closed.', [], [], true),
+            $d('health.preauth.cancelled', 'health_preauthorization', 'Preauthorization cancelled; benefit reservations released.', [], [], true),
+            $d('health.preauth.extension_requested', 'health_preauthorization', 'Hospital stay extension requested on an admission preauthorization.', [], [], true),
+            $d('health.preauth.extension_decided', 'health_preauthorization', 'Hospital stay extension decided (maker-checker).', [], [], true),
             // Batch 13A — REQ-PRV-001/002/004 providers (App\Application\Providers)
             $d('provider.registered', 'provider', 'Provider registered in the provider master.', [], [], true),
             $d('provider.credentialing_changed', 'provider', 'Provider credentialing status changed.', [], [], true),
@@ -262,6 +433,19 @@ final class DomainEventCatalogue
             $d('provider_network.member_added', 'provider_network', 'Provider added to a network.', [], [], true),
             $d('provider_contract.created', 'provider_contract', 'Provider contract created.', [], [], true),
             $d('provider_tariff.approved', 'provider_contract', 'Provider tariff version approved (maker-checker).', [], [], true),
+            // Agent E2 — REQ-HLT-001 health eligibility (App\Application\Health\Eligibility)
+            $d('health_member.enrolled', 'health_member', 'Health member (principal / dependant / group member) enrolled on a policy.', [], [], true),
+            $d('health_member.ended', 'health_member', 'Health member enrolment ended; active card revoked.', [], [], true),
+            $d('health_card.issued', 'health_member', 'Digital health card (signed QR) issued; previous card revoked.', [], [], true),
+            // REQ-HLT-003 provider claims (App\Application\Health\ProviderClaims)
+            $d('health.provider_claim.submitted', 'health_provider_claim', 'Provider invoice submitted and priced against the contracted tariff.', [], [], true),
+            $d('health.provider_claim.adjudicated', 'health_provider_claim', 'Provider claim adjudicated with a per-line explanation of benefits.', [], [], true),
+            $d('health.provider_claim.payable', 'health_provider_claim', 'Provider claim insurer share raised as a PAYABLE obligation to the provider.', [], [], true),
+            $d('health.provider_claim.disputed', 'health_provider_claim', 'Provider disputed an adjudication (PROVIDER_DISPUTE case).', [], [], true),
+            $d('health.provider_claim.dispute_resolved', 'health_provider_claim', 'Provider claim dispute resolved (reopened or upheld).', [], [], true),
+            $d('health.provider_claim.paid', 'health_provider_claim', 'Provider claim paid in a settlement batch.', [], [], true),
+            $d('health.provider_settlement.created', 'health_provider_settlement_batch', 'Provider settlement batch created.', [], [], true),
+            $d('health.provider_settlement.paid', 'health_provider_settlement_batch', 'Provider settlement batch paid.', [], [], true),
 
             // Batch 8-6 — REQ-PRD-011 life & special products (App\Application\Policies\Special)
             $d('special_policy.profile.created', 'policy', 'Special product profile (group/fleet/open cover/construction/agriculture/life) attached to a policy.', [], [$P], true),
@@ -276,11 +460,75 @@ final class DomainEventCatalogue
             $d('life_surrender_scale.activated', 'life_surrender_scale', 'Carrier surrender scale activated (maker-checker).', [], [$P], true),
             $d('life_surrender.quoted', 'policy', 'Life surrender value computed (rules-driven, carrier scale).', [], [$P], true),
 
+            // Batch 10-1 — REQ-COM-001 commission machine (App\Application\Commissions\Machine\CommissionMachine)
+            $d('commission.earned', 'commission', 'Commission earned: the premium it is based on is settled.', [], [$C], true),
+            $d('commission.approved', 'commission', 'Commission approved by finance.', [], [$C], true),
+            $d('commission.payable', 'commission', 'Commission payable: a PAYABLE COMMISSION obligation exists.', [], [$C], true),
+            $d('commission.paid', 'commission', 'Commission fully paid to the intermediary.', [], [$C], true),
+            $d('commission.adjusted', 'commission', 'Commission amount adjusted; awaits re-approval.', [], [$C], true),
+            $d('commission.disputed', 'commission', 'Commission disputed.', [], [$C], true),
+            $d('commission.dispute_resolved', 'commission', 'Commission dispute resolved; awaits re-approval.', [], [$C], true),
+            $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
+            $d('commission.reopened', 'commission', 'Paid commission reopened to PAYABLE after its payout was reversed (D10).', [], [$C], true),
+
+            // Agent B1 — REQ-RPT-001/002/006 regulatory returns, change engine, inspection workspace
+            $d('regulatory.report.approved', 'regulatory_report_run', 'Regulatory return run approved (maker-checker).', [], [$C], true),
+            $d('regulatory.report.submitted', 'regulatory_report_run', 'Regulatory return run submitted to the authority.', [], [$C], true),
+            $d('regulatory.report.acknowledged', 'regulatory_report_run', 'Regulatory return acknowledged by the authority.', [], [$C], true),
+            $d('regulatory.rule.reviewed', 'regulatory_rule', 'Regulatory rule change reviewed with impact analysis.', [], [$C], true),
+            $d('regulatory.rule.approved', 'regulatory_rule', 'Regulatory rule change approved.', [], [$C], true),
+            $d('regulatory.rule.effective', 'regulatory_rule', 'Regulatory rule version became effective.', [], [$C], true),
+            $d('regulatory.rule.superseded', 'regulatory_rule', 'Regulatory rule version superseded by a newer effective version.', [], [$C], true),
+            $d('regulatory.inspection.opened', 'regulatory_inspection', 'Regulatory inspection workspace opened (grant approved).', [], [$C], true),
+            $d('regulatory.inspection.closed', 'regulatory_inspection', 'Regulatory inspection workspace closed.', [], [$C], true),
+            // Agent B3 — REQ-API-006 developer portal / REQ-API-007 carrier connectors (App\Application\Integrations)
+            $d('integration.client_key.issued', 'integration_client', 'Additional (sandbox/production) API key issued to an integration client.', [], [$C], true),
+            $d('integration.client_key.revoked', 'integration_client', 'Integration client API key revoked.', [], [$C], true),
+            $d('integration.consent.granted', 'integration_client', 'Tenant granted an integration client scoped delegated access.', [], [$C], true),
+            $d('integration.consent.revoked', 'integration_client', 'Tenant revoked an integration client consent.', [], [$C], true),
+            $d('integration.carrier_connector.configured', 'carrier', 'Carrier connector configuration created or changed.', [], [$C], true),
+            $d('integration.carrier_message.sent', 'carrier', 'Outbound carrier message delivered through the carrier connector.', [], [$C], true),
+            $d('integration.carrier_message.fallback_queued', 'carrier', 'Outbound carrier message moved to the manual fallback queue.', [], [$C], true),
+            $d('integration.carrier_message.fallback_resolved', 'carrier', 'Manual fallback carrier message resolved (sent manually, requeued or cancelled).', [], [$C], true),
+            $d('integration.record_mapping.conflict_detected', 'integration_client', 'Carrier sync changed a record OpesInsure owns; conflict queued for review.', [], [$C], true),
+            $d('integration.record_mapping.conflict_resolved', 'integration_client', 'External record mapping conflict resolved.', [], [$C], true),
+            // Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power)
+            $d('vehicle.fiscal_power.verified', 'vehicle_fiscal_power_record', 'Cameroon fiscal power (CV fiscal) verified from an authoritative source (maker-checker).', [], [$C], true),
+            $d('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', 'Conflicting authoritative fiscal power values; conflict case opened.', [], [$C], true),
+            $d('vehicle.stamp_duty_schedule.approved', 'vehicle_stamp_duty_rate_schedule', 'Automobile stamp duty rate schedule version approved (effective-dated).', [], [$C], true),
+            $d('vehicle.transport_licence.verified', 'vehicle_transport_licence', 'Transport licence verified VALID (enables the transport stamp duty schedule).', [], [$C], true),
+            // Agent F1 — owner spec "Finance Counterparty Accounts & Commission Sub-Ledger v1" (App\Application\Finance\Subledger)
+            $d('premium.remittance.recorded', 'premium_remittance', 'Broker premium remittance to an insurer recorded; held as unapplied cash until allocated.', [], [], true),
+            $d('premium.remittance.allocated', 'premium_remittance', 'Premium remittance allocated to insurer premium payables.', ['PremiumRemitted'], [], true),
+            $d('premium.remittance.overdue', 'financial_obligation', 'Insurer premium payable past its remittance due date with an outstanding balance.', ['PremiumRemittanceOverdue'], [], true),
+            $d('finance.counterparty_account.opened', 'finance_counterparty_account', 'Counterparty account opened (pending approval).', [], [], true),
+            $d('finance.counterparty_account.approved', 'finance_counterparty_account', 'Counterparty account approved by an independent checker (ACTIVE).', [], [], true),
+            $d('finance.statement.generated', 'document', 'Finance statement document (DOC-193..200) generated from the sub-ledger.', [], [], true),
+            $d('finance.debit_note.issued', 'financial_obligation', 'Debit note issued (spec DebitNoteIssued; no debit-note store yet).', ['DebitNoteIssued']),
+            $d('finance.credit_note.issued', 'financial_obligation', 'Credit note issued (spec CreditNoteIssued; no credit-note store yet).', ['CreditNoteIssued']),
+            $d('ledger.period.closed', 'accounting_period', 'Accounting period closed (audited as ledger.period.closed).', ['PeriodClosed']),
+            $d('ledger.period.reopened', 'accounting_period', 'Accounting period reopened after maker-checker approval.', ['PeriodReopened']),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),
+            // Agent B2 — REQ-RPT-003 KPI governance (App\Application\Reporting\Kpi\KpiCatalogueService)
+            $d('reporting.kpi_definition.submitted', 'kpi_definition', 'KPI definition version submitted for checker approval.', [], [$C], true),
+            $d('reporting.kpi_definition.approved', 'kpi_definition', 'KPI definition version approved by an independent checker (previous version retired).', [], [$C], true),
+            $d('reporting.kpi_definition.rejected', 'kpi_definition', 'KPI definition version rejected by the checker.', [], [$C], true),
+            $d('reporting.kpi_definition.retired', 'kpi_definition', 'Active KPI definition version retired (baseline applies again).', [], [$C], true),
         ];
     }
+
+    /** Agent F1 — spec PascalCase events that name an already-catalogued fact (aliases only; no new event). */
+    private const SPEC_ALIASES = [
+        'PremiumBilled' => 'finance.obligation.created', 'PremiumCollected' => 'finance.obligation.settled', 'PremiumPartiallyCollected' => 'payment.allocated',
+        'CommissionExpected' => 'commission.calculated', 'CommissionBecamePayable' => 'commission.payable', 'CommissionPartiallyPaid' => 'partner.payout.paid',
+        'CommissionPaid' => 'commission.paid', 'CommissionClawedBack' => 'commission.clawed_back', 'RefundPaid' => 'refund.paid',
+        'PaymentReversed' => 'payment.allocation.reversed', 'SettlementCalculated' => 'settlement.calculated', 'SettlementApproved' => 'settlement.approved',
+        'SettlementPaid' => 'settlement.settled', 'ReconciliationMatched' => 'reconciliation.manual_match.approved',
+        'ReconciliationExceptionRaised' => 'reconciliation.exception.raised', 'JournalPosted' => 'ledger.journal.posted', 'JournalReversed' => 'ledger.journal.reversed',
+    ];
 
     private static function boot(): void
     {
@@ -300,6 +548,12 @@ final class DomainEventCatalogue
                 }
                 self::$byAlias[$a] = $e->name;
             }
+        }
+        foreach (self::SPEC_ALIASES as $a => $name) {
+            if (isset(self::$byAlias[$a]) || ! isset(self::$byName[$name])) {
+                throw new InvalidArgumentException("Spec alias {$a} is mapped twice or names an unknown event.");
+            }
+            self::$byAlias[$a] = $name;
         }
     }
 

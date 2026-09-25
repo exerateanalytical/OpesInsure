@@ -77,6 +77,12 @@ final class UnderwritingDecisionService
         $facts['underwriting.risk_band'] = $score['band'];
         [$fired, $trace] = $this->run($definitions, $facts);
         $rec = UnderwritingRecommendation::combine($fired, $flags);
+        $capacity = $this->capacity($c, $snap, $at);
+        if ($capacity && in_array($capacity['result'], ['CAPACITY_EXCEEDED', 'FACULTATIVE_REQUIRED'], true)) {
+            // REQ-CAT-002: an accumulation breach is an additional referral factor (never an automatic decline).
+            $rec['recommendation'] = in_array($rec['recommendation'], ['REFER', 'DECLINE'], true) ? $rec['recommendation'] : 'REFER';
+            $rec['reasons'][] = 'CAPACITY:'.$capacity['result'];
+        }
 
         $result = new EngineResult(
             engine: RuleEngine::ENGINE, outcome: $rec['recommendation'], referenceAt: $at, recordedAsOf: new \DateTimeImmutable,
@@ -85,18 +91,48 @@ final class UnderwritingDecisionService
             blocking: $rec['recommendation'] !== 'AUTO_ACCEPT', reasons: $rec['reasons'],
         );
 
-        return DB::transaction(function () use ($c, $result, $rec, $score, $versions, $submission, $actor): array {
+        return DB::transaction(function () use ($c, $result, $rec, $score, $versions, $submission, $actor, $capacity): array {
             $evaluationId = $this->recorder->record($result, self::OPERATION, 'underwriting_case', $c->id, $c->tenant_id);
             $c->update(['recommendation' => $rec['recommendation'], 'risk_score' => $score['score'], 'risk_band' => $score['band'], 'risk_factors' => $score['factors'],
                 'rule_set_versions' => $versions, 'engine_evaluation_id' => $evaluationId, 'evaluated_at' => now()]);
             $summary = ['engine_evaluation_id' => $evaluationId, 'recommendation' => $rec['recommendation'], 'reasons' => $rec['reasons'], 'conditions' => $rec['conditions'],
                 'requested_items' => $rec['requested_items'], 'risk_score' => $score['score'], 'risk_band' => $score['band'], 'risk_factors' => $score['factors'],
-                'rule_set_versions' => $versions, 'inputs_hash' => $result->inputsHash, 'proposal_submission_id' => $submission->id, 'decision_is_human' => true];
+                'rule_set_versions' => $versions, 'inputs_hash' => $result->inputsHash, 'proposal_submission_id' => $submission->id, 'decision_is_human' => true]
+                + ($capacity ? ['capacity' => $capacity] : []);
             $this->audit->record('underwriting.evaluated', 'underwriting_case', $c->id, ['engine_evaluation_id' => $evaluationId, 'recommendation' => $rec['recommendation'],
                 'risk_score' => $score['score'], 'rule_set_versions' => $versions, 'actor' => $actor?->id]);
 
             return $summary;
         });
+    }
+
+    /**
+     * REQ-CAT-002 capacity factor (LOCK-019): only when the snapshot carries a sum insured; NOT_CONFIGURED (no limit set) adds nothing.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function capacity(UnderwritingCase $c, array $snap, \DateTimeImmutable $at): ?array
+    {
+        $risk = (array) ($snap['risk_facts'] ?? []);
+        $terms = (array) ($snap['terms'] ?? []);
+        $sum = $risk['sum_insured_minor'] ?? $terms['sum_insured_minor'] ?? null;
+        if (! is_numeric($sum) || ! class_exists(\App\Application\Accumulation\CapacityService::class)) {
+            return null;
+        }
+        try {
+            $check = app(\App\Application\Accumulation\CapacityService::class)->check((string) $c->tenant_id, [
+                'location' => is_array($risk['address'] ?? null) ? $risk['address'] + $risk : $risk, 'zone_id' => null,
+                'peril_code' => (string) ($risk['peril_code'] ?? 'ALL'), 'sum_insured_minor' => (int) $sum,
+                'currency' => (string) ($terms['currency'] ?? $snap['currency'] ?? 'XAF'), 'line_code' => $snap['line_code'] ?? null,
+                'date' => $at->format('Y-m-d'), 'subject_type' => 'underwriting_case', 'subject_id' => $c->id,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+
+        return $check['result'] === \App\Application\Accumulation\CapacityService::NOT_CONFIGURED ? null : $check;
     }
 
     /** @return array{0: list<array{rule: RuleDefinition, unknown: bool, missing: list<string>}>, 1: list<array<string, mixed>>} */

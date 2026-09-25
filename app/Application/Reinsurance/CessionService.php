@@ -42,7 +42,7 @@ final class CessionService
             [$policy, $basis, $versions] = $this->inputs($tenantId, $policyId, $sumInsured, lock: true);
             $cessions = $this->calculator->calculate($basis['sum_insured_minor'], $basis['gross_premium_minor'], $versions);
 
-            $current = DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('status', 'CALCULATED')->get();
+            $current = $this->treatyRows($policyId)->where('status', 'CALCULATED')->get();
             if ($current->isNotEmpty() && $this->sameRun($current, $policy, $basis, $cessions)) {
                 return $this->summary($policy, $basis, $this->load($policyId, (int) $current->first()->run), (int) $current->first()->run, replayed: true);
             }
@@ -50,8 +50,8 @@ final class CessionService
                 return $this->summary($policy, $basis, [], null);
             }
 
-            $run = (int) DB::table('reinsurance_cessions')->where('policy_id', $policyId)->max('run') + 1;
-            DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('status', 'CALCULATED')->update(['status' => 'SUPERSEDED']);
+            $run = (int) $this->treatyRows($policyId)->max('run') + 1;
+            $this->treatyRows($policyId)->where('status', 'CALCULATED')->update(['status' => 'SUPERSEDED']);
             foreach ($cessions as $c) {
                 $id = (string) Str::uuid();
                 DB::table('reinsurance_cessions')->insert(['id' => $id, 'tenant_id' => $tenantId, 'policy_id' => $policyId, 'policy_version' => (int) $policy->version, 'run' => $run,
@@ -69,19 +69,45 @@ final class CessionService
             }
             $summary = $this->summary($policy, $basis, $this->load($policyId, $run), $run);
             $this->audit->record('reinsurance.policy.ceded', 'policy', $policyId, ['run' => $run, 'treaty_versions' => array_column($cessions, 'treaty_version_id'),
-                'ceded_premium_minor' => $summary['ceded_premium_minor'], 'currency' => $basis['currency']]);
+                'ceded_premium_minor' => $summary['treaty_ceded_premium_minor'], 'currency' => $basis['currency']]);
             $this->outbox->record('reinsurance.policy.ceded', 'policy', $policyId, ['tenant_id' => $tenantId, 'run' => $run, 'currency' => $basis['currency'],
-                'gross_premium_minor' => $basis['gross_premium_minor'], 'ceded_premium_minor' => $summary['ceded_premium_minor'], 'net_premium_minor' => $summary['net_premium_minor']]);
+                'gross_premium_minor' => $basis['gross_premium_minor'], 'ceded_premium_minor' => $summary['treaty_ceded_premium_minor'], 'net_premium_minor' => $summary['net_premium_minor']]);
 
             return $summary;
         });
     }
 
-    /** Current (CALCULATED) cessions of a policy with gross / net exposure. */
+    /**
+     * REQ-REI-003: records the cession of a bound facultative placement (source FACULTATIVE, no treaty) next to the
+     * treaty cessions, with one share row per signed line. Called by FacultativePlacementService inside its transaction.
+     *
+     * @param  array{placement_id: string, policy_version: int, currency: string, sum_insured_minor: int, gross_premium_minor: int, ceded_percent: float,
+     *               ceded_sum_minor: int, ceded_premium_minor: int, commission_minor: int, brokerage_minor: int, tax_minor: int, net_ceded_premium_minor: int}  $c
+     * @param  array<int, array<string, mixed>>  $shares  reinsurer_id, share_percent, ceded_sum_minor, ceded_premium_minor, commission_minor, brokerage_minor, tax_minor, net_premium_minor
+     */
+    public function recordFacultative(string $tenantId, string $policyId, array $c, array $shares): string
+    {
+        $id = (string) Str::uuid();
+        DB::table('reinsurance_cessions')->insert(['id' => $id, 'tenant_id' => $tenantId, 'policy_id' => $policyId, 'policy_version' => $c['policy_version'], 'run' => 0,
+            'source' => 'FACULTATIVE', 'facultative_placement_id' => $c['placement_id'], 'treaty_id' => null, 'treaty_version_id' => null, 'treaty_type' => 'FACULTATIVE',
+            'currency' => $c['currency'], 'sum_insured_minor' => $c['sum_insured_minor'], 'gross_premium_minor' => $c['gross_premium_minor'], 'subject_sum_minor' => $c['sum_insured_minor'],
+            'ceded_sum_minor' => $c['ceded_sum_minor'], 'ceded_percent' => $c['ceded_percent'], 'ceded_premium_minor' => $c['ceded_premium_minor'],
+            'commission_minor' => $c['commission_minor'], 'brokerage_minor' => $c['brokerage_minor'], 'tax_minor' => $c['tax_minor'],
+            'net_ceded_premium_minor' => $c['net_ceded_premium_minor'], 'layers' => '[]', 'status' => 'BOUND', 'calculated_by' => auth()->id(), 'created_at' => now()]);
+        foreach ($shares as $s) {
+            DB::table('reinsurance_cession_shares')->insert(['id' => (string) Str::uuid(), 'cession_id' => $id, 'reinsurer_id' => $s['reinsurer_id'], 'share_percent' => $s['share_percent'],
+                'ceded_sum_minor' => $s['ceded_sum_minor'], 'ceded_premium_minor' => $s['ceded_premium_minor'], 'commission_minor' => $s['commission_minor'],
+                'brokerage_minor' => $s['brokerage_minor'], 'tax_minor' => $s['tax_minor'], 'net_premium_minor' => $s['net_premium_minor'], 'created_at' => now()]);
+        }
+
+        return $id;
+    }
+
+    /** Current (CALCULATED) treaty cessions plus BOUND facultative cessions of a policy with gross / net exposure. */
     public function forPolicy(string $tenantId, string $policyId): array
     {
         $policy = $this->policy($tenantId, $policyId);
-        $run = DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('status', 'CALCULATED')->max('run');
+        $run = $this->treatyRows($policyId)->where('status', 'CALCULATED')->max('run');
         $rows = $run ? $this->load($policyId, (int) $run) : [];
         $first = $rows[0] ?? null;
         $basis = ['currency' => $policy->currency, 'gross_premium_minor' => (int) ($first['gross_premium_minor'] ?? $policy->premium_minor),
@@ -132,11 +158,28 @@ final class CessionService
         return $a === $b;
     }
 
+    /** Treaty cessions only; facultative cessions (source FACULTATIVE) are outside treaty runs. */
+    private function treatyRows(string $policyId): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('source', 'TREATY');
+    }
+
     private function load(string $policyId, int $run): array
     {
-        $order = ['QUOTA_SHARE' => 1, 'SURPLUS' => 2, 'EXCESS_OF_LOSS' => 3, 'STOP_LOSS' => 4];
+        return $this->hydrate($this->treatyRows($policyId)->where('run', $run)->get());
+    }
 
-        return DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('run', $run)->get()
+    /** BOUND facultative cessions of the policy (REQ-REI-003). */
+    private function facultative(string $policyId): array
+    {
+        return $this->hydrate(DB::table('reinsurance_cessions')->where('policy_id', $policyId)->where('source', 'FACULTATIVE')->where('status', 'BOUND')->orderBy('created_at')->get());
+    }
+
+    private function hydrate($rows): array
+    {
+        $order = ['FACULTATIVE' => 0, 'QUOTA_SHARE' => 1, 'SURPLUS' => 2, 'EXCESS_OF_LOSS' => 3, 'STOP_LOSS' => 4];
+
+        return $rows
             ->sortBy(fn ($c) => ($order[$c->treaty_type] ?? 9).$c->treaty_version_id)->values()->map(function ($c) {
             $a = (array) $c;
             $a['layers'] = json_decode($a['layers'], true);
@@ -155,12 +198,16 @@ final class CessionService
 
     private function summary(object $policy, array $basis, array $cessions, ?int $run, bool $replayed = false): array
     {
+        // Policy cession totals = treaty + facultative (REQ-REI-003).
+        $treatyCeded = array_sum(array_column($cessions, 'ceded_premium_minor'));
+        $cessions = [...$this->facultative($policy->id), ...$cessions];
         $net = CessionCalculator::net($basis['sum_insured_minor'], $basis['gross_premium_minor'], $cessions);
         $sum = fn (string $k) => array_sum(array_column($cessions, $k));
 
         return ['policy_id' => $policy->id, 'run' => $run, 'replayed' => $replayed, 'currency' => $basis['currency'],
             'gross_sum_insured_minor' => $basis['sum_insured_minor'], 'gross_premium_minor' => $basis['gross_premium_minor'],
-            'ceded_premium_minor' => $sum('ceded_premium_minor'), 'commission_minor' => $sum('commission_minor'), 'brokerage_minor' => $sum('brokerage_minor'),
+            'ceded_premium_minor' => $sum('ceded_premium_minor'), 'treaty_ceded_premium_minor' => $treatyCeded,
+            'facultative_ceded_premium_minor' => $sum('ceded_premium_minor') - $treatyCeded, 'commission_minor' => $sum('commission_minor'), 'brokerage_minor' => $sum('brokerage_minor'),
             'tax_minor' => $sum('tax_minor'), 'net_ceded_premium_minor' => $sum('net_ceded_premium_minor'),
             'net_sum_insured_minor' => $net['net_sum_minor'], 'net_premium_minor' => $net['net_premium_minor'], 'cessions' => $cessions];
     }

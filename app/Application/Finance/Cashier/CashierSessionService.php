@@ -88,6 +88,8 @@ final class CashierSessionService
         if (! empty($d['payment_intent_id']) && ! DB::table('payment_intents')->where('tenant_id', $tenantId)->where('id', $d['payment_intent_id'])->exists()) {
             throw FinanceProblem::make('CASHIER_UNKNOWN_PAYMENT', 422, 'Payment not found for this tenant.');
         }
+        // REQ-FRD-002 (agent C16): whoever reconciled or refunded this payment may not also collect it.
+        app(\App\Application\Fraud\SegregationOfDutiesPolicy::class)->assertMay('COLLECT', $d['payment_intent_id'] ?? null, $actor);
         $currency = strtoupper($d['currency'] ?? $session->currency);
         $id = (string) Str::uuid();
         $receipt = 'CR-'.now()->format('Ymd').'-'.strtoupper(Str::random(8));
@@ -117,6 +119,9 @@ final class CashierSessionService
             $this->audit->record('cashier.collection.recorded', 'cashier_collection', $id, $payload);
             $this->outbox->record('cashier.collection.recorded', 'cashier_collection', $id, $payload);
         });
+        // REQ-ACC-001: posted after commit in the session currency, idempotent per collection.
+        $row = DB::table('cashier_collections')->find($id);
+        app(\App\Application\Ledger\Posting\AccountingEventPoster::class)->record($tenantId, 'cashier.collection.recorded', $id, (int) $row->session_amount_minor, (string) $session->currency);
 
         return DB::table('cashier_collections')->find($id);
     }

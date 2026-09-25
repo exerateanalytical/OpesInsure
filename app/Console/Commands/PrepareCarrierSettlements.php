@@ -8,7 +8,9 @@ use App\Application\FinancialDistribution\CarrierSettlementService;
 use App\Models\Policy;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use App\Application\Settlements\SettlementService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -18,6 +20,12 @@ use Throwable;
  * approves (maker-checker: the preparer is the system actor, so any human
  * finance approver satisfies the separation constraint). Idempotent per
  * period via the batch idempotency key.
+ *
+ * D10 owner decision: POLICY-basis batches are retired. The weekly schedule was
+ * removed (double-remittance risk with OBLIGATIONS batches, see
+ * App\Application\Settlements\SettlementService). The command stays for manual
+ * catch-up only and refuses any carrier group whose policies are already in a
+ * live OBLIGATIONS batch. Existing POLICY batches stay readable for history.
  */
 final class PrepareCarrierSettlements extends Command
 {
@@ -41,7 +49,14 @@ final class PrepareCarrierSettlements extends Command
             ->select('tenant_id', 'carrier_id', 'currency')->distinct()->get();
 
         $prepared = 0;
+        $refused = 0;
         foreach ($groups as $g) {
+            if ($this->alreadyInObligationsBatch($g->tenant_id, $g->carrier_id, $g->currency, $start, $end)) {
+                $refused++;
+                $this->warn("Carrier {$g->carrier_id}: refused - policies already included in an OBLIGATIONS settlement batch (would double-remit).");
+
+                continue;
+            }
             try {
                 $settlements->prepare([
                     'tenant_id' => $g->tenant_id, 'carrier_id' => $g->carrier_id, 'currency' => $g->currency,
@@ -55,9 +70,19 @@ final class PrepareCarrierSettlements extends Command
             }
         }
 
-        $this->info("Prepared {$prepared} settlement batch(es) for {$start->toDateString()}..{$end->toDateString()}.");
+        $this->info("Prepared {$prepared} settlement batch(es) for {$start->toDateString()}..{$end->toDateString()}. Refused (OBLIGATIONS overlap): {$refused}.");
 
         return self::SUCCESS;
+    }
+
+    private function alreadyInObligationsBatch(string $tenantId, string $carrierId, string $currency, CarbonImmutable $start, CarbonImmutable $end): bool
+    {
+        return DB::table('settlement_items as i')->join('settlement_batches as sb', 'sb.id', '=', 'i.settlement_batch_id')
+            ->join('policies as p', 'p.id', '=', 'i.policy_id')
+            ->where('sb.calculation_basis', SettlementService::BASIS_OBLIGATIONS)->whereIn('sb.status', SettlementService::LIVE)
+            ->where('p.tenant_id', $tenantId)->where('p.carrier_id', $carrierId)->where('p.currency', $currency)
+            ->where('p.status', 'ACTIVE')->whereNotNull('p.payment_intent_id')
+            ->whereBetween('p.issued_at', [$start->startOfDay(), $end->endOfDay()])->exists();
     }
 
     private function systemActor(): ?User

@@ -129,6 +129,13 @@ final class KycService
             $s->update(['status' => 'SUBMITTED', 'submitted_at' => now(), 'notes' => $notes, 'case_id' => $case->id,
                 'kyc_level' => $level, 'level_source' => 'COMPUTED', 'risk_factors' => $factors, 'version' => $s->version + 1]);
             $this->screen($s, $party);
+            // REQ-AML-001 / REQ-KYC-004 list screening (agent E8) — only when the tenant has an active list version.
+            if (class_exists(\App\Application\Compliance\Aml\Screening\ScreeningService::class)) {
+                $aml = app(\App\Application\Compliance\Aml\Screening\ScreeningService::class);
+                if ($aml->hasActiveLists($s->tenant_id)) {
+                    $aml->screenParty($s->tenant_id, $party, 'KYC_SUBMISSION', $actor, 'party', $party->id);
+                }
+            }
             $this->reassess($s->fresh(), [], [], $actor?->id, 'Submitted for review.');
             $this->audit->record('kyc_submission.submitted', 'kyc_submission', $s->id, ['party_id' => $s->party_id, 'case_id' => $case->id, 'kyc_level' => $level]);
             $this->outbox->record('kyc_submission.submitted', 'kyc_submission', $s->id, ['kyc_submission_id' => $s->id, 'tenant_id' => $s->tenant_id, 'case_id' => $case->id, 'kyc_level' => $level]);

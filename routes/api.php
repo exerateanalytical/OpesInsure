@@ -249,6 +249,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('chargebacks/{chargeback}/resolve', [FinancialControlController::class, 'resolveChargeback'])->middleware('permission:chargeback.resolve');
         Route::get('ledger/accounts', [LedgerController::class, 'accounts'])->middleware('permission:ledger.read');
         Route::get('ledger/journals/{journal}', [LedgerController::class, 'journal'])->middleware('permission:ledger.read');
+        // Deprecated alias (D10): creates a DRAFT manual journal (maker-checker); successor is POST v1/ledger/manual-journals.
         Route::post('ledger/journals', [LedgerController::class, 'manual'])->middleware('permission:ledger.adjust');
         Route::post('ledger/journals/{journal}/reverse', [LedgerController::class, 'reverse'])->middleware('permission:ledger.reverse');
         // The legacy commission/settlement WRITE routes were removed: they wrote the
@@ -296,7 +297,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('risk-alerts', [RiskAlertController::class, 'alert'])->middleware('permission:fraud.alert.create');
         Route::post('risk-alerts/{alert}/decision', [RiskAlertController::class, 'decide'])->middleware('permission:fraud.alert.decide');
         Route::post('compliance/privileged-access', [ComplianceController::class, 'grantAccess'])->middleware('permission:compliance.access.grant');
-        Route::post('compliance/data-subject-requests', [ComplianceController::class, 'dataRequest']);
+        Route::post('compliance/data-subject-requests', [ComplianceController::class, 'dataRequest'])->middleware('permission:compliance.dsr.receive'); // REQ-DUP-009: was unguarded
         Route::get('compliance/audit-log', [ComplianceController::class, 'audit'])->middleware('permission:audit.read');
         Route::get('reports/insurance-portfolio', [InsuranceReportController::class, 'portfolio'])->middleware('permission:reports.insurance.read');
         Route::get('reports/renewals', [InsuranceReportController::class, 'renewals'])->middleware('permission:reports.insurance.read');
@@ -311,8 +312,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('integrations/clients/{client}/webhooks', [IntegrationController::class, 'subscribe'])->middleware('permission:integrations.manage');
         Route::post('integrations/delivery-attempts/{attempt}/replay', [IntegrationController::class, 'replayDeliveryAttempt'])->middleware('permission:integrations.manage');
         Route::get('integrations/health', [IntegrationController::class, 'health'])->middleware('permission:integrations.manage');
-        Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware('permission:broker.bordereaux.manage');
-        Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware('permission:broker.bordereaux.submit');
+        // REQ-DUP-008: canonical is the `bordereaux` resource (routes/wave6.php + Batch 10-5 block); broker/carrier
+        // bordereau routes are deprecated aliases mapping their legacy bodies onto the one BordereauService.
+        Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware(['permission:broker.bordereaux.manage', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux', 'REQ-DUP-008')]);
+        Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware(['permission:broker.bordereaux.submit', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux/{bordereau}/submit', 'REQ-DUP-008')]);
         // REQ-DUP-010: canonical is renewals/seed (RenewalController). The broker variant is a
         // deprecated alias: its action only maps the legacy body (days_ahead) onto the same
         // RenewalService::sweep (which also keeps renewal_work_items); removal pending.
@@ -320,7 +323,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/delegated-authorities', [CarrierOperationsController::class, 'createAuthority'])->middleware('permission:carrier.authority.manage');
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);
-        Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
+        Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware(['permission:carrier.bordereaux.decide', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux/{bordereau}/acknowledge', 'REQ-DUP-008')]);
 
         // Batch 13D — REQ-COI-001 co-insurance (apériteur + followers, share apportionment)
         Route::get('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'index'])->middleware('permission:coinsurance.view');
@@ -574,3 +577,641 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+
+// Batch 10-2 — REQ-COM-002 commission rules: resolver preview + rule components (tiers, splits).
+Route::prefix('v1/financial-distribution')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Rules\Http\CommissionRuleController::class;
+    Route::get('commission-rules/resolve', [$c, 'resolve'])->middleware('permission:commission.manage');
+    Route::get('commission-rules/{rule}', [$c, 'show'])->middleware('permission:commission.manage')->whereUuid('rule');
+});
+// End Batch 10-2
+// Batch 10-3 — REQ-COM-003 commission statements: generation, adjustments (maker-checker), disputes (case engine).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Statements\Http\CommissionStatementController::class;
+    Route::post('commission-statements/generate', [$c, 'generate'])->middleware('permission:statements.prepare');
+    Route::post('partner-statements/{statement}/adjustments', [$c, 'propose'])->middleware('permission:commission.statements.adjust')->whereUuid('statement');
+    Route::post('partner-statement-adjustments/{item}/approve', [$c, 'approve'])->middleware('permission:commission.statements.adjustments.approve')->whereUuid('item');
+    Route::post('partner-statement-adjustments/{item}/reject', [$c, 'reject'])->middleware('permission:commission.statements.adjustments.approve')->whereUuid('item');
+    Route::post('partner-statements/{statement}/dispute', [$c, 'dispute'])->middleware('permission:commission.statements.dispute')->whereUuid('statement');
+    Route::post('partner-statements/{statement}/resolve-dispute', [$c, 'resolve'])->middleware('permission:commission.statements.dispute.resolve')->whereUuid('statement');
+});
+// End Batch 10-3
+// Batch 10-5 — REQ-DUP-008 one `bordereaux` resource (reads; writes are in routes/wave6.php).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $f = \App\Interfaces\Http\Controllers\Api\V1\FinancialDistribution\FinancialDistributionController::class;
+    Route::get('bordereaux', [$f, 'bordereaux'])->middleware('permission:bordereaux.view');
+    Route::get('bordereaux/{bordereau}', [$f, 'showBordereau'])->middleware('permission:bordereaux.view')->whereUuid('bordereau');
+});
+// End Batch 10-5
+// Batch 10-9 — REQ-ACC-004 technical accounting (written/earned/UPR, claims paid/outstanding/incurred, imported IBNR/life values).
+Route::prefix('v1/finance/technical')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $t = \App\Application\Ledger\Technical\Http\TechnicalAccountingController::class;
+    Route::get('reports/{report}', [$t, 'report'])->middleware('permission:technical_accounting.read')->where('report', 'premiums|claims|summary');
+    Route::get('actuarial-imports', [$t, 'listImports'])->middleware('permission:technical_accounting.read');
+    Route::get('actuarial-imports/{import}', [$t, 'showImport'])->middleware('permission:technical_accounting.read')->whereUuid('import');
+    Route::post('actuarial-imports', [$t, 'storeImport'])->middleware('permission:technical_accounting.actuarial.import');
+    Route::post('actuarial-imports/{import}/approve', [$t, 'approveImport'])->middleware('permission:technical_accounting.actuarial.approve')->whereUuid('import');
+    Route::post('actuarial-imports/{import}/reject', [$t, 'rejectImport'])->middleware('permission:technical_accounting.actuarial.approve')->whereUuid('import');
+    Route::post('upr-postings', [$t, 'postUpr'])->middleware('permission:technical_accounting.upr.post');
+});
+// End Batch 10-9
+// Batch 10-4 — REQ-STL-001 ledger-calculated broker–insurer settlement lifecycle; REQ-DUP-011 one settlement read:
+// GET carrier-settlements/{batch} and GET broker-settlements/{batch} are aliases of GET settlements/{batch}
+// (same SettlementService + SettlementResource). POST settlements/* stays retired (legacy write path).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Settlements\Http\SettlementLifecycleController::class;
+    Route::get('carrier-settlements/{batch}', [SettlementController::class, 'show'])->middleware(['permission:settlement.read', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('settlements/{batch}', 'REQ-DUP-011')])->whereUuid('batch');
+    Route::get('broker-settlements/{batch}', [SettlementController::class, 'show'])->middleware(['permission:settlement.read', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('settlements/{batch}', 'REQ-DUP-011')])->whereUuid('batch');
+    Route::post('broker-settlements', [$s, 'store'])->middleware('permission:settlement.prepare');
+    Route::post('broker-settlements/{batch}/calculate', [$s, 'calculate'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/review', [$s, 'review'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/cancel', [$s, 'cancel'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/approve', [$s, 'approve'])->middleware('permission:settlement.approve')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/reject', [$s, 'reject'])->middleware('permission:settlement.approve')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/process', [$s, 'process'])->middleware('permission:settlement.submit')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/fail', [$s, 'fail'])->middleware('permission:settlement.confirm')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/settle', [$s, 'settle'])->middleware('permission:settlement.confirm')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/reconcile', [$s, 'reconcile'])->middleware('permission:settlement.reconcile')->whereUuid('batch');
+});
+// End Batch 10-4
+// Agent 10-10 — REQ-ACC-005 finance exception centre (FIN-006) and finance reports registry (FIN-024), read-only.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::get('exception-centre', [\App\Application\Finance\ExceptionCentre\Http\FinanceExceptionCentreController::class, 'index'])->middleware('permission:finance.exceptions.view');
+    $fr = \App\Application\Finance\Reports\Http\FinanceReportController::class;
+    Route::get('reports', [$fr, 'index'])->middleware('permission:finance.reports.view');
+    Route::get('reports/{report}', [$fr, 'show'])->middleware('permission:finance.reports.view')->where('report', '[Ff][Rr]-[0-9]{2}');
+});
+// End Agent 10-10
+// Batch 10-7 — REQ-ACC-002 manual journal lifecycle (maker-checker) + trial balance.
+Route::prefix('v1/ledger')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $m = \App\Interfaces\Http\Controllers\Api\V1\Ledger\ManualJournalController::class;
+    Route::post('manual-journals', [$m, 'store'])->middleware('permission:ledger.adjust');
+    Route::post('manual-journals/{journal}/validate', [$m, 'validateJournal'])->middleware('permission:ledger.adjust')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/approve', [$m, 'approve'])->middleware('permission:ledger.approve')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/reject', [$m, 'reject'])->middleware('permission:ledger.approve')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/post', [$m, 'post'])->middleware('permission:ledger.post')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/reverse', [$m, 'reverse'])->middleware('permission:ledger.reverse')->whereUuid('journal');
+    Route::get('trial-balance', [$m, 'trialBalance'])->middleware('permission:ledger.read');
+});
+// End Batch 10-7
+// Batch 10-1 — REQ-COM-001 commission machine (App\Application\Commissions\Machine).
+Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Machine\Http\CommissionLifecycleController::class;
+    Route::get('{accrual}', [$c, 'show'])->middleware('permission:commission.read')->whereUuid('accrual');
+    Route::post('{accrual}/earn', [$c, 'earn'])->middleware('permission:commission.vest')->whereUuid('accrual');
+    Route::post('{accrual}/approve', [$c, 'approve'])->middleware('permission:commission.approve')->whereUuid('accrual');
+    Route::post('{accrual}/make-payable', [$c, 'makePayable'])->middleware('permission:commission.vest')->whereUuid('accrual');
+    Route::post('{accrual}/adjust', [$c, 'adjust'])->middleware('permission:commission.manage')->whereUuid('accrual');
+    Route::post('{accrual}/dispute', [$c, 'dispute'])->middleware('permission:commission.manage')->whereUuid('accrual');
+    Route::post('{accrual}/resolve-dispute', [$c, 'resolveDispute'])->middleware('permission:commission.approve')->whereUuid('accrual');
+    Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
+});
+// End Batch 10-1
+// Agent C7 — REQ-CLM-006 claim parties (App\Application\Claims\Parties).
+Route::prefix('v1/claims/{claim}/parties')->middleware(['auth:api', 'tenant', 'json.api'])->whereUuid('claim')->group(function (): void {
+    $c = \App\Application\Claims\Parties\Http\ClaimPartyController::class;
+    Route::get('', [$c, 'index'])->middleware('permission:claims.view');
+    Route::post('', [$c, 'store'])->middleware('permission:claims.parties.manage');
+    Route::patch('{party}', [$c, 'update'])->middleware('permission:claims.parties.manage')->whereUuid('party');
+    Route::delete('{party}', [$c, 'destroy'])->middleware('permission:claims.parties.manage')->whereUuid('party');
+});
+// End Agent C7
+// Batch 11 C4 — REQ-CLM-004 limit / aggregate exhaustion ledger (App\Application\Claims\Limits), read API.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $l = \App\Application\Claims\Limits\Http\LimitLedgerController::class;
+    Route::get('policies/{policy}/limits', [$l, 'policy'])->middleware('permission:claims.view')->whereUuid('policy');
+    Route::get('claims/{claim}/limits', [$l, 'claim'])->middleware('permission:claims.view')->whereUuid('claim');
+});
+// End Batch 11 C4
+// Agent C14 — REQ-CLM-014 claim closure checklist, closure reasons, reopening (maker-checker) (App\Application\Claims\Closure).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Claims\Closure\Http\ClaimClosureController::class;
+    Route::get('{claim}/closure/checklist', [$c, 'checklist'])->middleware('permission:claims.read')->whereUuid('claim');
+    Route::get('{claim}/closure/history', [$c, 'history'])->middleware('permission:claims.read')->whereUuid('claim');
+    Route::post('{claim}/close', [$c, 'close'])->middleware('permission:claims.close')->whereUuid('claim');
+    Route::post('{claim}/reopen-requests', [$c, 'requestReopen'])->middleware('permission:claims.reopen.request')->whereUuid('claim');
+    Route::post('reopen-requests/{request}/approve', [$c, 'approveReopen'])->middleware('permission:claims.reopen.approve')->whereUuid('request');
+    Route::post('reopen-requests/{request}/reject', [$c, 'rejectReopen'])->middleware('permission:claims.reopen.approve')->whereUuid('request');
+    Route::post('recoveries/{recovery}/transfer', [$c, 'transferRecovery'])->middleware('permission:claims.close')->whereUuid('recovery');
+});
+// End Agent C14
+// Agent C6 — REQ-CLM-005 claim evidence rules / checklist / metadata / WF-051-052 review (App\Application\Claims\Evidence).
+Route::prefix('v1/claims/{id}/evidence')->middleware(['auth:api', 'tenant', 'json.api'])->whereUuid('id')->group(function (): void {
+    $e = \App\Application\Claims\Evidence\Http\ClaimEvidenceController::class;
+    Route::get('rules', [$e, 'rules'])->middleware('permission:claims.view');
+    Route::get('checklist', [$e, 'checklist'])->middleware('permission:claims.view');
+    Route::get('{document}', [$e, 'show'])->middleware('permission:claims.view')->whereUuid('document');
+    Route::post('{document}/review', [$e, 'review'])->middleware('permission:claims.evidence.verify')->whereUuid('document');
+});
+// End Agent C6
+// Agent C10 — REQ-CLM-010 claim assessment (recommendation) + investigation (App\Application\Claims\Assessment).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Claims\Assessment\Http\ClaimAssessmentController::class;
+    Route::get('{claim}/assessments', [$a, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/assessments', [$a, 'store'])->middleware('permission:claims.assessment.record')->whereUuid('claim');
+    Route::post('assessments/{assessment}/accept', [$a, 'accept'])->middleware('permission:claims.assessment.review')->whereUuid('assessment');
+    Route::post('assessments/{assessment}/reject', [$a, 'reject'])->middleware('permission:claims.assessment.review')->whereUuid('assessment');
+    Route::post('{claim}/investigations', [$a, 'openInvestigation'])->middleware('permission:claims.investigation.manage')->whereUuid('claim');
+    Route::post('investigations/{investigation}/indicators', [$a, 'attachIndicators'])->middleware('permission:claims.investigation.manage')->whereUuid('investigation');
+    Route::post('investigations/{investigation}/findings', [$a, 'findings'])->middleware('permission:claims.investigation.manage')->whereUuid('investigation');
+    Route::post('investigations/{investigation}/conclude', [$a, 'conclude'])->middleware('permission:claims.investigation.conclude')->whereUuid('investigation');
+});
+// End Agent C10
+
+// C11 — REQ-CLM-011 claims execution modes (App\Application\Claims\Execution).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Claims\Execution\Http\ClaimExecutionController::class;
+    Route::get('claims/{id}/execution', [$c, 'show'])->middleware('permission:claims.view')->whereUuid('id');
+    Route::post('claims/{id}/execution/submit', [$c, 'submit'])->middleware('permission:claims.carrier.exchange')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/inbound', [$c, 'inbound'])->middleware('permission:claims.carrier.callback')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/manual', [$c, 'propose'])->middleware('permission:claims.carrier.manual_entry')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/manual/{entry}/approve', [$c, 'approve'])->middleware('permission:claims.carrier.manual_approve')->whereUuid(['id', 'entry']);
+    Route::post('claims/{id}/carrier-messages/manual/{entry}/reject', [$c, 'reject'])->middleware('permission:claims.carrier.manual_approve')->whereUuid(['id', 'entry']);
+    Route::post('carriers/{carrier}/claims-signing-keys', [$c, 'registerKey'])->middleware('permission:claims.carrier.keys')->whereUuid('carrier');
+    Route::post('carriers/{carrier}/claims-signing-keys/{key}/revoke', [$c, 'revokeKey'])->middleware('permission:claims.carrier.keys')->whereUuid('carrier');
+});
+// End C11
+// Agent C3 — REQ-CLM-003 coverage-at-loss engine (App\Application\Claims\Coverage).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cc = \App\Application\Claims\Coverage\Http\ClaimCoverageController::class;
+    Route::post('coverage/check', [$cc, 'check'])->middleware('permission:claims.coverage.check');
+    Route::get('{claim}/coverage-checks', [$cc, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/coverage-checks', [$cc, 'store'])->middleware('permission:claims.coverage.check')->whereUuid('claim');
+    Route::post('{claim}/coverage-checks/{check}/resolve', [$cc, 'resolve'])->middleware('permission:claims.coverage.resolve')->whereUuid('claim')->whereUuid('check');
+});
+// End Agent C3
+// Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $x = \App\Application\Claims\Adjusters\Http\ClaimExpertAssignmentController::class;
+    $a = \App\Application\Claims\Adjusters\Http\AdjusterAssignmentController::class;
+    Route::get('claims/{id}/assignments', [$x, 'index'])->middleware('permission:claims.view')->whereUuid('id');
+    Route::post('claims/{id}/assignments/experts', [$x, 'store'])->middleware('permission:claims.experts.assign')->whereUuid('id');
+    Route::get('claims/{id}/assignments/{assignment}', [$x, 'show'])->middleware('permission:claims.view')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/report/accept', [$x, 'acceptReport'])->middleware('permission:claims.experts.review')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/report/return', [$x, 'returnReport'])->middleware('permission:claims.experts.review')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/cancel', [$x, 'cancel'])->middleware('permission:claims.experts.assign')->whereUuid(['id', 'assignment']);
+    Route::get('adjuster/assignments', [$a, 'index'])->middleware('permission:claims.experts.work');
+    Route::get('adjuster/assignments/{assignment}', [$a, 'show'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/accept', [$a, 'accept'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/decline', [$a, 'decline'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/inspection', [$a, 'scheduleInspection'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/inspected', [$a, 'recordInspection'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/report', [$a, 'submitReport'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+});
+// End Agent C9
+// Agent C16 — REQ-FRD-001 claim fraud review (WF-089) / REQ-FRD-002 SoD violation report (App\Application\Fraud).
+Route::prefix('v1/fraud')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Fraud\Http\FraudControlController::class;
+    Route::post('claims/{claim}/assess', [$c, 'assess'])->middleware('permission:fraud.alert.create')->whereUuid('claim');
+    Route::post('claim-reviews/{alert}/outcome', [$c, 'outcome'])->middleware('permission:fraud.alert.decide')->whereUuid('alert');
+    Route::get('sod-violations', [$c, 'sodViolations'])->middleware('permission:fraud.sod.report');
+});
+// End Agent C16
+// Agent C12 — REQ-CLM-012 claim decisions (reason catalogue, CLAIM_SETTLE authority referral, maker-checker, appeal).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $d = \App\Application\Claims\Decisions\Http\ClaimDecisionController::class;
+    Route::get('{claim}/decision-history', [$d, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/decision-proposals', [$d, 'store'])->middleware('permission:claims.decision.propose')->whereUuid('claim');
+    Route::post('{claim}/decision-proposals/{decision}/approve', [$d, 'approve'])->middleware('permission:claims.decision.approve')->whereUuid(['claim', 'decision']);
+    Route::post('{claim}/decision-proposals/{decision}/return', [$d, 'returnToMaker'])->middleware('permission:claims.decision.approve')->whereUuid(['claim', 'decision']);
+    Route::post('{claim}/appeals', [$d, 'appeal'])->middleware('permission:claims.decision.appeal')->whereUuid('claim');
+});
+Route::get('v1/claim-decision-reason-codes', [\App\Application\Claims\Decisions\Http\ClaimDecisionController::class, 'reasonCodes'])
+    ->middleware(['auth:api', 'tenant', 'json.api', 'permission:claims.view']);
+// End Agent C12
+// Agent C15 — REQ-REC-001 claim recoveries (receivables), REQ-REC-002 litigation, REQ-REC-003 collections.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rc = \App\Application\Claims\Recovery\Http\ClaimRecoveryController::class;
+    Route::get('claim-recoveries', [$rc, 'index'])->middleware('permission:claims.view');
+    Route::post('claim-recoveries', [$rc, 'store'])->middleware('permission:claims.recovery');
+    Route::get('claim-recoveries/{recovery}', [$rc, 'show'])->middleware('permission:claims.view')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/receive', [$rc, 'receive'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/dispute', [$rc, 'dispute'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/resolve-dispute', [$rc, 'resolveDispute'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    Route::post('claim-recoveries/{recovery}/close', [$rc, 'close'])->middleware('permission:claims.recovery')->whereUuid('recovery');
+    $lm = \App\Application\Claims\Recovery\Http\LegalMatterController::class;
+    Route::get('legal-matters', [$lm, 'index'])->middleware('permission:legal.matters.view');
+    Route::post('legal-matters', [$lm, 'store'])->middleware('permission:legal.matters.manage');
+    Route::get('legal-matters/{matter}', [$lm, 'show'])->middleware('permission:legal.matters.view')->whereUuid('matter');
+    Route::post('legal-matters/{matter}/hearings', [$lm, 'hearing'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-hearings/{hearing}/record', [$lm, 'recordHearing'])->middleware('permission:legal.matters.manage')->whereUuid('hearing');
+    Route::post('legal-matters/{matter}/deadlines', [$lm, 'deadline'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-deadlines/{deadline}/complete', [$lm, 'completeDeadline'])->middleware('permission:legal.matters.manage')->whereUuid('deadline');
+    Route::post('legal-matters/{matter}/costs', [$lm, 'cost'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    Route::post('legal-matters/{matter}/outcome', [$lm, 'outcome'])->middleware('permission:legal.matters.manage')->whereUuid('matter');
+    $cc = \App\Application\Collections\Http\CollectionController::class;
+    Route::get('collections', [$cc, 'index'])->middleware('permission:collections.view');
+    Route::post('collections/run', [$cc, 'run'])->middleware('permission:collections.manage');
+    Route::get('collections/{obligation}', [$cc, 'show'])->middleware('permission:collections.view')->whereUuid('obligation');
+    Route::post('collections/{obligation}/promises', [$cc, 'promise'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/{obligation}/escalate', [$cc, 'escalate'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/{obligation}/write-off-requests', [$cc, 'requestWriteOff'])->middleware('permission:collections.manage')->whereUuid('obligation');
+    Route::post('collections/write-off-requests/{request}/approve', [$cc, 'approveWriteOff'])->middleware('permission:collections.write_off.approve')->whereUuid('request');
+    Route::post('collections/write-off-requests/{request}/reject', [$cc, 'rejectWriteOff'])->middleware('permission:collections.write_off.approve')->whereUuid('request');
+});
+// End Agent C15
+// Batch 11 C5 — REQ-CLM-008 event-based reserves (writes stay on claims/{id}/reserves + /approve in routes/wave7.php).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::get('{id}/reserve-position', [\App\Application\Claims\Reserves\Http\ReservePositionController::class, 'show'])->middleware('permission:claims.view')->whereUuid('id');
+});
+// End Batch 11 C5
+// Agent C2 — REQ-CLM-002 FNOL: agent-assisted FNOL (AGT-052) + immutable FNOL snapshot read.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::post('mobile/partner/agent/claims', [\App\Interfaces\Http\Controllers\Api\V1\Claims\AgentFnolController::class, 'store'])->middleware(['permission:agent.clients.manage', 'throttle:10,1']);
+    Route::get('claims/{id}/fnol-snapshot', [\App\Interfaces\Http\Controllers\Api\V1\Claims\ClaimLifecycleController::class, 'fnolSnapshot'])->middleware('permission:claims.view')->whereUuid('id');
+});
+// End Agent C2
+// Batch 12 C13 — REQ-CLM-013 claim settlement (App\Application\Claims\Settlement).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Claims\Settlement\Http\ClaimSettlementController::class;
+    Route::post('claims/{claim}/settlements', [$s, 'calculate'])->middleware('permission:claims.settlement.calculate')->whereUuid('claim');
+    Route::get('claim-settlements/{settlement}', [$s, 'show'])->middleware('permission:claims.view')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/offer', [$s, 'offer'])->middleware('permission:claims.settlement.offer')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/accept', [$s, 'accept'])->middleware('permission:claims.settlement.respond')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/dispute', [$s, 'dispute'])->middleware('permission:claims.settlement.respond')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/discharge', [$s, 'requestDischarge'])->middleware('permission:claims.settlement.discharge')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/discharge/confirm', [$s, 'confirmDischarge'])->middleware('permission:claims.settlement.discharge')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/payment', [$s, 'requestPayment'])->middleware('permission:claims.settlement.pay')->whereUuid('settlement');
+});
+// End Batch 12 C13
+// Agent C8 — REQ-CLM-007 claim types per line/product + late-claim approval (App\Application\Claims\Types).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $ct = \App\Application\Claims\Types\Http\ClaimTypeController::class;
+    Route::get('claim-types', [$ct, 'index'])->middleware('permission:claims.view');
+    Route::post('claim-types', [$ct, 'store'])->middleware('permission:claims.types.manage');
+    Route::post('claim-types/{version}/approve', [$ct, 'approve'])->middleware('permission:claims.types.approve')->whereUuid('version');
+    Route::get('claims/{claim}/reporting-check', [$ct, 'reporting'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('claims/{claim}/late-report/recommend', [$ct, 'recommend'])->middleware('permission:claims.late_report.recommend')->whereUuid('claim');
+    Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
+});
+// End Agent C8
+// Agent E1 — REQ-PRV-003 provider portal (App\Application\Providers\Portal); read-only, scoped by ProviderScope.
+Route::prefix('v1/provider-portal')->middleware(['auth:api', 'tenant', 'json.api', \App\Application\Providers\Portal\ProviderScope::class])->group(function (): void {
+    $pp = \App\Application\Providers\Portal\Http\ProviderPortalController::class;
+    Route::get('profile', [$pp, 'profile'])->middleware('permission:provider_portal.profile.view');
+    Route::get('facilities', [$pp, 'facilities'])->middleware('permission:provider_portal.profile.view');
+    Route::get('services', [$pp, 'services'])->middleware('permission:provider_portal.profile.view');
+    Route::get('network-memberships', [$pp, 'memberships'])->middleware('permission:provider_portal.network.view');
+    Route::get('contracts', [$pp, 'contracts'])->middleware('permission:provider_portal.network.view');
+    Route::get('tariffs', [$pp, 'tariffs'])->middleware('permission:provider_portal.tariffs.view');
+    Route::get('assignments', [$pp, 'assignments'])->middleware('permission:provider_portal.assignments.view');
+    Route::get('preauthorizations', [$pp, 'preauthorizations'])->middleware('permission:provider_portal.preauth.view');
+    Route::get('claims', [$pp, 'claims'])->middleware('permission:provider_portal.claims.view');
+    Route::get('statement', [$pp, 'statement'])->middleware('permission:provider_portal.finance.view');
+    Route::get('payments', [$pp, 'payments'])->middleware('permission:provider_portal.finance.view');
+});
+// End Agent E1
+// Agent E6 — Batch 14C REQ-REI-003 facultative placements (App\Application\Reinsurance\Facultative).
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $f = \App\Application\Reinsurance\Facultative\Http\FacultativeController::class;
+    Route::get('facultative', [$f, 'index'])->middleware('permission:reinsurance.facultative.view');
+    Route::post('facultative', [$f, 'store'])->middleware('permission:reinsurance.facultative.manage');
+    Route::get('facultative/{placement}', [$f, 'show'])->middleware('permission:reinsurance.facultative.view')->whereUuid('placement');
+    Route::post('facultative/{placement}/lines', [$f, 'lines'])->middleware('permission:reinsurance.facultative.manage')->whereUuid('placement');
+    Route::post('facultative/{placement}/submit', [$f, 'submit'])->middleware('permission:reinsurance.facultative.manage')->whereUuid('placement');
+    Route::post('facultative/{placement}/approve', [$f, 'approve'])->middleware('permission:reinsurance.facultative.approve')->whereUuid('placement');
+    Route::post('facultative/{placement}/reject', [$f, 'reject'])->middleware('permission:reinsurance.facultative.approve')->whereUuid('placement');
+});
+// End Agent E6
+// Agent E2 — REQ-HLT-001 health eligibility, members, digital health card (App\Application\Health\Eligibility).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $he = \App\Application\Health\Eligibility\Http\HealthEligibilityController::class;
+    Route::get('policies/{policy}/health-members', [$he, 'members'])->middleware('permission:health.members.view')->whereUuid('policy');
+    Route::post('policies/{policy}/health-members', [$he, 'enrol'])->middleware('permission:health.members.manage')->whereUuid('policy');
+    Route::post('policies/{policy}/health-networks', [$he, 'linkNetwork'])->middleware('permission:health.members.manage')->whereUuid('policy');
+    Route::post('health-members/{member}/end', [$he, 'end'])->middleware('permission:health.members.manage')->whereUuid('member');
+    Route::post('health-members/{member}/card', [$he, 'issueCard'])->middleware('permission:health.cards.issue')->whereUuid('member');
+    Route::get('health-members/{member}/eligibility-checks', [$he, 'history'])->middleware('permission:health.eligibility.view')->whereUuid('member');
+    Route::post('health-benefit-rules', [$he, 'addBenefitRule'])->middleware('permission:health.benefits.manage');
+    Route::post('health/eligibility/check', [$he, 'check'])->middleware('permission:health.eligibility.check');
+    Route::post('health/eligibility/scan', [$he, 'scan'])->middleware(['permission:health.eligibility.scan', 'throttle:60,1']);
+});
+// End Agent E2
+// Agent E4 — REQ-HLT-003 provider claims (cashless billing), EOB, disputes, settlement batches, statements (App\Application\Health\ProviderClaims).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $hpc = \App\Application\Health\ProviderClaims\Http\ProviderClaimController::class;
+    Route::get('health/provider-claims', [$hpc, 'index'])->middleware('permission:health.provider_claims.view');
+    Route::post('health/provider-claims', [$hpc, 'store'])->middleware('permission:health.provider_claims.capture');
+    Route::get('health/provider-claims/{claim}', [$hpc, 'show'])->middleware('permission:health.provider_claims.view')->whereUuid('claim');
+    Route::get('health/provider-claims/{claim}/eob', [$hpc, 'eob'])->middleware('permission:health.provider_claims.view')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/submit', [$hpc, 'submit'])->middleware('permission:health.provider_claims.capture')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/review', [$hpc, 'review'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/adjudicate', [$hpc, 'adjudicate'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/payable', [$hpc, 'payable'])->middleware('permission:health.provider_claims.approve_payment')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/dispute', [$hpc, 'dispute'])->middleware('permission:health.provider_claims.dispute')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/dispute/resolve', [$hpc, 'resolveDispute'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-settlements', [$hpc, 'createBatch'])->middleware('permission:health.provider_settlements.manage');
+    Route::get('health/provider-settlements/{batch}', [$hpc, 'showBatch'])->middleware('permission:health.provider_claims.view')->whereUuid('batch');
+    Route::post('health/provider-settlements/{batch}/pay', [$hpc, 'payBatch'])->middleware('permission:health.provider_settlements.pay')->whereUuid('batch');
+    Route::get('health/providers/{provider}/statement', [$hpc, 'statement'])->middleware('permission:health.provider_claims.view')->whereUuid('provider');
+});
+// End Agent E4
+// Agent E7 — REQ-REI-004 reinsurance recoveries (App\Application\Reinsurance\Recoveries).
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rc = \App\Application\Reinsurance\Recoveries\Http\RecoveryController::class;
+    Route::get('recoveries', [$rc, 'index'])->middleware('permission:reinsurance.recoveries.view');
+    Route::get('recoveries/summary', [$rc, 'summary'])->middleware('permission:reinsurance.recoveries.view');
+    Route::get('recoveries/{recovery}', [$rc, 'show'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('recovery');
+    Route::get('claims/{claim}/recoveries', [$rc, 'claim'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('claim');
+    Route::post('claims/{claim}/recoveries/preview', [$rc, 'preview'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('claim');
+    Route::post('claims/{claim}/recoveries/estimate', [$rc, 'estimate'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('claim');
+    Route::post('recoveries/{recovery}/notify', [$rc, 'notify'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/agree', [$rc, 'agree'])->middleware('permission:reinsurance.recoveries.approve')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/bill', [$rc, 'bill'])->middleware('permission:reinsurance.recoveries.bill')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/receipts', [$rc, 'receive'])->middleware('permission:reinsurance.recoveries.settle')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/dispute', [$rc, 'dispute'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/close', [$rc, 'close'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('treaties/{treaty}/large-loss-threshold', [$rc, 'threshold'])->middleware('permission:reinsurance.treaties.manage')->whereUuid('treaty');
+});
+// End Agent E7
+// Agent E11 — REQ-CAT-001/002/003 accumulation, capacity check, catastrophe events + large loss (App\Application\Accumulation).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Accumulation\Http\AccumulationController::class;
+    Route::get('accumulation/zones', [$a, 'zones'])->middleware('permission:accumulation.view');
+    Route::post('accumulation/zones', [$a, 'createZone'])->middleware('permission:accumulation.manage');
+    Route::post('accumulation/locations/rebuild', [$a, 'rebuild'])->middleware('permission:accumulation.manage');
+    Route::get('accumulation', [$a, 'accumulation'])->middleware('permission:accumulation.view');
+    Route::get('accumulation/snapshots', [$a, 'snapshots'])->middleware('permission:accumulation.view');
+    Route::post('accumulation/snapshots', [$a, 'snapshot'])->middleware('permission:accumulation.manage');
+    Route::get('accumulation/snapshots/{snapshot}', [$a, 'showSnapshot'])->middleware('permission:accumulation.view')->whereUuid('snapshot');
+    Route::post('accumulation/capacity-limits', [$a, 'setLimit'])->middleware('permission:accumulation.manage');
+    Route::post('capacity/check', [$a, 'check'])->middleware('permission:accumulation.capacity.check');
+    Route::post('catastrophe-events', [$a, 'declareEvent'])->middleware('permission:catastrophe.events.manage');
+    Route::get('catastrophe-events/{event}', [$a, 'showEvent'])->middleware('permission:catastrophe.events.view')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/claims', [$a, 'linkClaim'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/aggregate', [$a, 'aggregateEvent'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/close', [$a, 'closeEvent'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('large-loss/threshold', [$a, 'largeLossThreshold'])->middleware('permission:catastrophe.events.manage');
+    Route::post('claims/{claim}/large-loss-check', [$a, 'largeLossCheck'])->middleware('permission:claims.view')->whereUuid('claim');
+});
+// End Agent E11
+// Agent E9 — REQ-AML-002 AML risk rating / EDD / transaction monitoring; REQ-AML-003 STR (tipping-off: 404 without cases.str.view).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Compliance\Aml\Risk\Http\AmlRiskController::class;
+    $s = \App\Application\Compliance\Aml\Str\Http\StrController::class;
+    Route::post('aml/customers/{party}/risk-rating', [$a, 'rate'])->middleware('permission:aml.risk.rate')->whereUuid('party');
+    Route::get('aml/customers/{party}/risk-rating', [$a, 'show'])->middleware('permission:aml.risk.view')->whereUuid('party');
+    Route::get('aml/transaction-monitoring/rules', [$a, 'rules'])->middleware('permission:aml.risk.view');
+    Route::post('aml/transaction-monitoring/evaluate', [$a, 'monitor'])->middleware('permission:aml.monitoring.evaluate');
+    Route::get('aml/str-reports', [$s, 'index']);
+    Route::post('aml/str-reports', [$s, 'store']);
+    Route::get('aml/str-reports/{str}', [$s, 'show'])->whereUuid('str');
+    Route::post('aml/str-reports/{str}/submit', [$s, 'submit'])->whereUuid('str');
+});
+// End Agent E9
+// Agent E10 — REQ-CMP-001 compliance cases on the case engine, REQ-CMP-003 governance registers, REQ-DUP-009 canonical compliance/*.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cc = \App\Interfaces\Http\Controllers\Api\V1\Compliance\ComplianceCaseController::class;
+    $co = \App\Interfaces\Http\Controllers\Api\V1\Compliance\ComplianceController::class;
+    $gv = \App\Interfaces\Http\Controllers\Api\V1\Compliance\GovernanceRegisterController::class;
+    Route::post('compliance/cases', [$cc, 'open'])->middleware('permission:compliance.cases.create');
+    Route::get('compliance/cases/{case}', [$cc, 'show'])->middleware('permission:compliance.cases.read')->whereUuid('case');
+    Route::post('compliance/cases/{case}/transition', [$cc, 'transition'])->middleware('permission:compliance.cases.transition')->whereUuid('case');
+    Route::post('compliance/cases/{case}/findings', [$cc, 'addFinding'])->middleware('permission:compliance.findings.manage')->whereUuid('case');
+    Route::post('compliance/findings/{finding}/withdraw', [$cc, 'withdrawFinding'])->middleware('permission:compliance.findings.manage')->whereUuid('finding');
+    Route::post('compliance/findings/{finding}/corrective-actions', [$cc, 'planAction'])->middleware('permission:compliance.actions.manage')->whereUuid('finding');
+    Route::post('compliance/corrective-actions/{action}/events', [$cc, 'actOnAction'])->middleware('permission:compliance.actions.manage')->whereUuid('action');
+    Route::post('compliance/corrective-actions/{action}/verify', [$cc, 'verifyAction'])->middleware('permission:compliance.actions.verify')->whereUuid('action');
+    Route::post('compliance/cases/{case}/evidence', [$cc, 'linkEvidence'])->middleware('permission:compliance.evidence.link')->whereUuid('case');
+    Route::post('compliance/privileged-access/{x}/approve', [$co, 'approveAccess'])->middleware('permission:compliance.access.approve')->whereUuid('x');
+    Route::post('compliance/privileged-access/{x}/revoke', [$co, 'revokeAccess'])->middleware('permission:compliance.access.revoke')->whereUuid('x');
+    Route::post('compliance/data-subject-requests/{x}/verify', [$co, 'verifyDataRequest'])->middleware('permission:compliance.dsr.verify')->whereUuid('x');
+    Route::post('compliance/data-subject-requests/{x}/resolve', [$co, 'resolveDataRequest'])->middleware('permission:compliance.dsr.resolve')->whereUuid('x');
+    $reg = 'ict-assets|ict-incidents|vendors|outsourcing-contracts|due-diligence-reviews|exit-plans';
+    Route::post('compliance/governance/exit-plans/{id}/approve', [$gv, 'approveExitPlan'])->middleware('permission:compliance.governance.approve')->whereUuid('id');
+    Route::get('compliance/governance/{register}', [$gv, 'index'])->middleware('permission:compliance.governance.read')->where('register', $reg);
+    Route::get('compliance/governance/{register}/{id}', [$gv, 'show'])->middleware('permission:compliance.governance.read')->where('register', $reg)->whereUuid('id');
+    Route::post('compliance/governance/{register}', [$gv, 'store'])->middleware('permission:compliance.governance.manage')->where('register', $reg);
+    Route::patch('compliance/governance/{register}/{id}', [$gv, 'update'])->middleware('permission:compliance.governance.manage')->where('register', $reg)->whereUuid('id');
+});
+// End Agent E10
+// Batch 14 E5 — REQ-HLT-004 health benefit schedules + accumulator (App\Application\Health\Benefits).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $hb = \App\Application\Health\Benefits\Http\BenefitController::class;
+    Route::get('health/benefits/remaining', [$hb, 'remaining'])->middleware('permission:health.benefits.view');
+    Route::get('health/benefit-schedules', [$hb, 'index'])->middleware('permission:health.benefits.view');
+    Route::post('health/benefit-schedules', [$hb, 'store'])->middleware('permission:health.benefits.manage');
+});
+// End Batch 14 E5
+// Agent E8 — REQ-AML-001 / REQ-KYC-004 PEP / sanctions / watchlist screening (App\Application\Compliance\Aml\Screening).
+Route::prefix('v1/aml/screening')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sc = \App\Application\Compliance\Aml\Screening\Http\ScreeningController::class;
+    Route::get('lists', [$sc, 'sources'])->middleware('permission:aml.screening.view');
+    Route::post('lists', [$sc, 'storeSource'])->middleware('permission:aml.screening.lists.manage');
+    Route::post('lists/{source}/versions', [$sc, 'import'])->middleware('permission:aml.screening.lists.manage')->whereUuid('source');
+    Route::get('list-versions/{version}', [$sc, 'showVersion'])->middleware('permission:aml.screening.view')->whereUuid('version');
+    Route::post('list-versions/{version}/decide', [$sc, 'decideVersion'])->middleware('permission:aml.screening.lists.approve')->whereUuid('version');
+    Route::post('parties/{party}/screen', [$sc, 'screenParty'])->middleware('permission:aml.screening.run')->whereUuid('party');
+    Route::get('parties/{party}/status', [$sc, 'partyStatus'])->middleware('permission:aml.screening.view')->whereUuid('party');
+    Route::get('hits', [$sc, 'hits'])->middleware('permission:aml.screening.view');
+    Route::post('hits/{hit}/disposition', [$sc, 'propose'])->middleware('permission:aml.screening.disposition.propose')->whereUuid('hit');
+    Route::post('hits/{hit}/disposition/decide', [$sc, 'decide'])->middleware('permission:aml.screening.disposition.approve')->whereUuid('hit');
+});
+// End Agent E8
+// Agent E3 — REQ-HLT-002 health preauthorization / guarantee of payment (App\Application\Health\Preauth).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $pa = \App\Application\Health\Preauth\Http\PreauthorizationController::class;
+    Route::get('health/preauthorizations', [$pa, 'index'])->middleware('permission:health.preauth.view');
+    Route::post('health/preauthorizations', [$pa, 'store'])->middleware('permission:health.preauth.request');
+    Route::get('health/preauthorizations/{preauth}', [$pa, 'show'])->middleware('permission:health.preauth.view')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/info-request', [$pa, 'requestInfo'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/info', [$pa, 'provideInfo'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/proposal', [$pa, 'propose'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/proposal/return', [$pa, 'returnProposal'])->middleware('permission:health.preauth.approve')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/decision', [$pa, 'decide'])->middleware('permission:health.preauth.approve')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/admission', [$pa, 'admit'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/discharge', [$pa, 'discharge'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/cancel', [$pa, 'cancel'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/extensions', [$pa, 'requestExtension'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/extensions/{extension}/proposal', [$pa, 'proposeExtension'])->middleware('permission:health.preauth.review')->whereUuid(['preauth', 'extension']);
+    Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
+});
+// End Agent E3
+// Agent B4 — REQ-API-004 missing API-family read endpoints (docs/audit/API_FAMILY_COVERAGE.md); thin controllers, no new logic.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rq = \App\Interfaces\Http\Controllers\Api\V1\ApiFamilies\UnderwritingReferralQueueController::class;
+    Route::get('underwriting/referrals', [$rq, 'index'])->middleware('permission:carrier.referrals.read');
+    Route::get('underwriting/referrals/{referral}', [$rq, 'show'])->middleware('permission:carrier.referrals.read')->whereUuid('referral');
+    $nd = \App\Interfaces\Http\Controllers\Api\V1\ApiFamilies\NotificationDeliveryQueryController::class;
+    Route::get('notifications', [$nd, 'index'])->middleware('permission:communications.manage');
+    Route::get('notifications/{d}', [$nd, 'show'])->middleware('permission:communications.manage')->whereUuid('d');
+});
+// End Agent B4
+// Agent B6 — REQ-OPS-001/002/005 operations console (App\Application\Operations).
+Route::prefix('v1/operations')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $op = \App\Application\Operations\Http\OperationsConsoleController::class;
+    Route::get('health', [$op, 'health'])->middleware('permission:operations.console.view');
+    Route::get('integrations', [$op, 'integrations'])->middleware('permission:operations.console.view');
+    Route::get('exceptions', [$op, 'exceptions'])->middleware('permission:operations.console.view');
+    Route::get('correlations/{correlationId}', [$op, 'correlation'])->middleware('permission:operations.console.view')->where('correlationId', '[A-Za-z0-9._:-]{1,128}');
+    Route::get('failed-jobs', [$op, 'failedJobs'])->middleware('permission:operations.platform.view');
+    Route::post('failed-jobs/{uuid}/retry', [$op, 'retryJob'])->middleware('permission:operations.jobs.manage')->whereUuid('uuid');
+    Route::post('failed-jobs/{uuid}/forget', [$op, 'forgetJob'])->middleware('permission:operations.jobs.manage')->whereUuid('uuid');
+    Route::get('incidents', [$op, 'incidents'])->middleware('permission:operations.console.view');
+    Route::post('incidents', [$op, 'storeIncident'])->middleware('permission:operations.incidents.manage');
+    Route::patch('incidents/{id}', [$op, 'updateIncident'])->middleware('permission:operations.incidents.manage')->whereUuid('id');
+    Route::get('restore-verifications', [$op, 'restoreVerifications'])->middleware('permission:operations.console.view');
+});
+// End Agent B6
+// Agent B2 — REQ-RPT-003 KPI governance catalogue, REQ-RPT-004 dashboard registry + data API, REQ-RPT-005 unified report catalogue.
+Route::prefix('v1/reporting')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rp = \App\Application\Reporting\Http\ReportingController::class;
+    $kpi = '[a-z][a-z0-9_]*(\.[a-z0-9_]+)*';
+    Route::get('kpi-queries', [$rp, 'queries'])->middleware('permission:reporting.kpis.view');
+    Route::get('kpis', [$rp, 'kpis'])->middleware('permission:reporting.kpis.view');
+    Route::post('kpis', [$rp, 'draft'])->middleware('permission:reporting.kpis.manage');
+    Route::get('kpis/{code}', [$rp, 'kpi'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::get('kpis/{code}/value', [$rp, 'value'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::get('kpis/{code}/drill', [$rp, 'drill'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::post('kpi-definitions/{definition}/submit', [$rp, 'submit'])->middleware('permission:reporting.kpis.manage')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/approve', [$rp, 'approve'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/reject', [$rp, 'reject'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/retire', [$rp, 'retire'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::get('dashboards', [$rp, 'dashboards'])->middleware('permission:reporting.dashboards.view');
+    Route::get('dashboards/{dashboard}', [$rp, 'dashboard'])->middleware('permission:reporting.dashboards.view')->where('dashboard', '[a-z_]+');
+    Route::get('dashboards/{dashboard}/tiles/{tile}/drill', [$rp, 'dashboardDrill'])->middleware('permission:reporting.dashboards.view')->where(['dashboard' => '[a-z_]+', 'tile' => '[a-z0-9_]+']);
+    Route::get('reports', [$rp, 'reports'])->middleware('permission:reporting.reports.view');
+    Route::get('reports/{report}', [$rp, 'report'])->middleware('permission:reporting.reports.view')->where('report', '[A-Za-z]{2,3}-[0-9]{2,3}');
+});
+// End Agent B2
+// Agent B1 — REQ-RPT-001 regulatory returns + lineage, REQ-RPT-002 regulatory change engine, REQ-RPT-006 inspection workspace + profitability.
+Route::prefix('v1/regulatory')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rg = \App\Application\Regulatory\Http\RegulatoryReturnsController::class;
+    Route::get('return-definitions', [$rg, 'definitions'])->middleware('permission:regulatory.returns.view');
+    Route::post('return-definitions', [$rg, 'define'])->middleware('permission:regulatory.returns.define');
+    Route::post('return-definitions/{definition}/approve', [$rg, 'approveDefinition'])->middleware('permission:regulatory.returns.approve')->whereUuid('definition');
+    Route::post('return-definitions/{definition}/runs', [$rg, 'generate'])->middleware('permission:trust.regulatory-reports.prepare')->whereUuid('definition');
+    Route::get('return-runs/{run}', [$rg, 'run'])->middleware('permission:regulatory.returns.view')->whereUuid('run');
+    Route::get('return-runs/{run}/lineage', [$rg, 'lineage'])->middleware('permission:regulatory.returns.view')->whereUuid('run');
+    Route::get('rules', [$rg, 'rules'])->middleware('permission:regulatory.rules.view');
+    Route::post('rules', [$rg, 'draftRule'])->middleware('permission:regulatory.rules.draft');
+    Route::get('rules/{rule}', [$rg, 'rule'])->middleware('permission:regulatory.rules.view')->whereUuid('rule');
+    Route::get('rules/{rule}/impact', [$rg, 'impact'])->middleware('permission:regulatory.rules.view')->whereUuid('rule');
+    Route::post('rules/{rule}/review', [$rg, 'reviewRule'])->middleware('permission:regulatory.rules.review')->whereUuid('rule');
+    Route::post('rules/{rule}/approve', [$rg, 'approveRule'])->middleware('permission:regulatory.rules.approve')->whereUuid('rule');
+    Route::post('rules/{rule}/activate', [$rg, 'activateRule'])->middleware('permission:regulatory.rules.approve')->whereUuid('rule');
+    Route::get('reference-sets/{set}/impact', [$rg, 'referenceSetImpact'])->middleware('permission:regulatory.rules.view')->whereUuid('set');
+    Route::post('inspections', [$rg, 'openInspection'])->middleware('permission:regulatory.inspections.manage');
+    Route::get('inspections/{inspection}', [$rg, 'inspection'])->middleware('permission:regulatory.inspections.view')->whereUuid('inspection');
+    Route::post('inspections/{inspection}/approve', [$rg, 'approveInspection'])->middleware('permission:regulatory.inspections.approve')->whereUuid('inspection');
+    Route::post('inspections/{inspection}/close', [$rg, 'closeInspection'])->middleware('permission:regulatory.inspections.manage')->whereUuid('inspection');
+    Route::get('inspections/{inspection}/workspace/{resource}', [$rg, 'inspectionRead'])->middleware('permission:regulatory.inspections.access')->whereUuid('inspection');
+    Route::get('inspections/{inspection}/workspace/{resource}/export', [$rg, 'inspectionExport'])->middleware('permission:regulatory.inspections.access')->whereUuid('inspection');
+    Route::get('profitability/policies', [$rg, 'profitability'])->middleware('permission:regulatory.profitability.view');
+});
+// End Agent B1
+// Agent B3 — REQ-API-006 developer portal / REQ-API-007 carrier connectors / REQ-IAM-004 scopes
+// (/.well-known/openid-configuration + /.well-known/jwks.json are registered un-prefixed by IntegrationsDeveloperPlatformServiceProvider).
+Route::prefix('v1')->middleware(['json.api'])->group(function (): void {
+    $dp = \App\Application\Integrations\Developer\Http\DeveloperPortalController::class;
+    Route::get('developer/openapi.json', [$dp, 'openapi']);
+    Route::get('developer/scopes', [$dp, 'scopes']);
+    Route::get('partner/usage', [$dp, 'partnerUsage'])->middleware('integration.client:*');
+});
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $dp = \App\Application\Integrations\Developer\Http\DeveloperPortalController::class;
+    Route::get('developer/clients', [$dp, 'clients'])->middleware('permission:integrations.manage');
+    Route::post('developer/clients/{client}/keys', [$dp, 'issueKey'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::post('developer/clients/{client}/keys/{key}/revoke', [$dp, 'revokeKey'])->middleware('permission:integrations.revoke')->whereUuid(['client', 'key']);
+    Route::put('developer/clients/{client}/rate-limits', [$dp, 'rateLimits'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::get('developer/clients/{client}/usage', [$dp, 'usage'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::get('developer/consents', [$dp, 'consents'])->middleware('permission:integrations.consent.manage');
+    Route::post('developer/consents', [$dp, 'grantConsent'])->middleware('permission:integrations.consent.manage');
+    Route::post('developer/consents/{consent}/revoke', [$dp, 'revokeConsent'])->middleware('permission:integrations.consent.manage')->whereUuid('consent');
+    $cc = \App\Application\Integrations\Carriers\Http\CarrierConnectorController::class;
+    Route::get('carrier-connectors/fallback-queue', [$cc, 'fallbackQueue'])->middleware('permission:integrations.carrier_connectors.manage');
+    Route::get('carrier-connectors/{carrier}', [$cc, 'show'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::put('carrier-connectors/{carrier}', [$cc, 'configure'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::post('carrier-connectors/{carrier}/sync', [$cc, 'sync'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('carrier');
+    Route::post('carrier-connectors/messages/{message}/dispatch', [$cc, 'dispatch'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('message');
+    Route::post('carrier-connectors/messages/{message}/resolve', [$cc, 'resolveFallback'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('message');
+    Route::post('carrier-connectors/mappings/{mapping}/resolve-conflict', [$cc, 'resolveConflict'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('mapping');
+});
+// End Agent B3
+// Agent B5 — REQ-IMP-002 legacy migration (App\Application\Import\Legacy\LegacyMigrationPipeline).
+// stage → validate → dry-run → reconcile → submit → approve (maker-checker) → commit; rollback while uncommitted.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api', 'throttle:60,1'])->group(function (): void {
+    $lm = \App\Interfaces\Http\Controllers\Api\V1\Import\LegacyMigrationController::class;
+    Route::get('legacy-migrations/entities', [$lm, 'entities'])->middleware('permission:legacy_migration.manage');
+    Route::get('legacy-migrations', [$lm, 'index'])->middleware('permission:legacy_migration.manage');
+    Route::post('legacy-migrations', [$lm, 'store'])->middleware('permission:legacy_migration.manage');
+    Route::get('legacy-migrations/{batch}', [$lm, 'show'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::put('legacy-migrations/{batch}/mapping', [$lm, 'map'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/validate', [$lm, 'validateBatch'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/dry-run', [$lm, 'dryRun'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/reconcile', [$lm, 'reconcile'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/submit', [$lm, 'submit'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/rollback', [$lm, 'rollback'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/approve', [$lm, 'approve'])->middleware('permission:legacy_migration.approve')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/reject', [$lm, 'reject'])->middleware('permission:legacy_migration.approve')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/commit', [$lm, 'commit'])->middleware('permission:legacy_migration.commit')->whereUuid('batch');
+});
+// End Agent B5
+// Agent B7 — REQ-SEC-001 security centre, REQ-SEC-003 purposes / purpose-of-use log, REQ-MOB-007 crash reports (App\Application\Security\Http).
+Route::prefix('v1')->group(function (): void {
+    Route::post('mobile/runtime/crash-reports', [\App\Application\Security\Http\SecurityCentreController::class, 'crashReport'])->middleware('throttle:30,1');
+});
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sc = \App\Application\Security\Http\SecurityCentreController::class;
+    Route::get('me/security/login-activity', [$sc, 'myLoginActivity']);
+    Route::get('security-centre/login-activity', [$sc, 'loginActivity'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/privileged-access', [$sc, 'privilegedAccess'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/crash-reports', [$sc, 'crashReports'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/findings', [$sc, 'findings'])->middleware('permission:security.findings.read');
+    Route::post('security-centre/findings', [$sc, 'reportFinding'])->middleware('permission:security.findings.manage');
+    Route::get('security-centre/findings/{finding}', [$sc, 'finding'])->middleware('permission:security.findings.read')->whereUuid('finding');
+    Route::post('security-centre/findings/{finding}/transition', [$sc, 'transitionFinding'])->middleware('permission:security.findings.manage')->whereUuid('finding');
+    Route::get('privacy/purposes', [$sc, 'purposes'])->middleware('permission:privacy.purposes.read');
+    Route::patch('privacy/purposes/{code}', [$sc, 'updatePurpose'])->middleware('permission:privacy.purposes.manage')->where('code', '[A-Z0-9_]+');
+    Route::get('privacy/purpose-checks', [$sc, 'purposeChecks'])->middleware('permission:privacy.purposes.read');
+});
+// End Agent B7
+// Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $vp = \App\Application\Vehicles\Power\Http\VehiclePowerController::class;
+    Route::get('master-data/vehicles/power/search', [$vp, 'search'])->middleware('permission:vehicle_power.view');
+    Route::get('master-data/vehicles/{variant}/power', [$vp, 'show'])->middleware('permission:vehicle_power.view')->whereUuid('variant');
+    Route::get('master-data/fiscal-power/bands', [$vp, 'bands'])->middleware('permission:vehicle_power.view');
+    Route::get('master-data/fiscal-power/stamp-duty-rates', [$vp, 'rates'])->middleware('permission:vehicle_power.view');
+    Route::post('master-data/vehicles/{variant}/power', [$vp, 'recordPower'])->middleware('permission:vehicle_power.manage')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power', [$vp, 'submitFiscal'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power/verify', [$vp, 'verify'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power/conflict', [$vp, 'conflict'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('variant');
+    Route::post('master-data/fiscal-power/records', [$vp, 'submitRecord'])->middleware('permission:vehicle_power.fiscal.submit');
+    Route::post('master-data/fiscal-power/records/{record}/source', [$vp, 'attachSource'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('record');
+    Route::post('master-data/fiscal-power/records/{record}/verify', [$vp, 'verifyRecord'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('record');
+    Route::post('master-data/fiscal-power/records/{record}/reject', [$vp, 'reject'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('record');
+    Route::post('master-data/fiscal-power/conflicts/{conflict}/resolve', [$vp, 'resolveConflict'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('conflict');
+    Route::post('master-data/fiscal-power/rate-schedules/version', [$vp, 'scheduleVersion'])->middleware('permission:vehicle_power.stamp_duty.manage');
+    Route::post('master-data/fiscal-power/rate-schedules/{schedule}/approve', [$vp, 'approveSchedule'])->middleware('permission:vehicle_power.stamp_duty.approve')->whereUuid('schedule');
+    Route::post('master-data/vehicles/transport-licences', [$vp, 'recordLicence'])->middleware('permission:vehicle_power.fiscal.submit');
+    Route::post('master-data/vehicles/transport-licences/{licence}/decision', [$vp, 'decideLicence'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('licence');
+});
+// End Agent V1
+// Agent F1 — finance counterparty accounts & commission sub-ledger (App\Application\Finance\Subledger; owner spec v1).
+Route::prefix('v1/finance/subledger')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sl = \App\Application\Finance\Subledger\Http\SubledgerController::class;
+    Route::get('accounts', [$sl, 'accounts'])->middleware('permission:finance.accounts.view');
+    Route::post('accounts', [$sl, 'openAccount'])->middleware('permission:finance.adjustments.create');
+    Route::post('accounts/{account}/approve', [$sl, 'approveAccount'])->middleware('permission:finance.adjustments.approve')->whereUuid('account');
+    Route::post('accounts/{account}/status', [$sl, 'accountStatus'])->middleware('permission:finance.adjustments.approve')->whereUuid('account');
+    Route::get('accounts/{account}/balance', [$sl, 'accountBalance'])->middleware('permission:finance.accounts.view')->whereUuid('account');
+    Route::get('entries', [$sl, 'entries'])->middleware('permission:finance.ledger.view');
+    Route::get('entries/{entry}/drilldown', [$sl, 'drilldown'])->middleware('permission:finance.ledger.view')->whereUuid('entry');
+    Route::get('balances', [$sl, 'balances'])->middleware('permission:finance.accounts.view');
+    Route::get('dashboards/broker', [$sl, 'brokerDashboard'])->middleware('permission:finance.accounts.view');
+    Route::get('dashboards/insurer', [$sl, 'insurerDashboard'])->middleware('permission:finance.accounts.view');
+    Route::get('insurers/{insurer}', [$sl, 'brokerInsurer'])->middleware('permission:finance.accounts.view')->whereUuid('insurer');
+    Route::get('brokers/{broker}', [$sl, 'insurerBroker'])->middleware('permission:finance.accounts.view')->whereUuid('broker');
+    Route::get('customers/{party}', [$sl, 'customerLedger'])->middleware('permission:finance.accounts.view')->whereUuid('party');
+    Route::get('agents/{agent}', [$sl, 'agentLedger'])->middleware('permission:finance.commissions.view')->whereUuid('agent');
+    Route::post('remittances', [$sl, 'recordRemittance'])->middleware('permission:finance.settlements.create');
+    Route::post('remittances/{remittance}/allocations', [$sl, 'allocateRemittance'])->middleware('permission:finance.settlements.create')->whereUuid('remittance');
+    Route::post('remittances/{remittance}/hold', [$sl, 'holdRemittance'])->middleware('permission:finance.reconciliation.override')->whereUuid('remittance');
+    Route::get('aging/{scope}', [$sl, 'aging'])->middleware('permission:finance.accounts.view');
+    Route::post('aging-settings', [$sl, 'configureAging'])->middleware('permission:finance.commissions.configure');
+    Route::get('reports', [$sl, 'reports'])->middleware('permission:finance.accounts.view');
+    Route::get('reports/{report}', [$sl, 'report'])->middleware('permission:finance.accounts.export');
+    Route::post('documents/{doc}', [$sl, 'generateDocument'])->middleware('permission:finance.accounts.export');
+});
+// End Agent F1

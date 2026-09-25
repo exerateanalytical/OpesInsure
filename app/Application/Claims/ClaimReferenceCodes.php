@@ -33,7 +33,7 @@ final class ClaimReferenceCodes
     public const RESERVE_TYPES = ['INDEMNITY', 'LEGAL', 'ADJUSTER', 'MEDICAL', 'REPAIR', 'SALVAGE', 'RECOVERY', 'OTHER'];
 
     /** Superset of the codes already stored in claim_recoveries.type (SUBROGATION, SALVAGE, OTHER). */
-    public const RECOVERY_TYPES = ['SUBROGATION', 'SALVAGE', 'REINSURANCE', 'COINSURANCE', 'THIRD_PARTY', 'OTHER'];
+    public const RECOVERY_TYPES = ['SUBROGATION', 'SALVAGE', 'REINSURANCE', 'COINSURANCE', 'THIRD_PARTY', 'OTHER', 'CONTRIBUTION', 'DEDUCTIBLE_RECOVERY'];
 
     /**
      * Workflow decision code => existing stored codes.

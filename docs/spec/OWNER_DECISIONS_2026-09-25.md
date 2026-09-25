@@ -70,8 +70,17 @@ Stored at database/data/workflow_institutional_data_master_2026.json.
 - Case families are now the owner's 10: KYC, UNDERWRITING, CLAIMS, FRAUD_REVIEW, COMPLAINT, FINANCE_EXCEPTION, PROVIDER, REINSURANCE, REGULATORY, OPERATIONS. They replace the 8 reconstructed families.
 - Beneficial ownership rule: MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS (VERIFIED_RULE).
 
+<<<<<<< HEAD
 ## UI decisions (owner, 2026-09-25)
 - D1 yes: move the public site to the canonical UI (Inter, blue #1769E0 for interactive, gold accent only, blue focus ring). The owner is supplying a folder of further public-site designs; follow them.
 - D2 yes: retire the placeholder /portal/{portal} page (redirect to the right panel).
 - D3 yes: adopt Lucide icons (composer package allowed).
 - D4 yes: build the missing broker and carrier web sections (contracts, bordereaux, settlements, receivables, staff), each with a tenant and permission review.
+=======
+## Addendum 2026-09-25 (owner, via cloud session)
+- **Decision 27 clarified (AML screening):** automated name matching against sanction/PEP/watchlists that the tenant itself imports and approves
+  is compatible with decision 27, because every hit is dispositioned by a human (maker-checker). User-facing wording must say
+  "screened against your approved lists; matches reviewed by your compliance team", never that the platform performs or guarantees screening.
+- **Claims officers cannot approve a colleague's claim:** CLAIMS_OFFICER loses `*` and gets an explicit maker-only permission list (Batch 13–15 role pass).
+- **Permission catalogue:** every permission used by a route must be catalogued (drift test enforces it).
+>>>>>>> origin/claude/charming-bohr-2fd2hk

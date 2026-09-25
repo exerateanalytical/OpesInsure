@@ -110,7 +110,7 @@ final class PolicyPremiumObligations
             return null;
         }
 
-        return DB::transaction(function () use ($payment, $obligation): object {
+        $settled = DB::transaction(function () use ($payment, $obligation): object {
             $settled = $this->obligations->settle($obligation->id, (int) $payment->amount_minor, 'payment_intent:'.$payment->id);
             $instalmentId = DB::table('policy_premium_instalments')->where('financial_obligation_id', $obligation->id)->value('id');
             if ($instalmentId) {
@@ -119,6 +119,16 @@ final class PolicyPremiumObligations
 
             return $settled;
         });
+        // REQ-COM-001: settled premium earns the policy's accrued commission (savepoint; never undoes the settlement).
+        if ($obligation->policy_id) {
+            try {
+                DB::transaction(fn () => app(\App\Application\Commissions\Machine\CommissionLifecycleService::class)->onPremiumSettled($obligation->policy_id));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $settled;
     }
 
     /** @return list<object> */

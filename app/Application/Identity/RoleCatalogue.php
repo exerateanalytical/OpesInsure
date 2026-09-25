@@ -19,7 +19,8 @@ use App\Application\Identity\Rbac\DataScope;
  *     enumerated in the spec and are NOT invented here);
  *   - FRP V provider roles (PROVIDER_ADMIN, FRONT_DESK, DOCTOR, BILLING,
  *     PHARMACY, LAB, FINANCE);
- *   - ESR actors (BRANCH_MANAGER, ADJUSTER, DEVELOPER, REGULATOR).
+ *   - ESR actors (BRANCH_MANAGER, ADJUSTER, DEVELOPER, REGULATOR);
+ *   - D10 owner decision: CASHIER (till operator, distinct from the approving BRANCH_MANAGER).
  *
  * An existing tenant Role row always wins over these defaults (invitation
  * acceptance and seeders use firstOrCreate), so administrators' edits to a
@@ -49,6 +50,7 @@ final class RoleCatalogue
         'BROKER_STAFF' => 'Broker staff (producer)',
         'AGENT' => 'Agent',
         'BRANCH_MANAGER' => 'Branch manager',
+        'CASHIER' => 'Cashier (till operator)',
         // Insurer (SCF §7)
         'CARRIER_SUPER_ADMIN' => 'Insurer super administrator',
         'CARRIER_ADMIN' => 'Insurer administrator',
@@ -66,6 +68,13 @@ final class RoleCatalogue
         'PROVIDER_PHARMACY' => 'Provider pharmacy',
         'PROVIDER_LAB' => 'Provider laboratory',
         'PROVIDER_FINANCE' => 'Provider finance',
+        // Provider portal (SPEC role codes)
+        'FRONT_DESK' => 'Provider portal front desk',
+        'DOCTOR' => 'Provider portal doctor',
+        'BILLING_OFFICER' => 'Provider portal billing officer',
+        'PHARMACY_USER' => 'Provider portal pharmacy user',
+        'LAB_USER' => 'Provider portal laboratory user',
+        'FINANCE_USER' => 'Provider portal finance user',
         // External
         'REGULATOR' => 'Regulator (read only)',
         'CUSTOMER' => 'Customer',
@@ -80,21 +89,25 @@ final class RoleCatalogue
         'CARRIER_STAFF' => 'SCF §7', 'UNDERWRITER' => 'BP III', 'SENIOR_UNDERWRITER' => 'BP III', 'REINSURANCE_OFFICER' => 'BP III',
         'CUSTOMER_SERVICE' => 'SCF §7', 'ADJUSTER' => 'ESR CLP', 'PROVIDER_ADMIN' => 'FRP V', 'PROVIDER_FRONT_DESK' => 'FRP V',
         'PROVIDER_DOCTOR' => 'FRP V', 'PROVIDER_BILLING' => 'FRP V', 'PROVIDER_PHARMACY' => 'FRP V', 'PROVIDER_LAB' => 'FRP V',
-        'PROVIDER_FINANCE' => 'FRP V', 'REGULATOR' => 'ESR REG', 'CUSTOMER' => 'BP III',
+        'PROVIDER_FINANCE' => 'FRP V', 'REGULATOR' => 'ESR REG', 'CUSTOMER' => 'BP III', 'CASHIER' => 'D10 owner decision',
+        'FRONT_DESK' => 'SPEC provider portal', 'DOCTOR' => 'SPEC provider portal', 'BILLING_OFFICER' => 'SPEC provider portal',
+        'PHARMACY_USER' => 'SPEC provider portal', 'LAB_USER' => 'SPEC provider portal', 'FINANCE_USER' => 'SPEC provider portal',
     ];
 
     /** Role codes an administrator may invite someone into. */
     public const INVITABLE = [
         'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'AGENT', 'BRANCH_MANAGER',
         'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'REINSURANCE_OFFICER',
-        'CUSTOMER_SERVICE', 'ADJUSTER', 'FINANCE_OFFICER', 'DEVELOPER',
+        'CUSTOMER_SERVICE', 'ADJUSTER', 'FINANCE_OFFICER', 'CASHIER', 'DEVELOPER',
         'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+        'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER',
     ];
 
     /** Roles linked to one insurer via tenant_memberships.carrier_id. */
     public const CARRIER_ROLES = ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'];
 
-    public const PROVIDER_ROLES = ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE'];
+    public const PROVIDER_ROLES = ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+        'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER'];
 
     /**
      * REQ-RBAC-004: platform administration roles. Their grants never reach
@@ -107,34 +120,65 @@ final class RoleCatalogue
 
     public const AGENT_PERMISSIONS = ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'distribution.catalogue.view', 'quotes.manage', 'quotes.send', 'quotes.carrier_requests.view', 'quotes.carrier_requests.create', 'quotes.premium_override.request', 'stickers.view', 'stickers.handover', 'stickers.assign', 'policies.cancellation.request', 'policies.reinstatement.request', 'policies.portfolio_transfer.read'];
 
-    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'beneficiaries.manage', 'distribution.catalogue.view', 'quotes.manage', 'quotes.send', 'quotes.carrier_requests.view', 'quotes.carrier_requests.create', 'quotes.premium_override.request', 'stickers.view', 'stickers.handover', 'stickers.assign', 'special_policies.view', 'cargo_declarations.declare', 'documents.signatures.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'policies.portfolio_transfer.read'];
+    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'beneficiaries.manage', 'distribution.catalogue.view', 'quotes.manage', 'quotes.send', 'quotes.carrier_requests.view', 'quotes.carrier_requests.create', 'quotes.premium_override.request', 'stickers.view', 'stickers.handover', 'stickers.assign', 'special_policies.view', 'cargo_declarations.declare', 'documents.signatures.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'policies.portfolio_transfer.read', 'premium_status.read', 'bordereaux.view'];
 
     public const BROKER_SUPERVISOR_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'beneficiaries.manage', 'distribution.catalogue.view', 'quotes.carrier_requests.record_on_behalf', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign.any', 'documents.intake.manage', 'policies.portfolio_transfer.request'];
 
-    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'attribution.transfer', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'distribution.catalogue.view', 'quotes.carrier_requests.record_on_behalf', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign.any', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'special_policies.schedule.manage', 'cargo_declarations.cancel', 'documents.intake.manage', 'policies.portfolio_transfer.request', 'policies.portability.export', 'policy.recovery.request'];
+    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'attribution.transfer', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'distribution.catalogue.view', 'quotes.carrier_requests.record_on_behalf', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign.any', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'special_policies.schedule.manage', 'cargo_declarations.cancel', 'documents.intake.manage', 'policies.portfolio_transfer.request', 'policies.portability.export', 'policy.recovery.request', 'statements.read', 'finance.obligations.view', 'commission.statements.dispute'];
 
-    public const CARRIER_STAFF_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read', 'carrier.finance.read', 'documents.carrier.upload', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'policies.issuance_queue.view', 'stickers.view', 'providers.view', 'provider_networks.view', 'special_policies.view', 'cargo_declarations.declare', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'documents.signatures.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'policy.recovery.request'];
+    public const CARRIER_STAFF_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read', 'carrier.finance.read', 'documents.carrier.upload', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'policies.issuance_queue.view', 'stickers.view', 'providers.view', 'provider_networks.view', 'special_policies.view', 'cargo_declarations.declare', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'documents.signatures.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'policy.recovery.request', 'premium_status.read', 'bordereaux.view', 'claims.carrier.manual_entry'];
 
-    public const CARRIER_ADMIN_PERMISSIONS = [...self::CARRIER_STAFF_PERMISSIONS, 'carrier.bordereaux.decide', 'carrier.authority.manage', 'carrier.authority.approve', 'documents.status.request', 'documents.confidential.read', 'documents.financial.read', 'approvals.inbox.view', 'approvals.decide', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'catalogue.review', 'catalogue.test', 'policies.issuance_queue.manage', 'stickers.handover', 'stickers.allocate', 'stickers.allocate.carrier', 'stickers.reconcile', 'stickers.receive', 'providers.manage', 'providers.credential', 'provider_networks.manage', 'special_policies.manage', 'special_policies.schedule.manage', 'cargo_declarations.cancel', 'life_surrender.scales.manage', 'policies.portfolio_transfer.request', 'policies.portability.export', 'documents.access_log.read', 'documents.retention.manage', 'documents.legal_hold.manage', 'documents.destruction.request', 'policies.cancellation.review', 'policies.suspend'];
+    public const CARRIER_ADMIN_PERMISSIONS = [...self::CARRIER_STAFF_PERMISSIONS, 'carrier.bordereaux.decide', 'carrier.authority.manage', 'carrier.authority.approve', 'documents.status.request', 'documents.confidential.read', 'documents.financial.read', 'approvals.inbox.view', 'approvals.decide', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'catalogue.review', 'catalogue.test', 'policies.issuance_queue.manage', 'stickers.handover', 'stickers.allocate', 'stickers.allocate.carrier', 'stickers.reconcile', 'stickers.receive', 'providers.manage', 'providers.credential', 'provider_networks.manage', 'special_policies.manage', 'special_policies.schedule.manage', 'cargo_declarations.cancel', 'life_surrender.scales.manage', 'policies.portfolio_transfer.request', 'policies.portability.export', 'documents.access_log.read', 'documents.retention.manage', 'documents.legal_hold.manage', 'documents.destruction.request', 'policies.cancellation.review', 'policies.suspend', 'statements.read', 'finance.obligations.view', 'payments.allocations.read', 'refund.view', 'clearing.view', 'fx.rates.view', 'finance.exceptions.view', 'finance.reports.view', 'technical_accounting.read', 'claims.coverage.check'];
 
-    public const CARRIER_SUPER_ADMIN_PERMISSIONS = [...self::CARRIER_ADMIN_PERMISSIONS, 'documents.status.approve', 'documents.medical.read', 'documents.regulatory.read', 'approvals.matrix.view', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'parties.merge.approve', 'catalogue.review', 'catalogue.test', 'policies.issuance_queue.resolve', 'provider_tariffs.approve', 'coinsurance.view', 'coinsurance.approve', 'reinsurance.treaties.view', 'reinsurance.cessions.view', 'reinsurance.treaties.approve', 'life_surrender.scales.approve', 'policies.portfolio_transfer.approve', 'documents.retention.approve', 'documents.destruction.approve', 'policies.cancellation.approve', 'policies.reinstatement.approve', 'policy.recovery.approve', 'policy.premium.waive'];
+    public const CARRIER_SUPER_ADMIN_PERMISSIONS = [...self::CARRIER_ADMIN_PERMISSIONS, 'documents.status.approve', 'documents.medical.read', 'documents.regulatory.read', 'approvals.matrix.view', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'parties.merge.approve', 'catalogue.review', 'catalogue.test', 'policies.issuance_queue.resolve', 'provider_tariffs.approve', 'coinsurance.view', 'coinsurance.approve', 'reinsurance.treaties.view', 'reinsurance.cessions.view', 'reinsurance.treaties.approve', 'life_surrender.scales.approve', 'policies.portfolio_transfer.approve', 'documents.retention.approve', 'documents.destruction.approve', 'policies.cancellation.approve', 'policies.reinstatement.approve', 'policy.recovery.approve', 'policy.premium.waive', 'finance.obligations.manage', 'payments.allocations.reverse', 'finance.allocation_rules.manage', 'premium_components.close', 'refund.reconcile', 'clearing.reconcile', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.manage', 'ledger.periods.reopen', 'ledger.approve', 'ledger.post', 'technical_accounting.actuarial.approve', 'technical_accounting.upr.post', 'commission.statements.adjustments.approve', 'commission.statements.dispute.resolve', 'settlement.reconcile', 'claims.coverage.resolve', 'claims.carrier.manual_approve', 'claims.carrier.keys', 'collections.write_off.approve'];
 
     public const UNDERWRITER_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'underwriting.decide', 'documents.review', 'documents.confidential.read', 'policies.read', 'risk_assets.read', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'coinsurance.view', 'coinsurance.manage', 'coinsurance.apportion', 'special_policies.view', 'special_policies.schedule.manage', 'cargo_declarations.declare', 'life_surrender.quote', 'life_surrender.scales.manage', 'documents.signatures.manage', 'policies.cancellation.review', 'policies.reinstatement.request', 'policy.recovery.request'];
 
     public const SENIOR_UNDERWRITER_PERMISSIONS = [...self::UNDERWRITER_PERMISSIONS, 'underwriting.assign', 'documents.medical.read', 'documents.status.request', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'coinsurance.approve', 'special_policies.manage', 'cargo_declarations.cancel', 'life_surrender.scales.approve', 'policies.cancellation.approve', 'policies.suspend', 'policies.reinstatement.approve', 'policy.recovery.approve'];
 
-    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload'];
+    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload', 'claims.experts.work', 'claims.assessment.record', 'provider_portal.assignments.view', 'provider_portal.profile.view'];
 
-    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request'];
+    /**
+     * Owner decision (agent R): "a claims officer cannot approve a colleague's claim".
+     * Explicit MAKER set replacing the former '*'. Every checker permission
+     * (*.approve, *.review, *.supervise, *.conclude, *.resolve, settlement.pay,
+     * payment.approve/execute/reverse, ...) stays with CLAIMS_MANAGER.
+     */
+    public const CLAIMS_OFFICER_PERMISSIONS = [
+        'claims.view', 'claims.read', 'claims.create', 'claims.assign', 'claims.transition',
+        'claims.parties.manage', 'claims.coverage.check', 'claims.experts.assign', 'claims.assessment.record',
+        'claims.investigation.manage', 'claims.carrier.manual_entry', 'claims.carrier.exchange', 'claims.carrier.callback',
+        'claims.decision.propose', 'claims.decision.appeal', 'claims.reserve.request',
+        'claims.settlement.calculate', 'claims.settlement.offer', 'claims.settlement.respond', 'claims.settlement.discharge',
+        'claims.payment.request', 'claims.close', 'claims.reopen.request', 'claims.late_report.recommend', 'claims.types.manage',
+        'claims.evidence.manage', 'claims.recovery', 'claims.dispute',
+        'legal.matters.view', 'collections.view',
+        'documents.read', 'documents.intake.manage', 'documents.carrier.upload',
+        'customers.read', 'policies.read', 'risk_assets.read', 'beneficiaries.read',
+        'providers.view', 'provider_networks.view', 'workspace.read', 'cases.view', 'cases.manage',
+    ];
 
-    public const REINSURANCE_OFFICER_PERMISSIONS = ['policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view'];
+    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal'];
 
-    public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request'];
+    public const REINSURANCE_OFFICER_PERMISSIONS = ['policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view', 'fx.rates.view', 'finance.reports.view', 'technical_accounting.read'];
 
-    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request'];
+    public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request', 'finance.obligations.view', 'payments.allocations.read', 'payments.allocations.manage', 'premium_status.read', 'premium_components.manage', 'refund.view', 'refund.review', 'refund.pay', 'clearing.view', 'clearing.manage', 'cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'statements.read', 'finance.exceptions.view', 'finance.reports.view', 'ledger.periods.close', 'technical_accounting.read', 'technical_accounting.actuarial.import', 'commission.statements.adjust', 'commission.statements.dispute', 'bordereaux.view', 'collections.view', 'collections.manage'];
+
+    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'finance.obligations.view', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.view'];
+
+    /** D10: till operator. Operates a cashier session; never approves it (BRANCH_MANAGER / checker does). */
+    public const CASHIER_PERMISSIONS = ['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view'];
 
     public const PROVIDER_PERMISSIONS = [
-        'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read'],
+        'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read',
+            'provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.assignments.view', 'provider_portal.preauth.view', 'provider_portal.claims.view', 'provider_portal.finance.view'],
+        // Provider portal SPEC roles (read-only portal views; provider-scoped).
+        'FRONT_DESK' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'DOCTOR' => ['provider_portal.profile.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'BILLING_OFFICER' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.claims.view', 'provider_portal.preauth.view', 'provider_portal.finance.view'],
+        'PHARMACY_USER' => ['provider_portal.profile.view', 'provider_portal.tariffs.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'LAB_USER' => ['provider_portal.profile.view', 'provider_portal.tariffs.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'FINANCE_USER' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.finance.view'],
         'PROVIDER_FRONT_DESK' => ['provider.portal.read', 'provider.eligibility.check'],
         'PROVIDER_DOCTOR' => ['provider.portal.read', 'provider.eligibility.check', 'provider.claims.submit', 'documents.medical.read'],
         'PROVIDER_BILLING' => ['provider.portal.read', 'provider.claims.submit', 'provider.claims.read'],
@@ -169,10 +213,10 @@ final class RoleCatalogue
     {
         return match ($roleCode) {
             'CUSTOMER' => DataScope::OWN,
-            'AGENT', 'BROKER_STAFF', 'ADJUSTER', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_PHARMACY', 'PROVIDER_LAB' => DataScope::ASSIGNED,
+            'AGENT', 'BROKER_STAFF', 'ADJUSTER', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'FRONT_DESK', 'DOCTOR', 'PHARMACY_USER', 'LAB_USER' => DataScope::ASSIGNED,
             'BROKER_SUPERVISOR' => DataScope::TEAM,
             'BRANCH_MANAGER' => DataScope::BRANCH,
-            'BROKER_ADMIN', 'PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE' => DataScope::ORGANIZATION,
+            'BROKER_ADMIN', 'PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE', 'BILLING_OFFICER', 'FINANCE_USER' => DataScope::ORGANIZATION,
             'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'CUSTOMER_SERVICE', 'REINSURANCE_OFFICER' => DataScope::CARRIER_RELATIONSHIP,
             'SYSTEM_ADMIN', 'DEVELOPER' => DataScope::PLATFORM,
             'REGULATOR' => DataScope::REGULATOR_READ,
@@ -206,12 +250,15 @@ final class RoleCatalogue
             'REINSURANCE_OFFICER' => self::REINSURANCE_OFFICER_PERMISSIONS,
             'FINANCE_OFFICER' => self::FINANCE_OFFICER_PERMISSIONS,
             'BRANCH_MANAGER' => self::BRANCH_MANAGER_PERMISSIONS,
+            'CASHIER' => self::CASHIER_PERMISSIONS,
             'REGULATOR' => self::REGULATOR_PERMISSIONS,
             'DEVELOPER' => self::DEVELOPER_PERMISSIONS,
-            'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE' => self::PROVIDER_PERMISSIONS[$roleCode],
+            'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+            'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER' => self::PROVIDER_PERMISSIONS[$roleCode],
             // SYSTEM_ADMIN keeps '*', but PermissionEvaluator confines a
             // PLATFORM_ONLY role's grants to platform permissions.
-            'SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER' => ['*'],
+            'SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER' => ['*'],
+            'CLAIMS_OFFICER' => self::CLAIMS_OFFICER_PERMISSIONS,
             default => [],
         };
     }

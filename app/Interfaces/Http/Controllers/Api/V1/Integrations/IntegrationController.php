@@ -18,7 +18,7 @@ final class IntegrationController
             'partner_id' => 'nullable|uuid|exists:partners,id',
             'name' => 'required|string|max:160',
             'scopes' => 'required|array|min:1',
-            'scopes.*' => 'in:quotes.read,quotes.write,policies.read,policies.write,claims.read,claims.write,settlements.read,webhooks.manage',
+            'scopes.*' => ['string', \Illuminate\Validation\Rule::in(\App\Application\Integrations\Developer\OAuthScopeCatalogue::scopes())],
             'allowed_ips' => 'sometimes|array',
             'allowed_ips.*' => 'ip',
             'rate_limit_per_minute' => 'required|integer|min:1|max:1000',

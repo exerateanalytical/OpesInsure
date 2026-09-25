@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Reinsurance\Http;
 
-use App\Application\Reinsurance\BordereauService;
+use App\Application\Reinsurance\TreatyBordereauService;
 use App\Application\Reinsurance\CessionService;
 use App\Application\Reinsurance\TreatyService;
 use App\Domain\Tenancy\TenantContext;
@@ -67,6 +67,7 @@ final class ReinsuranceController
             'attachment_ratio' => 'nullable|numeric|min:0', 'limit_ratio' => 'nullable|numeric|min:0', 'notes' => 'nullable|string|max:1000',
             'layers' => 'sometimes|array', 'layers.*.layer' => 'sometimes|integer', 'layers.*.attachment_minor' => 'required_with:layers|integer|min:0',
             'layers.*.limit_minor' => 'required_with:layers|integer|min:1', 'layers.*.rate_percent' => 'required_with:layers|numeric|min:0|max:100', 'layers.*.reinstatements' => 'sometimes|integer|min:0',
+            'layers.*.reinstatement_premium_percent' => 'sometimes|numeric|min:0|max:1000',
             'participants' => 'required|array|min:1', 'participants.*.reinsurer_id' => 'required|uuid', 'participants.*.broker_id' => 'nullable|uuid',
             'participants.*.share_percent' => 'required|numeric|gt:0|max:100', 'participants.*.is_lead' => 'sometimes|boolean']);
 
@@ -100,7 +101,7 @@ final class ReinsuranceController
         return response()->json(['data' => $result], $result['replayed'] || $result['run'] === null ? 200 : 201);
     }
 
-    public function bordereau(Request $r, string $treaty, BordereauService $service): JsonResponse
+    public function bordereau(Request $r, string $treaty, TreatyBordereauService $service): JsonResponse
     {
         $data = $r->validate(['type' => 'sometimes|in:PREMIUM,RISK', 'from' => 'required|date', 'to' => 'required|date|after_or_equal:from']);
 

@@ -28,7 +28,10 @@ use App\Models\Policy;
  */
 final class DocumentPackResolver
 {
-    public const TRIGGERS = ['QUOTE_GENERATED', 'POLICY_ISSUED', 'PAYMENT_RECONCILED', 'RENEWAL_ISSUED', 'ENDORSEMENT_ISSUED', 'CANCELLATION_ISSUED', 'REINSTATEMENT_ISSUED', 'CLAIM_REGISTERED', 'CLAIM_APPROVED', 'CLAIM_PARTIALLY_APPROVED', 'CLAIM_DECLINED'];
+    public const TRIGGERS = ['QUOTE_GENERATED', 'POLICY_ISSUED', 'PAYMENT_RECONCILED', 'RENEWAL_ISSUED', 'ENDORSEMENT_ISSUED', 'CANCELLATION_ISSUED', 'REINSTATEMENT_ISSUED', 'CLAIM_REGISTERED', 'CLAIM_APPROVED', 'CLAIM_PARTIALLY_APPROVED', 'CLAIM_DECLINED', 'PREAUTH_APPROVED', 'PREAUTH_PARTIALLY_APPROVED', 'PREAUTH_DECLINED', 'PREAUTH_EXTENSION_APPROVED'];
+
+    /** REQ-HLT-002 health preauthorization triggers (ctx['preauth']; one document set per preauthorization subject). */
+    public const PREAUTH_TRIGGERS = ['PREAUTH_APPROVED', 'PREAUTH_PARTIALLY_APPROVED', 'PREAUTH_DECLINED', 'PREAUTH_EXTENSION_APPROVED'];
 
     public const CLASSES = ['MOTOR', 'FLEET', 'HEALTH_INDIVIDUAL', 'CORPORATE_HEALTH', 'LIFE', 'GROUP_LIFE', 'PROPERTY', 'BUSINESS', 'TRAVEL', 'ACCIDENT', 'MARINE_CARGO', 'PROFESSIONAL_LIABILITY', 'GENERAL'];
 
@@ -58,6 +61,16 @@ final class DocumentPackResolver
         'CLAIM_APPROVED' => ['CLAIM_DECISION', 'SETTLEMENT_OFFER'],
         'CLAIM_PARTIALLY_APPROVED' => ['PARTIAL_APPROVAL_NOTICE', 'SETTLEMENT_OFFER'],
         'CLAIM_DECLINED' => ['CLAIM_REJECTION'],
+        'PREAUTH_APPROVED' => ['PREAUTHORIZATION_APPROVAL', 'GUARANTEE_OF_PAYMENT'],
+        'PREAUTH_PARTIALLY_APPROVED' => ['PARTIAL_PREAUTHORIZATION_APPROVAL', 'GUARANTEE_OF_PAYMENT'],
+        'PREAUTH_DECLINED' => ['PREAUTHORIZATION_REJECTION'],
+        'PREAUTH_EXTENSION_APPROVED' => ['HOSPITAL_STAY_EXTENSION_AUTHORIZATION', 'GUARANTEE_OF_PAYMENT'],
+    ];
+
+    /** Conditional trigger documents, generated only when the event includes them (ctx['include']). */
+    private const TRIGGER_CONDITIONAL = [
+        'PREAUTH_APPROVED' => ['HOSPITAL_ADMISSION_AUTHORIZATION'],
+        'PREAUTH_PARTIALLY_APPROVED' => ['HOSPITAL_ADMISSION_AUTHORIZATION'],
     ];
 
     /** Pack documents that belong to an earlier step of the same event (linked, not re-generated). */
@@ -71,7 +84,7 @@ final class DocumentPackResolver
     /** Universal policy documents (catalogue spec) for classes without a catalogue pack. */
     private const UNIVERSAL_POLICY = ['INSURANCE_PROPOSAL', 'INSURANCE_POLICY', 'POLICY_SCHEDULE', 'GENERAL_CONDITIONS', 'CERTIFICATE_OF_INSURANCE', 'PREMIUM_RECEIPT'];
 
-    private const TRIGGER_STAGE = ['POLICY_ISSUED' => 'ISSUANCE', 'RENEWAL_ISSUED' => 'RENEWAL', 'ENDORSEMENT_ISSUED' => 'SERVICING', 'CANCELLATION_ISSUED' => 'SERVICING', 'REINSTATEMENT_ISSUED' => 'SERVICING', 'QUOTE_GENERATED' => 'PRE_CONTRACT', 'CLAIM_REGISTERED' => 'CLAIM', 'CLAIM_APPROVED' => 'CLAIM', 'CLAIM_PARTIALLY_APPROVED' => 'CLAIM', 'CLAIM_DECLINED' => 'CLAIM'];
+    private const TRIGGER_STAGE = ['POLICY_ISSUED' => 'ISSUANCE', 'RENEWAL_ISSUED' => 'RENEWAL', 'ENDORSEMENT_ISSUED' => 'SERVICING', 'CANCELLATION_ISSUED' => 'SERVICING', 'REINSTATEMENT_ISSUED' => 'SERVICING', 'QUOTE_GENERATED' => 'PRE_CONTRACT', 'CLAIM_REGISTERED' => 'CLAIM', 'CLAIM_APPROVED' => 'CLAIM', 'CLAIM_PARTIALLY_APPROVED' => 'CLAIM', 'CLAIM_DECLINED' => 'CLAIM', 'PREAUTH_APPROVED' => 'CLAIM', 'PREAUTH_PARTIALLY_APPROVED' => 'CLAIM', 'PREAUTH_DECLINED' => 'CLAIM', 'PREAUTH_EXTENSION_APPROVED' => 'CLAIM'];
 
     public function __construct(private DocumentRegister $register, private CatalogueSource $catalogue) {}
 
@@ -165,6 +178,7 @@ final class DocumentPackResolver
         $packCode = array_key_first($packs) ?? match ($trigger) {
             'POLICY_ISSUED' => $class.'_NEW_BUSINESS_PACK',
             'CLAIM_REGISTERED', 'CLAIM_APPROVED', 'CLAIM_PARTIALLY_APPROVED', 'CLAIM_DECLINED' => ($prefix ?? $class).'_CLAIM_PACK',
+            'PREAUTH_APPROVED', 'PREAUTH_PARTIALLY_APPROVED', 'PREAUTH_DECLINED', 'PREAUTH_EXTENSION_APPROVED' => ($prefix ?? $class).'_PREAUTH_PACK',
             default => $class.'_'.str_replace('_ISSUED', '', $trigger).'_PACK',
         };
 
@@ -187,6 +201,9 @@ final class DocumentPackResolver
         }
         foreach (self::TRIGGER_DOCUMENTS[$trigger] ?? [] as $code) {
             $add($code, 'REQUIRED', null);
+        }
+        foreach (self::TRIGGER_CONDITIONAL[$trigger] ?? [] as $code) {
+            $add($code, 'CONDITIONAL', null);
         }
         if ($trigger === 'CANCELLATION_ISSUED' && in_array($class, ['MOTOR', 'FLEET'], true)) {
             $add('MOTOR_INSURANCE_CANCELLATION_CERTIFICATE', 'REQUIRED', null);

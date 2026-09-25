@@ -1,0 +1,306 @@
+diff --git a/app/Application/Security/Login/LoginActivityRecorder.php b/app/Application/Security/Login/LoginActivityRecorder.php
+new file mode 100644
+index 0000000..c3135b1
+--- /dev/null
++++ b/app/Application/Security/Login/LoginActivityRecorder.php
+@@ -0,0 +1,96 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Security\Login;
++
++use App\Application\Events\OutboxWriter;
++use App\Models\User;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Throwable;
++
++/**
++ * REQ-SEC-001 login activity: one row per successful sign-in with device and
++ * hashed IP, plus anomaly flags. NEW_DEVICE is raised when a user who already
++ * had a device signs in from an unseen one. IMPOSSIBLE_TRAVEL is only ever
++ * evaluated when BOTH this and the previous login carry edge geolocation
++ * (config security_centre.login.geo_headers) — without geo data it is skipped,
++ * never guessed.
++ *
++ * Never throws: recording must not block a sign-in.
++ */
++final class LoginActivityRecorder
++{
++    public function __construct(private readonly OutboxWriter $outbox) {}
++
++    /** @return list<string> anomaly flags */
++    public function record(User $user, string $method, ?string $deviceId, string $deviceFingerprint, ?string $deviceName, ?string $platform, bool $newDevice, string $ip, ?Request $request = null): array
++    {
++        try {
++            $request ??= request();
++            [$lat, $lng, $country] = $this->geo($request);
++            $flags = [];
++            if ($newDevice && DB::table('user_devices')->where('user_id', $user->id)->where('id', '!=', $deviceId)->exists()) {
++                $flags[] = 'NEW_DEVICE';
++            }
++            if ($lat !== null && $lng !== null) {
++                $prev = DB::table('login_activities')->where('user_id', $user->id)->whereNotNull('latitude')->whereNotNull('longitude')->orderByDesc('occurred_at')->first();
++                if ($prev && $this->impossible((float) $prev->latitude, (float) $prev->longitude, $lat, $lng, now()->diffInSeconds($prev->occurred_at, true))) {
++                    $flags[] = 'IMPOSSIBLE_TRAVEL';
++                }
++            }
++
++            $id = (string) Str::uuid();
++            DB::table('login_activities')->insert([
++                'id' => $id, 'user_id' => $user->id, 'method' => $method, 'device_id' => $deviceId,
++                'device_fingerprint_hash' => hash('sha256', $deviceFingerprint), 'device_name' => $deviceName ? mb_substr($deviceName, 0, 120) : null,
++                'platform' => $platform ? mb_substr($platform, 0, 24) : null, 'ip_hash' => hash('sha256', $ip),
++                'user_agent_hash' => $request?->userAgent() ? hash('sha256', (string) $request->userAgent()) : null,
++                'country_code' => $country, 'latitude' => $lat, 'longitude' => $lng, 'new_device' => $newDevice,
++                'anomaly_flags' => json_encode($flags), 'occurred_at' => now(),
++            ]);
++
++            if ($flags !== []) {
++                DB::table('security_events')->insert(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'type' => 'LOGIN_ANOMALY', 'severity' => in_array('IMPOSSIBLE_TRAVEL', $flags, true) ? 'WARNING' : 'NOTICE',
++                    'ip_hash' => hash('sha256', $ip), 'user_agent_hash' => null, 'metadata' => json_encode(['login_activity_id' => $id, 'flags' => $flags]), 'occurred_at' => now()]);
++                $this->outbox->record('security.login.anomaly_detected', 'user', $user->id, ['login_activity_id' => $id, 'flags' => $flags]);
++            }
++
++            return $flags;
++        } catch (Throwable $e) {
++            report($e);
++
++            return [];
++        }
++    }
++
++    /** @return array{0: ?float, 1: ?float, 2: ?string} */
++    private function geo(?Request $request): array
++    {
++        $h = config('security_centre.login.geo_headers', []);
++        $read = fn (?string $name) => ($request && $name) ? $request->header($name) : null;
++        $lat = $read($h['latitude'] ?? null);
++        $lng = $read($h['longitude'] ?? null);
++        $country = $read($h['country'] ?? null);
++        $valid = is_numeric($lat) && is_numeric($lng) && abs((float) $lat) <= 90 && abs((float) $lng) <= 180;
++
++        return [$valid ? (float) $lat : null, $valid ? (float) $lng : null, is_string($country) && preg_match('/^[A-Za-z]{2}$/', $country) ? strtoupper($country) : null];
++    }
++
++    private function impossible(float $lat1, float $lng1, float $lat2, float $lng2, float $seconds): bool
++    {
++        $r = 6371.0;
++        $dLat = deg2rad($lat2 - $lat1);
++        $dLng = deg2rad($lng2 - $lng1);
++        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
++        $km = 2 * $r * asin(min(1.0, sqrt($a)));
++        if ($km < 100) {
++            return false; // city-scale moves / geo-IP jitter are never flagged
++        }
++        $hours = max($seconds, 60) / 3600;
++
++        return $km / $hours > (int) config('security_centre.login.impossible_travel_kmh', 900);
++    }
++}
+diff --git a/config/security_centre.php b/config/security_centre.php
+new file mode 100644
+index 0000000..b1a2a70
+--- /dev/null
++++ b/config/security_centre.php
+@@ -0,0 +1,58 @@
++<?php
++
++declare(strict_types=1);
++
++/*
++ | Agent B7 — security centre (REQ-SEC-001 / 003 / 005, REQ-MOB-007 backend).
++ | Every external integration here is OFF unless explicitly configured; an
++ | unconfigured attestation verifier yields UNVERIFIED, never PASS.
++ */
++return [
++    'login' => [
++        // Request headers carrying edge-geolocation (e.g. set by a CDN/WAF).
++        // Null = no geo data: the impossible-travel check is then skipped.
++        'geo_headers' => [
++            'latitude' => env('SECURITY_GEO_LAT_HEADER'),
++            'longitude' => env('SECURITY_GEO_LNG_HEADER'),
++            'country' => env('SECURITY_GEO_COUNTRY_HEADER'),
++        ],
++        // PLATFORM_PROVISIONAL threshold: travel faster than this between two
++        // geolocated logins is flagged as impossible travel.
++        'impossible_travel_kmh' => (int) env('SECURITY_IMPOSSIBLE_TRAVEL_KMH', 900),
++    ],
++
++    'attestation' => [
++        'play_integrity' => [
++            'enabled' => (bool) env('PLAY_INTEGRITY_ENABLED', false),
++            'package_name' => env('PLAY_INTEGRITY_PACKAGE_NAME'),
++            // Short-lived OAuth access token for the Play Integrity API. Minting
++            // it from a service account is an operations concern (deploy note).
++            'access_token' => env('PLAY_INTEGRITY_ACCESS_TOKEN'),
++            'endpoint' => env('PLAY_INTEGRITY_ENDPOINT', 'https://playintegrity.googleapis.com/v1'),
++        ],
++        'app_attest' => [
++            'enabled' => (bool) env('APP_ATTEST_ENABLED', false),
++            'team_id' => env('APP_ATTEST_TEAM_ID'),
++            'bundle_id' => env('APP_ATTEST_BUNDLE_ID'),
++        ],
++    ],
++
++    // Served at /.well-known/assetlinks.json and /.well-known/apple-app-site-association.
++    'app_links' => [
++        'android' => [
++            'package_name' => env('APP_LINKS_ANDROID_PACKAGE'),
++            // Comma-separated SHA-256 signing-certificate fingerprints.
++            'sha256_cert_fingerprints' => array_values(array_filter(array_map('trim', explode(',', (string) env('APP_LINKS_ANDROID_SHA256', ''))))),
++        ],
++        'ios' => [
++            // "<TEAMID>.<bundle id>", comma-separated.
++            'app_ids' => array_values(array_filter(array_map('trim', explode(',', (string) env('APP_LINKS_IOS_APP_IDS', ''))))),
++            'paths' => array_values(array_filter(array_map('trim', explode(',', (string) env('APP_LINKS_IOS_PATHS', '/app/*'))))),
++        ],
++    ],
++
++    'crash_reports' => [
++        'max_stack_bytes' => 8000,
++        'max_message_bytes' => 500,
++    ],
++];
+diff --git a/database/migrations/2026_10_18_160701_create_security_centre_tables.php b/database/migrations/2026_10_18_160701_create_security_centre_tables.php
+new file mode 100644
+index 0000000..df0077f
+--- /dev/null
++++ b/database/migrations/2026_10_18_160701_create_security_centre_tables.php
+@@ -0,0 +1,134 @@
++<?php
++
++declare(strict_types=1);
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++use Illuminate\Support\Str;
++
++/**
++ * Agent B7 — security centre: login activity (REQ-SEC-001), purpose-of-use
++ * registry + enforcement log (REQ-SEC-003), device integrity attestations
++ * (REQ-SEC-005), crash reports (REQ-MOB-007) and security-finding lifecycle.
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('login_activities', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('user_id')->constrained()->cascadeOnDelete();
++            $t->string('method', 24);
++            $t->uuid('device_id')->nullable();
++            $t->string('device_fingerprint_hash', 64)->nullable();
++            $t->string('device_name', 120)->nullable();
++            $t->string('platform', 24)->nullable();
++            $t->string('ip_hash', 64)->nullable();
++            $t->string('user_agent_hash', 64)->nullable();
++            $t->string('country_code', 2)->nullable();
++            $t->decimal('latitude', 10, 7)->nullable();
++            $t->decimal('longitude', 10, 7)->nullable();
++            $t->boolean('new_device')->default(false);
++            $t->jsonb('anomaly_flags')->default('[]');
++            $t->timestampTz('occurred_at')->index();
++            $t->index(['user_id', 'occurred_at']);
++        });
++
++        Schema::create('processing_purposes', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->string('code', 64)->unique();
++            $t->string('name', 160);
++            $t->string('lawful_basis', 32);
++            $t->string('consent_purpose', 64)->nullable();
++            $t->string('basis_status', 32)->default('PLATFORM_PROVISIONAL');
++            $t->boolean('is_active')->default(true);
++            $t->text('description')->nullable();
++            $t->timestampsTz();
++        });
++
++        Schema::create('purpose_of_use_checks', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->uuid('tenant_id')->nullable()->index();
++            $t->uuid('party_id')->nullable()->index();
++            $t->string('purpose_code', 64);
++            $t->string('operation', 64);
++            $t->string('decision', 16);
++            $t->string('lawful_basis', 32)->nullable();
++            $t->uuid('consent_id')->nullable();
++            $t->string('refusal_code', 32)->nullable();
++            $t->string('reference_type', 64)->nullable();
++            $t->string('reference_id', 64)->nullable();
++            $t->uuid('actor_id')->nullable();
++            $t->timestampTz('occurred_at');
++        });
++
++        Schema::create('device_integrity_attestations', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('user_id')->constrained()->cascadeOnDelete();
++            $t->string('platform', 16);
++            $t->string('provider', 32);
++            $t->string('verdict', 16);
++            $t->string('verifier', 64);
++            $t->jsonb('reasons')->default('[]');
++            $t->string('nonce_hash', 64);
++            $t->timestampTz('created_at');
++        });
++
++        Schema::create('mobile_crash_reports', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->string('fingerprint', 64);
++            $t->string('platform', 16);
++            $t->string('app_version', 32);
++            $t->string('build', 32)->nullable();
++            $t->string('os_version', 32)->nullable();
++            $t->string('error_type', 120);
++            $t->text('message')->nullable();
++            $t->text('stack')->nullable();
++            $t->unsignedInteger('occurrences')->default(1);
++            $t->timestampTz('first_seen_at');
++            $t->timestampTz('last_seen_at');
++            $t->unique(['fingerprint', 'app_version']);
++        });
++
++        Schema::create('security_finding_events', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('security_finding_id')->constrained()->cascadeOnDelete();
++            $t->string('from_status', 24)->nullable();
++            $t->string('to_status', 24);
++            $t->uuid('actor_id')->nullable();
++            $t->text('notes')->nullable();
++            $t->timestampTz('occurred_at');
++        });
++
++        // Starter catalogue. Every lawful basis is PLATFORM_PROVISIONAL until
++        // the owner / DPO confirms it against Cameroonian data-protection law.
++        $now = now();
++        $rows = [
++            ['INSURANCE_SERVICES', 'Insurance contract servicing', 'CONTRACT', null],
++            ['CLAIMS_PROCESSING', 'Claims handling', 'CONTRACT', null],
++            ['MARKETING', 'Marketing communications', 'CONSENT', 'MARKETING'],
++            ['DATA_SHARING', 'Sharing personal data with third parties', 'CONSENT', 'DATA_SHARING'],
++            ['PARTNER_SHARING', 'Sharing with distribution partners', 'CONSENT', 'PARTNER_SHARING'],
++            ['ANALYTICS', 'Product analytics', 'CONSENT', 'ANALYTICS'],
++            ['WHATSAPP_UPDATES', 'WhatsApp service updates', 'CONSENT', 'WHATSAPP_UPDATES'],
++            ['DSR_FULFILMENT', 'Answering a data-subject request', 'LEGAL_OBLIGATION', null],
++            ['PORTABILITY_CUSTOMER_REQUEST', 'Portability export requested by the customer', 'LEGAL_OBLIGATION', null],
++            ['PORTABILITY_REGULATOR_REQUEST', 'Portability export requested by the regulator', 'LEGAL_OBLIGATION', null],
++            ['PORTABILITY_INTERMEDIARY_TRANSFER', 'Portability export to a new intermediary', 'CONSENT', 'DATA_SHARING'],
++            ['PORTABILITY_CARRIER_TRANSFER', 'Portability export to a new carrier', 'CONSENT', 'DATA_SHARING'],
++        ];
++        DB::table('processing_purposes')->insert(array_map(fn ($r) => [
++            'id' => (string) Str::uuid(), 'code' => $r[0], 'name' => $r[1], 'lawful_basis' => $r[2], 'consent_purpose' => $r[3],
++            'basis_status' => 'PLATFORM_PROVISIONAL', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now,
++        ], $rows));
++    }
++
++    public function down(): void
++    {
++        foreach (['security_finding_events', 'mobile_crash_reports', 'device_integrity_attestations', 'purpose_of_use_checks', 'processing_purposes', 'login_activities'] as $table) {
++            Schema::dropIfExists($table);
++        }
++    }
++};

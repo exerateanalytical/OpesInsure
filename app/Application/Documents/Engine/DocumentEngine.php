@@ -68,7 +68,7 @@ final class DocumentEngine
     ) {}
 
     /**
-     * @param array{transaction?: PolicyTransaction, claim?: Claim, payment?: PaymentIntentRecord, cover_note?: bool} $ctx
+     * @param array{transaction?: PolicyTransaction, claim?: Claim, payment?: PaymentIntentRecord, cover_note?: bool, preauth?: object, extension?: object, subject?: array{type: string, key: string, label: string}, valid_from?: string, valid_until?: string} $ctx
      */
     public function fire(string $trigger, Policy $policy, array $ctx = [], ?User $actor = null): DocumentPackManifest
     {
@@ -95,7 +95,12 @@ final class DocumentEngine
 
             $items = [];
             foreach ($pack['items'] as $item) {
-                $subjects = $item['per_subject'] ? $this->packs->subjects($policy, $item['per_subject']) : [];
+                // REQ-HLT-002: preauthorization documents are per preauthorization (never supersede another member's GOP).
+                if (! $item['per_subject'] && isset($ctx['subject']['type'])) {
+                    $item['per_subject'] = $ctx['subject']['type'];
+                }
+                $subjects = isset($ctx['subject']['type']) && $item['per_subject'] === $ctx['subject']['type'] ? [$ctx['subject']]
+                    : ($item['per_subject'] ? $this->packs->subjects($policy, $item['per_subject']) : []);
                 foreach ($subjects ?: [null] as $subject) {
                     $items[] = $this->produce($policy, $manifest, $pack, $item, $subject, $trigger, $ctx + $extra, $label, $actor);
                 }
@@ -392,7 +397,7 @@ final class DocumentEngine
             'document_stage' => $this->stage($type, $trigger), 'security_level' => $type['security_level'], 'status' => $status,
             'numbering_family' => $number['family'], 'document_number' => $number['number'], 'document_sequence' => $number['sequence'],
             'verification_code' => $verification, 'generation_trigger' => $trigger, 'issued_at' => $issuedAt,
-            'valid_from' => $certificateLike ? $policy->coverage_starts_at : null, 'valid_until' => $certificateLike ? $policy->coverage_ends_at : null,
+            'valid_from' => $ctx['valid_from'] ?? ($certificateLike ? $policy->coverage_starts_at : null), 'valid_until' => $ctx['valid_until'] ?? ($certificateLike ? $policy->coverage_ends_at : null),
             'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label,
                 'demo_watermark' => \App\Application\Documents\DemoDocumentMark::active(), 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']],
             'uploaded_by' => $actor?->id,
@@ -478,6 +483,7 @@ final class DocumentEngine
             'CANCELLATION_ISSUED' => ['CANCELLATION / RÉSILIATION '.($ctx['transaction']->transaction_number ?? ''), 0],
             'REINSTATEMENT_ISSUED' => ['REINSTATEMENT / REMISE EN VIGUEUR '.($ctx['transaction']->transaction_number ?? ''), 0],
             'PAYMENT_RECONCILED' => ['PAYMENT '.($ctx['payment']->provider_reference ?? ''), 0],
+            'PREAUTH_APPROVED', 'PREAUTH_PARTIALLY_APPROVED', 'PREAUTH_DECLINED', 'PREAUTH_EXTENSION_APPROVED' => ['PREAUTHORIZATION / PRISE EN CHARGE '.($ctx['preauth']->preauth_number ?? ''), 0],
             default => [isset($ctx['claim']) ? 'CLAIM '.$ctx['claim']->claim_number : $trigger, 0],
         };
     }
@@ -520,6 +526,23 @@ final class DocumentEngine
                 }
 
                 return [$c->id, []];
+            case 'PREAUTH_APPROVED':
+            case 'PREAUTH_PARTIALLY_APPROVED':
+            case 'PREAUTH_DECLINED':
+            case 'PREAUTH_EXTENSION_APPROVED':
+                // REQ-HLT-002: the preauthorization (and extension) must belong to the policy and carry the decided state.
+                $pa = $ctx['preauth'] ?? null;
+                $need = ['PREAUTH_APPROVED' => ['APPROVED'], 'PREAUTH_PARTIALLY_APPROVED' => ['PARTIALLY_APPROVED'], 'PREAUTH_DECLINED' => ['DECLINED'],
+                    'PREAUTH_EXTENSION_APPROVED' => ['ADMITTED']][$trigger];
+                if (! is_object($pa) || ($pa->policy_id ?? null) !== $policy->id || ! in_array($pa->status ?? null, $need, true)) {
+                    $fail('the preauthorization is not in the required state');
+                }
+                $ext = $ctx['extension'] ?? null;
+                if ($trigger === 'PREAUTH_EXTENSION_APPROVED' && (! is_object($ext) || ! in_array($ext->status ?? null, ['APPROVED', 'PARTIALLY_APPROVED'], true))) {
+                    $fail('an approved stay extension is required');
+                }
+
+                return [$trigger === 'PREAUTH_EXTENSION_APPROVED' ? $ext->id : $pa->id, []];
             case 'PAYMENT_RECONCILED':
                 $p = $ctx['payment'] ?? null;
                 if (! $p instanceof PaymentIntentRecord || $p->status !== 'SUCCEEDED' || $policy->payment_intent_id !== $p->id) {

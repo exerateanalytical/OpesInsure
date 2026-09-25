@@ -44,7 +44,7 @@ it('grants the Batch 7 permissions to the existing catalogue roles', function (s
 ]);
 
 it('keeps the wildcard roles covering the new permissions and every catalogued suggestion an existing role', function () {
-    foreach (['FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER', 'SYSTEM_ADMIN'] as $role) {
+    foreach (['FINANCE_MANAGER', 'CLAIMS_MANAGER', 'SYSTEM_ADMIN'] as $role) {
         expect(RoleCatalogue::defaultPermissions($role))->toBe(['*']);
     }
     foreach (['issuance_ops', 'providers', 'coinsurance', 'reinsurance'] as $category) {

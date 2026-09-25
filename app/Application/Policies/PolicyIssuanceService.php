@@ -78,6 +78,11 @@ final class PolicyIssuanceService
 
             // REQ-KYC-001 gate on bind (tenant mode OFF | WARN | ENFORCE — App\Application\Kyc\KycGate).
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($tenant->id, $proposal->party_id, 'BIND', 'proposal', $proposal->id);
+            // REQ-AML-001 screening hold (tenant mode OFF | WARN | ENFORCE — App\Application\Compliance\Aml\Screening\ComplianceGate).
+            app(\App\Application\Compliance\Aml\Screening\ComplianceGate::class)->assertMayProceed($tenant->id, [$proposal->party_id], 'BIND', 'proposal', $proposal->id);
+            // Vehicle Power master (motor_policy_issuance): the stamp duty needs a verified fiscal power — REVIEW_REQUIRED otherwise.
+            app(\App\Application\Vehicles\Power\VehicleStampDutyService::class)->assertIssuable($proposal->offer->rating_run_id, (string) $proposal->offer->quote->line_code,
+                (array) $proposal->offer->quote->risk_facts, $tenant->id);
 
             $authoritySnapshot = ['mode' => 'CARRIER_REVIEW_REQUIRED'];
             $status = 'CARRIER_REVIEW';
@@ -170,6 +175,7 @@ final class PolicyIssuanceService
             }
             // REQ-KYC-001 gate on issue (KYC may have expired since the bind request).
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($request->tenant_id, $proposal->party_id, 'ISSUE', 'policy_issuance_request', $request->id);
+            app(\App\Application\Compliance\Aml\Screening\ComplianceGate::class)->assertMayProceed($request->tenant_id, [$proposal->party_id], 'ISSUE', 'policy_issuance_request', $request->id);
 
             // Renewals: when the proposal's quote came from a renewal case,
             // link the successor to the policy it renews (B14).
@@ -235,6 +241,12 @@ final class PolicyIssuanceService
             // REQ-OBL-001 / REQ-PAY-006: premium obligations + instalment schedule; the bind payment settles the first (savepoint; never blocks issuance).
             try {
                 DB::transaction(fn () => app(\App\Application\Finance\Obligations\PolicyPremiumObligations::class)->generate($policy));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+            // REQ-COM-001: SALE → ACCRUED commission for the producing intermediary (savepoint; never blocks issuance).
+            try {
+                DB::transaction(fn () => app(\App\Application\Commissions\Machine\CommissionLifecycleService::class)->onPolicyIssued($policy));
             } catch (\Throwable $e) {
                 report($e);
             }

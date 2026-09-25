@@ -3,6 +3,10 @@
 Two backend sessions work on this repo: the **local** session (owner's Windows PC, Laragon) and the **cloud** session (claude.ai/code container).
 The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md).
 
+> **Local session: start with docs/LOCAL_SESSION_RESUME.md.**
+>
+> **DEPLOY REQUEST (owner, 2026-09-25):** deploy branch `claude/charming-bohr-2fd2hk` at `7596e34` or later (full suite 1636 passed). Follow LOCAL_SESSION_RESUME.md sections 2–3, guides Batch 7 → 8 → 9 → 10 → 11_12 → 13_17. Record the release id here when done.
+
 ## Protocol (both sessions follow it)
 1. **Before starting work:** `git fetch origin`, read this file top to bottom and the latest `docs/BUILD_PROGRESS.md`, and check
    `git log origin/master..origin/claude/charming-bohr-2fd2hk` and the reverse direction. Do not start a work item another session has
@@ -29,16 +33,32 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 8 (10 agents: endorsements, cancellation, suspension, renewals, premium-to-cover/lapse, special products, portability, certificates/verification, document governance, roles+wiring) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH8.md |
 | Batch 8 wiring | cloud | DONE (on branch) |
 | Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH9.md |
+| Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
+| Owner decisions D10 | cloud | MERGED (ships with Batch 11/12) |
+| Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH11_12.md |
+| Batches 13B–17 (provider portal, cashless health, facultative/recoveries, compliance/AML, accumulation, regulatory reporting, KPIs, developer platform, API families, legacy migration, hardening) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH13_17.md |
+| Owner specs V1 (vehicle/fiscal power) + F1 (finance sub-ledger) | cloud | DONE, on branch (same handover) |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
 
+<<<<<<< HEAD
 ### 2026-09-25 local: DEPLOYED Batches 7, 8 and 9 (master c790693) as release r20260925-163340
 - Before it: the decisions batch c0a8d01 (+4919d6c) went live as r20260925-144020.
 - Local full pest on the merged tree: 1288 passed / 0 failed. Backup opesinsure-20260925-1613.sql.gz. All 22 migrations rehearsed on a prod copy, then applied.
 - Post-deploy: policies:backfill-chronology 15 backfilled / 0 failed; rbac:sync-role-permissions 8 roles, +138 permissions; finance:backfill-obligations 15 backfilled / 0 failed.
 - Live: verify-live 75/76 (the legacy /claims check). Purchase journey OK: 6 offers, POL-2026-000004 issued with 1 policy_versions row and 1 financial obligation.
 - Local, uncommitted in the working tree and not yet deployed: canonical document security (cs1), canonical web UI + D2-D4 (cs2, adds the composer package mallardduck/blade-lucide-icons), issuer letterheads/logos. Local will merge master, test and deploy them next.
+=======
+### 2026-09-25 cloud: Batches 13B–17 + V1 + F1 merged. ALL BATCHES BUILT. Full suite 1636 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH13_17.md
+- Route permissions all catalogued (config/permissions.php); OpenAPI regenerated. Cloud build is complete; the rest is local deploy.
+
+### 2026-09-25 cloud: Batches 11+12 (15 claims agents) + D10 decisions + integration fix merged. Full suite 1440 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH11_12.md
+- Follow-up merged: C8 claim types/deadlines + claims role pass (see the handover's follow-up section). Full suite 1457 passed / 0 failed.
+
+### 2026-09-25 cloud: Batch 10 merged (10 agents + 1 fix agent). Full suite 1348 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH10.md
+- Merge fixes: commission accrual combines the 10-2 rule resolver with the 10-1 state machine; JournalLine split into its own file (it broke autoload); a single commission payable per partner statement (the per-accrual payable is removed); one rule selector.
+>>>>>>> origin/claude/charming-bohr-2fd2hk
 
 ### 2026-09-25 cloud: Batch 8 wiring + Batch 9 merged (10 agents). Full suite 1288 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH9.md
 - Merge fixes: duplicate payment_intents.financial_obligation_id column (9-4 vs 9-1), webhook/reconciliation obligation hooks re-applied on the new payment machine, refunds bound to obligations, reinstatement re-request bug fixed.

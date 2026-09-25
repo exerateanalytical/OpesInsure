@@ -254,6 +254,20 @@ final class PolicyServicingService
                 ], $actor);
             }
 
+            // REQ-COM-001: endorsement premium change adjusts commission; cancellation claws it back pro-rata (savepoint; never blocks servicing).
+            if (in_array($transaction->type, ['ENDORSEMENT', 'CANCELLATION'], true)) {
+                try {
+                    DB::transaction(function () use ($transaction, $policy, $actor): void {
+                        $commission = app(\App\Application\Commissions\Machine\CommissionLifecycleService::class);
+                        $transaction->type === 'CANCELLATION'
+                            ? $commission->onPolicyCancelled($policy->refresh(), $transaction, $actor)
+                            : $commission->onEndorsementApproved($policy->refresh(), $transaction, $actor);
+                    });
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             $this->audit->record('policy.service.approved', 'policy_transaction', $transaction->id, [
                 'policy_id' => $policy->id,
                 'to_status' => $toStatus,

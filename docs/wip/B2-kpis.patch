@@ -1,0 +1,442 @@
+diff --git a/app/Application/Reporting/Kpi/KpiCatalogueService.php b/app/Application/Reporting/Kpi/KpiCatalogueService.php
+new file mode 100644
+index 0000000..e8521fd
+--- /dev/null
++++ b/app/Application/Reporting/Kpi/KpiCatalogueService.php
+@@ -0,0 +1,225 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Reporting\Kpi;
++
++use App\Application\Audit\AuditWriter;
++use App\Application\Events\OutboxWriter;
++use App\Models\User;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
++
++/**
++ * Agent B2 — REQ-RPT-003 KPI governance (MPS §88; FRP IX). Each KPI carries name, definition, formula, sources,
++ * date basis, filters, currency, owner and version. Tenant KPIs are versioned and maker-checker approved
++ * (DRAFT → PENDING_APPROVAL → ACTIVE | REJECTED; ACTIVE → RETIRED; approving a new version retires the previous one).
++ *
++ * Until a tenant approves its own version, every registered query is exposed as a SYSTEM_BASELINE KPI (version 0)
++ * whose code equals the query key — so dashboards always have a governed definition to show, never an ad-hoc number.
++ */
++final class KpiCatalogueService
++{
++    public const DRAFT = 'DRAFT';
++
++    public const PENDING = 'PENDING_APPROVAL';
++
++    public const ACTIVE = 'ACTIVE';
++
++    public const REJECTED = 'REJECTED';
++
++    public const RETIRED = 'RETIRED';
++
++    public const BASELINE = 'SYSTEM_BASELINE';
++
++    private const OWNERS = ['policies' => 'UNDERWRITING', 'premium' => 'FINANCE', 'claims' => 'CLAIMS', 'quotes' => 'SALES', 'proposals' => 'SALES',
++        'underwriting' => 'UNDERWRITING', 'payments' => 'FINANCE', 'receivables' => 'FINANCE', 'commissions' => 'FINANCE', 'renewals' => 'SALES',
++        'kyc' => 'COMPLIANCE', 'refunds' => 'FINANCE', 'regulatory' => 'COMPLIANCE'];
++
++    public function __construct(private OutboxWriter $outbox, private AuditWriter $audit) {}
++
++    /** @return array<string, mixed> the baseline (version 0) definition of a registered query */
++    public static function baseline(string $queryKey): array
++    {
++        $q = KpiQueryRegistry::get($queryKey);
++
++        return [
++            'id' => null, 'code' => $queryKey, 'version' => 0, 'status' => self::BASELINE, 'name' => $q['label'],
++            'definition' => $q['label'].' — system baseline definition over the registered query '.$queryKey.'.',
++            'formula' => self::formulaOf($q), 'query_key' => $queryKey, 'sources' => $q['sources'],
++            'date_basis' => $q['date_basis'] ?? 'SNAPSHOT', 'filters' => [], 'currency' => null,
++            'owner' => self::OWNERS[Str::before($queryKey, '.')] ?? 'PLATFORM', 'unit' => $q['unit'],
++            'created_by' => null, 'approved_by' => null, 'approved_at' => null,
++        ];
++    }
++
++    /** @return list<array<string, mixed>> the effective catalogue: tenant ACTIVE versions override baselines; tenant-only codes included. */
++    public function catalogue(string $tenantId): array
++    {
++        $out = [];
++        foreach (array_keys(KpiQueryRegistry::definitions()) as $key) {
++            $out[$key] = self::baseline($key);
++        }
++        foreach (DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('status', self::ACTIVE)->orderBy('code')->get() as $row) {
++            $out[$row->code] = $this->present($row);
++        }
++        ksort($out);
++
++        return array_values($out);
++    }
++
++    /** @return array<string, mixed> the effective (ACTIVE or baseline) definition of a KPI code */
++    public function resolve(string $tenantId, string $code): array
++    {
++        $row = DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('code', $code)->where('status', self::ACTIVE)->first();
++        if ($row) {
++            return $this->present($row);
++        }
++        if (KpiQueryRegistry::has($code)) {
++            return self::baseline($code);
++        }
++
++        throw new NotFoundHttpException("Unknown KPI {$code}.");
++    }
++
++    /** @return list<array<string, mixed>> */
++    public function versions(string $tenantId, string $code): array
++    {
++        return DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('code', $code)->orderByDesc('version')->get()->map(fn ($r) => $this->present($r))->all();
++    }
++
++    /** @param array<string, mixed> $data */
++    public function draft(string $tenantId, User $maker, array $data): array
++    {
++        $queryKey = (string) ($data['query_key'] ?? '');
++        if (! KpiQueryRegistry::has($queryKey)) {
++            throw ValidationException::withMessages(['query_key' => 'KPIs may only use a registered query; free SQL is not accepted.']);
++        }
++        $q = KpiQueryRegistry::get($queryKey);
++        $filters = $this->validFilters($q, (array) ($data['filters'] ?? []));
++        $currency = isset($data['currency']) ? strtoupper((string) $data['currency']) : null;
++        if ($currency !== null && ! isset($q['filters']['currency']) && $q['unit'] !== KpiQueryRegistry::UNIT_MONEY) {
++            throw ValidationException::withMessages(['currency' => "Query {$queryKey} has no currency dimension."]);
++        }
++        $dateBasis = (string) ($data['date_basis'] ?? ($q['date_basis'] ?? 'SNAPSHOT'));
++        if ($dateBasis !== ($q['date_basis'] ?? 'SNAPSHOT')) {
++            throw ValidationException::withMessages(['date_basis' => 'The date basis must be the registered query\'s: '.($q['date_basis'] ?? 'SNAPSHOT').'.']);
++        }
++
++        return DB::transaction(function () use ($tenantId, $maker, $data, $queryKey, $q, $filters, $currency, $dateBasis): array {
++            $code = (string) $data['code'];
++            $version = (int) DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('code', $code)->lockForUpdate()->max('version') + 1;
++            $id = (string) Str::uuid();
++            DB::table('kpi_definitions')->insert([
++                'id' => $id, 'tenant_id' => $tenantId, 'code' => $code, 'version' => $version, 'name' => $data['name'], 'definition' => $data['definition'],
++                'formula' => $data['formula'] ?? self::formulaOf($q), 'query_key' => $queryKey, 'sources' => json_encode($q['sources']),
++                'date_basis' => $dateBasis, 'filters' => json_encode((object) $filters), 'currency' => $currency, 'owner' => $data['owner'], 'unit' => $q['unit'],
++                'status' => self::DRAFT, 'created_by' => $maker->id, 'created_at' => now(), 'updated_at' => now(),
++            ]);
++            $this->audit->record('reporting.kpi_definition.drafted', 'kpi_definition', $id, ['code' => $code, 'version' => $version, 'query_key' => $queryKey]);
++
++            return $this->present(DB::table('kpi_definitions')->find($id));
++        });
++    }
++
++    public function submit(string $tenantId, string $id, User $maker): array
++    {
++        return $this->transition($tenantId, $id, self::DRAFT, self::PENDING, ['submitted_at' => now()], 'reporting.kpi_definition.submitted', $maker);
++    }
++
++    public function approve(string $tenantId, string $id, User $checker): array
++    {
++        return DB::transaction(function () use ($tenantId, $id, $checker): array {
++            $row = $this->locked($tenantId, $id);
++            if ($row->created_by === $checker->id) {
++                abort(403, 'Maker-checker: the author of a KPI version cannot approve it.');
++            }
++            $previous = DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('code', $row->code)->where('status', self::ACTIVE)->lockForUpdate()->first();
++            if ($previous) {
++                DB::table('kpi_definitions')->where('id', $previous->id)->update(['status' => self::RETIRED, 'retired_at' => now(), 'updated_at' => now()]);
++            }
++
++            return $this->transition($tenantId, $id, self::PENDING, self::ACTIVE, ['approved_by' => $checker->id, 'approved_at' => now()], 'reporting.kpi_definition.approved', $checker,
++                ['superseded_version' => $previous?->version]);
++        });
++    }
++
++    public function reject(string $tenantId, string $id, User $checker, string $reason): array
++    {
++        return DB::transaction(function () use ($tenantId, $id, $checker, $reason): array {
++            if ($this->locked($tenantId, $id)->created_by === $checker->id) {
++                abort(403, 'Maker-checker: the author of a KPI version cannot reject it.');
++            }
++
++            return $this->transition($tenantId, $id, self::PENDING, self::REJECTED, ['rejected_by' => $checker->id, 'rejection_reason' => $reason], 'reporting.kpi_definition.rejected', $checker, ['reason' => $reason]);
++        });
++    }
++
++    public function retire(string $tenantId, string $id, User $actor): array
++    {
++        return $this->transition($tenantId, $id, self::ACTIVE, self::RETIRED, ['retired_at' => now()], 'reporting.kpi_definition.retired', $actor);
++    }
++
++    private function transition(string $tenantId, string $id, string $from, string $to, array $set, string $event, User $actor, array $extra = []): array
++    {
++        return DB::transaction(function () use ($tenantId, $id, $from, $to, $set, $event, $actor, $extra): array {
++            $row = $this->locked($tenantId, $id);
++            if ($row->status !== $from) {
++                abort(409, "KPI version is {$row->status}; expected {$from}.");
++            }
++            DB::table('kpi_definitions')->where('id', $id)->update($set + ['status' => $to, 'updated_at' => now()]);
++            $payload = ['kpi_definition_id' => $id, 'tenant_id' => $tenantId, 'code' => $row->code, 'version' => $row->version, 'from' => $from, 'to' => $to, 'actor_id' => $actor->id] + $extra;
++            $this->outbox->record($event, 'kpi_definition', $id, $payload);
++            $this->audit->record($event, 'kpi_definition', $id, $payload);
++
++            return $this->present(DB::table('kpi_definitions')->find($id));
++        });
++    }
++
++    private function locked(string $tenantId, string $id): object
++    {
++        return DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('id', $id)->lockForUpdate()->first()
++            ?? throw new NotFoundHttpException('KPI version not found.');
++    }
++
++    /** @param array<string, mixed> $q */
++    private function validFilters(array $q, array $filters): array
++    {
++        $out = [];
++        foreach ($filters as $name => $value) {
++            if (! isset($q['filters'][$name])) {
++                throw ValidationException::withMessages(["filters.{$name}" => "Filter {$name} is not permitted on this query (allowed: ".implode(', ', array_keys($q['filters'])).').']);
++            }
++            $values = is_array($value) ? array_values($value) : [$value];
++            foreach ($values as $v) {
++                if (! is_scalar($v) || strlen((string) $v) > 120) {
++                    throw ValidationException::withMessages(["filters.{$name}" => 'Filter values must be short scalar values.']);
++                }
++            }
++            $out[$name] = is_array($value) ? array_map('strval', $values) : (string) $value;
++        }
++
++        return $out;
++    }
++
++    /** @param array<string, mixed> $q */
++    private static function formulaOf(array $q): string
++    {
++        return $q['unit'] === KpiQueryRegistry::UNIT_MONEY
++            ? 'SUM('.$q['sum_column'].') per '.$q['currency_column'].' over the registered record set'
++            : 'COUNT(records) over the registered record set';
++    }
++
++    private function present(object $r): array
++    {
++        return [
++            'id' => $r->id, 'code' => $r->code, 'version' => (int) $r->version, 'status' => $r->status, 'name' => $r->name, 'definition' => $r->definition,
++            'formula' => $r->formula, 'query_key' => $r->query_key, 'sources' => json_decode($r->sources, true), 'date_basis' => $r->date_basis,
++            'filters' => json_decode($r->filters, true) ?: [], 'currency' => $r->currency, 'owner' => $r->owner, 'unit' => $r->unit,
++            'created_by' => $r->created_by, 'submitted_at' => $r->submitted_at, 'approved_by' => $r->approved_by, 'approved_at' => $r->approved_at,
++            'rejection_reason' => $r->rejection_reason, 'retired_at' => $r->retired_at,
++        ];
++    }
++}
+diff --git a/app/Application/Reporting/Kpi/KpiQueryRegistry.php b/app/Application/Reporting/Kpi/KpiQueryRegistry.php
+new file mode 100644
+index 0000000..c65a5da
+--- /dev/null
++++ b/app/Application/Reporting/Kpi/KpiQueryRegistry.php
+@@ -0,0 +1,144 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Reporting\Kpi;
++
++use App\Application\Finance\Obligations\ObligationService;
++use App\Application\Finance\ExceptionCentre\FinanceExceptionCentre;
++use Illuminate\Database\Query\Builder;
++use Illuminate\Support\Facades\DB;
++use InvalidArgumentException;
++
++/**
++ * Agent B2 — REQ-RPT-003 registered KPI queries. The ONLY place a KPI's SQL lives: users pick a `query_key`
++ * and may only narrow it with the query's whitelisted equality filters. Each query builds the exact record set a
++ * KPI counts/sums, so the drill-down (KPI → filtered list → record) returns the rows behind the figure.
++ *
++ * Shape per query:
++ *  - label, unit (count|money), sources (tables), date_basis (column the period filter applies to, or null = snapshot)
++ *  - currency_column (money queries), sum_column (money queries)
++ *  - filters: whitelist name => qualified column (equality / IN only)
++ *  - record: resource (list screen / API resource the drill-down lands on), id column, columns shown
++ *  - attention_when_positive: status semantics — a non-zero value is an exception/queue needing action
++ */
++final class KpiQueryRegistry
++{
++    public const UNIT_COUNT = 'count';
++
++    public const UNIT_MONEY = 'money';
++
++    public const OPEN_CLAIM_EXCLUDED = ['CLOSED', 'CLOSED_PAID', 'REJECTED', 'WITHDRAWN'];
++
++    /** @return array<string, array<string, mixed>> */
++    public static function definitions(): array
++    {
++        $policyCols = ['policies.id', 'policies.policy_number', 'policies.status', 'policies.party_id', 'policies.carrier_id', 'policies.coverage_starts_at', 'policies.coverage_ends_at', 'policies.premium_minor', 'policies.currency'];
++        $claimCols = ['claims.id', 'claims.claim_number', 'claims.status', 'claims.policy_id', 'claims.current_reserve_minor', 'claims.currency', 'claims.created_at'];
++        $policyFilters = ['status' => 'policies.status', 'carrier_id' => 'policies.carrier_id', 'currency' => 'policies.currency'];
++
++        return [
++            'policies.active' => ['label' => 'Active policies', 'unit' => self::UNIT_COUNT, 'sources' => ['policies'], 'date_basis' => null,
++                'filters' => $policyFilters, 'record' => ['resource' => 'policies', 'id' => 'policies.id', 'columns' => $policyCols]],
++            'policies.pending_issuance' => ['label' => 'Paid, pending issuance', 'unit' => self::UNIT_COUNT, 'sources' => ['policies'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => $policyFilters, 'record' => ['resource' => 'policies', 'id' => 'policies.id', 'columns' => $policyCols]],
++            'policies.expiring_30d' => ['label' => 'Policies expiring within 30 days', 'unit' => self::UNIT_COUNT, 'sources' => ['policies'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => $policyFilters, 'record' => ['resource' => 'policies', 'id' => 'policies.id', 'columns' => $policyCols]],
++            'policies.issued' => ['label' => 'Policies issued', 'unit' => self::UNIT_COUNT, 'sources' => ['policies'], 'date_basis' => 'policies.issued_at',
++                'filters' => $policyFilters, 'record' => ['resource' => 'policies', 'id' => 'policies.id', 'columns' => $policyCols]],
++            'premium.written' => ['label' => 'Written premium (issued policies)', 'unit' => self::UNIT_MONEY, 'sources' => ['policies'], 'date_basis' => 'policies.issued_at',
++                'currency_column' => 'policies.currency', 'sum_column' => 'policies.premium_minor',
++                'filters' => $policyFilters, 'record' => ['resource' => 'policies', 'id' => 'policies.id', 'columns' => $policyCols]],
++            'claims.open' => ['label' => 'Open claims', 'unit' => self::UNIT_COUNT, 'sources' => ['claims'], 'date_basis' => null,
++                'filters' => ['status' => 'claims.status', 'currency' => 'claims.currency'], 'record' => ['resource' => 'claims', 'id' => 'claims.id', 'columns' => $claimCols]],
++            'claims.outstanding_reserve' => ['label' => 'Outstanding claim reserve', 'unit' => self::UNIT_MONEY, 'sources' => ['claims'], 'date_basis' => null,
++                'currency_column' => 'claims.currency', 'sum_column' => 'claims.current_reserve_minor',
++                'filters' => ['status' => 'claims.status', 'currency' => 'claims.currency'], 'record' => ['resource' => 'claims', 'id' => 'claims.id', 'columns' => $claimCols]],
++            'claims.not_closed' => ['label' => 'Claims without a closure date', 'unit' => self::UNIT_COUNT, 'sources' => ['claims'], 'date_basis' => null,
++                'filters' => ['status' => 'claims.status', 'currency' => 'claims.currency'], 'record' => ['resource' => 'claims', 'id' => 'claims.id', 'columns' => $claimCols]],
++            'claims.reported' => ['label' => 'Claims reported', 'unit' => self::UNIT_COUNT, 'sources' => ['claims'], 'date_basis' => 'claims.created_at',
++                'filters' => ['status' => 'claims.status', 'currency' => 'claims.currency'], 'record' => ['resource' => 'claims', 'id' => 'claims.id', 'columns' => $claimCols]],
++            'claims.failed_payments' => ['label' => 'Failed claim payments', 'unit' => self::UNIT_COUNT, 'sources' => ['claim_payments', 'claims'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => [], 'record' => ['resource' => 'claims', 'id' => 'claim_payments.id', 'columns' => ['claim_payments.id', 'claim_payments.claim_id', 'claims.claim_number', 'claim_payments.status']]],
++            'quotes.created' => ['label' => 'Quotes created', 'unit' => self::UNIT_COUNT, 'sources' => ['quotes'], 'date_basis' => 'quotes.created_at',
++                'filters' => ['status' => 'quotes.status', 'line_code' => 'quotes.line_code', 'channel' => 'quotes.channel'],
++                'record' => ['resource' => 'quotes', 'id' => 'quotes.id', 'columns' => ['quotes.id', 'quotes.quote_number', 'quotes.status', 'quotes.line_code', 'quotes.party_id', 'quotes.created_at']]],
++            'proposals.open' => ['label' => 'Open proposals', 'unit' => self::UNIT_COUNT, 'sources' => ['proposals'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'proposals.status'],
++                'record' => ['resource' => 'proposals', 'id' => 'proposals.id', 'columns' => ['proposals.id', 'proposals.proposal_number', 'proposals.status', 'proposals.party_id', 'proposals.created_at']]],
++            'underwriting.queue' => ['label' => 'Underwriting queue', 'unit' => self::UNIT_COUNT, 'sources' => ['underwriting_cases'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'underwriting_cases.status', 'carrier_id' => 'underwriting_cases.carrier_id'],
++                'record' => ['resource' => 'underwriting-cases', 'id' => 'underwriting_cases.id', 'columns' => ['underwriting_cases.id', 'underwriting_cases.status', 'underwriting_cases.priority', 'underwriting_cases.proposal_id', 'underwriting_cases.decision_due_at']]],
++            'payments.pending' => ['label' => 'Payments pending', 'unit' => self::UNIT_COUNT, 'sources' => ['payment_intents'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'payment_intents.status', 'provider' => 'payment_intents.provider', 'currency' => 'payment_intents.currency'],
++                'record' => ['resource' => 'payments', 'id' => 'payment_intents.id', 'columns' => ['payment_intents.id', 'payment_intents.status', 'payment_intents.provider', 'payment_intents.amount_minor', 'payment_intents.currency', 'payment_intents.created_at']]],
++            'payments.collected' => ['label' => 'Premium collected', 'unit' => self::UNIT_MONEY, 'sources' => ['payment_intents'], 'date_basis' => 'payment_intents.created_at',
++                'currency_column' => 'payment_intents.currency', 'sum_column' => 'payment_intents.amount_minor',
++                'filters' => ['provider' => 'payment_intents.provider', 'currency' => 'payment_intents.currency'],
++                'record' => ['resource' => 'payments', 'id' => 'payment_intents.id', 'columns' => ['payment_intents.id', 'payment_intents.status', 'payment_intents.provider', 'payment_intents.amount_minor', 'payment_intents.currency', 'payment_intents.created_at']]],
++            'receivables.outstanding' => ['label' => 'Receivables outstanding', 'unit' => self::UNIT_MONEY, 'sources' => ['financial_obligations'], 'date_basis' => null,
++                'currency_column' => 'financial_obligations.currency', 'sum_column' => 'financial_obligations.outstanding_minor',
++                'filters' => ['type' => 'financial_obligations.type', 'currency' => 'financial_obligations.currency'],
++                'record' => ['resource' => 'financial-obligations', 'id' => 'financial_obligations.id', 'columns' => ['financial_obligations.id', 'financial_obligations.type', 'financial_obligations.status', 'financial_obligations.outstanding_minor', 'financial_obligations.currency', 'financial_obligations.due_at']]],
++            'receivables.overdue' => ['label' => 'Receivables overdue', 'unit' => self::UNIT_MONEY, 'sources' => ['financial_obligations'], 'date_basis' => null, 'attention_when_positive' => true,
++                'currency_column' => 'financial_obligations.currency', 'sum_column' => 'financial_obligations.outstanding_minor',
++                'filters' => ['type' => 'financial_obligations.type', 'currency' => 'financial_obligations.currency'],
++                'record' => ['resource' => 'financial-obligations', 'id' => 'financial_obligations.id', 'columns' => ['financial_obligations.id', 'financial_obligations.type', 'financial_obligations.status', 'financial_obligations.outstanding_minor', 'financial_obligations.currency', 'financial_obligations.due_at']]],
++            'commissions.pending' => ['label' => 'Commission pending', 'unit' => self::UNIT_MONEY, 'sources' => ['commission_accruals'], 'date_basis' => null,
++                'currency_column' => 'commission_accruals.currency', 'sum_column' => 'commission_accruals.amount_minor',
++                'filters' => ['partner_id' => 'commission_accruals.partner_id', 'currency' => 'commission_accruals.currency'],
++                'record' => ['resource' => 'commission-accruals', 'id' => 'commission_accruals.id', 'columns' => ['commission_accruals.id', 'commission_accruals.partner_id', 'commission_accruals.policy_id', 'commission_accruals.status', 'commission_accruals.amount_minor', 'commission_accruals.currency']]],
++            'renewals.due' => ['label' => 'Renewals due', 'unit' => self::UNIT_COUNT, 'sources' => ['renewal_work_items'], 'date_basis' => 'renewal_work_items.renewal_due_on', 'attention_when_positive' => true,
++                'filters' => ['assigned_to' => 'renewal_work_items.assigned_to'],
++                'record' => ['resource' => 'renewals', 'id' => 'renewal_work_items.id', 'columns' => ['renewal_work_items.id', 'renewal_work_items.policy_id', 'renewal_work_items.renewal_due_on', 'renewal_work_items.status', 'renewal_work_items.assigned_to']]],
++            'kyc.pending_review' => ['label' => 'KYC awaiting review', 'unit' => self::UNIT_COUNT, 'sources' => ['kyc_submissions'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'kyc_submissions.status'],
++                'record' => ['resource' => 'kyc-submissions', 'id' => 'kyc_submissions.id', 'columns' => ['kyc_submissions.id', 'kyc_submissions.party_id', 'kyc_submissions.status', 'kyc_submissions.submitted_at']]],
++            'refunds.open' => ['label' => 'Refunds awaiting action', 'unit' => self::UNIT_COUNT, 'sources' => ['refunds'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'refunds.status', 'currency' => 'refunds.currency'],
++                'record' => ['resource' => 'refunds', 'id' => 'refunds.id', 'columns' => ['refunds.id', 'refunds.refund_number', 'refunds.status', 'refunds.amount_minor', 'refunds.currency', 'refunds.created_at']]],
++            'regulatory.runs_open' => ['label' => 'Regulatory report runs not yet submitted', 'unit' => self::UNIT_COUNT, 'sources' => ['regulatory_report_runs'], 'date_basis' => null, 'attention_when_positive' => true,
++                'filters' => ['status' => 'regulatory_report_runs.status'],
++                'record' => ['resource' => 'regulatory-report-runs', 'id' => 'regulatory_report_runs.id', 'columns' => ['regulatory_report_runs.id', 'regulatory_report_runs.definition_id', 'regulatory_report_runs.period_key', 'regulatory_report_runs.status']]],
++        ];
++    }
++
++    /** @return array<string, mixed> */
++    public static function get(string $key): array
++    {
++        return self::definitions()[$key] ?? throw new InvalidArgumentException("Unknown registered KPI query {$key}.");
++    }
++
++    public static function has(string $key): bool
++    {
++        return isset(self::definitions()[$key]);
++    }
++
++    /** Tenant-scoped base record set for a registered query (no period/filters applied yet). */
++    public static function base(string $key, string $tenantId): Builder
++    {
++        return match ($key) {
++            'policies.active' => DB::table('policies')->where('policies.tenant_id', $tenantId)->where('policies.status', 'ACTIVE'),
++            'policies.pending_issuance' => DB::table('policies')->where('policies.tenant_id', $tenantId)->where('policies.status', 'PAID_PENDING_ISSUANCE'),
++            'policies.expiring_30d' => DB::table('policies')->where('policies.tenant_id', $tenantId)->whereIn('policies.status', ['ACTIVE', 'EXPIRING'])->whereBetween('policies.coverage_ends_at', [now(), now()->addDays(30)]),
++            'policies.issued', 'premium.written' => DB::table('policies')->where('policies.tenant_id', $tenantId)->whereNotNull('policies.issued_at'),
++            'claims.open', 'claims.outstanding_reserve' => DB::table('claims')->where('claims.tenant_id', $tenantId)->whereNull('claims.closed_at')->whereNotIn('claims.status', self::OPEN_CLAIM_EXCLUDED),
++            'claims.not_closed' => DB::table('claims')->where('claims.tenant_id', $tenantId)->whereNull('claims.closed_at'),
++            'claims.reported' => DB::table('claims')->where('claims.tenant_id', $tenantId),
++            'claims.failed_payments' => DB::table('claim_payments')->join('claims', 'claims.id', '=', 'claim_payments.claim_id')->where('claims.tenant_id', $tenantId)->where('claim_payments.status', 'FAILED'),
++            'quotes.created' => DB::table('quotes')->where('quotes.tenant_id', $tenantId),
++            'proposals.open' => DB::table('proposals')->where('proposals.tenant_id', $tenantId)->whereNotIn('proposals.status', ['ISSUED', 'CANCELLED', 'REJECTED', 'DECLINED', 'EXPIRED']),
++            'underwriting.queue' => DB::table('underwriting_cases')->where('underwriting_cases.tenant_id', $tenantId)->whereIn('underwriting_cases.status', ['QUEUED', 'IN_REVIEW', 'REFERRED']),
++            'payments.pending' => DB::table('payment_intents')->where('payment_intents.tenant_id', $tenantId)->whereIn('payment_intents.status', ['PENDING', 'REQUESTED', 'STARTED', 'PROCESSING']),
++            'payments.collected' => DB::table('payment_intents')->where('payment_intents.tenant_id', $tenantId)->where('payment_intents.status', 'SUCCEEDED'),
++            'receivables.outstanding' => DB::table('financial_obligations')->where('financial_obligations.tenant_id', $tenantId)->where('financial_obligations.kind', 'RECEIVABLE')->whereIn('financial_obligations.status', ObligationService::OPEN_STATUSES),
++            'receivables.overdue' => DB::table('financial_obligations')->where('financial_obligations.tenant_id', $tenantId)->where('financial_obligations.kind', 'RECEIVABLE')->whereIn('financial_obligations.status', ObligationService::OPEN_STATUSES)->where('financial_obligations.due_at', '<', now()),
++            'commissions.pending' => DB::table('commission_accruals')->where('commission_accruals.tenant_id', $tenantId)->where('commission_accruals.status', 'PENDING'),
++            'renewals.due' => DB::table('renewal_work_items')->where('renewal_work_items.tenant_id', $tenantId)->where('renewal_work_items.status', 'DUE'),
++            'kyc.pending_review' => DB::table('kyc_submissions')->where('kyc_submissions.tenant_id', $tenantId)->whereIn('kyc_submissions.status', ['SUBMITTED', 'REVIEWING']),
++            'refunds.open' => DB::table('refunds')->where('refunds.tenant_id', $tenantId)->whereIn('refunds.status', FinanceExceptionCentre::REFUND_ACTION_STATUSES),
++            'regulatory.runs_open' => DB::table('regulatory_report_runs')->where('regulatory_report_runs.tenant_id', $tenantId)->whereNull('regulatory_report_runs.submitted_at'),
++            default => throw new InvalidArgumentException("Unknown registered KPI query {$key}."),
++        };
++    }
++}
+diff --git a/database/migrations/2026_10_18_160201_create_kpi_definitions_table.php b/database/migrations/2026_10_18_160201_create_kpi_definitions_table.php
+new file mode 100644
+index 0000000..c987dee
+--- /dev/null
++++ b/database/migrations/2026_10_18_160201_create_kpi_definitions_table.php
+@@ -0,0 +1,55 @@
++<?php
++
++declare(strict_types=1);
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B2 — REQ-RPT-003 KPI governance catalogue (MPS §88): versioned, maker-checker KPI definitions.
++ * A KPI never carries SQL: it binds to a code-registered query (App\Application\Reporting\Kpi\KpiQueryRegistry)
++ * by `query_key` and may only narrow it with that query's whitelisted filters.
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('kpi_definitions', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('tenant_id')->constrained();
++            $t->string('code', 80);
++            $t->unsignedInteger('version');
++            $t->string('name');
++            $t->text('definition');
++            $t->text('formula');
++            $t->string('query_key', 80);
++            $t->jsonb('sources');
++            $t->string('date_basis', 64);
++            $t->jsonb('filters')->default('{}');
++            $t->string('currency', 3)->nullable();
++            $t->string('owner', 120);
++            $t->string('unit', 16);
++            $t->string('status', 24)->default('DRAFT');
++            $t->foreignUuid('created_by')->constrained('users');
++            $t->timestampTz('submitted_at')->nullable();
++            $t->foreignUuid('approved_by')->nullable()->constrained('users');
++            $t->timestampTz('approved_at')->nullable();
++            $t->foreignUuid('rejected_by')->nullable()->constrained('users');
++            $t->text('rejection_reason')->nullable();
++            $t->timestampTz('retired_at')->nullable();
++            $t->timestampsTz();
++            $t->unique(['tenant_id', 'code', 'version']);
++            $t->index(['tenant_id', 'code', 'status']);
++        });
++        DB::statement("ALTER TABLE kpi_definitions ADD CONSTRAINT kpi_definitions_status_valid CHECK (status IN ('DRAFT','PENDING_APPROVAL','ACTIVE','REJECTED','RETIRED'))");
++        DB::statement('ALTER TABLE kpi_definitions ADD CONSTRAINT kpi_definitions_checker CHECK (approved_by IS NULL OR approved_by <> created_by)');
++        DB::statement("CREATE UNIQUE INDEX kpi_definitions_one_active ON kpi_definitions (tenant_id, code) WHERE status = 'ACTIVE'");
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('kpi_definitions');
++    }
++};

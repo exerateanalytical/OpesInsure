@@ -1,6 +1,11 @@
 <?php
 namespace App\Domain\Claims;
 use DomainException;
+/**
+ * @deprecated REQ-DUP-006: frozen legacy table. The single runtime claim machine is ClaimMachine (via
+ * App\Application\Claims\ClaimTransitions). Kept only because the REQ-WFL-001 parity tests pin this table;
+ * no application code may use it (tests/Feature/Batch11/ClaimMachine enforces that).
+ */
 final class ClaimLifecycle
 {
     private const TRANSITIONS=[

@@ -40,6 +40,9 @@ final class PolicyPortabilityExportService
         if (! DB::table('policy_versions')->where('policy_id', $policy->id)->exists()) {
             throw ValidationException::withMessages(['policy' => ['This policy has no recorded chronology yet; it cannot be exported.']]);
         }
+        // REQ-SEC-003: purpose-of-use guard (transfers to a new intermediary/carrier need the party's DATA_SHARING consent).
+        app(\App\Application\Security\Purpose\PurposeOfUseGuard::class)->enforce('PORTABILITY_'.$purpose, 'policy.portability.export', $policy->party_id,
+            ['tenant_id' => $policy->tenant_id, 'reference_type' => 'policy', 'reference_id' => $policy->id, 'actor_id' => $actor->id]);
         $pack = $this->build($policy);
         $packHash = $this->json->hash($pack);
         $id = (string) Str::uuid();

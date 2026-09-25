@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\WebExperiences;
 
-use Illuminate\Support\Facades\DB;
+use App\Application\Reporting\Dashboards\DashboardRegistry;
 
 /**
  * REQ-UI-002 metric contract for the insurer and broker portal dashboards.
@@ -18,41 +18,30 @@ use Illuminate\Support\Facades\DB;
  */
 final class PortalDashboardMetrics
 {
+    public function __construct(private DashboardRegistry $dashboards) {}
+
     /** @return list<array{key:string, label:string, value:int|string, hint:?string, tone:string, drilldown:?string}> */
     public function for(string $portal, string $tenantId): array
     {
-        return match ($portal) {
-            'insurer' => $this->insurer($tenantId),
-            'broker' => $this->broker($tenantId),
-            default => [],
-        };
+        if (! in_array($portal, ['insurer', 'broker'], true)) {
+            return [];
+        }
+
+        // Agent B2 — REQ-RPT-004: tiles and values come from the governed dashboard registry (same shape as before).
+        return array_map(fn (array $t) => $this->m(
+            $t['key'],
+            ($t['format'] ?? null) === 'money_total' ? Money::format((int) $t['value'], 'XAF') : (int) $t['value'],
+            $t['tone'],
+            $t['drilldown'],
+        ), $this->tilesWithFormat($portal, $tenantId));
     }
 
-    private function insurer(string $t): array
+    /** @return list<array<string, mixed>> */
+    private function tilesWithFormat(string $portal, string $tenantId): array
     {
-        $openClaims = DB::table('claims')->where('tenant_id', $t)->whereNull('closed_at')->whereNotIn('status', ['CLOSED', 'CLOSED_PAID', 'REJECTED', 'WITHDRAWN']);
-        $reserve = (int) (clone $openClaims)->sum('current_reserve_minor');
+        $formats = array_column(DashboardRegistry::get($portal)['tiles'], 'format', 'key');
 
-        return [
-            $this->m('active_policies', DB::table('policies')->where('tenant_id', $t)->where('status', 'ACTIVE')->count(), 'success', 'policies'),
-            $this->m('pending_issuance', DB::table('policies')->where('tenant_id', $t)->where('status', 'PAID_PENDING_ISSUANCE')->count(), 'warning', 'policies'),
-            $this->m('open_claims', (clone $openClaims)->count(), 'info', 'claims'),
-            $this->m('outstanding_reserve', Money::format($reserve, 'XAF'), 'info', 'claims'),
-            $this->m('underwriting_queue', DB::table('underwriting_cases')->where('tenant_id', $t)->whereIn('status', ['QUEUED', 'IN_REVIEW', 'REFERRED'])->count(), 'warning', null),
-            $this->m('failed_claim_payments', DB::table('claim_payments as p')->join('claims as c', 'c.id', '=', 'p.claim_id')->where('c.tenant_id', $t)->where('p.status', 'FAILED')->count(), 'danger', 'claims'),
-        ];
-    }
-
-    private function broker(string $t): array
-    {
-        return [
-            $this->m('quotes_30d', DB::table('quotes')->where('tenant_id', $t)->where('created_at', '>=', now()->subDays(30))->count(), 'info', 'quotes'),
-            $this->m('proposals_open', DB::table('proposals')->where('tenant_id', $t)->whereNotIn('status', ['ISSUED', 'CANCELLED', 'REJECTED', 'DECLINED', 'EXPIRED'])->count(), 'warning', null),
-            $this->m('active_policies', DB::table('policies')->where('tenant_id', $t)->where('status', 'ACTIVE')->count(), 'success', 'policies'),
-            $this->m('renewals_due_30d', DB::table('policies')->where('tenant_id', $t)->whereIn('status', ['ACTIVE', 'EXPIRING'])->whereBetween('coverage_ends_at', [now(), now()->addDays(30)])->count(), 'warning', 'policies'),
-            $this->m('payments_pending', DB::table('payment_intents')->where('tenant_id', $t)->whereIn('status', ['PENDING', 'REQUESTED', 'STARTED', 'PROCESSING'])->count(), 'warning', null),
-            $this->m('open_claims', DB::table('claims')->where('tenant_id', $t)->whereNull('closed_at')->count(), 'info', 'claims'),
-        ];
+        return array_map(fn (array $t) => $t + ['format' => $formats[$t['key']] ?? null], $this->dashboards->data($tenantId, $portal)['tiles']);
     }
 
     private function m(string $key, int|string $value, string $tone, ?string $drilldown): array
