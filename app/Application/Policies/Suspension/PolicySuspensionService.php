@@ -106,7 +106,8 @@ final class PolicySuspensionService
             $case = $this->cases->open($policy->tenant_id, self::CASE_TYPE, [
                 'title' => 'Reinstatement — '.($policy->policy_number ?? $policy->id),
                 'subject_type' => 'policy', 'subject_id' => $policy->id,
-                'source_type' => 'policy_suspension', 'source_id' => $suspension->id,
+                // one case per request (a rejected request may be followed by a new one on the same suspension)
+                'source_type' => 'policy_reinstatement_request', 'source_id' => (string) \Illuminate\Support\Str::uuid(),
                 'carrier_id' => $policy->carrier_id, 'priority' => 'HIGH',
             ], $actor);
 

@@ -123,6 +123,11 @@ it('REQ-POL-006 rejects a reinstatement request back to SUSPENDED and allows a s
     expect($s->status)->toBe('SUSPENDED')->and($policy->refresh()->status)->toBe('SUSPENDED')
         ->and(WorkCase::withoutGlobalScopes()->find($caseId)->status)->toBe('CANCELLED');
 
+    // a new request after a rejection opens a fresh case (previously a unique-constraint 500)
+    $again = $svc->requestReinstatement($policy, 'PAID', $maker);
+    expect($again->status)->toBe('REINSTATEMENT_REQUESTED')->and($again->reinstatement_case_id)->not->toBe($caseId);
+    $svc->rejectReinstatement($policy, 'Still unpaid', $checker);
+
     $svc->reinstate($policy, 'PREMIUM_RECEIVED', null);
     expect($policy->refresh()->status)->toBe('ACTIVE')->and($s->refresh()->status)->toBe('REINSTATED');
 });
