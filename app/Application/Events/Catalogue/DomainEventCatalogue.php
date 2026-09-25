@@ -105,6 +105,10 @@ final class DomainEventCatalogue
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
+            // REQ-CLM-006 (App\Application\Claims\Parties\ClaimPartyService)
+            $d('claim.party.added', 'claim', 'Party (claimant, third party, payee, expert…) added to a claim.', [], [], true),
+            $d('claim.party.updated', 'claim', 'Claim party details changed.', [], [], true),
+            $d('claim.party.removed', 'claim', 'Claim party removed (dated, soft).', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
