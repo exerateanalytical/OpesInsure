@@ -666,3 +666,17 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+
+// C11 — REQ-CLM-011 claims execution modes (App\Application\Claims\Execution).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Claims\Execution\Http\ClaimExecutionController::class;
+    Route::get('claims/{id}/execution', [$c, 'show'])->middleware('permission:claims.view')->whereUuid('id');
+    Route::post('claims/{id}/execution/submit', [$c, 'submit'])->middleware('permission:claims.carrier.exchange')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/inbound', [$c, 'inbound'])->middleware('permission:claims.carrier.callback')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/manual', [$c, 'propose'])->middleware('permission:claims.carrier.manual_entry')->whereUuid('id');
+    Route::post('claims/{id}/carrier-messages/manual/{entry}/approve', [$c, 'approve'])->middleware('permission:claims.carrier.manual_approve')->whereUuid(['id', 'entry']);
+    Route::post('claims/{id}/carrier-messages/manual/{entry}/reject', [$c, 'reject'])->middleware('permission:claims.carrier.manual_approve')->whereUuid(['id', 'entry']);
+    Route::post('carriers/{carrier}/claims-signing-keys', [$c, 'registerKey'])->middleware('permission:claims.carrier.keys')->whereUuid('carrier');
+    Route::post('carriers/{carrier}/claims-signing-keys/{key}/revoke', [$c, 'revokeKey'])->middleware('permission:claims.carrier.keys')->whereUuid('carrier');
+});
+// End C11
