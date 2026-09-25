@@ -17,7 +17,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payment_intents', function (Blueprint $t) {
-            $t->uuid('financial_obligation_id')->nullable()->index();
+            // financial_obligation_id is added by 2026_10_14_910001 (Batch 9-1)
             $t->string('collection_mode', 32)->nullable();
             $t->jsonb('collection_semantics')->nullable();
             $t->unsignedSmallInteger('max_attempts')->default(3);
@@ -40,6 +40,6 @@ return new class extends Migration
             $t->dropConstrainedForeignId('requested_by');
             $t->dropColumn(['collection_mode', 'retry_of_attempt_id', 'retry_idempotency_key']);
         });
-        Schema::table('payment_intents', fn (Blueprint $t) => $t->dropColumn(['financial_obligation_id', 'collection_mode', 'collection_semantics', 'max_attempts']));
+        Schema::table('payment_intents', fn (Blueprint $t) => $t->dropColumn(['collection_mode', 'collection_semantics', 'max_attempts']));
     }
 };
