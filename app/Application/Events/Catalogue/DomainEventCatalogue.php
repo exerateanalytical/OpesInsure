@@ -379,6 +379,10 @@ final class DomainEventCatalogue
             $d('provider_network.member_added', 'provider_network', 'Provider added to a network.', [], [], true),
             $d('provider_contract.created', 'provider_contract', 'Provider contract created.', [], [], true),
             $d('provider_tariff.approved', 'provider_contract', 'Provider tariff version approved (maker-checker).', [], [], true),
+            // Agent E2 — REQ-HLT-001 health eligibility (App\Application\Health\Eligibility)
+            $d('health_member.enrolled', 'health_member', 'Health member (principal / dependant / group member) enrolled on a policy.', [], [], true),
+            $d('health_member.ended', 'health_member', 'Health member enrolment ended; active card revoked.', [], [], true),
+            $d('health_card.issued', 'health_member', 'Digital health card (signed QR) issued; previous card revoked.', [], [], true),
 
             // Batch 8-6 — REQ-PRD-011 life & special products (App\Application\Policies\Special)
             $d('special_policy.profile.created', 'policy', 'Special product profile (group/fleet/open cover/construction/agriculture/life) attached to a policy.', [], [$P], true),

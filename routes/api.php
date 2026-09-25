@@ -873,3 +873,17 @@ Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])-
     Route::post('facultative/{placement}/reject', [$f, 'reject'])->middleware('permission:reinsurance.facultative.approve')->whereUuid('placement');
 });
 // End Agent E6
+// Agent E2 — REQ-HLT-001 health eligibility, members, digital health card (App\Application\Health\Eligibility).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $he = \App\Application\Health\Eligibility\Http\HealthEligibilityController::class;
+    Route::get('policies/{policy}/health-members', [$he, 'members'])->middleware('permission:health.members.view')->whereUuid('policy');
+    Route::post('policies/{policy}/health-members', [$he, 'enrol'])->middleware('permission:health.members.manage')->whereUuid('policy');
+    Route::post('policies/{policy}/health-networks', [$he, 'linkNetwork'])->middleware('permission:health.members.manage')->whereUuid('policy');
+    Route::post('health-members/{member}/end', [$he, 'end'])->middleware('permission:health.members.manage')->whereUuid('member');
+    Route::post('health-members/{member}/card', [$he, 'issueCard'])->middleware('permission:health.cards.issue')->whereUuid('member');
+    Route::get('health-members/{member}/eligibility-checks', [$he, 'history'])->middleware('permission:health.eligibility.view')->whereUuid('member');
+    Route::post('health-benefit-rules', [$he, 'addBenefitRule'])->middleware('permission:health.benefits.manage');
+    Route::post('health/eligibility/check', [$he, 'check'])->middleware('permission:health.eligibility.check');
+    Route::post('health/eligibility/scan', [$he, 'scan'])->middleware(['permission:health.eligibility.scan', 'throttle:60,1']);
+});
+// End Agent E2
