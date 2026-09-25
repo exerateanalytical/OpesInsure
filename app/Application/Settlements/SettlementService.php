@@ -54,7 +54,7 @@ final class SettlementService
         'CANCELLED' => [],
     ];
 
-    private const LIVE = ['DRAFT', 'CALCULATED', 'REVIEW', 'APPROVED', 'PROCESSING', 'SETTLED', 'RECONCILED'];
+    public const LIVE = ['DRAFT', 'CALCULATED', 'REVIEW', 'APPROVED', 'PROCESSING', 'SETTLED', 'RECONCILED'];
 
     public function __construct(
         private readonly CarrierSettlementService $legacy,

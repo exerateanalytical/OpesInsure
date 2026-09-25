@@ -249,6 +249,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('chargebacks/{chargeback}/resolve', [FinancialControlController::class, 'resolveChargeback'])->middleware('permission:chargeback.resolve');
         Route::get('ledger/accounts', [LedgerController::class, 'accounts'])->middleware('permission:ledger.read');
         Route::get('ledger/journals/{journal}', [LedgerController::class, 'journal'])->middleware('permission:ledger.read');
+        // Deprecated alias (D10): creates a DRAFT manual journal (maker-checker); successor is POST v1/ledger/manual-journals.
         Route::post('ledger/journals', [LedgerController::class, 'manual'])->middleware('permission:ledger.adjust');
         Route::post('ledger/journals/{journal}/reverse', [LedgerController::class, 'reverse'])->middleware('permission:ledger.reverse');
         // The legacy commission/settlement WRITE routes were removed: they wrote the
