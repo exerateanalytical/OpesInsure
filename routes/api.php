@@ -906,3 +906,21 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::get('health/providers/{provider}/statement', [$hpc, 'statement'])->middleware('permission:health.provider_claims.view')->whereUuid('provider');
 });
 // End Agent E4
+// Agent E7 — REQ-REI-004 reinsurance recoveries (App\Application\Reinsurance\Recoveries).
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rc = \App\Application\Reinsurance\Recoveries\Http\RecoveryController::class;
+    Route::get('recoveries', [$rc, 'index'])->middleware('permission:reinsurance.recoveries.view');
+    Route::get('recoveries/summary', [$rc, 'summary'])->middleware('permission:reinsurance.recoveries.view');
+    Route::get('recoveries/{recovery}', [$rc, 'show'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('recovery');
+    Route::get('claims/{claim}/recoveries', [$rc, 'claim'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('claim');
+    Route::post('claims/{claim}/recoveries/preview', [$rc, 'preview'])->middleware('permission:reinsurance.recoveries.view')->whereUuid('claim');
+    Route::post('claims/{claim}/recoveries/estimate', [$rc, 'estimate'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('claim');
+    Route::post('recoveries/{recovery}/notify', [$rc, 'notify'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/agree', [$rc, 'agree'])->middleware('permission:reinsurance.recoveries.approve')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/bill', [$rc, 'bill'])->middleware('permission:reinsurance.recoveries.bill')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/receipts', [$rc, 'receive'])->middleware('permission:reinsurance.recoveries.settle')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/dispute', [$rc, 'dispute'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('recoveries/{recovery}/close', [$rc, 'close'])->middleware('permission:reinsurance.recoveries.manage')->whereUuid('recovery');
+    Route::post('treaties/{treaty}/large-loss-threshold', [$rc, 'threshold'])->middleware('permission:reinsurance.treaties.manage')->whereUuid('treaty');
+});
+// End Agent E7

@@ -361,6 +361,15 @@ final class DomainEventCatalogue
             $d('reinsurance.facultative.submitted', 'facultative_placement', 'Facultative slip submitted for approval with signed lines.', [], [], true),
             $d('reinsurance.facultative.bound', 'facultative_placement', 'Facultative placement approved (maker-checker, FACULTATIVE_APPROVE) and bound; cession recorded.', [], [], true),
             $d('reinsurance.facultative.rejected', 'facultative_placement', 'Facultative placement rejected by the checker.', [], [], true),
+            // Batch 14C / E7 — REQ-REI-004 reinsurance recoveries (App\Application\Reinsurance\Recoveries)
+            $d('reinsurance.recovery.estimated', 'reinsurance_recovery', 'Reinsurance recovery estimated from claim reserves/payments against cessions in force.', [], [], true),
+            $d('reinsurance.recovery.notified', 'reinsurance_recovery', 'Reinsurance recovery notified to reinsurers.', [], [], true),
+            $d('reinsurance.recovery.large_loss_notified', 'reinsurance_recovery', 'Claim crossed the treaty large-loss threshold; reinsurers notified.', [], [], true),
+            $d('reinsurance.recovery.agreed', 'reinsurance_recovery', 'Reinsurance recovery amount agreed with reinsurers.', [], [], true),
+            $d('reinsurance.recovery.billed', 'reinsurance_recovery', 'Reinsurance recovery billed (receivable obligations raised, ledger posted).', [], [], true),
+            $d('reinsurance.recovery.settled', 'reinsurance_recovery', 'Reinsurance recovery cash received from a reinsurer (obligation settled, ledger posted).', [], [], true),
+            $d('reinsurance.recovery.disputed', 'reinsurance_recovery', 'Reinsurance recovery disputed.', [], [], true),
+            $d('reinsurance.recovery.closed', 'reinsurance_recovery', 'Reinsurance recovery closed.', [], [], true),
             // Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters)
             $d('claim.expert.assigned', 'claim', 'Expert / adjuster appointed on a claim.', [], [], true),
             $d('claim.expert.accepted', 'claim', 'Expert accepted the assignment.', [], [], true),
