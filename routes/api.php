@@ -666,3 +666,12 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C3 — REQ-CLM-003 coverage-at-loss engine (App\Application\Claims\Coverage).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cc = \App\Application\Claims\Coverage\Http\ClaimCoverageController::class;
+    Route::post('coverage/check', [$cc, 'check'])->middleware('permission:claims.coverage.check');
+    Route::get('{claim}/coverage-checks', [$cc, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/coverage-checks', [$cc, 'store'])->middleware('permission:claims.coverage.check')->whereUuid('claim');
+    Route::post('{claim}/coverage-checks/{check}/resolve', [$cc, 'resolve'])->middleware('permission:claims.coverage.resolve')->whereUuid('claim')->whereUuid('check');
+});
+// End Agent C3

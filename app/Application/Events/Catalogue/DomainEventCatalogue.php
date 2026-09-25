@@ -105,6 +105,8 @@ final class DomainEventCatalogue
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
+            $d('claim.coverage.checked', 'claim', 'Coverage-at-loss check stored on a claim (REQ-CLM-003).', [], [], true),
+            $d('claim.coverage.resolved', 'claim', 'Coverage review resolved by a handler (REQ-CLM-003).', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
