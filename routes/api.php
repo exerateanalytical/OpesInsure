@@ -845,3 +845,19 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E1 — REQ-PRV-003 provider portal (App\Application\Providers\Portal); read-only, scoped by ProviderScope.
+Route::prefix('v1/provider-portal')->middleware(['auth:api', 'tenant', 'json.api', \App\Application\Providers\Portal\ProviderScope::class])->group(function (): void {
+    $pp = \App\Application\Providers\Portal\Http\ProviderPortalController::class;
+    Route::get('profile', [$pp, 'profile'])->middleware('permission:provider_portal.profile.view');
+    Route::get('facilities', [$pp, 'facilities'])->middleware('permission:provider_portal.profile.view');
+    Route::get('services', [$pp, 'services'])->middleware('permission:provider_portal.profile.view');
+    Route::get('network-memberships', [$pp, 'memberships'])->middleware('permission:provider_portal.network.view');
+    Route::get('contracts', [$pp, 'contracts'])->middleware('permission:provider_portal.network.view');
+    Route::get('tariffs', [$pp, 'tariffs'])->middleware('permission:provider_portal.tariffs.view');
+    Route::get('assignments', [$pp, 'assignments'])->middleware('permission:provider_portal.assignments.view');
+    Route::get('preauthorizations', [$pp, 'preauthorizations'])->middleware('permission:provider_portal.preauth.view');
+    Route::get('claims', [$pp, 'claims'])->middleware('permission:provider_portal.claims.view');
+    Route::get('statement', [$pp, 'statement'])->middleware('permission:provider_portal.finance.view');
+    Route::get('payments', [$pp, 'payments'])->middleware('permission:provider_portal.finance.view');
+});
+// End Agent E1
