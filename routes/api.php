@@ -666,3 +666,8 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Batch 11 C5 — REQ-CLM-008 event-based reserves (writes stay on claims/{id}/reserves + /approve in routes/wave7.php).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::get('{id}/reserve-position', [\App\Application\Claims\Reserves\Http\ReservePositionController::class, 'show'])->middleware('permission:claims.view')->whereUuid('id');
+});
+// End Batch 11 C5

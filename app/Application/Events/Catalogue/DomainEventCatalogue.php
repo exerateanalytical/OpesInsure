@@ -104,6 +104,10 @@ final class DomainEventCatalogue
             $d('claim.payment.approved', 'claim', 'Claim payment approved.', [], [], true),
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
+            // REQ-CLM-008 (Batch 11 C5) event-based reserves.
+            $d('claim.reserve.requested', 'claim', 'Claim reserve movement requested (maker).', [], [], true),
+            $d('claim.reserve.referred', 'claim', 'Claim reserve approval referred: approver RESERVE_APPROVE limit exceeded.', [], [], true),
+            $d('claim.reserve.changed', 'claim', 'Claim reserve movement approved and posted.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
