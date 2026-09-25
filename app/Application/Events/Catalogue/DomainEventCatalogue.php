@@ -375,6 +375,15 @@ final class DomainEventCatalogue
             $d('provider_network.member_added', 'provider_network', 'Provider added to a network.', [], [], true),
             $d('provider_contract.created', 'provider_contract', 'Provider contract created.', [], [], true),
             $d('provider_tariff.approved', 'provider_contract', 'Provider tariff version approved (maker-checker).', [], [], true),
+            // REQ-HLT-003 provider claims (App\Application\Health\ProviderClaims)
+            $d('health.provider_claim.submitted', 'health_provider_claim', 'Provider invoice submitted and priced against the contracted tariff.', [], [], true),
+            $d('health.provider_claim.adjudicated', 'health_provider_claim', 'Provider claim adjudicated with a per-line explanation of benefits.', [], [], true),
+            $d('health.provider_claim.payable', 'health_provider_claim', 'Provider claim insurer share raised as a PAYABLE obligation to the provider.', [], [], true),
+            $d('health.provider_claim.disputed', 'health_provider_claim', 'Provider disputed an adjudication (PROVIDER_DISPUTE case).', [], [], true),
+            $d('health.provider_claim.dispute_resolved', 'health_provider_claim', 'Provider claim dispute resolved (reopened or upheld).', [], [], true),
+            $d('health.provider_claim.paid', 'health_provider_claim', 'Provider claim paid in a settlement batch.', [], [], true),
+            $d('health.provider_settlement.created', 'health_provider_settlement_batch', 'Provider settlement batch created.', [], [], true),
+            $d('health.provider_settlement.paid', 'health_provider_settlement_batch', 'Provider settlement batch paid.', [], [], true),
 
             // Batch 8-6 — REQ-PRD-011 life & special products (App\Application\Policies\Special)
             $d('special_policy.profile.created', 'policy', 'Special product profile (group/fleet/open cover/construction/agriculture/life) attached to a policy.', [], [$P], true),

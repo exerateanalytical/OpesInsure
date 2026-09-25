@@ -55,6 +55,8 @@ final class DefaultChartOfAccounts
         'claim.settlement.approved' => ['CLAIMS', '601000', '481000', 'Claim settlement approved (claims payable).'],
         'claim.settlement.paid' => ['CLAIMS', '481000', '521000', 'Claim settlement paid.'],
         'claim.recovery.received' => ['CLAIMS', '521000', '601000', 'Claim recovery (subrogation / salvage / contribution) received.'],
+        'health.provider_claim.approved' => ['CLAIMS', '601000', '481000', 'Health provider claim adjudicated: insurer share recognised as claims payable.'],
+        'health.provider_claim.paid' => ['CLAIMS', '481000', '521000', 'Health provider claim paid in a provider settlement batch.'],
         'premium.tax.assessed' => ['TAX', '411000', '443000', 'Tax on premium assessed.'],
     ];
 }

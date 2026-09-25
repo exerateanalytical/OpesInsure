@@ -845,3 +845,22 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E4 — REQ-HLT-003 provider claims (cashless billing), EOB, disputes, settlement batches, statements (App\Application\Health\ProviderClaims).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $hpc = \App\Application\Health\ProviderClaims\Http\ProviderClaimController::class;
+    Route::get('health/provider-claims', [$hpc, 'index'])->middleware('permission:health.provider_claims.view');
+    Route::post('health/provider-claims', [$hpc, 'store'])->middleware('permission:health.provider_claims.capture');
+    Route::get('health/provider-claims/{claim}', [$hpc, 'show'])->middleware('permission:health.provider_claims.view')->whereUuid('claim');
+    Route::get('health/provider-claims/{claim}/eob', [$hpc, 'eob'])->middleware('permission:health.provider_claims.view')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/submit', [$hpc, 'submit'])->middleware('permission:health.provider_claims.capture')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/review', [$hpc, 'review'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/adjudicate', [$hpc, 'adjudicate'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/payable', [$hpc, 'payable'])->middleware('permission:health.provider_claims.approve_payment')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/dispute', [$hpc, 'dispute'])->middleware('permission:health.provider_claims.dispute')->whereUuid('claim');
+    Route::post('health/provider-claims/{claim}/dispute/resolve', [$hpc, 'resolveDispute'])->middleware('permission:health.provider_claims.adjudicate')->whereUuid('claim');
+    Route::post('health/provider-settlements', [$hpc, 'createBatch'])->middleware('permission:health.provider_settlements.manage');
+    Route::get('health/provider-settlements/{batch}', [$hpc, 'showBatch'])->middleware('permission:health.provider_claims.view')->whereUuid('batch');
+    Route::post('health/provider-settlements/{batch}/pay', [$hpc, 'payBatch'])->middleware('permission:health.provider_settlements.pay')->whereUuid('batch');
+    Route::get('health/providers/{provider}/statement', [$hpc, 'statement'])->middleware('permission:health.provider_claims.view')->whereUuid('provider');
+});
+// End Agent E4
