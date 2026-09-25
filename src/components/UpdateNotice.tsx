@@ -17,7 +17,13 @@ import { colors, radius, space, type } from "@/theme/tokens";
  */
 export function UpdateNotice() {
   const { t } = useTranslation();
-  const [ready, setReady] = useState(false);
+  // The native updater (checkAutomatically: ON_LOAD) often downloads the new
+  // bundle itself on cold start; then checkForUpdateAsync/fetchUpdateAsync
+  // report nothing new and a fetch-only flag would never flip. useUpdates()
+  // reflects that download too, so the dialog appears either way.
+  const { isUpdatePending } = Updates.useUpdates();
+  const [fetched, setFetched] = useState(false);
+  const ready = fetched || isUpdatePending;
   const [dismissed, setDismissed] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const busy = useRef(false);
@@ -28,10 +34,11 @@ export function UpdateNotice() {
     try {
       const result = await Updates.checkForUpdateAsync();
       if (result.isAvailable) {
-        const fetched = await Updates.fetchUpdateAsync();
-        if (!fetched.isRollBackToEmbedded && fetched.isNew) {
-          setReady(true);
-          // A newly fetched bundle re-opens the dialog even after "Later".
+        const got = await Updates.fetchUpdateAsync();
+        if (!got.isRollBackToEmbedded) {
+          // Newly fetched, or already downloaded by the native updater: both
+          // mean a restart applies it. Re-open the dialog even after "Later".
+          setFetched(true);
           setDismissed(false);
         }
       }
