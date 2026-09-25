@@ -12,7 +12,7 @@ export default function NotFound() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <Card feature>
-        <Compass size={32} color={colors.blue600} />
+        <Compass size={32} color={colors.navy800} />
         <Text accessibilityRole="header" style={styles.title}>{t("nfTitle")}</Text>
         <Text style={styles.body}>{t("nfBody")}</Text>
         <Button label={t("goHome")} icon={Home} onPress={() => router.replace("/")} />

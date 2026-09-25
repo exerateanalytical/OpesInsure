@@ -12,7 +12,7 @@ export default function Compare() {
     <Screen>
       <AppHeader title={t("cmpTitle")} subtitle={t("cmpSubtitle")} />
       <Card feature>
-        <Scale size={36} color={colors.blue600} />
+        <Scale size={36} color={colors.navy800} />
         <Text style={styles.title}>{t("cmpStartTitle")}</Text>
         <Text style={styles.body}>{t("cmpStartBody")}</Text>
         <Button label={t("cmpStart")} onPress={() => router.push("/quote/product")} />

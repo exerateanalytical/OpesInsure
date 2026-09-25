@@ -51,7 +51,7 @@ export default function Emergency() {
             style={[s.option, service === key && s.selected]}
             onPress={() => setService(key)}
           >
-            <Icon size={22} color={colors.blue600} />
+            <Icon size={22} color={colors.navy800} />
             <Text>{t(label)}</Text>
           </Pressable>
         ))}

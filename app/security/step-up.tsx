@@ -22,7 +22,7 @@ export default function StepUp() {
     <Screen>
       <AppHeader title={t("suTitle")} subtitle={t("suSubtitle")} back />
       <Card feature>
-        <ShieldCheck size={34} color={colors.blue600} />
+        <ShieldCheck size={34} color={colors.navy800} />
         <Text style={styles.title}>{t("suHeading")}</Text>
         <Text style={styles.body}>{challenge?.delivery_hint ?? t("suPreparing")}</Text>
         <TextField label={t("suCode")} value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="sms-otp" maxLength={6} />

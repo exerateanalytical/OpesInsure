@@ -78,7 +78,7 @@ export default function Payment() {
       <Stepper steps={STEPS} current={step.step} failed={step.failed} done={step.done} />
       <Card feature style={st.center}>
         <View style={st.icon}>
-          <Smartphone size={36} color={colors.blue600} />
+          <Smartphone size={36} color={colors.navy800} />
         </View>
         <StatusChip label={payment ? pInfo.label : t("payRecovering")} tone={payment ? pInfo.tone : "warning"} />
         {step.failed ? (

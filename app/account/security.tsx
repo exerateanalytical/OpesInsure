@@ -74,7 +74,7 @@ export default function Security() {
     <Screen>
       <AppHeader title={t("securityDevices")} back />
       <Card>
-        <Fingerprint size={30} color={colors.blue600} />
+        <Fingerprint size={30} color={colors.navy800} />
         <StatusChip label={enabled ? t("biometricOn") : t("biometricOff")} tone={enabled ? "success" : "warning"} />
         <Text style={styles.body}>{t("biometricBody")}</Text>
         <Text style={styles.meta}>

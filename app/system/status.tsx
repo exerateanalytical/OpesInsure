@@ -17,7 +17,7 @@ export default function SystemStatus() {
       <AppHeader title={t("statusTitle")} subtitle={t("statusSubtitle")} back />
       <Card>
         <View style={styles.row}>
-          <Activity size={24} color={colors.blue600} />
+          <Activity size={24} color={colors.navy800} />
           <View style={styles.flex}>
             <Text style={styles.title}>OpesInsure mobile</Text>
             <Text style={styles.body}>Version {environmentConfig.appVersion} · {environmentConfig.releaseChannel}</Text>

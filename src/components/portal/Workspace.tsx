@@ -2,9 +2,9 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Check, LucideIcon } from "lucide-react-native";
-import { Card } from "@/components/ui";
+import { Card, Chip } from "@/components/ui";
 import { useColumns } from "@/components/responsive";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 import { translateNow } from "@/i18n";
 
 export type WorkspaceItem = {
@@ -29,7 +29,7 @@ export function WorkspaceMenu({ items }: { items: WorkspaceItem[] }) {
         >
           <Card style={s.tile}>
             <View style={s.icon}>
-              <it.icon size={22} color={colors.blue600} />
+              <it.icon size={22} color={colors.navy800} />
             </View>
             <Text style={s.label}>{it.label}</Text>
             <Text style={s.sub}>{it.subtitle}</Text>
@@ -40,7 +40,7 @@ export function WorkspaceMenu({ items }: { items: WorkspaceItem[] }) {
   );
 }
 
-/** Single-select chip row (status filters, decision choice). */
+/** Single-select chip row (status filters, decision choice): the shared Chip, as a radiogroup. */
 export function ChoiceChips<T extends string>({
   options,
   value,
@@ -54,21 +54,9 @@ export function ChoiceChips<T extends string>({
 }) {
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={label} style={s.chips}>
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={o.label}
-            onPress={() => onChange(o.value)}
-            style={[s.chip, on && s.chipOn]}
-          >
-            <Text style={[s.chipText, on && s.chipTextOn]}>{o.label}</Text>
-          </Pressable>
-        );
-      })}
+      {options.map((o) => (
+        <Chip key={o.value} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} />
+      ))}
     </View>
   );
 }
@@ -130,19 +118,6 @@ const s = StyleSheet.create({
   label: { ...type.label, color: colors.navy950 },
   sub: { ...type.meta, color: colors.neutral600 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  chip: {
-    minHeight: 40,
-    paddingHorizontal: space.x3,
-    borderRadius: radius.control,
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.white,
-  },
-  chipOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
-  chipText: { ...type.label, color: colors.navy950 },
-  chipTextOn: { color: colors.white },
   consent: { flexDirection: "row", alignItems: "flex-start", gap: space.x3, minHeight: 48 },
   box: {
     width: 24,

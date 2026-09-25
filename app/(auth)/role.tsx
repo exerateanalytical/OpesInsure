@@ -97,7 +97,7 @@ export default function RoleSelect() {
               <Card>
                 <View style={styles.row}>
                   <View style={styles.icon}>
-                    <Icon size={30} color={colors.blue600} />
+                    <Icon size={30} color={colors.navy800} />
                   </View>
                   <View style={styles.copy}>
                     <Text style={styles.title}>{label}</Text>

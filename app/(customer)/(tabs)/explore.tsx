@@ -106,7 +106,7 @@ export default function Explore() {
                 style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
               >
                 <View style={styles.icon}>
-                  <Icon size={30} color={colors.blue600} />
+                  <Icon size={30} color={colors.navy800} />
                 </View>
                 <Text style={styles.label}>{t(c.label)}</Text>
                 <Text style={styles.meta}>{t(c.caption)}</Text>

@@ -37,7 +37,7 @@ export default function DeviceStatus() {
     <Screen>
       <AppHeader title={t("devTitle")} subtitle={t("devSubtitle")} back />
       <Card feature>
-        <ShieldAlert size={34} color={colors.blue600} />
+        <ShieldAlert size={34} color={colors.navy800} />
         <Text style={styles.title}>{Application.applicationName ?? "OpesInsure"}</Text>
         <Text style={styles.body}>{t("devPackage", { id: Application.applicationId ?? "development" })}</Text>
         <Text style={styles.body}>{t("devVersion", { version: environmentConfig.appVersion, build: environmentConfig.buildVersion })}</Text>

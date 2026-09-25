@@ -56,7 +56,7 @@ export default function Invitation() {
     <Screen>
       <AppHeader title={t("invTitle")} subtitle={t("invSubtitle")} back />
       <Card feature>
-        <Handshake size={32} color={colors.blue600} />
+        <Handshake size={32} color={colors.navy800} />
         <Text style={styles.title}>{t("invHow")}</Text>
         <Text style={styles.body}>{t("invBody1")}</Text>
         <Text style={styles.body}>{t("invSteps")}</Text>

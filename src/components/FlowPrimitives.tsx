@@ -18,7 +18,7 @@ export function FlowRow({
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} style={s.row}>
       <View style={s.icon}>
-        <Icon size={29} color={colors.blue600} />
+        <Icon size={29} color={colors.navy800} />
       </View>
       <View style={s.copy}>
         <Text style={s.title}>{title}</Text>
