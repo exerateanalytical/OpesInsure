@@ -574,3 +574,14 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+// Batch 10-3 — REQ-COM-003 commission statements: generation, adjustments (maker-checker), disputes (case engine).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Statements\Http\CommissionStatementController::class;
+    Route::post('commission-statements/generate', [$c, 'generate'])->middleware('permission:statements.prepare');
+    Route::post('partner-statements/{statement}/adjustments', [$c, 'propose'])->middleware('permission:commission.statements.adjust')->whereUuid('statement');
+    Route::post('partner-statement-adjustments/{item}/approve', [$c, 'approve'])->middleware('permission:commission.statements.adjustments.approve')->whereUuid('item');
+    Route::post('partner-statement-adjustments/{item}/reject', [$c, 'reject'])->middleware('permission:commission.statements.adjustments.approve')->whereUuid('item');
+    Route::post('partner-statements/{statement}/dispute', [$c, 'dispute'])->middleware('permission:commission.statements.dispute')->whereUuid('statement');
+    Route::post('partner-statements/{statement}/resolve-dispute', [$c, 'resolve'])->middleware('permission:commission.statements.dispute.resolve')->whereUuid('statement');
+});
+// End Batch 10-3
