@@ -21,13 +21,23 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 |---|---|---|
 | Deploy decisions batch `c0a8d01` | local | TODO: not confirmed live. Deploy before Batch 7 is merged. |
 | Batch 7A authority, 7B underwriting, 7C policy chronology | cloud | DONE (on branch, needs deploy) |
-| Batch 7D issuance ops (+ issuability gate on the payment→issuance path) | cloud agent | IN PROGRESS |
+| Batch 7D issuance ops (+ issuability gate on the payment→issuance path) | cloud | DONE (on branch) |
 | Batch 5/6 rules-engine follow-ups | cloud | DONE (on branch) |
 | Duplicate master-data lists + bordereau type set + test baseline triage | cloud | DONE (on branch) |
 | Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud | DONE (on branch) |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: Batch 7D merged, so Batch 7 is complete. Full suite 1163 passed / 0 failed.
+- Extra migration `2026_10_12_740001` (issuance_exceptions + sticker custody chain; backfills sticker_stock.custody_level).
+- PaymentIssuanceTrigger no longer swallows failures: they go to `issuance_exceptions` (API issuance-exceptions/*: scan, retry, escalate, resolve), and the
+  customer gets a one-time "issuance delayed" message. Territory now comes from data (risk facts → carrier → tenant), not a hard-coded CM.
+- Issuability gate (documents per decision 31, premium-to-cover per decision 17, KYC, underwriting) now runs on the payment→issuance path.
+  PAYMENT_PENDING with no underwriting case counts as straight-through approved.
+- Certificates with a sticker now require a motor policy (single assignToPolicy path). Sticker handovers carrier→broker→branch→agent need the receiver to accept.
+- New permissions to grant: policies.issuance_queue.{view,manage,resolve}, stickers.* (SYSTEM_ADMIN does not bypass them).
+- Nothing schedules the issuance-exception scan yet (Batch 8/9 item).
 
 ### 2026-09-25 cloud: merged 9 work items. Full pest suite 1151 passed / 0 failed.
 **Local, to deploy:** merge `origin/claude/charming-bohr-2fd2hk` into master, run the full suite, then the normal chain (backup → rehearse → deploy → verify-live).
