@@ -100,7 +100,7 @@ final class AuthorityService
         }
 
         $checkId = (string) Str::uuid();
-        DB::table('authority_checks')->insert([
+        $row = [
             'id' => $checkId, 'tenant_id' => $tenantId, 'carrier_id' => $agreement->carrier_id,
             'holder_type' => 'PARTNER', 'holder_id' => $agreement->partner_id, 'authority_type' => $authorityType, 'action' => $action,
             'subject_type' => $subject['type'], 'subject_id' => $subject['id'], 'line_code' => $lineCode,
@@ -108,13 +108,31 @@ final class AuthorityService
             'source' => $limit ? self::LIMIT_SOURCE : self::LEGACY_SOURCE, 'authority_limit_id' => $limit?->id,
             'delegated_authority_agreement_id' => $agreement->id, 'intermediary_authorization_id' => $intermediary['id'],
             'referral_case_id' => $caseId, 'checked_by' => $actor?->id, 'created_at' => now(),
-        ]);
-        $this->audit->record('authority.checked', 'authority_check', $checkId, [
-            'outcome' => $outcome, 'reason' => $reason, 'action' => $action, 'amount_minor' => $amountMinor, 'referral_case_id' => $caseId,
-        ]);
+        ];
+        $result = new AuthorityOutcome($outcome, $reason, $limit ? self::LIMIT_SOURCE : self::LEGACY_SOURCE, $limit?->id, $max,
+            $intermediary['id'], $caseId, $checkId, $row);
 
-        return new AuthorityOutcome($outcome, $reason, $limit ? self::LIMIT_SOURCE : self::LEGACY_SOURCE, $limit?->id, $max,
-            $intermediary['id'], $caseId, $checkId);
+        // A DENIED caller throws and rolls its transaction back; it must call record() after the rollback so the
+        // blocked attempt stays in the registry (owner decision on 7A). ALLOWED/REFERRED commit with the caller.
+        if ($outcome !== AuthorityOutcome::DENIED) {
+            $this->record($result);
+        }
+
+        return $result;
+    }
+
+    /** Append the decision to authority_checks (+ audit). Idempotent on the check id. */
+    public function record(AuthorityOutcome $outcome): void
+    {
+        $row = $outcome->record;
+        if (DB::table('authority_checks')->where('id', $row['id'])->exists()) {
+            return;
+        }
+        DB::table('authority_checks')->insert($row);
+        $this->audit->record('authority.checked', 'authority_check', $row['id'], [
+            'outcome' => $row['outcome'], 'reason' => $row['reason'], 'action' => $row['action'],
+            'amount_minor' => $row['amount_minor'], 'referral_case_id' => $row['referral_case_id'],
+        ]);
     }
 
     /**
