@@ -574,3 +574,15 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+// Batch 10-9 — REQ-ACC-004 technical accounting (written/earned/UPR, claims paid/outstanding/incurred, imported IBNR/life values).
+Route::prefix('v1/finance/technical')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $t = \App\Application\Ledger\Technical\Http\TechnicalAccountingController::class;
+    Route::get('reports/{report}', [$t, 'report'])->middleware('permission:technical_accounting.read')->where('report', 'premiums|claims|summary');
+    Route::get('actuarial-imports', [$t, 'listImports'])->middleware('permission:technical_accounting.read');
+    Route::get('actuarial-imports/{import}', [$t, 'showImport'])->middleware('permission:technical_accounting.read')->whereUuid('import');
+    Route::post('actuarial-imports', [$t, 'storeImport'])->middleware('permission:technical_accounting.actuarial.import');
+    Route::post('actuarial-imports/{import}/approve', [$t, 'approveImport'])->middleware('permission:technical_accounting.actuarial.approve')->whereUuid('import');
+    Route::post('actuarial-imports/{import}/reject', [$t, 'rejectImport'])->middleware('permission:technical_accounting.actuarial.approve')->whereUuid('import');
+    Route::post('upr-postings', [$t, 'postUpr'])->middleware('permission:technical_accounting.upr.post');
+});
+// End Batch 10-9
