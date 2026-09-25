@@ -845,3 +845,11 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Batch 14 E5 — REQ-HLT-004 health benefit schedules + accumulator (App\Application\Health\Benefits).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $hb = \App\Application\Health\Benefits\Http\BenefitController::class;
+    Route::get('health/benefits/remaining', [$hb, 'remaining'])->middleware('permission:health.benefits.view');
+    Route::get('health/benefit-schedules', [$hb, 'index'])->middleware('permission:health.benefits.view');
+    Route::post('health/benefit-schedules', [$hb, 'store'])->middleware('permission:health.benefits.manage');
+});
+// End Batch 14 E5
