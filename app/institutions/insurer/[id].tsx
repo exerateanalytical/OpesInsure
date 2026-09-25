@@ -200,6 +200,13 @@ function DirectorySections({ insurer }: { insurer: Parameters<typeof readDirecto
           ))}
         </>
       ) : null}
+      {(insurer.legal_footer ?? []).filter((l) => typeof l === "string" && l.trim()).length ? (
+        <Card>
+          {(insurer.legal_footer ?? []).filter((l) => typeof l === "string" && l.trim()).map((line, i) => (
+            <Text key={i} style={styles.legal}>{line}</Text>
+          ))}
+        </Card>
+      ) : null}
       {d.sources.length ? (
         <Text style={styles.source}>{t("directorySources", { sources: d.sources.join(", ") })}</Text>
       ) : null}
@@ -229,6 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   source: { ...type.meta, color: colors.neutral500, textAlign: "center" },
+  legal: { ...type.meta, color: colors.neutral600 },
   between: {
     flexDirection: "row",
     justifyContent: "space-between",

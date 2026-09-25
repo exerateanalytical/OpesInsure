@@ -126,6 +126,9 @@ export type Institution = {
   initials: string;
   /** Licensed logo (admin-uploaded); null until the institution has one. */
   logo_url?: string | null;
+  letterhead_available?: boolean;
+  /** Legal footer lines from the approved letterhead (public display only). */
+  legal_footer?: string[];
   city: string | null;
   code?: string;
   phone?: string | null;
