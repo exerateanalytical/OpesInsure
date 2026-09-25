@@ -202,6 +202,11 @@ final class DomainEventCatalogue
             $d('policy.premium.suspended', 'policy', 'Policy suspended on premium default (SUSPEND_ON_DEFAULT).', [], [], true),
             $d('policy.premium.lapsed', 'policy', 'Defaulted instalment lapsed after the rule lapse_after_days.', [], [], true),
             $d('policy.premium.instalment_settled', 'policy', 'Instalment paid in full or waived.', [], [], true),
+            // Batch 10-9 — REQ-ACC-004 (App\Application\Ledger\Technical)
+            $d('technical.actuarial_import.created', 'technical_actuarial_import', 'IBNR / life actuarial values imported as a new version awaiting approval (REQ-ACC-004).', [], [], true),
+            $d('technical.actuarial_import.approved', 'technical_actuarial_import', 'Actuarial import approved (maker-checker); previous approved version superseded.', [], [], true),
+            $d('technical.actuarial_import.rejected', 'technical_actuarial_import', 'Actuarial import rejected.', [], [], true),
+            $d('technical.upr.posted', 'technical_upr_posting', 'Period-end UPR computed and its movement posted to the ledger (REQ-ACC-004).', [], [], true),
             // Batch 9-1 — REQ-OBL-001 (App\Application\Finance\Obligations\ObligationService)
             $d('finance.obligation.created', 'financial_obligation', 'Financial obligation (receivable / payable) raised.', [], [], true),
             $d('finance.obligation.settled', 'financial_obligation', 'Financial obligation fully settled.', [], [], true),
