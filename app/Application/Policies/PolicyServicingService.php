@@ -54,7 +54,7 @@ final class PolicyServicingService
 
             $calculation = ['refund_minor' => 0, 'rule_id' => null];
             if ($data['type'] === 'CANCELLATION') {
-                $calculation = $this->cancellation->calculate($policy, $effectiveAt);
+                $calculation = $this->cancellation->calculate($policy, $effectiveAt, $data['initiated_by'] ?? null);
             }
 
             $termsAfter = array_replace_recursive($policy->terms_snapshot, $data['requested_changes'] ?? []);
