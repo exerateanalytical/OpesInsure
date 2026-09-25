@@ -10,6 +10,7 @@ import { SupportApi } from "@/api/client";
 import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { withoutRelock } from "@/lib/appLock";
 
 const CLOSED = ["RESOLVED", "CLOSED", "CANCELLED"];
 /** Categories the server already treats as HIGH priority
@@ -44,10 +45,10 @@ export default function SupportDetail() {
     });
   const attach = () =>
     run("attach", async () => {
-      const picked = await DocumentPicker.getDocumentAsync({
+      const picked = await withoutRelock(() => DocumentPicker.getDocumentAsync({
         type: ["image/jpeg", "image/png", "application/pdf"],
         copyToCacheDirectory: true,
-      });
+      }));
       const asset = picked.assets?.[0];
       if (picked.canceled || !asset) return;
       const form = new FormData();

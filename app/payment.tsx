@@ -9,8 +9,8 @@ import { useInsurance } from "@/store/insurance";
 import { humanize, isNotFound, isProviderNotConfigured, paymentStatusInfo, purchaseStep } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
-const STEPS = ["Initiated", "Awaiting confirmation", "Confirmed"];
 const POLL_MS = 5000;
 /** After this long without a decision, suggest leaving and checking later. */
 const PATIENCE_MS = 3 * 60 * 1000;
@@ -23,6 +23,8 @@ export default function Payment() {
   const refresh = useInsurance((s) => s.refreshPayment);
   const refreshPurchase = useInsurance((s) => s.refreshPurchase);
   const f = useFormatters();
+  const { t, td } = useTranslation();
+  const STEPS = [t("payStepInitiated"), t("payStepAwaiting"), t("payStepConfirmed")];
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [startedAt] = useState(() => Date.now());
@@ -72,43 +74,43 @@ export default function Payment() {
 
   return (
     <Screen>
-      <AppHeader title="Authorize payment" subtitle="Status is verified with the server" />
+      <AppHeader title={t("payTitle")} subtitle={t("paySubtitle")} />
       <Stepper steps={STEPS} current={step.step} failed={step.failed} done={step.done} />
       <Card feature style={st.center}>
         <View style={st.icon}>
           <Smartphone size={36} color={colors.blue600} />
         </View>
-        <StatusChip label={payment ? pInfo.label : "Recovering"} tone={payment ? pInfo.tone : "warning"} />
+        <StatusChip label={payment ? pInfo.label : t("payRecovering")} tone={payment ? pInfo.tone : "warning"} />
         {step.failed ? (
           <>
-            <Text style={ps.title}>Payment not completed</Text>
-            <Text style={[ps.body, st.text]}>The operator reported the payment as {humanize(payment?.status).toLowerCase() || "failed"}. Nothing was taken from your wallet. You can try again.</Text>
+            <Text style={ps.title}>{t("payNotCompleted")}</Text>
+            <Text style={[ps.body, st.text]}>
+              {t("payFailedBody", { status: payment?.status ? td(`status_${payment.status}`, payment.status).toLowerCase() : t("payFailedDefault") })}
+            </Text>
           </>
         ) : payment ? (
           <>
-            <Text style={ps.title}>Check your phone</Text>
-            <Text style={[ps.body, st.text]}>
-              Approve the {humanize(payment.provider)} prompt on {payment.payer_phone_e164}. Never share your PIN.
-            </Text>
+            <Text style={ps.title}>{t("payCheckPhone")}</Text>
+            <Text style={[ps.body, st.text]}>{t("payApprove", { provider: humanize(payment.provider), phone: payment.payer_phone_e164 })}</Text>
             <Text style={ps.title}>{f.xaf(payment.amount_minor)}</Text>
           </>
         ) : (
-          <Text style={ps.title}>Recovering secure payment…</Text>
+          <Text style={ps.title}>{t("payRecoveringBody")}</Text>
         )}
       </Card>
-      {error ? isProviderNotConfigured(error) ? <ProviderNotConfigured error={error} /> : <ErrorCard error={error} fallback="Status could not be verified. Your payment is safe; try again." /> : null}
+      {error ? isProviderNotConfigured(error) ? <ProviderNotConfigured error={error} /> : <ErrorCard error={error} fallback={t("payStatusFailed")} /> : null}
       {waitingLong ? (
         <Card>
-          <Text style={ps.body}>Still waiting for the operator. You can leave this screen — we keep checking and you will be notified when the payment is confirmed.</Text>
+          <Text style={ps.body}>{t("payWaitingLong")}</Text>
         </Card>
       ) : null}
       {step.failed ? (
-        <Button label="Try payment again" onPress={() => router.replace({ pathname: "/checkout", params: { proposalId: payment?.proposal_id ?? proposalId ?? "" } })} />
+        <Button label={t("payTryAgain")} onPress={() => router.replace({ pathname: "/checkout", params: { proposalId: payment?.proposal_id ?? proposalId ?? "" } })} />
       ) : (
-        <Button label="Refresh verified status" loading={checking} variant="secondary" onPress={() => void check()} />
+        <Button label={t("payRefresh")} loading={checking} variant="secondary" onPress={() => void check()} />
       )}
       <Button
-        label="Check later"
+        label={t("payCheckLater")}
         variant="tertiary"
         onPress={() => {
           const id = payment?.proposal_id ?? proposalId;

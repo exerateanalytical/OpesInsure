@@ -9,10 +9,12 @@ import { PaymentsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, receiptView } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
 
 export default function Receipt() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFormatters();
+  const { t, td } = useTranslation();
   const { data, loading, error, reload } = useLoad(() => PaymentsApi.receipt(id), [id]);
   const [openError, setOpenError] = useState<string | null>(null);
   const r = data ? receiptView(data as unknown as Record<string, unknown>) : null;
@@ -23,38 +25,38 @@ export default function Receipt() {
     try {
       await Linking.openURL(r.downloadUrl);
     } catch {
-      setOpenError("The receipt PDF could not be opened on this device.");
+      setOpenError(t("rcPdfFailed"));
     }
   };
 
   return (
     <Screen>
-      <AppHeader title="Official receipt" back />
-      {loading && !data ? <LoadingState label="Loading receipt…" /> : null}
-      {error && !data ? <ErrorCard error={error} fallback="The receipt could not be loaded." onRetry={() => void reload()} /> : null}
+      <AppHeader title={t("rcTitle")} back />
+      {loading && !data ? <LoadingState label={t("rcLoading")} /> : null}
+      {error && !data ? <ErrorCard error={error} fallback={t("rcLoadFailed")} onRetry={() => void reload()} /> : null}
       {r ? (
         <>
           <Card feature>
-            <StatusChip label={r.status && r.status !== "SUCCEEDED" ? humanize(r.status) : "Paid"} tone={r.status && r.status !== "SUCCEEDED" ? "warning" : "success"} />
+            <StatusChip label={r.status && r.status !== "SUCCEEDED" ? td(`status_${r.status}`, humanize(r.status)) : t("rcPaid")} tone={r.status && r.status !== "SUCCEEDED" ? "warning" : "success"} />
             <Text style={ps.title}>{f.xaf(r.amountMinor)}</Text>
             <Rule />
-            <InfoRow label="Receipt number" value={r.number} />
-            <InfoRow label="Issued" value={f.dateTime(r.issuedAt)} />
-            {r.provider ? <InfoRow label="Network" value={humanize(r.provider)} /> : null}
-            {r.payer ? <InfoRow label="Paid from" value={r.payer} /> : null}
-            <Text style={ps.meta}>This receipt proves payment, not insurance cover. Your policy certificate is the proof of cover.</Text>
+            <InfoRow label={t("rcNumber")} value={r.number} />
+            <InfoRow label={t("rcIssued")} value={f.dateTime(r.issuedAt)} />
+            {r.provider ? <InfoRow label={t("pmNetwork")} value={humanize(r.provider)} /> : null}
+            {r.payer ? <InfoRow label={t("rcPaidFrom")} value={r.payer} /> : null}
+            <Text style={ps.meta}>{t("rcNotCover")}</Text>
           </Card>
           {r.downloadUrl ? (
-            <Button label="Open PDF receipt" icon={Download} onPress={() => void openPdf()} />
+            <Button label={t("rcOpenPdf")} icon={Download} onPress={() => void openPdf()} />
           ) : (
-            <Text style={ps.meta}>A PDF copy is not available for this receipt yet. The details above are the official record.</Text>
+            <Text style={ps.meta}>{t("rcNoPdf")}</Text>
           )}
           {openError ? <Text style={ps.error}>{openError}</Text> : null}
           <Button
-            label="Share receipt details"
+            label={t("rcShare")}
             icon={Share2}
             variant="secondary"
-            onPress={() => void Share.share({ message: `OpesInsure receipt ${r.number}\nAmount: ${f.xaf(r.amountMinor)}\nIssued: ${f.dateTime(r.issuedAt)}` })}
+            onPress={() => void Share.share({ message: t("rcShareMessage", { number: r.number, amount: f.xaf(r.amountMinor), date: f.dateTime(r.issuedAt) }) })}
           />
         </>
       ) : null}

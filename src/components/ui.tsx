@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { ChevronLeft, LucideIcon } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { formatXaf, useTranslation } from "@/i18n";
 
 export function Screen({
   children,
@@ -34,7 +35,9 @@ export function Screen({
   // Without a footer the screen owns the bottom inset so the last button is
   // never hidden under the Android nav bar / iOS home indicator.
   const bottom = footer ? 0 : insets.bottom;
-  const body = <View style={[styles.screenBody, style]}>{children}</View>;
+  // Without its own ScrollView the body fills the screen, so a virtualized
+  // list (FlatList) can take the remaining height and scroll by itself.
+  const body = <View style={[styles.screenBody, !scroll && styles.flex, style]}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <KeyboardAvoidingView
@@ -75,12 +78,13 @@ export function AppHeader({
   action?: ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   return (
     <View style={styles.header}>
       {back && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t("back")}
           hitSlop={8}
           onPress={() => router.back()}
           style={styles.iconButton}
@@ -184,7 +188,7 @@ export function TextField({
         accessibilityLabel={label}
         accessibilityHint={hint}
         accessibilityState={{ disabled: props.editable === false }}
-        placeholderTextColor={colors.neutral400}
+        placeholderTextColor={colors.neutral500}
         style={[styles.input, error && styles.inputError]}
         {...props}
       />
@@ -239,9 +243,11 @@ export function Money({
   amount: number;
   size?: "normal" | "large";
 }) {
+  const { language } = useTranslation();
+  const text = formatXaf(amount, language);
   return (
-    <Text accessibilityLabel={`${amount} FCFA`} style={size === "large" ? styles.moneyLarge : styles.money}>
-      {new Intl.NumberFormat("fr-CM").format(amount)} FCFA
+    <Text accessibilityLabel={text} style={size === "large" ? styles.moneyLarge : styles.money}>
+      {text}
     </Text>
   );
 }

@@ -244,8 +244,12 @@ test("patch three demo data covers operational claim lifecycle", () => {
 });
 test("settlement payment screen warns against advance fee fraud", () => {
   const screen = read("app/claim/[id]/settlement-payment.tsx");
-  assert.match(screen, /never asks you to pay a fee/i);
-  assert.match(screen, /server/i);
+  // Copy lives in the EN/FR catalogue since 1.3.0.
+  assert.match(screen, /t\("settlePayWarning"\)/);
+  assert.match(screen, /t\("settlePaySubtitle"\)/);
+  assert.match(read("src/i18n/en.ts"), /never asks you to pay a fee/i);
+  assert.match(read("src/i18n/en.ts"), /settlePaySubtitle: "Payment status is verified by the server"/);
+  assert.match(read("src/i18n/fr.ts"), /ne vous demande jamais de payer des frais/);
 });
 test("patch four agent routes use a dedicated role guard", () => {
   const layout = read("app/_layout.tsx");
@@ -405,7 +409,8 @@ test("patch seven enforces server-driven release and maintenance gates", () => {
   assert.match(runtime, /force_update/);
   assert.match(runtime, /minimum_version/);
   assert.match(runtime, /maintenance\.active/);
-  assert.match(gate, /Update required/);
+  assert.match(gate, /t\("gateUpdateTitle"\)/);
+  assert.match(read("src/i18n/en.ts"), /gateUpdateTitle: "Update required"/);
 });
 test("patch seven requires purpose-bound step-up grants for sensitive actions", () => {
   const client = read("src/api/client.ts");

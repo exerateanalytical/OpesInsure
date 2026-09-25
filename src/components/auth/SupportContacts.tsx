@@ -10,9 +10,12 @@ export function useSupportContacts() {
   const [contacts, setContacts] = useState<SupportContacts | null>(null);
   useEffect(() => {
     let live = true;
-    void SupportContactsApi.get().then((c) => {
-      if (live) setContacts(c);
-    });
+    SupportContactsApi.get()
+      .then((c) => {
+        if (live) setContacts(c);
+      })
+      // Contacts are optional here: no rows render when they cannot load.
+      .catch(() => undefined);
     return () => {
       live = false;
     };
@@ -70,6 +73,6 @@ export function SupportContactList({
 const styles = StyleSheet.create({
   list: { gap: space.x1 },
   heading: { ...type.cardTitle, color: colors.navy950 },
-  row: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 40 },
+  row: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 44 },
   label: { ...type.label, color: colors.blue600, flex: 1 },
 });

@@ -1,5 +1,7 @@
 import { useSession } from "@/store/session";
 import { copy, CopyKey, Language } from "@/i18n/strings";
+import { setApiErrorLocalizer } from "@/api/client";
+import { apiErrorCopyKey } from "@/lib/apiErrors";
 
 export type Vars = Record<string, string | number>;
 
@@ -16,6 +18,18 @@ export const translateDynamic = (language: Language, key: string, fallback: stri
   const en = copy.en as Record<string, string>;
   return table[key] ?? en[key] ?? fallback.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 };
+
+/** Translate outside React (class components, stores, error mapping). */
+export const translateNow = (key: CopyKey, vars?: Vars) =>
+  translate(useSession.getState().language, key, vars);
+
+// Backend error codes → EN/FR copy in the user's current language.
+setApiErrorLocalizer((code, status) => {
+  const key = apiErrorCopyKey(code);
+  if (key) return translateNow(key);
+  if (status === 404) return translateNow("errNotFound");
+  return null;
+});
 
 export function useTranslation() {
   const language = useSession((state) => state.language);

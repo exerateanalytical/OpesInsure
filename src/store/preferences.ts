@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SecureJson } from "@/security/secureJson";
 
 /**
- * Small device-local preferences for the customer shell. Nothing here is a
- * secret; tokens stay in SecureStore (TokenVault).
+ * Small device-local preferences for the customer shell. Flags live in
+ * AsyncStorage; the profile extras (address, date of birth, beneficiaries)
+ * are PII and live in device-only SecureStore chunks (SecureJson).
  */
 const keys = {
   onboardingSeen: "opesinsure.onboarding_seen",
@@ -67,18 +69,31 @@ export const Preferences = {
   marketingConsent: async () => (await read(keys.marketingConsent)) === "1",
   setMarketingConsent: (value: boolean) => write(keys.marketingConsent, value ? "1" : "0"),
   profileExtras: async (): Promise<ProfileExtras> => {
+    const stored = await SecureJson.read<Partial<ProfileExtras> | null>(keys.profileExtras, null);
+    if (stored) return { ...emptyProfileExtras, ...stored };
+    // One-time move of the pre-1.3 plain AsyncStorage copy.
     const raw = await read(keys.profileExtras);
     if (!raw) return emptyProfileExtras;
     try {
-      return { ...emptyProfileExtras, ...(JSON.parse(raw) as Partial<ProfileExtras>) };
+      const legacy = { ...emptyProfileExtras, ...(JSON.parse(raw) as Partial<ProfileExtras>) };
+      await SecureJson.write(keys.profileExtras, legacy).catch(() => undefined);
+      await write(keys.profileExtras, null);
+      return legacy;
     } catch {
       return emptyProfileExtras;
     }
   },
-  saveProfileExtras: (extras: ProfileExtras) => write(keys.profileExtras, JSON.stringify(extras)),
+  saveProfileExtras: async (extras: ProfileExtras) => {
+    try {
+      await SecureJson.write(keys.profileExtras, extras);
+    } catch {
+      // Keystore unavailable: the extras just are not kept on this device.
+    }
+  },
   /** Removed on sign-out: personal data must not outlive the session. */
   clearPersonal: async () => {
     await write(keys.profileExtras, null);
+    await SecureJson.remove(keys.profileExtras);
     await write(keys.marketingConsent, null);
     await write(keys.pendingOnboarding, null);
   },

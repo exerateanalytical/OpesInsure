@@ -5,6 +5,7 @@ import { InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/Purch
 import { Proposal, QuoteOffer } from "@/api/client";
 import { localized, normalizeCoverage, providerName } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
+import { useTranslation } from "@/i18n";
 
 /**
  * What the customer is agreeing to: insurer, product, price breakdown,
@@ -13,6 +14,7 @@ import { useFormatters } from "@/hooks/useFormatters";
  */
 export function ProposalSummary({ proposal, offer }: { proposal: Proposal; offer?: QuoteOffer | null }) {
   const f = useFormatters();
+  const { t: tr } = useTranslation();
   const t = proposal.terms_snapshot;
   const source = proposal.offer ?? offer ?? null;
   const cover = normalizeCoverage(t?.coverage_snapshot ?? source?.coverage_snapshot, f.language);
@@ -20,29 +22,29 @@ export function ProposalSummary({ proposal, offer }: { proposal: Proposal; offer
   return (
     <>
       <Card>
-        <Text style={ps.meta}>{source ? providerName(source) : "Licensed insurance carrier"}</Text>
-        <Text style={ps.title}>{localized(source?.product?.name, f.language) || "Insurance policy"}</Text>
-        <InfoRow label="Application" value={proposal.proposal_number} />
+        <Text style={ps.meta}>{source ? providerName(source) : tr("licensedCarrier")}</Text>
+        <Text style={ps.title}>{localized(source?.product?.name, f.language) || tr("insurancePolicy")}</Text>
+        <InfoRow label={tr("sumApplication")} value={proposal.proposal_number} />
         <Rule />
-        <InfoRow label="Premium" value={f.xaf(t?.premium_minor)} />
-        <InfoRow label="Taxes" value={f.xaf(t?.tax_minor)} />
-        <InfoRow label="Fees" value={f.xaf(t?.fee_minor)} />
-        <InfoRow label="Total to pay" value={f.xaf(t?.total_minor)} strong />
+        <InfoRow label={tr("sumPremium")} value={f.xaf(t?.premium_minor)} />
+        <InfoRow label={tr("sumTaxes")} value={f.xaf(t?.tax_minor)} />
+        <InfoRow label={tr("sumFees")} value={f.xaf(t?.fee_minor)} />
+        <InfoRow label={tr("sumTotalToPay")} value={f.xaf(t?.total_minor)} strong />
         <Rule />
-        <InfoRow label="Cover starts" value={t?.coverage_starts_at ? f.date(t.coverage_starts_at) : "When payment is confirmed"} />
-        <InfoRow label="Cover ends" value={t?.coverage_ends_at ? f.date(t.coverage_ends_at) : "12 months after start"} />
-        <InfoRow label="Excess / deductible" value={cover.excessMinor === null ? "Not stated" : f.xaf(cover.excessMinor)} />
+        <InfoRow label={tr("sumCoverStarts")} value={t?.coverage_starts_at ? f.date(t.coverage_starts_at) : tr("sumWhenPaid")} />
+        <InfoRow label={tr("sumCoverEnds")} value={t?.coverage_ends_at ? f.date(t.coverage_ends_at) : tr("sumTwelveMonths")} />
+        <InfoRow label={tr("sumExcess")} value={cover.excessMinor === null ? tr("sumNotStated") : f.xaf(cover.excessMinor)} />
       </Card>
       {included.length || cover.exclusions.length ? (
         <Card>
-          <Text style={ps.title}>What is covered</Text>
+          <Text style={ps.title}>{tr("sumWhatCovered")}</Text>
           {included.map((c) => (
-            <InfoRow key={c.code} label={c.name} value={c.limitMinor !== null ? f.xaf(c.limitMinor) : "Included"} />
+            <InfoRow key={c.code} label={c.name} value={c.limitMinor !== null ? f.xaf(c.limitMinor) : tr("sumIncluded")} />
           ))}
           {cover.exclusions.length ? (
             <>
               <Rule />
-              <Text style={ps.title}>Key exclusions</Text>
+              <Text style={ps.title}>{tr("sumKeyExclusions")}</Text>
               {cover.exclusions.map((e) => (
                 <Text key={e.code} style={ps.meta}>
                   • {e.name}

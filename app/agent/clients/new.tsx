@@ -70,13 +70,18 @@ export default function NewAgentClient() {
               router.replace(`/agent/clients/${c.id}`);
             } catch (e) {
               if (e instanceof ApiError && e.status === 0) {
-                await OfflineVault.enqueue({
+                // OFFLINE_QUEUE_FULL (localized) surfaces instead of crashing.
+                const queued = await OfflineVault.enqueue({
                   kind: "MUTATION",
                   resource: "Consented agent client registration",
                   method: "POST",
                   path: "/mobile/partner/agent/clients",
                   payload,
+                }).catch((queueError: unknown) => {
+                  setError(errorMessage(queueError));
+                  return null;
                 });
+                if (!queued) return;
                 Alert.alert(
                   "Saved for sync",
                   "You're offline, so this client record will be created once the connection is back. It stays queued in Sync Centre until then.",

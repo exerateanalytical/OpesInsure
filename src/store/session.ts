@@ -6,6 +6,8 @@ import { CustomerApi } from "@/api/customer";
 import { Preferences } from "@/store/preferences";
 import { Language } from "@/i18n/strings";
 import { OfflineVault } from "@/offline/vault";
+import { SecureJson } from "@/security/secureJson";
+import { PaymentAttemptKeys } from "@/store/insurance";
 
 export type SessionStatus =
   "booting" | "anonymous" | "authenticating" | "authenticated" | "error";
@@ -29,24 +31,24 @@ type SessionState = {
   clearError: () => void;
 };
 
-/** Last good bootstrap, so an offline cold start keeps the user signed in. */
-const CACHE_KEY = "opesinsure.session_cache";
+/** Last good bootstrap, so an offline cold start keeps the user signed in.
+ * It holds PII (name, phone, workspaces), so it lives in device-only
+ * SecureStore chunks, never in plain AsyncStorage. */
+const CACHE_KEY = "opesinsure.session_cache.v2";
+const LEGACY_CACHE_KEY = "opesinsure.session_cache";
 const cacheBootstrap = async (bootstrap: SessionBootstrap | null) => {
   try {
-    if (bootstrap) await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(bootstrap));
-    else await AsyncStorage.removeItem(CACHE_KEY);
+    // Drop the pre-1.3 plain-text copy whatever happens.
+    await AsyncStorage.removeItem(LEGACY_CACHE_KEY).catch(() => undefined);
+    if (bootstrap) await SecureJson.write(CACHE_KEY, bootstrap);
+    else await SecureJson.remove(CACHE_KEY);
   } catch {
     // Cache is best effort.
   }
 };
 const cachedBootstrap = async (): Promise<SessionBootstrap | null> => {
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as SessionBootstrap) : null;
-    return parsed?.user && Array.isArray(parsed.workspaces) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = await SecureJson.read<SessionBootstrap | null>(CACHE_KEY, null);
+  return parsed?.user && Array.isArray(parsed.workspaces) ? parsed : null;
 };
 
 /** Only a rejected credential ends the session; timeouts, DNS failures and
@@ -184,6 +186,7 @@ export const useSession = create<SessionState>((set, get) => ({
       await AuthApi.logout();
     } finally {
       await OfflineVault.clearSensitiveData();
+      await PaymentAttemptKeys.clear().catch(() => undefined);
       await cacheBootstrap(null);
       await Preferences.clearPersonal();
       set({ ...anonymousState, error: null });
@@ -195,6 +198,7 @@ export const useSession = create<SessionState>((set, get) => ({
     await CustomerApi.logoutAll();
     await TokenVault.clear();
     await OfflineVault.clearSensitiveData();
+    await PaymentAttemptKeys.clear().catch(() => undefined);
     await cacheBootstrap(null);
     await Preferences.clearPersonal();
     set({ ...anonymousState, error: null });

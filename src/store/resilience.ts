@@ -48,11 +48,16 @@ export const useResilience = create<ResilienceState>((set, get) => ({
     await get().refreshNetwork();
   },
   async refreshNetwork() {
-    const network = await Network.getNetworkStateAsync();
-    const online =
-      network.isConnected !== false && network.isInternetReachable !== false;
-    set({ online });
-    return online;
+    try {
+      const network = await Network.getNetworkStateAsync();
+      const online =
+        network.isConnected !== false && network.isInternetReachable !== false;
+      set({ online });
+      return online;
+    } catch {
+      // Network module unavailable: keep the last known state.
+      return get().online;
+    }
   },
   async syncNow() {
     if (get().syncing || !(await get().refreshNetwork())) return;

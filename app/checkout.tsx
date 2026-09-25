@@ -12,6 +12,7 @@ import { useSession } from "@/store/session";
 import { isProviderNotConfigured, proposalStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function Checkout() {
   const { proposalId } = useLocalSearchParams<{ proposalId?: string }>();
@@ -22,6 +23,7 @@ export default function Checkout() {
   const busy = useInsurance((s) => s.busy);
   const defaultPhone = useSession((s) => s.bootstrap?.user.phone_e164 ?? "");
   const f = useFormatters();
+  const { t } = useTranslation();
   const [phone, setPhone] = useState(defaultPhone);
   const [provider, setProvider] = useState<"mtn_momo" | "orange_money">("mtn_momo");
   const [loading, setLoading] = useState(true);
@@ -49,15 +51,15 @@ export default function Checkout() {
   if (!id)
     return (
       <Screen>
-        <AppHeader title="Review and pay" back />
+        <AppHeader title={t("coTitle")} back />
         <Card>
-          <Text style={ps.title}>No payable application found.</Text>
-          <Button label="My applications" variant="secondary" onPress={() => router.replace("/proposals")} />
+          <Text style={ps.title}>{t("coNoApplication")}</Text>
+          <Button label={t("myApplications")} variant="secondary" onPress={() => router.replace("/proposals")} />
         </Card>
       </Screen>
     );
-  if (loading && !proposal) return <Screen><AppHeader title="Review and pay" back /><LoadingState label="Loading your application…" /></Screen>;
-  if (!proposal) return <Screen><AppHeader title="Review and pay" back /><ErrorCard error={loadError} fallback="Your application could not be loaded." onRetry={() => void load()} /></Screen>;
+  if (loading && !proposal) return <Screen><AppHeader title={t("coTitle")} back /><LoadingState label={t("coLoading")} /></Screen>;
+  if (!proposal) return <Screen><AppHeader title={t("coTitle")} back /><ErrorCard error={loadError} fallback={t("coLoadFailed")} onRetry={() => void load()} /></Screen>;
 
   const info = proposalStatusInfo(proposal.status);
   const payable = info.stage === "payable";
@@ -75,19 +77,19 @@ export default function Checkout() {
 
   return (
     <Screen>
-      <AppHeader title="Review and pay" subtitle="Step 5 of 5 · Nothing is charged until you approve on your phone" back />
-      {loadError ? <ErrorCard error={loadError} fallback="Showing the last known terms; refresh failed." onRetry={() => void load()} /> : null}
+      <AppHeader title={t("coTitle")} subtitle={t("coSubtitle")} back />
+      {loadError ? <ErrorCard error={loadError} fallback={t("coStaleTerms")} onRetry={() => void load()} /> : null}
       <ProposalSummary proposal={proposal} offer={selectedOffer} />
       {!payable ? (
         <Card>
           <StatusChip label={info.label} tone={info.tone} />
           <Text style={ps.body}>{info.message}</Text>
-          <Button label="Open application" onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id: proposal.id } })} />
+          <Button label={t("coOpenApplication")} onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id: proposal.id } })} />
         </Card>
       ) : (
         <>
           <Card>
-            <Text style={ps.title}>Mobile Money network</Text>
+            <Text style={ps.title}>{t("coNetwork")}</Text>
             <View style={st.networks}>
               {(["mtn_momo", "orange_money"] as const).map((v) => (
                 <Pressable accessibilityRole="radio" accessibilityState={{ selected: provider === v }} key={v} style={[st.network, provider === v && st.selected]} onPress={() => setProvider(v)} disabled={busy}>
@@ -95,11 +97,11 @@ export default function Checkout() {
                 </Pressable>
               ))}
             </View>
-            <TextField label="Phone authorizing payment" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!busy} error={phone && !phoneValid ? "Use a Cameroon mobile number: +2376XXXXXXXX" : undefined} />
-            <Text style={ps.meta}>Your PIN is entered only in the operator prompt — never inside OpesInsure.</Text>
+            <TextField label={t("coPhone")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!busy} error={phone && !phoneValid ? t("coPhoneInvalid") : undefined} />
+            <Text style={ps.meta}>{t("coPinNote")}</Text>
           </Card>
-          {payError ? isProviderNotConfigured(payError) ? <ProviderNotConfigured error={payError} /> : <ErrorCard error={payError} fallback="The payment request failed. Nothing was charged." onRetry={() => void pay()} /> : null}
-          <Button label={`Request ${f.xaf(proposal.terms_snapshot?.total_minor)} payment`} icon={Smartphone} loading={busy} disabled={busy || !phoneValid} onPress={() => void pay()} />
+          {payError ? isProviderNotConfigured(payError) ? <ProviderNotConfigured error={payError} /> : <ErrorCard error={payError} fallback={t("coPayFailed")} onRetry={() => void pay()} /> : null}
+          <Button label={t("coRequest", { amount: f.xaf(proposal.terms_snapshot?.total_minor) })} icon={Smartphone} loading={busy} disabled={busy || !phoneValid} onPress={() => void pay()} />
         </>
       )}
     </Screen>

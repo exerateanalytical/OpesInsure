@@ -4,3 +4,14 @@ dist/
 _legacy_v0.3.0_backup/
 OPESINSURE_EXPO_*/
 OPESINSURE_CAMEROON_DEMO_DATA_v1*.json
+
+# Store / signing credentials (use EAS-managed credentials instead)
+credentials/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+.env*.local

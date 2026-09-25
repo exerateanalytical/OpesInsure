@@ -13,7 +13,9 @@ import {
   QuotesApi,
   TokenVault,
 } from "@/api/client";
-import { paymentIdempotencyKey } from "@/lib/purchase";
+import * as Crypto from "expo-crypto";
+import { paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
+import { SecureJson } from "@/security/secureJson";
 
 type Network = "mtn_momo" | "orange_money";
 export type InsuredPerson =
@@ -42,6 +44,20 @@ export const RecentProposals = {
       // Best effort only; the server remains the source of truth.
     }
   },
+};
+
+/** Random, persisted Idempotency-Key per payment attempt (no phone in it). */
+const PAYMENT_KEYS = "opesinsure.payment_attempt_keys";
+export const PaymentAttemptKeys = {
+  async forSlot(slot: string) {
+    const map = await SecureJson.read<Record<string, string>>(PAYMENT_KEYS, {});
+    const existing = map[slot];
+    if (existing) return paymentIdempotencyKey(existing);
+    const uuid = Crypto.randomUUID();
+    await SecureJson.write(PAYMENT_KEYS, rememberAttemptKey(map, slot, uuid)).catch(() => undefined);
+    return paymentIdempotencyKey(uuid);
+  },
+  clear: () => SecureJson.remove(PAYMENT_KEYS),
 };
 
 type State = {
@@ -210,7 +226,7 @@ export const useInsurance = create<State>((set, get) => ({
       let attempt = get().paymentAttempts[proposal.id] ?? 1;
       let created: Payment | null = null;
       for (let tries = 0; tries < 3; tries++) {
-        const key = paymentIdempotencyKey(proposal.id, attempt, provider, payer_phone_e164);
+        const key = await PaymentAttemptKeys.forSlot(paymentAttemptSlot(proposal.id, attempt, provider, payer_phone_e164));
         created = await InsuranceApi.createPayment({ proposal_id: proposal.id, provider, payer_phone_e164, idempotency_key: key });
         if (!FAILED.includes(created.status)) break;
         attempt += 1;
@@ -221,7 +237,8 @@ export const useInsurance = create<State>((set, get) => ({
       let payment = created;
       if (created.status === "CREATED") {
         try {
-          payment = await InsuranceApi.initiatePayment(created.id, `${paymentIdempotencyKey(proposal.id, attempt, provider, payer_phone_e164)}:init`);
+          const initKey = await PaymentAttemptKeys.forSlot(paymentAttemptSlot(proposal.id, attempt, provider, payer_phone_e164));
+          payment = await InsuranceApi.initiatePayment(created.id, `${initKey}:init`);
         } catch (e) {
           // e.g. 422 errors.provider "not configured": nothing was sent to the
           // operator, so there is nothing to recover or poll.

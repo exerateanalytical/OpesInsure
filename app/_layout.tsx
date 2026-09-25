@@ -71,6 +71,10 @@ export default function RootLayout() {
           <Stack.Screen name="account/data-usage" />
           <Stack.Screen name="security/step-up" />
           <Stack.Screen name="security/device-status" />
+          {/* Biometric lock + devices are offered to every role (partners
+              approve claims and money too), not only customers. */}
+          <Stack.Screen name="account/security" />
+          <Stack.Screen name="account/devices" />
           <Stack.Screen name="system/status" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
@@ -102,9 +106,7 @@ export default function RootLayout() {
           <Stack.Screen name="claim/[id]/settlement-payment" />
           <Stack.Screen name="account/profile" />
           <Stack.Screen name="account/language" />
-          <Stack.Screen name="account/devices" />
           <Stack.Screen name="account/notifications" />
-          <Stack.Screen name="account/security" />
           <Stack.Screen name="account/privacy" />
           <Stack.Screen name="onboarding/kyc" />
           <Stack.Screen name="assets/index" />

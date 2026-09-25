@@ -5,6 +5,7 @@ import { Check, LucideIcon } from "lucide-react-native";
 import { Card } from "@/components/ui";
 import { useColumns } from "@/components/responsive";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { translateNow } from "@/i18n";
 
 export type WorkspaceItem = {
   label: string;
@@ -112,8 +113,8 @@ export function Notice({ text, tone }: { text: string | null; tone: "ok" | "erro
   );
 }
 
-export function errorMessage(e: unknown, fallback = "The action could not be completed. Try again.") {
-  return e instanceof Error && e.message ? e.message : fallback;
+export function errorMessage(e: unknown, fallback?: string) {
+  return e instanceof Error && e.message ? e.message : (fallback ?? translateNow("errGeneric"));
 }
 
 const s = StyleSheet.create({

@@ -8,6 +8,8 @@ import {
   isProviderNotConfigured,
   normalizeCoverage,
   paymentIdempotencyKey,
+  paymentAttemptSlot,
+  rememberAttemptKey,
   policyStatusInfo,
   proposalStatusInfo,
   providerErrorMessage,
@@ -121,11 +123,26 @@ test("provider-not-configured is recognised (422 errors.provider and 503)", () =
   assert.equal(isProviderNotConfigured({ status: 422, message: "phone invalid", fields: { phone: ["x"] } }), false);
 });
 
-test("payment idempotency key is stable per proposal + attempt + payer", () => {
-  const a = paymentIdempotencyKey("p-1", 1, "mtn_momo", "+237 650 000 000");
-  assert.equal(a, paymentIdempotencyKey("p-1", 1, "mtn_momo", "+237650000000"));
-  assert.notEqual(a, paymentIdempotencyKey("p-1", 2, "mtn_momo", "+237650000000"));
-  assert.ok(a.length >= 16 && a.length <= 128);
+test("payment attempt slot is stable per proposal + attempt + payer", () => {
+  const a = paymentAttemptSlot("p-1", 1, "mtn_momo", "+237 650 000 000");
+  assert.equal(a, paymentAttemptSlot("p-1", 1, "mtn_momo", "+237650000000"));
+  assert.notEqual(a, paymentAttemptSlot("p-1", 2, "mtn_momo", "+237650000000"));
+});
+
+test("payment Idempotency-Key is a persisted random uuid and never carries the phone", () => {
+  const key = paymentIdempotencyKey("3f2a1c9e-0000-4000-8000-000000000001");
+  assert.equal(key, "pay:3f2a1c9e-0000-4000-8000-000000000001");
+  assert.doesNotMatch(key, /237650/);
+  const store = read("src/store/insurance.ts");
+  assert.match(store, /PaymentAttemptKeys\.forSlot\(paymentAttemptSlot\(proposal\.id, attempt/);
+  assert.match(store, /Crypto\.randomUUID\(\)/);
+  assert.doesNotMatch(store, /paymentIdempotencyKey\(proposal\.id/);
+  // Bounded map, newest last.
+  let map = {};
+  for (let i = 0; i < 25; i++) map = rememberAttemptKey(map, `s${i}`, `u${i}`);
+  assert.equal(Object.keys(map).length, 20);
+  assert.equal(map.s24, "u24");
+  assert.equal(map.s0, undefined);
 });
 
 test("refund payload matches the new contract and keeps legacy fields", () => {
@@ -187,7 +204,7 @@ test("client: one idempotency key per operation, reused on retry and after 401",
   assert.match(client, /return attemptRequest<T>\(path, \{ \.\.\.options, retryAuth: false \}\)/);
   // payment creation uses the caller's stable key in the header too
   assert.match(client, /idempotencyKey: payload\.idempotency_key/);
-  assert.match(read("src/store/insurance.ts"), /paymentIdempotencyKey\(proposal\.id, attempt/);
+  assert.match(read("src/store/insurance.ts"), /paymentAttemptSlot\(proposal\.id, attempt/);
 });
 
 test("screens use the fixed contracts", () => {
@@ -195,7 +212,8 @@ test("screens use the fixed contracts", () => {
   assert.match(read("app/wallet/index.tsx"), /usePagedList/);
   assert.match(read("app/payments/[id]/refund.tsx"), /refundPayload/);
   assert.match(read("app/payment.tsx"), /refreshPurchase/);
-  assert.match(read("app/payment.tsx"), /Check later/);
+  assert.match(read("app/payment.tsx"), /t\("payCheckLater"\)/);
+  assert.match(read("src/i18n/en.ts"), /payCheckLater: "Check later"/);
   assert.match(read("app/quotes/[id].tsx"), /setQuoteResult|loadQuote/);
   assert.match(read("app/quotes/[id].tsx"), /next_path/);
   assert.match(read("src/hooks/usePolicies.ts"), /WalletApi/);

@@ -63,6 +63,8 @@ export default function Questions() {
             {[true, false].map((v) => (
               <Pressable
                 key={String(v)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: a[q.id] === v }}
                 onPress={() => setA({ ...a, [q.id]: v })}
                 style={[st.choice, a[q.id] === v && st.selected]}
               >

@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Download, FileText, Trash2 } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { Preferences } from "@/store/preferences";
+import { LegalLinks } from "@/components/LegalLinks";
 import { useTranslation } from "@/i18n";
 import { colors, space, type } from "@/theme/tokens";
 
@@ -59,6 +60,7 @@ export default function Privacy() {
         <Button label={t("privacyDelete")} icon={Trash2} variant="danger" onPress={() => request("delete")} />
         <Text style={styles.meta}>{t("privacyRetentionNote")}</Text>
       </Card>
+      <LegalLinks />
       <Button label={t("termsAndPrivacy")} icon={FileText} variant="tertiary" onPress={() => router.push("/terms")} />
     </Screen>
   );

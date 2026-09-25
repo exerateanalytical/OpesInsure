@@ -66,7 +66,7 @@ export function PolicyDocumentsSection({ policyId }: { policyId: string }) {
   const awaiting = data ? awaitingCount(data) : 0;
 
   const row = (d: IssuedDocument) => (
-    <Pressable key={d.id} accessibilityRole="button" onPress={() => void Linking.openURL(d.download_url)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#E5E7EB", gap: 4 }}>
+    <Pressable key={d.id} accessibilityRole="button" onPress={() => void Linking.openURL(d.download_url)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.neutral200, gap: 4 }}>
       <View style={[ps.row, { justifyContent: "space-between" }]}>
         <View style={[ps.row, { flex: 1 }]}>
           <FileText size={16} color={colors.blue600} />
@@ -91,8 +91,8 @@ export function PolicyDocumentsSection({ policyId }: { policyId: string }) {
           const count = currentOnly(data?.groups.find((x) => x.group === g)?.documents ?? []).length;
           return (
             <Pressable key={g} accessibilityRole="tab" accessibilityState={{ selected: g === group }} onPress={() => setGroup(g)}
-              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: g === group ? colors.blue600 : "#EEF2F7" }}>
-              <Text style={{ color: g === group ? "#FFFFFF" : "#1F2937", fontWeight: "600" }}>{t(groupKey(g))}{count ? ` (${count})` : ""}</Text>
+              style={{ paddingHorizontal: 12, minHeight: 44, justifyContent: "center", borderRadius: 16, backgroundColor: g === group ? colors.blue600 : colors.neutral100 }}>
+              <Text style={{ color: g === group ? colors.white : colors.neutral950, fontWeight: "600" }}>{t(groupKey(g))}{count ? ` (${count})` : ""}</Text>
             </Pressable>
           );
         })}

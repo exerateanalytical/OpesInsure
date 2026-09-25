@@ -14,6 +14,7 @@ import {
 import { usePathname } from "expo-router";
 import { CircleCheck, Flag, X } from "lucide-react-native";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 import { IssueReportApi } from "@/api/client";
 
 /**
@@ -23,6 +24,7 @@ import { IssueReportApi } from "@/api/client";
  * MobileIssueReportController) and are reviewable from the admin panel.
  */
 export function IssueReportButton() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -39,7 +41,7 @@ export function IssueReportButton() {
 
   const submit = async () => {
     if (note.trim().length < 3) {
-      setError("Say a little more about what happened.");
+      setError(t("reportShort"));
       return;
     }
     setBusy(true);
@@ -49,7 +51,7 @@ export function IssueReportButton() {
       setSent(true);
       setTimeout(close, 1400);
     } catch {
-      setError("Could not send this report. Check your connection and try again.");
+      setError(t("reportFailed"));
     } finally {
       setBusy(false);
     }
@@ -59,7 +61,7 @@ export function IssueReportButton() {
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Report a problem on this screen"
+        accessibilityLabel={t("reportOpen")}
         hitSlop={8}
         onPress={() => setOpen(true)}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
@@ -67,7 +69,7 @@ export function IssueReportButton() {
         <Flag size={20} color={colors.white} />
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close} />
+        <Pressable style={styles.backdrop} onPress={close} accessibilityRole="button" accessibilityLabel={t("close")} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.sheetWrap}
@@ -76,15 +78,15 @@ export function IssueReportButton() {
             {sent ? (
               <View style={styles.sentState}>
                 <CircleCheck size={32} color={colors.success} />
-                <Text style={styles.sentText}>Thanks — this has been reported.</Text>
+                <Text style={styles.sentText}>{t("reportThanks")}</Text>
               </View>
             ) : (
               <>
                 <View style={styles.sheetHeader}>
-                  <Text style={styles.sheetTitle}>Report a problem</Text>
+                  <Text style={styles.sheetTitle}>{t("reportTitle")}</Text>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Close"
+                    accessibilityLabel={t("close")}
                     hitSlop={8}
                     onPress={close}
                   >
@@ -92,12 +94,12 @@ export function IssueReportButton() {
                   </Pressable>
                 </View>
                 <Text style={styles.screenTag} numberOfLines={1}>
-                  This screen: {pathname || "/"}
+                  {t("reportScreen", { path: pathname || "/" })}
                 </Text>
                 <TextInput
-                  accessibilityLabel="What went wrong"
-                  placeholder="What went wrong, or what looks broken?"
-                  placeholderTextColor={colors.neutral400}
+                  accessibilityLabel={t("reportWhat")}
+                  placeholder={t("reportPlaceholder")}
+                  placeholderTextColor={colors.neutral500}
                   multiline
                   numberOfLines={4}
                   value={note}
@@ -108,7 +110,7 @@ export function IssueReportButton() {
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Send report"
+                  accessibilityLabel={t("reportSend")}
                   disabled={busy}
                   onPress={() => void submit()}
                   style={({ pressed }) => [
@@ -120,7 +122,7 @@ export function IssueReportButton() {
                   {busy ? (
                     <ActivityIndicator color={colors.white} />
                   ) : (
-                    <Text style={styles.submitText}>Send report</Text>
+                    <Text style={styles.submitText}>{t("reportSend")}</Text>
                   )}
                 </Pressable>
               </>

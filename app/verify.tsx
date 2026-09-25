@@ -1,3 +1,76 @@
-import React,{useState}from'react';import{StyleSheet,Text}from'react-native';import{QrCode,Search,ShieldCheck,ShieldX}from'lucide-react-native';import{AppHeader,Button,Card,Screen,StatusChip,TextField}from'@/components/ui';import{PublicApi,PublicVerification}from'@/api/client';import{colors,type}from'@/theme/tokens';
-export default function Verify(){const[value,setValue]=useState('');const[result,setResult]=useState<PublicVerification|null>(null);const[loading,setLoading]=useState(false);const[error,setError]=useState<string|null>(null);const verify=async()=>{const reference=value.trim().toUpperCase();if(reference.length<6){setError('Enter a complete certificate, sticker or policy reference.');return}setLoading(true);setError(null);setResult(null);try{setResult(await PublicApi.verify(reference))}catch(e){setError(e instanceof Error?e.message:'Verification could not be completed.')}finally{setLoading(false)}};const valid=result?.result==='VALID';return <Screen><AppHeader title="Verify insurance" subtitle="Privacy-minimised public verification" back/><Card feature><QrCode size={40} color={colors.blue600}/><Text style={styles.title}>Enter a document reference</Text><TextField label="Certificate, sticker or policy reference" value={value} onChangeText={setValue} placeholder="OI-CM-..." autoCapitalize="characters" error={error??undefined}/><Button label="Verify document" icon={Search} loading={loading} disabled={value.trim().length<6} onPress={()=>void verify()}/></Card>{result?<Card>{valid?<ShieldCheck size={32} color={colors.success}/>:<ShieldX size={32} color={colors.danger}/>}<StatusChip label={result.result.replaceAll('_',' ')} tone={valid?'success':result.result==='NOT_FOUND'?'danger':'warning'}/><Text style={styles.title}>{valid?'Valid insurance record':'Document is not currently valid'}</Text>{result.carrier_name?<Text style={styles.body}>Insurer: {result.carrier_name}</Text>:null}{result.product_class?<Text style={styles.body}>Class: {result.product_class}</Text>:null}{result.coverage_starts_at&&result.coverage_ends_at?<Text style={styles.body}>Cover: {new Date(result.coverage_starts_at).toLocaleDateString()} — {new Date(result.coverage_ends_at).toLocaleDateString()}</Text>:null}<Text style={styles.note}>Checked {new Date(result.verified_at).toLocaleString()}</Text></Card>:null}<Text style={styles.note}>Only validity, insurer, product class and cover dates are displayed. Personal and financial information remains private.</Text></Screen>}
-const styles=StyleSheet.create({title:{...type.cardTitle,color:colors.navy950},body:{...type.body,color:colors.neutral700},note:{...type.meta,color:colors.neutral600}});
+import React, { useState } from "react";
+import { StyleSheet, Text } from "react-native";
+import { QrCode, Search, ShieldCheck, ShieldX } from "lucide-react-native";
+import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { PublicApi, PublicVerification } from "@/api/client";
+import { useFormatters } from "@/hooks/useFormatters";
+import { errorMessage } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
+import { colors, type } from "@/theme/tokens";
+
+export default function Verify() {
+  const { t, td } = useTranslation();
+  const f = useFormatters();
+  const [value, setValue] = useState("");
+  const [result, setResult] = useState<PublicVerification | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const verify = async () => {
+    const reference = value.trim().toUpperCase();
+    if (reference.length < 6) {
+      setError(t("vfRefShort"));
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      setResult(await PublicApi.verify(reference));
+    } catch (e) {
+      setError(errorMessage(e, t("vfFailed")));
+    } finally {
+      setLoading(false);
+    }
+  };
+  const valid = result?.result === "VALID";
+  return (
+    <Screen>
+      <AppHeader title={t("vfTitle")} subtitle={t("vfSubtitle")} back />
+      <Card feature>
+        <QrCode size={40} color={colors.blue600} />
+        <Text style={styles.title}>{t("vfEnterRef")}</Text>
+        <TextField
+          label={t("vfRefLabel")}
+          value={value}
+          onChangeText={setValue}
+          placeholder="OI-CM-..."
+          autoCapitalize="characters"
+          error={error ?? undefined}
+        />
+        <Button label={t("vfVerify")} icon={Search} loading={loading} disabled={value.trim().length < 6} onPress={() => void verify()} />
+      </Card>
+      {result ? (
+        <Card>
+          {valid ? <ShieldCheck size={32} color={colors.success} /> : <ShieldX size={32} color={colors.danger} />}
+          <StatusChip
+            label={td(`vfResult_${result.result}`, result.result)}
+            tone={valid ? "success" : result.result === "NOT_FOUND" ? "danger" : "warning"}
+          />
+          <Text style={styles.title}>{valid ? t("vfValid") : t("vfInvalid")}</Text>
+          {result.carrier_name ? <Text style={styles.body}>{t("vfInsurer", { name: result.carrier_name })}</Text> : null}
+          {result.product_class ? <Text style={styles.body}>{t("vfClass", { name: result.product_class })}</Text> : null}
+          {result.coverage_starts_at && result.coverage_ends_at ? (
+            <Text style={styles.body}>{t("vfCover", { range: f.range(result.coverage_starts_at, result.coverage_ends_at) })}</Text>
+          ) : null}
+          <Text style={styles.note}>{t("vfChecked", { date: f.dateTime(result.verified_at) })}</Text>
+        </Card>
+      ) : null}
+      <Text style={styles.note}>{t("vfPrivacy")}</Text>
+    </Screen>
+  );
+}
+const styles = StyleSheet.create({
+  title: { ...type.cardTitle, color: colors.navy950 },
+  body: { ...type.body, color: colors.neutral700 },
+  note: { ...type.meta, color: colors.neutral600 },
+});

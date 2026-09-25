@@ -6,6 +6,7 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen, SectionTitle, StatusChip, TextField } from "@/components/ui";
 import { ChoiceChips, errorMessage, Notice } from "@/components/portal/Workspace";
 import { CarrierClaimDetail, CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
+import { parseAmountMinor } from "@/lib/purchase";
 import { colors, space, type } from "@/theme/tokens";
 
 type Decision = "APPROVE" | "PARTIAL" | "DECLINE";
@@ -44,7 +45,8 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
       setBusy(null);
     }
   };
-  const amountMinor = Math.round(Number(amount.replace(/\s/g, "")) * 100);
+  // Locale-aware ("1 000,50" in FR); null when not a valid number.
+  const amountMinor = parseAmountMinor(amount) ?? 0;
   const decisionReady =
     decision !== null &&
     reason.trim().length > 1 &&

@@ -49,6 +49,8 @@ export default function AgentSaleNew() {
         {clients.map((c) => (
           <Pressable
             key={c.id}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: client === c.id }}
             style={[s.option, client === c.id && s.selected]}
             onPress={() => {
               setClient(c.id);
@@ -64,6 +66,8 @@ export default function AgentSaleNew() {
         {products.map((p) => (
           <Pressable
             key={p}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: product === p }}
             style={[s.option, product === p && s.selected]}
             onPress={() => setProduct(p)}
           >

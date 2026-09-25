@@ -10,6 +10,7 @@ import { CustomerApi } from "@/api/customer";
 import { Preferences, ProfileExtras, emptyProfileExtras, profileExtrasToNotes } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { withoutRelock } from "@/lib/appLock";
 
 const ID_TYPES = ["NATIONAL_ID", "PASSPORT", "RESIDENCE_PERMIT", "DRIVING_LICENCE"] as const;
 
@@ -61,7 +62,7 @@ export default function Kyc() {
         if (!permission.granted) throw new Error(t("cameraPermissionNeeded"));
       }
       const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.7, base64: true };
-      const result = source === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+      const result = source === "camera" ? await withoutRelock(() => ImagePicker.launchCameraAsync(options)) : await withoutRelock(() => ImagePicker.launchImageLibraryAsync(options));
       const asset = result.assets?.[0];
       if (result.canceled || !asset?.base64) return;
       const doc = await CustomerApi.uploadDocument({

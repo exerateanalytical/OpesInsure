@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { AlertTriangle, ChevronRight, Siren } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, SectionTitle, StatusChip } from "@/components/ui";
@@ -44,36 +44,66 @@ export default function Claims() {
       </Pressable>
     );
   };
-  return (
-    <Screen>
+  const emergency = (
+    <Card>
+      <View style={styles.row}>
+        <Siren size={22} color={colors.dangerText} />
+        <Text style={[styles.title, styles.flex]}>{t("emergencyTitle")}</Text>
+      </View>
+      <Text style={styles.body}>{t("emergencyBody")}</Text>
+      <Button label={t("emergencyAssistance")} variant="danger" onPress={() => router.push("/claim/emergency")} />
+    </Card>
+  );
+  const header = (
+    <View style={styles.header}>
       <AppHeader title={t("claims")} subtitle={t("claimsSubtitle")} />
       <Button label={t("reportIncident")} icon={AlertTriangle} onPress={() => router.push("/claim/new")} />
-      {q.loading && !q.data ? (
-        <LoadingState label={t("claimsLoading")} />
-      ) : q.error && !q.data ? (
-        <ErrorState onRetry={() => void q.reload()} />
-      ) : claims.length ? (
-        <>
-          {open.length ? <SectionTitle title={t("claimsOpen")} /> : null}
-          {open.map(row)}
-          {past.length ? <SectionTitle title={t("claimsPast")} /> : null}
-          {past.map(row)}
-        </>
-      ) : (
-        <EmptyState title={t("claimsEmpty")} message={t("claimsEmptyBody")} />
-      )}
-      <Card>
-        <View style={styles.row}>
-          <Siren size={22} color={colors.dangerText} />
-          <Text style={[styles.title, styles.flex]}>{t("emergencyTitle")}</Text>
-        </View>
-        <Text style={styles.body}>{t("emergencyBody")}</Text>
-        <Button label={t("emergencyAssistance")} variant="danger" onPress={() => router.push("/claim/emergency")} />
-      </Card>
+    </View>
+  );
+  if (!claims.length)
+    return (
+      <Screen>
+        {header}
+        {q.loading && !q.data ? (
+          <LoadingState label={t("claimsLoading")} />
+        ) : q.error && !q.data ? (
+          <ErrorState error={q.error} onRetry={() => void q.reload()} />
+        ) : (
+          <EmptyState title={t("claimsEmpty")} message={t("claimsEmptyBody")} />
+        )}
+        {emergency}
+      </Screen>
+    );
+  const sections = [
+    { key: "open", title: t("claimsOpen"), data: open },
+    { key: "past", title: t("claimsPast"), data: past },
+  ].filter((x) => x.data.length);
+  // Virtualized (SectionList): long claim histories stay smooth.
+  return (
+    <Screen scroll={false}>
+      <SectionList
+        sections={sections}
+        keyExtractor={(c) => c.id}
+        stickySectionHeadersEnabled={false}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={q.loading} onRefresh={() => void q.reload()} />}
+        ListHeaderComponent={header}
+        renderSectionHeader={({ section }) => <SectionTitle title={section.title} />}
+        renderItem={({ item }) => row(item)}
+        ItemSeparatorComponent={Separator}
+        SectionSeparatorComponent={Separator}
+        ListFooterComponent={<View style={styles.footer}>{emergency}</View>}
+      />
     </Screen>
   );
 }
+const Separator = () => <View style={styles.sep} />;
 const styles = StyleSheet.create({
+  content: { paddingBottom: space.x16 },
+  header: { gap: space.x4, marginBottom: space.x4 },
+  sep: { height: space.x3 },
+  footer: { marginTop: space.x6 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   chips: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
   flex: { flex: 1 },

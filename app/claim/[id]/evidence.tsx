@@ -13,6 +13,7 @@ import { uploadClaimEvidence } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { claimActionAllowed } from "@/lib/claimStatus";
 import { colors, space, type } from "@/theme/tokens";
+import { withoutRelock } from "@/lib/appLock";
 
 const MAX_VIDEO_SECONDS = 60;
 
@@ -51,11 +52,11 @@ export default function Evidence() {
       setError(t("cameraPermissionNeeded"));
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({
+    const result = await withoutRelock(() => ImagePicker.launchCameraAsync({
       mediaTypes: [media],
       quality: 0.8,
       videoMaxDuration: MAX_VIDEO_SECONDS,
-    });
+    }));
     const asset = result.assets?.[0];
     if (!result.canceled && asset)
       await upload(
@@ -65,11 +66,11 @@ export default function Evidence() {
   };
 
   const library = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const result = await withoutRelock(() => ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images", "videos"],
       quality: 0.8,
       videoMaxDuration: MAX_VIDEO_SECONDS,
-    });
+    }));
     const asset = result.assets?.[0];
     if (!result.canceled && asset) {
       const video = asset.type === "video";
@@ -81,11 +82,11 @@ export default function Evidence() {
   };
 
   const document = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
+    const result = await withoutRelock(() => DocumentPicker.getDocumentAsync({
       type: ["application/pdf", "image/jpeg", "image/png"],
       copyToCacheDirectory: true,
       multiple: false,
-    });
+    }));
     const asset = result.assets?.[0];
     if (!result.canceled && asset) await upload(asset, "DOCUMENT");
   };

@@ -2,19 +2,19 @@
     "expo": {
         "name": "OpesInsure",
         "slug": "opesinsure",
-        "version": "1.2.2",
+        "version": "1.3.0",
         "orientation": "portrait",
         "scheme": "opesinsure",
         "userInterfaceStyle": "light",
         "newArchEnabled": true,
         "ios": {
-            "supportsTablet": true,
+            "supportsTablet": false,
             "bundleIdentifier": "com.opesware.opesinsure",
             "associatedDomains": [
                 "applinks:insurance.opesdatacenter.tech"
             ],
             "infoPlist": {
-                "ITSAppUsesNonExemptEncryption": true,
+                "ITSAppUsesNonExemptEncryption": false,
                 "NSFaceIDUsageDescription": "Use Face ID to protect insurance and financial information."
             }
         },
@@ -44,8 +44,7 @@
             ],
             "permissions": [
                 "android.permission.RECORD_AUDIO",
-                "android.permission.USE_BIOMETRIC",
-                "android.permission.USE_FINGERPRINT"
+                "android.permission.USE_BIOMETRIC"
             ]
         },
         "plugins": [
@@ -70,7 +69,9 @@
             [
                 "expo-image-picker",
                 {
-                    "cameraPermission": "Allow OpesInsure to capture claim evidence."
+                    "cameraPermission": "Allow OpesInsure to capture claim evidence.",
+                    "microphonePermission": "Allow OpesInsure to record audio with claim videos.",
+                    "photosPermission": "Allow OpesInsure to attach photos and videos to your claims and KYC."
                 }
             ],
             "expo-document-picker",
@@ -88,7 +89,7 @@
         "icon": "./assets/icon.png",
         "owner": "opeswares-team",
         "runtimeVersion": {
-            "policy": "appVersion"
+            "policy": "fingerprint"
         },
         "updates": {
             "url": "https://u.expo.dev/257a3907-e58d-442b-914f-984d74c96767",

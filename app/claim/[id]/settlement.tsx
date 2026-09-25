@@ -1,89 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { Alert, Text } from "react-native";
+import React, { useState } from "react";
+import { Alert, StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  AppHeader,
-  Button,
-  Card,
-  Money,
-  Screen,
-  StatusChip,
-} from "@/components/ui";
-import { ClaimSettlement, ClaimsCompletionApi } from "@/api/client";
+import { AppHeader, Button, Card, Money, Screen, StatusChip } from "@/components/ui";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
+import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ClaimsCompletionApi } from "@/api/client";
 import { handleStepUpRequired } from "@/security/step-up";
+import { useLoad } from "@/hooks/useLoad";
+import { useFormatters } from "@/hooks/useFormatters";
+import { isNotFound } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
+import { colors, type } from "@/theme/tokens";
+
 export default function Settlement() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [x, setX] = useState<ClaimSettlement>();
-  useEffect(() => {
-    ClaimsCompletionApi.settlement(id).then(setX);
-  }, [id]);
-  if (!x)
-    return (
-      <Screen>
-        <AppHeader title="Settlement" back />
-        <Text>No settlement offer is currently available.</Text>
-      </Screen>
-    );
+  const { t, td } = useTranslation();
+  const { xaf, date } = useFormatters();
+  const { data: x, setData: setX, loading, error, reload } = useLoad(() => ClaimsCompletionApi.settlement(id), [id]);
+  const [actionError, setActionError] = useState<unknown>(null);
   const decide = (decision: "ACCEPT" | "REJECT") =>
     Alert.alert(
-      decision === "ACCEPT"
-        ? "Accept settlement?"
-        : "Reject and request review?",
-      decision === "ACCEPT"
-        ? "Acceptance is recorded against the settlement terms shown."
-        : "The claim remains open for review; no payment will be initiated.",
+      decision === "ACCEPT" ? t("settleAcceptQ") : t("settleRejectQ"),
+      decision === "ACCEPT" ? t("settleAcceptBody") : t("settleRejectBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: decision === "ACCEPT" ? "Accept" : "Reject",
+          text: decision === "ACCEPT" ? t("settleAccept") : t("settleReject"),
           style: decision === "REJECT" ? "destructive" : "default",
           onPress: async () => {
+            setActionError(null);
             try {
               setX(await ClaimsCompletionApi.decideSettlement(id, decision));
-            } catch (error) {
-              if (!handleStepUpRequired(error, "CLAIM_SETTLEMENT_DECISION", `/claim/${id}/settlement`)) throw error;
+            } catch (e) {
+              if (!handleStepUpRequired(e, "CLAIM_SETTLEMENT_DECISION", `/claim/${id}/settlement`)) setActionError(e);
             }
           },
         },
       ],
     );
+  if (!x)
+    return (
+      <Screen>
+        <AppHeader title={t("settleTitle")} back />
+        {loading ? (
+          <LoadingState label={t("settleLoading")} />
+        ) : error && !isNotFound(error) ? (
+          <ErrorState error={error} onRetry={() => void reload()} />
+        ) : (
+          <EmptyState title={t("settleNone")} message={t("settleNoneBody")} action={t("refresh")} onPress={() => void reload()} />
+        )}
+      </Screen>
+    );
   return (
     <Screen>
-      <AppHeader
-        title="Settlement offer"
-        subtitle={`Decision due ${x.decision_deadline.slice(0, 10)}`}
-        back
-      />
+      <AppHeader title={t("settleTitle")} subtitle={t("settleDue", { date: date(x.decision_deadline) })} back />
       <Card feature>
-        <StatusChip
-          label={x.status}
-          tone={x.status === "ACCEPTED" ? "success" : "warning"}
-        />
-        <Text>Assessed amount</Text>
+        <StatusChip label={td(`status_${x.status}`, x.status)} tone={x.status === "ACCEPTED" ? "success" : "warning"} />
+        <Text style={s.body}>{t("settleAssessed")}</Text>
         <Money amount={x.offered_minor / 100} />
-        <Text>
-          Deductible:{" "}
-          {new Intl.NumberFormat("fr-CM").format(x.deductible_minor / 100)} FCFA
-        </Text>
-        <Text>Net settlement</Text>
+        <Text style={s.body}>{t("settleDeductible", { amount: xaf(x.deductible_minor) })}</Text>
+        <Text style={s.body}>{t("settleNet")}</Text>
         <Money amount={x.net_minor / 100} size="large" />
-        <Text>{x.terms}</Text>
+        <Text style={s.body}>{x.terms}</Text>
       </Card>
+      {actionError ? <ErrorCard error={actionError} fallback={t("errGeneric")} onRetry={() => void reload()} retryLabel={t("refresh")} /> : null}
       {x.status === "OFFERED" ? (
         <>
-          <Button label="Accept settlement" onPress={() => decide("ACCEPT")} />
-          <Button
-            label="Reject and request review"
-            variant="secondary"
-            onPress={() => decide("REJECT")}
-          />
+          <Button label={t("settleAcceptCta")} onPress={() => decide("ACCEPT")} />
+          <Button label={t("settleRejectCta")} variant="secondary" onPress={() => decide("REJECT")} />
         </>
       ) : null}
-      <Button
-        label="Track settlement payment"
-        variant="secondary"
-        onPress={() => router.push(`/claim/${id}/settlement-payment`)}
-      />
+      <Button label={t("settleTrackPayment")} variant="secondary" onPress={() => router.push(`/claim/${id}/settlement-payment`)} />
     </Screen>
   );
 }
+const s = StyleSheet.create({ body: { ...type.body, color: colors.neutral700 } });

@@ -3,6 +3,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { CloudOff, Inbox, RefreshCw } from "lucide-react-native";
 import { Button, Card } from "./ui";
 import { colors, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
+import { apiErrorCopyKey } from "@/lib/apiErrors";
 
 export function EmptyState({
   title,
@@ -27,24 +29,29 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ onRetry }: { onRetry?: () => void }) {
+/** Load failure with retry. A known backend code (STALE_RECORD,
+ * INTEGRATION_UNAVAILABLE, ...) or a 404 shows its specific message. */
+export function ErrorState({ onRetry, error }: { onRetry?: () => void; error?: unknown }) {
+  const { t } = useTranslation();
+  const e = error as { code?: string; status?: number; message?: string } | null | undefined;
+  const specific = e && (apiErrorCopyKey(e.code) || e.status === 404) ? e.message : null;
   return (
     <Card style={styles.panel}>
       <View style={styles.icon}>
         <CloudOff size={24} color={colors.dangerText} />
       </View>
       <Text accessibilityRole="alert" style={styles.title}>
-        We could not load this information
+        {t("loadErrorTitle")}
       </Text>
-      <Text style={styles.message}>
-        Your information is safe. Check your connection and try again.
-      </Text>
-      <Button label="Retry" icon={RefreshCw} variant="secondary" onPress={onRetry} />
+      <Text style={styles.message}>{specific || t("loadErrorBody")}</Text>
+      {onRetry ? <Button label={t("retry")} icon={RefreshCw} variant="secondary" onPress={onRetry} /> : null}
     </Card>
   );
 }
 
-export function LoadingState({ label = "Loading…" }: { label?: string }) {
+export function LoadingState({ label: custom }: { label?: string }) {
+  const { t } = useTranslation();
+  const label = custom ?? t("loading");
   return (
     <View
       accessibilityRole="progressbar"
@@ -67,8 +74,8 @@ export function StatePanel<T>({
   data,
   onRetry,
   isEmpty,
-  emptyTitle = "Nothing here yet",
-  emptyMessage = "New items will appear here as soon as they are available.",
+  emptyTitle,
+  emptyMessage,
   loadingLabel,
   children,
 }: {
@@ -82,8 +89,9 @@ export function StatePanel<T>({
   loadingLabel?: string;
   children: (data: T) => ReactNode;
 }) {
+  const { t } = useTranslation();
   if (loading && data === undefined) return <LoadingState label={loadingLabel} />;
-  if (error && data === undefined) return <ErrorState onRetry={onRetry} />;
+  if (error && data === undefined) return <ErrorState onRetry={onRetry} error={error} />;
   if (data === undefined) return <LoadingState label={loadingLabel} />;
   const empty = isEmpty
     ? isEmpty(data)
@@ -91,9 +99,9 @@ export function StatePanel<T>({
   if (empty)
     return (
       <EmptyState
-        title={emptyTitle}
-        message={emptyMessage}
-        action="Refresh"
+        title={emptyTitle ?? t("emptyDefaultTitle")}
+        message={emptyMessage ?? t("emptyDefaultBody")}
+        action={t("refresh")}
         onPress={onRetry}
       />
     );

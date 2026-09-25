@@ -5,6 +5,7 @@ import { Button, Card, StatusChip } from "@/components/ui";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { isValidIsoDate, RiskOption } from "@/lib/riskSchema";
 import { errorMessage, Tone } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
 
 export function InfoRow({ label, value, strong }: { label: string; value: ReactNode; strong?: boolean }) {
   return (
@@ -23,7 +24,8 @@ export function Rule() {
   return <View style={s.rule} />;
 }
 
-export function ErrorCard({ error, fallback, onRetry, retryLabel = "Try again" }: { error: unknown; fallback: string; onRetry?: () => void; retryLabel?: string }) {
+export function ErrorCard({ error, fallback, onRetry, retryLabel }: { error: unknown; fallback: string; onRetry?: () => void; retryLabel?: string }) {
+  const { t } = useTranslation();
   return (
     <Card>
       <View style={s.inline}>
@@ -32,25 +34,27 @@ export function ErrorCard({ error, fallback, onRetry, retryLabel = "Try again" }
           {errorMessage(error, fallback)}
         </Text>
       </View>
-      {onRetry ? <Button label={retryLabel} variant="secondary" onPress={onRetry} /> : null}
+      {onRetry ? <Button label={retryLabel ?? t("tryAgain")} variant="secondary" onPress={onRetry} /> : null}
     </Card>
   );
 }
 
 export function LoadMore({ hasMore, loading, error, onPress }: { hasMore: boolean; loading: boolean; error?: unknown; onPress: () => void }) {
+  const { t } = useTranslation();
   if (!hasMore) return null;
   return (
     <View style={s.gap}>
-      {error ? <Text style={s.error}>{errorMessage(error, "More items could not be loaded.")}</Text> : null}
-      <Button label={error ? "Retry loading more" : "Load more"} variant="secondary" loading={loading} onPress={onPress} />
+      {error ? <Text style={s.error}>{errorMessage(error, t("loadMoreFailed"))}</Text> : null}
+      <Button label={error ? t("loadMoreRetry") : t("loadMore")} variant="secondary" loading={loading} onPress={onPress} />
     </View>
   );
 }
 
 /** Horizontal progress stepper (Initiated → Awaiting → Confirmed, wizard steps…). */
 export function Stepper({ steps, current, failed, done }: { steps: string[]; current: number; failed?: boolean; done?: boolean }) {
+  const { t } = useTranslation();
   return (
-    <View style={s.stepper} accessibilityRole="progressbar" accessibilityLabel={`Step ${current + 1} of ${steps.length}: ${steps[current] ?? ""}`}>
+    <View style={s.stepper} accessibilityRole="progressbar" accessibilityLabel={t("stepOf", { current: current + 1, total: steps.length, label: steps[current] ?? "" })}>
       {steps.map((label, i) => {
         const complete = i < current || (done && i === current);
         const active = i === current && !done;
@@ -75,19 +79,20 @@ export function ToneChip({ label, tone }: { label: string; tone: Tone }) {
 }
 
 /** Tappable select that opens a modal list — used for every enum field. */
-export function PickerField({ label, value, options, onChange, error, placeholder = "Choose…" }: { label: string; value: string | undefined; options: RiskOption[]; onChange: (v: string) => void; error?: string; placeholder?: string }) {
+export function PickerField({ label, value, options, onChange, error, placeholder }: { label: string; value: string | undefined; options: RiskOption[]; onChange: (v: string) => void; error?: string; placeholder?: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value);
   return (
     <View style={s.field}>
       <Text style={s.fieldLabel}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${current?.label ?? "not chosen"}`} onPress={() => setOpen(true)} style={[s.select, error ? s.selectError : null]}>
-        <Text style={[s.selectText, !current && s.placeholder]}>{current?.label ?? placeholder}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${current?.label ?? t("notChosen")}`} onPress={() => setOpen(true)} style={[s.select, error ? s.selectError : null]}>
+        <Text style={[s.selectText, !current && s.placeholder]}>{current?.label ?? placeholder ?? t("chooseOption")}</Text>
         <ChevronDown size={18} color={colors.neutral500} />
       </Pressable>
       {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close" />
+        <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t("close")} />
         <View style={s.sheet}>
           <Text style={s.sheetTitle}>{label}</Text>
           <FlatList
@@ -114,17 +119,25 @@ export function PickerField({ label, value, options, onChange, error, placeholde
   );
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthNames = (language: string) => {
+  try {
+    const f = new Intl.DateTimeFormat(language === "fr" ? "fr-CM" : "en-CM", { month: "short", timeZone: "UTC" });
+    return Array.from({ length: 12 }, (_, i) => f.format(new Date(Date.UTC(2000, i, 1))));
+  } catch {
+    return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  }
+};
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** Day / month / year pickers producing an ISO yyyy-mm-dd string. */
 export function DateField({ label, value, onChange, error, minYear, maxYear }: { label: string; value: string | undefined; onChange: (v: string) => void; error?: string; minYear?: number; maxYear?: number }) {
+  const { t, language } = useTranslation();
   const now = new Date().getFullYear();
   const lo = minYear ?? now - 100;
   const hi = maxYear ?? now + 2;
   const [y, m, d] = (value ?? "").split("-");
   const years = useMemo(() => Array.from({ length: hi - lo + 1 }, (_, i) => String(hi - i)).map((v) => ({ value: v, label: v })), [lo, hi]);
-  const months = MONTHS.map((label, i) => ({ value: pad(i + 1), label }));
+  const months = monthNames(language).map((label, i) => ({ value: pad(i + 1), label }));
   const days = Array.from({ length: 31 }, (_, i) => ({ value: pad(i + 1), label: String(i + 1) }));
   const set = (part: "y" | "m" | "d", v: string) => {
     const next = { y: y ?? "", m: m ?? "", d: d ?? "", [part]: v };
@@ -135,22 +148,23 @@ export function DateField({ label, value, onChange, error, minYear, maxYear }: {
     <View style={s.field}>
       <Text style={s.fieldLabel}>{label}</Text>
       <View style={s.dateRow}>
-        <View style={s.flex}><PickerField label="Day" value={d || undefined} options={days} onChange={(v) => set("d", v)} placeholder="Day" /></View>
-        <View style={s.flex}><PickerField label="Month" value={m || undefined} options={months} onChange={(v) => set("m", v)} placeholder="Month" /></View>
-        <View style={s.flex}><PickerField label="Year" value={y || undefined} options={years} onChange={(v) => set("y", v)} placeholder="Year" /></View>
+        <View style={s.flex}><PickerField label={t("dateDay")} value={d || undefined} options={days} onChange={(v) => set("d", v)} placeholder={t("dateDay")} /></View>
+        <View style={s.flex}><PickerField label={t("dateMonth")} value={m || undefined} options={months} onChange={(v) => set("m", v)} placeholder={t("dateMonth")} /></View>
+        <View style={s.flex}><PickerField label={t("dateYear")} value={y || undefined} options={years} onChange={(v) => set("y", v)} placeholder={t("dateYear")} /></View>
       </View>
-      {error && !incomplete ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : incomplete ? <Text style={s.hint}>Choose day, month and year.</Text> : null}
+      {error && !incomplete ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : incomplete ? <Text style={s.hint}>{t("dateIncomplete")}</Text> : null}
     </View>
   );
 }
 
 export function YesNoField({ label, value, onChange, error }: { label: string; value: string | undefined; onChange: (v: string) => void; error?: string }) {
+  const { t } = useTranslation();
   return (
     <View style={s.field}>
       <Text style={s.fieldLabel}>{label}</Text>
       <View style={s.dateRow}>
-        {[["true", "Yes"], ["false", "No"]].map(([v, l]) => (
-          <Pressable key={v} accessibilityRole="radio" accessibilityState={{ selected: value === v }} onPress={() => onChange(v!)} style={[s.choice, value === v && s.optionOn]}>
+        {[["true", t("yes")], ["false", t("no")]].map(([v, l]) => (
+          <Pressable key={v} accessibilityRole="radio" accessibilityLabel={`${label}: ${l}`} accessibilityState={{ selected: value === v }} onPress={() => onChange(v!)} style={[s.choice, value === v && s.optionOn]}>
             <Text style={s.optionText}>{l}</Text>
           </Pressable>
         ))}

@@ -48,6 +48,8 @@ export default function Emergency() {
         {options.map(([key, Icon, label]) => (
           <Pressable
             key={key}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: service === key }}
             style={[s.option, service === key && s.selected]}
             onPress={() => setService(key)}
           >

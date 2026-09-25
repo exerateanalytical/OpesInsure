@@ -13,25 +13,29 @@ import {
   TextField,
 } from "@/components/ui";
 import { CarrierApi, CarrierReferral } from "@/api/client";
+import { useTranslation } from "@/i18n";
+import { errorMessage } from "@/lib/purchase";
 export default function ReferralDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t, td } = useTranslation();
   const q = useLoad(() => CarrierApi.referral(id), [id]);
   const x: CarrierReferral | undefined = q.data;
   const setX = q.setData;
   const [note, setNote] = useState("");
   const decide = (d: "APPROVE" | "DECLINE" | "MORE_INFORMATION") =>
     Alert.alert(
-      "Record underwriting decision?",
-      `Decision: ${d.replaceAll("_", " ")}`,
+      t("refDecisionQ"),
+      t("refDecision", { decision: td(`refDecision_${d}`, d) }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Confirm",
+          text: t("refConfirm"),
           onPress: async () => {
             try {
               setX(await CarrierApi.decideReferral(id, d, note));
-            } catch {
-              Alert.alert("Decision not recorded", "Check the connection and try again.");
+            } catch (e) {
+              // AUTHORITY_EXCEEDED / STALE_RECORD / ... arrive localized.
+              Alert.alert(t("refNotRecorded"), errorMessage(e, t("errGeneric")));
             }
           },
         },

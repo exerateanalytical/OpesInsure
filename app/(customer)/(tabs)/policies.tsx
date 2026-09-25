@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { AppHeader, Button, Screen, SectionTitle } from "@/components/ui";
@@ -8,18 +8,13 @@ import { usePolicies } from "@/hooks/usePolicies";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { Pill } from "@/components/purchase/PurchaseUi";
 import { PolicyBucket, policyStatusInfo } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
 import { space } from "@/theme/tokens";
 
-const FILTERS: { key: PolicyBucket | "all"; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "active", label: "Active" },
-  { key: "pending", label: "Pending" },
-  { key: "expired", label: "Expired" },
-  { key: "cancelled", label: "Cancelled" },
-  { key: "suspended", label: "Suspended" },
-];
+const FILTERS: (PolicyBucket | "all")[] = ["all", "active", "pending", "expired", "cancelled", "suspended"];
 
 export default function Policies() {
+  const { t, td } = useTranslation();
   const { policies, loading, error, reload } = usePolicies();
   const [filter, setFilter] = useState<PolicyBucket | "all">("all");
   const counts = useMemo(() => {
@@ -31,42 +26,70 @@ export default function Policies() {
     return c;
   }, [policies]);
   const visible = filter === "all" ? policies : policies.filter((p) => policyStatusInfo(p.status).bucket === filter);
+  const header = (
+    <AppHeader
+      title={t("policies")}
+      subtitle={t("policiesSubtitle")}
+      action={<Button label={t("myApplications")} icon={FileText} variant="tertiary" onPress={() => router.push("/proposals")} />}
+    />
+  );
+  if (!policies.length)
+    return (
+      <Screen>
+        {header}
+        {loading ? (
+          <LoadingState label={t("policiesLoading")} />
+        ) : error ? (
+          <ErrorState error={error} onRetry={() => void reload()} />
+        ) : (
+          <EmptyState title={t("policiesEmpty")} message={t("policiesEmptyBody")} action={t("compareInsurance")} onPress={() => router.push("/quote/product")} />
+        )}
+      </Screen>
+    );
+  // Virtualized: a long policy history no longer renders every card at once.
   return (
-    <Screen>
-      <AppHeader
-        title="Policies"
-        subtitle="Your active and previous protection"
-        action={<Button label="My applications" icon={FileText} variant="tertiary" onPress={() => router.push("/proposals")} />}
-      />
-      {loading && !policies.length ? (
-        <LoadingState label="Loading policies…" />
-      ) : error && !policies.length ? (
-        <ErrorState onRetry={() => void reload()} />
-      ) : policies.length ? (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
-            {FILTERS.map((f) => (
-              <Pill key={f.key} label={`${f.label}${counts[f.key] ? ` (${counts[f.key]})` : ""}`} selected={filter === f.key} onPress={() => setFilter(f.key)} />
-            ))}
-          </ScrollView>
-          <SectionTitle title="Your policies" />
-          {visible.length ? (
-            visible.map((policy) => <PolicyCard key={policy.id} policy={policy} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policy.id } })} />)
-          ) : (
-            <EmptyState title="No policies with this status" message="Choose another filter to see your other policies." action="Show all" onPress={() => setFilter("all")} />
-          )}
-          <View style={st.gap}>
-            <Button label="Payments & receipts" variant="secondary" onPress={() => router.push("/payments")} />
+    <Screen scroll={false}>
+      <FlatList
+        data={visible}
+        keyExtractor={(p) => p.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={st.content}
+        ItemSeparatorComponent={Separator}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void reload()} />}
+        ListHeaderComponent={
+          <View style={st.header}>
+            {header}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
+              {FILTERS.map((key) => {
+                const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
+                return <Pill key={key} label={`${label}${counts[key] ? ` (${counts[key]})` : ""}`} selected={filter === key} onPress={() => setFilter(key)} />;
+              })}
+            </ScrollView>
+            <SectionTitle title={t("policiesYours")} />
           </View>
-        </>
-      ) : (
-        <EmptyState title="No policies yet" message="Your issued policies will appear here. Applications in progress are under My applications." action="Compare insurance" onPress={() => router.push("/quote/product")} />
-      )}
+        }
+        renderItem={({ item: policy }) => (
+          <PolicyCard policy={policy} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policy.id } })} />
+        )}
+        ListEmptyComponent={
+          <EmptyState title={t("policiesFilterEmpty")} message={t("policiesFilterEmptyBody")} action={t("showAll")} onPress={() => setFilter("all")} />
+        }
+        ListFooterComponent={
+          <View style={st.footer}>
+            <Button label={t("paymentsReceipts")} variant="secondary" onPress={() => router.push("/payments")} />
+          </View>
+        }
+      />
     </Screen>
   );
 }
 
+const Separator = () => <View style={st.sep} />;
+
 const st = StyleSheet.create({
+  content: { paddingBottom: space.x16 },
+  header: { gap: space.x4, marginBottom: space.x4 },
   filters: { gap: space.x2, paddingVertical: space.x1 },
-  gap: { gap: space.x2 },
+  sep: { height: space.x4 },
+  footer: { gap: space.x2, marginTop: space.x6 },
 });

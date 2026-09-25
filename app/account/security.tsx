@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
 import * as LocalAuthentication from "expo-local-authentication";
-import * as SecureStore from "expo-secure-store";
 import { Fingerprint, LogOut, Smartphone } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
-
-const BIOMETRIC_KEY = "opesinsure.biometric_enabled";
+import { BiometricLock } from "@/security/biometric";
+import { useRuntime } from "@/store/runtime";
+import { environmentConfig } from "@/config/environment";
+import { resolveLockPolicy } from "@/lib/appLock";
 
 export default function Security() {
   const { t } = useTranslation();
@@ -17,17 +18,17 @@ export default function Security() {
   const [enabled, setEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<"bio" | "all" | null>(null);
+  const runtimeSecurity = useRuntime((s) => s.bootstrap?.security);
+  const policy = resolveLockPolicy(runtimeSecurity, environmentConfig);
   useEffect(() => {
-    SecureStore.getItemAsync(BIOMETRIC_KEY)
-      .then((v) => setEnabled(v === "true"))
-      .catch(() => setEnabled(false));
+    void BiometricLock.enabled().then(setEnabled);
   }, []);
   const change = async () => {
     setBusy("bio");
     setMessage(null);
     try {
       if (enabled) {
-        await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
+        await BiometricLock.disable();
         setEnabled(false);
         return;
       }
@@ -39,7 +40,7 @@ export default function Security() {
       }
       const result = await LocalAuthentication.authenticateAsync({ promptMessage: t("biometricEnablePrompt") });
       if (result.success) {
-        await SecureStore.setItemAsync(BIOMETRIC_KEY, "true");
+        await BiometricLock.enable();
         setEnabled(true);
       }
     } catch (e) {
@@ -76,6 +77,12 @@ export default function Security() {
         <Fingerprint size={30} color={colors.blue600} />
         <StatusChip label={enabled ? t("biometricOn") : t("biometricOff")} tone={enabled ? "success" : "warning"} />
         <Text style={styles.body}>{t("biometricBody")}</Text>
+        <Text style={styles.meta}>
+          {t("lockPolicyBody", {
+            seconds: Math.round(policy.relockGraceMs / 1000),
+            minutes: Math.round(policy.idleTimeoutMs / 60000),
+          })}
+        </Text>
         <Button label={enabled ? t("biometricDisable") : t("biometricEnable")} loading={busy === "bio"} onPress={() => void change()} />
       </Card>
       <Button label={t("reviewDevices")} icon={Smartphone} variant="secondary" onPress={() => router.push("/account/devices")} />
@@ -91,5 +98,6 @@ export default function Security() {
 const styles = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
+  meta: { ...type.meta, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
 });

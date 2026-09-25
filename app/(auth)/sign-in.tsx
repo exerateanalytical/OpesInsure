@@ -60,9 +60,12 @@ export default function SignIn() {
   useEffect(() => {
     let live = true;
     if (process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "false") return;
-    void AuthApi.demoAccounts().then((d) => {
-      if (live) setDemo(d);
-    });
+    AuthApi.demoAccounts()
+      .then((d) => {
+        if (live) setDemo(d);
+      })
+      // Demo accounts are optional (server-gated); no list on failure.
+      .catch(() => undefined);
     return () => {
       live = false;
     };

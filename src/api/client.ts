@@ -3,11 +3,13 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { OfflineOperation } from "@/offline/types";
 import { environmentConfig } from "@/config/environment";
+import { DEVICE_ONLY } from "@/security/secureJson";
 import { PageResult, unwrapPage } from "@/lib/purchase";
 export type { PageResult } from "@/lib/purchase";
 
-const configuredUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-const API_URL = configuredUrl ?? (__DEV__ ? "http://10.0.2.2:8000/api/v1" : "");
+// environmentConfig.apiBaseUrl already falls back to the production host in
+// production builds, so an OTA published without env cannot brick the fleet.
+const API_URL = environmentConfig.apiBaseUrl || (__DEV__ ? "http://10.0.2.2:8000/api/v1" : "");
 const keys = {
   access: "opesinsure.access_token",
   refresh: "opesinsure.refresh_token",
@@ -17,7 +19,19 @@ const keys = {
   stepUp: "opesinsure.step_up_grant",
 };
 export type ApiFieldErrors = Record<string, string[]>;
+/** Registered by src/i18n (which imports this module, not the reverse) so
+ * known backend codes (STALE_RECORD, DUPLICATE_SUBMISSION, ...) carry an
+ * EN/FR message in the user's language. */
+type ErrorLocalizer = (code: string, status?: number) => string | null;
+let localizeError: ErrorLocalizer | null = null;
+export const setApiErrorLocalizer = (fn: ErrorLocalizer) => {
+  localizeError = fn;
+};
+/** Localized copy for an error code, or null when it has no specific copy. */
+export const localizeErrorCode = (code: string, status?: number) => localizeError?.(code, status) ?? null;
 export class ApiError extends Error {
+  /** The server's own (untranslated) message, kept for support/diagnostics. */
+  public detail: string;
   constructor(
     public status: number,
     public code: string,
@@ -25,7 +39,8 @@ export class ApiError extends Error {
     public fields?: ApiFieldErrors,
     public retryAfter?: number,
   ) {
-    super(message);
+    super(localizeError?.(code, status) ?? message);
+    this.detail = message;
     this.name = "ApiError";
   }
 }
@@ -53,9 +68,11 @@ export const onSessionExpired = (listener: () => void) => {
 
 export const TokenVault = {
   async save(access: string, refresh: string) {
+    // Device-only: tokens never migrate through encrypted backups or a
+    // device transfer (existing items are rewritten at the next rotation).
     await Promise.all([
-      SecureStore.setItemAsync(keys.access, access),
-      SecureStore.setItemAsync(keys.refresh, refresh),
+      SecureStore.setItemAsync(keys.access, access, DEVICE_ONLY),
+      SecureStore.setItemAsync(keys.refresh, refresh, DEVICE_ONLY),
     ]);
   },
   async access() {
@@ -65,7 +82,7 @@ export const TokenVault = {
     return SecureStore.getItemAsync(keys.refresh);
   },
   async setTenant(id: string) {
-    await SecureStore.setItemAsync(keys.tenant, id);
+    await SecureStore.setItemAsync(keys.tenant, id, DEVICE_ONLY);
   },
   async tenant() {
     return SecureStore.getItemAsync(keys.tenant);
@@ -79,7 +96,7 @@ export const TokenVault = {
     ]);
   },
   async setPendingPayment(id: string) {
-    await SecureStore.setItemAsync(keys.payment, id);
+    await SecureStore.setItemAsync(keys.payment, id, DEVICE_ONLY);
   },
   async pendingPayment() {
     return SecureStore.getItemAsync(keys.payment);
@@ -91,7 +108,7 @@ export const TokenVault = {
     let id = await SecureStore.getItemAsync(keys.device);
     if (!id) {
       id = Crypto.randomUUID();
-      await SecureStore.setItemAsync(keys.device, id);
+      await SecureStore.setItemAsync(keys.device, id, DEVICE_ONLY);
     }
     return id;
   },
@@ -1785,6 +1802,16 @@ export type RuntimeBootstrap = {
   security: {
     step_up_ttl_seconds: number;
     device_risk_action: "ALLOW" | "LIMIT" | "BLOCK";
+    /** Optional server overrides for the app lock (seconds). */
+    relock_grace_seconds?: number | null;
+    session_idle_timeout_seconds?: number | null;
+  };
+  /** Optional Play/App Store legal links; the app falls back to the
+   * insurance.opesdatacenter.tech defaults when absent. */
+  legal?: {
+    privacy_policy_url?: string | null;
+    account_deletion_url?: string | null;
+    terms_url?: string | null;
   };
 };
 export const RuntimeApi = {

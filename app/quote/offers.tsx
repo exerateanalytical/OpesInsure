@@ -9,6 +9,7 @@ import { OfferCard, useNow } from "@/components/offers/OfferCard";
 import { useInsurance } from "@/store/insurance";
 import { filterOffers, OfferSort, providerName, sortOffers, validityLeft } from "@/lib/purchase";
 import { colors, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 const MAX_COMPARE = 3;
 const toMinor = (v: string) => {
@@ -17,6 +18,7 @@ const toMinor = (v: string) => {
 };
 
 export default function Offers() {
+  const { t } = useTranslation();
   const offers = useInsurance((s) => s.offers);
   const quote = useInsurance((s) => s.quote);
   const busy = useInsurance((s) => s.busy);
@@ -71,8 +73,8 @@ export default function Offers() {
   if (!quote)
     return (
       <Screen>
-        <AppHeader title="Available offers" back />
-        <EmptyState title="No quote open" message="Start a new quote or resume a saved one to see offers." action="Saved quotes" onPress={() => router.replace("/quotes")} />
+        <AppHeader title={t("ofTitle")} back />
+        <EmptyState title={t("ofNoQuote")} message={t("ofNoQuoteBody")} action={t("quotesTitle")} onPress={() => router.replace("/quotes")} />
       </Screen>
     );
 
@@ -82,7 +84,7 @@ export default function Offers() {
       offer={o}
       now={now}
       width={narrow ? cardWidth : undefined}
-      badge={o.total_minor === cheapest ? { label: "Lowest total", tone: "success" } : undefined}
+      badge={o.total_minor === cheapest ? { label: t("ofLowest"), tone: "success" } : undefined}
       compareSelected={compare.includes(o.id)}
       onToggleCompare={offers.length > 1 ? () => toggleCompare(o.id) : undefined}
       selecting={selecting === o.id}
@@ -93,56 +95,56 @@ export default function Offers() {
 
   return (
     <Screen>
-      <AppHeader title="Available offers" subtitle={`Step 3 of 5 · ${offers.length} live carrier result${offers.length === 1 ? "" : "s"}`} back />
+      <AppHeader title={t("ofTitle")} subtitle={t("ofSubtitle", { count: offers.length })} back />
       <View style={st.notice}>
         <Info size={17} color={colors.blue700} />
-        <Text style={st.noticeText}>Compare cover, excess and exclusions — not price alone.</Text>
+        <Text style={st.noticeText}>{t("ofNotice")}</Text>
       </View>
       {quoteExpired ? (
         <Card>
-          <Text style={ps.title}>These prices have expired</Text>
-          <Text style={ps.body}>Offers are only valid for a limited time. Re-rate to get current prices from the insurers.</Text>
-          <Button label="Re-rate quote" icon={RefreshCcw} loading={busy} onPress={() => void rerate(quote.id).catch(() => undefined)} />
+          <Text style={ps.title}>{t("ofExpiredTitle")}</Text>
+          <Text style={ps.body}>{t("ofExpiredBody")}</Text>
+          <Button label={t("ofRerate")} icon={RefreshCcw} loading={busy} onPress={() => void rerate(quote.id).catch(() => undefined)} />
         </Card>
       ) : null}
-      {error && !selectError ? <ErrorCard error={{ message: error }} fallback="Offers could not be updated." onRetry={() => void rerate(quote.id).catch(() => undefined)} retryLabel="Retry" /> : null}
-      {selectError ? <ErrorCard error={selectError} fallback="This offer could not be selected." /> : null}
+      {error && !selectError ? <ErrorCard error={{ message: error }} fallback={t("ofUpdateFailed")} onRetry={() => void rerate(quote.id).catch(() => undefined)} retryLabel={t("retry")} /> : null}
+      {selectError ? <ErrorCard error={selectError} fallback={t("ofSelectFailed")} /> : null}
       {offers.length > 1 ? (
         <>
           <View style={ps.row}>
-            <Text style={ps.meta}>Sort</Text>
-            <Pill label="Lowest price" selected={sort === "price"} onPress={() => setSort("price")} />
-            <Pill label="Most cover" selected={sort === "cover"} onPress={() => setSort("cover")} />
-            <Pill label={showFilters ? "Hide filters" : "Filters"} selected={showFilters || providers.length > 0 || !!maxPremium || !!maxExcess} onPress={() => setShowFilters(!showFilters)} />
+            <Text style={ps.meta}>{t("ofSort")}</Text>
+            <Pill label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
+            <Pill label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
+            <Pill label={showFilters ? t("ofHideFilters") : t("ofFilters")} selected={showFilters || providers.length > 0 || !!maxPremium || !!maxExcess} onPress={() => setShowFilters(!showFilters)} />
           </View>
           {showFilters ? (
             <Card>
               <View style={ps.row}>
                 <SlidersHorizontal size={16} color={colors.neutral600} />
-                <Text style={ps.title}>Filter offers</Text>
+                <Text style={ps.title}>{t("ofFilterTitle")}</Text>
               </View>
-              <Text style={ps.meta}>Insurer</Text>
+              <Text style={ps.meta}>{t("ofInsurer")}</Text>
               <View style={ps.row}>
                 {carriers.map(([id, name]) => (
                   <Pill key={id} label={name} selected={providers.includes(id)} onPress={() => setProviders((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))} />
                 ))}
               </View>
-              <TextField label="Maximum total premium (FCFA)" value={maxPremium} onChangeText={setMaxPremium} keyboardType="numeric" placeholder="No limit" />
-              <TextField label="Maximum excess (FCFA)" value={maxExcess} onChangeText={setMaxExcess} keyboardType="numeric" placeholder="No limit" />
-              <Button label="Clear filters" variant="tertiary" onPress={() => { setProviders([]); setMaxPremium(""); setMaxExcess(""); }} />
+              <TextField label={t("ofMaxPremium")} value={maxPremium} onChangeText={setMaxPremium} keyboardType="numeric" placeholder={t("ofNoLimit")} />
+              <TextField label={t("ofMaxExcess")} value={maxExcess} onChangeText={setMaxExcess} keyboardType="numeric" placeholder={t("ofNoLimit")} />
+              <Button label={t("ofClearFilters")} variant="tertiary" onPress={() => { setProviders([]); setMaxPremium(""); setMaxExcess(""); }} />
             </Card>
           ) : null}
         </>
       ) : null}
       {offers.length === 0 ? (
         <Card>
-          <Text style={ps.title}>No eligible offer was returned.</Text>
-          <Text style={ps.meta}>Change the risk details or contact support. No substitute price will be shown.</Text>
-          <Button label="Change details" variant="secondary" onPress={() => router.replace("/quote/risk")} />
-          <Button label="Retry rating" variant="tertiary" loading={busy} onPress={() => void rerate(quote.id).catch(() => undefined)} />
+          <Text style={ps.title}>{t("ofNoneTitle")}</Text>
+          <Text style={ps.meta}>{t("ofNoneBody")}</Text>
+          <Button label={t("ofChangeDetails")} variant="secondary" onPress={() => router.replace("/quote/risk")} />
+          <Button label={t("ofRetryRating")} variant="tertiary" loading={busy} onPress={() => void rerate(quote.id).catch(() => undefined)} />
         </Card>
       ) : visible.length === 0 ? (
-        <EmptyState title="No offer matches these filters" message="Loosen the premium or excess limit, or include more insurers." action="Clear filters" onPress={() => { setProviders([]); setMaxPremium(""); setMaxExcess(""); }} />
+        <EmptyState title={t("ofNoMatch")} message={t("ofNoMatchBody")} action={t("ofClearFilters")} onPress={() => { setProviders([]); setMaxPremium(""); setMaxExcess(""); }} />
       ) : narrow ? (
         <ScrollView horizontal snapToInterval={cardWidth + space.x3} decelerationRate="fast" snapToAlignment="start" showsHorizontalScrollIndicator={false} contentContainerStyle={st.carousel}>
           {cards}
@@ -150,10 +152,10 @@ export default function Offers() {
       ) : (
         cards
       )}
-      {narrow && visible.length > 1 ? <Text style={[ps.meta, st.center]}>Swipe to see {visible.length} offers</Text> : null}
+      {narrow && visible.length > 1 ? <Text style={[ps.meta, st.center]}>{t("ofSwipe", { count: visible.length })}</Text> : null}
       {compare.length > 0 ? (
         <Button
-          label={compare.length < 2 ? "Select at least 2 offers to compare" : `Compare ${compare.length} offers side by side`}
+          label={compare.length < 2 ? t("ofSelectTwo") : t("ofCompareN", { count: compare.length })}
           icon={Columns3}
           disabled={compare.length < 2}
           onPress={() => router.push({ pathname: "/quote/compare", params: { ids: compare.join(",") } })}

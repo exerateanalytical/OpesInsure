@@ -4,7 +4,9 @@ import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Bell,
+  ChevronRight,
   CircleUserRound,
+  Fingerprint,
   Languages,
   LockKeyhole,
   LogOut,
@@ -21,6 +23,8 @@ import {
   NotificationsApi,
 } from "@/api/client";
 import { useSession } from "@/store/session";
+import { useTranslation } from "@/i18n";
+import { LegalLinks } from "@/components/LegalLinks";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export type PortalKey = "agent" | "broker" | "carrier";
@@ -36,6 +40,7 @@ export function PortalHeader({
   title: string;
   subtitle?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <AppHeader
       title={title}
@@ -44,12 +49,12 @@ export function PortalHeader({
         <View style={s.headerActions}>
           <HeaderIcon
             icon={Bell}
-            label="Notifications"
+            label={t("portalNotifTitle")}
             onPress={() => router.push(`/${portal}/notifications` as never)}
           />
           <HeaderIcon
             icon={CircleUserRound}
-            label="Account and settings"
+            label={t("portalAccountSubtitle")}
             onPress={() => router.push(`/${portal}/account` as never)}
           />
         </View>
@@ -84,6 +89,7 @@ function HeaderIcon({
 export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { td } = useTranslation();
   // Longest matching prefix wins, so /agent/clients/123 highlights "Clients".
   const active = tabs.reduce<PortalTab | undefined>(
     (best, t) =>
@@ -101,11 +107,12 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
       {tabs.map((t) => {
         const selected = active?.href === t.href;
         const tint = selected ? colors.blue600 : colors.neutral600;
+        const label = td(`portalTab_${t.label}`, t.label);
         return (
           <Pressable
             key={t.href}
             accessibilityRole="tab"
-            accessibilityLabel={t.label}
+            accessibilityLabel={label}
             accessibilityState={{ selected }}
             onPress={() => {
               if (pathname !== t.href) router.navigate(t.href as never);
@@ -114,7 +121,7 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
           >
             <t.icon size={22} color={tint} strokeWidth={2} />
             <Text numberOfLines={1} style={[s.tabLabel, { color: tint }]}>
-              {t.label}
+              {label}
             </Text>
           </Pressable>
         );
@@ -135,16 +142,17 @@ export function PortalScreen({
 }
 
 export function PortalNotifications({ tabs }: { tabs: PortalTab[] }) {
+  const { t } = useTranslation();
   const q = useLoad(() => NotificationsApi.list());
   return (
     <PortalScreen tabs={tabs}>
-      <AppHeader title="Notifications" subtitle="Alerts for your workspace" back />
+      <AppHeader title={t("portalNotifTitle")} subtitle={t("portalNotifSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading notifications…"
-        emptyTitle="You are all caught up"
-        emptyMessage="New alerts about your work will appear here."
+        loadingLabel={t("notificationsLoading")}
+        emptyTitle={t("portalNotifEmpty")}
+        emptyMessage={t("portalNotifEmptyBody")}
       >
         {(items) => (
           <Card>
@@ -161,17 +169,11 @@ export function PortalNotifications({ tabs }: { tabs: PortalTab[] }) {
   );
 }
 
-const prefLabels: [keyof NotificationPreferences, string][] = [
-  ["push", "Push notifications"],
-  ["sms", "SMS alerts"],
-  ["email", "Email"],
-  ["renewals", "Renewal reminders"],
-  ["claims", "Claim updates"],
-  ["payments", "Payments and commissions"],
-];
+const prefKeys: (keyof NotificationPreferences)[] = ["push", "sms", "email", "renewals", "claims", "payments"];
 
 /** Account and settings for partner portals: profile, security, alerts, language, sign out. */
 export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
+  const { t, td } = useTranslation();
   const bootstrap = useSession((st) => st.bootstrap);
   const workspace = useSession((st) => st.activeWorkspace);
   const language = useSession((st) => st.language);
@@ -214,7 +216,7 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
       setNotice(null);
     } catch {
       setPrefs(previous);
-      setNotice("Could not save your preference. Try again.");
+      setNotice(t("portalPrefSaveFailed"));
     }
   };
   const changeLanguage = async (code: "en" | "fr") => {
@@ -222,19 +224,19 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
     try {
       await AccountApi.setLocale(code);
     } catch {
-      setNotice("Language changed on this device; it will sync when online.");
+      setNotice(t("portalLanguageOffline"));
     }
   };
   return (
     <PortalScreen tabs={tabs}>
-      <AppHeader title="Account" subtitle="Profile, security and preferences" />
+      <AppHeader title={t("portalAccountTitle")} subtitle={t("portalAccountSubtitle")} />
       <Card feature>
         <View style={s.profileRow}>
           <View style={s.avatar}>
             <UserRound size={24} color={colors.white} />
           </View>
           <View style={s.flex}>
-            <Text style={s.name}>{user?.full_name ?? "Partner user"}</Text>
+            <Text style={s.name}>{user?.full_name ?? t("portalPartnerUser")}</Text>
             {user?.phone_e164 ? <Text style={s.body}>{user.phone_e164}</Text> : null}
             {user?.email ? <Text style={s.body}>{user.email}</Text> : null}
           </View>
@@ -246,11 +248,21 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
         ) : null}
       </Card>
 
-      <SectionTitle title="Security" />
+      <SectionTitle title={t("portalSecurity")} />
       <Card>
-        <Row icon={LockKeyhole} label="Phone verification">
+        {/* Biometric lock + devices: available to every role, not only customers. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("portalBiometric")}
+          onPress={() => router.push("/account/security" as never)}
+        >
+          <Row icon={Fingerprint} label={t("portalBiometric")}>
+            <ChevronRight size={20} color={colors.neutral500} />
+          </Row>
+        </Pressable>
+        <Row icon={LockKeyhole} label={t("portalPhoneVerification")}>
           <Text style={s.meta}>
-            {user?.phone_verified_at ? "Verified" : "Not verified"}
+            {user?.phone_verified_at ? t("portalVerified") : t("portalNotVerified")}
           </Text>
         </Row>
         {emailUnverified ? (
@@ -259,31 +271,28 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
             disabled={verifyState === "busy" || verifyState === "sent"}
             onPress={verifyEmail}
           >
-            <Row icon={LockKeyhole} label="Email verification">
+            <Row icon={LockKeyhole} label={t("portalEmailVerification")}>
               <Text style={s.meta}>
                 {verifyState === "busy"
-                  ? "Sending…"
+                  ? t("portalEmailSending")
                   : verifyState === "sent"
-                    ? "Check your inbox"
+                    ? t("portalEmailSent")
                     : verifyState === "error"
-                      ? "Could not send — tap to retry"
-                      : "Verify your email"}
+                      ? t("portalEmailRetry")
+                      : t("portalEmailVerify")}
               </Text>
             </Row>
           </Pressable>
         ) : null}
-        <Text style={s.body}>
-          Sign in with your phone number and password, or a one-time code. Never
-          share a code; our staff will never ask for it.
-        </Text>
+        <Text style={s.body}>{t("portalSecurityNote")}</Text>
       </Card>
 
-      <SectionTitle title="Notification settings" />
+      <SectionTitle title={t("notificationSettings")} />
       <Card>
-        {prefLabels.map(([key, label]) => (
-          <Row key={key} icon={Bell} label={label}>
+        {prefKeys.map((key) => (
+          <Row key={key} icon={Bell} label={td(`portalPref_${key}`, key)}>
             <Switch
-              accessibilityLabel={label}
+              accessibilityLabel={td(`portalPref_${key}`, key)}
               value={!!prefs[key]}
               onValueChange={(v) => void toggle(key, v)}
               trackColor={{ true: colors.blue600, false: colors.neutral300 }}
@@ -297,9 +306,9 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
         ) : null}
       </Card>
 
-      <SectionTitle title="Language" />
+      <SectionTitle title={t("portalLanguage")} />
       <Card>
-        <Row icon={Languages} label="App language">
+        <Row icon={Languages} label={t("portalAppLanguage")}>
           <View style={s.segment}>
             {(
               [
@@ -328,6 +337,7 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
 
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={t("portalSignOut")}
         style={({ pressed }) => [s.logout, pressed && s.pressed]}
         onPress={async () => {
           await signOut();
@@ -335,8 +345,9 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
         }}
       >
         <LogOut size={20} color={colors.dangerText} />
-        <Text style={s.logoutText}>Sign out securely</Text>
+        <Text style={s.logoutText}>{t("portalSignOut")}</Text>
       </Pressable>
+      <LegalLinks />
     </PortalScreen>
   );
 }

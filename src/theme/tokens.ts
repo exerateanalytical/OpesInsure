@@ -3,7 +3,9 @@ export const colors = {
   blue700: '#1458BC', blue600: '#1769E0', blue500: '#3881EA', blue100: '#DCEAFF', blue50: '#EEF5FF',
   gold600: '#B97800', gold500: '#D99100', gold100: '#FCE8B2', gold50: '#FFF8E6',
   neutral950: '#101828', neutral800: '#243447', neutral700: '#344454', neutral600: '#526477',
-  neutral500: '#687B8E', neutral400: '#8A98A6', neutral300: '#B8C3CD', neutral200: '#DCE3E8',
+  // Contrast (WCAG): neutral500 5.0:1 on white / 4.7:1 on neutral50 (AA text);
+  // neutral400 4.4:1 on white (placeholders, icons, borders; was 2.9:1).
+  neutral500: '#5E7185', neutral400: '#687B8E', neutral300: '#B8C3CD', neutral200: '#DCE3E8',
   neutral100: '#EDF1F4', neutral50: '#F6F8FA', white: '#FFFFFF',
   success: '#07855B', successText: '#056B49', successSoft: '#E7F6F0',
   warning: '#B97800', warningText: '#7A4E00', warningSoft: '#FFF6DD',

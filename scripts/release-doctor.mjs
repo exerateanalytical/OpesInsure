@@ -17,6 +17,16 @@ if (eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN !== "false")
   errors.push("PRODUCTION_DEMO_MODE_NOT_FALSE");
 if (eas.build.production.channel !== "production")
   errors.push("PRODUCTION_CHANNEL_INVALID");
+// production-apk bakes a different JS env (SHOW_DEMO_LOGIN=true): it must
+// never share an update channel with the store build.
+const apk = eas.build["production-apk"];
+if (apk && (apk.channel ?? eas.build[apk.extends]?.channel) === eas.build.production.channel)
+  errors.push("PRODUCTION_APK_SHARES_UPDATE_CHANNEL");
+// One version everywhere: package.json is the source, app.json mirrors it.
+const pkg = readJson("package.json");
+const app = readJson("app.json");
+if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${app.expo.version},package.json=${pkg.version}`);
+if (app.expo.runtimeVersion?.policy !== "fingerprint") errors.push("RUNTIME_POLICY_NOT_FINGERPRINT");
 const associations = readFileSync("store/associations/assetlinks.json", "utf8");
 if (profile === "production" && associations.includes("REPLACE_WITH_"))
   errors.push("ANDROID_ASSOCIATION_PLACEHOLDER");

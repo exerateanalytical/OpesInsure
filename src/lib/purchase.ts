@@ -430,6 +430,10 @@ export function isNotFound(error: unknown) {
 }
 
 export function errorMessage(error: unknown, fallback: string) {
+  // ApiError messages are already localized (incl. 404 and the backend's
+  // STALE_RECORD / DUPLICATE_SUBMISSION / ... codes) by src/i18n.
+  const api = error as ErrorLike & { name?: string };
+  if (api?.name === "ApiError" && api.message) return api.message;
   if (isNotFound(error)) return "This record was not found or is not linked to your account.";
   const m = (error as ErrorLike)?.message;
   return typeof m === "string" && m ? m : fallback;
@@ -438,14 +442,31 @@ export function errorMessage(error: unknown, fallback: string) {
 // --- Idempotency -----------------------------------------------------------
 
 /**
- * A stable key per proposal + attempt + payer: a double tap (or an app
- * restart before the response lands) re-sends the same key, so the backend
- * returns the SAME payment instead of creating a second one. A new attempt
- * number is used only after the previous payment reached a failed state.
+ * Identifies one payment attempt: proposal + attempt number + provider +
+ * payer. It is only used ON THE DEVICE (as a lookup key in encrypted
+ * storage) and is never sent: the payer's phone must not reach request
+ * headers, the server idempotency store or its logs.
  */
-export function paymentIdempotencyKey(proposalId: string, attempt: number, provider: string, phone: string) {
+export function paymentAttemptSlot(proposalId: string, attempt: number, provider: string, phone: string) {
   const digits = phone.replace(/\D/g, "");
-  return `pay:${proposalId}:${attempt}:${provider}:${digits}`.slice(0, 128);
+  return `${proposalId}:${attempt}:${provider}:${digits}`;
+}
+
+/**
+ * The Idempotency-Key actually sent: `pay:` + a random UUID that is minted
+ * once per attempt slot and persisted, so a double tap, a timeout-then-retry
+ * or an app restart re-sends the SAME key and the backend returns the same
+ * payment instead of creating a second one. No PII.
+ */
+export function paymentIdempotencyKey(attemptUuid: string) {
+  return `pay:${attemptUuid}`.slice(0, 128);
+}
+
+/** Keeps the newest `max` slot → uuid entries (insertion order). */
+export function rememberAttemptKey(map: Record<string, string>, slot: string, uuid: string, max = 20) {
+  const entries = Object.entries(map).filter(([k]) => k !== slot);
+  entries.push([slot, uuid]);
+  return Object.fromEntries(entries.slice(-max));
 }
 
 // --- Refunds ---------------------------------------------------------------
@@ -490,4 +511,34 @@ export function receiptView(r: Record<string, unknown> | null | undefined) {
 /** Safe https/http URL or null — never hand undefined to Linking.openURL. */
 export function openableUrl(v: unknown): string | null {
   return typeof v === "string" && /^https?:\/\//.test(v) ? v : null;
+}
+
+// --- Amount input ------------------------------------------------------------
+
+/**
+ * Parses a user-typed FCFA amount into minor units, accepting FR and EN
+ * formats: "1 000,50", "1.000,50", "1,000.50", "1000.5", "250 000".
+ * Returns null for anything that is not a finite, non-negative number, so a
+ * caller never submits NaN.
+ */
+export function parseAmountMinor(input: string): number | null {
+  let s = String(input ?? "").replace(/[\s  ]/g, "").replace(/fcfa|xaf/gi, "");
+  if (!s || !/^[0-9.,]+$/.test(s)) return null;
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimal = lastComma > lastDot ? "," : ".";
+    const thousands = decimal === "," ? "." : ",";
+    s = s.split(thousands).join("").replace(decimal, ".");
+  } else if (lastComma >= 0 || lastDot >= 0) {
+    const sep = lastComma >= 0 ? "," : ".";
+    const parts = s.split(sep);
+    const tail = parts[parts.length - 1] ?? "";
+    // One separator with 1-2 trailing digits is a decimal point; otherwise
+    // it groups thousands ("1.000.000", "250,000").
+    s = parts.length === 2 && tail.length > 0 && tail.length <= 2 ? `${parts[0]}.${tail}` : parts.join("");
+  }
+  const value = Number(s);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return Math.round(value * 100);
 }

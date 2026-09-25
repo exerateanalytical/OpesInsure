@@ -10,6 +10,7 @@ import { useInsurance } from "@/store/insurance";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, localized } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
 
 /** Only in-app, customer-owned paths may come back from the server. */
 const SAFE_NEXT = /^\/(quote|proposals|checkout|payment|confirmation|policy)(\/|$|\?)/;
@@ -17,6 +18,7 @@ const SAFE_NEXT = /^\/(quote|proposals|checkout|payment|confirmation|policy)(\/|
 export default function QuoteDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFormatters();
+  const { t } = useTranslation();
   const setQuoteResult = useInsurance((s) => s.setQuoteResult);
   const loadQuote = useInsurance((s) => s.loadQuote);
   const rerate = useInsurance((s) => s.rerateQuote);
@@ -101,10 +103,10 @@ export default function QuoteDetail() {
             variant="danger"
             disabled={!!busy}
             onPress={() =>
-              Alert.alert("Remove quote?", "This removes the saved quote from your account.", [
-                { text: "Cancel", style: "cancel" },
+              Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [
+                { text: t("cancel"), style: "cancel" },
                 {
-                  text: "Remove",
+                  text: t("qtRemove"),
                   style: "destructive",
                   onPress: async () => {
                     setBusy("discard");

@@ -27,6 +27,8 @@ export default function NewService() {
           {types.map((x) => (
             <Pressable
               key={x}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: x === typeValue }}
               onPress={() => setType(x)}
               style={[s.option, x === typeValue && s.selected]}
             >

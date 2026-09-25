@@ -109,7 +109,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
       </Pressable>
       {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityLabel={t("mdClose")} />
+        <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t("mdClose")} />
         <View style={s.sheet}>
           <View style={s.sheetHeader}>
             <Text style={s.sheetTitle}>{label}</Text>
@@ -125,7 +125,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
                 value={draft}
                 onChangeText={setDraft}
                 placeholder={t("mdOtherPlaceholder")}
-                placeholderTextColor={colors.neutral400}
+                placeholderTextColor={colors.neutral500}
                 style={s.input}
                 maxLength={200}
                 accessibilityLabel={t("mdOtherPlaceholder")}
@@ -137,7 +137,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
             <>
               <View style={s.search}>
                 <Search size={18} color={colors.neutral500} />
-                <TextInput value={q} onChangeText={setQ} placeholder={t("mdSearch")} placeholderTextColor={colors.neutral400} style={s.searchInput} autoCorrect={false} accessibilityLabel={t("mdSearch")} />
+                <TextInput value={q} onChangeText={setQ} placeholder={t("mdSearch")} placeholderTextColor={colors.neutral500} style={s.searchInput} autoCorrect={false} accessibilityLabel={t("mdSearch")} />
               </View>
               {state === "loading" && !data ? <ActivityIndicator color={colors.blue600} /> : null}
               <SectionList

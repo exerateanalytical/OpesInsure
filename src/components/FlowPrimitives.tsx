@@ -74,7 +74,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.x3,
-    minHeight: 42,
+    minHeight: 44,
   },
   dot: {
     width: 12,

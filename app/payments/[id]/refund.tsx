@@ -9,10 +9,12 @@ import { handleStepUpRequired } from "@/security/step-up";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, REFUND_REASONS, refundPayload } from "@/lib/purchase";
+import { useTranslation } from "@/i18n";
 
 export default function Refund() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFormatters();
+  const { t, td } = useTranslation();
   const payment = useLoad(() => PaymentsApi.show(id), [id]);
   const [reason, setReason] = useState("");
   const [reasonCode, setReasonCode] = useState<string>("");
@@ -40,22 +42,22 @@ export default function Refund() {
 
   return (
     <Screen>
-      <AppHeader title="Refund review" subtitle="Submitting does not cancel active cover automatically" back />
+      <AppHeader title={t("rfTitle")} subtitle={t("rfSubtitle")} back />
       {result ? (
         <Card feature>
-          <StatusChip label={humanize(result.status)} tone="info" />
-          <Text style={ps.title}>Refund request received</Text>
-          {result.amount_minor ? <InfoRow label="Amount" value={f.xaf(result.amount_minor)} /> : null}
-          <Text style={ps.body}>The insurer reviews refund requests. You will be notified of the decision.</Text>
-          <Button label="Back to payment" variant="secondary" onPress={() => router.back()} />
+          <StatusChip label={td(`status_${result.status}`, humanize(result.status))} tone="info" />
+          <Text style={ps.title}>{t("rfReceived")}</Text>
+          {result.amount_minor ? <InfoRow label={t("rfAmount")} value={f.xaf(result.amount_minor)} /> : null}
+          <Text style={ps.body}>{t("rfReviewNote")}</Text>
+          <Button label={t("rfBack")} variant="secondary" onPress={() => router.back()} />
         </Card>
       ) : (
         <Card>
-          {payment.data ? <InfoRow label="Refund amount (full payment)" value={f.xaf(amount)} strong /> : payment.error ? <ErrorCard error={payment.error} fallback="Payment could not be loaded." onRetry={() => void payment.reload()} /> : null}
-          <PickerField label="Reason" value={reasonCode || undefined} options={REFUND_REASONS.map((r) => ({ value: r.code, label: r.label }))} onChange={setReasonCode} />
-          <TextField label="Tell us more" multiline value={reason} onChangeText={setReason} hint="At least 10 characters" editable={!busy} />
-          {error ? <ErrorCard error={error} fallback="The refund request could not be submitted." onRetry={() => void submit()} /> : null}
-          <Button label="Submit for review" loading={busy} disabled={!valid || busy} onPress={() => void submit()} />
+          {payment.data ? <InfoRow label={t("rfFullAmount")} value={f.xaf(amount)} strong /> : payment.error ? <ErrorCard error={payment.error} fallback={t("rfPaymentFailed")} onRetry={() => void payment.reload()} /> : null}
+          <PickerField label={t("rfReason")} value={reasonCode || undefined} options={REFUND_REASONS.map((r) => ({ value: r.code, label: td(`refundReason_${r.code}`, r.label) }))} onChange={setReasonCode} />
+          <TextField label={t("rfTellMore")} multiline value={reason} onChangeText={setReason} hint={t("rfMin10")} editable={!busy} />
+          {error ? <ErrorCard error={error} fallback={t("rfSubmitFailed")} onRetry={() => void submit()} /> : null}
+          <Button label={t("rfSubmit")} loading={busy} disabled={!valid || busy} onPress={() => void submit()} />
         </Card>
       )}
     </Screen>
