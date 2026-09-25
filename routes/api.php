@@ -845,3 +845,15 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E6 — Batch 14C REQ-REI-003 facultative placements (App\Application\Reinsurance\Facultative).
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $f = \App\Application\Reinsurance\Facultative\Http\FacultativeController::class;
+    Route::get('facultative', [$f, 'index'])->middleware('permission:reinsurance.facultative.view');
+    Route::post('facultative', [$f, 'store'])->middleware('permission:reinsurance.facultative.manage');
+    Route::get('facultative/{placement}', [$f, 'show'])->middleware('permission:reinsurance.facultative.view')->whereUuid('placement');
+    Route::post('facultative/{placement}/lines', [$f, 'lines'])->middleware('permission:reinsurance.facultative.manage')->whereUuid('placement');
+    Route::post('facultative/{placement}/submit', [$f, 'submit'])->middleware('permission:reinsurance.facultative.manage')->whereUuid('placement');
+    Route::post('facultative/{placement}/approve', [$f, 'approve'])->middleware('permission:reinsurance.facultative.approve')->whereUuid('placement');
+    Route::post('facultative/{placement}/reject', [$f, 'reject'])->middleware('permission:reinsurance.facultative.approve')->whereUuid('placement');
+});
+// End Agent E6

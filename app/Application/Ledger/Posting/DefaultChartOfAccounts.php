@@ -50,6 +50,7 @@ final class DefaultChartOfAccounts
         'settlement.approved' => ['SETTLEMENT', '702000', '401100', 'Carrier settlement approved: net premium due to insurer.'],
         'settlement.settled' => ['SETTLEMENT', '401100', '521000', 'Carrier settlement paid.'],
         'reinsurance.policy.ceded' => ['REINSURANCE', '602000', '401200', 'Premium ceded to reinsurer.'],
+        'reinsurance.facultative.bound' => ['REINSURANCE', '602000', '401200', 'Facultative premium ceded on binding.'],
         'coinsurance.apportioned' => ['COINSURANCE', '702000', '401300', 'Co-insurer share of premium apportioned.'],
         'claim.reserve.changed' => ['CLAIMS', '601000', '481500', 'Claim reserve increased (a decrease posts the mapped accounts reversed).'],
         'claim.settlement.approved' => ['CLAIMS', '601000', '481000', 'Claim settlement approved (claims payable).'],

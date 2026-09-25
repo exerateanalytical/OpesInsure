@@ -116,7 +116,7 @@ final class CessionCalculator
         $premium = $grossPremium;
         foreach ($cessions as $c) {
             $premium -= $c['ceded_premium_minor'];
-            if (in_array($c['treaty_type'], ['QUOTA_SHARE', 'SURPLUS', 'EXCESS_OF_LOSS'], true) && $sum !== null) {
+            if (in_array($c['treaty_type'], ['FACULTATIVE', 'QUOTA_SHARE', 'SURPLUS', 'EXCESS_OF_LOSS'], true) && $sum !== null) {
                 $sum -= (int) $c['ceded_sum_minor'];
             }
         }
