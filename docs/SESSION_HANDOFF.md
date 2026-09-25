@@ -4,6 +4,8 @@ Two backend sessions work on this repo: the **local** session (owner's Windows P
 The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md).
 
 > **Local session: start with docs/LOCAL_SESSION_RESUME.md.**
+>
+> **DEPLOY REQUEST (owner, 2026-09-25):** deploy branch `claude/charming-bohr-2fd2hk` at `7596e34` or later (full suite 1636 passed). Follow LOCAL_SESSION_RESUME.md sections 2–3, guides Batch 7 → 8 → 9 → 10 → 11_12 → 13_17. Record the release id here when done.
 
 ## Protocol (both sessions follow it)
 1. **Before starting work:** `git fetch origin`, read this file top to bottom and the latest `docs/BUILD_PROGRESS.md`, and check
