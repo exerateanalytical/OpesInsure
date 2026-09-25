@@ -29,7 +29,7 @@ import {
 } from "lucide-react-native";
 import { BrandMark } from "@/components/BrandMark";
 import { SearchBar } from "@/components/SearchBar";
-import { HeritageAccent, StatusChip } from "@/components/ui";
+import { CONTENT_MAX_WIDTH, HeritageAccent, ripple, StatusChip } from "@/components/ui";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useColumns } from "@/components/responsive";
 import { usePolicies } from "@/hooks/usePolicies";
@@ -179,6 +179,7 @@ export default function CustomerHome() {
                     ? router.push("/(customer)/(tabs)/explore")
                     : router.push({ pathname: "/quote/product", params: { product: c.id } })
                 }
+                android_ripple={ripple()}
                 style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
               >
                 <Icon size={28} color={colors.navy800} />
@@ -457,7 +458,7 @@ function Row({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.neutral50 },
-  content: { paddingHorizontal: space.x5, paddingBottom: space.x16, gap: space.x5 },
+  content: { paddingHorizontal: space.x5, paddingBottom: space.x16, gap: space.x5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
   flex: { flex: 1 },
   pressed: { opacity: 0.82 },
   top: { height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
@@ -519,6 +520,7 @@ const styles = StyleSheet.create({
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {
     minHeight: 92,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
     gap: space.x2,
@@ -547,7 +549,8 @@ const styles = StyleSheet.create({
     height: 28,
     paddingHorizontal: space.x2,
     borderRadius: 14,
-    backgroundColor: colors.neutral100,
+    borderWidth: 1,
+    borderColor: colors.neutral300,
     alignItems: "center",
     justifyContent: "center",
   },

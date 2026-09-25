@@ -16,7 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, LucideIcon } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { CONTENT_MAX_WIDTH, colors, radius, space, type } from "@/theme/tokens";
 import { formatXaf, useTranslation } from "@/i18n";
 
 export function Screen({
@@ -37,7 +37,9 @@ export function Screen({
   const bottom = footer ? 0 : insets.bottom;
   // Without its own ScrollView the body fills the screen, so a virtualized
   // list (FlatList) can take the remaining height and scroll by itself.
-  const body = <View style={[styles.screenBody, !scroll && styles.flex, style]}>{children}</View>;
+  // Content is capped at CONTENT_MAX_WIDTH and centred on tablets/foldables
+  // so cards do not stretch edge to edge on wide screens.
+  const body = <View style={[styles.screenBody, styles.contentWidth, !scroll && styles.flex, style]}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <KeyboardAvoidingView
@@ -65,6 +67,11 @@ export function Screen({
     </SafeAreaView>
   );
 }
+
+export { CONTENT_MAX_WIDTH } from "@/theme/tokens";
+
+/** Android ripple for pressable surfaces; iOS/web fall back to the opacity press style. */
+export const ripple = (dark = false) => ({ color: dark ? "rgba(255,255,255,0.18)" : "rgba(15,21,53,0.10)", borderless: false });
 
 export function AppHeader({
   title,
@@ -120,11 +127,29 @@ export function Card({
   children,
   style,
   feature = false,
+  onPress,
+  accessibilityLabel,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   feature?: boolean;
+  /** Makes the whole card a native pressable (ripple on Android). */
+  onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+        android_ripple={ripple()}
+        style={({ pressed }) => [styles.card, feature && styles.featureCard, pressed && styles.cardPressed, style]}
+      >
+        {children}
+      </Pressable>
+    );
+  }
   return (
     <View style={[styles.card, feature && styles.featureCard, style]}>
       {children}
@@ -154,6 +179,7 @@ export function Button({
       accessibilityState={{ disabled, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
+      android_ripple={ripple(variant === "primary")}
       style={({ pressed }) => [
         styles.button,
         styles[`button_${variant}`],
@@ -253,6 +279,7 @@ export function Chip({
       accessibilityRole={role}
       accessibilityState={{ selected }}
       onPress={onPress}
+      android_ripple={ripple(selected)}
       style={({ pressed }) => [styles.chipSelect, selected && styles.chipSelectOn, pressed && styles.pressed]}
     >
       <Text allowFontScaling maxFontSizeMultiplier={1.6} style={[styles.chipSelectText, selected && styles.chipSelectTextOn]}>
@@ -306,6 +333,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1 },
   screenBody: { paddingHorizontal: space.x5, gap: space.x6 },
+  contentWidth: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+  cardPressed: { opacity: 0.9, borderColor: colors.neutral300 },
   header: {
     minHeight: 56,
     flexDirection: "row",
@@ -350,6 +379,7 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 50,
+    overflow: "hidden",
     borderRadius: radius.control,
     paddingHorizontal: space.x4,
     flexDirection: "row",
@@ -407,6 +437,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   chipSelect: {
     minHeight: 40,
+    overflow: "hidden",
     paddingHorizontal: space.x4,
     justifyContent: "center",
     borderRadius: radius.pill,

@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChevronRight, LucideIcon } from "lucide-react-native";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { ripple } from "@/components/ui";
 export function FlowRow({
   title,
   subtitle,
@@ -16,7 +17,7 @@ export function FlowRow({
   onPress?: () => void;
 }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} style={s.row}>
+    <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [s.row, pressed && s.pressed]}>
       <View style={s.icon}>
         <Icon size={29} color={colors.navy800} />
       </View>
@@ -46,6 +47,7 @@ export function Step({
   );
 }
 const s = StyleSheet.create({
+  pressed: { opacity: 0.85 },
   row: {
     minHeight: 78,
     flexDirection: "row",

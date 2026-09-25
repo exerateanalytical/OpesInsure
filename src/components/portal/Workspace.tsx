@@ -2,9 +2,9 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Check, LucideIcon } from "lucide-react-native";
-import { Card, Chip } from "@/components/ui";
+import { Card, Chip, ripple } from "@/components/ui";
 import { useColumns } from "@/components/responsive";
-import { colors, space, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 import { translateNow } from "@/i18n";
 
 export type WorkspaceItem = {
@@ -25,7 +25,8 @@ export function WorkspaceMenu({ items }: { items: WorkspaceItem[] }) {
           accessibilityRole="button"
           accessibilityLabel={`${it.label}, ${it.subtitle}`}
           onPress={() => router.push(it.href as never)}
-          style={({ pressed }) => [grid.item, pressed && s.pressed]}
+          android_ripple={ripple()}
+          style={({ pressed }) => [grid.item, s.tileWrap, pressed && s.pressed]}
         >
           <Card style={s.tile}>
             <View style={s.icon}>
@@ -107,6 +108,7 @@ export function errorMessage(e: unknown, fallback?: string) {
 
 const s = StyleSheet.create({
   pressed: { opacity: 0.82 },
+  tileWrap: { borderRadius: radius.card, overflow: "hidden" },
   tile: { minHeight: 112, gap: space.x1 },
   icon: {
     width: 40,

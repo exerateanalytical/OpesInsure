@@ -182,7 +182,8 @@ const styles = StyleSheet.create({
   family: {
     ...type.meta,
     color: colors.neutral700,
-    backgroundColor: colors.neutral100,
+    borderWidth: 1,
+    borderColor: colors.neutral200,
     borderRadius: radius.pill,
     paddingHorizontal: space.x2,
     paddingVertical: 2,

@@ -27,7 +27,7 @@ import {
   ShieldAlert,
   MailCheck,
 } from "lucide-react-native";
-import { AppHeader, Card, Screen } from "@/components/ui";
+import { AppHeader, Card, ripple, Screen } from "@/components/ui";
 import { useSession } from "@/store/session";
 import { AuthApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -135,7 +135,8 @@ export default function Profile() {
             <Pressable
               accessibilityRole="button"
               key={label}
-              style={styles.item}
+              android_ripple={ripple()}
+              style={({ pressed }) => [styles.item, pressed && styles.pressed]}
               onPress={() => router.push(path as never)}
             >
               <View style={styles.icon}>
@@ -165,6 +166,7 @@ export default function Profile() {
   );
 }
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.85 },
   title: { ...type.cardTitle, color: colors.navy950 },
   group: { ...type.caption, color: colors.neutral600, letterSpacing: 1, textTransform: "uppercase" },
   body: { ...type.body, color: colors.neutral600 },

@@ -1,5 +1,5 @@
 import { useWindowDimensions } from "react-native";
-import { space } from "@/theme/tokens";
+import { CONTENT_MAX_WIDTH, space } from "@/theme/tokens";
 
 /** 1 column below 360dp, 2 on phones, 3 at 768dp and wider. */
 export function columnsFor(width: number) {
@@ -22,7 +22,8 @@ export function useColumns({
   const { width } = useWindowDimensions();
   let columns = columnsFor(width);
   if (max) columns = Math.min(columns, max);
-  const available = Math.max(0, width - inset);
+  // Screen caps content at CONTENT_MAX_WIDTH, so the grid must not assume the full window.
+  const available = Math.max(0, Math.min(width, CONTENT_MAX_WIDTH) - inset);
   // Drop a column while items would be narrower than minItem.
   if (minItem)
     while (

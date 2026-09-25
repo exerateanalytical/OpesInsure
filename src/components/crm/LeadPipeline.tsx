@@ -178,9 +178,9 @@ export function LeadActivityLog({
 
 const s = StyleSheet.create({
   rail: { flexDirection: "row", flexWrap: "wrap", gap: space.x1 },
-  stage: { ...type.meta, color: colors.neutral500, paddingHorizontal: space.x2, paddingVertical: 2, borderRadius: 999, backgroundColor: colors.neutral100 },
-  stageOn: { color: colors.white, backgroundColor: colors.blue600 },
-  stageLost: { color: colors.white, backgroundColor: colors.dangerText },
+  stage: { ...type.meta, color: colors.neutral500, paddingHorizontal: space.x2, paddingVertical: 2, borderRadius: 999, borderWidth: 1, borderColor: colors.neutral200 },
+  stageOn: { color: colors.white, backgroundColor: colors.navy900, borderColor: colors.navy900 },
+  stageLost: { color: colors.white, backgroundColor: colors.dangerText, borderColor: colors.dangerText },
   meta: { ...type.meta, color: colors.neutral600 },
   body: { ...type.body, color: colors.neutral700 },
   entry: { gap: 2, paddingVertical: space.x2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
