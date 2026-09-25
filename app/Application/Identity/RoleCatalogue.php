@@ -68,6 +68,13 @@ final class RoleCatalogue
         'PROVIDER_PHARMACY' => 'Provider pharmacy',
         'PROVIDER_LAB' => 'Provider laboratory',
         'PROVIDER_FINANCE' => 'Provider finance',
+        // Provider portal (SPEC role codes)
+        'FRONT_DESK' => 'Provider portal front desk',
+        'DOCTOR' => 'Provider portal doctor',
+        'BILLING_OFFICER' => 'Provider portal billing officer',
+        'PHARMACY_USER' => 'Provider portal pharmacy user',
+        'LAB_USER' => 'Provider portal laboratory user',
+        'FINANCE_USER' => 'Provider portal finance user',
         // External
         'REGULATOR' => 'Regulator (read only)',
         'CUSTOMER' => 'Customer',
@@ -83,6 +90,8 @@ final class RoleCatalogue
         'CUSTOMER_SERVICE' => 'SCF §7', 'ADJUSTER' => 'ESR CLP', 'PROVIDER_ADMIN' => 'FRP V', 'PROVIDER_FRONT_DESK' => 'FRP V',
         'PROVIDER_DOCTOR' => 'FRP V', 'PROVIDER_BILLING' => 'FRP V', 'PROVIDER_PHARMACY' => 'FRP V', 'PROVIDER_LAB' => 'FRP V',
         'PROVIDER_FINANCE' => 'FRP V', 'REGULATOR' => 'ESR REG', 'CUSTOMER' => 'BP III', 'CASHIER' => 'D10 owner decision',
+        'FRONT_DESK' => 'SPEC provider portal', 'DOCTOR' => 'SPEC provider portal', 'BILLING_OFFICER' => 'SPEC provider portal',
+        'PHARMACY_USER' => 'SPEC provider portal', 'LAB_USER' => 'SPEC provider portal', 'FINANCE_USER' => 'SPEC provider portal',
     ];
 
     /** Role codes an administrator may invite someone into. */
@@ -91,12 +100,14 @@ final class RoleCatalogue
         'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'REINSURANCE_OFFICER',
         'CUSTOMER_SERVICE', 'ADJUSTER', 'FINANCE_OFFICER', 'CASHIER', 'DEVELOPER',
         'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+        'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER',
     ];
 
     /** Roles linked to one insurer via tenant_memberships.carrier_id. */
     public const CARRIER_ROLES = ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'];
 
-    public const PROVIDER_ROLES = ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE'];
+    public const PROVIDER_ROLES = ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+        'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER'];
 
     /**
      * REQ-RBAC-004: platform administration roles. Their grants never reach
@@ -125,7 +136,27 @@ final class RoleCatalogue
 
     public const SENIOR_UNDERWRITER_PERMISSIONS = [...self::UNDERWRITER_PERMISSIONS, 'underwriting.assign', 'documents.medical.read', 'documents.status.request', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'coinsurance.approve', 'special_policies.manage', 'cargo_declarations.cancel', 'life_surrender.scales.approve', 'policies.cancellation.approve', 'policies.suspend', 'policies.reinstatement.approve', 'policy.recovery.approve'];
 
-    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload', 'claims.experts.work', 'claims.assessment.record'];
+    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload', 'claims.experts.work', 'claims.assessment.record', 'provider_portal.assignments.view', 'provider_portal.profile.view'];
+
+    /**
+     * Owner decision (agent R): "a claims officer cannot approve a colleague's claim".
+     * Explicit MAKER set replacing the former '*'. Every checker permission
+     * (*.approve, *.review, *.supervise, *.conclude, *.resolve, settlement.pay,
+     * payment.approve/execute/reverse, ...) stays with CLAIMS_MANAGER.
+     */
+    public const CLAIMS_OFFICER_PERMISSIONS = [
+        'claims.view', 'claims.read', 'claims.create', 'claims.assign', 'claims.transition',
+        'claims.parties.manage', 'claims.coverage.check', 'claims.experts.assign', 'claims.assessment.record',
+        'claims.investigation.manage', 'claims.carrier.manual_entry', 'claims.carrier.exchange', 'claims.carrier.callback',
+        'claims.decision.propose', 'claims.decision.appeal', 'claims.reserve.request',
+        'claims.settlement.calculate', 'claims.settlement.offer', 'claims.settlement.respond', 'claims.settlement.discharge',
+        'claims.payment.request', 'claims.close', 'claims.reopen.request', 'claims.late_report.recommend', 'claims.types.manage',
+        'claims.evidence.manage', 'claims.recovery', 'claims.dispute',
+        'legal.matters.view', 'collections.view',
+        'documents.read', 'documents.intake.manage', 'documents.carrier.upload',
+        'customers.read', 'policies.read', 'risk_assets.read', 'beneficiaries.read',
+        'providers.view', 'provider_networks.view', 'workspace.read', 'cases.view', 'cases.manage',
+    ];
 
     public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal'];
 
@@ -139,7 +170,15 @@ final class RoleCatalogue
     public const CASHIER_PERMISSIONS = ['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view'];
 
     public const PROVIDER_PERMISSIONS = [
-        'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read'],
+        'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read',
+            'provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.assignments.view', 'provider_portal.preauth.view', 'provider_portal.claims.view', 'provider_portal.finance.view'],
+        // Provider portal SPEC roles (read-only portal views; provider-scoped).
+        'FRONT_DESK' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'DOCTOR' => ['provider_portal.profile.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'BILLING_OFFICER' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.claims.view', 'provider_portal.preauth.view', 'provider_portal.finance.view'],
+        'PHARMACY_USER' => ['provider_portal.profile.view', 'provider_portal.tariffs.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'LAB_USER' => ['provider_portal.profile.view', 'provider_portal.tariffs.view', 'provider_portal.preauth.view', 'provider_portal.claims.view'],
+        'FINANCE_USER' => ['provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.finance.view'],
         'PROVIDER_FRONT_DESK' => ['provider.portal.read', 'provider.eligibility.check'],
         'PROVIDER_DOCTOR' => ['provider.portal.read', 'provider.eligibility.check', 'provider.claims.submit', 'documents.medical.read'],
         'PROVIDER_BILLING' => ['provider.portal.read', 'provider.claims.submit', 'provider.claims.read'],
@@ -174,10 +213,10 @@ final class RoleCatalogue
     {
         return match ($roleCode) {
             'CUSTOMER' => DataScope::OWN,
-            'AGENT', 'BROKER_STAFF', 'ADJUSTER', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_PHARMACY', 'PROVIDER_LAB' => DataScope::ASSIGNED,
+            'AGENT', 'BROKER_STAFF', 'ADJUSTER', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'FRONT_DESK', 'DOCTOR', 'PHARMACY_USER', 'LAB_USER' => DataScope::ASSIGNED,
             'BROKER_SUPERVISOR' => DataScope::TEAM,
             'BRANCH_MANAGER' => DataScope::BRANCH,
-            'BROKER_ADMIN', 'PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE' => DataScope::ORGANIZATION,
+            'BROKER_ADMIN', 'PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE', 'BILLING_OFFICER', 'FINANCE_USER' => DataScope::ORGANIZATION,
             'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'CUSTOMER_SERVICE', 'REINSURANCE_OFFICER' => DataScope::CARRIER_RELATIONSHIP,
             'SYSTEM_ADMIN', 'DEVELOPER' => DataScope::PLATFORM,
             'REGULATOR' => DataScope::REGULATOR_READ,
@@ -214,10 +253,12 @@ final class RoleCatalogue
             'CASHIER' => self::CASHIER_PERMISSIONS,
             'REGULATOR' => self::REGULATOR_PERMISSIONS,
             'DEVELOPER' => self::DEVELOPER_PERMISSIONS,
-            'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE' => self::PROVIDER_PERMISSIONS[$roleCode],
+            'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
+            'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER' => self::PROVIDER_PERMISSIONS[$roleCode],
             // SYSTEM_ADMIN keeps '*', but PermissionEvaluator confines a
             // PLATFORM_ONLY role's grants to platform permissions.
-            'SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER' => ['*'],
+            'SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER' => ['*'],
+            'CLAIMS_OFFICER' => self::CLAIMS_OFFICER_PERMISSIONS,
             default => [],
         };
     }
