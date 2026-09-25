@@ -297,7 +297,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('risk-alerts', [RiskAlertController::class, 'alert'])->middleware('permission:fraud.alert.create');
         Route::post('risk-alerts/{alert}/decision', [RiskAlertController::class, 'decide'])->middleware('permission:fraud.alert.decide');
         Route::post('compliance/privileged-access', [ComplianceController::class, 'grantAccess'])->middleware('permission:compliance.access.grant');
-        Route::post('compliance/data-subject-requests', [ComplianceController::class, 'dataRequest']);
+        Route::post('compliance/data-subject-requests', [ComplianceController::class, 'dataRequest'])->middleware('permission:compliance.dsr.receive'); // REQ-DUP-009: was unguarded
         Route::get('compliance/audit-log', [ComplianceController::class, 'audit'])->middleware('permission:audit.read');
         Route::get('reports/insurance-portfolio', [InsuranceReportController::class, 'portfolio'])->middleware('permission:reports.insurance.read');
         Route::get('reports/renewals', [InsuranceReportController::class, 'renewals'])->middleware('permission:reports.insurance.read');
@@ -959,3 +959,29 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('aml/str-reports/{str}/submit', [$s, 'submit'])->whereUuid('str');
 });
 // End Agent E9
+// Agent E10 — REQ-CMP-001 compliance cases on the case engine, REQ-CMP-003 governance registers, REQ-DUP-009 canonical compliance/*.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cc = \App\Interfaces\Http\Controllers\Api\V1\Compliance\ComplianceCaseController::class;
+    $co = \App\Interfaces\Http\Controllers\Api\V1\Compliance\ComplianceController::class;
+    $gv = \App\Interfaces\Http\Controllers\Api\V1\Compliance\GovernanceRegisterController::class;
+    Route::post('compliance/cases', [$cc, 'open'])->middleware('permission:compliance.cases.create');
+    Route::get('compliance/cases/{case}', [$cc, 'show'])->middleware('permission:compliance.cases.read')->whereUuid('case');
+    Route::post('compliance/cases/{case}/transition', [$cc, 'transition'])->middleware('permission:compliance.cases.transition')->whereUuid('case');
+    Route::post('compliance/cases/{case}/findings', [$cc, 'addFinding'])->middleware('permission:compliance.findings.manage')->whereUuid('case');
+    Route::post('compliance/findings/{finding}/withdraw', [$cc, 'withdrawFinding'])->middleware('permission:compliance.findings.manage')->whereUuid('finding');
+    Route::post('compliance/findings/{finding}/corrective-actions', [$cc, 'planAction'])->middleware('permission:compliance.actions.manage')->whereUuid('finding');
+    Route::post('compliance/corrective-actions/{action}/events', [$cc, 'actOnAction'])->middleware('permission:compliance.actions.manage')->whereUuid('action');
+    Route::post('compliance/corrective-actions/{action}/verify', [$cc, 'verifyAction'])->middleware('permission:compliance.actions.verify')->whereUuid('action');
+    Route::post('compliance/cases/{case}/evidence', [$cc, 'linkEvidence'])->middleware('permission:compliance.evidence.link')->whereUuid('case');
+    Route::post('compliance/privileged-access/{x}/approve', [$co, 'approveAccess'])->middleware('permission:compliance.access.approve')->whereUuid('x');
+    Route::post('compliance/privileged-access/{x}/revoke', [$co, 'revokeAccess'])->middleware('permission:compliance.access.revoke')->whereUuid('x');
+    Route::post('compliance/data-subject-requests/{x}/verify', [$co, 'verifyDataRequest'])->middleware('permission:compliance.dsr.verify')->whereUuid('x');
+    Route::post('compliance/data-subject-requests/{x}/resolve', [$co, 'resolveDataRequest'])->middleware('permission:compliance.dsr.resolve')->whereUuid('x');
+    $reg = 'ict-assets|ict-incidents|vendors|outsourcing-contracts|due-diligence-reviews|exit-plans';
+    Route::post('compliance/governance/exit-plans/{id}/approve', [$gv, 'approveExitPlan'])->middleware('permission:compliance.governance.approve')->whereUuid('id');
+    Route::get('compliance/governance/{register}', [$gv, 'index'])->middleware('permission:compliance.governance.read')->where('register', $reg);
+    Route::get('compliance/governance/{register}/{id}', [$gv, 'show'])->middleware('permission:compliance.governance.read')->where('register', $reg)->whereUuid('id');
+    Route::post('compliance/governance/{register}', [$gv, 'store'])->middleware('permission:compliance.governance.manage')->where('register', $reg);
+    Route::patch('compliance/governance/{register}/{id}', [$gv, 'update'])->middleware('permission:compliance.governance.manage')->where('register', $reg)->whereUuid('id');
+});
+// End Agent E10

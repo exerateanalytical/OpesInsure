@@ -38,6 +38,33 @@ trait AuthorizesSensitiveActions
     }
 
     /**
+     * REQ-DUP-009: a canonical action served by several routes (canonical + deprecated aliases with
+     * their own historical permission names) re-asserts whichever `permission:` the matched route
+     * declares. Returns that permission name (also used as the audit action). A route without a
+     * permission middleware is refused (fail closed).
+     */
+    private function authorizeRoutePermission(\Illuminate\Http\Request $request, string $subjectType, ?string $subjectId = null): string
+    {
+        $permission = null;
+        foreach ($request->route()?->gatherMiddleware() ?? [] as $m) {
+            if (is_string($m) && str_starts_with($m, 'permission:')) {
+                $permission = substr($m, strlen('permission:'));
+                break;
+            }
+        }
+        abort_if($permission === null, 403, 'Permission denied.');
+        $this->authorizePermission($permission, $subjectType, $subjectId);
+
+        return $permission;
+    }
+
+    /** True when the matched route is a deprecated trust/* alias (keeps that family's response shape). */
+    private function viaTrustAlias(\Illuminate\Http\Request $request): bool
+    {
+        return str_starts_with((string) $request->route()?->uri(), 'api/v1/trust/');
+    }
+
+    /**
      * Same defence-in-depth guarantee as authorizePermission(), for the
      * model-policy-based abilities Wave 11 uses (Gate::authorize against an
      * auto-discovered Policy class). Logs the outcome before letting
