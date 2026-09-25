@@ -344,3 +344,29 @@ Route::prefix('v1')->group(function (): void {
 });
 
 require __DIR__.'/wave6.php';
+
+// Batch 13A — REQ-PRV-001 / REQ-PRV-002 / REQ-PRV-004: provider master + network.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $p = \App\Application\Providers\Http\ProviderController::class;
+    $n = \App\Application\Providers\Http\ProviderNetworkController::class;
+    Route::get('providers', [$p, 'index'])->middleware('permission:providers.view');
+    Route::post('providers', [$p, 'store'])->middleware('permission:providers.manage');
+    Route::get('providers/{provider}', [$p, 'show'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::get('providers/{provider}/credentialing', [$p, 'history'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::post('providers/{provider}/credentialing', [$p, 'transition'])->middleware('permission:providers.credential')->whereUuid('provider');
+    Route::post('providers/{provider}/facilities', [$p, 'addFacility'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('provider-facilities/{facility}/services', [$p, 'addFacilityService'])->middleware('permission:providers.manage')->whereUuid('facility');
+    Route::post('providers/{provider}/code-mappings', [$p, 'mapCode'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('providers/{provider}/relationships', [$p, 'relate'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::get('medical-services', [$n, 'services'])->middleware('permission:providers.view');
+    Route::post('medical-services', [$n, 'addService'])->middleware('permission:providers.manage');
+    Route::get('provider-networks', [$n, 'index'])->middleware('permission:provider_networks.view');
+    Route::post('provider-networks', [$n, 'store'])->middleware('permission:provider_networks.manage');
+    Route::get('provider-networks/{network}/members', [$n, 'members'])->middleware('permission:provider_networks.view')->whereUuid('network');
+    Route::post('provider-networks/{network}/members', [$n, 'addMember'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-network-memberships/{membership}/end', [$n, 'endMember'])->middleware('permission:provider_networks.manage')->whereUuid('membership');
+    Route::post('provider-networks/{network}/contracts', [$n, 'addContract'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-contracts/{contract}/tariffs', [$n, 'draftTariff'])->middleware('permission:provider_networks.manage')->whereUuid('contract');
+    Route::get('provider-contracts/{contract}/price', [$n, 'price'])->middleware('permission:provider_networks.view')->whereUuid('contract');
+    Route::post('provider-tariffs/{tariff}/approve', [$n, 'approveTariff'])->middleware('permission:provider_tariffs.approve')->whereUuid('tariff');
+});
