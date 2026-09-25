@@ -497,6 +497,17 @@ final class DomainEventCatalogue
             $d('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', 'Conflicting authoritative fiscal power values; conflict case opened.', [], [$C], true),
             $d('vehicle.stamp_duty_schedule.approved', 'vehicle_stamp_duty_rate_schedule', 'Automobile stamp duty rate schedule version approved (effective-dated).', [], [$C], true),
             $d('vehicle.transport_licence.verified', 'vehicle_transport_licence', 'Transport licence verified VALID (enables the transport stamp duty schedule).', [], [$C], true),
+            // Agent F1 — owner spec "Finance Counterparty Accounts & Commission Sub-Ledger v1" (App\Application\Finance\Subledger)
+            $d('premium.remittance.recorded', 'premium_remittance', 'Broker premium remittance to an insurer recorded; held as unapplied cash until allocated.', [], [], true),
+            $d('premium.remittance.allocated', 'premium_remittance', 'Premium remittance allocated to insurer premium payables.', ['PremiumRemitted'], [], true),
+            $d('premium.remittance.overdue', 'financial_obligation', 'Insurer premium payable past its remittance due date with an outstanding balance.', ['PremiumRemittanceOverdue'], [], true),
+            $d('finance.counterparty_account.opened', 'finance_counterparty_account', 'Counterparty account opened (pending approval).', [], [], true),
+            $d('finance.counterparty_account.approved', 'finance_counterparty_account', 'Counterparty account approved by an independent checker (ACTIVE).', [], [], true),
+            $d('finance.statement.generated', 'document', 'Finance statement document (DOC-193..200) generated from the sub-ledger.', [], [], true),
+            $d('finance.debit_note.issued', 'financial_obligation', 'Debit note issued (spec DebitNoteIssued; no debit-note store yet).', ['DebitNoteIssued']),
+            $d('finance.credit_note.issued', 'financial_obligation', 'Credit note issued (spec CreditNoteIssued; no credit-note store yet).', ['CreditNoteIssued']),
+            $d('ledger.period.closed', 'accounting_period', 'Accounting period closed (audited as ledger.period.closed).', ['PeriodClosed']),
+            $d('ledger.period.reopened', 'accounting_period', 'Accounting period reopened after maker-checker approval.', ['PeriodReopened']),
 
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
@@ -508,6 +519,16 @@ final class DomainEventCatalogue
             $d('reporting.kpi_definition.retired', 'kpi_definition', 'Active KPI definition version retired (baseline applies again).', [], [$C], true),
         ];
     }
+
+    /** Agent F1 — spec PascalCase events that name an already-catalogued fact (aliases only; no new event). */
+    private const SPEC_ALIASES = [
+        'PremiumBilled' => 'finance.obligation.created', 'PremiumCollected' => 'finance.obligation.settled', 'PremiumPartiallyCollected' => 'payment.allocated',
+        'CommissionExpected' => 'commission.calculated', 'CommissionBecamePayable' => 'commission.payable', 'CommissionPartiallyPaid' => 'partner.payout.paid',
+        'CommissionPaid' => 'commission.paid', 'CommissionClawedBack' => 'commission.clawed_back', 'RefundPaid' => 'refund.paid',
+        'PaymentReversed' => 'payment.allocation.reversed', 'SettlementCalculated' => 'settlement.calculated', 'SettlementApproved' => 'settlement.approved',
+        'SettlementPaid' => 'settlement.settled', 'ReconciliationMatched' => 'reconciliation.manual_match.approved',
+        'ReconciliationExceptionRaised' => 'reconciliation.exception.raised', 'JournalPosted' => 'ledger.journal.posted', 'JournalReversed' => 'ledger.journal.reversed',
+    ];
 
     private static function boot(): void
     {
@@ -527,6 +548,12 @@ final class DomainEventCatalogue
                 }
                 self::$byAlias[$a] = $e->name;
             }
+        }
+        foreach (self::SPEC_ALIASES as $a => $name) {
+            if (isset(self::$byAlias[$a]) || ! isset(self::$byName[$name])) {
+                throw new InvalidArgumentException("Spec alias {$a} is mapped twice or names an unknown event.");
+            }
+            self::$byAlias[$a] = $name;
         }
     }
 

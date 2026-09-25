@@ -15,6 +15,12 @@ final class DefaultChartOfAccounts
     /** code => [name, type] */
     public const ACCOUNTS = [
         '411000' => ['Premium receivable (policyholders)', 'ASSET'],
+        '411100' => ['Premium receivable (intermediaries / brokers)', 'ASSET'],
+        '412000' => ['Commission receivable (insurers)', 'ASSET'],
+        '412100' => ['Reinsurance commission receivable', 'ASSET'],
+        '409100' => ['Agent advances recoverable', 'ASSET'],
+        '409200' => ['Commission clawback receivable', 'ASSET'],
+        '409300' => ['Provider advances', 'ASSET'],
         '401100' => ['Insurer / carrier premium payable', 'LIABILITY'],
         '401200' => ['Reinsurance premium payable', 'LIABILITY'],
         '401300' => ['Co-insurer share payable', 'LIABILITY'],
@@ -22,7 +28,11 @@ final class DefaultChartOfAccounts
         '419000' => ['Refunds payable to customers', 'LIABILITY'],
         '421000' => ['Commission payable (intermediaries)', 'LIABILITY'],
         '443000' => ['Taxes payable (VAT / insurance tax)', 'LIABILITY'],
+        '445000' => ['Levies payable', 'LIABILITY'],
+        '447000' => ['Withholding tax payable', 'LIABILITY'],
         '471000' => ['Suspense account', 'ASSET'],
+        '471100' => ['Unapplied cash / customer credits', 'LIABILITY'],
+        '581000' => ['Settlement clearing (internal transfers)', 'ASSET'],
         '481000' => ['Claims payable (approved settlements)', 'LIABILITY'],
         '481500' => ['Outstanding claims reserve', 'LIABILITY'],
         '521000' => ['Bank', 'ASSET'],
@@ -62,5 +72,8 @@ final class DefaultChartOfAccounts
         'health.provider_claim.approved' => ['CLAIMS', '601000', '481000', 'Health provider claim adjudicated: insurer share recognised as claims payable.'],
         'health.provider_claim.paid' => ['CLAIMS', '481000', '521000', 'Health provider claim paid in a provider settlement batch.'],
         'premium.tax.assessed' => ['TAX', '411000', '443000', 'Tax on premium assessed.'],
+        // Agent F1 — finance sub-ledger: broker → insurer premium remittances (held as unapplied until allocated).
+        'premium.remittance.recorded' => ['REMITTANCE', '471100', '521000', 'Premium remittance paid to an insurer; held as unapplied until allocated.'],
+        'premium.remittance.allocated' => ['REMITTANCE', '401100', '471100', 'Unapplied premium remittance allocated to premium payable to the insurer.'],
     ];
 }

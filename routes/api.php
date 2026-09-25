@@ -1188,3 +1188,30 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('master-data/vehicles/transport-licences/{licence}/decision', [$vp, 'decideLicence'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('licence');
 });
 // End Agent V1
+// Agent F1 — finance counterparty accounts & commission sub-ledger (App\Application\Finance\Subledger; owner spec v1).
+Route::prefix('v1/finance/subledger')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sl = \App\Application\Finance\Subledger\Http\SubledgerController::class;
+    Route::get('accounts', [$sl, 'accounts'])->middleware('permission:finance.accounts.view');
+    Route::post('accounts', [$sl, 'openAccount'])->middleware('permission:finance.adjustments.create');
+    Route::post('accounts/{account}/approve', [$sl, 'approveAccount'])->middleware('permission:finance.adjustments.approve')->whereUuid('account');
+    Route::post('accounts/{account}/status', [$sl, 'accountStatus'])->middleware('permission:finance.adjustments.approve')->whereUuid('account');
+    Route::get('accounts/{account}/balance', [$sl, 'accountBalance'])->middleware('permission:finance.accounts.view')->whereUuid('account');
+    Route::get('entries', [$sl, 'entries'])->middleware('permission:finance.ledger.view');
+    Route::get('entries/{entry}/drilldown', [$sl, 'drilldown'])->middleware('permission:finance.ledger.view')->whereUuid('entry');
+    Route::get('balances', [$sl, 'balances'])->middleware('permission:finance.accounts.view');
+    Route::get('dashboards/broker', [$sl, 'brokerDashboard'])->middleware('permission:finance.accounts.view');
+    Route::get('dashboards/insurer', [$sl, 'insurerDashboard'])->middleware('permission:finance.accounts.view');
+    Route::get('insurers/{insurer}', [$sl, 'brokerInsurer'])->middleware('permission:finance.accounts.view')->whereUuid('insurer');
+    Route::get('brokers/{broker}', [$sl, 'insurerBroker'])->middleware('permission:finance.accounts.view')->whereUuid('broker');
+    Route::get('customers/{party}', [$sl, 'customerLedger'])->middleware('permission:finance.accounts.view')->whereUuid('party');
+    Route::get('agents/{agent}', [$sl, 'agentLedger'])->middleware('permission:finance.commissions.view')->whereUuid('agent');
+    Route::post('remittances', [$sl, 'recordRemittance'])->middleware('permission:finance.settlements.create');
+    Route::post('remittances/{remittance}/allocations', [$sl, 'allocateRemittance'])->middleware('permission:finance.settlements.create')->whereUuid('remittance');
+    Route::post('remittances/{remittance}/hold', [$sl, 'holdRemittance'])->middleware('permission:finance.reconciliation.override')->whereUuid('remittance');
+    Route::get('aging/{scope}', [$sl, 'aging'])->middleware('permission:finance.accounts.view');
+    Route::post('aging-settings', [$sl, 'configureAging'])->middleware('permission:finance.commissions.configure');
+    Route::get('reports', [$sl, 'reports'])->middleware('permission:finance.accounts.view');
+    Route::get('reports/{report}', [$sl, 'report'])->middleware('permission:finance.accounts.export');
+    Route::post('documents/{doc}', [$sl, 'generateDocument'])->middleware('permission:finance.accounts.export');
+});
+// End Agent F1
