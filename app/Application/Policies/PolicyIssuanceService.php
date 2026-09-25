@@ -7,6 +7,7 @@ namespace App\Application\Policies;
 use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\Shared\CanonicalJson;
+use App\Application\Authority\AuthorityDenied;
 use App\Application\Authority\AuthorityService;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
@@ -32,6 +33,18 @@ final class PolicyIssuanceService
     ) {}
 
     public function request(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
+    {
+        try {
+            return $this->requestInTransaction($tenant, $proposal, $payment, $data, $actor);
+        } catch (AuthorityDenied $denied) {
+            // Blocked attempts stay in the authority registry after the rollback.
+            $this->authority->record($denied->outcome);
+
+            throw $denied->error;
+        }
+    }
+
+    private function requestInTransaction(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
     {
         return DB::transaction(function () use ($tenant, $proposal, $payment, $data, $actor): PolicyIssuanceRequest {
             $proposal->load('offer.quote');
@@ -98,9 +111,9 @@ final class PolicyIssuanceService
                 );
 
                 if ($outcome->denied()) {
-                    throw ValidationException::withMessages([
+                    throw new AuthorityDenied($outcome, ValidationException::withMessages([
                         'delegated_authority_agreement_id' => __('wave5.authority_denied', ['reason' => $outcome->reason]),
-                    ]);
+                    ]));
                 }
 
                 $authoritySnapshot = [

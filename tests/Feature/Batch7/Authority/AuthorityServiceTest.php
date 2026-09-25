@@ -106,3 +106,17 @@ it('enforces intermediary authorization: lapsed denies, missing refers', functio
     expect($req->status)->toBe('CARRIER_REVIEW')->and($req->authority_snapshot['decision'])->toBe('INTERMEDIARY_AUTHORIZATION_MISSING')
         ->and($req->authority_snapshot['referral_case_id'])->not->toBeNull();
 });
+
+it('keeps a denied attempt in authority_checks after the request transaction rolls back', function () {
+    $f = b7aFixture(intermediaryStatus: 'SUSPENDED');
+    expect(fn () => b7aRequest($f))->toThrow(ValidationException::class);
+
+    $row = DB::table('authority_checks')->where('subject_id', $f['proposal']->id)->sole();
+    expect($row->outcome)->toBe('DENIED')->and($row->reason)->toBe('INTERMEDIARY_NOT_AUTHORIZED')
+        ->and($row->delegated_authority_agreement_id)->toBe($f['agreement_id'])
+        ->and(PolicyIssuanceRequest::where('proposal_id', $f['proposal']->id)->exists())->toBeFalse();
+
+    $territory = b7aFixture();
+    expect(fn () => b7aRequest($territory, 'GA'))->toThrow(ValidationException::class);
+    expect(DB::table('authority_checks')->where('subject_id', $territory['proposal']->id)->where('outcome', 'DENIED')->value('reason'))->toBe('TERRITORY_NOT_PERMITTED');
+});

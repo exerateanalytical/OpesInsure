@@ -22,6 +22,8 @@ final readonly class AuthorityOutcome
         public ?string $intermediaryAuthorizationId,
         public ?string $referralCaseId,
         public string $checkId,
+        /** @var array<string, mixed> the authority_checks row */
+        public array $record = [],
     ) {}
 
     public function allowed(): bool
