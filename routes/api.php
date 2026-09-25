@@ -509,3 +509,35 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('clearing/batches/{batch}/reconcile', [$cl, 'reconcile'])->middleware('permission:clearing.reconcile')->whereUuid('batch');
 });
 // End Batch 9-6
+
+// Agent W1 — Batch 8 wiring: cancellation (REQ-CAN-001, BRK-062 approver queue), suspension/reinstatement (REQ-POL-006),
+// premium recovery (REQ-POL-010) and staff triage of customer service requests (REQ-DUP-014; conversion goes through
+// POST policies/{policy}/transactions with service_request_id).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cn = \App\Application\Policies\Http\PolicyCancellationController::class;
+    Route::post('policies/{policy}/cancellations/preview', [$cn, 'preview'])->middleware('permission:policies.cancellation.request')->whereUuid('policy');
+    Route::post('policies/{policy}/cancellations', [$cn, 'store'])->middleware('permission:policies.cancellation.request')->whereUuid('policy');
+    Route::get('policy-cancellations', [$cn, 'index'])->middleware('permission:policies.cancellation.review');
+    Route::get('policy-cancellations/{cancellation}', [$cn, 'show'])->middleware('permission:policies.cancellation.review')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/review', [$cn, 'review'])->middleware('permission:policies.cancellation.review')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/approve', [$cn, 'approve'])->middleware('permission:policies.cancellation.approve')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/reject', [$cn, 'reject'])->middleware('permission:policies.cancellation.approve')->whereUuid('cancellation');
+
+    $su = \App\Application\Policies\Http\PolicySuspensionController::class;
+    Route::post('policies/{policy}/suspend', [$su, 'suspend'])->middleware('permission:policies.suspend')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstatement-requests', [$su, 'requestReinstatement'])->middleware('permission:policies.reinstatement.request')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstatement-requests/reject', [$su, 'rejectReinstatement'])->middleware('permission:policies.reinstatement.approve')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstate', [$su, 'reinstate'])->middleware('permission:policies.reinstatement.approve')->whereUuid('policy');
+    Route::get('policy-reinstatement-queue', [$su, 'queue'])->middleware('permission:policies.reinstatement.approve');
+
+    $rc = \App\Application\Policies\Http\PolicyRecoveryController::class;
+    Route::post('policies/{policy}/recovery-cases', [$rc, 'open'])->middleware('permission:policy.recovery.request')->whereUuid('policy');
+    Route::get('policy-recovery-cases', [$rc, 'index'])->middleware('permission:policy.recovery.approve');
+    Route::get('policy-recovery-cases/{case}', [$rc, 'show'])->middleware('permission:policy.recovery.request')->whereUuid('case');
+    Route::post('policy-recovery-cases/{case}/approve', [$rc, 'approve'])->middleware('permission:policy.recovery.approve')->whereUuid('case');
+    Route::post('policy-recovery-cases/{case}/reject', [$rc, 'reject'])->middleware('permission:policy.recovery.approve')->whereUuid('case');
+    Route::post('policy-premium-instalments/{instalment}/settle', [$rc, 'settleInstalment'])->middleware('permission:policy.recovery.request')->whereUuid('instalment');
+    Route::post('policy-premium-instalments/{instalment}/waive', [$rc, 'waiveInstalment'])->middleware('permission:policy.premium.waive')->whereUuid('instalment');
+
+    Route::get('policy-service-requests', [\App\Application\Policies\Http\ServiceRequestTriageController::class, 'index'])->middleware('permission:policies.service.approve');
+});

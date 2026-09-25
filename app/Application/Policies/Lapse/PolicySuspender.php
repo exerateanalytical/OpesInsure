@@ -9,11 +9,11 @@ use Illuminate\Container\Attributes\Bind;
 /**
  * Seam for suspending an in-force policy on premium default (REQ-POL-008 SUSPEND_ON_DEFAULT).
  *
- * The canonical suspension service (App\Application\Policies\Suspension, REQ-POL-006) is built separately;
- * until it is merged the default binding is StateMachinePolicySuspender. On merge, rebind this interface
- * to an adapter over the Suspension service — the lapse sweep only depends on this contract.
+ * Bound to SuspensionServicePolicySuspender, an adapter over the canonical suspension service
+ * (App\Application\Policies\Suspension, REQ-POL-006), so premium default uses the single suspension path.
+ * StateMachinePolicySuspender remains as the legacy direct implementation (no longer bound).
  */
-#[Bind(StateMachinePolicySuspender::class)]
+#[Bind(SuspensionServicePolicySuspender::class)]
 interface PolicySuspender
 {
     /**
