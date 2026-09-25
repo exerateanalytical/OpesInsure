@@ -394,3 +394,31 @@ Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])-
     Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
     Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
 });
+
+// Batch 8-9 — REQ-DOC-008 origin/evidence, REQ-DOC-009 access log/retention/legal hold/destruction, REQ-DOC-010 intake, REQ-DOC-012 e-signature.
+Route::prefix('v1/document-governance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $g = \App\Application\Documents\Http\DocumentGovernanceController::class;
+    Route::get('third-party-evidence', [$g, 'thirdPartyEvidence'])->middleware('permission:documents.read');
+    Route::get('intake', [$g, 'intakeIndex'])->middleware('permission:documents.intake.manage');
+    Route::post('intake', [$g, 'intakeReceive'])->middleware('permission:documents.intake.manage');
+    Route::post('intake/{item}/classify', [$g, 'intakeClassify'])->middleware('permission:documents.intake.manage')->whereUuid('item');
+    Route::post('intake/{item}/reject', [$g, 'intakeReject'])->middleware('permission:documents.intake.manage')->whereUuid('item');
+    Route::get('documents/{document}/access-log', [$g, 'accessLog'])->middleware('permission:documents.access_log.read')->whereUuid('document');
+    Route::get('documents/{document}/retention', [$g, 'retentionStatus'])->middleware('permission:documents.retention.manage')->whereUuid('document');
+    Route::post('documents/{document}/destruction-requests', [$g, 'destructionRequest'])->middleware('permission:documents.destruction.request')->whereUuid('document');
+    Route::post('destruction-requests/{request}/decide', [$g, 'destructionDecide'])->middleware('permission:documents.destruction.approve')->whereUuid('request');
+    Route::get('retention-schedules', [$g, 'retentionIndex'])->middleware('permission:documents.retention.manage');
+    Route::post('retention-schedules', [$g, 'retentionDraft'])->middleware('permission:documents.retention.manage');
+    Route::post('retention-schedules/{schedule}/approve', [$g, 'retentionApprove'])->middleware('permission:documents.retention.approve')->whereUuid('schedule');
+    Route::get('legal-holds', [$g, 'holdIndex'])->middleware('permission:documents.legal_hold.manage');
+    Route::post('legal-holds', [$g, 'holdPlace'])->middleware('permission:documents.legal_hold.manage');
+    Route::post('legal-holds/{hold}/release', [$g, 'holdRelease'])->middleware('permission:documents.legal_hold.manage')->whereUuid('hold');
+    Route::post('signature-requests', [$g, 'signatureCreate'])->middleware('permission:documents.signatures.manage');
+    Route::get('signature-requests/{request}', [$g, 'signatureShow'])->middleware('permission:documents.signatures.manage')->whereUuid('request');
+    Route::post('signature-requests/{request}/cancel', [$g, 'signatureCancel'])->middleware('permission:documents.signatures.manage')->whereUuid('request');
+});
+Route::prefix('v1/signature-requests')->middleware(['auth:api', 'json.api', 'throttle:30,1'])->group(function (): void {
+    $g = \App\Application\Documents\Http\DocumentGovernanceController::class;
+    Route::post('{request}/sign', [$g, 'sign'])->whereUuid('request');
+    Route::post('{request}/decline', [$g, 'decline'])->whereUuid('request');
+});
