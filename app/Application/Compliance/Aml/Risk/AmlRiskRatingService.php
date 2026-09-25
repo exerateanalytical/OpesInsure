@@ -99,8 +99,10 @@ final class AmlRiskRatingService
             $svc = app(self::SCREENING_SERVICE);
             if (method_exists($svc, 'riskFacts')) {
                 $facts = array_values(array_filter(array_map(fn ($f) => strtoupper((string) $f), (array) $svc->riskFacts($tenantId, $partyId))));
-
-                return [$facts, 'SCREENING_SERVICE'];
+                if ($facts !== []) {
+                    return [$facts, 'SCREENING_SERVICE'];
+                }
+                // No list-screening facts for the party: the KYC screening checks remain the only screening source.
             }
         }
 

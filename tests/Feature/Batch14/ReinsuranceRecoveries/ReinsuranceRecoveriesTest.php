@@ -221,29 +221,37 @@ it('REQ-REI-004: stop loss recovers on the aggregate retained loss ratio across 
     $this->postJson("/api/v1/reinsurance/recoveries/{$r1['id']}/close", ['reason' => 'Below stop-loss attachment'], $this->h)->assertOk()->assertJsonPath('data.status', 'CLOSED');
 });
 
-it('REQ-REI-004: facultative placements are included when the facultative table exists; permissions and tenancy enforced', function () {
+it('REQ-REI-004: bound E6 facultative placements are recovery sources exactly once; permissions and tenancy enforced', function () {
     $a = e7Reinsurer('A');
     $fac = e7Reinsurer('FAC');
     e7Treaty('QS', 'QUOTA_SHARE', ['cession_percent' => 50], [['reinsurer_id' => $a, 'share_percent' => 100]]);
     $policy = e7Policy();
     $claim = e7Claim($policy, 1_000_000);
 
-    $created = false;
-    if (! Schema::hasTable('reinsurance_facultative_cessions')) {
-        Schema::create('reinsurance_facultative_cessions', function ($t) {
-            $t->uuid('id')->primary();
-            $t->uuid('policy_id');
-            $t->uuid('reinsurer_id');
-            $t->decimal('ceded_percent', 9, 4);
-            $t->string('status', 16);
-        });
-        $created = true;
-    }
-    if ($created) {
-        DB::table('reinsurance_facultative_cessions')->insert(['id' => (string) Str::uuid(), 'policy_id' => $policy->id, 'reinsurer_id' => $fac, 'ceded_percent' => 20, 'status' => 'ACTIVE']);
-        $by = collect($this->postJson("/api/v1/reinsurance/claims/{$claim->id}/recoveries/preview", [], $this->h)->assertOk()->json('data.recoveries'))->keyBy('treaty_type');
-        expect($by['FACULTATIVE']['recoverable_minor'])->toBe(200_000)->and($by['QUOTA_SHARE']['recoverable_minor'])->toBe(400_000);
-    }
+    // A real E6 placement: 20 % facultative, bound through the maker-checker flow, recorded once by CessionService.
+    $fm = makeAuthTestUser($this->tenant, [...E7_PERMS, 'reinsurance.facultative.view', 'reinsurance.facultative.manage']);
+    $fc = makeAuthTestUser($this->tenant, ['reinsurance.facultative.view', 'reinsurance.facultative.approve']);
+    DB::table('authority_limits')->insert(['id' => (string) Str::uuid(), 'carrier_id' => $this->f['carrier']->id, 'holder_type' => 'USER', 'holder_id' => $fc->id,
+        'authority_type' => 'FACULTATIVE_APPROVE', 'max_amount_minor' => 500_000_000, 'currency' => 'XAF', 'effective_from' => now()->subMonth()->toDateString(),
+        'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+    Passport::actingAs($fm, [], 'api');
+    $slip = $this->postJson('/api/v1/reinsurance/facultative', ['policy_id' => $policy->id, 'risk_description' => 'Warehouse', 'placed_share_percent' => 20,
+        'period_from' => '2026-11-01', 'period_to' => '2027-10-31', 'participants' => [['reinsurer_id' => $fac, 'offered_percent' => 100]]], $this->h)->assertCreated()->json('data.id');
+    $this->postJson("/api/v1/reinsurance/facultative/{$slip}/lines", ['lines' => [['reinsurer_id' => $fac, 'written_percent' => 100]]], $this->h)->assertOk();
+    $this->postJson("/api/v1/reinsurance/facultative/{$slip}/submit", [], $this->h)->assertOk();
+    Passport::actingAs($fc, [], 'api');
+    $this->postJson("/api/v1/reinsurance/facultative/{$slip}/approve", ['reason' => 'Signed slip'], $this->h)->assertOk()->assertJsonPath('data.status', 'BOUND');
+
+    Passport::actingAs($this->maker, [], 'api');
+    $recs = $this->postJson("/api/v1/reinsurance/claims/{$claim->id}/recoveries/preview", [], $this->h)->assertOk()->json('data.recoveries');
+    $by = collect($recs)->keyBy('treaty_type');
+    // FAC 20 % of 1m = 200k; QS 50 % of the remaining 800k = 400k. The placement is one source, never two.
+    expect($by['FACULTATIVE']['recoverable_minor'])->toBe(200_000)->and($by['QUOTA_SHARE']['recoverable_minor'])->toBe(400_000)
+        ->and(collect($recs)->where('source_type', 'FACULTATIVE'))->toHaveCount(1)
+        ->and(array_sum(array_column($recs, 'recoverable_minor')))->toBe(600_000);
+    $this->postJson("/api/v1/reinsurance/claims/{$claim->id}/recoveries/estimate", [], $this->h)->assertOk();
+    expect(DB::table('reinsurance_recoveries')->where('claim_id', $claim->id)->where('source_type', 'FACULTATIVE')->count())->toBe(1)
+        ->and(DB::table('reinsurance_recoveries')->where('claim_id', $claim->id)->where('source_type', 'FACULTATIVE')->value('source_key'))->toBe($slip);
 
     $viewer = makeAuthTestUser($this->tenant, ['reinsurance.recoveries.view']);
     Passport::actingAs($viewer, [], 'api');

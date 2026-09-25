@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  *
  * estimate() reads the claim (claims.current_reserve_minor = outstanding reserve; claim_payments PAID and
  * claim_settlements PAID without a linked payment = paid) and the policy's CALCULATED cessions (CessionService),
- * plus facultative placements when that table exists, and records one recovery per source split by reinsurer.
+ * including the BOUND facultative cessions E6 records there, and records one recovery per source split by reinsurer.
  * Amounts refresh while ESTIMATED / NOTIFIED / DISPUTED (unbilled); from AGREED they are frozen.
  *
  * Lifecycle: ESTIMATED -> NOTIFIED -> AGREED -> BILLED -> SETTLED -> CLOSED, with DISPUTED from NOTIFIED/AGREED/BILLED.
@@ -43,9 +43,6 @@ final class RecoveryService
     ];
 
     private const REFRESHABLE = ['ESTIMATED', 'NOTIFIED', 'DISPUTED'];
-
-    /** Tables E6 (facultative) may create; the first one present with the needed columns is used. */
-    private const FACULTATIVE_TABLES = ['reinsurance_facultative_cessions', 'facultative_cessions', 'reinsurance_facultative_placements'];
 
     public function __construct(
         private readonly CessionService $cessions,
@@ -347,39 +344,31 @@ final class RecoveryService
         return [$claim, $policy, ['gross_paid_minor' => $paid, 'outstanding_reserve_minor' => $reserve, 'gross_incurred_minor' => $paid + $reserve]];
     }
 
-    /** Recovery sources = current treaty cessions of the policy + facultative placements (if E6's table exists). */
+    /**
+     * Recovery sources = the policy's cessions from CessionService::forPolicy, read once: its current treaty run plus
+     * the BOUND facultative cessions E6 records there (source FACULTATIVE, shares per reinsurer). No other table is read,
+     * so a facultative placement is counted exactly once.
+     */
     private function sources(string $tenantId, object $policy): array
     {
+        $fac = [];
         $out = [];
         foreach ($this->cessions->forPolicy($tenantId, $policy->id)['cessions'] as $c) {
+            $shares = array_map(fn ($s) => ['reinsurer_id' => $s['reinsurer_id'], 'share_percent' => (float) $s['share_percent']], $c['shares']);
+            if (($c['source'] ?? null) === 'FACULTATIVE' || $c['treaty_type'] === 'FACULTATIVE') {
+                $fac[] = ['source_type' => 'FACULTATIVE', 'source_key' => (string) ($c['facultative_placement_id'] ?? $c['id']), 'cession_id' => $c['id'],
+                    'treaty_type' => 'FACULTATIVE', 'ceded_percent' => (float) $c['ceded_percent'], 'shares' => $shares];
+
+                continue;
+            }
             $v = $this->treaties->version($tenantId, $c['treaty_version_id']);
             $out[] = ['source_type' => 'TREATY', 'source_key' => $c['treaty_version_id'], 'treaty_id' => $c['treaty_id'], 'treaty_version_id' => $c['treaty_version_id'],
                 'cession_id' => $c['id'], 'treaty_type' => $c['treaty_type'], 'ceded_percent' => (float) $c['ceded_percent'], 'layers' => $c['layers'] ?? [],
                 'treaty_layers' => $v['layers'] ?? [], 'attachment_ratio' => $v['attachment_ratio'] ?? null, 'limit_ratio' => $v['limit_ratio'] ?? null,
-                'shares' => array_map(fn ($s) => ['reinsurer_id' => $s['reinsurer_id'], 'share_percent' => (float) $s['share_percent']], $c['shares'])];
+                'shares' => $shares];
         }
 
-        return array_merge($this->facultative($policy->id), $out);
-    }
-
-    private function facultative(string $policyId): array
-    {
-        foreach (self::FACULTATIVE_TABLES as $table) {
-            if (! Schema::hasTable($table) || ! Schema::hasColumns($table, ['policy_id', 'reinsurer_id'])) {
-                continue;
-            }
-            $pctCol = collect(['ceded_percent', 'cession_percent', 'share_percent'])->first(fn ($c) => Schema::hasColumn($table, $c));
-            if (! $pctCol) {
-                continue;
-            }
-            $rows = DB::table($table)->where('policy_id', $policyId)
-                ->when(Schema::hasColumn($table, 'status'), fn ($q) => $q->whereNotIn('status', ['DRAFT', 'CANCELLED', 'DECLINED', 'SUPERSEDED', 'REJECTED', 'EXPIRED']))->get();
-
-            return $rows->map(fn ($f) => ['source_type' => 'FACULTATIVE', 'source_key' => (string) $f->id, 'treaty_type' => 'FACULTATIVE', 'ceded_percent' => (float) $f->{$pctCol},
-                'shares' => [['reinsurer_id' => $f->reinsurer_id, 'share_percent' => 100.0]]])->all();
-        }
-
-        return [];
+        return array_merge($fac, $out);
     }
 
     /** Stop loss: aggregate retained losses of all claims under the treaty version vs its subject premium. */

@@ -87,4 +87,19 @@ final class ProviderScope
     {
         return in_array($providerId, self::providerIdsFor($user), true);
     }
+
+    /**
+     * Provider-side actions on a record of $providerId: a provider user (acts for at least one provider) must act for
+     * this one; back-office staff (act for no provider) are governed by their permissions alone.
+     */
+    public static function assertMayActFor(?User $user, string $providerId): void
+    {
+        if (! $user) {
+            return;
+        }
+        $ids = self::providerIdsFor($user);
+        if ($ids !== [] && ! in_array($providerId, $ids, true)) {
+            throw new ApiProblemException('PROVIDER_SCOPE', 403, 'This account does not act for the provider of this record.');
+        }
+    }
 }

@@ -10,6 +10,7 @@ use App\Application\Cases\CaseService;
 use App\Application\Cases\Models\WorkCase;
 use App\Application\Documents\Engine\DocumentEngine;
 use App\Application\Events\OutboxWriter;
+use App\Application\Providers\Portal\ProviderScope;
 use App\Application\Providers\ProviderNetworkService;
 use App\Application\Providers\ProviderRegistry;
 use App\Interfaces\Http\Errors\ApiProblemException;
@@ -41,6 +42,9 @@ final class PreauthorizationService
 
     private const ACCUMULATOR = 'App\\Application\\Health\\Benefits\\BenefitAccumulator';
 
+    /** E2 eligibility outcomes that refuse the service (other outcomes leave the decision to the reviewer). */
+    public const BLOCKING_OUTCOMES = ['NOT_ELIGIBLE', 'WAITING_PERIOD', 'BENEFIT_EXHAUSTED'];
+
     private const IN_FORCE = ['ACTIVE', 'EXPIRING', 'ENDORSEMENT_PENDING', 'CANCELLATION_PENDING'];
 
     public function __construct(
@@ -65,6 +69,7 @@ final class PreauthorizationService
         $policy = Policy::where('tenant_id', $tenantId)->whereKey($d['policy_id'])->first()
             ?? throw new ApiProblemException('POLICY_NOT_FOUND', 404, 'Policy not found.');
         $p = $this->providers->find($d['provider_id']);
+        ProviderScope::assertMayActFor($actor, $p->id);
         if ($p->category !== 'HEALTH') {
             throw new ApiProblemException('PROVIDER_NOT_HEALTH', 422, "A {$p->category} provider cannot request a health preauthorization.");
         }
@@ -96,8 +101,9 @@ final class PreauthorizationService
         }
         unset($l);
         $eligible = $lines !== [] && ! in_array(false, array_map(fn ($l) => (bool) ($l['eligibility']['eligible'] ?? false), $lines), true);
+        $firstElig = $lines[0]['eligibility'] ?? [];
 
-        return DB::transaction(function () use ($tenantId, $type, $policy, $p, $facilityId, $contract, $details, $serviceDate, $memberRef, $lines, $currency, $eligible, $d, $actor) {
+        return DB::transaction(function () use ($tenantId, $type, $policy, $p, $facilityId, $contract, $details, $serviceDate, $memberRef, $lines, $currency, $eligible, $firstElig, $d, $actor) {
             $id = (string) Str::uuid();
             $number = 'PA-'.now()->format('Ym').'-'.strtoupper(Str::random(8));
             $case = $this->cases->open($tenantId, PreauthLifecycle::CASE_TYPE, [
@@ -110,7 +116,8 @@ final class PreauthorizationService
                 'status' => 'REQUESTED', 'policy_id' => $policy->id, 'member_ref' => $memberRef, 'provider_profile_id' => $p->id,
                 'provider_facility_id' => $facilityId, 'provider_contract_id' => $contract?->id, 'service_date' => $serviceDate,
                 'type_details' => json_encode($details, JSON_THROW_ON_ERROR), 'clinical_notes' => $d['clinical_notes'] ?? null,
-                'eligibility' => json_encode(['eligible' => $eligible, 'source' => $lines[0]['eligibility']['source'] ?? null], JSON_THROW_ON_ERROR), 'eligible' => $eligible,
+                'eligibility' => json_encode(['eligible' => $eligible, 'source' => $firstElig['source'] ?? null, 'outcome' => $firstElig['outcome'] ?? null,
+                    'health_member_id' => $firstElig['health_member_id'] ?? null], JSON_THROW_ON_ERROR), 'eligible' => $eligible,
                 'currency' => $currency, 'requested_amount_minor' => array_sum(array_column($lines, 'requested_amount_minor')),
                 'insurer_amount_minor' => array_sum(array_column($lines, 'insurer_amount_minor')),
                 'approved_until' => $type === 'ADMISSION' ? CarbonImmutable::parse($details['expected_discharge_date'])->toDateString() : null,
@@ -131,6 +138,8 @@ final class PreauthorizationService
 
     public function provideInfo(string $tenantId, string $id, string $answer, User $actor): object
     {
+        ProviderScope::assertMayActFor($actor, $this->find($tenantId, $id)->provider_profile_id);
+
         return $this->move($tenantId, $id, 'provide_info', $actor, null, fn ($pa) => [
             'decision' => null, 'clinical_notes' => trim(($pa->clinical_notes ? $pa->clinical_notes."\n\n" : '').'[info] '.$answer),
         ], ['answer' => $answer]);
@@ -225,6 +234,7 @@ final class PreauthorizationService
     {
         return DB::transaction(function () use ($tenantId, $id, $admittedOn, $actor) {
             $pa = $this->lock($tenantId, $id);
+            ProviderScope::assertMayActFor($actor, $pa->provider_profile_id);
             $this->assertAdmission($pa);
             $on = CarbonImmutable::parse($admittedOn ?? now())->toDateString();
             if ($pa->gop_valid_until && ($on < $pa->gop_valid_from || $on > $pa->gop_valid_until)) {
@@ -239,6 +249,7 @@ final class PreauthorizationService
     {
         return DB::transaction(function () use ($tenantId, $id, $dischargedOn, $actor) {
             $pa = $this->lock($tenantId, $id);
+            ProviderScope::assertMayActFor($actor, $pa->provider_profile_id);
             $this->assertAdmission($pa);
             $on = CarbonImmutable::parse($dischargedOn ?? now())->toDateString();
             if ($on < $pa->admitted_on) {
@@ -257,6 +268,7 @@ final class PreauthorizationService
     public function requestExtension(string $tenantId, string $id, array $d, User $actor): object
     {
         $pa = $this->find($tenantId, $id);
+        ProviderScope::assertMayActFor($actor, $pa->provider_profile_id);
         $this->assertAdmission($pa);
         if ($pa->status !== 'ADMITTED') {
             throw new ApiProblemException('PREAUTH_NOT_ADMITTED', 409, 'A stay extension needs an admitted patient.');
@@ -527,9 +539,12 @@ final class PreauthorizationService
     private function eligibility(string $tenantId, Policy $policy, string $memberRef, string $providerId, string $serviceCode, string $day): array
     {
         if (class_exists(self::ELIGIBILITY)) {
-            $r = app(self::ELIGIBILITY)->check($tenantId, $memberRef, $providerId, $serviceCode, CarbonImmutable::parse($day));
+            $r = app(self::ELIGIBILITY)->check($tenantId, $memberRef, $providerId, $serviceCode, CarbonImmutable::parse($day), 'PREAUTH', null, $policy->id);
+            $outcome = (string) ($r['outcome'] ?? (($r['eligible'] ?? false) ? 'ELIGIBLE' : 'NOT_ELIGIBLE'));
 
-            return ['source' => 'ELIGIBILITY_SERVICE', 'eligible' => (bool) ($r['eligible'] ?? false)] + $r;
+            // E2 contract: NOT_ELIGIBLE / WAITING_PERIOD / BENEFIT_EXHAUSTED block; the other outcomes are for the reviewer.
+            return ['source' => 'ELIGIBILITY_SERVICE', 'eligible' => ! in_array($outcome, self::BLOCKING_OUTCOMES, true), 'outcome' => $outcome,
+                'coverage_code' => $r['coverage']['code'] ?? null, 'benefit_code' => $r['benefit_code'] ?? null] + $r;
         }
         // Fallback (E2 not deployed): policy of this tenant in force on the service date.
         $reasons = [];
@@ -634,42 +649,146 @@ final class PreauthorizationService
     }
 
     /**
-     * Benefit reservation through the E5 BenefitAccumulator when deployed: one reservation per approved line, keyed by
-     * member + benefit (medical service category) + the preauthorization reference. A business refusal (limit exhausted)
-     * propagates and blocks the approval.
+     * Benefit reservation through the E5 BenefitAccumulator when deployed: one reservation per approved line on the benefit
+     * E2 eligibility resolved for the line (fallback: the medical service category), held by `preauth:<id>` so the provider
+     * claim that bills under this GOP consumes the reservation (E4). A product without a benefit schedule reserves nothing;
+     * any other refusal (limit exhausted, waiting period) blocks the approval.
      *
      * @param  list<object>  $lines
      * @return list<array<string, mixed>>
      */
     private function reserve(object $pa, array $lines, string $reference): array
     {
-        if (! class_exists(self::ACCUMULATOR) || ! method_exists(self::ACCUMULATOR, 'reserve')) {
-            return array_map(fn ($l) => ['line_id' => $l->id, 'benefit_code' => $l->category_code, 'amount_minor' => (int) $l->approved_amount_minor, 'status' => 'NOT_RESERVED', 'reason' => 'ACCUMULATOR_UNAVAILABLE'], $lines);
-        }
-        $acc = app(self::ACCUMULATOR);
         $out = [];
+        $available = class_exists(self::ACCUMULATOR) && method_exists(self::ACCUMULATOR, 'reserve');
         foreach ($lines as $l) {
-            $r = $acc->reserve($pa->tenant_id, $pa->member_ref, $l->category_code, (int) $l->approved_amount_minor, $pa->currency, 'health_preauthorization', $reference, CarbonImmutable::parse($pa->service_date));
-            $out[] = ['line_id' => $l->id, 'benefit_code' => $l->category_code, 'amount_minor' => (int) $l->approved_amount_minor, 'status' => 'RESERVED',
-                'reservation' => is_object($r) ? ($r->id ?? null) : (is_array($r) ? ($r['id'] ?? null) : $r)];
+            $elig = json_decode((string) ($l->eligibility ?? '{}'), true) ?: [];
+            $benefit = (string) ($elig['benefit_code'] ?? $l->category_code);
+            $row = ['line_id' => $l->id, 'benefit_code' => $benefit, 'amount_minor' => (int) $l->approved_amount_minor, 'holder' => self::holder($pa->id)];
+            if (! $available) {
+                $out[] = $row + ['status' => 'NOT_RESERVED', 'reason' => 'ACCUMULATOR_UNAVAILABLE'];
+
+                continue;
+            }
+            try {
+                $r = app(self::ACCUMULATOR)->reserve($pa->tenant_id, self::benefitMember($pa), $benefit, (int) $l->approved_amount_minor, CarbonImmutable::parse($pa->service_date), [
+                    'holder' => self::holder($pa->id), 'reference_type' => 'health_preauthorization', 'reference_id' => $reference,
+                    'idempotency_key' => 'preauth-reserve:'.$l->id, 'reason' => 'Guarantee of payment '.$pa->preauth_number,
+                ]);
+                $out[] = $row + ['status' => 'RESERVED', 'group_id' => $r['group_id'] ?? null];
+            } catch (\App\Application\Health\Benefits\BenefitRefused $e) {
+                if ($e->reasonCode !== 'schedule_not_found') {
+                    throw new ApiProblemException('BENEFIT_REFUSED', 409, $e->getMessage(), [], ['reason' => $e->reasonCode, 'benefit_code' => $benefit]);
+                }
+                $out[] = $row + ['status' => 'NOT_RESERVED', 'reason' => 'NO_BENEFIT_SCHEDULE'];
+            }
         }
 
         return $out;
     }
 
-    /** @return list<array<string, mixed>> */
+    /** Give back what the GOP still holds (cancel). @return list<array<string, mixed>> */
     private function release(object $pa): array
     {
         $rows = json_decode((string) $pa->benefit_reservations, true) ?: [];
-        $canRelease = class_exists(self::ACCUMULATOR) && method_exists(self::ACCUMULATOR, 'release');
+        if (! class_exists(self::ACCUMULATOR) || ! method_exists(self::ACCUMULATOR, 'release')) {
+            return $rows;
+        }
+        $done = [];
         foreach ($rows as &$r) {
-            if (($r['status'] ?? null) === 'RESERVED' && $canRelease) {
-                app(self::ACCUMULATOR)->release($pa->tenant_id, $r['reservation'] ?? null);
-                $r['status'] = 'RELEASED';
+            if (($r['status'] ?? null) !== 'RESERVED') {
+                continue;
             }
+            // release(null) gives back the holder's whole outstanding reservation on the benefit: once per benefit.
+            if (! isset($done[$r['benefit_code']])) {
+                app(self::ACCUMULATOR)->release($pa->tenant_id, self::benefitMember($pa), $r['benefit_code'], null, CarbonImmutable::parse($pa->service_date), [
+                    'holder' => self::holder($pa->id), 'reference_type' => 'health_preauthorization', 'reference_id' => $pa->id, 'reason' => 'Preauthorization cancelled',
+                ]);
+                $done[$r['benefit_code']] = true;
+            }
+            $r['status'] = 'RELEASED';
         }
 
         return $rows;
+    }
+
+    /** E5 holder of a preauthorization's reservations (Wave A contract). */
+    public static function holder(string $preauthId): string
+    {
+        return 'preauth:'.$preauthId;
+    }
+
+    /**
+     * E5 member argument for a preauthorization: E2's health member id when eligibility resolved one (so preauth and
+     * provider claims hit the same accumulator whatever reference each was given), else the raw member reference.
+     *
+     * @return array{member_ref: string, policy_id: string}
+     */
+    public static function benefitMember(object $pa): array
+    {
+        $elig = is_string($pa->eligibility ?? null) ? (json_decode($pa->eligibility, true) ?: []) : (array) ($pa->eligibility ?? []);
+
+        return ['member_ref' => (string) ($elig['health_member_id'] ?? $pa->member_ref), 'policy_id' => (string) $pa->policy_id];
+    }
+
+    // ----------------------------------------------------------------- guarantee of payment (E4 contract)
+
+    /**
+     * Verify a guarantee of payment for a provider claim: the preauthorization must be of this tenant, APPROVED /
+     * PARTIALLY_APPROVED / ADMITTED (or DISCHARGED, for the stay it covered), for this provider and policy, the service
+     * date inside the GOP validity window and some guaranteed amount left.
+     *
+     * @return array{verified: bool, reason: string, preauth: ?object, remaining_minor: int}
+     */
+    public function guaranteeFor(string $tenantId, string $preauthId, string $providerId, ?string $policyId, string $serviceDate): array
+    {
+        $pa = Str::isUuid($preauthId) ? DB::table('health_preauthorizations')->where('tenant_id', $tenantId)->where('id', $preauthId)->first() : null;
+        $fail = fn (string $reason) => ['verified' => false, 'reason' => $reason, 'preauth' => $pa, 'remaining_minor' => 0];
+        if (! $pa) {
+            return $fail('GOP_NOT_FOUND');
+        }
+        if (! in_array($pa->status, [...PreauthLifecycle::GUARANTEED, 'DISCHARGED'], true)) {
+            return $fail('GOP_NOT_APPROVED');
+        }
+        if ($pa->provider_profile_id !== $providerId) {
+            return $fail('GOP_OTHER_PROVIDER');
+        }
+        if ($policyId !== null && $pa->policy_id !== $policyId) {
+            return $fail('GOP_OTHER_POLICY');
+        }
+        $day = CarbonImmutable::parse($serviceDate)->toDateString();
+        if (! $pa->gop_valid_from || $day < (string) $pa->gop_valid_from || ($pa->gop_valid_until && $day > (string) $pa->gop_valid_until)) {
+            return $fail('GOP_OUTSIDE_VALIDITY');
+        }
+        $left = (int) $pa->approved_amount_minor - (int) $pa->consumed_amount_minor;
+        if ($left <= 0) {
+            return $fail('GOP_EXHAUSTED');
+        }
+
+        return ['verified' => true, 'reason' => 'VERIFIED', 'preauth' => $pa, 'remaining_minor' => $left];
+    }
+
+    /**
+     * Draw a provider claim's insurer share from the GOP (row-locked, never beyond the approved amount).
+     *
+     * @return int the amount consumed from the guarantee
+     */
+    public function consumeGuarantee(string $tenantId, string $preauthId, int $amountMinor, string $providerClaimId): int
+    {
+        return DB::transaction(function () use ($tenantId, $preauthId, $amountMinor, $providerClaimId): int {
+            $pa = $this->lock($tenantId, $preauthId);
+            $take = max(0, min($amountMinor, (int) $pa->approved_amount_minor - (int) $pa->consumed_amount_minor));
+            if ($take > 0) {
+                DB::table('health_preauthorizations')->where('id', $pa->id)->update(['consumed_amount_minor' => (int) $pa->consumed_amount_minor + $take, 'updated_at' => now()]);
+                DB::table('health_preauthorization_events')->insert([
+                    'id' => (string) Str::uuid(), 'health_preauthorization_id' => $pa->id, 'extension_id' => null, 'event' => 'gop_consumed', 'from_status' => $pa->status,
+                    'to_status' => $pa->status, 'actor_id' => null, 'reason' => null, 'occurred_at' => now(),
+                    'payload' => json_encode(['provider_claim_id' => $providerClaimId, 'amount_minor' => $take, 'consumed_after_minor' => (int) $pa->consumed_amount_minor + $take], JSON_THROW_ON_ERROR),
+                ]);
+            }
+
+            return $take;
+        });
     }
 
     private function fireDocuments(string $trigger, object $pa, ?object $ext, User $actor, array $include): ?object

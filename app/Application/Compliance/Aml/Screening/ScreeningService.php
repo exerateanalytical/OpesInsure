@@ -216,6 +216,32 @@ final class ScreeningService
             ->orderBy('created_at')->get();
     }
 
+    /**
+     * E9 contract: AML risk facts of a party from its list-screening hit dispositions, in the KYC fact vocabulary
+     * (<LIST_TYPE>_POSSIBLE_MATCH / <LIST_TYPE>_CONFIRMED_MATCH, e.g. SANCTIONS_CONFIRMED_MATCH):
+     *   TRUE_MATCH → CONFIRMED_MATCH; open, proposed or ESCALATED → POSSIBLE_MATCH; FALSE_POSITIVE → no fact.
+     *
+     * @return list<string>
+     */
+    public function riskFacts(string $tenantId, string $partyId): array
+    {
+        $facts = [];
+        foreach (ScreeningHit::where('tenant_id', $tenantId)->where('party_id', $partyId)->get(['list_type', 'status', 'disposition']) as $h) {
+            $level = match (true) {
+                $h->status === 'DISPOSED' && $h->disposition === 'TRUE_MATCH' => 'CONFIRMED_MATCH',
+                $h->status === 'DISPOSED' && $h->disposition === 'FALSE_POSITIVE' => null,
+                default => 'POSSIBLE_MATCH',
+            };
+            if ($level !== null) {
+                $facts[] = strtoupper((string) $h->list_type).'_'.$level;
+            }
+        }
+        $facts = array_values(array_unique($facts));
+        sort($facts);
+
+        return $facts;
+    }
+
     private function intervalDays(string $tenantId): ?int
     {
         $settings = Tenant::whereKey($tenantId)->value('settings');
