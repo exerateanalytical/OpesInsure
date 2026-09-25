@@ -126,6 +126,8 @@ final class RefundEngine
         if (app()->bound(RefundObligationLink::class)) {
             app(RefundObligationLink::class)->settle($r);
         }
+        // REQ-ACC-001: GL posting, idempotent per (refund.paid, refund id).
+        app(\App\Application\Ledger\Posting\AccountingEventPoster::class)->record($r->tenant_id, 'refund.paid', $r->id, (int) $r->amount_minor, (string) $r->currency);
 
         return $r->refresh();
     }

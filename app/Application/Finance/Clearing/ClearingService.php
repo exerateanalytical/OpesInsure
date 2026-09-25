@@ -79,6 +79,8 @@ final class ClearingService
         $this->outbox->record('payment.clearing.settled', 'clearing_batch', $batch->id, ['clearing_batch_id' => $batch->id, 'provider' => $batch->provider,
             'settled_minor' => $batch->settled_minor, 'currency' => $batch->currency]);
         $this->audit->record('payment.clearing.settled', 'clearing_batch', $batch->id, ['settled_minor' => $batch->settled_minor, 'fee_minor' => $batch->fee_minor]);
+        // REQ-ACC-001: bank credit posted against mobile-money clearing, idempotent per batch.
+        app(\App\Application\Ledger\Posting\AccountingEventPoster::class)->record($batch->tenant_id, 'payment.clearing.settled', $batch->id, (int) $batch->settled_minor, (string) $batch->currency);
 
         return $batch->refresh();
     }

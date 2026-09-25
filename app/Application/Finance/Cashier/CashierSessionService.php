@@ -117,6 +117,9 @@ final class CashierSessionService
             $this->audit->record('cashier.collection.recorded', 'cashier_collection', $id, $payload);
             $this->outbox->record('cashier.collection.recorded', 'cashier_collection', $id, $payload);
         });
+        // REQ-ACC-001: posted after commit in the session currency, idempotent per collection.
+        $row = DB::table('cashier_collections')->find($id);
+        app(\App\Application\Ledger\Posting\AccountingEventPoster::class)->record($tenantId, 'cashier.collection.recorded', $id, (int) $row->session_amount_minor, (string) $session->currency);
 
         return DB::table('cashier_collections')->find($id);
     }
