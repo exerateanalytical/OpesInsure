@@ -36,6 +36,10 @@ final class PolicyServicingService
             $reinstatable = $data['type'] === 'REINSTATEMENT'
                 && in_array($policy->status, ['SUSPENDED', 'EXPIRED'], true);
 
+            if ($data['type'] === 'REINSTATEMENT' && $policy->status === 'LAPSED') {
+                // REQ-POL-010: a lapsed policy comes back only through premium recovery (arrears + maker-checker).
+                throw ValidationException::withMessages(['status' => 'RECOVERY_REQUIRED: a LAPSED policy is reinstated through a recovery case (POST policies/{policy}/recovery-cases).']);
+            }
             if ($policy->status !== 'ACTIVE' && ! $reinstatable) {
                 throw ValidationException::withMessages(['status' => __('wave5.policy_not_serviceable')]);
             }

@@ -7,7 +7,7 @@ use App\Application\Payments\WebhookProcessingService;
 use App\Application\Policies\Lapse\PolicyRecoveryService;
 use App\Application\Policies\Lapse\PolicySuspender;
 use App\Application\Policies\Lapse\PremiumDefaultSweep;
-use App\Application\Policies\Lapse\StateMachinePolicySuspender;
+use App\Application\Policies\Lapse\SuspensionServicePolicySuspender;
 use App\Application\Policies\PolicyIssuanceService;
 use App\Models\Policy;
 use App\Models\PolicyIssuanceRequest;
@@ -172,7 +172,7 @@ it('REQ-POL-010 recovers a LAPSED (expired) policy only with a future coverage e
 });
 
 it('wires the suspender seam, the catalogue events and the scheduled command', function () {
-    expect(app(PolicySuspender::class))->toBeInstanceOf(StateMachinePolicySuspender::class);
+    expect(app(PolicySuspender::class))->toBeInstanceOf(SuspensionServicePolicySuspender::class);
     foreach (['policy.premium.grace_started', 'policy.premium.defaulted', 'policy.premium.suspended', 'policy.premium.lapsed',
         'policy.premium.instalment_settled', 'policy.recovery.requested', 'policy.recovery.approved', 'policy.recovery.rejected'] as $e) {
         expect(DomainEventCatalogue::has($e))->toBeTrue();
