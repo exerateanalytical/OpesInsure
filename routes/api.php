@@ -666,3 +666,16 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Batch 12 C13 — REQ-CLM-013 claim settlement (App\Application\Claims\Settlement).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Claims\Settlement\Http\ClaimSettlementController::class;
+    Route::post('claims/{claim}/settlements', [$s, 'calculate'])->middleware('permission:claims.settlement.calculate')->whereUuid('claim');
+    Route::get('claim-settlements/{settlement}', [$s, 'show'])->middleware('permission:claims.view')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/offer', [$s, 'offer'])->middleware('permission:claims.settlement.offer')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/accept', [$s, 'accept'])->middleware('permission:claims.settlement.respond')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/dispute', [$s, 'dispute'])->middleware('permission:claims.settlement.respond')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/discharge', [$s, 'requestDischarge'])->middleware('permission:claims.settlement.discharge')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/discharge/confirm', [$s, 'confirmDischarge'])->middleware('permission:claims.settlement.discharge')->whereUuid('settlement');
+    Route::post('claim-settlements/{settlement}/payment', [$s, 'requestPayment'])->middleware('permission:claims.settlement.pay')->whereUuid('settlement');
+});
+// End Batch 12 C13
