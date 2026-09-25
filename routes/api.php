@@ -574,3 +574,11 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+
+// Batch 10-2 — REQ-COM-002 commission rules: resolver preview + rule components (tiers, splits).
+Route::prefix('v1/financial-distribution')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Rules\Http\CommissionRuleController::class;
+    Route::get('commission-rules/resolve', [$c, 'resolve'])->middleware('permission:commission.manage');
+    Route::get('commission-rules/{rule}', [$c, 'show'])->middleware('permission:commission.manage')->whereUuid('rule');
+});
+// End Batch 10-2
