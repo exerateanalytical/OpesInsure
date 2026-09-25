@@ -316,6 +316,16 @@ final class DomainEventCatalogue
             // Batch 13C — REQ-REI-001/002 reinsurance (App\Application\Reinsurance)
             $d('reinsurance.treaty_version.activated', 'reinsurance_treaty', 'Treaty version activated (maker-checker).', [], [], true),
             $d('reinsurance.policy.ceded', 'policy', 'Policy cession calculated against treaties in force.', [], [], true),
+            // Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters)
+            $d('claim.expert.assigned', 'claim', 'Expert / adjuster appointed on a claim.', [], [], true),
+            $d('claim.expert.accepted', 'claim', 'Expert accepted the assignment.', [], [], true),
+            $d('claim.expert.declined', 'claim', 'Expert declined the assignment.', [], [], true),
+            $d('claim.expert.inspection_scheduled', 'claim', 'Expert scheduled the inspection.', [], [], true),
+            $d('claim.expert.inspected', 'claim', 'Expert recorded the inspection.', [], [], true),
+            $d('claim.expert.report_submitted', 'claim', 'Expert submitted the assessment report.', [], [], true),
+            $d('claim.expert.report_accepted', 'claim', 'Insurer accepted the expert report.', [], [], true),
+            $d('claim.expert.report_returned', 'claim', 'Insurer returned the expert report for rework.', [], [], true),
+            $d('claim.expert.cancelled', 'claim', 'Insurer cancelled the expert assignment.', [], [], true),
             // Batch 13A — REQ-PRV-001/002/004 providers (App\Application\Providers)
             $d('provider.registered', 'provider', 'Provider registered in the provider master.', [], [], true),
             $d('provider.credentialing_changed', 'provider', 'Provider credentialing status changed.', [], [], true),
