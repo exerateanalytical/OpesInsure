@@ -464,6 +464,17 @@ final class DomainEventCatalogue
             $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
             $d('commission.reopened', 'commission', 'Paid commission reopened to PAYABLE after its payout was reversed (D10).', [], [$C], true),
 
+            // Agent B1 — REQ-RPT-001/002/006 regulatory returns, change engine, inspection workspace
+            $d('regulatory.report.approved', 'regulatory_report_run', 'Regulatory return run approved (maker-checker).', [], [$C], true),
+            $d('regulatory.report.submitted', 'regulatory_report_run', 'Regulatory return run submitted to the authority.', [], [$C], true),
+            $d('regulatory.report.acknowledged', 'regulatory_report_run', 'Regulatory return acknowledged by the authority.', [], [$C], true),
+            $d('regulatory.rule.reviewed', 'regulatory_rule', 'Regulatory rule change reviewed with impact analysis.', [], [$C], true),
+            $d('regulatory.rule.approved', 'regulatory_rule', 'Regulatory rule change approved.', [], [$C], true),
+            $d('regulatory.rule.effective', 'regulatory_rule', 'Regulatory rule version became effective.', [], [$C], true),
+            $d('regulatory.rule.superseded', 'regulatory_rule', 'Regulatory rule version superseded by a newer effective version.', [], [$C], true),
+            $d('regulatory.inspection.opened', 'regulatory_inspection', 'Regulatory inspection workspace opened (grant approved).', [], [$C], true),
+            $d('regulatory.inspection.closed', 'regulatory_inspection', 'Regulatory inspection workspace closed.', [], [$C], true),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),
