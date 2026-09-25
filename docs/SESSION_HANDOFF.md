@@ -3,6 +3,8 @@
 Two backend sessions work on this repo: the **local** session (owner's Windows PC, Laragon) and the **cloud** session (claude.ai/code container).
 The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md).
 
+> **Local session: start with docs/LOCAL_SESSION_RESUME.md.**
+
 ## Protocol (both sessions follow it)
 1. **Before starting work:** `git fetch origin`, read this file top to bottom and the latest `docs/BUILD_PROGRESS.md`, and check
    `git log origin/master..origin/claude/charming-bohr-2fd2hk` and the reverse direction. Do not start a work item another session has
@@ -32,6 +34,7 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
 | Owner decisions D10 | cloud | MERGED (ships with Batch 11/12) |
 | Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH11_12.md |
+| Batches 13B–17 (provider portal, cashless health, facultative/recoveries, compliance/AML, accumulation, regulatory reporting, KPIs, developer platform, API families, legacy migration, hardening) | cloud | IN PROGRESS. Don't start locally. |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
