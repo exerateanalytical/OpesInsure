@@ -2003,6 +2003,7 @@ export const en = {
   docViewerBadLink: "This document link is not valid.",
   docViewerRenderFailed: "The document could not be displayed. Use Share to open it in another app.",
   docViewerWebHint: "The in-app viewer runs on Android and iOS.",
+  newVersionAvailable: "OpesInsure {version} is available · tap to download",
   updateReadyTitle: "Update ready",
   updateReadyBody: "A new version of OpesInsure has been downloaded. Restart now to use it.",
   updateReadyShort: "Update ready · tap to restart",

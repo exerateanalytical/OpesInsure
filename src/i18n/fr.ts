@@ -1992,6 +1992,7 @@ export const fr: Record<keyof typeof en, string> = {
   docViewerBadLink: "Ce lien de document n'est pas valide.",
   docViewerRenderFailed: "Le document n'a pas pu être affiché. Utilisez Partager pour l'ouvrir dans une autre application.",
   docViewerWebHint: "La visionneuse intégrée fonctionne sur Android et iOS.",
+  newVersionAvailable: "OpesInsure {version} est disponible · appuyez pour télécharger",
   updateReadyTitle: "Mise à jour prête",
   updateReadyBody: "Une nouvelle version d'OpesInsure a été téléchargée. Redémarrez maintenant pour l'utiliser.",
   updateReadyShort: "Mise à jour prête · appuyez pour redémarrer",

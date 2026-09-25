@@ -1848,7 +1848,10 @@ export type RuntimeBootstrap = {
   environment?: { name?: string; demo_mode?: boolean; banner?: string | null } | null;
   release: {
     minimum_version: string;
+    latest_version?: string | null;
     force_update: boolean;
+    /** Server says a newer native build exists (soft notice, not a gate). */
+    update_recommended?: boolean;
     store_url: string | null;
   };
   maintenance: {

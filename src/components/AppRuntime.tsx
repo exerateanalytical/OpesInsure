@@ -13,6 +13,7 @@ import { useRuntime } from "@/store/runtime";
 import { RuntimeGateView } from "@/components/RuntimeGate";
 import { IssueReportButton } from "@/components/IssueReportButton";
 import { UpdateNotice } from "@/components/UpdateNotice";
+import { NewVersionNotice } from "@/components/NewVersionNotice";
 import { resolveNotificationTarget } from "@/lib/customerLogic";
 import { registerForPush, resetPushRegistration } from "@/notifications/push";
 import { BiometricLock } from "@/security/biometric";
@@ -265,6 +266,7 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         accessibilityElementsHidden={!!overlay}
       >
         <UpdateNotice />
+        <NewVersionNotice />
         {envBanner ? (
           <View accessibilityRole="text" style={styles.env}>
             <Text style={styles.envText}>{envBanner.kind === "demo" ? t("envBannerDemo") : t("envBannerGeneric", { banner: envBanner.banner })}</Text>
