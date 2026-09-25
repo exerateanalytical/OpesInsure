@@ -73,6 +73,9 @@ final class DomainEventCatalogue
             $d('refund.rejected', 'refund', 'Refund rejected before payout.', [], [$C], true),
             $d('refund.paid', 'refund', 'Approved refund paid out to the customer.', [], [$C], true),
             $d('refund.reconciled', 'refund', 'Refund payout matched to the bank / provider statement.', [], [$C], true),
+            // Agent C16 REQ-FRD-001 / WF-089 claim fraud review (App\Application\Fraud\ClaimFraudIndicatorService)
+            $d('fraud.claim.review_required', 'claim', 'Fraud indicators fired; claim flagged REVIEW_REQUIRED and a suspicious-claim case opened (never auto-confirmed).', [], [$C], true),
+            $d('fraud.claim.review_decided', 'claim', 'Human reviewer recorded the suspicious-claim review outcome.', [], [$C], true),
             // Batch 9-6 REQ-PAY-011 mobile-money clearing (App\Application\Finance\Clearing\ClearingService)
             $d('payment.clearing.settled', 'clearing_batch', 'Provider settlement batch credited by the bank.', [], [$C], true),
             $d('payment.clearing.reconciled', 'clearing_batch', 'Provider settlement batch reconciled (matched or variance).', [], [$C], true),

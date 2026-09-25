@@ -65,6 +65,7 @@ final class RefundEngine
     public function calculate(Refund $r, array $data, User $actor): Refund
     {
         $this->assertStatus($r, ['CANDIDATE', 'CALCULATED']);
+        $this->sod($r, $actor);
 
         return DB::transaction(function () use ($r, $data, $actor): Refund {
             $payment = PaymentIntentRecord::whereKey($r->payment_intent_id)->lockForUpdate()->firstOrFail();
@@ -87,6 +88,7 @@ final class RefundEngine
     public function review(Refund $r, User $actor, ?string $notes = null): Refund
     {
         $this->assertStatus($r, ['CALCULATED']);
+        $this->sod($r, $actor);
         if ($r->calculated_by === $actor->id) {
             throw ValidationException::withMessages(['actor' => __('wave4.maker_checker')]);
         }
@@ -99,6 +101,7 @@ final class RefundEngine
     /** Checker step — FinancialCaseService owns the REQUESTED → APPROVED transition and its maker-checker rule. */
     public function approve(Refund $r, User $actor): Refund
     {
+        $this->sod($r, $actor);
         $r = $this->cases->approveRefund($r, $actor);
         if (app()->bound(RefundObligationLink::class) && ($obligation = app(RefundObligationLink::class)->open($r))) {
             $r->update(['financial_obligation_id' => $obligation]);
@@ -121,6 +124,7 @@ final class RefundEngine
     public function pay(Refund $r, array $data, User $actor): Refund
     {
         $this->assertStatus($r, ['APPROVED']);
+        $this->sod($r, $actor);
         $r->update(['status' => 'PAID', 'payout_method' => $data['payout_method'], 'provider_reference' => $data['provider_reference'], 'paid_by' => $actor->id, 'paid_at' => now(), 'completed_at' => now()]);
         $this->transition($r, 'APPROVED', 'PAID', 'PAID', $actor, 'refund.paid', ['amount_minor' => $r->amount_minor, 'payout_method' => $data['payout_method']]);
         if (app()->bound(RefundObligationLink::class)) {
@@ -135,6 +139,7 @@ final class RefundEngine
     public function reconcile(Refund $r, User $actor, string $bankReference): Refund
     {
         $this->assertStatus($r, ['PAID']);
+        $this->sod($r, $actor);
         if ($r->paid_by === $actor->id) {
             throw ValidationException::withMessages(['actor' => __('wave4.maker_checker')]);
         }
@@ -151,6 +156,12 @@ final class RefundEngine
             ->when($exceptRefundId, fn ($q) => $q->where('id', '<>', $exceptRefundId))->sum('amount_minor');
 
         return max(0, (int) $payment->amount_minor - $held);
+    }
+
+    /** REQ-FRD-002 (agent C16): the collector / reconciler of the refunded payment may not handle the refund. */
+    private function sod(Refund $r, User $actor): void
+    {
+        app(\App\Application\Fraud\SegregationOfDutiesPolicy::class)->assertMay('REFUND', $r->payment_intent_id, $actor);
     }
 
     /** @param list<string> $allowed */
