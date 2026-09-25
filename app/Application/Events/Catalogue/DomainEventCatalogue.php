@@ -59,6 +59,8 @@ final class DomainEventCatalogue
             $d('renewal.completed', 'policy', 'Policy renewed.', ['PolicyRenewed'], [$W], true),
             $d('claim.fnol.submitted', 'claim', 'Claim reported (FNOL).', ['ClaimReported'], [$W], true),
             $d('claim.evidence.attached', 'claim', 'Claim evidence received.', ['ClaimEvidenceReceived'], [$W], true),
+            // REQ-CLM-005 (App\Application\Claims\Evidence\ClaimEvidenceReviewService)
+            $d('claim.evidence.reviewed', 'claim', 'Claim evidence accepted or rejected with a reason (WF-051/052).', [], [$C], true),
             $d('claim.assigned', 'claim', 'Claim assigned to a handler.', ['ClaimAssigned'], [$W], true),
             $d('claim.decision.approved', 'claim', 'Claim approved.', ['ClaimApproved'], [$W], true),
             $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W]),
