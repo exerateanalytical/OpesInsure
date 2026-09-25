@@ -13,6 +13,7 @@ Schedule::command('payments:poll-pending')->everyFiveMinutes()->withoutOverlappi
 Schedule::command('notifications:dispatch-pending')->everyMinute()->withoutOverlapping()->onOneServer();
 Schedule::command('policies:scan-issuance-queue')->hourly()->withoutOverlapping()->onOneServer();
 Schedule::command('telemetry:prune')->dailyAt('03:00')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+Schedule::command('renewals:sweep')->dailyAt('01:15')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
 
 // REQ-POL-008 / REQ-POL-010: in-force premium-to-cover sweep (GRACE → SUSPEND_ON_DEFAULT → LAPSED).
 Artisan::command('policies:premium-cover-sweep', function (App\Application\Policies\Lapse\PremiumDefaultSweep $sweep) {
