@@ -21,3 +21,10 @@ Artisan::command('policies:premium-cover-sweep', function (App\Application\Polic
     $this->info("Evaluated: {$s['evaluated']}. Grace: {$s['grace']}. Defaulted: {$s['defaulted']}. Suspended: {$s['suspended']}. Lapsed: {$s['lapsed']}.");
 })->purpose('Apply premium-cover rules to overdue instalments: grace, suspension on default, lapse.');
 Schedule::command('policies:premium-cover-sweep')->dailyAt('00:45')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+// Batch 10-1 — REQ-COM-001: settled premium earns commission; approved + vested commission becomes payable.
+Artisan::command('commissions:advance', function (App\Application\Commissions\Machine\CommissionLifecycleService $service) {
+    $s = $service->advance();
+    $this->info("Earned: {$s['earned']}. Payable: {$s['payable']}.");
+})->purpose('Advance the commission machine: ACCRUED → EARNED on settled premium, APPROVED → PAYABLE once vested.');
+Schedule::command('commissions:advance')->dailyAt('02:10')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();

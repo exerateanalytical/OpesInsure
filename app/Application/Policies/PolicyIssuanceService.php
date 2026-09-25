@@ -238,6 +238,12 @@ final class PolicyIssuanceService
             } catch (\Throwable $e) {
                 report($e);
             }
+            // REQ-COM-001: SALE → ACCRUED commission for the producing intermediary (savepoint; never blocks issuance).
+            try {
+                DB::transaction(fn () => app(\App\Application\Commissions\Machine\CommissionLifecycleService::class)->onPolicyIssued($policy));
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->event($request, $fromStatus, 'APPROVED', 'CARRIER_AUTHORIZED', $actor);
             $this->audit->record('policy.issued', 'policy', $policy->id, ['policy_number' => $policy->policy_number]);

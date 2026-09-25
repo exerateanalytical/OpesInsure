@@ -574,3 +574,17 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+
+// Batch 10-1 — REQ-COM-001 commission machine (App\Application\Commissions\Machine).
+Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Commissions\Machine\Http\CommissionLifecycleController::class;
+    Route::get('{accrual}', [$c, 'show'])->middleware('permission:commission.read')->whereUuid('accrual');
+    Route::post('{accrual}/earn', [$c, 'earn'])->middleware('permission:commission.vest')->whereUuid('accrual');
+    Route::post('{accrual}/approve', [$c, 'approve'])->middleware('permission:commission.approve')->whereUuid('accrual');
+    Route::post('{accrual}/make-payable', [$c, 'makePayable'])->middleware('permission:commission.vest')->whereUuid('accrual');
+    Route::post('{accrual}/adjust', [$c, 'adjust'])->middleware('permission:commission.manage')->whereUuid('accrual');
+    Route::post('{accrual}/dispute', [$c, 'dispute'])->middleware('permission:commission.manage')->whereUuid('accrual');
+    Route::post('{accrual}/resolve-dispute', [$c, 'resolveDispute'])->middleware('permission:commission.approve')->whereUuid('accrual');
+    Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
+});
+// End Batch 10-1

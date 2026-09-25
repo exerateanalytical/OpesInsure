@@ -95,7 +95,7 @@ final class DomainEventCatalogue
             $d('policy.snapshot.created', 'policy', 'Immutable policy product snapshot created.', ['PolicySnapshotCreated'], [$P]),
             $d('claim.coverage.evaluated', 'claim', 'Claim coverage evaluated.', ['ClaimCoverageEvaluated'], [$P]),
             $d('claim.settlement.calculated', 'claim', 'Claim settlement amount calculated.', ['ClaimSettlementCalculated'], [$P]),
-            $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P]),
+            $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P], true),
 
             // --- Already emitted by code, no spec alias ---
             $d('chargeback.resolved', 'chargeback', 'Payment chargeback resolved.', [], [], true),
@@ -275,6 +275,16 @@ final class DomainEventCatalogue
             $d('cargo_declaration.cancelled', 'policy', 'Cargo declaration cancelled.', [], [$P], true),
             $d('life_surrender_scale.activated', 'life_surrender_scale', 'Carrier surrender scale activated (maker-checker).', [], [$P], true),
             $d('life_surrender.quoted', 'policy', 'Life surrender value computed (rules-driven, carrier scale).', [], [$P], true),
+
+            // Batch 10-1 — REQ-COM-001 commission machine (App\Application\Commissions\Machine\CommissionMachine)
+            $d('commission.earned', 'commission', 'Commission earned: the premium it is based on is settled.', [], [$C], true),
+            $d('commission.approved', 'commission', 'Commission approved by finance.', [], [$C], true),
+            $d('commission.payable', 'commission', 'Commission payable: a PAYABLE COMMISSION obligation exists.', [], [$C], true),
+            $d('commission.paid', 'commission', 'Commission fully paid to the intermediary.', [], [$C], true),
+            $d('commission.adjusted', 'commission', 'Commission amount adjusted; awaits re-approval.', [], [$C], true),
+            $d('commission.disputed', 'commission', 'Commission disputed.', [], [$C], true),
+            $d('commission.dispute_resolved', 'commission', 'Commission dispute resolved; awaits re-approval.', [], [$C], true),
+            $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
 
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
