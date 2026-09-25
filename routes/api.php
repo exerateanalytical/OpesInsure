@@ -563,3 +563,14 @@ Route::prefix('v1/payments')->middleware(['auth:api', 'tenant', 'json.api'])->gr
     Route::get('{payment}/collection-mode', [$m, 'collectionMode'])->whereUuid('payment');
 });
 // End Batch 9-4
+// Batch 9-1 — REQ-OBL-001 financial obligations (money chain) + REQ-PAY-006 instalment schedules.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $o = \App\Application\Finance\Obligations\Http\ObligationController::class;
+    Route::get('obligations', [$o, 'index'])->middleware('permission:finance.obligations.view');
+    Route::get('obligations/aging', [$o, 'aging'])->middleware('permission:finance.obligations.view');
+    Route::get('obligations/{obligation}', [$o, 'show'])->middleware('permission:finance.obligations.view')->whereUuid('obligation');
+    Route::post('obligations/{obligation}/write-off', [$o, 'writeOff'])->middleware('permission:finance.obligations.manage')->whereUuid('obligation');
+    Route::post('obligations/{obligation}/cancel', [$o, 'cancel'])->middleware('permission:finance.obligations.manage')->whereUuid('obligation');
+    Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
+});
+// End Batch 9-1

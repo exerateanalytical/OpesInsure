@@ -61,7 +61,8 @@ final class PolicyIssuanceService
                 || $proposal->status !== 'PAYMENT_PENDING'
                 || $payment->status !== 'SUCCEEDED'
                 || ! $payment->reconciled_at
-                || $payment->amount_minor !== (int) $terms['total_minor']
+                // REQ-PAY-006: an instalment plan binds on its first scheduled instalment (same rule as PolicyIssuabilityService).
+                || ! in_array($payment->amount_minor, array_filter([(int) $terms['total_minor'], count($proposal->cover_terms['schedule'] ?? []) > 1 ? (int) $proposal->cover_terms['schedule'][0]['amount_minor'] : null]), true)
                 || $payment->currency !== $terms['currency'];
 
             if ($invalidPayment) {
@@ -230,6 +231,13 @@ final class PolicyIssuanceService
                 $policy, $policy->previous_policy_id ? 'RENEWAL' : 'ISSUANCE', $policy->coverage_starts_at,
                 ['source_type' => 'policy_issuance_request', 'source_id' => $request->id, 'actor_id' => $actor->id, 'authority' => $request->authority_snapshot],
             );
+
+            // REQ-OBL-001 / REQ-PAY-006: premium obligations + instalment schedule; the bind payment settles the first (savepoint; never blocks issuance).
+            try {
+                DB::transaction(fn () => app(\App\Application\Finance\Obligations\PolicyPremiumObligations::class)->generate($policy));
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->event($request, $fromStatus, 'APPROVED', 'CARRIER_AUTHORIZED', $actor);
             $this->audit->record('policy.issued', 'policy', $policy->id, ['policy_number' => $policy->policy_number]);

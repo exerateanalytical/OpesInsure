@@ -189,6 +189,10 @@ final class DomainEventCatalogue
             $d('policy.premium.suspended', 'policy', 'Policy suspended on premium default (SUSPEND_ON_DEFAULT).', [], [], true),
             $d('policy.premium.lapsed', 'policy', 'Defaulted instalment lapsed after the rule lapse_after_days.', [], [], true),
             $d('policy.premium.instalment_settled', 'policy', 'Instalment paid in full or waived.', [], [], true),
+            // Batch 9-1 — REQ-OBL-001 (App\Application\Finance\Obligations\ObligationService)
+            $d('finance.obligation.created', 'financial_obligation', 'Financial obligation (receivable / payable) raised.', [], [], true),
+            $d('finance.obligation.settled', 'financial_obligation', 'Financial obligation fully settled.', [], [], true),
+            $d('finance.obligation.reopened', 'financial_obligation', 'A settlement on a financial obligation was reversed (obligation reopened).', [], [], true),
             $d('policy.recovery.requested', 'policy', 'Recovery opened for a suspended / expired / lapsed policy.', [], [], true),
             $d('policy.recovery.approved', 'policy', 'Recovery approved (maker-checker); policy active again.', [], [], true),
             $d('policy.recovery.rejected', 'policy', 'Recovery case rejected.', [], [], true),
