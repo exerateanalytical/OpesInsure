@@ -47,6 +47,11 @@ final class DispatchIntegrationOutbox extends Command
                 continue; // another worker already claimed this row
             }
 
+            // REQ-AML-003 / Reg. 003-25 tipping-off: STR cases and AML signals never leave the platform via partner webhooks.
+            if (\App\Application\Compliance\Aml\Str\TippingOffGuard::withholdFromIntegrations($message)) {
+                continue;
+            }
+
             $subscriptions = IntegrationWebhookSubscription::where('event_name', $message->event_name)
                 ->where('status', 'ACTIVE')
                 ->whereHas('client', fn ($q) => $q->where('status', 'ACTIVE'))
