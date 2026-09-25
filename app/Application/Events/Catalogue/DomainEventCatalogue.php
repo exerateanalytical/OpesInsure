@@ -63,7 +63,7 @@ final class DomainEventCatalogue
             $d('claim.evidence.reviewed', 'claim', 'Claim evidence accepted or rejected with a reason (WF-051/052).', [], [$C], true),
             $d('claim.assigned', 'claim', 'Claim assigned to a handler.', ['ClaimAssigned'], [$W], true),
             $d('claim.decision.approved', 'claim', 'Claim approved.', ['ClaimApproved'], [$W], true),
-            $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W]),
+            $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W], true),
             $d('claim.payment.paid', 'claim', 'Claim settlement paid.', ['ClaimSettled'], [$W], true),
             $d('refund.approved', 'refund', 'Refund approved.', ['RefundApproved'], [$W], true),
             // Batch 9-6 REQ-PAY-009 / WF-063 refund engine (App\Application\Finance\Refunds\RefundEngine)
@@ -134,6 +134,12 @@ final class DomainEventCatalogue
             $d('claim.recovery.transferred', 'claim', 'Claim recovery transferred to another owner.', [], [], true),
             $d('claim.coverage.checked', 'claim', 'Coverage-at-loss check stored on a claim (REQ-CLM-003).', [], [], true),
             $d('claim.coverage.resolved', 'claim', 'Coverage review resolved by a handler (REQ-CLM-003).', [], [], true),
+            // REQ-CLM-012 (App\Application\Claims\Decisions)
+            $d('claim.decision.proposed', 'claim', 'Claim decision proposed (maker).', [], [], true),
+            $d('claim.decision.referred', 'claim', 'Claim decision over CLAIM_SETTLE authority referred to a supervisor.', [], [], true),
+            $d('claim.decision.returned', 'claim', 'Claim decision proposal returned to the maker by the checker.', [], [], true),
+            $d('claim.decision.appealed', 'claim', 'Appeal lodged against a claim decision.', [], [], true),
+            $d('claim.decision.notified', 'claim', 'Customer notified of a claim decision with its reasons.', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable

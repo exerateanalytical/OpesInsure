@@ -766,3 +766,15 @@ Route::prefix('v1/fraud')->middleware(['auth:api', 'tenant', 'json.api'])->group
     Route::get('sod-violations', [$c, 'sodViolations'])->middleware('permission:fraud.sod.report');
 });
 // End Agent C16
+// Agent C12 — REQ-CLM-012 claim decisions (reason catalogue, CLAIM_SETTLE authority referral, maker-checker, appeal).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $d = \App\Application\Claims\Decisions\Http\ClaimDecisionController::class;
+    Route::get('{claim}/decision-history', [$d, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/decision-proposals', [$d, 'store'])->middleware('permission:claims.decision.propose')->whereUuid('claim');
+    Route::post('{claim}/decision-proposals/{decision}/approve', [$d, 'approve'])->middleware('permission:claims.decision.approve')->whereUuid(['claim', 'decision']);
+    Route::post('{claim}/decision-proposals/{decision}/return', [$d, 'returnToMaker'])->middleware('permission:claims.decision.approve')->whereUuid(['claim', 'decision']);
+    Route::post('{claim}/appeals', [$d, 'appeal'])->middleware('permission:claims.decision.appeal')->whereUuid('claim');
+});
+Route::get('v1/claim-decision-reason-codes', [\App\Application\Claims\Decisions\Http\ClaimDecisionController::class, 'reasonCodes'])
+    ->middleware(['auth:api', 'tenant', 'json.api', 'permission:claims.view']);
+// End Agent C12

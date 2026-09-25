@@ -121,6 +121,74 @@ final class AuthorityService
         return $result;
     }
 
+    /**
+     * Staff authority for a monetary decision (REQ-CLM-012: CLAIM_SETTLE). The holder is the user: the highest
+     * ACTIVE authority_limits row among holder USER (user id) and holder ROLE (the user's membership role codes)
+     * for the carrier is the user's limit. Amount within limit → ALLOWED; over limit or no limit at all →
+     * REFERRED with an AUTHORITY_REFERRAL case (never a bare error). Recorded in authority_checks.
+     *
+     * @param  array{type: string, id: string, title?: string}  $subject
+     */
+    public function checkStaffLimit(
+        string $tenantId,
+        string $carrierId,
+        User $holder,
+        string $authorityType,
+        int $amountMinor,
+        string $currency,
+        array $subject,
+        string $action,
+        ?string $lineCode = null,
+        bool $openReferral = true,
+    ): AuthorityOutcome {
+        $this->types->assertActive($authorityType);
+        $day = now()->toDateString();
+        $membership = $holder->memberships()->where('tenant_id', $tenantId)->where('status', 'ACTIVE')->with('roles')->first();
+        $roleCodes = $membership ? array_values(array_unique(array_filter([$membership->role_code, ...$membership->roles->pluck('code')->all()]))) : [];
+
+        $limit = null;
+        foreach ([['USER', $holder->id], ...array_map(fn ($r) => ['ROLE', $r], $roleCodes)] as [$type, $id]) {
+            $row = $this->effectiveLimit($type, (string) $id, $carrierId, $authorityType, $lineCode, $day);
+            if ($row && (! $limit || (int) $row->max_amount_minor > (int) $limit->max_amount_minor)) {
+                $limit = $row;
+            }
+        }
+
+        if (! $limit) {
+            [$outcome, $reason] = [AuthorityOutcome::REFERRED, 'NO_AUTHORITY_LIMIT'];
+        } elseif ($amountMinor > (int) $limit->max_amount_minor) {
+            [$outcome, $reason] = [AuthorityOutcome::REFERRED, 'AUTHORITY_LIMIT_EXCEEDED'];
+        } else {
+            [$outcome, $reason] = [AuthorityOutcome::ALLOWED, 'WITHIN_AUTHORITY_LIMIT'];
+        }
+
+        $caseId = null;
+        if ($outcome === AuthorityOutcome::REFERRED && $openReferral) {
+            $caseId = $this->cases->open($tenantId, 'AUTHORITY_REFERRAL', [
+                'title' => ($subject['title'] ?? 'Authority referral').' — '.$reason,
+                'subject_type' => $subject['type'], 'subject_id' => $subject['id'],
+                'source_type' => 'authority_check', 'source_id' => $subject['id'],
+                'carrier_id' => $carrierId, 'priority' => 'HIGH',
+                'idempotency_key' => 'authority:'.$action.':'.$subject['type'].':'.$subject['id'],
+            ], $holder)->id;
+        }
+
+        $checkId = (string) Str::uuid();
+        $row = [
+            'id' => $checkId, 'tenant_id' => $tenantId, 'carrier_id' => $carrierId,
+            'holder_type' => $limit->holder_type ?? 'USER', 'holder_id' => $limit->holder_id ?? $holder->id, 'authority_type' => $authorityType, 'action' => $action,
+            'subject_type' => $subject['type'], 'subject_id' => $subject['id'], 'line_code' => $lineCode,
+            'amount_minor' => $amountMinor, 'currency' => $currency, 'outcome' => $outcome, 'reason' => $reason,
+            'source' => self::LIMIT_SOURCE, 'authority_limit_id' => $limit?->id,
+            'delegated_authority_agreement_id' => null, 'intermediary_authorization_id' => null,
+            'referral_case_id' => $caseId, 'checked_by' => $holder->id, 'created_at' => now(),
+        ];
+        $result = new AuthorityOutcome($outcome, $reason, self::LIMIT_SOURCE, $limit?->id, $limit ? (int) $limit->max_amount_minor : null, null, $caseId, $checkId, $row);
+        $this->record($result);
+
+        return $result;
+    }
+
     /** Append the decision to authority_checks (+ audit). Idempotent on the check id. */
     public function record(AuthorityOutcome $outcome): void
     {
