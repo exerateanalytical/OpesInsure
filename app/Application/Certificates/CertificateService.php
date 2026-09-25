@@ -62,9 +62,13 @@ final class CertificateService
     {
         return DB::transaction(function () use ($d, $actor): StickerBatch {
             $b = StickerBatch::create([...$d, 'quantity' => count($d['stickers']), 'received_by' => $actor->id, 'received_at' => now(), 'status' => 'RECEIVED']);
+            $level = ! empty($d['custodian_tenant_id']) ? 'BROKER' : 'CARRIER';
             foreach ($d['stickers'] as $s) {
-                StickerStock::create(['serial_number' => $s['serial_number'], 'carrier_id' => $d['carrier_id'], 'batch_number' => $d['batch_number'], 'status' => 'IN_STOCK',
-                    'custodian_tenant_id' => $d['custodian_tenant_id'] ?? null, 'sticker_batch_id' => $b->id, 'security_code_hash' => hash('sha256', $s['security_code'])]);
+                $stock = StickerStock::create(['serial_number' => $s['serial_number'], 'carrier_id' => $d['carrier_id'], 'batch_number' => $d['batch_number'], 'status' => 'IN_STOCK',
+                    'custodian_tenant_id' => $d['custodian_tenant_id'] ?? null, 'sticker_batch_id' => $b->id, 'security_code_hash' => hash('sha256', $s['security_code']), 'custody_level' => $level]);
+                // REQ-POL-007: the custody chain starts at receipt.
+                DB::table('sticker_custody_events')->insert(['id' => (string) Str::uuid(), 'sticker_stock_id' => $stock->id, 'event_type' => 'RECEIVED', 'from_tenant_id' => null,
+                    'to_tenant_id' => $d['custodian_tenant_id'] ?? null, 'to_level' => $level, 'actor_id' => $actor->id, 'reason_code' => 'BATCH_RECEIVED', 'occurred_at' => now()]);
             }
             $this->audit->record('sticker.batch.received', 'sticker_batch', $b->id, ['quantity' => $b->quantity]);
 
@@ -128,13 +132,8 @@ final class CertificateService
             $this->engine->supersedePrevious($p, $doc, $actor);
 
             if (! empty($d['sticker_serial_number'])) {
-                $s = StickerStock::where(['serial_number' => $d['sticker_serial_number'], 'carrier_id' => $p->carrier_id, 'custodian_tenant_id' => $p->tenant_id, 'status' => 'IN_STOCK'])->lockForUpdate()->first();
-                if (! $s) {
-                    throw ValidationException::withMessages(['sticker_serial_number' => __('wave5.sticker_unavailable')]);
-                }
-                $s->update(['status' => 'ASSIGNED', 'assigned_policy_id' => $p->id, 'assigned_at' => now()]);
-                DB::table('sticker_custody_events')->insert(['id' => (string) Str::uuid(), 'sticker_stock_id' => $s->id, 'event_type' => 'ASSIGNED_TO_POLICY', 'from_tenant_id' => $s->custodian_tenant_id,
-                    'to_tenant_id' => $p->tenant_id, 'actor_id' => $actor->id, 'reason_code' => 'POLICY_ISSUANCE', 'occurred_at' => now()]);
+                // REQ-POL-007: one assign-to-policy path (custody checks + sticker_custody_events ASSIGNED_TO_POLICY).
+                app(\App\Application\Stickers\StickerCustodyService::class)->assignToPolicy($p, (string) $d['sticker_serial_number'], $actor);
             }
             $this->audit->record('certificate.issued', 'document', $doc->id, ['policy_id' => $p->id, 'document_number' => $doc->document_number, 'type' => $type['code']]);
             $this->outbox->record('certificate.issued', 'document', $doc->id, ['document_id' => $doc->id, 'policy_id' => $p->id]);
