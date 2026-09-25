@@ -666,3 +666,15 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C14 — REQ-CLM-014 claim closure checklist, closure reasons, reopening (maker-checker) (App\Application\Claims\Closure).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Claims\Closure\Http\ClaimClosureController::class;
+    Route::get('{claim}/closure/checklist', [$c, 'checklist'])->middleware('permission:claims.read')->whereUuid('claim');
+    Route::get('{claim}/closure/history', [$c, 'history'])->middleware('permission:claims.read')->whereUuid('claim');
+    Route::post('{claim}/close', [$c, 'close'])->middleware('permission:claims.close')->whereUuid('claim');
+    Route::post('{claim}/reopen-requests', [$c, 'requestReopen'])->middleware('permission:claims.reopen.request')->whereUuid('claim');
+    Route::post('reopen-requests/{request}/approve', [$c, 'approveReopen'])->middleware('permission:claims.reopen.approve')->whereUuid('request');
+    Route::post('reopen-requests/{request}/reject', [$c, 'rejectReopen'])->middleware('permission:claims.reopen.approve')->whereUuid('request');
+    Route::post('recoveries/{recovery}/transfer', [$c, 'transferRecovery'])->middleware('permission:claims.close')->whereUuid('recovery');
+});
+// End Agent C14
