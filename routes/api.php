@@ -396,3 +396,20 @@ Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])-
     Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
     Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
 });
+
+// Batch 8-7 — REQ-POL-009 policy portfolio transfer (maker-checker, notice/consent) + portability export packs (ICE gaps 36, 42).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Policies\Portability\Http\PolicyPortabilityController::class;
+    Route::post('policy-portfolio-transfers/preview', [$c, 'preview'])->middleware('permission:policies.portfolio_transfer.request');
+    Route::post('policy-portfolio-transfers', [$c, 'store'])->middleware(['permission:policies.portfolio_transfer.request', 'throttle:10,1']);
+    Route::get('policy-portfolio-transfers', [$c, 'index'])->middleware('permission:policies.portfolio_transfer.read');
+    Route::get('policy-portfolio-transfers/{transfer}', [$c, 'show'])->middleware('permission:policies.portfolio_transfer.read')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/approve', [$c, 'approve'])->middleware('permission:policies.portfolio_transfer.approve')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/reject', [$c, 'reject'])->middleware('permission:policies.portfolio_transfer.approve')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/policies/{policy}/consent', [$c, 'consent'])->middleware('permission:policies.portfolio_transfer.request')->whereUuid(['transfer', 'policy']);
+    Route::get('policies/{policy}/servicing-history', [$c, 'servicingHistory'])->middleware('permission:policies.portfolio_transfer.read')->whereUuid('policy');
+    Route::post('policies/{policy}/portability-exports', [$c, 'export'])->middleware(['permission:policies.portability.export', 'throttle:10,1'])->whereUuid('policy');
+    Route::get('policies/{policy}/portability-exports', [$c, 'exports'])->middleware('permission:policies.portability.export')->whereUuid('policy');
+    Route::get('policy-portability-exports/{export}', [$c, 'pack'])->middleware('permission:policies.portability.export')->whereUuid('export');
+    Route::get('policy-portability-exports/{export}/pdf', [$c, 'pdf'])->middleware('permission:policies.portability.export')->whereUuid('export');
+});
