@@ -121,6 +121,10 @@ final class DomainEventCatalogue
             $d('claim.payment.approved', 'claim', 'Claim payment approved.', [], [], true),
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
+            // REQ-CLM-008 (Batch 11 C5) event-based reserves.
+            $d('claim.reserve.requested', 'claim', 'Claim reserve movement requested (maker).', [], [], true),
+            $d('claim.reserve.referred', 'claim', 'Claim reserve approval referred: approver RESERVE_APPROVE limit exceeded.', [], [], true),
+            $d('claim.reserve.changed', 'claim', 'Claim reserve movement approved and posted.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
             // REQ-CLM-006 (App\Application\Claims\Parties\ClaimPartyService)
             $d('claim.party.added', 'claim', 'Party (claimant, third party, payee, expert…) added to a claim.', [], [], true),
