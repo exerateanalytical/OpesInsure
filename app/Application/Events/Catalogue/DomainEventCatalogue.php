@@ -157,6 +157,12 @@ final class DomainEventCatalogue
             $d('partner.payout.paid', 'partner_payout', 'Partner payout paid.', [], [], true),
             $d('partner.payout.reversed', 'partner_payout', 'Partner payout reversed.', [], [], true),
             $d('partner.statement.approved', 'partner_statement', 'Partner statement approved.', [], [], true),
+            // REQ-STL-002 / REQ-DUP-008 carrier bordereau (App\Application\FinancialDistribution\BordereauService)
+            $d('bordereau.prepared', 'bordereau', 'Carrier bordereau prepared with per-type items for a period.', [], [], true),
+            $d('bordereau.approved', 'bordereau', 'Carrier bordereau approved (checker).', [], [], true),
+            $d('bordereau.submitted', 'bordereau', 'Carrier bordereau submitted to the carrier.', [], [], true),
+            $d('bordereau.acknowledged', 'bordereau', 'Carrier acknowledged the bordereau.', [], [], true),
+            $d('bordereau.rejected', 'bordereau', 'Carrier rejected the bordereau.', [], [], true),
             $d('party.created', 'party', 'Party created.', [], [], true),
             // REQ-PTY-002/003/004 golden record (App\Application\Customers\Roles|Relationships|Matching)
             $d('party.role_assigned', 'party', 'Explicit bitemporal party role recorded (LOCK-006).', [], [], true),

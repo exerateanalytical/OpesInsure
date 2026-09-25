@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Reinsurance\Http;
 
-use App\Application\Reinsurance\BordereauService;
+use App\Application\Reinsurance\TreatyBordereauService;
 use App\Application\Reinsurance\CessionService;
 use App\Application\Reinsurance\TreatyService;
 use App\Domain\Tenancy\TenantContext;
@@ -100,7 +100,7 @@ final class ReinsuranceController
         return response()->json(['data' => $result], $result['replayed'] || $result['run'] === null ? 200 : 201);
     }
 
-    public function bordereau(Request $r, string $treaty, BordereauService $service): JsonResponse
+    public function bordereau(Request $r, string $treaty, TreatyBordereauService $service): JsonResponse
     {
         $data = $r->validate(['type' => 'sometimes|in:PREMIUM,RISK', 'from' => 'required|date', 'to' => 'required|date|after_or_equal:from']);
 

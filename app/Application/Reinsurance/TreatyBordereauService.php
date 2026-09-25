@@ -7,10 +7,10 @@ namespace App\Application\Reinsurance;
 use Illuminate\Support\Facades\DB;
 
 /**
- * REQ-REI-002: premium / risk bordereau for one treaty over a period, built from current (CALCULATED)
+ * REQ-REI-002 (reinsurance, NOT the carrier bordereau in App\Application\FinancialDistribution\BordereauService): premium / risk bordereau for one treaty over a period, built from current (CALCULATED)
  * cessions, one line per policy and reinsurer share, with per-reinsurer totals.
  */
-final class BordereauService
+final class TreatyBordereauService
 {
     public function __construct(private readonly TreatyService $treaties) {}
 
