@@ -845,3 +845,17 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E9 — REQ-AML-002 AML risk rating / EDD / transaction monitoring; REQ-AML-003 STR (tipping-off: 404 without cases.str.view).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Compliance\Aml\Risk\Http\AmlRiskController::class;
+    $s = \App\Application\Compliance\Aml\Str\Http\StrController::class;
+    Route::post('aml/customers/{party}/risk-rating', [$a, 'rate'])->middleware('permission:aml.risk.rate')->whereUuid('party');
+    Route::get('aml/customers/{party}/risk-rating', [$a, 'show'])->middleware('permission:aml.risk.view')->whereUuid('party');
+    Route::get('aml/transaction-monitoring/rules', [$a, 'rules'])->middleware('permission:aml.risk.view');
+    Route::post('aml/transaction-monitoring/evaluate', [$a, 'monitor'])->middleware('permission:aml.monitoring.evaluate');
+    Route::get('aml/str-reports', [$s, 'index']);
+    Route::post('aml/str-reports', [$s, 'store']);
+    Route::get('aml/str-reports/{str}', [$s, 'show'])->whereUuid('str');
+    Route::post('aml/str-reports/{str}/submit', [$s, 'submit'])->whereUuid('str');
+});
+// End Agent E9
