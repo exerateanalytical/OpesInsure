@@ -33,6 +33,13 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 
 ## Log (newest first)
 
+### 2026-09-25 local: DEPLOYED Batches 7, 8 and 9 (master c790693) as release r20260925-163340
+- Before it: the decisions batch c0a8d01 (+4919d6c) went live as r20260925-144020.
+- Local full pest on the merged tree: 1288 passed / 0 failed. Backup opesinsure-20260925-1613.sql.gz. All 22 migrations rehearsed on a prod copy, then applied.
+- Post-deploy: policies:backfill-chronology 15 backfilled / 0 failed; rbac:sync-role-permissions 8 roles, +138 permissions; finance:backfill-obligations 15 backfilled / 0 failed.
+- Live: verify-live 75/76 (the legacy /claims check). Purchase journey OK: 6 offers, POL-2026-000004 issued with 1 policy_versions row and 1 financial obligation.
+- Local, uncommitted in the working tree and not yet deployed: canonical document security (cs1), canonical web UI + D2-D4 (cs2, adds the composer package mallardduck/blade-lucide-icons), issuer letterheads/logos. Local will merge master, test and deploy them next.
+
 ### 2026-09-25 cloud: Batch 8 wiring + Batch 9 merged (10 agents). Full suite 1288 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH9.md
 - Merge fixes: duplicate payment_intents.financial_obligation_id column (9-4 vs 9-1), webhook/reconciliation obligation hooks re-applied on the new payment machine, refunds bound to obligations, reinstatement re-request bug fixed.
 
