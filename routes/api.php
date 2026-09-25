@@ -190,6 +190,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('underwriting/cases/{case}/assign', [ProposalController::class, 'assign'])->middleware('permission:underwriting.assign');
         Route::post('underwriting/referrals/{referral}/resolve', [ProposalController::class, 'resolveReferral'])->middleware('permission:underwriting.decide');
         Route::post('underwriting/cases/{case}/decision', [ProposalController::class, 'decide'])->middleware('permission:underwriting.decide');
+        // Batch 7B — REQ-UW-001…005 underwriter workspace (queue, case file, system evaluate, review steps, WF-019 info request).
+        Route::get('underwriting/cases', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'index'])->middleware('permission:underwriting.decide');
+        Route::get('underwriting/cases/{case}', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'show'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/evaluate', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'evaluate'])->middleware(['permission:underwriting.decide', 'throttle:30,1']);
+        Route::post('underwriting/cases/{case}/start-review', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'startReview'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/ready-for-decision', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'readyForDecision'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/information-requests', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'requestInformation'])->middleware('permission:underwriting.decide');
         Route::get('policies', [PolicyController::class, 'index']);
         Route::post('policy-issuance-requests', [PolicyController::class, 'requestIssuance'])->middleware('permission:policies.issue.request');
         Route::post('policy-issuance-requests/{issuance}/approve', [PolicyController::class, 'approveIssuance'])->middleware('permission:policies.issue.approve');
