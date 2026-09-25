@@ -35,7 +35,7 @@ final class MobileClaimPartyService
     {
         $claim = $this->claims->owned($claimId, $user, $tenantId);
 
-        return ClaimInvolvedParty::where('claim_id', $claim->id)->orderBy('created_at')->paginate($perPage);
+        return ClaimInvolvedParty::where('claim_id', $claim->id)->active()->orderBy('created_at')->paginate($perPage);
     }
 
     /**
@@ -58,7 +58,11 @@ final class MobileClaimPartyService
         }
 
         $party = ClaimInvolvedParty::create([
+            'tenant_id' => $claim->tenant_id,
             'claim_id' => $claim->id,
+            'source' => 'MOBILE',
+            'effective_from' => now()->toDateString(),
+            'consent_recorded_at' => $consentGiven ? now() : null,
             'role' => $data['role'],
             'display_name' => $data['display_name'],
             'is_self' => $isSelf,

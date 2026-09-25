@@ -666,3 +666,12 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C7 — REQ-CLM-006 claim parties (App\Application\Claims\Parties).
+Route::prefix('v1/claims/{claim}/parties')->middleware(['auth:api', 'tenant', 'json.api'])->whereUuid('claim')->group(function (): void {
+    $c = \App\Application\Claims\Parties\Http\ClaimPartyController::class;
+    Route::get('', [$c, 'index'])->middleware('permission:claims.view');
+    Route::post('', [$c, 'store'])->middleware('permission:claims.parties.manage');
+    Route::patch('{party}', [$c, 'update'])->middleware('permission:claims.parties.manage')->whereUuid('party');
+    Route::delete('{party}', [$c, 'destroy'])->middleware('permission:claims.parties.manage')->whereUuid('party');
+});
+// End Agent C7
