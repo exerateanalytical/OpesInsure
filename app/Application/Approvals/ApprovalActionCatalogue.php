@@ -63,6 +63,7 @@ final class ApprovalActionCatalogue
         // Documents / data
         'document.status_change' => ['workflow' => 'DOCUMENT', 'category' => 'DOCUMENT', 'description' => 'Document revoke / replace / cancel', 'sources' => 'WF-081 E7; DCP'],
         'master_data.import.approve' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Master-data import', 'sources' => 'MDC'],
+        'legacy_migration.commit' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Legacy data migration batch commit (after dry run + reconciliation)', 'sources' => 'BP W26; MPS §92; REQ-IMP-002', 'checker_permission' => 'legacy_migration.approve'],
         'entity.merge' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Duplicate entity merge', 'sources' => 'ICE gap 15'],
         'release.certify' => ['workflow' => 'RELEASE', 'category' => 'CONFIGURATION', 'description' => 'Release certification', 'sources' => 'Wave 11'],
         // Batch 5B rules engine (REQ-RUL-001…004): rule sets and question sets are configuration, maker-checker governed.

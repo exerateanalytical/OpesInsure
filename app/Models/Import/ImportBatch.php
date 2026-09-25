@@ -19,7 +19,8 @@ final class ImportBatch extends Model
     protected function casts(): array
     {
         return ['target_params' => 'array', 'source_columns' => 'array', 'mapping' => 'array', 'raw_rows' => 'array', 'rows' => 'array',
-            'report' => 'array', 'result' => 'array', 'imported_at' => 'datetime', 'imported_count' => 'integer'];
+            'report' => 'array', 'result' => 'array', 'imported_at' => 'datetime',
+            'control_totals' => 'array', 'dry_run' => 'array', 'reconciliation' => 'array', 'reconciled_at' => 'datetime', 'rolled_back_at' => 'datetime', 'imported_count' => 'integer'];
     }
 
     protected static function booted(): void

@@ -1128,3 +1128,22 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('carrier-connectors/mappings/{mapping}/resolve-conflict', [$cc, 'resolveConflict'])->middleware('permission:integrations.carrier_connectors.manage')->whereUuid('mapping');
 });
 // End Agent B3
+// Agent B5 — REQ-IMP-002 legacy migration (App\Application\Import\Legacy\LegacyMigrationPipeline).
+// stage → validate → dry-run → reconcile → submit → approve (maker-checker) → commit; rollback while uncommitted.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api', 'throttle:60,1'])->group(function (): void {
+    $lm = \App\Interfaces\Http\Controllers\Api\V1\Import\LegacyMigrationController::class;
+    Route::get('legacy-migrations/entities', [$lm, 'entities'])->middleware('permission:legacy_migration.manage');
+    Route::get('legacy-migrations', [$lm, 'index'])->middleware('permission:legacy_migration.manage');
+    Route::post('legacy-migrations', [$lm, 'store'])->middleware('permission:legacy_migration.manage');
+    Route::get('legacy-migrations/{batch}', [$lm, 'show'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::put('legacy-migrations/{batch}/mapping', [$lm, 'map'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/validate', [$lm, 'validateBatch'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/dry-run', [$lm, 'dryRun'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/reconcile', [$lm, 'reconcile'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/submit', [$lm, 'submit'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/rollback', [$lm, 'rollback'])->middleware('permission:legacy_migration.manage')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/approve', [$lm, 'approve'])->middleware('permission:legacy_migration.approve')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/reject', [$lm, 'reject'])->middleware('permission:legacy_migration.approve')->whereUuid('batch');
+    Route::post('legacy-migrations/{batch}/commit', [$lm, 'commit'])->middleware('permission:legacy_migration.commit')->whereUuid('batch');
+});
+// End Agent B5
