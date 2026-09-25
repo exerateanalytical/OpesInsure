@@ -8,16 +8,18 @@ import { ChoiceChips, errorMessage, Notice } from "@/components/portal/Workspace
 import { CarrierClaimDetail, CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { parseAmountMinor } from "@/lib/purchase";
 import { colors, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 type Decision = "APPROVE" | "PARTIAL" | "DECLINE";
 
 export default function CarrierClaimScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierWorkspaceApi.claim(String(id)), [id]);
   return (
     <Screen>
-      <AppHeader title="Claim" subtitle="Decisions need a second insurer approver" back />
-      <StatePanel {...q} onRetry={q.reload} loadingLabel="Loading claim…">
+      <AppHeader title={t("welcomeClaim")} subtitle={t("caClaimSubtitle")} back />
+      <StatePanel {...q} onRetry={q.reload} loadingLabel={t("caLoadingClaim")}>
         {(c) => <ClaimBody claim={c} onChange={(n) => q.setData(n)} />}
       </StatePanel>
     </Screen>
@@ -25,6 +27,7 @@ export default function CarrierClaimScreen() {
 }
 
 function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange: (c: CarrierClaimDetail) => void }) {
+  const { t } = useTranslation();
   const [note, setNote] = useState("");
   const [decision, setDecision] = useState<Decision | null>(null);
   const [amount, setAmount] = useState("");
@@ -74,24 +77,24 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
 
       {can("acknowledge") ? (
         <Button
-          label="Acknowledge claim"
+          label={t("caAcknowledgeClaim")}
           loading={busy === "ack"}
-          onPress={() => run("ack", () => CarrierWorkspaceApi.acknowledgeClaim(c.id), "Claim acknowledged.")}
+          onPress={() => run("ack", () => CarrierWorkspaceApi.acknowledgeClaim(c.id), t("caClaimAcknowledged"))}
         />
       ) : null}
 
       {can("request_information") ? (
         <>
-          <SectionTitle title="Request information" />
+          <SectionTitle title={t("caRequestInformation")} />
           <Card>
-            <TextField label="What do you need from the claimant?" value={note} onChangeText={setNote} multiline />
+            <TextField label={t("caWhatDoYouNeed")} value={note} onChangeText={setNote} multiline />
             <Button
-              label="Send request"
+              label={t("caSendRequest")}
               variant="secondary"
               loading={busy === "info"}
               disabled={note.trim().length < 5}
               onPress={() =>
-                run("info", () => CarrierWorkspaceApi.requestClaimInformation(c.id, note.trim()), "Information requested.")
+                run("info", () => CarrierWorkspaceApi.requestClaimInformation(c.id, note.trim()), t("caInformationRequested"))
               }
             />
           </Card>
@@ -100,26 +103,26 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
 
       {can("propose_decision") ? (
         <>
-          <SectionTitle title="Propose a decision" />
+          <SectionTitle title={t("caProposeDecision")} />
           <Card>
             <ChoiceChips<Decision>
-              label="Decision"
+              label={t("trackDecision")}
               value={decision}
               onChange={setDecision}
               options={[
-                { value: "APPROVE", label: "Approve" },
-                { value: "PARTIAL", label: "Partial" },
-                { value: "DECLINE", label: "Decline" },
+                { value: "APPROVE", label: t("refDecision_APPROVE") },
+                { value: "PARTIAL", label: t("caPartial") },
+                { value: "DECLINE", label: t("refDecision_DECLINE") },
               ]}
             />
             {decision && decision !== "DECLINE" ? (
-              <TextField label="Amount to pay (FCFA)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+              <TextField label={t("caAmountToPay")} keyboardType="number-pad" value={amount} onChangeText={setAmount} />
             ) : null}
-            <TextField label="Reason code" value={reason} onChangeText={setReason} autoCapitalize="characters" />
-            <TextField label="Rationale" value={rationale} onChangeText={setRationale} multiline />
-            <Text style={s.meta}>A second insurer user must approve before the decision takes effect.</Text>
+            <TextField label={t("caReasonCode")} value={reason} onChangeText={setReason} autoCapitalize="characters" />
+            <TextField label={t("caRationale")} value={rationale} onChangeText={setRationale} multiline />
+            <Text style={s.meta}>{t("caSecondApprover")}</Text>
             <Button
-              label="Submit for approval"
+              label={t("caSubmitForApproval")}
               loading={busy === "propose"}
               disabled={!decisionReady}
               onPress={() =>
@@ -132,7 +135,7 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
                       reason_code: reason.trim().toUpperCase().replace(/\s+/g, "_"),
                       rationale: rationale.trim(),
                     }),
-                  "Decision submitted for approval.",
+                  t("caDecisionSubmitted"),
                 )
               }
             />
@@ -142,7 +145,7 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
 
       {c.pending_decision ? (
         <>
-          <SectionTitle title="Decision awaiting approval" />
+          <SectionTitle title={t("caDecisionAwaiting")} />
           <Card>
             <Text style={s.title}>
               {humanize(c.pending_decision.decision)}
@@ -152,21 +155,21 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
             <Text style={s.body}>{c.pending_decision.rationale}</Text>
             {can("approve_decision") ? (
               <Button
-                label="Approve decision"
+                label={t("caApproveDecision")}
                 loading={busy === "approve"}
                 onPress={() =>
                   run(
                     "approve",
                     () => CarrierWorkspaceApi.approveClaimDecision(c.id, c.pending_decision!.id),
-                    "Decision approved.",
+                    t("caDecisionApproved"),
                   )
                 }
               />
             ) : (
               <Text style={s.meta}>
                 {c.pending_decision.proposed_by_me
-                  ? "You proposed this decision; another approver must confirm it."
-                  : "An insurer administrator must approve this decision."}
+                  ? t("caYouProposed")
+                  : t("caAdminMustApprove")}
               </Text>
             )}
           </Card>
@@ -177,7 +180,7 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
 
       {c.timeline.length > 0 ? (
         <>
-          <SectionTitle title="History" />
+          <SectionTitle title={t("claimTimeline")} />
           <Card>
             {c.timeline.map((e, i) => (
               <Text key={`${e.occurred_at}-${i}`} style={s.meta}>

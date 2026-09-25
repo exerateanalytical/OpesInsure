@@ -179,6 +179,9 @@ test("secure document access and customer service mutations remain server mediat
   const client = read("src/api/client.ts");
   assert.match(client, /documents\/\$\{id\}\/access/);
   assert.match(client, /policy-service-requests/);
+  // Canonical create (REQ-DUP-014); the /mobile alias is read-only now.
+  assert.ok(client.includes("`/policies/${encodeURIComponent(policy_id)}/service-requests`"));
+  assert.ok(!client.includes('api<PolicyServiceCase>("/mobile/policy-service-requests", {'));
   assert.match(client, /support\/cases/);
   assert.match(client, /idempotent:\s*true/);
 });
@@ -283,8 +286,12 @@ test("agent operations are typed and server mediated", () => {
 test("agent UI protects client payment and origin ownership", () => {
   const sale = read("app/agent/sales/new.tsx");
   const client = read("app/agent/clients/new.tsx");
-  assert.match(sale, /never collect or enter/i);
-  assert.match(client, /cannot overwrite/i);
+  // Copy lives in the EN/FR catalogues; the screens reference the keys.
+  const en = read("src/i18n/en.ts");
+  assert.match(sale, /t\("agNeverPin"\)/);
+  assert.match(en, /agNeverPin: ".*never collect or enter/i);
+  assert.match(client, /t\("agOriginLockRules"\)/);
+  assert.match(en, /agOriginLockRules: ".*cannot overwrite/i);
   assert.match(client, /consent/i);
 });
 test("patch four demo data covers field operations", () => {

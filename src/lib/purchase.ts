@@ -1,11 +1,23 @@
 /**
  * Pure helpers for the customer purchase, payment and wallet flows.
  *
- * No imports on purpose: tests/purchase-flow.test.mjs loads this file
- * directly with Node's type stripping, so it must stay dependency-free and
- * use only erasable TypeScript syntax (no enums, namespaces or parameter
- * properties).
+ * Only the plain EN/FR catalogues are imported: tests/purchase-flow.test.mjs
+ * loads this file directly with Node's type stripping, so it must stay
+ * dependency-free and use only erasable TypeScript syntax (no enums,
+ * namespaces or parameter properties). Labels take an optional language
+ * (default "en").
  */
+import { en } from "../i18n/en.ts";
+import { fr } from "../i18n/fr.ts";
+
+type CopyKey = keyof typeof en;
+/** Catalogue lookup for pure helpers (same tables as src/i18n). */
+export function copyText(language: string | undefined, key: string, vars?: Record<string, string | number>): string {
+  const table = (language === "fr" ? fr : en) as Record<string, string>;
+  const text = table[key] ?? (en as Record<string, string>)[key] ?? key;
+  return vars ? text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : text;
+}
+const tx = (language: string | undefined, key: CopyKey, vars?: Record<string, string | number>) => copyText(language, key, vars);
 
 // --- Pagination ------------------------------------------------------------
 
@@ -164,14 +176,14 @@ export function normalizeCoverage(
       const d = (raw ?? {}) as Record<string, unknown>;
       const url = d.url ?? d.download_url ?? d.href;
       return {
-        label: localized(d.label ?? d.name ?? d.title, language) || "Policy wording",
+        label: localized(d.label ?? d.name ?? d.title, language) || tx(language, "policyWording"),
         url: typeof url === "string" ? url : "",
       };
     })
     .filter((d) => d.url.startsWith("https://") || d.url.startsWith("http://"));
   const wording = s.policy_wording_url ?? s.wording_url;
   if (typeof wording === "string" && /^https?:\/\//.test(wording))
-    documents.unshift({ label: "Policy wording", url: wording });
+    documents.unshift({ label: tx(language, "policyWording"), url: wording });
   const explicitExcess = num(s.excess_minor ?? s.deductible_minor);
   const deductibles = coverages
     .map((c) => c.deductibleMinor)
@@ -202,7 +214,7 @@ export type OfferLike = {
 
 export const providerName = (o: {
   carrier?: { party?: { display_name?: string } } | null;
-}) => o.carrier?.party?.display_name ?? "Licensed insurance carrier";
+}, language?: string) => o.carrier?.party?.display_name ?? tx(language, "licensedCarrier");
 
 export type OfferSort = "price" | "cover" | "insurer" | "excess";
 export type CoverLevel = "essential" | "standard" | "full";
@@ -339,26 +351,26 @@ export function compareRows(offers: OfferLike[], language: string = "en"): Compa
     };
   };
   const rows: CompareRow[] = [
-    { key: "provider", label: "Insurer", cells: offers.map((o) => ({ text: providerName(o) })) },
-    { key: "product", label: "Product", cells: offers.map((o) => ({ text: localized(o.product?.name, language) || "Insurance offer" })) },
-    money("premium", "Premium", (o) => o.premium_minor),
-    money("tax", "Taxes", (o) => o.tax_minor),
-    money("fees", "Fees", (o) => o.fee_minor),
-    money("total", "Total payable", (o) => o.total_minor),
-    money("excess", "Excess / deductible", (_o, i) => norm[i]?.excessMinor ?? null),
+    { key: "provider", label: tx(language, "ofInsurer"), cells: offers.map((o) => ({ text: providerName(o, language) })) },
+    { key: "product", label: tx(language, "cfProduct"), cells: offers.map((o) => ({ text: localized(o.product?.name, language) || tx(language, "insuranceOffer") })) },
+    money("premium", tx(language, "sumPremium"), (o) => o.premium_minor),
+    money("tax", tx(language, "sumTaxes"), (o) => o.tax_minor),
+    money("fees", tx(language, "sumFees"), (o) => o.fee_minor),
+    money("total", tx(language, "sumTotalPayable"), (o) => o.total_minor),
+    money("excess", tx(language, "sumExcess"), (_o, i) => norm[i]?.excessMinor ?? null),
     {
       key: "level",
-      label: "Cover level",
-      cells: offers.map((o) => ({ text: { essential: "Essential", standard: "Standard", full: "Full" }[coverLevel(o, offers)] })),
+      label: tx(language, "ofCoverLevel"),
+      cells: offers.map((o) => ({ text: tx(language, ({ essential: "ofLevelEssential", standard: "ofLevelStandard", full: "ofLevelFull" } as const)[coverLevel(o, offers)]) })),
     },
   ];
   // Only when the API supplies them (see the backend gap note).
   if (offers.some((o) => carrierRating(o)))
-    rows.push({ key: "rating", label: "Insurer rating", cells: offers.map((o) => ({ text: carrierRating(o) ?? "—" })) });
+    rows.push({ key: "rating", label: tx(language, "cmpRowRating"), cells: offers.map((o) => ({ text: carrierRating(o) ?? "—" })) });
   if (offers.some((o) => carrierClaimsDays(o) !== null))
-    rows.push({ key: "claims_days", label: "Avg. claim settlement", cells: offers.map((o) => { const d = carrierClaimsDays(o); return { text: d === null ? "—" : `${d} days` }; }) });
+    rows.push({ key: "claims_days", label: tx(language, "cmpRowClaimsDays"), cells: offers.map((o) => { const d = carrierClaimsDays(o); return { text: d === null ? "—" : tx(language, "cmpDays", { count: d }) }; }) });
   if (offers.some((o) => offerPaymentMethods(o).length))
-    rows.push({ key: "payment", label: "Payment options", cells: offers.map((o) => ({ text: offerPaymentMethods(o).join(", ") || "—" })) });
+    rows.push({ key: "payment", label: tx(language, "ofPaymentOptions"), cells: offers.map((o) => ({ text: offerPaymentMethods(o).join(", ") || "—" })) });
   const codes: { code: string; name: string }[] = [];
   norm.forEach((n) =>
     n.coverages.forEach((c) => {
@@ -371,33 +383,33 @@ export function compareRows(offers: OfferLike[], language: string = "en"): Compa
       label: name,
       cells: norm.map((n) => {
         const c = n.coverages.find((x) => x.code === code);
-        if (!c) return { text: "Not included" };
-        const tag = c.mandatory ? "Included" : c.optional ? "Optional" : "Included";
+        if (!c) return { text: tx(language, "cmpNotIncluded") };
+        const tag = c.optional && !c.mandatory ? tx(language, "cmpOptional") : tx(language, "sumIncluded");
         return { text: tag, minor: c.limitMinor };
       }),
     });
   }
   rows.push({
     key: "exclusions",
-    label: "Exclusions",
-    cells: norm.map((n) => ({ text: n.exclusions.length ? n.exclusions.map((e) => e.name).join(", ") : "None listed" })),
+    label: tx(language, "cmpRowExclusions"),
+    cells: norm.map((n) => ({ text: n.exclusions.length ? n.exclusions.map((e) => e.name).join(", ") : tx(language, "cmpNoneListed") })),
   });
   return rows;
 }
 
 // --- Validity --------------------------------------------------------------
 
-export function validityLeft(validUntil: string | null | undefined, now: number = Date.now()) {
+export function validityLeft(validUntil: string | null | undefined, now: number = Date.now(), language?: string) {
   const end = validUntil ? Date.parse(validUntil) : NaN;
-  if (!Number.isFinite(end)) return { expired: false, label: "Validity not stated", ms: null as number | null };
+  if (!Number.isFinite(end)) return { expired: false, label: tx(language, "validityNotStated"), ms: null as number | null };
   const ms = end - now;
-  if (ms <= 0) return { expired: true, label: "Offer expired", ms: 0 };
+  if (ms <= 0) return { expired: true, label: tx(language, "offerExpired"), ms: 0 };
   const minutes = Math.floor(ms / 60000);
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
   const mins = minutes % 60;
   const label =
-    days > 0 ? `Valid for ${days}d ${hours}h` : hours > 0 ? `Valid for ${hours}h ${mins}m` : `Valid for ${Math.max(mins, 1)} min`;
+    days > 0 ? tx(language, "validityDays", { days, hours }) : hours > 0 ? tx(language, "validityHours", { hours, mins }) : tx(language, "validityMinutes", { mins: Math.max(mins, 1) });
   return { expired: false, label, ms };
 }
 
@@ -406,22 +418,31 @@ export function validityLeft(validUntil: string | null | undefined, now: number 
 export type Tone = "neutral" | "success" | "warning" | "info" | "danger";
 export type PolicyBucket = "active" | "pending" | "expired" | "cancelled" | "suspended";
 
-const POLICY: Record<string, { label: string; tone: Tone; bucket: PolicyBucket; claimable: boolean; note?: string }> = {
-  ACTIVE: { label: "Active", tone: "success", bucket: "active", claimable: true },
-  EXPIRING: { label: "Expiring soon", tone: "warning", bucket: "active", claimable: true, note: "Renew before the end date to stay covered." },
-  ENDORSEMENT_PENDING: { label: "Change in review", tone: "info", bucket: "active", claimable: true, note: "A requested change is being reviewed. Your current cover continues meanwhile." },
-  CANCELLATION_PENDING: { label: "Cancellation pending", tone: "warning", bucket: "active", claimable: true, note: "Cancellation is being processed. Cover continues until it is confirmed." },
-  PENDING_PAYMENT: { label: "Awaiting payment", tone: "warning", bucket: "pending", claimable: false, note: "Cover starts only after payment is confirmed." },
-  PAID_PENDING_ISSUANCE: { label: "Issuance in progress", tone: "info", bucket: "pending", claimable: false, note: "Payment received. The insurer is issuing your policy." },
-  SUSPENDED: { label: "Suspended", tone: "danger", bucket: "suspended", claimable: false, note: "Cover is suspended. Contact the insurer to restore it." },
-  CANCELLED: { label: "Cancelled", tone: "neutral", bucket: "cancelled", claimable: false },
-  EXPIRED: { label: "Expired", tone: "neutral", bucket: "expired", claimable: false, note: "Renew to restore cover." },
-  LAPSED: { label: "Lapsed", tone: "neutral", bucket: "expired", claimable: false },
+const POLICY: Record<string, { tone: Tone; bucket: PolicyBucket; claimable: boolean; note?: boolean }> = {
+  ACTIVE: { tone: "success", bucket: "active", claimable: true },
+  EXPIRING: { tone: "warning", bucket: "active", claimable: true, note: true },
+  ENDORSEMENT_PENDING: { tone: "info", bucket: "active", claimable: true, note: true },
+  CANCELLATION_PENDING: { tone: "warning", bucket: "active", claimable: true, note: true },
+  PENDING_PAYMENT: { tone: "warning", bucket: "pending", claimable: false, note: true },
+  PAID_PENDING_ISSUANCE: { tone: "info", bucket: "pending", claimable: false, note: true },
+  SUSPENDED: { tone: "danger", bucket: "suspended", claimable: false, note: true },
+  CANCELLED: { tone: "neutral", bucket: "cancelled", claimable: false },
+  EXPIRED: { tone: "neutral", bucket: "expired", claimable: false, note: true },
+  LAPSED: { tone: "neutral", bucket: "expired", claimable: false },
 };
 
-export function policyStatusInfo(status: string | null | undefined) {
+/** Label (catalogue policyStatus_*), tone, bucket and customer note (policyNote_*). */
+export function policyStatusInfo(status: string | null | undefined, language?: string) {
   const key = (status ?? "").toUpperCase();
-  return POLICY[key] ?? { label: humanize(key) || "Unknown", tone: "neutral" as Tone, bucket: "pending" as PolicyBucket, claimable: false };
+  const known = POLICY[key];
+  if (!known) return { label: humanize(key) || tx(language, "statusUnknown"), tone: "neutral" as Tone, bucket: "pending" as PolicyBucket, claimable: false, note: undefined as string | undefined };
+  return {
+    label: copyText(language, `policyStatus_${key}`),
+    tone: known.tone,
+    bucket: known.bucket,
+    claimable: known.claimable,
+    note: known.note ? copyText(language, `policyNote_${key}`) : undefined,
+  };
 }
 
 export type ProposalStage =
@@ -434,43 +455,49 @@ export type ProposalStage =
   | "paid"
   | "closed";
 
-const PROPOSAL: Record<string, { label: string; tone: Tone; stage: ProposalStage; message: string }> = {
-  DRAFT: { label: "Draft", tone: "neutral", stage: "disclosures", message: "Answer the insurer's questions to continue." },
-  DISCLOSURES_PENDING: { label: "Questions pending", tone: "warning", stage: "disclosures", message: "Answer the insurer's questions to continue." },
-  MORE_INFORMATION: { label: "More information needed", tone: "warning", stage: "documents", message: "The insurer needs more information or documents before deciding." },
-  DOCUMENTS_PENDING: { label: "Documents needed", tone: "warning", stage: "documents", message: "Upload the requested documents so the insurer can review your application." },
-  SUBMITTED: { label: "Submitted", tone: "info", stage: "review", message: "Your application was submitted and is queued for review." },
-  UNDER_REVIEW: { label: "Under review", tone: "info", stage: "review", message: "An underwriter is reviewing your application. No payment is requested until it is approved." },
-  COUNTEROFFERED: { label: "Revised offer", tone: "warning", stage: "counteroffer", message: "The insurer proposed revised terms. Review them before continuing." },
-  DECLINED: { label: "Declined", tone: "danger", stage: "declined", message: "The insurer declined this application. You can compare other offers." },
-  APPROVED: { label: "Approved", tone: "success", stage: "payable", message: "Approved. Review the terms and pay to start cover." },
-  PAYMENT_PENDING: { label: "Ready to pay", tone: "success", stage: "payable", message: "Approved. Review the terms and pay to start cover." },
-  PAID: { label: "Paid", tone: "success", stage: "paid", message: "Payment received. Your policy is being issued." },
-  ISSUED: { label: "Policy issued", tone: "success", stage: "paid", message: "Your policy was issued." },
-  WITHDRAWN: { label: "Withdrawn", tone: "neutral", stage: "closed", message: "This application was withdrawn." },
-  EXPIRED: { label: "Expired", tone: "neutral", stage: "closed", message: "This application expired. Start a new quote." },
+const PROPOSAL: Record<string, { tone: Tone; stage: ProposalStage }> = {
+  DRAFT: { tone: "neutral", stage: "disclosures" },
+  DISCLOSURES_PENDING: { tone: "warning", stage: "disclosures" },
+  MORE_INFORMATION: { tone: "warning", stage: "documents" },
+  DOCUMENTS_PENDING: { tone: "warning", stage: "documents" },
+  SUBMITTED: { tone: "info", stage: "review" },
+  UNDER_REVIEW: { tone: "info", stage: "review" },
+  COUNTEROFFERED: { tone: "warning", stage: "counteroffer" },
+  DECLINED: { tone: "danger", stage: "declined" },
+  APPROVED: { tone: "success", stage: "payable" },
+  PAYMENT_PENDING: { tone: "success", stage: "payable" },
+  PAID: { tone: "success", stage: "paid" },
+  ISSUED: { tone: "success", stage: "paid" },
+  WITHDRAWN: { tone: "neutral", stage: "closed" },
+  EXPIRED: { tone: "neutral", stage: "closed" },
 };
 
-export function proposalStatusInfo(status: string | null | undefined) {
+/** Label (proposalStatus_*), tone, stage and message (proposalMsg_*). */
+export function proposalStatusInfo(status: string | null | undefined, language?: string) {
   const key = (status ?? "").toUpperCase();
-  return PROPOSAL[key] ?? { label: humanize(key) || "Unknown", tone: "neutral" as Tone, stage: "review" as ProposalStage, message: "Status is being updated by the insurer." };
+  const known = PROPOSAL[key];
+  if (!known) return { label: humanize(key) || tx(language, "statusUnknown"), tone: "neutral" as Tone, stage: "review" as ProposalStage, message: tx(language, "proposalMsg_UNKNOWN") };
+  return { label: copyText(language, `proposalStatus_${key}`), tone: known.tone, stage: known.stage, message: copyText(language, `proposalMsg_${key}`) };
 }
 
-export function paymentStatusInfo(status: string | null | undefined): { label: string; tone: Tone } {
-  switch ((status ?? "").toUpperCase()) {
-    case "SUCCEEDED": return { label: "Paid", tone: "success" };
-    case "FAILED": return { label: "Failed", tone: "danger" };
-    case "EXPIRED": return { label: "Expired", tone: "danger" };
-    case "CANCELLED": return { label: "Cancelled", tone: "neutral" };
-    case "REFUND_PENDING": return { label: "Refund pending", tone: "warning" };
-    case "REFUNDED": return { label: "Refunded", tone: "neutral" };
-    case "CREATED": return { label: "Created", tone: "info" };
-    case "PENDING_CUSTOMER": return { label: "Awaiting your approval", tone: "warning" };
-    case "PROCESSING": return { label: "Processing", tone: "warning" };
-    default:
-      if ((status ?? "").toUpperCase().startsWith("CHARGEBACK")) return { label: "Disputed", tone: "danger" };
-      return { label: humanize(status) || "Unknown", tone: "neutral" };
-  }
+const PAYMENT: Record<string, Tone> = {
+  SUCCEEDED: "success",
+  FAILED: "danger",
+  EXPIRED: "danger",
+  CANCELLED: "neutral",
+  REFUND_PENDING: "warning",
+  REFUNDED: "neutral",
+  CREATED: "info",
+  PENDING_CUSTOMER: "warning",
+  PROCESSING: "warning",
+};
+
+/** Label (paymentStatus_*) and tone; chargebacks read as disputed. */
+export function paymentStatusInfo(status: string | null | undefined, language?: string): { label: string; tone: Tone } {
+  const key = (status ?? "").toUpperCase();
+  if (PAYMENT[key]) return { label: copyText(language, `paymentStatus_${key}`), tone: PAYMENT[key] };
+  if (key.startsWith("CHARGEBACK")) return { label: tx(language, "paymentStatus_DISPUTED"), tone: "danger" };
+  return { label: humanize(status) || tx(language, "statusUnknown"), tone: "neutral" };
 }
 
 /**
@@ -520,12 +547,12 @@ export function isNotFound(error: unknown) {
   return (error as ErrorLike)?.status === 404;
 }
 
-export function errorMessage(error: unknown, fallback: string) {
+export function errorMessage(error: unknown, fallback: string, language?: string) {
   // ApiError messages are already localized (incl. 404 and the backend's
   // STALE_RECORD / DUPLICATE_SUBMISSION / ... codes) by src/i18n.
   const api = error as ErrorLike & { name?: string };
   if (api?.name === "ApiError" && api.message) return api.message;
-  if (isNotFound(error)) return "This record was not found or is not linked to your account.";
+  if (isNotFound(error)) return tx(language, "errNotFound");
   const m = (error as ErrorLike)?.message;
   return typeof m === "string" && m ? m : fallback;
 }

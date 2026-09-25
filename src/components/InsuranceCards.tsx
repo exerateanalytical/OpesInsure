@@ -20,7 +20,7 @@ export function BrokerCard({ broker, onPress }: { broker: Institution; onPress: 
 /** Owned-policy card: provider, product, status label and localized cover dates. */
 export function PolicyCard({policy,onPress}:{policy:WalletPolicy|Policy;onPress?:()=>void}) {
   const f=useFormatters();
-  const info=policyStatusInfo(policy.status);
+  const info=policyStatusInfo(policy.status, f.language);
   const w=policy as WalletPolicy;
   const provider=w.carrier_name??w.carrier?.party?.display_name??'Licensed insurance carrier';
   return <Pressable accessibilityRole={onPress?'button':undefined} onPress={onPress}><Card><View style={styles.between}><View style={[styles.inline,styles.copy]}><View style={styles.logo}><ShieldCheck size={20} color={colors.blue600}/></View><View style={styles.copy}><Text style={styles.title}>{w.product_name??'Insurance policy'}</Text><Text style={styles.meta}>{provider}</Text></View></View><StatusChip label={info.label} tone={info.tone}/></View><Text style={styles.ref}>{policy.policy_number}</Text><View style={styles.between}><Text style={styles.meta}>{f.range(policy.coverage_starts_at,policy.coverage_ends_at)}</Text>{onPress&&<Text style={styles.link}>View policy</Text>}</View></Card></Pressable>;

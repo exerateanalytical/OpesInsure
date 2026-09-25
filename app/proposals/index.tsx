@@ -74,7 +74,7 @@ export default function Applications() {
       {items.length ? (
         <Card>
           {items.map((p) => {
-            const info = proposalStatusInfo(p.status);
+            const info = proposalStatusInfo(p.status, f.language);
             const name = p.product_name ?? (localized(p.offer?.product?.name, f.language) || "Insurance application");
             return (
               <FlowRow

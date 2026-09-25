@@ -61,7 +61,7 @@ export default function Checkout() {
   if (loading && !proposal) return <Screen><AppHeader title={t("coTitle")} back /><LoadingState label={t("coLoading")} /></Screen>;
   if (!proposal) return <Screen><AppHeader title={t("coTitle")} back /><ErrorCard error={loadError} fallback={t("coLoadFailed")} onRetry={() => void load()} /></Screen>;
 
-  const info = proposalStatusInfo(proposal.status);
+  const info = proposalStatusInfo(proposal.status, f.language);
   const payable = info.stage === "payable";
   const phoneValid = /^\+237[26]\d{8}$/.test(phone);
   const pay = async () => {

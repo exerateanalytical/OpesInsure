@@ -45,7 +45,7 @@ export function OfferCard({
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const cover = normalizeCoverage(offer.coverage_snapshot, f.language);
-  const validity = validityLeft(offer.valid_until, now);
+  const validity = validityLeft(offer.valid_until, now, f.language);
   const included = cover.coverages.filter((c) => !c.optional);
   const optional = cover.coverages.filter((c) => c.optional);
   const carrierId = offer.carrier?.id ?? offer.carrier_id;
@@ -61,7 +61,7 @@ export function OfferCard({
         ) : null}
       </View>
       <Pressable accessibilityRole="link" onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })}>
-        <Text style={st.provider}>{providerName(offer)} ›</Text>
+        <Text style={st.provider}>{providerName(offer, f.language)} ›</Text>
       </Pressable>
       {carrierRating(offer) || carrierClaimsDays(offer) !== null ? (
         <Text style={ps.meta}>

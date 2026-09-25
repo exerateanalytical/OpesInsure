@@ -10,30 +10,32 @@ import { OperationsList } from "@/components/OperationsList";
 import { useColumns } from "@/components/responsive";
 import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function CarrierPayments() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.payments(), []);
   const grid = useColumns();
   return (
     <PortalScreen tabs={carrierTabs}>
-      <AppHeader title="Payments" subtitle="Premium payments and reconciliation" />
+      <AppHeader title={t("faqTopicPayments")} subtitle={t("caPaymentsSubtitle")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading payments…"
+        loadingLabel={t("paymentsLoading")}
         isEmpty={(d) => d.items.length === 0}
-        emptyTitle="No payments yet"
-        emptyMessage="Premium payments for your policies will appear here."
+        emptyTitle={t("paymentsEmpty")}
+        emptyMessage={t("caNoPaymentsBody")}
       >
         {(d) => (
           <>
             <View style={grid.row}>
               {(
                 [
-                  ["Collected", money(d.summary.succeeded_minor)],
-                  ["Reconciled", money(d.summary.reconciled_minor)],
-                  ["Awaiting reconciliation", String(d.summary.unreconciled_count)],
-                  ["Exceptions", String(d.summary.exception_count)],
+                  [t("caCollected"), money(d.summary.succeeded_minor)],
+                  [t("caReconciled"), money(d.summary.reconciled_minor)],
+                  [t("caAwaitingReconciliation"), String(d.summary.unreconciled_count)],
+                  [t("caExceptions"), String(d.summary.exception_count)],
                 ] as const
               ).map(([label, value]) => (
                 <Card key={label} style={[s.metric, grid.item]}>
@@ -42,7 +44,7 @@ export default function CarrierPayments() {
                 </Card>
               ))}
             </View>
-            <SectionTitle title="Payments" />
+            <SectionTitle title={t("faqTopicPayments")} />
             <OperationsList
               icon={HandCoins}
               rows={d.items.map((p) => ({

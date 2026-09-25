@@ -33,7 +33,7 @@ export default function PaymentDetail() {
     }
   };
 
-  const info = paymentStatusInfo(p?.status);
+  const info = paymentStatusInfo(p?.status, f.language);
   return (
     <Screen>
       <AppHeader title={t("pmTitle")} back />

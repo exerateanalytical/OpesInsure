@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   filterByQuery,
-  manualReviewPayload,
+  suggestionOutcome,
+  vehicleSuggestionPayload,
   modelYears,
   normalizeMakes,
   normalizeModels,
@@ -61,8 +62,20 @@ test("manual 'not listed' entry validates, builds the review payload and a snaps
   assert.equal(validateManualEntry({ ...entry, year: "1949" }, range).year, "vehicleErrYear");
   assert.equal(validateManualEntry({ ...entry, vin: "a!" }, range).vin, "vehicleErrVin");
 
-  const payload = manualReviewPayload(entry, "asset-1");
-  assert.deepEqual(payload, { make: "Zotye", model: "T600", model_year: 2018, body_type: "SUV", powertrain: "PETROL", usage: "TAXI", vin: "LJ123456", registration_number: "LT 123 AB", risk_asset_id: "asset-1" });
+  // Canonical intake: POST /master-data/suggestions {domain: "vehicle", list, text, parent, attributes}.
+  const payload = vehicleSuggestionPayload(entry, "asset-1");
+  assert.deepEqual(payload, {
+    domain: "vehicle", list: "models", text: "T600", parent: "Zotye",
+    attributes: { model_year: 2018, body_type: "SUV", powertrain: "PETROL", usage: "TAXI", vin: "LJ123456", registration_number: "LT 123 AB", risk_asset_id: "asset-1" },
+  });
+  assert.deepEqual(vehicleSuggestionPayload({ ...emptyManualEntry(), make: "Zotye" }), { domain: "vehicle", list: "makes", text: "Zotye", attributes: {} });
+  // data.review.id becomes vehicle_review_id; a MATCHED answer brings the master codes.
+  assert.deepEqual(suggestionOutcome({ status: "PENDING", value: null, review: { id: "rev-9", status: "PENDING" } }), { reviewId: "rev-9", makeCode: undefined, modelCode: undefined });
+  const matched = suggestionOutcome({ data: { status: "MATCHED", value: { make: "ZOTYE", model: "ZOTYE_T600" }, review: null } });
+  const codes = selectionFromManual(entry, matched.reviewId, matched);
+  assert.equal(codes.make_code, "ZOTYE");
+  assert.equal(codes.model_code, "ZOTYE_T600");
+  assert.equal(codes.manual, false);
   const sel = selectionFromManual(entry, "rev-1");
   assert.equal(sel.manual, true);
   const values = selectionToValues(sel);
@@ -115,8 +128,10 @@ test("MOTOR schema: make/model selectors, codes + snapshot facts, usage_type der
 
 test("vehicle picker is wired into the quote wizard and the add-vehicle screen with EN/FR copy", () => {
   const client = read("src/api/client.ts");
-  for (const path of ["/public/vehicles/makes", "/public/vehicles/reference", "/mobile/vehicles/master-review"]) assert.ok(client.includes(path), path);
-  assert.match(read("app/quote/risk.tsx"), /VehiclePicker/);
+  for (const path of ["/public/vehicles/makes", "/public/vehicles/reference", "/master-data/suggestions"]) assert.ok(client.includes(path), path);
+  assert.match(read("app/quote/risk.tsx"), /onVehicle/);
+  assert.match(read("src/components/forms/ContractField.tsx"), /<VehiclePicker/);
+  assert.doesNotMatch(client, /mobile\/vehicles\/master-review/,"deprecated alias no longer called");
   assert.match(read("app/assets/new.tsx"), /VehiclePicker/);
   assert.match(read("app/assets/new.tsx"), /createVehicle/);
   const picker = read("src/components/vehicles/VehiclePicker.tsx");

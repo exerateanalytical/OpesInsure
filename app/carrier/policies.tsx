@@ -7,18 +7,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function CarrierPolicies() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.policies(), []);
   return (
     <PortalScreen tabs={carrierTabs}>
-      <AppHeader title="Policies" subtitle="Policies written on your paper" />
+      <AppHeader title={t("policies")} subtitle={t("caPoliciesSubtitle")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading policies…"
-        emptyTitle="No policies yet"
-        emptyMessage="Policies you issue will appear here."
+        loadingLabel={t("policiesLoading")}
+        emptyTitle={t("policiesEmpty")}
+        emptyMessage={t("caNoPoliciesBody")}
       >
         {(x) => (
           <OperationsList

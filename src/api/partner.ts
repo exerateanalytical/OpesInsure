@@ -6,6 +6,7 @@
  * carrier (see routes/wave16_partner.php).
  */
 import { api, AgentClient } from "./client";
+import { formatDisplayDate } from "@/i18n";
 
 // ------------------------------------------------------------------ shared
 export type PartnerQuote = {
@@ -53,7 +54,7 @@ export type PartnerClaim = {
 export const money = (minor?: number | null) =>
   `${new Intl.NumberFormat("fr-CM").format(Math.round((minor ?? 0) / 100))} FCFA`;
 export const shortDate = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString() : "—";
+  formatDisplayDate(iso);
 export const humanize = (s: string) =>
   s.charAt(0) + s.slice(1).toLowerCase().replaceAll("_", " ");
 
@@ -295,7 +296,8 @@ export const CarrierWorkspaceApi = {
   ) => api<CarrierClaimDetail>(`/mobile/partner/carrier/claims/${id}/decisions`, post(payload)),
   approveClaimDecision: (id: string, decisionId: string) =>
     api<CarrierClaimDetail>(`/mobile/partner/carrier/claims/${id}/decisions/${decisionId}/approve`, post()),
-  approveIssuance: (id: string, payload: { carrier_reference?: string; policy_number?: string } = {}) =>
+  /** The policy number is always allocated by the server (read back from the response); only a carrier reference may be sent. */
+  approveIssuance: (id: string, payload: { carrier_reference?: string } = {}) =>
     api<{ id: string; status: string; policy_id: string; policy_number: string; carrier_reference: string }>(
       `/mobile/partner/carrier/issuance/${id}/approve`,
       post(payload),

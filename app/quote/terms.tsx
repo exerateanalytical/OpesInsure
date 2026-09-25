@@ -4,7 +4,9 @@ import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { DisclosureApi } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
+import { useTranslation } from "@/i18n";
 export default function Terms() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{
     proposalId?: string;
   }>();
@@ -16,24 +18,22 @@ export default function Terms() {
   return (
     <Screen>
       <AppHeader
-        title="Terms & declarations"
-        subtitle="Review before payment"
+        title={t("qtTermsDeclarations")}
+        subtitle={t("qtReviewBeforePayment")}
         back
       />
       <Card>
         <Text>
-          By continuing, you confirm that the information supplied is complete
-          and accurate, and authorize its use to quote, issue and service this
-          insurance contract.
+          {t("qtTermsConsent")}
         </Text>
         <Button
-          label={accepted ? "Accepted" : "Accept declarations"}
+          label={accepted ? t("quoteStatus_ACCEPTED") : t("qtAcceptDeclarations")}
           variant={accepted ? "secondary" : "primary"}
           onPress={() => setAccepted(true)}
         />
       </Card>
       <Button
-        label="Continue to payment"
+        label={t("qtContinuePayment")}
         disabled={!accepted || !proposalId}
         loading={busy}
         onPress={async () => {
@@ -44,7 +44,7 @@ export default function Terms() {
             await DisclosureApi.acceptTerms(proposalId, true);
             router.push({ pathname: "/checkout", params: { proposalId } });
           } catch {
-            setError("Your acceptance could not be recorded. Try again.");
+            setError(t("qtAcceptanceFailed"));
           } finally {
             setBusy(false);
           }

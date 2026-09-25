@@ -22,23 +22,25 @@ import { useColumns } from "@/components/responsive";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { CarrierApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 export default function CarrierHome() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.dashboard(), []);
   const grid = useColumns();
   return (
     <PortalScreen tabs={carrierTabs}>
       <PortalHeader
         portal="carrier"
-        title="Carrier operations"
-        subtitle="Underwriting, issuance, claims and settlement"
+        title={t("caOperations")}
+        subtitle={t("caOperationsSubtitle")}
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading dashboard…"
+        loadingLabel={t("agLoadingDashboard")}
         isEmpty={(v) => v.metrics.length === 0}
-        emptyTitle="No activity yet"
-        emptyMessage="Your figures will appear here once work is recorded."
+        emptyTitle={t("agNoActivity")}
+        emptyMessage={t("agNoActivityBody")}
       >
         {(v) => (
           <View style={grid.row}>
@@ -53,17 +55,17 @@ export default function CarrierHome() {
       </StatePanel>
       <WorkspaceMenu
         items={[
-          { label: "Products", subtitle: "Products and tariffs", icon: Package, href: "/carrier/products" },
-          { label: "Quotes & proposals", subtitle: "Proposals for your products", icon: FileSignature, href: "/carrier/proposals" },
-          { label: "Underwriting", subtitle: "Referrals to decide", icon: ClipboardCheck, href: "/carrier/referrals" },
-          { label: "Issuance", subtitle: "Approve or reject issuance", icon: FileCheck2, href: "/carrier/issuance" },
-          { label: "Policies", subtitle: "Your policies in force", icon: FileText, href: "/carrier/policies" },
-          { label: "Claims", subtitle: "Acknowledge and decide", icon: ShieldAlert, href: "/carrier/claims" },
-          { label: "Payments", subtitle: "Premiums and reconciliation", icon: HandCoins, href: "/carrier/payments" },
-          { label: "Distribution partners", subtitle: "Brokers and agents selling", icon: Handshake, href: "/carrier/partners" },
-          { label: "Settlements", subtitle: "Premium settlements", icon: Landmark, href: "/carrier/settlements" },
-          { label: "Bordereaux", subtitle: "Broker bordereaux", icon: FileSpreadsheet, href: "/carrier/bordereaux" },
-          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/carrier/account" },
+          { label: t("caProducts"), subtitle: t("caProductsTariffs"), icon: Package, href: "/carrier/products" },
+          { label: t("caQuotesProposals"), subtitle: t("caProposalsForProducts"), icon: FileSignature, href: "/carrier/proposals" },
+          { label: t("portalTab_Underwriting"), subtitle: t("caReferralsToDecide"), icon: ClipboardCheck, href: "/carrier/referrals" },
+          { label: t("caIssuance"), subtitle: t("caApproveRejectIssuance"), icon: FileCheck2, href: "/carrier/issuance" },
+          { label: t("policies"), subtitle: t("caPoliciesInForce"), icon: FileText, href: "/carrier/policies" },
+          { label: t("claims"), subtitle: t("caAcknowledgeDecide"), icon: ShieldAlert, href: "/carrier/claims" },
+          { label: t("faqTopicPayments"), subtitle: t("caPremiumsReconciliation"), icon: HandCoins, href: "/carrier/payments" },
+          { label: t("caDistributionPartners"), subtitle: t("caBrokersAgentsSelling"), icon: Handshake, href: "/carrier/partners" },
+          { label: t("caSettlements"), subtitle: t("caPremiumSettlements"), icon: Landmark, href: "/carrier/settlements" },
+          { label: t("caBordereaux"), subtitle: t("caBrokerBordereaux"), icon: FileSpreadsheet, href: "/carrier/bordereaux" },
+          { label: t("account"), subtitle: t("agProfileSecurity"), icon: CircleUserRound, href: "/carrier/account" },
         ]}
       />
     </PortalScreen>

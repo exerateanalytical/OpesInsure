@@ -333,7 +333,34 @@ export type NotificationPreferences = {
   claims: boolean;
   payments: boolean;
 };
+export type CustomerProfile = {
+  party_id?: string;
+  full_name?: string;
+  date_of_birth: string | null;
+  occupation: string | null;
+  address_line1: string | null;
+  city: string | null;
+  region: string | null;
+  country_code?: string | null;
+  beneficiaries: { name: string; relationship: string; share_percent: number }[];
+};
+export type UserSettings = { display_timezone: string | null; business_timezone: string; effective_display_timezone: string };
+export const SettingsApi = {
+  timezones: () => api<{ timezone: string; countries: string[] }[]>("/settings/timezones"),
+  me: () => api<UserSettings>("/me/settings"),
+  /** null resets to the organisation (business) time zone. */
+  updateMe: (display_timezone: string | null) =>
+    api<UserSettings>("/me/settings", { method: "PATCH", body: JSON.stringify({ display_timezone }), idempotent: true }),
+};
 export const AccountApi = {
+  /** GET/PATCH /mobile/account/customer-profile (form customer_profile). */
+  customerProfile: () => api<CustomerProfile>("/mobile/account/customer-profile"),
+  updateCustomerProfile: (payload: Record<string, unknown>) =>
+    api<CustomerProfile>("/mobile/account/customer-profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
   updateProfile: (payload: { full_name: string; email: string | null }) =>
     api<SessionBootstrap["user"]>("/mobile/account/profile", {
       method: "PATCH",
@@ -862,11 +889,13 @@ export type Claim = {
 export const ClaimsApi = {
   list: () => api<any>("/mobile/claims"),
   show: (id: string) => api<Claim>(`/mobile/claims/${id}`),
+  /** Body built from form claim_fnol (policy_id, incident_at, incident_type, incident_location, description, …). */
   create: (payload: {
     policy_id: string;
     incident_at: string;
-    incident_location: string;
+    incident_location?: string;
     description: string;
+    [key: string]: unknown;
   }) =>
     api<Claim>("/mobile/claims", {
       method: "POST",
@@ -1364,8 +1393,9 @@ export const VehiclesApi = {
       `/public/vehicles/models/${encodeURIComponent(modelCode)}/generations/${encodeURIComponent(generationCode)}/variants${year ? `?year=${encodeURIComponent(year)}` : ""}`,
       { anonymous: true, envelope: true, timeoutMs: 8000 },
     ),
-  submitReview: (payload: Record<string, string | number>) =>
-    api<{ id: string; status: string; make: string; model: string }>("/mobile/vehicles/master-review", {
+  /** Canonical "not listed" intake (REQ-DUP-013): data {status, value: {make, model} | null, review: {id, …} | null}. */
+  suggest: (payload: { domain: "vehicle"; list: "makes" | "models"; text: string; parent?: string; attributes?: Record<string, string | number> }) =>
+    api<{ status: string; value: { make: string; model: string | null } | null; review: { id: string; status: string } | null }>("/master-data/suggestions", {
       method: "POST",
       body: JSON.stringify(payload),
       idempotent: true,
@@ -1718,8 +1748,9 @@ export const PolicyServicesApi = {
     ),
   show: (id: string) =>
     api<PolicyServiceCase>(`/mobile/policy-service-requests/${id}`),
-  create: (payload: { policy_id: string; type: string; reason: string }) =>
-    api<PolicyServiceCase>("/mobile/policy-service-requests", {
+  /** Canonical create (REQ-DUP-014): POST /policies/{id}/service-requests. */
+  create: ({ policy_id, ...payload }: { policy_id: string; type: string; reason: string }) =>
+    api<PolicyServiceCase>(`/policies/${encodeURIComponent(policy_id)}/service-requests`, {
       method: "POST",
       body: JSON.stringify(payload),
       idempotent: true,
@@ -1793,6 +1824,8 @@ export const SyncApi = {
 };
 
 export type RuntimeBootstrap = {
+  /** Optional {name, demo_mode, banner}: a banner (DEMO, STAGING, …) is shown when set. */
+  environment?: { name?: string; demo_mode?: boolean; banner?: string | null } | null;
   release: {
     minimum_version: string;
     force_update: boolean;

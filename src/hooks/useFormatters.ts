@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { formatCameroonDate, formatXaf } from "@/i18n";
 import { useSession } from "@/store/session";
+import { useTimezone } from "@/store/timezone";
 
 /**
  * Money/date formatting for the purchase and wallet screens, bound to the
@@ -9,6 +10,7 @@ import { useSession } from "@/store/session";
  */
 export function useFormatters() {
   const language = useSession((s) => s.language);
+  const timeZone = useTimezone((s) => s.timezone);
   return useMemo(() => {
     const xaf = (minor: number | null | undefined) =>
       typeof minor === "number" && Number.isFinite(minor)
@@ -16,17 +18,17 @@ export function useFormatters() {
         : "—";
     const dateTime = (value: string | null | undefined) => {
       if (!value || !Number.isFinite(Date.parse(value))) return "—";
-      return formatCameroonDate(value, language);
+      return formatCameroonDate(value, language, true, timeZone);
     };
     const date = (value: string | null | undefined) => {
       if (!value || !Number.isFinite(Date.parse(value))) return "—";
       return new Intl.DateTimeFormat(language === "fr" ? "fr-CM" : "en-CM", {
         dateStyle: "medium",
-        timeZone: "Africa/Douala",
+        timeZone,
       }).format(new Date(value));
     };
     const range = (start?: string | null, end?: string | null) =>
       `${date(start)} — ${date(end)}`;
     return { language, xaf, date, dateTime, range };
-  }, [language]);
+  }, [language, timeZone]);
 }

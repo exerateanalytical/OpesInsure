@@ -8,10 +8,12 @@ import { useInsurance } from "@/store/insurance";
 import { compareRows } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 /** Side-by-side table for the selected offers (2–3 ticked, or every
- * insurer via "Compare all") with normalized rows; scrolls horizontally. */
+ * insurer via t("qtCompareAll")) with normalized rows; scrolls horizontally. */
 export default function CompareOffers() {
+  const { t } = useTranslation();
   const { ids = "" } = useLocalSearchParams<{ ids?: string }>();
   const all = useInsurance((s) => s.offers);
   const f = useFormatters();
@@ -47,14 +49,14 @@ export default function CompareOffers() {
   if (offers.length < 2)
     return (
       <Screen>
-        <AppHeader title="Compare offers" back />
-        <EmptyState title="Select two or three offers" message="Tick “Compare” on the offers you want to see side by side." action="Back to offers" onPress={() => router.back()} />
+        <AppHeader title={t("compare")} back />
+        <EmptyState title={t("qtSelectTwoThree")} message={t("qtTickCompare")} action={t("qtBackToOffers")} onPress={() => router.back()} />
       </Screen>
     );
 
   return (
     <Screen>
-      <AppHeader title="Compare offers" subtitle={`${offers.length} offers · same rows for every insurer · best value highlighted`} back />
+      <AppHeader title={t("compare")} subtitle={t("qtCompareSubtitle", { count: offers.length })} back />
       <ScrollView horizontal showsHorizontalScrollIndicator>
         <View style={st.table}>
           {rows.map((row, r) => (
@@ -72,14 +74,14 @@ export default function CompareOffers() {
             <View style={{ width: labelWidth }} />
             {offers.map((o) => (
               <View key={o.id} style={[st.cell, { width: colWidth }]}>
-                <Button label="Choose" variant="secondary" loading={choosing === o.id} disabled={!!choosing} onPress={() => void choose(o.id)} />
+                <Button label={t("qtChoose")} variant="secondary" loading={choosing === o.id} disabled={!!choosing} onPress={() => void choose(o.id)} />
               </View>
             ))}
           </View>
         </View>
       </ScrollView>
-      {error ? <ErrorCard error={error} fallback="This offer could not be selected." /> : null}
-      <Text style={ps.meta}>“Not included” means the insurer’s offer does not list that cover. Figures come from each insurer’s rated offer; verify the policy wording before paying.</Text>
+      {error ? <ErrorCard error={error} fallback={t("ofSelectFailed")} /> : null}
+      <Text style={ps.meta}>{t("qtCompareNote")}</Text>
     </Screen>
   );
 }

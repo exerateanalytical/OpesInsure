@@ -9,10 +9,12 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { AgentWorkspaceApi, LeadStatus, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 type Filter = "OPEN" | LeadStatus;
 
 export default function AgentLeads() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.leads(), []);
   const [filter, setFilter] = useState<Filter>("OPEN");
   const rows = (q.data ?? []).filter((l) =>
@@ -20,25 +22,25 @@ export default function AgentLeads() {
   );
   return (
     <PortalScreen tabs={agentTabs}>
-      <AppHeader title="Leads" subtitle="Prospects you are working before they become clients" />
-      <Button label="Add a lead" icon={Plus} onPress={() => router.push("/agent/leads/new")} />
+      <AppHeader title={t("portalTab_Leads")} subtitle={t("agLeadsSubtitle")} />
+      <Button label={t("agAddLead")} icon={Plus} onPress={() => router.push("/agent/leads/new")} />
       <ChoiceChips<Filter>
-        label="Filter leads"
+        label={t("agFilterLeads")}
         value={filter}
         onChange={setFilter}
         options={[
-          { value: "OPEN", label: "Open" },
-          { value: "CONVERTED", label: "Converted" },
-          { value: "LOST", label: "Lost" },
+          { value: "OPEN", label: t("supportStatus_OPEN") },
+          { value: "CONVERTED", label: t("agLeadConverted") },
+          { value: "LOST", label: t("agLeadLost") },
         ]}
       />
       <StatePanel
         {...q}
         data={q.data === undefined ? undefined : rows}
         onRetry={q.reload}
-        loadingLabel="Loading leads…"
-        emptyTitle="No leads here"
-        emptyMessage="Add a prospect to start tracking your follow-ups."
+        loadingLabel={t("agLoadingLeads")}
+        emptyTitle={t("agNoLeads")}
+        emptyMessage={t("agNoLeadsBody")}
       >
         {(x) => (
           <OperationsList

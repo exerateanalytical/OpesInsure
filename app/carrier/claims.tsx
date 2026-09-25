@@ -8,21 +8,23 @@ import { router } from "expo-router";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function CarrierClaims() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.claims(), []);
   const x = q.data ?? [];
   return (
     <PortalScreen tabs={carrierTabs}>
       <AppHeader
-        title="Claims"
-        subtitle="Acknowledge, request information and decide"
+        title={t("claims")}
+        subtitle={t("caClaimsSubtitle")}
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading claims…"
-        emptyTitle="No claims in your queue"
-        emptyMessage="Claims on your policies will appear here for acknowledgement and decision."
+        loadingLabel={t("claimsLoading")}
+        emptyTitle={t("caNoClaims")}
+        emptyMessage={t("caNoClaimsBody")}
       >
         {() => (
           <>

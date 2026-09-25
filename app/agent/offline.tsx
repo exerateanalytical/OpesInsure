@@ -5,15 +5,17 @@ import { CloudUpload } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { AgentApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function AgentOffline() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentApi.offlineQueue(), []);
   const x = q.data ?? [];
   const setX = q.setData;
   return (
     <Screen>
       <AppHeader
-        title="Offline field activity"
-        subtitle="Nothing is treated as submitted until acknowledged by the server"
+        title={t("agOfflineFieldActivity")}
+        subtitle={t("agNothingSubmitted")}
         back
       />
       <StatePanel {...q} onRetry={q.reload}>
@@ -29,7 +31,7 @@ export default function AgentOffline() {
               />
               {i.status === "FAILED" ? (
                 <Button
-                  label="Retry secure sync"
+                  label={t("agRetrySecureSync")}
                   variant="secondary"
                   onPress={async () => {
                     const v = await AgentApi.retryOffline(i.id);

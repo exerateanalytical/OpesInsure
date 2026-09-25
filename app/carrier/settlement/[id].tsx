@@ -7,16 +7,18 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Card, Screen, SectionTitle, StatusChip } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierFinanceApi, fcfa } from "@/api/extra";
+import { formatDisplayDate, useTranslation } from "@/i18n";
 import { colors, space, type } from "@/theme/tokens";
 
-const day = (v?: string | null) => (v ? new Date(v).toLocaleDateString() : "");
+const day = (v?: string | null) => (v ? formatDisplayDate(v) : "");
 
 export default function CarrierSettlementDetail() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierFinanceApi.settlement(id), [id]);
   return (
     <Screen>
-      <AppHeader title="Settlement" subtitle={q.data?.settlement_number ?? undefined} back />
+      <AppHeader title={t("trackSettlement")} subtitle={q.data?.settlement_number ?? undefined} back />
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false}>
         {(s) => (
           <>
@@ -42,14 +44,14 @@ export default function CarrierSettlementDetail() {
                 icon={FileCheck2}
                 rows={s.items.map((i) => ({
                   id: i.id,
-                  title: `Net due ${fcfa(i.net_due_minor)}`,
+                  title: t("caNetDue", { amount: fcfa(i.net_due_minor) }),
                   subtitle: `Gross ${fcfa(i.gross_premium_minor)} · commission ${fcfa(i.commission_minor)}`,
                   status: i.status,
                 }))}
               />
             ) : (
               <View style={styles.empty}>
-                <Text style={styles.body}>This batch has no items.</Text>
+                <Text style={styles.body}>{t("caBatchEmpty")}</Text>
               </View>
             )}
           </>

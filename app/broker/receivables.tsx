@@ -8,19 +8,21 @@ import { AppHeader, SectionTitle } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerApi } from "@/api/client";
 import { BrokerFinanceApi, fcfa } from "@/api/extra";
+import { formatDisplayDate, useTranslation } from "@/i18n";
 
 const day = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString() : "";
+  iso ? formatDisplayDate(iso) : "";
 
 export default function Receivables() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.receivables(), []);
   const statements = useLoad(() => BrokerFinanceApi.statements(), []);
   const accruals = useLoad(() => BrokerFinanceApi.accruals(), []);
   return (
     <PortalScreen tabs={brokerTabs}>
       <AppHeader
-        title="Receivables"
-        subtitle="Backend ledger remains authoritative"
+        title={t("brReceivables")}
+        subtitle={t("brLedgerAuthoritative")}
       />
       <StatePanel {...q} onRetry={q.reload}>
         {(x) => (
@@ -35,12 +37,12 @@ export default function Receivables() {
           />
         )}
       </StatePanel>
-      <SectionTitle title="Statements" />
+      <SectionTitle title={t("brStatements")} />
       <StatePanel
         {...statements}
         onRetry={statements.reload}
-        emptyTitle="No statements yet"
-        emptyMessage="Commission statements appear here once finance publishes them."
+        emptyTitle={t("brNoStatements")}
+        emptyMessage={t("brNoStatementsBody")}
       >
         {(x) => (
           <OperationsList
@@ -54,12 +56,12 @@ export default function Receivables() {
           />
         )}
       </StatePanel>
-      <SectionTitle title="Commission accruals" />
+      <SectionTitle title={t("brCommissionAccruals")} />
       <StatePanel
         {...accruals}
         onRetry={accruals.reload}
-        emptyTitle="No commission accrued yet"
-        emptyMessage="Commission accrues when a policy you placed is issued."
+        emptyTitle={t("brNoAccrued")}
+        emptyMessage={t("brNoAccruedBody")}
       >
         {(x) => (
           <OperationsList

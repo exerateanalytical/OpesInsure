@@ -1,20 +1,33 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
+import { ContractField } from "@/components/forms/ContractField";
 import { DisclosureApi, DisclosureSession } from "@/api/client";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
+import { fieldFacts, isFieldVisible, parseContractField, validateStep, type RiskField } from "@/lib/riskSchema";
+import { colors, type } from "@/theme/tokens";
+
+/** Disclosure questions carry InputFieldContract v1 (boolean, pickers, or free_text): one renderer. */
+function questionFields(session?: DisclosureSession): RiskField[] {
+  return (session?.questions ?? [])
+    .map((q) => parseContractField({ ...q, key: q.id, type: q.type ?? "boolean" }))
+    .filter((f): f is RiskField => f !== null);
+}
+
 export default function Questions() {
-  const { proposalId = "" } = useLocalSearchParams<{
-    proposalId?: string;
-  }>();
+  const { t, language } = useTranslation();
+  const { proposalId = "" } = useLocalSearchParams<{ proposalId?: string }>();
   const [s, setS] = useState<DisclosureSession>();
-  const [a, setA] = useState<Record<string, boolean | string>>({});
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fields = useMemo(() => questionFields(s), [s]);
+
   const load = useCallback(async () => {
     if (!proposalId) {
       setLoading(false);
@@ -25,9 +38,8 @@ export default function Questions() {
     try {
       const x = await DisclosureApi.session(proposalId);
       setS(x);
-      setA(
-        Object.fromEntries(x.questions.map((q) => [q.id, q.answer ?? false])),
-      );
+      // Booleans default to "No" (as before); other answers start empty.
+      setValues(Object.fromEntries(x.questions.map((q) => [q.id, q.answer === undefined || q.answer === null ? ((q.type ?? "boolean") === "boolean" ? "false" : "") : String(q.answer)])));
     } catch {
       setFailed(true);
     } finally {
@@ -37,90 +49,62 @@ export default function Questions() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const submit = async () => {
+    if (busy) return;
+    const e = validateStep({ key: "disclosure", title: "", fields }, values, language === "fr" ? "fr" : "en");
+    setErrors(e);
+    if (Object.values(e).some(Boolean)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const answers: Record<string, unknown> = {};
+      for (const f of fields) if (isFieldVisible(f, values)) Object.assign(answers, fieldFacts(f.type === "text" ? { ...f, freeText: f.freeText ?? "UNCLASSIFIED" } : f, values));
+      await DisclosureApi.saveAnswers(proposalId, answers as Record<string, boolean | string>);
+      const x = await DisclosureApi.submit(proposalId);
+      // Straight-through proposals become payable; flagged ones wait
+      // for an underwriter; others need documents. The hub routes each.
+      router.replace(x.status === "REFERRED" ? { pathname: "/quote/referral", params: { proposalId } } : { pathname: "/proposals/[id]", params: { id: proposalId } });
+    } catch {
+      setError(t("disclosureSubmitFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen>
-      <AppHeader
-        title="Risk disclosure"
-        subtitle="Accurate answers protect your claim"
-        back
-      />
+      <AppHeader title={t("disclosureTitle")} subtitle={t("disclosureSubtitle")} back />
       {!proposalId ? (
-        <EmptyState
-          title="No proposal selected"
-          message="Choose an offer first; disclosure questions belong to a specific proposal."
-          action="Start a quote"
-          onPress={() => router.replace("/quote/product")}
-        />
+        <EmptyState title={t("disclosureNoProposal")} message={t("disclosureNoProposalBody")} action={t("startQuote")} onPress={() => router.replace("/quote/product")} />
       ) : loading ? (
-        <LoadingState label="Loading disclosure questions…" />
+        <LoadingState label={t("disclosureLoading")} />
       ) : failed ? (
         <ErrorState onRetry={() => void load()} />
       ) : null}
-      {s?.questions.map((q) => (
-        <Card key={q.id}>
-          <Text style={st.q}>{q.label}</Text>
-          <View style={st.choices}>
-            {[true, false].map((v) => (
-              <Pressable
-                key={String(v)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: a[q.id] === v }}
-                onPress={() => setA({ ...a, [q.id]: v })}
-                style={[st.choice, a[q.id] === v && st.selected]}
-              >
-                <Text style={st.choiceText}>{v ? "Yes" : "No"}</Text>
-              </Pressable>
-            ))}
-          </View>
+      {fields.length ? (
+        <Card>
+          {fields.map((f) =>
+            isFieldVisible(f, values) ? (
+              <ContractField
+                key={f.key}
+                field={f}
+                value={values[f.key]}
+                values={values}
+                error={errors[f.key] || undefined}
+                onChange={(v) => setValues((x) => ({ ...x, [f.key]: v }))}
+                setAny={(k, v) => setValues((x) => ({ ...x, [k]: v }))}
+                screen="quote.disclosure"
+              />
+            ) : null,
+          )}
         </Card>
-      ))}
-      {s ? (
-        <Button
-          label="Review underwriting result"
-          loading={busy}
-          onPress={async () => {
-            if (busy) return;
-            setBusy(true);
-            setError(null);
-            try {
-              await DisclosureApi.saveAnswers(proposalId, a);
-              const x = await DisclosureApi.submit(proposalId);
-              // Straight-through proposals become payable; flagged ones wait
-              // for an underwriter; others need documents. The hub routes each.
-              router.replace(
-                x.status === "REFERRED"
-                  ? { pathname: "/quote/referral", params: { proposalId } }
-                  : { pathname: "/proposals/[id]", params: { id: proposalId } },
-              );
-            } catch {
-              setError("Your answers could not be submitted. Try again.");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
       ) : null}
-      {error ? (
-        <Text accessibilityRole="alert" style={st.error}>
-          {error}
-        </Text>
-      ) : null}
+      {s ? <Button label={t("disclosureReview")} loading={busy} onPress={() => void submit()} /> : null}
+      {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
     </Screen>
   );
 }
 const st = StyleSheet.create({
-  q: { ...type.cardTitle, color: colors.navy950 },
-  choices: { flexDirection: "row", gap: space.x3 },
-  choice: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    borderRadius: radius.control,
-  },
-  choiceText: { ...type.label, color: colors.navy950 },
   error: { ...type.meta, color: colors.dangerText },
-  selected: { backgroundColor: colors.blue50, borderColor: colors.blue600 },
 });

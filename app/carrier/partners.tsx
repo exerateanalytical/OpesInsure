@@ -5,18 +5,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function CarrierPartners() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.partners(), []);
   return (
     <Screen>
-      <AppHeader title="Distribution partners" subtitle="Brokers and agents selling your products" back />
+      <AppHeader title={t("caDistributionPartners")} subtitle={t("caPartnersSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading partners…"
-        emptyTitle="No distribution partners yet"
-        emptyMessage="Brokers and agents appear here once they place policies or hold an agreement with you."
+        loadingLabel={t("caLoadingPartners")}
+        emptyTitle={t("caNoPartners")}
+        emptyMessage={t("caNoPartnersBody")}
       >
         {(x) => (
           <OperationsList

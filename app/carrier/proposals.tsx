@@ -5,18 +5,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function CarrierProposals() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.proposals(), []);
   return (
     <Screen>
-      <AppHeader title="Quotes & proposals" subtitle="Proposals made on your products" back />
+      <AppHeader title={t("caQuotesProposals")} subtitle={t("caProposalsSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading proposals…"
-        emptyTitle="No proposals"
-        emptyMessage="Proposals customers make on your products will appear here."
+        loadingLabel={t("caLoadingProposals")}
+        emptyTitle={t("caNoProposals")}
+        emptyMessage={t("caNoProposalsBody")}
       >
         {(x) => (
           <OperationsList

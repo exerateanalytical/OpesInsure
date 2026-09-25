@@ -90,7 +90,7 @@ export default function Offers() {
   const cheapest = useMemo(() => (offers.length ? Math.min(...offers.map((o) => o.total_minor)) : null), [offers]);
   const quoteExpired =
     String(quote?.status ?? "").toUpperCase() === "EXPIRED" ||
-    (offers.length > 0 && offers.every((o) => validityLeft(o.valid_until, now).expired));
+    (offers.length > 0 && offers.every((o) => validityLeft(o.valid_until, now, f.language).expired));
 
   const select = async (id: string) => {
     const offer = offers.find((o) => o.id === id);

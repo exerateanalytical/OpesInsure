@@ -8,8 +8,10 @@ import { OperationsList } from "@/components/OperationsList";
 import { errorMessage, Notice } from "@/components/portal/Workspace";
 import { BrokerInvitation, BrokerWorkspaceApi, humanize, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function BrokerStaffScreen() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerWorkspaceApi.staff(), []);
   const [phone, setPhone] = useState("+237");
   const [busy, setBusy] = useState(false);
@@ -17,14 +19,14 @@ export default function BrokerStaffScreen() {
   const [issued, setIssued] = useState<BrokerInvitation | null>(null);
   return (
     <Screen>
-      <AppHeader title="Staff" subtitle="People who work in your broker office" back />
+      <AppHeader title={t("brStaff")} subtitle={t("brStaffSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading staff…"
+        loadingLabel={t("brLoadingStaff")}
         isEmpty={(d) => d.members.length === 0 && d.pending_invitations.length === 0}
-        emptyTitle="No staff yet"
-        emptyMessage="Staff memberships appear here once invitations are accepted."
+        emptyTitle={t("brNoStaff")}
+        emptyMessage={t("brNoStaffBody")}
       >
         {(d) => (
           <>
@@ -39,7 +41,7 @@ export default function BrokerStaffScreen() {
             />
             {d.pending_invitations.length > 0 ? (
               <>
-                <SectionTitle title="Pending invitations" />
+                <SectionTitle title={t("brPendingInvitations")} />
                 <OperationsList
                   icon={MailPlus}
                   rows={d.pending_invitations.map((i) => ({
@@ -51,14 +53,14 @@ export default function BrokerStaffScreen() {
                 />
               </>
             ) : null}
-            <SectionTitle title="Invite staff" />
+            <SectionTitle title={t("brInviteStaff")} />
             <Card>
               {d.can_invite ? (
                 <>
-                  <TextField label="Staff member phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+                  <TextField label={t("brStaffPhone")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
                   <Notice text={error} tone="error" />
                   <Button
-                    label="Invite as broker staff"
+                    label={t("brInviteAsStaff")}
                     icon={MailPlus}
                     loading={busy}
                     disabled={phone.replace(/\D/g, "").length < 8}
@@ -84,15 +86,15 @@ export default function BrokerStaffScreen() {
                       </Text>
                       <Text selectable style={s.code}>{issued.invite_code}</Text>
                       <Button
-                        label="Share code"
+                        label={t("brShareCode")}
                         variant="secondary"
-                        onPress={() => void Share.share({ message: `Your OpesInsure broker staff invitation code: ${issued.invite_code}` })}
+                        onPress={() => void Share.share({ message: t("brInviteShareMessage", { code: issued.invite_code }) })}
                       />
                     </>
                   ) : null}
                 </>
               ) : (
-                <Text style={s.body}>Only a broker administrator can invite staff. Ask your administrator.</Text>
+                <Text style={s.body}>{t("brOnlyAdminInvites")}</Text>
               )}
             </Card>
           </>

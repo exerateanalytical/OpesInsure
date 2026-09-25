@@ -5,14 +5,16 @@ import { BadgeCheck } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function BrokerCompliance() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.compliance(), []);
   const x = q.data ?? [];
   return (
     <Screen>
       <AppHeader
-        title="Broker compliance"
-        subtitle="Deadlines and documentary obligations"
+        title={t("brCompliance")}
+        subtitle={t("brComplianceSubtitle")}
         back
       />
       <StatePanel {...q} onRetry={q.reload}>

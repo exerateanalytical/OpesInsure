@@ -1,4 +1,5 @@
 import { useSession } from "@/store/session";
+import { useTimezone } from "@/store/timezone";
 import { copy, CopyKey, Language } from "@/i18n/strings";
 import { setApiErrorLocalizer } from "@/api/client";
 import { apiErrorCopyKey } from "@/lib/apiErrors";
@@ -33,12 +34,14 @@ setApiErrorLocalizer((code, status) => {
 
 export function useTranslation() {
   const language = useSession((state) => state.language);
+  const timeZone = useTimezone((state) => state.timezone);
   return {
+    timeZone,
     language,
     t: (key: CopyKey, vars?: Vars) => translate(language, key, vars),
     td: (key: string, fallback: string) => translateDynamic(language, key, fallback),
     date: (value: string | null | undefined, withTime = false) =>
-      formatCameroonDate(value, language, withTime),
+      formatCameroonDate(value, language, withTime, timeZone),
   };
 }
 
@@ -49,6 +52,8 @@ export const formatCameroonDate = (
   value: string | null | undefined,
   language: Language,
   withTime = true,
+  /** Display zone (GET /me/settings effective_display_timezone); Africa/Douala by default. */
+  timeZone: string = useTimezone.getState().timezone,
 ) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -56,6 +61,10 @@ export const formatCameroonDate = (
   return new Intl.DateTimeFormat(language === "fr" ? "fr-CM" : "en-CM", {
     dateStyle: "medium",
     ...(withTime ? { timeStyle: "short" } : {}),
-    timeZone: "Africa/Douala",
+    timeZone,
   }).format(date);
 };
+
+/** Outside hooks (list helpers): current language and display time zone. */
+export const formatDisplayDate = (value: string | null | undefined, withTime = false) =>
+  formatCameroonDate(value, useSession.getState().language, withTime);

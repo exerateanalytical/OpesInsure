@@ -7,16 +7,18 @@ import { AppHeader, Button, Card, Screen, SectionTitle, StatusChip, TextField } 
 import { ChoiceChips, ConsentCheckbox, errorMessage, Notice } from "@/components/portal/Workspace";
 import { AgentLead, AgentWorkspaceApi, humanize, LeadStatus, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 type Manual = Exclude<LeadStatus, "CONVERTED">;
 
 export default function LeadDetail() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => AgentWorkspaceApi.lead(String(id)), [id]);
   return (
     <Screen>
-      <AppHeader title="Lead" subtitle="Follow up, then convert with the client's consent" back />
-      <StatePanel {...q} onRetry={q.reload} loadingLabel="Loading lead…">
+      <AppHeader title={t("agLead")} subtitle={t("agLeadSubtitle")} back />
+      <StatePanel {...q} onRetry={q.reload} loadingLabel={t("agLoadingLead")}>
         {(lead) => <LeadBody lead={lead} onChange={(l) => q.setData(l)} />}
       </StatePanel>
     </Screen>
@@ -24,6 +26,7 @@ export default function LeadDetail() {
 }
 
 function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead) => void }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<Manual | null>(lead.status === "CONVERTED" ? null : lead.status);
   const [notes, setNotes] = useState(lead.notes ?? "");
   const [consent, setConsent] = useState(false);
@@ -41,29 +44,29 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
 
       {converted ? (
         <Card>
-          <Text style={s.body}>This lead is now a protected client.</Text>
+          <Text style={s.body}>{t("agLeadConvertedNotice")}</Text>
           {lead.converted_customer_id ? (
-            <Button label="Open client" variant="secondary" onPress={() => router.replace(`/agent/clients/${lead.converted_customer_id}`)} />
+            <Button label={t("agOpenClient")} variant="secondary" onPress={() => router.replace(`/agent/clients/${lead.converted_customer_id}`)} />
           ) : null}
         </Card>
       ) : (
         <>
-          <SectionTitle title="Follow-up" />
+          <SectionTitle title={t("agFollowUp")} />
           <Card>
             <ChoiceChips<Manual>
-              label="Lead status"
+              label={t("agLeadStatus")}
               value={status}
               onChange={setStatus}
               options={[
-                { value: "NEW", label: "New" },
-                { value: "CONTACTED", label: "Contacted" },
-                { value: "QUALIFIED", label: "Qualified" },
-                { value: "LOST", label: "Lost" },
+                { value: "NEW", label: t("agLeadNew") },
+                { value: "CONTACTED", label: t("agLeadContacted") },
+                { value: "QUALIFIED", label: t("agLeadQualified") },
+                { value: "LOST", label: t("agLeadLost") },
               ]}
             />
-            <TextField label="Notes" value={notes} onChangeText={setNotes} multiline />
+            <TextField label={t("agNotes")} value={notes} onChangeText={setNotes} multiline />
             <Button
-              label="Save follow-up"
+              label={t("agSaveFollowUp")}
               variant="secondary"
               loading={busy === "save"}
               onPress={async () => {
@@ -71,7 +74,7 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
                 setMsg(null);
                 try {
                   onChange(await AgentWorkspaceApi.updateLead(lead.id, { status: status ?? undefined, notes }));
-                  setMsg({ text: "Saved.", tone: "ok" });
+                  setMsg({ text: t("settingsSavedShort"), tone: "ok" });
                 } catch (e) {
                   setMsg({ text: errorMessage(e), tone: "error" });
                 } finally {
@@ -81,19 +84,18 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
             />
           </Card>
 
-          <SectionTitle title="Convert to client" />
+          <SectionTitle title={t("agConvertToClient")} />
           <Card>
             <Text style={s.body}>
-              Read the privacy notice to the client and ask for their agreement. The consent record and
-              its reference are created by the server when you convert.
+              {t("agReadPrivacyConvert")}
             </Text>
             <ConsentCheckbox
               checked={consent}
               onChange={setConsent}
-              label="The client agreed to OpesInsure processing their data to arrange insurance."
+              label={t("agClientConsent")}
             />
             <Button
-              label="Convert to protected client"
+              label={t("agConvertProtected")}
               disabled={!consent}
               loading={busy === "convert"}
               onPress={async () => {

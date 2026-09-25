@@ -43,9 +43,9 @@ export default function ReferralDetail() {
     );
   return (
     <Screen>
-      <AppHeader title="Referral review" subtitle={x?.quote_id} back />
+      <AppHeader title={t("caReferralReview")} subtitle={x?.quote_id} back />
       {!x ? (
-        <StatePanel {...q} onRetry={q.reload} loadingLabel="Loading referral…">
+        <StatePanel {...q} onRetry={q.reload} loadingLabel={t("caLoadingReferral")}>
           {() => null}
         </StatePanel>
       ) : null}
@@ -58,7 +58,7 @@ export default function ReferralDetail() {
         {x ? <Money amount={x.premium_minor / 100} /> : null}
         <Text>{x?.reason}</Text>
         <TextField
-          label="Underwriting note"
+          label={t("caUnderwritingNote")}
           multiline
           value={note}
           onChangeText={setNote}
@@ -68,18 +68,18 @@ export default function ReferralDetail() {
       {x?.status === "PENDING_REVIEW" ? (
         <>
           <Button
-            label="Approve within authority"
+            label={t("caApproveWithinAuthority")}
             disabled={note.length < 5}
             onPress={() => decide("APPROVE")}
           />
           <Button
-            label="Request more information"
+            label={t("caRequestMoreInfo")}
             variant="secondary"
             disabled={note.length < 5}
             onPress={() => decide("MORE_INFORMATION")}
           />
           <Button
-            label="Decline with reason"
+            label={t("caDeclineWithReason")}
             variant="danger"
             disabled={note.length < 5}
             onPress={() => decide("DECLINE")}

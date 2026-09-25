@@ -14,21 +14,23 @@ import {
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useInsurance } from "@/store/insurance";
+import { useTranslation } from "@/i18n";
 
 const products = [
-  ["motor", "Motor insurance", "Car, motorcycle or commercial vehicle", Car],
-  ["health", "Health cover", "Individual, family or employee healthcare", HeartPulse],
-  ["travel", "Travel insurance", "Medical assistance and trip protection", Plane],
-  ["home", "Home insurance", "Building, contents and liability", Home],
-  ["life", "Life protection", "Family protection, savings or education", ShieldPlus],
-  ["business", "Business insurance", "Premises, stock and liability for your company", Briefcase],
-  ["accident", "Personal accident", "Lump sum for accidental injury or disability", HardHat],
+  ["motor", Car],
+  ["health", HeartPulse],
+  ["travel", Plane],
+  ["home", Home],
+  ["life", ShieldPlus],
+  ["business", Briefcase],
+  ["accident", HardHat],
 ] as const;
 type ProductId = (typeof products)[number][0];
 const isProduct = (v: unknown): v is ProductId =>
   typeof v === "string" && products.some(([id]) => id === v);
 
 export default function Product() {
+  const { t } = useTranslation();
   const setProduct = useInsurance((s) => s.setProduct);
   const { product: param } = useLocalSearchParams<{ product?: string }>();
   // Preselect when arriving from a Home tile (/quote/product?product=motor).
@@ -50,18 +52,20 @@ export default function Product() {
   return (
     <Screen>
       <AppHeader
-        title="Choose your cover"
-        subtitle="Step 1 of 5 · You can save and return"
+        title={t("qtChooseCover")}
+        subtitle={t("qtStep1")}
         back
       />
       {current ? (
         <Button
-          label={`Continue with ${current[1].toLowerCase()}`}
+          label={t("qtContinueWith", { product: t(`qtProd_${current[0]}`).toLowerCase() })}
           onPress={() => proceed(current[0])}
         />
       ) : null}
-      {products.map(([id, title, subtitle, Icon]) => {
+      {products.map(([id, Icon]) => {
         const on = id === selected;
+        const title = t(`qtProd_${id}`);
+        const subtitle = t(`qtProdSub_${id}`);
         return (
           <Pressable
             accessibilityRole="button"

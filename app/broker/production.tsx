@@ -5,14 +5,16 @@ import { BookOpenCheck } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function BrokerProductionScreen() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.production(), []);
   const x = q.data ?? [];
   return (
     <Screen>
       <AppHeader
-        title="Production register"
-        subtitle="Mobile view of issued business"
+        title={t("brProductionRegister")}
+        subtitle={t("brProductionSubtitle")}
         back
       />
       <StatePanel {...q} onRetry={q.reload}>

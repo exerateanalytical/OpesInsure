@@ -117,11 +117,11 @@ export async function searchVehicleModels(make: string, q: string): Promise<Mast
  * blocks the quote — failures are swallowed (the server also files it when
  * the quote is submitted with `{key}_other`).
  */
-export async function suggestValue(input: { domain: string; list: string; text: string; parent?: string; line_code?: string; field_key?: string }) {
+export async function suggestValue(input: { domain: string; list: string; text: string; parent?: string; line_code?: string; field_key?: string; screen?: string }) {
   try {
     return await api<{ status: string; value?: MasterValue | null }>("/master-data/suggestions", {
       method: "POST",
-      body: JSON.stringify({ ...input, screen: "quote.risk" }),
+      body: JSON.stringify({ ...input, screen: input.screen ?? "quote.risk" }),
       idempotent: true,
       timeoutMs: 8000,
     });

@@ -208,23 +208,47 @@ export function validateManualEntry(e: ManualVehicleEntry, range?: { min: number
   return errors;
 }
 
-/** Body for POST /mobile/vehicles/master-review (empty optional fields omitted). */
-export function manualReviewPayload(e: ManualVehicleEntry, riskAssetId?: string | null) {
-  const out: Record<string, string | number> = { make: e.make.trim(), model: e.model.trim() };
-  if (e.year) out.model_year = Number(e.year);
-  if (e.body_type) out.body_type = e.body_type;
-  if (e.powertrain) out.powertrain = e.powertrain;
-  if (e.vehicle_usage) out.usage = e.vehicle_usage;
-  if (e.vin.trim()) out.vin = e.vin.trim().toUpperCase();
-  if (e.registration_number.trim()) out.registration_number = e.registration_number.trim().toUpperCase();
-  if (e.engine_number.trim()) out.engine_number = e.engine_number.trim();
-  if (riskAssetId) out.risk_asset_id = riskAssetId;
-  return out;
+/**
+ * Body for POST /master-data/suggestions (domain "vehicle", REQ-DUP-013):
+ * a model under its make (text + parent), or a make alone; the typed
+ * details travel as attributes (empty ones omitted).
+ */
+export function vehicleSuggestionPayload(e: ManualVehicleEntry, riskAssetId?: string | null) {
+  const make = e.make.trim();
+  const model = e.model.trim();
+  const attributes: Record<string, string | number> = {};
+  if (e.year) attributes.model_year = Number(e.year);
+  if (e.body_type) attributes.body_type = e.body_type;
+  if (e.powertrain) attributes.powertrain = e.powertrain;
+  if (e.vehicle_usage) attributes.usage = e.vehicle_usage;
+  if (e.vin.trim()) attributes.vin = e.vin.trim().toUpperCase();
+  if (e.registration_number.trim()) attributes.registration_number = e.registration_number.trim().toUpperCase();
+  if (e.engine_number.trim()) attributes.engine_number = e.engine_number.trim();
+  if (riskAssetId) attributes.risk_asset_id = riskAssetId;
+  return model
+    ? { domain: "vehicle" as const, list: "models" as const, text: model, parent: make, attributes }
+    : { domain: "vehicle" as const, list: "makes" as const, text: make, attributes };
+}
+
+/** The suggestion answer: data.review.id to carry as vehicle_review_id, or the matched master codes. */
+export function suggestionOutcome(res: unknown): { reviewId?: string; makeCode?: string; modelCode?: string } {
+  const r = res && typeof res === "object" ? (res as Record<string, unknown>) : {};
+  const body = r.data && typeof r.data === "object" ? (r.data as Record<string, unknown>) : r;
+  const review = body.review && typeof body.review === "object" ? (body.review as Record<string, unknown>) : null;
+  const value = body.value && typeof body.value === "object" ? (body.value as Record<string, unknown>) : null;
+  return {
+    reviewId: typeof review?.id === "string" ? review.id : undefined,
+    makeCode: typeof value?.make === "string" ? value.make : undefined,
+    modelCode: typeof value?.model === "string" ? value.model : undefined,
+  };
 }
 
 /** Manual entry → selection snapshot (no codes: the quote continues on text until reconciled). */
-export function selectionFromManual(e: ManualVehicleEntry, reviewId?: string): VehicleSelection {
+export function selectionFromManual(e: ManualVehicleEntry, reviewId?: string, matched?: { makeCode?: string; modelCode?: string }): VehicleSelection {
+  // A MATCHED suggestion answers with the master codes: the quote then rates on codes.
   return {
+    ...(matched?.makeCode ? { make_code: matched.makeCode } : {}),
+    ...(matched?.modelCode ? { model_code: matched.modelCode } : {}),
     make: e.make.trim(),
     model: e.model.trim(),
     year: e.year || undefined,
@@ -234,7 +258,7 @@ export function selectionFromManual(e: ManualVehicleEntry, reviewId?: string): V
     vin: e.vin.trim() ? e.vin.trim().toUpperCase() : undefined,
     registration_number: e.registration_number.trim() ? e.registration_number.trim().toUpperCase() : undefined,
     engine_number: e.engine_number.trim() || undefined,
-    manual: true,
+    manual: !(matched?.makeCode && matched?.modelCode),
     review_id: reviewId,
   };
 }

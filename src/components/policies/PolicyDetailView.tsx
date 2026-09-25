@@ -124,7 +124,7 @@ export function PolicyDetailView({ id }: { id: string }) {
   if (loading && !p) return <Screen><AppHeader title={t("pdTitle")} back /><LoadingState label={t("pdLoading")} /></Screen>;
   if (!p) return <Screen><AppHeader title={t("pdTitle")} back /><ErrorCard error={error} fallback={t("pdLoadFailed")} onRetry={() => void load()} /></Screen>;
 
-  const info = policyStatusInfo(p.status);
+  const info = policyStatusInfo(p.status, f.language);
   const provider = p.carrier_name ?? p.carrier?.party?.display_name ?? t("licensedCarrier");
   const premium = p.premium_minor ?? p.terms_snapshot?.total_minor ?? null;
   const cover = normalizeCoverage(p.terms_snapshot?.coverage_snapshot, f.language);
@@ -209,7 +209,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         {payments === null ? <Text style={ps.meta}>{t("paymentsLoading")}</Text> : null}
         {payments?.length === 0 ? <Text style={ps.meta}>{t("pdNoPayments")}</Text> : null}
         {payments?.map((pay) => (
-          <FlowRow key={pay.id} icon={CreditCard} title={f.xaf(pay.amount_minor)} subtitle={pay.created_at ? f.date(pay.created_at) : humanize(pay.provider)} status={paymentStatusInfo(pay.status).label} onPress={() => router.push({ pathname: "/payments/[id]", params: { id: pay.id } })} />
+          <FlowRow key={pay.id} icon={CreditCard} title={f.xaf(pay.amount_minor)} subtitle={pay.created_at ? f.date(pay.created_at) : humanize(pay.provider)} status={paymentStatusInfo(pay.status, f.language).label} onPress={() => router.push({ pathname: "/payments/[id]", params: { id: pay.id } })} />
         ))}
       </Card>
 

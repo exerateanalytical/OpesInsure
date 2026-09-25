@@ -7,24 +7,26 @@ import { errorMessage, Notice } from "@/components/portal/Workspace";
 import { CarrierApi, CarrierQueueItem } from "@/api/client";
 import { CarrierWorkspaceApi, humanize, shortDate } from "@/api/partner";
 import { colors, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 const PENDING = ["REQUESTED", "CARRIER_REVIEW", "PENDING"];
 
 export default function Issuance() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.issuance(), []);
   return (
     <Screen>
       <AppHeader
-        title="Issuance queue"
-        subtitle="Payment and underwriting must be verified before issue"
+        title={t("caIssuanceQueue")}
+        subtitle={t("caIssuanceSubtitle")}
         back
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading issuance requests…"
-        emptyTitle="Nothing to issue"
-        emptyMessage="Paid proposals waiting for your policy number will appear here."
+        loadingLabel={t("caLoadingIssuance")}
+        emptyTitle={t("caNothingToIssue")}
+        emptyMessage={t("caNothingToIssueBody")}
       >
         {(rows) => (
           <>
@@ -43,7 +45,8 @@ export default function Issuance() {
 }
 
 function IssuanceCard({ item, onDone }: { item: CarrierQueueItem; onDone: (status: string) => void }) {
-  const [policyNumber, setPolicyNumber] = useState("");
+  const { t } = useTranslation();
+  const [carrierReference, setCarrierReference] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
   const [msg, setMsg] = useState<{ text: string; tone: "ok" | "error" } | null>(null);
@@ -59,21 +62,24 @@ function IssuanceCard({ item, onDone }: { item: CarrierQueueItem; onDone: (statu
       </Text>
       {pending ? (
         <>
+          {/* Policy numbers are always allocated by the server; the carrier may add its own reference. */}
+          <Text style={s.meta}>{t("caPolicyNumberByServer")}</Text>
           <TextField
-            label="Policy number (optional — generated if blank)"
-            value={policyNumber}
-            onChangeText={setPolicyNumber}
+            label={t("caCarrierReferenceOptional")}
+            value={carrierReference}
+            onChangeText={setCarrierReference}
             autoCapitalize="characters"
+            maxLength={64}
           />
           <Button
-            label="Approve and issue"
+            label={t("caApproveIssue")}
             loading={busy === "approve"}
             onPress={async () => {
               setBusy("approve");
               setMsg(null);
               try {
-                const r = await CarrierWorkspaceApi.approveIssuance(item.id, policyNumber.trim() ? { policy_number: policyNumber.trim() } : {});
-                setMsg({ text: `Policy ${r.policy_number} issued.`, tone: "ok" });
+                const r = await CarrierWorkspaceApi.approveIssuance(item.id, carrierReference.trim() ? { carrier_reference: carrierReference.trim() } : {});
+                setMsg({ text: t("caPolicyIssued", { number: r.policy_number }), tone: "ok" });
                 onDone(r.status);
               } catch (e) {
                 setMsg({ text: errorMessage(e), tone: "error" });
@@ -82,9 +88,9 @@ function IssuanceCard({ item, onDone }: { item: CarrierQueueItem; onDone: (statu
               }
             }}
           />
-          <TextField label="Reason for rejection" value={reason} onChangeText={setReason} multiline />
+          <TextField label={t("caReasonRejection")} value={reason} onChangeText={setReason} multiline />
           <Button
-            label="Reject"
+            label={t("settleReject")}
             variant="danger"
             loading={busy === "reject"}
             disabled={reason.trim().length < 5}
@@ -93,7 +99,7 @@ function IssuanceCard({ item, onDone }: { item: CarrierQueueItem; onDone: (statu
               setMsg(null);
               try {
                 const r = await CarrierWorkspaceApi.rejectIssuance(item.id, reason.trim());
-                setMsg({ text: "Issuance rejected.", tone: "ok" });
+                setMsg({ text: t("caIssuanceRejected"), tone: "ok" });
                 onDone(r.status);
               } catch (e) {
                 setMsg({ text: errorMessage(e), tone: "error" });

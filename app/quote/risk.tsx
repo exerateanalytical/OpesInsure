@@ -4,27 +4,20 @@ import { router } from "expo-router";
 import { Car, Check, UserRound } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
-import { DateField, ErrorCard, PickerField, Stepper, YesNoField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { DateField, ErrorCard, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { AssetsApi, CatalogueApi, RiskAsset } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { unwrapPage } from "@/lib/purchase";
-import { buildFacts, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
-import { VehiclePicker, useVehicleReference } from "@/components/vehicles/VehiclePicker";
-import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
+import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
+import { useVehicleReference } from "@/components/vehicles/VehiclePicker";
+import { ContractField } from "@/components/forms/ContractField";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
-import { RepeaterField } from "@/components/masterData/RepeaterField";
+import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const ASSET_LINES: Record<string, string[]> = { MOTOR: ["VEHICLE", "MOTOR", "CAR", "MOTORCYCLE"], HOME: ["PROPERTY", "HOME", "BUILDING"] };
-const RELATIONSHIPS = [
-  { value: "SPOUSE", label: "Spouse" },
-  { value: "CHILD", label: "Child" },
-  { value: "PARENT", label: "Parent" },
-  { value: "EMPLOYEE", label: "Employee" },
-  { value: "OTHER", label: "Other" },
-];
 
 function prefillFromAsset(asset: RiskAsset): Record<string, string> {
   const out: Record<string, string> = {};
@@ -79,15 +72,15 @@ export default function Risk() {
   }, [line, loadSchema]);
 
   // Step 0 is "who / what is insured"; schema steps follow.
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const stepTitle = (s?: { title: string; titleFr?: string }) => (s ? (language === "fr" && s.titleFr ? s.titleFr : s.title) : undefined);
-  const steps = useMemo(() => ["Insured", ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language]);
+  const steps = useMemo(() => [t("qtInsured"), ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language, t]);
   const current = step > 0 ? schema?.steps[step - 1] : undefined;
   const isLast = step === steps.length - 1;
 
   const insuredError =
     insured.mode === "other" && (!insured.full_name.trim() || !insured.relationship || !isValidIsoDate(insured.date_of_birth))
-      ? "Enter the insured person's name, relationship and date of birth."
+      ? t("qtInsuredMissing")
       : null;
 
   const next = async () => {
@@ -97,7 +90,7 @@ export default function Risk() {
       return setStep(1);
     }
     if (!current || !schema) return;
-    const e = validateStep(current, values);
+    const e = validateStep(current, values, language === "fr" ? "fr" : "en");
     setErrors(e);
     if (Object.keys(e).length) return;
     if (!isLast) return setStep(step + 1);
@@ -115,34 +108,36 @@ export default function Risk() {
     }
   };
 
+  const setAny = (key: string, v: string) => setValues((x) => ({ ...x, [key]: v }));
   const setValue = (key: string, v: string) => {
-    setValues((x) => ({ ...x, [key]: v }));
+    // A new parent (region, category, …) clears its children.
+    setValues((x) => ({ ...x, [key]: v, ...(x[key] !== v && schema ? clearedDependents(allFields(schema), key) : {}) }));
     if (errors[key]) setErrors((x) => ({ ...x, [key]: "" }));
   };
 
   if (!line || (!schemaLoading && !schema))
     return (
       <Screen>
-        <AppHeader title="Cover details" back />
+        <AppHeader title={t("qtCoverDetails")} back />
         <Card>
-          <Text style={ps.title}>Choose a supported insurance product first.</Text>
+          <Text style={ps.title}>{t("qtChooseSupported")}</Text>
         </Card>
-        <Button label="Choose product" onPress={() => router.replace("/quote/product")} />
+        <Button label={t("qtChooseProduct")} onPress={() => router.replace("/quote/product")} />
       </Screen>
     );
 
   return (
     <Screen>
-      <AppHeader title={stepTitle(current) ?? "Who is insured?"} subtitle={`Step 2 of 5 · ${schema?.source === "server" ? "Insurer questionnaire" : "Used for live rating"}`} back />
+      <AppHeader title={stepTitle(current) ?? t("qtWhoInsured")} subtitle={t(schema?.source === "server" ? "qtStep2Server" : "qtStep2Local")} back />
       {schemaLoading ? (
-        <LoadingState label="Loading questions…" />
+        <LoadingState label={t("qtLoadingQuestions")} />
       ) : (
         <>
           <Stepper steps={steps} current={step} />
           {step === 0 ? (
             <>
               <Card>
-                <Text style={ps.title}>Who should this policy cover?</Text>
+                <Text style={ps.title}>{t("qtWhoCover")}</Text>
                 <View style={st.choiceRow}>
                   {(["self", "other"] as const).map((mode) => (
                     <Pressable
@@ -153,23 +148,23 @@ export default function Risk() {
                       onPress={() => setInsured(mode === "self" ? { mode: "self" } : { mode: "other", full_name: "", date_of_birth: "", relationship: "" })}
                     >
                       <UserRound size={18} color={colors.blue600} />
-                      <Text style={st.choiceText}>{mode === "self" ? "Me" : "Someone else"}</Text>
+                      <Text style={st.choiceText}>{mode === "self" ? t("qtMe") : t("qtSomeoneElse")}</Text>
                     </Pressable>
                   ))}
                 </View>
                 {insured.mode === "other" ? (
                   <>
-                    <TextField label="Full name" value={insured.full_name} onChangeText={(full_name) => setInsured({ ...insured, full_name })} />
-                    <PickerField label="Relationship to you" value={insured.relationship || undefined} options={RELATIONSHIPS} onChange={(relationship) => setInsured({ ...insured, relationship })} />
-                    <DateField label="Date of birth" value={insured.date_of_birth} onChange={(date_of_birth) => setInsured({ ...insured, date_of_birth })} maxYear={new Date().getFullYear()} />
+                    <TextField label={t("fullName")} value={insured.full_name} onChangeText={(full_name) => setInsured({ ...insured, full_name })} />
+                    <MasterSelectField label={t("qtRelationshipToYou")} required domain="persons" list="relationship" otherAllowed={false} value={insured.relationship || undefined} onChange={(relationship) => setInsured({ ...insured, relationship })} />
+                    <DateField label={t("dateOfBirth")} value={insured.date_of_birth} onChange={(date_of_birth) => setInsured({ ...insured, date_of_birth })} maxYear={new Date().getFullYear()} />
                   </>
                 ) : null}
                 {errors.insured ? <Text style={ps.error}>{errors.insured}</Text> : null}
               </Card>
               {assets.length ? (
                 <Card>
-                  <Text style={ps.title}>Use a saved {line === "MOTOR" ? "vehicle" : "property"}?</Text>
-                  <Text style={ps.meta}>Its details are prefilled and the quote is linked to it.</Text>
+                  <Text style={ps.title}>{t(line === "MOTOR" ? "qtUseSavedVehicle" : "qtUseSavedProperty")}</Text>
+                  <Text style={ps.meta}>{t("qtAssetPrefilled")}</Text>
                   {assets.map((a) => {
                     const on = riskAssetId === a.id;
                     return (
@@ -185,14 +180,14 @@ export default function Risk() {
                       >
                         <Car size={18} color={colors.blue600} />
                         <View style={st.flex}>
-                          <Text style={st.choiceText}>{a.label || a.registration_number || "Saved asset"}</Text>
+                          <Text style={st.choiceText}>{a.label || a.registration_number || t("qtSavedAsset")}</Text>
                           {a.registration_number ? <Text style={ps.meta}>{a.registration_number}</Text> : null}
                         </View>
                         {on ? <Check size={18} color={colors.blue600} /> : null}
                       </Pressable>
                     );
                   })}
-                  <Button label="Add a new one" variant="tertiary" onPress={() => router.push("/assets/new")} />
+                  <Button label={t("qtAddNew")} variant="tertiary" onPress={() => router.push("/assets/new")} />
                 </Card>
               ) : null}
             </>
@@ -200,19 +195,21 @@ export default function Risk() {
             <Card>
               {current.fields.map((f) => (
                 isFieldVisible(f, values) ? (
-                  <FieldInput
+                  <ContractField
                     key={f.key}
                     field={withReferenceOptions(f, reference)}
                     value={values[f.key]}
                     values={values}
                     error={(f.type === "vehicle_make" ? errors[f.key] || errors.model_code : errors[f.key]) || undefined}
                     riskAssetId={riskAssetId}
+                    vehicle={selectionFromValues(values)}
                     onChange={(v) => setValue(f.key, v)}
-                    setAny={setValue}
+                    setAny={setAny}
                     lineCode={line}
+                    screen="quote.risk"
                     onVehicle={(sel) => {
                       // Clear the previous vehicle's keys, then apply the new selection (codes + snapshot text).
-                      setValues((x) => ({ ...x, make_code: "", model_code: "", make: "", model: "", vehicle_review_id: "", ...(sel ? selectionToValues(sel) : {}) }));
+                      setValues((x) => ({ ...x, make_code: "", model_code: "", make: "", model: "", vehicle_review_id: "", vehicle_generation_code: "", vehicle_variant_code: "", ...(sel ? selectionToValues(sel) : {}) }));
                       setErrors((x) => ({ ...x, make_code: "", model_code: "" }));
                     }}
                   />
@@ -220,13 +217,13 @@ export default function Risk() {
               ))}
             </Card>
           ) : null}
-          {!customerId ? <Text style={ps.error}>This workspace has no server-issued customer identity.</Text> : null}
-          {submitError || (storeError && isLast) ? <ErrorCard error={submitError ?? { message: storeError }} fallback="Offers could not be calculated." onRetry={() => void next()} /> : null}
-          <Text style={ps.meta}>The server validates these facts against the active product and tariff. The app never calculates or invents premiums.</Text>
+          {!customerId ? <Text style={ps.error}>{t("qtNoCustomerIdentity")}</Text> : null}
+          {submitError || (storeError && isLast) ? <ErrorCard error={submitError ?? { message: storeError }} fallback={t("qtOffersNotCalculated")} onRetry={() => void next()} /> : null}
+          <Text style={ps.meta}>{t("qtServerValidates")}</Text>
           <View style={st.nav}>
-            {step > 0 ? <View style={st.flex}><Button label="Back" variant="secondary" disabled={busy} onPress={() => setStep(step - 1)} /></View> : null}
+            {step > 0 ? <View style={st.flex}><Button label={t("qtBack")} variant="secondary" disabled={busy} onPress={() => setStep(step - 1)} /></View> : null}
             <View style={st.flex}>
-              <Button label={isLast ? "Get live offers" : "Next"} loading={busy} disabled={isLast && !customerId} onPress={() => void next()} />
+              <Button label={isLast ? t("qtGetLiveOffers") : t("next")} loading={busy} disabled={isLast && !customerId} onPress={() => void next()} />
             </View>
           </View>
         </>
@@ -252,47 +249,6 @@ function selectionFromValues(values: Record<string, string>): VehicleSelection |
     manual: !values.make_code || !values.model_code,
     review_id: values.vehicle_review_id || undefined,
   };
-}
-
-function FieldInput({ field, value, values, error, riskAssetId, onChange, onVehicle, setAny, lineCode }: { field: RiskField; value?: string; values: Record<string, string>; error?: string; riskAssetId?: string | null; onChange: (v: string) => void; onVehicle: (s: VehicleSelection | null) => void; setAny?: (key: string, v: string) => void; lineCode?: string }) {
-  const { language } = useTranslation();
-  const text = language === "fr" && field.labelFr ? field.labelFr : field.label;
-  const label = field.required ? text : `${text} (${language === "fr" ? "facultatif" : "optional"})`;
-  switch (field.type) {
-    // Institutional master data: searchable controlled lists and member/beneficiary builders.
-    case "select_master":
-    case "multi_select_master":
-      return field.master ? (
-        <MasterSelectField
-          label={text} required={field.required} domain={field.master.domain} list={field.master.list} value={value}
-          multiple={field.type === "multi_select_master"} parent={field.parentField ? values[field.parentField] : field.parentCode}
-          otherAllowed={field.otherAllowed} otherText={values[`${field.key}_other`]} error={error} lineCode={lineCode} fieldKey={field.key}
-          onChange={(v, other) => { onChange(v); if (other !== undefined) setAny?.(`${field.key}_other`, other); }}
-        />
-      ) : null;
-    case "repeater":
-      return <RepeaterField field={field} value={value} onChange={onChange} error={error} lineCode={lineCode} />;
-    case "file":
-      return <Text style={ps.meta}>{`${text} — ${language === "fr" ? "vous pourrez envoyer ce fichier après le devis." : "you can upload this file after the quote."}`}</Text>;
-    case "vehicle_make":
-      return <VehiclePicker value={selectionFromValues(values)} onChange={onVehicle} error={error} riskAssetId={riskAssetId} />;
-    case "vehicle_model":
-      return null; // chosen inside the make picker
-    case "select":
-      return <PickerField label={label} value={value} options={field.options ?? []} onChange={onChange} error={error} />;
-    case "date": {
-      const y = new Date().getFullYear();
-      const past = /birth|licence|issued/i.test(field.key);
-      return <DateField label={label} value={value} onChange={onChange} error={error} minYear={past ? y - 100 : y - 1} maxYear={past ? y : y + 2} />;
-    }
-    case "boolean":
-      return <YesNoField label={label} value={value} onChange={onChange} error={error} />;
-    case "number":
-    case "money":
-      return <TextField label={label} value={value ?? ""} onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ""))} placeholder={field.placeholder} keyboardType="numeric" error={error} hint={field.help ?? (field.type === "money" ? "Amount in FCFA" : undefined)} />;
-    default:
-      return <TextField label={label} value={value ?? ""} onChangeText={onChange} placeholder={field.placeholder} autoCapitalize="characters" error={error} hint={field.help} />;
-  }
 }
 
 const st = StyleSheet.create({

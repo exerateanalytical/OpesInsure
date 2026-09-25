@@ -6,19 +6,21 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function AgentQuotes() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.quotes(), []);
   return (
     <Screen>
-      <AppHeader title="Quotes" subtitle="Quotes you prepared for your clients" back />
-      <Button label="New assisted sale" icon={Plus} onPress={() => router.push("/agent/sales/new")} />
+      <AppHeader title={t("agQuotes")} subtitle={t("agQuotesSubtitle")} back />
+      <Button label={t("agNewAssistedSale")} icon={Plus} onPress={() => router.push("/agent/sales/new")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading quotes…"
-        emptyTitle="No quotes yet"
-        emptyMessage="Quotes you prepare for clients will appear here with their status."
+        loadingLabel={t("quotesLoading")}
+        emptyTitle={t("agNoQuotes")}
+        emptyMessage={t("agNoQuotesBody")}
       >
         {(x) => (
           <OperationsList

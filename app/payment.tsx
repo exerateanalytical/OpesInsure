@@ -70,7 +70,7 @@ export default function Payment() {
   }, [check, step.failed, step.done, halted]);
 
   const waitingLong = now - startedAt > PATIENCE_MS && !step.done && !step.failed;
-  const pInfo = paymentStatusInfo(payment?.status);
+  const pInfo = paymentStatusInfo(payment?.status, f.language);
 
   return (
     <Screen>

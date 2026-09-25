@@ -6,15 +6,17 @@ import { DateField, YesNoField } from "@/components/purchase/PurchaseUi";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { useTranslation } from "@/i18n";
 import { allocationTotals, parseItems, validateRepeater, type RepeaterItem } from "@/lib/masterFields";
-import type { RiskField } from "@/lib/riskSchema";
+import { resolveDateBound, type RiskField } from "@/lib/riskSchema";
 import { colors, radius, space, type } from "@/theme/tokens";
+
+const yearOf = (iso?: string) => (iso && /^\d{4}/.test(iso) ? Number(iso.slice(0, 4)) : undefined);
 
 /**
  * Members / beneficiaries / scheduled items builder. Items are stored as a
  * JSON string; each item's fields render like wizard fields (controlled lists
  * included). Allocation shares show a running total per rank (must be 100%).
  */
-export function RepeaterField({ field, value, onChange, error, lineCode }: { field: RiskField; value?: string; onChange: (v: string) => void; error?: string; lineCode?: string }) {
+export function RepeaterField({ field, value, onChange, error, lineCode, screen }: { field: RiskField; value?: string; onChange: (v: string) => void; error?: string; lineCode?: string; screen?: string }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
   const items = parseItems(value);
@@ -45,14 +47,14 @@ export function RepeaterField({ field, value, onChange, error, lineCode }: { fie
               return (
                 <MasterSelectField key={sub.key} label={label(sub)} required={sub.required} domain={sub.master.domain} list={sub.master.list} value={item[sub.key]}
                   parent={sub.parentField ? item[sub.parentField] : sub.parentCode} otherAllowed={sub.otherAllowed} otherText={item[`${sub.key}_other`]}
-                  onChange={(v, other) => set(i, sub.key, v, other)} error={err} lineCode={lineCode} fieldKey={`${field.key}.${sub.key}`} />
+                  onChange={(v, other) => set(i, sub.key, v, other)} error={err} lineCode={lineCode} fieldKey={`${field.key}.${sub.key}`} screen={screen} />
               );
             if (sub.type === "date")
-              return <DateField key={sub.key} label={subLabel} value={item[sub.key]} onChange={(v) => set(i, sub.key, v)} error={err} minYear={new Date().getFullYear() - 110} maxYear={new Date().getFullYear()} />;
+              return <DateField key={sub.key} label={subLabel} value={item[sub.key]} onChange={(v) => set(i, sub.key, v)} error={err} minYear={yearOf(resolveDateBound(sub.dateMin)) ?? new Date().getFullYear() - 110} maxYear={yearOf(resolveDateBound(sub.dateMax)) ?? new Date().getFullYear()} />;
             if (sub.type === "boolean") return <YesNoField key={sub.key} label={subLabel} value={item[sub.key]} onChange={(v) => set(i, sub.key, v)} error={err} />;
             const numeric = sub.type === "number" || sub.type === "money";
             return (
-              <TextField key={sub.key} label={subLabel} value={item[sub.key] ?? ""} error={err} keyboardType={numeric ? "numeric" : "default"}
+              <TextField key={sub.key} label={subLabel} value={item[sub.key] ?? ""} error={err} keyboardType={numeric ? "decimal-pad" : "default"} maxLength={sub.maxLength} autoCapitalize={sub.freeText === "PERSON_NAME" ? "words" : "sentences"}
                 onChangeText={(v) => set(i, sub.key, numeric ? v.replace(/[^\d.]/g, "") : v)} hint={sub.type === "money" ? t("mdAmountFcfa") : undefined} />
             );
           })}

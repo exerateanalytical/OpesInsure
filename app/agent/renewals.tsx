@@ -5,14 +5,16 @@ import { RefreshCw } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { AgentApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function AgentRenewals() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentApi.renewals(), []);
   const x = q.data ?? [];
   return (
     <Screen>
       <AppHeader
-        title="Renewal pipeline"
-        subtitle="Follow up without losing origin attribution"
+        title={t("agRenewalPipeline")}
+        subtitle={t("agRenewalSubtitle")}
         back
       />
       <StatePanel {...q} onRetry={q.reload}>
@@ -24,7 +26,7 @@ export default function AgentRenewals() {
                 key={r.id}
                 icon={RefreshCw}
                 title={r.customer_name}
-                subtitle={`${r.policy_number} · ${r.days_remaining} days remaining`}
+                subtitle={t("agDaysRemaining", { number: r.policy_number, days: r.days_remaining })}
                 status={r.status}
               />
             ))}

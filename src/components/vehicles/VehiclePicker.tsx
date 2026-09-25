@@ -16,7 +16,8 @@ import {
   VehicleGeneration,
   VehicleVariant,
   filterByQuery,
-  manualReviewPayload,
+  suggestionOutcome,
+  vehicleSuggestionPayload,
   ManualVehicleEntry,
   modelYears,
   normalizeMakes,
@@ -147,17 +148,17 @@ export function VehiclePicker({
     setEntryErrors(messages);
     if (Object.keys(messages).length) return;
     setSubmitting(true);
-    let reviewId: string | undefined;
+    let outcome: ReturnType<typeof suggestionOutcome> = {};
     try {
-      const res = await VehiclesApi.submitReview(manualReviewPayload(entry, riskAssetId));
-      reviewId = res?.id;
+      // Canonical intake: POST /master-data/suggestions {domain: "vehicle", list, text, parent, attributes}; data.review.id is kept.
+      outcome = suggestionOutcome(await VehiclesApi.suggest(vehicleSuggestionPayload(entry, riskAssetId)));
       setNotice(t("vehicleManualQueued", { name: `${entry.make} ${entry.model}` }));
     } catch {
       setNotice(t("vehicleManualNotSent"));
     } finally {
       setSubmitting(false);
     }
-    onChange(selectionFromManual(entry, reviewId));
+    onChange(selectionFromManual(entry, outcome.reviewId, outcome));
     setMode("done");
   };
 

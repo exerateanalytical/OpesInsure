@@ -22,7 +22,7 @@ export function ProposalSummary({ proposal, offer }: { proposal: Proposal; offer
   return (
     <>
       <Card>
-        <Text style={ps.meta}>{source ? providerName(source) : tr("licensedCarrier")}</Text>
+        <Text style={ps.meta}>{source ? providerName(source, f.language) : tr("licensedCarrier")}</Text>
         <Text style={ps.title}>{localized(source?.product?.name, f.language) || tr("insurancePolicy")}</Text>
         <InfoRow label={tr("sumApplication")} value={proposal.proposal_number} />
         <Rule />

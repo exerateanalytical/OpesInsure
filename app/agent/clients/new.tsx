@@ -7,8 +7,10 @@ import { ApiError } from "@/api/client";
 import { AgentWorkspaceApi } from "@/api/partner";
 import { OfflineVault } from "@/offline/vault";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function NewAgentClient() {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+237");
   const [city, setCity] = useState("");
@@ -18,37 +20,33 @@ export default function NewAgentClient() {
   return (
     <Screen>
       <AppHeader
-        title="Register client"
-        subtitle="The client must consent before their record is created"
+        title={t("agRegisterClientTitle")}
+        subtitle={t("agClientMustConsent")}
         back
       />
       <Card>
-        <TextField label="Full name" value={name} onChangeText={setName} />
+        <TextField label={t("fullName")} value={name} onChangeText={setName} />
         <TextField
-          label="Client phone"
+          label={t("agClientPhone")}
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
         />
-        <TextField label="City" value={city} onChangeText={setCity} />
+        <TextField label={t("city")} value={city} onChangeText={setCity} />
         <Text style={s.body}>
-          Read the privacy notice to the client and ask for their agreement.
-          The consent record and its reference are issued by the server — you
-          never type or invent one.
+          {t("agReadPrivacyNotice")}
         </Text>
         <ConsentCheckbox
           checked={consent}
           onChange={setConsent}
-          label="The client agreed to OpesInsure processing their data to arrange insurance."
+          label={t("agClientConsent")}
         />
         <Text style={s.body}>
-          The backend detects existing customers and applies the permanent
-          origin-lock rules. An agent cannot overwrite another partner’s
-          ownership.
+          {t("agOriginLockRules")}
         </Text>
         <Notice text={error} tone="error" />
         <Button
-          label="Create protected client"
+          label={t("agCreateProtectedClient")}
           loading={busy}
           disabled={
             !consent ||
@@ -73,7 +71,7 @@ export default function NewAgentClient() {
                 // OFFLINE_QUEUE_FULL (localized) surfaces instead of crashing.
                 const queued = await OfflineVault.enqueue({
                   kind: "MUTATION",
-                  resource: "Consented agent client registration",
+                  resource: t("agConsentedRegistration"),
                   method: "POST",
                   path: "/mobile/partner/agent/clients",
                   payload,
@@ -83,11 +81,11 @@ export default function NewAgentClient() {
                 });
                 if (!queued) return;
                 Alert.alert(
-                  "Saved for sync",
-                  "You're offline, so this client record will be created once the connection is back. It stays queued in Sync Centre until then.",
+                  t("agSavedForSync"),
+                  t("agOfflineClientQueued"),
                   [
-                    { text: "Stay here", style: "cancel" },
-                    { text: "View sync", onPress: () => router.push("/sync") },
+                    { text: t("agStayHere"), style: "cancel" },
+                    { text: t("viewSync"), onPress: () => router.push("/sync") },
                   ],
                 );
                 return;

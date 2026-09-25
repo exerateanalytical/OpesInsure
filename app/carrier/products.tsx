@@ -6,18 +6,20 @@ import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/compon
 import { errorMessage, Notice } from "@/components/portal/Workspace";
 import { CarrierProduct, CarrierWorkspaceApi, humanize, shortDate } from "@/api/partner";
 import { colors, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function CarrierProducts() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.products(), []);
   return (
     <Screen>
-      <AppHeader title="Products" subtitle="Your products, versions and tariffs" back />
+      <AppHeader title={t("caProducts")} subtitle={t("caProductsSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading products…"
-        emptyTitle="No products"
-        emptyMessage="Products published for your company will appear here."
+        loadingLabel={t("caLoadingProducts")}
+        emptyTitle={t("caNoProducts")}
+        emptyMessage={t("caNoProductsBody")}
       >
         {(rows) => (
           <>
@@ -36,6 +38,7 @@ export default function CarrierProducts() {
 }
 
 function ProductCard({ product: p, onChange }: { product: CarrierProduct; onChange: (p: CarrierProduct) => void }) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,14 +54,14 @@ function ProductCard({ product: p, onChange }: { product: CarrierProduct; onChan
         {p.code} · v{p.version} · {p.line_code} · from {shortDate(p.effective_from)}
       </Text>
       <Text style={s.meta}>
-        {approved ? `Approved tariff v${approved.version}` : "No approved tariff"} · {p.policies_in_force} policies in force
+        {approved ? t("caApprovedTariff", { version: approved.version }) : t("caNoApprovedTariff")} · {t("caPoliciesInForceCount", { count: p.policies_in_force })}
       </Text>
       {p.can_toggle ? (
         <>
-          <TextField label={active ? "Reason for pausing sales" : "Reason for resuming sales"} value={reason} onChangeText={setReason} />
+          <TextField label={active ? t("caReasonPause") : t("caReasonResume")} value={reason} onChangeText={setReason} />
           <Notice text={error} tone="error" />
           <Button
-            label={active ? "Pause sales" : "Resume sales"}
+            label={active ? t("caPauseSales") : t("caResumeSales")}
             variant={active ? "danger" : "primary"}
             loading={busy}
             disabled={reason.trim().length < 3}

@@ -42,7 +42,7 @@ export default function Payments() {
               icon={CreditCard}
               title={f.xaf(p.amount_minor)}
               subtitle={[humanize(p.provider), p.payer_phone_e164, p.created_at ? f.date(p.created_at) : null].filter(Boolean).join(" · ")}
-              status={paymentStatusInfo(p.status).label}
+              status={paymentStatusInfo(p.status, f.language).label}
               onPress={() => router.push({ pathname: "/payments/[id]", params: { id: p.id } })}
             />
           </View>

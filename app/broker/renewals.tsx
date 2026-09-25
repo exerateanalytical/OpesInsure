@@ -5,12 +5,14 @@ import { RefreshCw } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function BrokerRenewals() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.renewals(), []);
   const x = q.data ?? [];
   return (
     <Screen>
-      <AppHeader title="Broker renewals" back />
+      <AppHeader title={t("brRenewals")} back />
       <StatePanel {...q} onRetry={q.reload}>
         {() => (
           <>

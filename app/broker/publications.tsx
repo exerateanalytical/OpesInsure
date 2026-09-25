@@ -5,15 +5,17 @@ import { Store } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { BrokerApi } from "@/api/client";
 import { Text } from "react-native";
+import { useTranslation } from "@/i18n";
 export default function Publications() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.publications(), []);
   const x = q.data ?? [];
   const setX = q.setData;
   return (
     <Screen>
       <AppHeader
-        title="Marketplace publications"
-        subtitle="Publication requires platform and carrier approval"
+        title={t("brMarketplacePublications")}
+        subtitle={t("brPublicationApproval")}
         back
       />
       <StatePanel {...q} onRetry={q.reload}>
@@ -32,7 +34,7 @@ export default function Publications() {
               </Text>
               <Button
                 label={
-                  p.status === "PUBLISHED" ? "Unpublish" : "Submit for publication"
+                  p.status === "PUBLISHED" ? t("brUnpublish") : t("brSubmitPublication")
                 }
                 variant="secondary"
                 onPress={async () => {

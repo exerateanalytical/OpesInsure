@@ -10,9 +10,11 @@
  * Dependency-free (tests load it with Node type stripping).
  */
 
-import { isMasterType, masterFacts, validateMasterField, visibleIf, type Allocation, type MasterSource, type VisibleIf } from "./masterFields.ts";
+import { isMasterType, masterFacts, OTHER, validateMasterField, visibleIf, type Allocation, type Lang, type MasterSource, type VisibleIf } from "./masterFields.ts";
 
 export type RiskFieldType = "text" | "number" | "money" | "select" | "date" | "boolean" | "vehicle_make" | "vehicle_model"
+  // Chosen inside the vehicle picker (make -> model -> generation -> variant).
+  | "vehicle_generation" | "vehicle_variant"
   // Institutional master data: searchable controlled lists and repeaters (members, beneficiaries).
   | "select_master" | "multi_select_master" | "repeater" | "file";
 export type RiskOption = { value: string; label: string };
@@ -48,6 +50,25 @@ export type RiskField = {
   minItems?: number;
   maxItems?: number;
   pattern?: string;
+  // --- InputFieldContract v1 (docs/audit/FREE_TEXT_FIELDS_AUDIT.md) ---
+  /** Picker fed by an API (policies, insurance lines, insurer register); value_key names the submitted property. */
+  endpoint?: string;
+  valueKey?: string;
+  /** Present only on fields that may render as a text box (PERSON_NAME, IDENTIFIER, NARRATIVE, LANDMARK, ...). */
+  freeText?: string;
+  minLength?: number;
+  maxLength?: number;
+  multiline?: boolean;
+  /** Date bounds: ISO date/datetime or "today" / "now". */
+  dateMin?: string;
+  dateMax?: string;
+  withTime?: boolean;
+  /** Forms only: false marks helper pickers that are never sent. */
+  submit?: boolean;
+  /** Forms only: helper labels joined into this text target ("Landmark, City, Department, Region"). */
+  composeInto?: string;
+  composeFrom?: string[];
+  defaultValue?: string;
 };
 export type RiskStep = { key: string; title: string; titleFr?: string; fields: RiskField[] };
 export type RiskSchema = { line_code: string; steps: RiskStep[]; source: "server" | "local" };
@@ -177,7 +198,7 @@ export const LOCAL_SCHEMAS: Record<string, RiskStep[]> = {
   ],
 };
 
-const FIELD_TYPES: RiskFieldType[] = ["text", "number", "money", "select", "date", "boolean", "vehicle_make", "vehicle_model", "select_master", "multi_select_master", "repeater", "file"];
+const FIELD_TYPES: RiskFieldType[] = ["text", "number", "money", "select", "date", "boolean", "vehicle_make", "vehicle_model", "vehicle_generation", "vehicle_variant", "select_master", "multi_select_master", "repeater", "file"];
 
 /** Risk-fact key → vehicle reference group whose localized options replace the schema's (EN-only) options. */
 export const VEHICLE_REFERENCE: Record<string, string> = {
@@ -188,6 +209,92 @@ export const VEHICLE_REFERENCE: Record<string, string> = {
   vehicle_usage: "usage_types",
   vehicle_class: "vehicle_classes",
 };
+
+/** "today" / "now" resolved against the device clock (ISO date or datetime); other values pass through. */
+export function resolveDateBound(bound: string | undefined, now = new Date()): string | undefined {
+  if (!bound) return undefined;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (bound === "today") return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  if (bound === "now") return now.toISOString();
+  return bound;
+}
+
+const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
+/** One server field (risk-schema, forms/{form}, disclosure questions) -> RiskField. */
+export function parseContractField(f: unknown): RiskField | null {
+  const x = (f ?? {}) as Record<string, unknown>;
+  const key = typeof x.key === "string" ? x.key : "";
+  if (!key) return null;
+  const t = String(x.type ?? "text").toLowerCase();
+  const visible = x.visible_when && typeof x.visible_when === "object" && !Array.isArray(x.visible_when)
+    ? Object.fromEntries(Object.entries(x.visible_when as Record<string, unknown>).map(([k, v]) => [k, (Array.isArray(v) ? v : [v]).map(String)]))
+    : undefined;
+  const type: RiskFieldType = FIELD_TYPES.includes(t as RiskFieldType)
+    ? (t as RiskFieldType)
+    : t === "integer" || t === "decimal" ? "number" : t === "enum" ? "select" : t === "bool" || t === "checkbox" ? "boolean" : "text";
+  const options = Array.isArray(x.options)
+    ? x.options.map((o) =>
+        typeof o === "string"
+          ? { value: o, label: o.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) }
+          : { value: String((o as Record<string, unknown>)?.value ?? ""), label: String((o as Record<string, unknown>)?.label ?? (o as Record<string, unknown>)?.value ?? "") },
+      ).filter((o) => o.value)
+    : undefined;
+  const endpoint = str(x.endpoint);
+  const field: RiskField = {
+    key,
+    label: typeof x.label === "string" ? x.label : typeof x.label_en === "string" ? x.label_en : key,
+    type: type === "select" && !options?.length && !VEHICLE_REFERENCE[key] && !endpoint ? "text" : type,
+    options,
+    required: x.required === true,
+    placeholder: str(x.placeholder),
+    min: num(x.min),
+    max: num(x.max),
+    help: str(x.help),
+    source: str(x.source),
+    textKey: str(x.text_key),
+    dependsOn: str(x.depends_on),
+    reference: VEHICLE_REFERENCE[key],
+    visibleWhen: visible,
+  };
+  const src = x.source && typeof x.source === "object" ? (x.source as Record<string, unknown>) : null;
+  if (src && typeof src.domain === "string" && typeof src.list === "string") field.master = { domain: src.domain, list: src.list };
+  // source.parent names the parent FIELD (parent_field is its legacy mirror); source.parent_code a fixed parent code.
+  const parentField = str(src?.parent) ?? str(x.parent_field);
+  if (parentField) field.parentField = parentField;
+  const parentCode = str(src?.parent_code) ?? str(x.parent);
+  if (parentCode) field.parentCode = parentCode;
+  if (x.allow_other === true || x.other_allowed === true) field.otherAllowed = true;
+  else if (x.allow_other === false || x.other_allowed === false) field.otherAllowed = false;
+  if (x.visible_if && typeof x.visible_if === "object") field.visibleIf = x.visible_if as VisibleIf;
+  if (typeof x.label_fr === "string") field.labelFr = x.label_fr;
+  if (typeof x.pattern === "string") field.pattern = x.pattern;
+  if (typeof x.min_items === "number") field.minItems = x.min_items;
+  if (typeof x.max_items === "number") field.maxItems = x.max_items;
+  if (x.allocation && typeof x.allocation === "object") field.allocation = x.allocation as Allocation;
+  if (Array.isArray(x.item_fields)) field.itemFields = x.item_fields.map(parseContractField).filter((i): i is RiskField => i !== null);
+  if (endpoint) {
+    field.endpoint = endpoint;
+    field.valueKey = str(x.value_key) ?? "id";
+  }
+  if (x.free_text && typeof x.free_text === "object") field.freeText = str((x.free_text as Record<string, unknown>).reason) ?? "UNCLASSIFIED";
+  if (num(x.min_length) !== undefined) field.minLength = num(x.min_length);
+  if (num(x.max_length) !== undefined) field.maxLength = num(x.max_length);
+  if (x.multiline === true) field.multiline = true;
+  if (type === "date") {
+    if (typeof x.min === "string") field.dateMin = x.min;
+    if (typeof x.max === "string") field.dateMax = x.max;
+    if (x.with_time === true) field.withTime = true;
+  }
+  if (x.submit === false) field.submit = false;
+  if (typeof x.compose_into === "string") field.composeInto = x.compose_into;
+  if (Array.isArray(x.compose_from)) field.composeFrom = x.compose_from.map(String);
+  if (x.default !== undefined && x.default !== null && typeof x.default !== "object") field.defaultValue = String(x.default);
+  // A master field without a list or endpoint cannot be rendered as a picker: fall back to free text.
+  if ((type === "select_master" || type === "multi_select_master") && !field.master && !endpoint) field.type = "text";
+  return field;
+}
 
 /** Parses the server risk-schema payload; returns null when unusable. */
 export function normalizeRiskSchema(payload: unknown, lineCode: string): RiskSchema | null {
@@ -206,56 +313,7 @@ export function normalizeRiskSchema(payload: unknown, lineCode: string): RiskSch
     .map((s, i) => {
       const step = (s ?? {}) as Record<string, unknown>;
       const fields = (Array.isArray(step.fields) ? step.fields : [])
-        .map(function parseField(f: unknown): RiskField | null {
-          const x = (f ?? {}) as Record<string, unknown>;
-          const key = typeof x.key === "string" ? x.key : "";
-          if (!key) return null;
-          const t = String(x.type ?? "text").toLowerCase();
-          const visible = x.visible_when && typeof x.visible_when === "object" && !Array.isArray(x.visible_when)
-            ? Object.fromEntries(Object.entries(x.visible_when as Record<string, unknown>).map(([k, v]) => [k, (Array.isArray(v) ? v : [v]).map(String)]))
-            : undefined;
-          const type: RiskFieldType = FIELD_TYPES.includes(t as RiskFieldType)
-            ? (t as RiskFieldType)
-            : t === "integer" || t === "decimal" ? "number" : t === "enum" ? "select" : t === "bool" || t === "checkbox" ? "boolean" : "text";
-          const options = Array.isArray(x.options)
-            ? x.options.map((o) =>
-                typeof o === "string"
-                  ? { value: o, label: o.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) }
-                  : { value: String((o as Record<string, unknown>)?.value ?? ""), label: String((o as Record<string, unknown>)?.label ?? (o as Record<string, unknown>)?.value ?? "") },
-              ).filter((o) => o.value)
-            : undefined;
-          const field: RiskField = {
-            key,
-            label: typeof x.label === "string" ? x.label : key,
-            type: type === "select" && !options?.length && !VEHICLE_REFERENCE[key] ? "text" : type,
-            options,
-            required: x.required === true,
-            placeholder: typeof x.placeholder === "string" ? x.placeholder : undefined,
-            min: typeof x.min === "number" ? x.min : undefined,
-            max: typeof x.max === "number" ? x.max : undefined,
-            help: typeof x.help === "string" ? x.help : undefined,
-            source: typeof x.source === "string" ? x.source : undefined,
-            textKey: typeof x.text_key === "string" ? x.text_key : undefined,
-            dependsOn: typeof x.depends_on === "string" ? x.depends_on : undefined,
-            reference: VEHICLE_REFERENCE[key],
-            visibleWhen: visible,
-          };
-          const src = x.source && typeof x.source === "object" ? (x.source as Record<string, unknown>) : null;
-          if (src && typeof src.domain === "string" && typeof src.list === "string") field.master = { domain: src.domain, list: src.list };
-          if (typeof x.parent_field === "string") field.parentField = x.parent_field;
-          if (typeof x.parent === "string") field.parentCode = x.parent;
-          if (x.other_allowed === true) field.otherAllowed = true;
-          if (x.visible_if && typeof x.visible_if === "object") field.visibleIf = x.visible_if as VisibleIf;
-          if (typeof x.label_fr === "string") field.labelFr = x.label_fr;
-          if (typeof x.pattern === "string") field.pattern = x.pattern;
-          if (typeof x.min_items === "number") field.minItems = x.min_items;
-          if (typeof x.max_items === "number") field.maxItems = x.max_items;
-          if (x.allocation && typeof x.allocation === "object") field.allocation = x.allocation as Allocation;
-          if (Array.isArray(x.item_fields)) field.itemFields = x.item_fields.map(parseField).filter((i): i is RiskField => i !== null);
-          // A master field without a list cannot be rendered as a picker: fall back to free text.
-          if ((type === "select_master" || type === "multi_select_master") && !field.master) field.type = "text";
-          return field;
-        })
+        .map(parseContractField)
         .filter((f): f is RiskField => f !== null);
       return { key: typeof step.key === "string" ? step.key : `step_${i}`, title: typeof step.title === "string" ? step.title : `Step ${i + 1}`, titleFr: typeof step.label_fr === "string" ? step.label_fr : undefined, fields };
     })
@@ -278,28 +336,53 @@ export function isValidIsoDate(v: string) {
   return d.getUTCFullYear() === Number(m[1]) && d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]);
 }
 
+const tr = (lang: Lang, en: string, fr: string) => (lang === "fr" ? fr : en);
+const labelFor = (f: RiskField, lang: Lang) => (lang === "fr" && f.labelFr ? f.labelFr : f.label);
+
+/** Epoch ms of an ISO date / datetime (dates at local midnight), NaN when invalid. */
+function instant(v: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00`).getTime() : Date.parse(v);
+}
+
+/** Checks a date value against the field's min/max ("today" / "now" resolved now). */
+export function dateBoundError(field: RiskField, value: string, lang: Lang = "en", now = new Date()): string | null {
+  const min = resolveDateBound(field.dateMin, now);
+  const max = resolveDateBound(field.dateMax, now);
+  const dateOnly = !field.withTime;
+  const cut = (v: string) => (dateOnly ? v.slice(0, 10) : v);
+  const at = instant(cut(value));
+  if (min && at < instant(cut(min))) return field.dateMin === "today" ? tr(lang, "Choose today or a later date.", "Choisissez aujourd'hui ou une date ultérieure.") : tr(lang, `Must be on or after ${cut(min)}.`, `Doit être au plus tôt le ${cut(min)}.`);
+  if (max && at > instant(cut(max)) + (dateOnly ? 0 : 60_000)) return field.dateMax === "today" || field.dateMax === "now" ? tr(lang, "Cannot be in the future.", "Ne peut pas être dans le futur.") : tr(lang, `Must be on or before ${cut(max)}.`, `Doit être au plus tard le ${cut(max)}.`);
+  return null;
+}
+
 /** Returns an error message or null. */
-export function validateField(field: RiskField, raw: string | undefined): string | null {
+export function validateField(field: RiskField, raw: string | undefined, lang: Lang = "en"): string | null {
   const value = (raw ?? "").trim();
-  if (!value) return field.required ? `${field.label} is required.` : null;
+  if (!value) return field.required ? tr(lang, `${labelFor(field, lang)} is required.`, `${labelFor(field, lang)} : champ obligatoire.`) : null;
   switch (field.type) {
     case "number":
     case "money": {
       const n = Number(value.replace(/\s/g, ""));
-      if (!Number.isFinite(n)) return "Enter a number.";
-      if (field.min !== undefined && n < field.min) return `Must be at least ${field.min}.`;
-      if (field.max !== undefined && n > field.max) return `Must be at most ${field.max}.`;
+      if (!Number.isFinite(n)) return tr(lang, "Enter a number.", "Saisissez un nombre.");
+      if (field.min !== undefined && n < field.min) return tr(lang, `Must be at least ${field.min}.`, `Doit être au moins ${field.min}.`);
+      if (field.max !== undefined && n > field.max) return tr(lang, `Must be at most ${field.max}.`, `Doit être au plus ${field.max}.`);
       return null;
     }
     case "date":
-      return isValidIsoDate(value) ? null : "Choose a valid date.";
+      if (field.withTime ? !Number.isFinite(Date.parse(value)) : !isValidIsoDate(value)) return tr(lang, "Choose a valid date.", "Date invalide.");
+      return dateBoundError(field, value, lang);
     case "select":
-      // Reference-backed selects may still be loading their options; the server validates the code.
-      return !field.options?.length || field.options.some((o) => o.value === value) ? null : "Choose an option.";
+      // Endpoint pickers and reference-backed selects may still be loading their options; the server validates the code.
+      if (field.endpoint) return value === OTHER && field.otherAllowed === false ? tr(lang, "Choose an option.", "Choisissez une option.") : null;
+      return !field.options?.length || field.options.some((o) => o.value === value) ? null : tr(lang, "Choose an option.", "Choisissez une option.");
     case "boolean":
-      return value === "true" || value === "false" ? null : "Choose yes or no.";
-    default:
-      return value.length > 200 ? "Too long." : null;
+      return value === "true" || value === "false" ? null : tr(lang, "Choose yes or no.", "Choisissez oui ou non.");
+    default: {
+      const max = field.maxLength ?? 200;
+      if (field.minLength !== undefined && value.length < field.minLength) return tr(lang, `At least ${field.minLength} characters.`, `Au moins ${field.minLength} caractères.`);
+      return value.length > max ? tr(lang, "Too long.", "Trop long.") : null;
+    }
   }
 }
 
@@ -308,62 +391,99 @@ export function isFieldVisible(field: RiskField, values: Record<string, string>)
   return (!field.visibleWhen || Object.entries(field.visibleWhen).every(([k, allowed]) => allowed.includes(values[k] ?? ""))) && visibleIf(field.visibleIf, values);
 }
 
-export function validateStep(step: RiskStep, values: Record<string, string>) {
+/** An endpoint picker with "Other / Not listed" behaves like a master select (OTHER + {key}_other). */
+const otherCapable = (f: RiskField) => !!f.endpoint && f.otherAllowed === true;
+
+export function validateStep(step: RiskStep, values: Record<string, string>, lang: Lang = "en") {
   const errors: Record<string, string> = {};
   for (const f of step.fields) {
     if (!isFieldVisible(f, values)) continue;
     if (f.type === "vehicle_make" || f.type === "vehicle_model") {
       // A code from the master, or a manual "not listed" name awaiting review.
       const has = (values[f.key] ?? "").trim() || (f.textKey ? (values[f.textKey] ?? "").trim() : "");
-      if (f.required && !has) errors[f.key] = `${f.label} is required.`;
+      if (f.required && !has) errors[f.key] = tr(lang, `${labelFor(f, lang)} is required.`, `${labelFor(f, lang)} : champ obligatoire.`);
       continue;
     }
-    if (isMasterType(f.type)) {
-      const me = validateMasterField(f, values);
+    if (f.type === "vehicle_generation" || f.type === "vehicle_variant") continue; // optional refinements inside the vehicle picker
+    if (isMasterType(f.type) || otherCapable(f)) {
+      const me = validateMasterField({ ...f, label: labelFor(f, lang), type: isMasterType(f.type) ? f.type : "select_master" }, values, lang);
       if (me) errors[f.key] = me;
       continue;
     }
-    const e = validateField(f, values[f.key]);
+    const e = validateField(f, values[f.key], lang);
     if (e) errors[f.key] = e;
-    else if (f.pattern && (values[f.key] ?? "").trim() && !new RegExp(f.pattern).test((values[f.key] ?? "").trim())) errors[f.key] = "Check the format.";
+    else if (f.pattern && (values[f.key] ?? "").trim() && !new RegExp(f.pattern).test((values[f.key] ?? "").trim())) errors[f.key] = tr(lang, "Check the format.", "Vérifiez le format.");
   }
   // Cross-field rule: a trip cannot end before it starts.
   const dep = values.departure_date;
   const ret = values.return_date;
   if (dep && ret && isValidIsoDate(dep) && isValidIsoDate(ret) && ret < dep && step.fields.some((f) => f.key === "return_date"))
-    errors.return_date = "Return date must be after departure.";
+    errors.return_date = tr(lang, "Return date must be after departure.", "Le retour doit suivre le départ.");
   return errors;
 }
 
-/** Converts wizard strings to typed risk facts (money FCFA → minor units). */
+/**
+ * Typed value(s) of one field (money FCFA -> minor units, numbers, booleans,
+ * master codes + {key}_other). Identifier text without a free_text reason is
+ * upper-cased (registration numbers); names, landmarks and narratives keep
+ * their case.
+ */
+export function fieldFacts(f: RiskField, values: Record<string, string>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const raw = (values[f.key] ?? "").trim();
+  if (f.type === "vehicle_make" || f.type === "vehicle_model") {
+    if (raw) out[f.key] = raw;
+    const text = f.textKey ? (values[f.textKey] ?? "").trim() : "";
+    if (f.textKey && text) out[f.textKey] = text;
+    return out;
+  }
+  if (isMasterType(f.type)) return masterFacts(f, values);
+  if (!raw) return out;
+  switch (f.type) {
+    case "number": out[f.key] = Number(raw.replace(/\s/g, "")); break;
+    case "money": out[f.key] = Math.round(Number(raw.replace(/\s/g, "")) * 100); break;
+    case "boolean": out[f.key] = raw === "true"; break;
+    case "date":
+    case "select":
+    case "vehicle_generation":
+    case "vehicle_variant": out[f.key] = raw; break;
+    default: out[f.key] = !f.freeText || f.freeText === "IDENTIFIER" ? raw.toUpperCase() : raw;
+  }
+  const other = (values[`${f.key}_other`] ?? "").trim();
+  if (otherCapable(f) && raw === OTHER && other) out[`${f.key}_other`] = other;
+  return out;
+}
+
+/** Converts wizard strings to typed risk facts (money FCFA -> minor units). */
 export function buildFacts(schema: RiskSchema, values: Record<string, string>) {
   const facts: Record<string, unknown> = {};
   for (const step of schema.steps)
     for (const f of step.fields) {
-      if (!isFieldVisible(f, values)) continue;
-      const raw = (values[f.key] ?? "").trim();
-      if (f.type === "vehicle_make" || f.type === "vehicle_model") {
-        if (raw) facts[f.key] = raw;
-        const text = f.textKey ? (values[f.textKey] ?? "").trim() : "";
-        if (f.textKey && text) facts[f.textKey] = text;
-        continue;
-      }
-      if (isMasterType(f.type)) {
-        Object.assign(facts, masterFacts(f, values));
-        continue;
-      }
-      if (!raw) continue;
-      switch (f.type) {
-        case "number": facts[f.key] = Number(raw.replace(/\s/g, "")); break;
-        case "money": facts[f.key] = Math.round(Number(raw.replace(/\s/g, "")) * 100); break;
-        case "boolean": facts[f.key] = raw === "true"; break;
-        case "date":
-        case "select": facts[f.key] = raw; break;
-        default: facts[f.key] = raw.toUpperCase();
-      }
+      if (!isFieldVisible(f, values) || f.submit === false) continue;
+      Object.assign(facts, fieldFacts(f, values));
     }
   // Tariffs still rate on usage_type (PRIVATE | COMMERCIAL); derive it from the 28-value vehicle usage.
   if (typeof facts.vehicle_usage === "string" && facts.usage_type === undefined) facts.usage_type = usageTypeFor(facts.vehicle_usage);
   if (values.vehicle_review_id && (facts.make_code === undefined || facts.model_code === undefined)) facts.vehicle_review_id = values.vehicle_review_id;
   return facts;
+}
+
+/** Every field of a schema, flat (forms and wizards). */
+export const allFields = (schema: Pick<RiskSchema, "steps">) => schema.steps.flatMap((s) => s.fields);
+
+/**
+ * Clearing a parent clears its children (region -> department -> city), their
+ * "Other" text included, recursively. Returns the values to merge.
+ */
+export function clearedDependents(fields: RiskField[], key: string, seen = new Set<string>()): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of fields) {
+    if (seen.has(f.key) || (f.parentField !== key && f.dependsOn !== key)) continue;
+    seen.add(f.key);
+    out[f.key] = "";
+    out[`${f.key}_other`] = "";
+    if (f.textKey) out[f.textKey] = "";
+    Object.assign(out, clearedDependents(fields, f.key, seen));
+  }
+  return out;
 }

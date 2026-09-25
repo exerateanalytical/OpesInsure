@@ -10,29 +10,31 @@ import { OperationsList } from "@/components/OperationsList";
 import { useColumns } from "@/components/responsive";
 import { BrokerWorkspaceApi, money, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 export default function BrokerCommissions() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerWorkspaceApi.commissions(), []);
   const grid = useColumns();
   return (
     <PortalScreen tabs={brokerTabs}>
-      <AppHeader title="Commissions" subtitle="Accruals and settlement statements" />
+      <AppHeader title={t("agCommissions")} subtitle={t("brCommissionsSubtitle")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading commissions…"
+        loadingLabel={t("brLoadingCommissions")}
         isEmpty={(d) => d.accruals.length === 0 && d.statements.length === 0}
-        emptyTitle="No commission yet"
-        emptyMessage="Commission accrues when policies you placed are paid and issued."
+        emptyTitle={t("brNoCommission")}
+        emptyMessage={t("brNoCommissionBody")}
       >
         {(d) => (
           <>
             <View style={grid.row}>
               {(
                 [
-                  ["Pending", d.totals.pending_minor],
-                  ["Available", d.totals.available_minor],
-                  ["Paid", d.totals.paid_minor],
+                  [t("pending"), d.totals.pending_minor],
+                  [t("offerAvailable"), d.totals.available_minor],
+                  [t("claimStatus_PAID"), d.totals.paid_minor],
                 ] as const
               ).map(([label, v]) => (
                 <Card key={label} style={[s.metric, grid.item]}>
@@ -41,10 +43,10 @@ export default function BrokerCommissions() {
                 </Card>
               ))}
             </View>
-            <SectionTitle title="Statements" />
+            <SectionTitle title={t("brStatements")} />
             {d.statements.length === 0 ? (
               <Card>
-                <Text style={s.meta}>Statements appear here once finance approves them.</Text>
+                <Text style={s.meta}>{t("brStatementsAppear")}</Text>
               </Card>
             ) : (
               <OperationsList
@@ -57,10 +59,10 @@ export default function BrokerCommissions() {
                 }))}
               />
             )}
-            <SectionTitle title="Accruals" />
+            <SectionTitle title={t("brAccruals")} />
             {d.accruals.length === 0 ? (
               <Card>
-                <Text style={s.meta}>No commission accrued yet.</Text>
+                <Text style={s.meta}>{t("brNoCommissionAccrued")}</Text>
               </Card>
             ) : (
               <OperationsList

@@ -5,23 +5,25 @@ import { FileSpreadsheet } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierFinanceApi, fcfa } from "@/api/extra";
+import { formatDisplayDate, useTranslation } from "@/i18n";
 
-const day = (v?: string | null) => (v ? new Date(v).toLocaleDateString() : "");
+const day = (v?: string | null) => (v ? formatDisplayDate(v) : "");
 
 export default function CarrierBordereaux() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierFinanceApi.bordereaux(), []);
   return (
     <Screen>
       <AppHeader
-        title="Bordereaux"
-        subtitle="Premium and commission bordereaux received"
+        title={t("caBordereaux")}
+        subtitle={t("caBordereauxSubtitle")}
         back
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        emptyTitle="No bordereaux yet"
-        emptyMessage="Bordereaux appear here once a broker submits them."
+        emptyTitle={t("caNoBordereaux")}
+        emptyMessage={t("caNoBordereauxBody")}
       >
         {(x) => (
           <OperationsList

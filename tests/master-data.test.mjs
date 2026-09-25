@@ -124,9 +124,12 @@ test("EN and FR copy exist for every master-data string, and the wizard renders 
     assert.ok(fr.includes(`${key}:`), `fr ${key}`);
   }
   assert.ok(fr.includes("Autre / Non répertorié"));
+  // One renderer (ContractField) serves the risk wizard and the server forms.
   const risk = read("app/quote/risk.tsx");
-  assert.ok(risk.includes("<MasterSelectField") && risk.includes("<RepeaterField"));
-  assert.ok(risk.includes("<VehiclePicker"), "vehicle picker untouched");
+  const field = read("src/components/forms/ContractField.tsx");
+  assert.ok(risk.includes("<ContractField"));
+  assert.ok(field.includes("<MasterSelectField") && field.includes("<RepeaterField"));
+  assert.ok(field.includes("<VehiclePicker"), "vehicle picker untouched");
   const cache = read("src/lib/masterData.ts");
   assert.ok(cache.includes("/master-data/versions") && cache.includes("catalog_version"), "offline cache syncs on catalogue versions");
 });

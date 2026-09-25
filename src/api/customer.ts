@@ -94,20 +94,23 @@ export const CustomerApi = {
 
   // --- KYC -------------------------------------------------------------
   kyc: () => api<KycState>("/mobile/kyc/profile"),
+  /** Body from form kyc_identifier (identifier_type may be OTHER + identifier_type_other). */
   addIdentifier: (payload: {
     identifier_type: string;
     identifier_value: string;
     identifier_country?: string;
+    [key: string]: unknown;
   }) =>
     api<KycState>("/mobile/kyc/profile", {
       method: "PATCH",
       body: JSON.stringify(payload),
       idempotent: true,
     }),
-  attachKycDocument: (document_id: string, purpose: string) =>
+  /** extra: the rest of form kyc_document (purpose_other when purpose is OTHER). */
+  attachKycDocument: (document_id: string, purpose: string, extra: Record<string, unknown> = {}) =>
     api<KycSubmission>("/mobile/kyc/documents", {
       method: "POST",
-      body: JSON.stringify({ document_id, purpose }),
+      body: JSON.stringify({ ...extra, document_id, purpose }),
       idempotent: true,
     }),
   submitKyc: (notes?: string) =>

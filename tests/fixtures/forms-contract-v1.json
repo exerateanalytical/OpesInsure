@@ -1,0 +1,670 @@
+{
+ "customer_profile": {
+  "form": "customer_profile",
+  "version": 1,
+  "submit_to": "PATCH /api/v1/mobile/account/customer-profile",
+  "steps": [
+   {
+    "key": "identity",
+    "label": "About you",
+    "label_en": "About you",
+    "label_fr": "Vous"
+   },
+   {
+    "key": "address",
+    "label": "Address",
+    "label_en": "Address",
+    "label_fr": "Adresse"
+   },
+   {
+    "key": "beneficiaries",
+    "label": "Beneficiaries",
+    "label_en": "Beneficiaries",
+    "label_fr": "Bénéficiaires"
+   }
+  ],
+  "fields": [
+   {
+    "step": "identity",
+    "key": "date_of_birth",
+    "label": "Date of birth",
+    "label_en": "Date of birth",
+    "label_fr": "Date de naissance",
+    "type": "date",
+    "required": false,
+    "min": "1900-01-01",
+    "max": "today",
+    "input": "date"
+   },
+   {
+    "step": "identity",
+    "key": "occupation",
+    "label": "Occupation",
+    "label_en": "Occupation",
+    "label_fr": "Profession",
+    "type": "select_master",
+    "required": false,
+    "source": {
+     "domain": "occupations",
+     "list": "occupation",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "address",
+    "key": "region",
+    "label": "Region",
+    "label_en": "Region",
+    "label_fr": "Région",
+    "type": "select_master",
+    "required": false,
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_region",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "address",
+    "key": "department",
+    "label": "Department",
+    "label_en": "Department",
+    "label_fr": "Département",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "region",
+    "submit": false,
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_department",
+     "parent": "region",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "address",
+    "key": "city",
+    "label": "City / town",
+    "label_en": "City / town",
+    "label_fr": "Ville",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "department",
+    "source": {
+     "domain": "geography",
+     "list": "city",
+     "parent": "department",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "address",
+    "key": "address_line1",
+    "label": "Street / landmark",
+    "label_en": "Street / landmark",
+    "label_fr": "Rue / repère",
+    "type": "text",
+    "required": false,
+    "max_length": 255,
+    "input": "text",
+    "free_text": {
+     "reason": "LANDMARK"
+    }
+   },
+   {
+    "step": "beneficiaries",
+    "key": "beneficiaries",
+    "label": "Beneficiaries",
+    "label_en": "Beneficiaries",
+    "label_fr": "Bénéficiaires",
+    "type": "repeater",
+    "required": false,
+    "max_items": 10,
+    "allocation": {
+     "field": "share_percent",
+     "total": 100
+    },
+    "item_fields": [
+     {
+      "key": "name",
+      "label": "Full name",
+      "label_en": "Full name",
+      "label_fr": "Nom complet",
+      "type": "text",
+      "required": true,
+      "max_length": 160,
+      "input": "text",
+      "free_text": {
+       "reason": "PERSON_NAME"
+      }
+     },
+     {
+      "key": "relationship",
+      "label": "Relationship",
+      "label_en": "Relationship",
+      "label_fr": "Lien de parenté",
+      "type": "select_master",
+      "required": true,
+      "source": {
+       "domain": "persons",
+       "list": "relationship",
+       "parent": null,
+       "parent_code": null
+      },
+      "other_allowed": true,
+      "input": "picker",
+      "allow_other": true
+     },
+     {
+      "key": "share_percent",
+      "label": "Share (%)",
+      "label_en": "Share (%)",
+      "label_fr": "Quote-part (%)",
+      "type": "number",
+      "required": true,
+      "min": 0.01,
+      "max": 100,
+      "input": "number"
+     }
+    ],
+    "input": "repeater"
+   }
+  ],
+  "contract": 1
+ },
+ "kyc_identifier": {
+  "form": "kyc_identifier",
+  "version": 1,
+  "submit_to": "PATCH /api/v1/mobile/kyc/profile",
+  "steps": [
+   {
+    "key": "identifier",
+    "label": "Identity document",
+    "label_en": "Identity document",
+    "label_fr": "Pièce d'identité"
+   }
+  ],
+  "fields": [
+   {
+    "step": "identifier",
+    "key": "identifier_type",
+    "label": "Document type",
+    "label_en": "Document type",
+    "label_fr": "Type de pièce",
+    "type": "select_master",
+    "required": true,
+    "source": {
+     "domain": "documents",
+     "list": "identity_document",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "identifier",
+    "key": "identifier_value",
+    "label": "Document number",
+    "label_en": "Document number",
+    "label_fr": "Numéro de la pièce",
+    "type": "text",
+    "required": true,
+    "max_length": 64,
+    "input": "text",
+    "free_text": {
+     "reason": "IDENTIFIER"
+    }
+   },
+   {
+    "step": "identifier",
+    "key": "identifier_country",
+    "label": "Issuing country",
+    "label_en": "Issuing country",
+    "label_fr": "Pays d'émission",
+    "type": "select_master",
+    "required": false,
+    "default": "CM",
+    "other_allowed": false,
+    "source": {
+     "domain": "geography",
+     "list": "country",
+     "parent": null,
+     "parent_code": null
+    },
+    "input": "picker",
+    "allow_other": false
+   }
+  ],
+  "contract": 1
+ },
+ "kyc_document": {
+  "form": "kyc_document",
+  "version": 1,
+  "submit_to": "POST /api/v1/mobile/kyc/documents",
+  "steps": [
+   {
+    "key": "document",
+    "label": "Upload",
+    "label_en": "Upload",
+    "label_fr": "Téléversement"
+   }
+  ],
+  "fields": [
+   {
+    "step": "document",
+    "key": "purpose",
+    "label": "Document type",
+    "label_en": "Document type",
+    "label_fr": "Type de document",
+    "type": "select_master",
+    "required": true,
+    "source": {
+     "domain": "documents",
+     "list": "identity_document",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "document",
+    "key": "document_id",
+    "label": "File",
+    "label_en": "File",
+    "label_fr": "Fichier",
+    "type": "file",
+    "required": true,
+    "input": "file"
+   }
+  ],
+  "contract": 1
+ },
+ "claim_fnol": {
+  "form": "claim_fnol",
+  "version": 1,
+  "submit_to": "POST /api/v1/mobile/claims",
+  "steps": [
+   {
+    "key": "incident",
+    "label": "What happened",
+    "label_en": "What happened",
+    "label_fr": "Ce qui s'est passé"
+   },
+   {
+    "key": "location",
+    "label": "Where",
+    "label_en": "Where",
+    "label_fr": "Lieu"
+   },
+   {
+    "key": "details",
+    "label": "Details",
+    "label_en": "Details",
+    "label_fr": "Détails"
+   }
+  ],
+  "fields": [
+   {
+    "step": "incident",
+    "key": "policy_id",
+    "label": "Policy",
+    "label_en": "Policy",
+    "label_fr": "Contrat",
+    "type": "select",
+    "required": true,
+    "endpoint": "/api/v1/policies",
+    "value_key": "id",
+    "input": "picker",
+    "allow_other": false
+   },
+   {
+    "step": "incident",
+    "key": "claim_category",
+    "label": "Type of claim",
+    "label_en": "Type of claim",
+    "label_fr": "Type de sinistre",
+    "type": "select_master",
+    "required": true,
+    "submit": false,
+    "other_allowed": false,
+    "source": {
+     "domain": "claims",
+     "list": "claim_category",
+     "parent": null,
+     "parent_code": null
+    },
+    "input": "picker",
+    "allow_other": false
+   },
+   {
+    "step": "incident",
+    "key": "incident_type",
+    "label": "Cause",
+    "label_en": "Cause",
+    "label_fr": "Cause",
+    "type": "select_master",
+    "required": true,
+    "parent_field": "claim_category",
+    "source": {
+     "domain": "claims",
+     "list": "cause_of_loss",
+     "parent": "claim_category",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "incident",
+    "key": "incident_at",
+    "label": "Date and time",
+    "label_en": "Date and time",
+    "label_fr": "Date et heure",
+    "type": "date",
+    "required": true,
+    "with_time": true,
+    "max": "now",
+    "input": "date"
+   },
+   {
+    "step": "incident",
+    "key": "severity",
+    "label": "Severity",
+    "label_en": "Severity",
+    "label_fr": "Gravité",
+    "type": "select_master",
+    "required": false,
+    "submit": false,
+    "other_allowed": false,
+    "source": {
+     "domain": "claims",
+     "list": "severity",
+     "parent": null,
+     "parent_code": null
+    },
+    "input": "picker",
+    "allow_other": false
+   },
+   {
+    "step": "location",
+    "key": "incident_region",
+    "label": "Region",
+    "label_en": "Region",
+    "label_fr": "Région",
+    "type": "select_master",
+    "required": false,
+    "submit": false,
+    "compose_into": "incident_location",
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_region",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "location",
+    "key": "incident_department",
+    "label": "Department",
+    "label_en": "Department",
+    "label_fr": "Département",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "incident_region",
+    "submit": false,
+    "compose_into": "incident_location",
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_department",
+     "parent": "incident_region",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "location",
+    "key": "incident_city",
+    "label": "City / town",
+    "label_en": "City / town",
+    "label_fr": "Ville",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "incident_department",
+    "submit": false,
+    "compose_into": "incident_location",
+    "source": {
+     "domain": "geography",
+     "list": "city",
+     "parent": "incident_department",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "location",
+    "key": "incident_location",
+    "label": "Street / landmark",
+    "label_en": "Street / landmark",
+    "label_fr": "Rue / repère",
+    "type": "text",
+    "required": false,
+    "max_length": 255,
+    "compose_from": [
+     "incident_city",
+     "incident_department",
+     "incident_region"
+    ],
+    "input": "text",
+    "free_text": {
+     "reason": "LANDMARK"
+    }
+   },
+   {
+    "step": "details",
+    "key": "injuries_reported",
+    "label": "Anyone injured?",
+    "label_en": "Anyone injured?",
+    "label_fr": "Des blessés ?",
+    "type": "boolean",
+    "required": false,
+    "input": "boolean"
+   },
+   {
+    "step": "details",
+    "key": "police_report_filed",
+    "label": "Police report filed?",
+    "label_en": "Police report filed?",
+    "label_fr": "Constat de police établi ?",
+    "type": "boolean",
+    "required": false,
+    "input": "boolean"
+   },
+   {
+    "step": "details",
+    "key": "police_reference",
+    "label": "Police report number",
+    "label_en": "Police report number",
+    "label_fr": "Numéro du constat",
+    "type": "text",
+    "required": false,
+    "max_length": 120,
+    "visible_if": {
+     "police_report_filed": true
+    },
+    "input": "text",
+    "free_text": {
+     "reason": "IDENTIFIER"
+    }
+   },
+   {
+    "step": "details",
+    "key": "estimated_loss_minor",
+    "label": "Estimated loss (FCFA)",
+    "label_en": "Estimated loss (FCFA)",
+    "label_fr": "Perte estimée (FCFA)",
+    "type": "money",
+    "required": false,
+    "min": 0,
+    "input": "money"
+   },
+   {
+    "step": "details",
+    "key": "description",
+    "label": "Describe what happened",
+    "label_en": "Describe what happened",
+    "label_fr": "Décrivez les faits",
+    "type": "text",
+    "required": true,
+    "min_length": 10,
+    "max_length": 5000,
+    "multiline": true,
+    "input": "text",
+    "free_text": {
+     "reason": "NARRATIVE"
+    }
+   }
+  ],
+  "contract": 1
+ },
+ "agent_lead": {
+  "form": "agent_lead",
+  "version": 1,
+  "submit_to": "POST /api/v1/mobile/partner/agent/leads",
+  "steps": [
+   {
+    "key": "lead",
+    "label": "Prospect",
+    "label_en": "Prospect",
+    "label_fr": "Prospect"
+   }
+  ],
+  "fields": [
+   {
+    "step": "lead",
+    "key": "full_name",
+    "label": "Full name",
+    "label_en": "Full name",
+    "label_fr": "Nom complet",
+    "type": "text",
+    "required": true,
+    "max_length": 160,
+    "input": "text",
+    "free_text": {
+     "reason": "PERSON_NAME"
+    }
+   },
+   {
+    "step": "lead",
+    "key": "phone_e164",
+    "label": "Phone",
+    "label_en": "Phone",
+    "label_fr": "Téléphone",
+    "type": "text",
+    "required": true,
+    "pattern": "^\\+[1-9][0-9]{7,14}$",
+    "free_text": {
+     "reason": "IDENTIFIER"
+    },
+    "input": "text"
+   },
+   {
+    "step": "lead",
+    "key": "region",
+    "label": "Region",
+    "label_en": "Region",
+    "label_fr": "Région",
+    "type": "select_master",
+    "required": false,
+    "submit": false,
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_region",
+     "parent": null,
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "lead",
+    "key": "department",
+    "label": "Department",
+    "label_en": "Department",
+    "label_fr": "Département",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "region",
+    "submit": false,
+    "source": {
+     "domain": "geography",
+     "list": "cameroon_department",
+     "parent": "region",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "lead",
+    "key": "city",
+    "label": "City",
+    "label_en": "City",
+    "label_fr": "Ville",
+    "type": "select_master",
+    "required": false,
+    "parent_field": "department",
+    "source": {
+     "domain": "geography",
+     "list": "city",
+     "parent": "department",
+     "parent_code": null
+    },
+    "other_allowed": true,
+    "input": "picker",
+    "allow_other": true
+   },
+   {
+    "step": "lead",
+    "key": "product_interest",
+    "label": "Product of interest",
+    "label_en": "Product of interest",
+    "label_fr": "Produit d'intérêt",
+    "type": "select",
+    "required": false,
+    "endpoint": "/api/v1/catalogue/lines",
+    "value_key": "code",
+    "input": "picker",
+    "allow_other": false
+   }
+  ],
+  "contract": 1
+ }
+}

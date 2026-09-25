@@ -6,7 +6,7 @@ import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi } from "@/api/extra";
-import { useTranslation } from "@/i18n";
+import { formatDisplayDate, useTranslation } from "@/i18n";
 import { REGISTER_SOURCE_KEY } from "@/lib/institutions";
 import { colors, space, type } from "@/theme/tokens";
 
@@ -37,7 +37,7 @@ export default function BrokerDetail() {
               ) : null}
               {broker.licence_expires_on ? (
                 <Text style={styles.body}>
-                  {new Date(broker.licence_expires_on).toLocaleDateString()}
+                  {formatDisplayDate(broker.licence_expires_on)}
                 </Text>
               ) : null}
               {broker.phone ? (

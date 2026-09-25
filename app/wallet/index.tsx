@@ -29,7 +29,7 @@ export default function Wallet() {
               icon={ShieldCheck}
               title={p.product_name ?? p.policy_number}
               subtitle={[p.carrier_name ?? p.carrier?.party?.display_name, p.policy_number, f.range(p.coverage_starts_at, p.coverage_ends_at)].filter(Boolean).join(" · ")}
-              status={policyStatusInfo(p.status).label}
+              status={policyStatusInfo(p.status, f.language).label}
               onPress={() => router.push({ pathname: "/wallet/policy/[id]", params: { id: p.id } })}
             />
           ))}

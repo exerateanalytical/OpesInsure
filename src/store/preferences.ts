@@ -90,6 +90,11 @@ export const Preferences = {
       // Keystore unavailable: the extras just are not kept on this device.
     }
   },
+  /** Pre-1.3 device-only copy, dropped once the server profile (customer_profile form) holds it. */
+  forgetProfileExtras: async () => {
+    await write(keys.profileExtras, null);
+    await SecureJson.remove(keys.profileExtras).catch(() => undefined);
+  },
   /** Removed on sign-out: personal data must not outlive the session. */
   clearPersonal: async () => {
     await write(keys.profileExtras, null);
@@ -98,20 +103,3 @@ export const Preferences = {
     await write(keys.pendingOnboarding, null);
   },
 };
-
-/** KYC submission notes carry the profile fields the backend has no columns
- * for yet (address, occupation, date of birth, beneficiaries). Max 2000. */
-export function profileExtrasToNotes(extras: ProfileExtras) {
-  const lines = [
-    `address: ${extras.address_line1}`,
-    `city: ${extras.city}`,
-    `region: ${extras.region}`,
-    `occupation: ${extras.occupation}`,
-    `date_of_birth: ${extras.date_of_birth}`,
-    ...extras.beneficiaries.map(
-      (b, i) =>
-        `beneficiary_${i + 1}: ${b.full_name} | ${b.relationship} | ${b.date_of_birth} | ${b.share_percent}%`,
-    ),
-  ];
-  return lines.join("\n").slice(0, 2000);
-}

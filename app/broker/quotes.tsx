@@ -5,18 +5,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function BrokerQuotes() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerWorkspaceApi.quotes(), []);
   return (
     <Screen>
-      <AppHeader title="Quotes" subtitle="Quotes for clients attributed to your firm" back />
+      <AppHeader title={t("agQuotes")} subtitle={t("brQuotesSubtitle")} back />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading quotes…"
-        emptyTitle="No quotes yet"
-        emptyMessage="Quotes requested for your clients will appear here."
+        loadingLabel={t("quotesLoading")}
+        emptyTitle={t("agNoQuotes")}
+        emptyMessage={t("brNoQuotesBody")}
       >
         {(x) => (
           <OperationsList

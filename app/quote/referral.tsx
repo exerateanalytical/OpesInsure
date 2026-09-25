@@ -7,6 +7,7 @@ import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseU
 import { useInsurance } from "@/store/insurance";
 import { proposalStatusInfo } from "@/lib/purchase";
 import { colors } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 
 /**
  * Manual underwriting: a REFERRED quote (or a proposal whose disclosures
@@ -14,6 +15,7 @@ import { colors } from "@/theme/tokens";
  * server; once offers or a decision exist the user is moved on.
  */
 export default function Referral() {
+  const { t } = useTranslation();
   const { quoteId, proposalId } = useLocalSearchParams<{ quoteId?: string; proposalId?: string }>();
   const loadQuote = useInsurance((s) => s.loadQuote);
   const loadProposal = useInsurance((s) => s.loadProposal);
@@ -43,21 +45,20 @@ export default function Referral() {
 
   return (
     <Screen>
-      <AppHeader title="Underwriting review" subtitle="A person at the insurer is checking your details" back />
+      <AppHeader title={t("qtUnderwritingReview")} subtitle={t("qtPersonChecking")} back />
       <Card feature>
         <Clock3 size={32} color={colors.blue600} />
         <StatusChip label={status.replaceAll("_", " ")} tone="warning" />
-        <Text style={ps.title}>Your request needs manual underwriting</Text>
+        <Text style={ps.title}>{t("qtManualUnderwriting")}</Text>
         <Text style={ps.body}>
-          Some answers need an underwriter’s review before a price can be confirmed. Your request is saved; no payment will be requested until terms are
-          approved. We will notify you when there is a decision.
+          {t("qtReferralBody")}
         </Text>
-        <Text style={ps.meta}>Expected response: within two business days.</Text>
+        <Text style={ps.meta}>{t("qtExpectedResponse")}</Text>
       </Card>
-      {error ? <ErrorCard error={error} fallback="Status could not be refreshed." /> : null}
-      {quoteId || proposalId ? <Button label="Check status now" icon={RefreshCcw} loading={checking} onPress={() => void refresh()} /> : null}
-      <Button label="My applications" variant="secondary" onPress={() => router.replace("/proposals")} />
-      <Button label="Return to home" variant="tertiary" onPress={() => router.replace("/(customer)/(tabs)")} />
+      {error ? <ErrorCard error={error} fallback={t("qtStatusNotRefreshed")} /> : null}
+      {quoteId || proposalId ? <Button label={t("qtCheckStatus")} icon={RefreshCcw} loading={checking} onPress={() => void refresh()} /> : null}
+      <Button label={t("myApplications")} variant="secondary" onPress={() => router.replace("/proposals")} />
+      <Button label={t("qtReturnHome")} variant="tertiary" onPress={() => router.replace("/(customer)/(tabs)")} />
     </Screen>
   );
 }

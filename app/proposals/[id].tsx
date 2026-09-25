@@ -72,7 +72,7 @@ export default function ProposalDetail() {
     void load();
   }, [load]);
 
-  const info = proposalStatusInfo(p?.status);
+  const info = proposalStatusInfo(p?.status, f.language);
   // Waiting on an underwriter: refresh quietly every 30 s.
   useEffect(() => {
     if (info.stage !== "review") return;

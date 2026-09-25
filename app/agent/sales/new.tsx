@@ -6,20 +6,23 @@ import { AgentApi, AgentClient } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
+// The product name is sent as-is to the server; only its label is translated.
 const products = [
-  "Motor Third Party",
-  "Motor Comprehensive",
-  "Travel",
-  "Health",
-];
+  { value: "Motor Third Party", key: "agMotorThirdParty" },
+  { value: "Motor Comprehensive", key: "agMotorComprehensive" },
+  { value: "Travel", key: "catTravel" },
+  { value: "Health", key: "catHealth" },
+] as const;
 export default function AgentSaleNew() {
+  const { t } = useTranslation();
   const { customerId } = useLocalSearchParams<{ customerId?: string }>();
   const q = useLoad(() => AgentApi.clients(), []);
   const clients: AgentClient[] = q.data ?? [];
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [client, setClient] = useState(customerId ?? "");
-  const [product, setProduct] = useState(products[0]!);
+  const [product, setProduct] = useState<string>(products[0].value);
   const [phone, setPhone] = useState("+237");
   useEffect(() => {
     if (!customerId || !q.data) return;
@@ -29,19 +32,19 @@ export default function AgentSaleNew() {
   return (
     <Screen>
       <AppHeader
-        title="Assisted insurance sale"
-        subtitle="The client authorizes payment on their own phone"
+        title={t("agAssistedSale")}
+        subtitle={t("agClientAuthorizes")}
         back
       />
       <Card>
-        <Text style={s.label}>Client</Text>
+        <Text style={s.label}>{t("agClient")}</Text>
         {q.loading || q.error || clients.length === 0 ? (
           <StatePanel
             {...q}
             onRetry={q.reload}
-            loadingLabel="Loading clients…"
-            emptyTitle="No clients yet"
-            emptyMessage="Register a client before starting an assisted sale."
+            loadingLabel={t("agLoadingClients")}
+            emptyTitle={t("agNoClients")}
+            emptyMessage={t("agNoClientsBody")}
           >
             {() => null}
           </StatePanel>
@@ -62,8 +65,8 @@ export default function AgentSaleNew() {
             </Text>
           </Pressable>
         ))}
-        <Text style={s.label}>Product</Text>
-        {products.map((p) => (
+        <Text style={s.label}>{t("cfProduct")}</Text>
+        {products.map(({ value: p, key }) => (
           <Pressable
             key={p}
             accessibilityRole="radio"
@@ -71,20 +74,20 @@ export default function AgentSaleNew() {
             style={[s.option, product === p && s.selected]}
             onPress={() => setProduct(p)}
           >
-            <Text style={s.optionText}>{p}</Text>
+            <Text style={s.optionText}>{t(key)}</Text>
           </Pressable>
         ))}
         <TextField
-          label="Client payment phone"
+          label={t("agClientPaymentPhone")}
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
         />
         <Text style={s.note}>
-          The agent must never collect or enter the client’s Mobile Money PIN.
+          {t("agNeverPin")}
         </Text>
         <Button
-          label="Create quote and review"
+          label={t("agCreateQuoteReview")}
           disabled={!client || phone.length < 8}
           loading={busy}
           onPress={async () => {
@@ -98,7 +101,7 @@ export default function AgentSaleNew() {
               });
               router.replace(`/agent/sales/${x.id}`);
             } catch {
-              setError("The sale could not be created. Check the connection and try again.");
+              setError(t("agSaleFailed"));
             } finally {
               setBusy(false);
             }

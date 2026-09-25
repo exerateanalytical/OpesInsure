@@ -21,23 +21,25 @@ import { useColumns } from "@/components/responsive";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { AgentApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 export default function AgentHome() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentApi.dashboard(), []);
   const grid = useColumns();
   return (
     <PortalScreen tabs={agentTabs}>
       <PortalHeader
         portal="agent"
-        title="Agent field desk"
-        subtitle="Protected clients, assisted sales and earnings"
+        title={t("agFieldDesk")}
+        subtitle={t("agFieldDeskSubtitle")}
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading dashboard…"
+        loadingLabel={t("agLoadingDashboard")}
         isEmpty={(v) => v.metrics.length === 0}
-        emptyTitle="No activity yet"
-        emptyMessage="Your figures will appear here once work is recorded."
+        emptyTitle={t("agNoActivity")}
+        emptyMessage={t("agNoActivityBody")}
       >
         {(v) => (
           <View style={grid.row}>
@@ -52,16 +54,16 @@ export default function AgentHome() {
       </StatePanel>
       <WorkspaceMenu
         items={[
-          { label: "Leads", subtitle: "Prospects to follow up", icon: UserPlus, href: "/agent/leads" },
-          { label: "Quotes", subtitle: "Quotes you prepared", icon: FileSignature, href: "/agent/quotes" },
-          { label: "Customers", subtitle: "Origin-protected clients", icon: ContactRound, href: "/agent/clients" },
-          { label: "Policies", subtitle: "Your clients' cover", icon: FileText, href: "/agent/policies" },
-          { label: "Renewals", subtitle: "Policies due soon", icon: RefreshCw, href: "/agent/renewals" },
-          { label: "Commissions", subtitle: "Earnings and withdrawals", icon: CircleDollarSign, href: "/agent/wallet" },
-          { label: "New sale", subtitle: "Quote and request payment", icon: ShoppingBag, href: "/agent/sales/new" },
-          { label: "Verification", subtitle: "Identity and mandate", icon: ShieldCheck, href: "/agent/onboarding" },
-          { label: "Offline activity", subtitle: "Review and retry records", icon: CloudUpload, href: "/agent/offline" },
-          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/agent/account" },
+          { label: t("portalTab_Leads"), subtitle: t("agProspectsToFollow"), icon: UserPlus, href: "/agent/leads" },
+          { label: t("agQuotes"), subtitle: t("agQuotesPrepared"), icon: FileSignature, href: "/agent/quotes" },
+          { label: t("portalTab_Customers"), subtitle: t("agOriginProtectedClients"), icon: ContactRound, href: "/agent/clients" },
+          { label: t("policies"), subtitle: t("agClientsCover"), icon: FileText, href: "/agent/policies" },
+          { label: t("notifPref_renewals"), subtitle: t("agPoliciesDueSoon"), icon: RefreshCw, href: "/agent/renewals" },
+          { label: t("agCommissions"), subtitle: t("agEarningsWithdrawals"), icon: CircleDollarSign, href: "/agent/wallet" },
+          { label: t("agNewSale"), subtitle: t("agQuoteAndRequest"), icon: ShoppingBag, href: "/agent/sales/new" },
+          { label: t("agVerification"), subtitle: t("agIdentityMandate"), icon: ShieldCheck, href: "/agent/onboarding" },
+          { label: t("agOfflineActivity"), subtitle: t("agReviewRetry"), icon: CloudUpload, href: "/agent/offline" },
+          { label: t("account"), subtitle: t("agProfileSecurity"), icon: CircleUserRound, href: "/agent/account" },
         ]}
       />
     </PortalScreen>

@@ -5,13 +5,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { AgentApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function AgentClientDetail() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => AgentApi.client(id), [id]);
   const x = q.data;
   return (
     <Screen>
-      <AppHeader title={x?.full_name ?? "Client"} back />
+      <AppHeader title={x?.full_name ?? t("agClient")} back />
       <StatePanel {...q} onRetry={q.reload}>
         {() => (
           <>
@@ -21,14 +23,14 @@ export default function AgentClientDetail() {
             <Text>{x?.city}</Text>
             <Text>
               {x?.origin_locked
-                ? "Origin-protected client"
-                : "Ownership awaiting server confirmation"}
+                ? t("agOriginProtectedClient")
+                : t("agOwnershipAwaiting")}
             </Text>
             <Text>Active policies: {x?.active_policies ?? 0}</Text>
-            <Text>Renewal due: {x?.renewal_due_at ?? "None"}</Text>
+            <Text>Renewal due: {x?.renewal_due_at ?? t("agNone")}</Text>
           </Card>
           <Button
-            label="Start assisted sale"
+            label={t("agStartAssistedSale")}
             onPress={() => router.push(`/agent/sales/new?customerId=${id}`)}
           />
           </>

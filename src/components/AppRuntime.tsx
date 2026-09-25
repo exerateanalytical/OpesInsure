@@ -17,6 +17,8 @@ import { resolveNotificationTarget } from "@/lib/customerLogic";
 import { registerForPush, resetPushRegistration } from "@/notifications/push";
 import { BiometricLock } from "@/security/biometric";
 import { environmentConfig } from "@/config/environment";
+import { environmentBanner } from "@/lib/environmentBanner";
+import { useTimezone } from "@/store/timezone";
 import {
   backoffDelay,
   isIdleExpired,
@@ -80,6 +82,12 @@ export function AppRuntime({ children }: { children: ReactNode }) {
   policyRef.current = resolveLockPolicy(runtime?.security, environmentConfig);
   const statusRef = useRef(status);
   statusRef.current = status;
+  // Display time zone (GET /me/settings) for every formatted date; reset on sign-out.
+  useEffect(() => {
+    if (status === "authenticated") void useTimezone.getState().load();
+    else if (status === "anonymous") useTimezone.getState().reset();
+  }, [status]);
+  const envBanner = environmentBanner(runtime?.environment);
 
   const unlock = useCallback(async () => {
     if (!(await BiometricLock.enabled())) {
@@ -257,6 +265,11 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         accessibilityElementsHidden={!!overlay}
       >
         <UpdateNotice />
+        {envBanner ? (
+          <View accessibilityRole="text" style={styles.env}>
+            <Text style={styles.envText}>{envBanner.kind === "demo" ? t("envBannerDemo") : t("envBannerGeneric", { banner: envBanner.banner })}</Text>
+          </View>
+        ) : null}
         {!online ? (
           <Pressable
             accessibilityRole="button"
@@ -310,6 +323,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   offlineText: { ...type.meta, color: colors.warningText, textAlign: "center" },
+  env: { backgroundColor: colors.navy950, paddingHorizontal: space.x4, paddingVertical: space.x1 },
+  envText: { ...type.caption, color: colors.white, textAlign: "center" },
   lock: {
     zIndex: 1000,
     elevation: 1000,

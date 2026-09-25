@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, CheckCircle2, Images, UserRound } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { SchemaForm } from "@/components/forms/SchemaForm";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
-import { Preferences, ProfileExtras, emptyProfileExtras, profileExtrasToNotes } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
 
-const ID_TYPES = ["NATIONAL_ID", "PASSPORT", "RESIDENCE_PERMIT", "DRIVING_LICENCE"] as const;
-
 /**
- * Identity verification (App\Application\Kyc\MobileKycService):
- *  1. add an identifier (PATCH /mobile/kyc/profile),
- *  2. photograph the document (POST /mobile/documents → /mobile/kyc/documents),
- *  3. submit (POST /mobile/kyc/submission) with the profile extras as notes.
+ * Identity verification (MobileKycService):
+ *  1. add an identifier: server form kyc_identifier -> PATCH /mobile/kyc/profile,
+ *  2. photograph the document: form kyc_document (type picker) + photo
+ *     -> POST /mobile/documents -> POST /mobile/kyc/documents,
+ *  3. submit (POST /mobile/kyc/submission). Address, occupation and
+ *     beneficiaries now live on the server profile (form customer_profile).
  * With ?first=1 (right after sign-up) the step can be skipped and finished
  * later from Profile.
  */
@@ -27,17 +27,12 @@ export default function Kyc() {
   const onboarding = first === "1";
   const { t, td, date } = useTranslation();
   const q = useLoad(() => CustomerApi.kyc());
-  const [idType, setIdType] = useState<(typeof ID_TYPES)[number]>("NATIONAL_ID");
-  const [idValue, setIdValue] = useState("");
-  const [extras, setExtras] = useState<ProfileExtras>(emptyProfileExtras);
-  const [busy, setBusy] = useState<"id" | "doc" | "submit" | null>(null);
+  const [photo, setPhoto] = useState<{ base64: string; mime: "image/png" | "image/jpeg" } | null>(null);
+  const [busy, setBusy] = useState<"photo" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  useEffect(() => {
-    void Preferences.profileExtras().then(setExtras);
-  }, []);
 
-  const run = async (kind: "id" | "doc" | "submit", fn: () => Promise<void>) => {
+  const run = async (kind: "photo" | "submit", fn: () => Promise<void>) => {
     setBusy(kind);
     setError(null);
     setNotice(null);
@@ -49,14 +44,8 @@ export default function Kyc() {
       setBusy(null);
     }
   };
-  const addIdentifier = () =>
-    run("id", async () => {
-      q.setData(await CustomerApi.addIdentifier({ identifier_type: idType, identifier_value: idValue.trim(), identifier_country: "CM" }));
-      setIdValue("");
-      setNotice(t("kycIdentifierSaved"));
-    });
-  const addDocument = (source: "camera" | "library") =>
-    run("doc", async () => {
+  const takePhoto = (source: "camera" | "library") =>
+    run("photo", async () => {
       if (source === "camera") {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) throw new Error(t("cameraPermissionNeeded"));
@@ -65,19 +54,12 @@ export default function Kyc() {
       const result = source === "camera" ? await withoutRelock(() => ImagePicker.launchCameraAsync(options)) : await withoutRelock(() => ImagePicker.launchImageLibraryAsync(options));
       const asset = result.assets?.[0];
       if (result.canceled || !asset?.base64) return;
-      const doc = await CustomerApi.uploadDocument({
-        category: "KYC_IDENTITY",
-        mime_type: asset.mimeType === "image/png" ? "image/png" : "image/jpeg",
-        file_base64: asset.base64,
-      });
-      await CustomerApi.attachKycDocument(doc.id, "IDENTITY_DOCUMENT");
-      q.setData(await CustomerApi.kyc());
-      setNotice(t("kycDocumentAdded"));
+      setPhoto({ base64: asset.base64, mime: asset.mimeType === "image/png" ? "image/png" : "image/jpeg" });
+      setNotice(t("kycPhotoReady"));
     });
   const submit = () =>
     run("submit", async () => {
-      await CustomerApi.submitKyc(profileExtrasToNotes(extras));
-      await Preferences.saveProfileExtras({ ...extras, submitted_at: new Date().toISOString() });
+      await CustomerApi.submitKyc();
       q.setData(await CustomerApi.kyc());
       setNotice(t("kycSubmitted"));
     });
@@ -116,26 +98,19 @@ export default function Kyc() {
                     </Text>
                   </View>
                 ))}
-                {!locked ? (
-                  <>
-                    <View style={styles.chips} accessibilityRole="radiogroup">
-                      {ID_TYPES.map((x) => (
-                        <Pressable
-                          key={x}
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected: idType === x }}
-                          onPress={() => setIdType(x)}
-                          style={[styles.chip, idType === x && styles.chipOn]}
-                        >
-                          <Text style={[styles.chipText, idType === x && styles.chipTextOn]}>{td(`idType_${x}`, x)}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                    <TextField label={t("kycIdNumber")} value={idValue} onChangeText={setIdValue} autoCapitalize="characters" />
-                    <Button label={t("kycSaveIdentifier")} variant="secondary" loading={busy === "id"} disabled={idValue.trim().length < 4 || !!busy} onPress={() => void addIdentifier()} />
-                  </>
-                ) : null}
               </Card>
+              {!locked ? (
+                <SchemaForm
+                  form="kyc_identifier"
+                  submitLabel={t("kycSaveIdentifier")}
+                  resetOnSuccess
+                  onSubmit={async (payload) => {
+                    setError(null);
+                    q.setData(await CustomerApi.addIdentifier(payload as Parameters<typeof CustomerApi.addIdentifier>[0]));
+                    setNotice(t("kycIdentifierSaved"));
+                  }}
+                />
+              ) : null}
 
               <Card>
                 <Text style={styles.title}>{t("kycStep2")}</Text>
@@ -146,13 +121,32 @@ export default function Kyc() {
                     <Text style={styles.body}>{td(`scan_${d.scan_status}`, d.scan_status)}</Text>
                   </View>
                 ))}
-                {!locked ? (
-                  <>
-                    <Button label={t("kycTakePhoto")} icon={Camera} variant="secondary" loading={busy === "doc"} disabled={!!busy} onPress={() => void addDocument("camera")} />
-                    <Button label={t("evidenceFromLibrary")} icon={Images} variant="tertiary" disabled={!!busy} onPress={() => void addDocument("library")} />
-                  </>
-                ) : null}
+                {!locked ? <Text style={styles.meta}>{t("kycChooseTypeFirst")}</Text> : null}
               </Card>
+              {!locked ? (
+                <SchemaForm
+                  form="kyc_document"
+                  hide={["document_id"]}
+                  submitLabel={t("kycSaveDocument")}
+                  disabled={!photo}
+                  resetOnSuccess
+                  footer={
+                    <Card>
+                      {photo ? <Text style={styles.body}>{t("kycPhotoReady")}</Text> : null}
+                      <Button label={t("kycTakePhoto")} icon={Camera} variant="secondary" loading={busy === "photo"} disabled={!!busy} onPress={() => void takePhoto("camera")} />
+                      <Button label={t("evidenceFromLibrary")} icon={Images} variant="tertiary" disabled={!!busy} onPress={() => void takePhoto("library")} />
+                    </Card>
+                  }
+                  onSubmit={async ({ purpose, ...rest }) => {
+                    if (!photo) throw new Error(t("kycChooseTypeFirst"));
+                    const doc = await CustomerApi.uploadDocument({ category: "KYC_IDENTITY", mime_type: photo.mime, file_base64: photo.base64 });
+                    await CustomerApi.attachKycDocument(doc.id, String(purpose ?? "IDENTITY_DOCUMENT"), rest);
+                    setPhoto(null);
+                    q.setData(await CustomerApi.kyc());
+                    setNotice(t("kycDocumentAdded"));
+                  }}
+                />
+              ) : null}
 
               <Card>
                 <Text style={styles.title}>{t("kycStep3")}</Text>
@@ -189,11 +183,6 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x2 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  chip: { minHeight: 44, paddingHorizontal: space.x3, justifyContent: "center", borderRadius: radius.pill, borderWidth: 1, borderColor: colors.neutral300 },
-  chipOn: { backgroundColor: colors.blue50, borderColor: colors.blue600 },
-  chipText: { ...type.label, color: colors.navy950 },
-  chipTextOn: { color: colors.blue700 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },
 });

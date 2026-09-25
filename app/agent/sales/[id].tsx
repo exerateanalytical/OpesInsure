@@ -12,14 +12,16 @@ import {
   StatusChip,
 } from "@/components/ui";
 import { AgentApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function AgentSaleDetail() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => AgentApi.sale(id), [id]);
   const x = q.data;
   const setX = q.setData;
   return (
     <Screen>
-      <AppHeader title="Assisted sale" subtitle={x?.customer_name} back />
+      <AppHeader title={t("agAssistedSaleTitle")} subtitle={x?.customer_name} back />
       <StatePanel {...q} onRetry={q.reload}>
         {() => (
           <>
@@ -38,13 +40,12 @@ export default function AgentSaleDetail() {
             </Text>
           </Card>
           <Button
-            label="Send payment request to client"
+            label={t("agSendPaymentRequest")}
             disabled={!x || x.payment_status === "PENDING_CLIENT"}
             onPress={async () => setX(await AgentApi.requestPayment(id))}
           />
           <Text>
-            Payment success and commission availability are confirmed only by the
-            backend after the gateway webhook is verified.
+            {t("agPaymentConfirmedByBackend")}
           </Text>
           </>
         )}

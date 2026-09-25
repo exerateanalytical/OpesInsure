@@ -7,18 +7,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function AgentPolicies() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.policies(), []);
   return (
     <PortalScreen tabs={agentTabs}>
-      <AppHeader title="Policies" subtitle="Cover held by clients attributed to you" />
+      <AppHeader title={t("policies")} subtitle={t("agPoliciesSubtitle")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading policies…"
-        emptyTitle="No policies yet"
-        emptyMessage="Policies issued to your clients will appear here."
+        loadingLabel={t("policiesLoading")}
+        emptyTitle={t("policiesEmpty")}
+        emptyMessage={t("agNoPoliciesBody")}
       >
         {(x) => (
           <OperationsList

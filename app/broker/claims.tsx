@@ -7,18 +7,20 @@ import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { BrokerWorkspaceApi, money, shortDate } from "@/api/partner";
+import { useTranslation } from "@/i18n";
 
 export default function BrokerClaims() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerWorkspaceApi.claims(), []);
   return (
     <PortalScreen tabs={brokerTabs}>
-      <AppHeader title="Claims" subtitle="Claims on policies you placed" />
+      <AppHeader title={t("claims")} subtitle={t("brClaimsSubtitle")} />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading claims…"
-        emptyTitle="No claims"
-        emptyMessage="Claims your clients file on policies you placed will appear here."
+        loadingLabel={t("claimsLoading")}
+        emptyTitle={t("brNoClaims")}
+        emptyMessage={t("brNoClaimsBody")}
       >
         {(x) => (
           <OperationsList

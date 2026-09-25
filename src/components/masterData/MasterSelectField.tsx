@@ -18,11 +18,22 @@ type Props = {
   parent?: string;
   otherAllowed?: boolean;
   otherText?: string;
-  onChange: (value: string, otherText?: string) => void;
+  /** label: display label of the pick (the typed text for Other) — used to compose text targets. */
+  onChange: (value: string, otherText?: string, label?: string) => void;
   error?: string;
   required?: boolean;
   lineCode?: string;
   fieldKey?: string;
+  /** Suggestion context (quote.risk, form.customer_profile, …). */
+  screen?: string;
+  /** Values from somewhere other than master data (endpoint pickers, timezones). "Other" is appended when otherAllowed. */
+  loader?: () => Promise<MasterValue[]>;
+  /** Re-load when this changes (e.g. the endpoint URL). */
+  loaderKey?: string;
+  /** false: an Other pick is not filed as a master-data suggestion (no list to file it under). */
+  suggest?: boolean;
+  /** Custom text for the empty-selection placeholder. */
+  placeholder?: string;
 };
 
 /**
@@ -31,7 +42,7 @@ type Props = {
  * hierarchical and narrowed when a parent is chosen. "Other / Not listed"
  * asks for the value, files it for review and never blocks the quote.
  */
-export function MasterSelectField({ label, domain, list, value, multiple, parent, otherAllowed, otherText, onChange, error, required, lineCode, fieldKey }: Props) {
+export function MasterSelectField({ label, domain, list, value, multiple, parent, otherAllowed, otherText, onChange, error, required, lineCode, fieldKey, screen, loader, loaderKey, suggest = true, placeholder }: Props) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
   const [data, setData] = useState<{ list: MasterList; parents?: MasterList } | null>(null);
@@ -44,12 +55,17 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
   const load = useCallback(async () => {
     setState("loading");
     try {
-      setData(await loadList(domain, list));
+      if (loader) {
+        const rows = await loader();
+        const other: MasterValue[] = otherAllowed ? [{ code: OTHER, label: { en: "Other / Not listed", fr: "Autre / Non répertorié" }, is_other: true }] : [];
+        setData({ list: { code: list, label: { en: label, fr: label }, values: [...rows, ...other] } });
+      } else setData(await loadList(domain, list));
       setState("idle");
     } catch {
       setState("error");
     }
-  }, [domain, list]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loader identity changes every render; loaderKey tracks it.
+  }, [domain, list, loaderKey, otherAllowed]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -74,7 +90,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
       const next = selected.includes(v.code) ? selected.filter((c) => c !== v.code) : [...selected, v.code];
       onChange(JSON.stringify(next), otherText);
     } else {
-      onChange(v.code);
+      onChange(v.code, undefined, labelOf(v, lang));
       setOpen(false);
       setQ("");
     }
@@ -84,9 +100,9 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
     const text = draft.trim();
     if (!text) return;
     const next = multiple ? JSON.stringify([...selected.filter((c) => c !== OTHER), OTHER]) : OTHER;
-    onChange(next, text);
-    // Filed for review now; the server files it again (de-duplicated) with the quote.
-    void suggestValue({ domain, list, text, parent: parent || undefined, line_code: lineCode, field_key: fieldKey });
+    onChange(next, text, text);
+    // Filed for review now; for quotes the server files it again (de-duplicated) with the facts.
+    if (suggest) void suggestValue({ domain, list, text, parent: parent || undefined, line_code: lineCode, field_key: fieldKey, screen });
     setOtherMode(false);
     setOpen(false);
     setQ("");
@@ -103,7 +119,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
       >
         {state === "loading" ? <ActivityIndicator color={colors.blue600} /> : null}
         <Text style={[s.selectText, !display && s.placeholder]} numberOfLines={2}>
-          {state === "error" ? t("mdLoadFailed") : display || (multiple ? t("mdChooseSeveral") : t("mdChoose"))}
+          {state === "error" ? t("mdLoadFailed") : display || placeholder || (multiple ? t("mdChooseSeveral") : t("mdChoose"))}
         </Text>
         <ChevronDown size={18} color={colors.neutral500} />
       </Pressable>

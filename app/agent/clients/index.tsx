@@ -8,17 +8,19 @@ import { ContactRound, Plus } from "lucide-react-native";
 import { AppHeader, Button, Card } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { AgentApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function AgentClients() {
+  const { t } = useTranslation();
   const q = useLoad(() => AgentApi.clients(), []);
   const x = q.data ?? [];
   return (
     <PortalScreen tabs={agentTabs}>
       <AppHeader
-        title="Client portfolio"
-        subtitle="Origin ownership is enforced by the server"
+        title={t("agClientPortfolio")}
+        subtitle={t("agOriginEnforced")}
       />
       <Button
-        label="Register a client"
+        label={t("agRegisterClient")}
         icon={Plus}
         onPress={() => router.push("/agent/clients/new")}
       />

@@ -8,14 +8,16 @@ import { ClipboardCheck } from "lucide-react-native";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierApi } from "@/api/client";
+import { useTranslation } from "@/i18n";
 export default function Referrals() {
+  const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.referrals(), []);
   const x = q.data ?? [];
   return (
     <PortalScreen tabs={carrierTabs}>
       <AppHeader
-        title="Underwriting referrals"
-        subtitle="Decisions are recorded against delegated authority"
+        title={t("caReferrals")}
+        subtitle={t("caReferralsSubtitle")}
       />
       <StatePanel {...q} onRetry={q.reload}>
         {() => (

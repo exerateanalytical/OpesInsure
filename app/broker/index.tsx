@@ -23,23 +23,25 @@ import { useColumns } from "@/components/responsive";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { BrokerApi } from "@/api/client";
 import { colors, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 export default function BrokerHome() {
+  const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.dashboard(), []);
   const grid = useColumns();
   return (
     <PortalScreen tabs={brokerTabs}>
       <PortalHeader
         portal="broker"
-        title="Broker mobile office"
-        subtitle="Private client ledger and production control"
+        title={t("brMobileOffice")}
+        subtitle={t("brMobileOfficeSubtitle")}
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
-        loadingLabel="Loading dashboard…"
+        loadingLabel={t("agLoadingDashboard")}
         isEmpty={(v) => v.metrics.length === 0}
-        emptyTitle="No activity yet"
-        emptyMessage="Your figures will appear here once work is recorded."
+        emptyTitle={t("agNoActivity")}
+        emptyMessage={t("agNoActivityBody")}
       >
         {(v) => (
           <View style={grid.row}>
@@ -54,18 +56,18 @@ export default function BrokerHome() {
       </StatePanel>
       <WorkspaceMenu
         items={[
-          { label: "Customers", subtitle: "Private client ledger", icon: ContactRound, href: "/broker/clients" },
-          { label: "Sales", subtitle: "Production register", icon: BookOpenCheck, href: "/broker/production" },
-          { label: "Quotes", subtitle: "Quotes for your clients", icon: FileSignature, href: "/broker/quotes" },
-          { label: "Policies", subtitle: "Policies you placed", icon: FileText, href: "/broker/policies" },
-          { label: "Claims", subtitle: "Claims on your book", icon: ShieldAlert, href: "/broker/claims" },
-          { label: "Staff", subtitle: "Team and invitations", icon: Users, href: "/broker/staff" },
-          { label: "Commissions", subtitle: "Accruals and statements", icon: Wallet, href: "/broker/commissions" },
-          { label: "Renewals", subtitle: "Policies due soon", icon: RefreshCw, href: "/broker/renewals" },
-          { label: "Receivables", subtitle: "Amounts due to you", icon: ReceiptText, href: "/broker/receivables" },
-          { label: "Compliance", subtitle: "Licences and cases", icon: BadgeCheck, href: "/broker/compliance" },
-          { label: "Publications", subtitle: "Marketplace listings", icon: Store, href: "/broker/publications" },
-          { label: "Account", subtitle: "Profile and security", icon: CircleUserRound, href: "/broker/account" },
+          { label: t("portalTab_Customers"), subtitle: t("brPrivateLedger"), icon: ContactRound, href: "/broker/clients" },
+          { label: t("brSales"), subtitle: t("brProductionRegister"), icon: BookOpenCheck, href: "/broker/production" },
+          { label: t("agQuotes"), subtitle: t("brQuotesForClients"), icon: FileSignature, href: "/broker/quotes" },
+          { label: t("policies"), subtitle: t("brPoliciesPlaced"), icon: FileText, href: "/broker/policies" },
+          { label: t("claims"), subtitle: t("brClaimsOnBook"), icon: ShieldAlert, href: "/broker/claims" },
+          { label: t("brStaff"), subtitle: t("brTeamInvitations"), icon: Users, href: "/broker/staff" },
+          { label: t("agCommissions"), subtitle: t("brAccrualsStatements"), icon: Wallet, href: "/broker/commissions" },
+          { label: t("notifPref_renewals"), subtitle: t("agPoliciesDueSoon"), icon: RefreshCw, href: "/broker/renewals" },
+          { label: t("brReceivables"), subtitle: t("brAmountsDue"), icon: ReceiptText, href: "/broker/receivables" },
+          { label: t("brComplianceShort"), subtitle: t("brLicencesCases"), icon: BadgeCheck, href: "/broker/compliance" },
+          { label: t("brPublications"), subtitle: t("brMarketplaceListings"), icon: Store, href: "/broker/publications" },
+          { label: t("account"), subtitle: t("agProfileSecurity"), icon: CircleUserRound, href: "/broker/account" },
         ]}
       />
     </PortalScreen>

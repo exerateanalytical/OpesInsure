@@ -11,7 +11,9 @@ import {
 import { AgentApi, AgentWithdrawal } from "@/api/client";
 import { handleStepUpRequired } from "@/security/step-up";
 import { useSession } from "@/store/session";
+import { useTranslation } from "@/i18n";
 export default function AgentWithdrawalScreen() {
+  const { t } = useTranslation();
   const [amount, setAmount] = useState("");
   // Prefilled from the agent's registered mobile-money number (server
   // profile), falling back to the signed-in user's own phone. Never a
@@ -34,19 +36,19 @@ export default function AgentWithdrawalScreen() {
   return (
     <Screen>
       <AppHeader
-        title="Commission withdrawal"
-        subtitle="Destination changes require separate account verification"
+        title={t("agCommissionWithdrawal")}
+        subtitle={t("agDestinationChanges")}
         back
       />
       <Card>
         <TextField
-          label="Amount in FCFA"
+          label={t("mdAmountFcfa")}
           keyboardType="number-pad"
           value={amount}
           onChangeText={setAmount}
         />
         <TextField
-          label="Verified MTN MoMo phone"
+          label={t("agVerifiedMomo")}
           keyboardType="phone-pad"
           value={phone}
           onChangeText={(v) => {
@@ -55,7 +57,7 @@ export default function AgentWithdrawalScreen() {
           }}
         />
         <Button
-          label="Request withdrawal"
+          label={t("agRequestWithdrawal")}
           disabled={Number(amount) <= 0 || phone.length < 8}
           onPress={async () => {
             try {
