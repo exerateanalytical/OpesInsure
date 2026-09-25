@@ -33,6 +33,7 @@ final class StateMachineServiceProvider extends ServiceProvider
             // Bridges only (REQ-DUP-006); canonical claim machine arrives in wave 11A.
             $r->register(ClaimMachineAdapter::STATE_MACHINE, fn () => ClaimMachineAdapter::fromClaimStateMachine());
             $r->register(ClaimMachineAdapter::LIFECYCLE, fn () => ClaimMachineAdapter::fromClaimLifecycle());
+            $r->register(\App\Domain\Payments\PaymentMachine::NAME, fn () => \App\Domain\Payments\PaymentMachine::definition()); // REQ-PAY-001
 
             return $r;
         });

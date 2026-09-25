@@ -27,7 +27,7 @@ final class PaymentIntent
 
     public function confirm(): void
     {
-        if (! in_array($this->status, [PaymentStatus::PendingCustomer, PaymentStatus::Processing], true)) {
+        if (! in_array($this->status, [PaymentStatus::PendingCustomer, PaymentStatus::Processing, PaymentStatus::AwaitingTransfer], true) || ! $this->status->canBecome(PaymentStatus::Succeeded)) {
             throw new DomainException('Payment cannot be confirmed from its current state.');
         }
         $this->status = PaymentStatus::Succeeded;
