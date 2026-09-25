@@ -19,9 +19,7 @@ export function EmptyState({
 }) {
   return (
     <Card style={styles.panel}>
-      <View style={styles.icon}>
-        <Inbox size={24} color={colors.neutral600} />
-      </View>
+      <Inbox size={28} color={colors.neutral600} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {action && <Button label={action} variant="secondary" onPress={onPress} />}
@@ -37,9 +35,7 @@ export function ErrorState({ onRetry, error }: { onRetry?: () => void; error?: u
   const specific = e && (apiErrorCopyKey(e.code) || e.status === 404) ? e.message : null;
   return (
     <Card style={styles.panel}>
-      <View style={styles.icon}>
-        <CloudOff size={24} color={colors.dangerText} />
-      </View>
+      <CloudOff size={28} color={colors.dangerText} />
       <Text accessibilityRole="alert" style={styles.title}>
         {t("loadErrorTitle")}
       </Text>
@@ -110,14 +106,6 @@ export function StatePanel<T>({
 
 const styles = StyleSheet.create({
   panel: { alignItems: "center", paddingVertical: space.x8 },
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.neutral100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   title: { ...type.cardTitle, color: colors.navy950, textAlign: "center" },
   message: { ...type.body, color: colors.neutral600, textAlign: "center" },
   loading: {

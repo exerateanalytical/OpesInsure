@@ -106,7 +106,7 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
     >
       {tabs.map((t) => {
         const selected = active?.href === t.href;
-        const tint = selected ? colors.blue600 : colors.neutral600;
+        const tint = selected ? colors.navy900 : colors.neutral500;
         const label = td(`portalTab_${t.label}`, t.label);
         return (
           <Pressable
@@ -384,12 +384,13 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral200,
   },
+  // Mirrors app/(customer)/(tabs)/_layout.tsx so every role gets the same bar.
   tabBar: {
     flexDirection: "row",
     backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral200,
-    paddingTop: space.x2,
+    borderTopWidth: 2,
+    borderTopColor: colors.gold100,
+    paddingTop: 7,
   },
   tab: {
     flex: 1,

@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/security/secureStore";
 import { DEVICE_ONLY } from "@/security/secureJson";
 
 /** One key for the biometric-lock opt-in, shared by every portal. */

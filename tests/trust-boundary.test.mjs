@@ -15,7 +15,8 @@ test("policy confirmation requires issued policy payload", () => {
 });
 test("tokens and pending payment use secure storage", () => {
   const client = read("src/api/client.ts");
-  assert.match(client, /expo-secure-store/);
+  assert.match(client, /@\/security\/secureStore/);
+  assert.match(read("src/security/secureStore.ts"), /export \* from "expo-secure-store"/);
   assert.match(client, /pending_payment_id/);
 });
 test("workspaces come from authenticated bootstrap", () => {
@@ -366,7 +367,7 @@ test("patch five demo data covers broker and carrier operations", () => {
 test("patch six provides a device-encrypted offline vault and clears it on logout", () => {
   const vault = read("src/offline/vault.ts");
   const session = read("src/store/session.ts");
-  assert.match(vault, /expo-secure-store/);
+  assert.match(vault, /@\/security\/secureStore/);
   assert.match(vault, /WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
   assert.match(vault, /maxSecurePayloadBytes/);
   assert.match(session, /OfflineVault\.clearSensitiveData/);

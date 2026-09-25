@@ -1,16 +1,20 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { AppHeader, Button, Card, Chip, ChipRow, Screen, StatusChip, TextField } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi, type Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 import {
   REGISTER_SOURCE_KEY,
+  directoryCities,
+  filterByCity,
   filterInsurers,
+  readDirectory,
   registerCounts,
+  verificationText,
   type BranchFilter,
 } from "@/lib/institutions";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -28,7 +32,12 @@ export default function Insurers() {
   const [branch, setBranch] = useState<BranchFilter>("all");
   const q = useLoad(() => InstitutionsApi.list("insurer"), []);
   const counts = useMemo(() => registerCounts(q.data ?? []), [q.data]);
-  const filtered = useMemo(() => filterInsurers(q.data ?? [], branch, query), [q.data, branch, query]);
+  const [city, setCity] = useState<string | null>(null);
+  const cities = useMemo(() => directoryCities(q.data ?? []), [q.data]);
+  const filtered = useMemo(
+    () => filterByCity(filterInsurers(q.data ?? [], branch, query), city),
+    [q.data, branch, query, city],
+  );
 
   return (
     <Screen>
@@ -37,31 +46,38 @@ export default function Insurers() {
         subtitle={t(REGISTER_SOURCE_KEY)}
         back
       />
-      <View style={styles.tabs} accessibilityRole="tablist">
+      <ChipRow exclusive>
         {BRANCHES.map((b) => {
-          const on = branch === b.id;
           const n = b.id === "all" ? counts.total : counts[b.id];
           return (
-            <Pressable
+            <Chip
               key={b.id}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
+              role="tab"
+              label={`${t(b.label)}${n ? ` (${n})` : ""}`}
+              selected={branch === b.id}
               onPress={() => setBranch(b.id)}
-              style={[styles.tab, on && styles.tabOn]}
-            >
-              <Text style={[styles.tabText, on && styles.tabTextOn]}>
-                {t(b.label)}{n ? ` (${n})` : ""}
-              </Text>
-            </Pressable>
+            />
           );
         })}
-      </View>
+      </ChipRow>
       <TextField
         label={t("searchInsurers")}
         value={query}
         onChangeText={setQuery}
         placeholder={t("searchInsurersPlaceholder")}
       />
+      {cities.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityLabel={t("filterByCity")}
+          contentContainerStyle={styles.tabs}
+        >
+          {[null, ...cities].map((c) => (
+            <Chip key={c ?? "all"} label={c ?? t("cityAll")} selected={city === c} onPress={() => setCity(c)} />
+          ))}
+        </ScrollView>
+      ) : null}
       <Button
         label={t("browseAuthorizedBrokers")}
         variant="secondary"
@@ -94,8 +110,10 @@ export default function Insurers() {
 }
 
 function InsurerRow({ insurer }: { insurer: Institution }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const families = insurer.product_families ?? [];
+  const dir = readDirectory(insurer);
+  const hqCity = dir.hq?.city ?? insurer.city;
   return (
     <Pressable
       accessibilityRole="button"
@@ -110,6 +128,13 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
           <View style={styles.copy}>
             <Text style={styles.name}>{insurer.short_name ?? insurer.name}</Text>
             {insurer.short_name ? <Text style={styles.meta}>{insurer.name}</Text> : null}
+            {hqCity || dir.branches.length ? (
+              <Text style={styles.meta}>
+                {[hqCity, dir.branches.length ? t("branchNetwork", { count: dir.branches.length }) : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Text>
+            ) : null}
           </View>
           {insurer.branch ? (
             <StatusChip
@@ -119,6 +144,11 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
           ) : null}
           <ChevronRight size={20} color={colors.neutral500} />
         </View>
+        {dir.verification ? (
+          <View style={styles.families}>
+            <StatusChip label={verificationText(dir.verification, language, t)} tone={dir.verification.tone} />
+          </View>
+        ) : null}
         {families.length ? (
           <View style={styles.families}>
             {families.map((f) => (
@@ -136,18 +166,6 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
 
 const styles = StyleSheet.create({
   tabs: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
-  tab: {
-    minHeight: 44,
-    paddingHorizontal: space.x4,
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.neutral200,
-    backgroundColor: colors.white,
-  },
-  tabOn: { backgroundColor: colors.navy950, borderColor: colors.navy950 },
-  tabText: { ...type.label, color: colors.navy950 },
-  tabTextOn: { color: colors.white },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   copy: { flex: 1, gap: 3 },
   logo: {

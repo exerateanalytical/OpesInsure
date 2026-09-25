@@ -1,15 +1,34 @@
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Check, ChevronDown, FlaskConical, X } from "lucide-react-native";
-import { authColors, authSpace, colors, radius, type } from "@/theme/tokens";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Building2,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  FlaskConical,
+  Handshake,
+  LucideIcon,
+  UserRound,
+  UsersRound,
+} from "lucide-react-native";
+import { authColors, authRadius, authSpace, authType, colors } from "@/theme/tokens";
 import { demoOptionLabel, type DemoAccountLike } from "@/lib/demoLogin";
 import { useTranslation } from "@/i18n";
 
+/** Role icon per demo account (server role_code); customer by default. */
+const roleIcon = (role?: string): LucideIcon => {
+  const r = (role ?? "").toUpperCase();
+  if (r.includes("CARRIER") || r.includes("INSURER")) return Building2;
+  if (r.includes("BROKER")) return Handshake;
+  if (r.includes("AGENT")) return UserRound;
+  return UsersRound;
+};
+
 /**
- * One select field ("Choose a demo account") instead of a list of buttons.
- * Opens a bottom sheet (core RN Modal: no native dependency) listing the
- * server's demo accounts; picking one signs in straight away.
+ * Demo sign-in as a dropdown select: one field ("Choose a demo account")
+ * that expands an option list right underneath it, inside the sign-in card.
+ * Picking an option signs in straight away. No Modal, so it behaves the
+ * same on Android, iOS and the browser preview.
  */
 export function DemoAccountPicker({
   accounts,
@@ -23,9 +42,9 @@ export function DemoAccountPicker({
   onPick: (account: DemoAccountLike) => void;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const busy = accounts.find((a) => a.phone_e164 === busyPhone);
+  const Chevron = open ? ChevronUp : ChevronDown;
   return (
     <View style={styles.wrap}>
       <View style={styles.titleRow}>
@@ -37,98 +56,101 @@ export function DemoAccountPicker({
         accessibilityLabel={t("demoChoose")}
         accessibilityState={{ expanded: open, disabled: !!disabled, busy: !!busy }}
         disabled={disabled}
-        onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.select, pressed && styles.pressed, disabled && styles.disabled]}
+        onPress={() => setOpen((v) => !v)}
+        style={({ pressed }) => [styles.select, open && styles.selectOpen, pressed && styles.pressed, disabled && styles.disabled]}
       >
         <Text style={[styles.selectText, !busy && styles.placeholder]} numberOfLines={1}>
           {busy ? `${t("signingIn")} ${demoOptionLabel(busy)}` : t("demoChoose")}
         </Text>
-        {busy ? <ActivityIndicator color={colors.blue600} /> : <ChevronDown size={20} color={colors.neutral600} />}
+        {busy ? <ActivityIndicator color={authColors.blue500} /> : <Chevron size={20} color={authColors.slate500} />}
       </Pressable>
-      <Text style={styles.hint}>{t("demoPickHint")}</Text>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)} statusBarTranslucent>
-        <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t("close")} onPress={() => setOpen(false)} />
-        <View style={[styles.sheet, { paddingBottom: authSpace[4] + insets.bottom }]} accessibilityViewIsModal>
-          <View style={styles.sheetHead}>
-            <Text accessibilityRole="header" style={styles.sheetTitle}>{t("demoChoose")}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t("close")} hitSlop={12} onPress={() => setOpen(false)}>
-              <X size={22} color={colors.navy950} />
-            </Pressable>
-          </View>
-          <FlatList
-            data={accounts}
-            keyExtractor={(a) => a.phone_e164}
-            ItemSeparatorComponent={() => <View style={styles.sep} />}
-            renderItem={({ item }) => (
+      {open ? (
+        <View accessibilityRole="menu" style={styles.menu}>
+          {accounts.map((item, index) => {
+            const Icon = roleIcon(item.role_code);
+            const selected = busyPhone === item.phone_e164;
+            return (
               <Pressable
+                key={item.phone_e164}
                 accessibilityRole="menuitem"
                 accessibilityLabel={demoOptionLabel(item)}
+                accessibilityState={{ selected }}
+                disabled={disabled}
                 onPress={() => {
                   setOpen(false);
                   onPick(item);
                 }}
-                style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.option, index > 0 && styles.optionBorder, pressed && styles.optionPressed]}
               >
+                <View style={styles.optionIcon}>
+                  <Icon size={18} color={authColors.navy800} strokeWidth={1.8} />
+                </View>
                 <View style={styles.flex}>
                   <Text style={styles.optionLabel}>{item.label}</Text>
-                  <Text style={styles.optionMeta}>
+                  <Text style={styles.optionMeta} numberOfLines={1}>
                     {item.full_name ? `${item.full_name} · ` : ""}
                     {item.phone_e164}
                   </Text>
                 </View>
-                {busyPhone === item.phone_e164 ? <Check size={18} color={colors.success} /> : null}
+                {selected ? <Check size={18} color={colors.success} /> : null}
               </Pressable>
-            )}
-          />
+            );
+          })}
         </View>
-      </Modal>
+      ) : (
+        <Text style={styles.hint}>{t("demoPickHint")}</Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    marginHorizontal: authSpace[5],
-    marginTop: authSpace[4],
-    backgroundColor: authColors.white,
-    borderRadius: radius.feature,
+    gap: authSpace[1],
+    borderRadius: authRadius.lg,
     borderWidth: 1,
     borderColor: colors.gold100,
-    padding: authSpace[4],
-    gap: authSpace[2],
+    backgroundColor: colors.gold50,
+    padding: authSpace[3],
   },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: authSpace[1] },
-  title: { ...type.label, color: colors.navy950 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: authSpace[1], marginBottom: 2 },
+  title: { ...authType.label, color: authColors.navy950 },
   select: {
     minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
     gap: authSpace[2],
     borderWidth: 1.5,
-    borderColor: colors.neutral300,
-    borderRadius: radius.control,
+    borderColor: authColors.ice200,
+    borderRadius: authRadius.lg,
     paddingHorizontal: authSpace[3],
-    backgroundColor: colors.neutral50,
+    backgroundColor: authColors.white,
   },
-  selectText: { ...type.body, color: colors.navy950, flex: 1 },
-  placeholder: { color: colors.neutral600 },
-  hint: { ...type.meta, color: colors.neutral600 },
-  pressed: { opacity: 0.75 },
+  selectOpen: { borderColor: authColors.blue500 },
+  selectText: { ...authType.body, color: authColors.navy950, flex: 1 },
+  placeholder: { color: authColors.slate500 },
+  hint: { ...authType.label, fontSize: 12, fontFamily: "Inter_400Regular", color: authColors.textSecondary },
+  pressed: { opacity: 0.85 },
   disabled: { opacity: 0.55 },
-  backdrop: { flex: 1, backgroundColor: "rgba(15,21,53,0.55)" },
-  sheet: {
-    maxHeight: "75%",
-    backgroundColor: colors.white,
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    paddingHorizontal: authSpace[4],
-    paddingTop: authSpace[3],
+  menu: {
+    borderWidth: 1.5,
+    borderColor: authColors.blue500,
+    borderRadius: authRadius.lg,
+    backgroundColor: authColors.white,
+    overflow: "hidden",
   },
-  sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: authSpace[2] },
-  sheetTitle: { ...type.cardTitle, color: colors.navy950, flex: 1 },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.neutral200 },
-  option: { minHeight: 56, flexDirection: "row", alignItems: "center", paddingVertical: authSpace[2], gap: authSpace[2] },
+  option: { minHeight: 56, flexDirection: "row", alignItems: "center", gap: authSpace[2], paddingHorizontal: authSpace[3], paddingVertical: authSpace[2] },
+  optionBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: authColors.ice200 },
+  optionPressed: { backgroundColor: authColors.ice50 },
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: authColors.ice50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   flex: { flex: 1 },
-  optionLabel: { ...type.body, fontFamily: "Inter_600SemiBold", color: colors.navy950 },
-  optionMeta: { ...type.meta, color: colors.neutral600 },
+  optionLabel: { ...authType.label, color: authColors.navy950 },
+  optionMeta: { ...authType.label, fontSize: 12, fontFamily: "Inter_400Regular", color: authColors.textSecondary },
 });

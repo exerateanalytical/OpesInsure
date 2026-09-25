@@ -181,9 +181,7 @@ export default function CustomerHome() {
                 }
                 style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
               >
-                <View style={styles.categoryIcon}>
-                  <Icon size={22} color={colors.blue600} />
-                </View>
+                <Icon size={28} color={colors.navy800} />
                 <Text style={styles.categoryLabel} numberOfLines={2}>{t(c.label)}</Text>
               </Pressable>
             );
@@ -359,9 +357,7 @@ export default function CustomerHome() {
 function CardHeader({ icon: Icon, title, count, countLabel }: { icon: LucideIcon; title: string; count?: number; countLabel?: string }) {
   return (
     <View style={styles.cardHeader}>
-      <View style={styles.cardIcon}>
-        <Icon size={20} color={colors.blue600} />
-      </View>
+      <Icon size={22} color={colors.navy900} />
       <Text accessibilityRole="header" style={styles.cardTitle}>{title}</Text>
       {count !== undefined ? (
         <View style={styles.count} accessibilityLabel={`${count} ${countLabel ?? ""}`.trim()}>
@@ -533,14 +529,6 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral200,
     borderRadius: radius.card,
   },
-  categoryIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.control,
-    backgroundColor: colors.gold50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   categoryLabel: { ...type.caption, color: colors.navy950, textAlign: "center" },
   card: {
     backgroundColor: colors.white,
@@ -550,15 +538,9 @@ const styles = StyleSheet.create({
     padding: space.x4,
     gap: space.x2,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  cardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.control,
-    backgroundColor: colors.blue50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  // Icons sit directly on the card background (no tinted box); the row keeps
+  // the old 36dp height so headers align with the count pill.
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 36 },
   cardTitle: { ...type.label, fontSize: 16, color: colors.navy950, flex: 1 },
   count: {
     minWidth: 28,

@@ -2,9 +2,9 @@ import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, Columns3, Info, RefreshCcw, SlidersHorizontal } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { AppHeader, Button, Card, Screen, TextField , Chip } from "@/components/ui";
 import { EmptyState } from "@/components/StatePanel";
-import { ErrorCard, Pill, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { OfferCard, useNow } from "@/components/offers/OfferCard";
 import { useInsurance } from "@/store/insurance";
 import {
@@ -166,11 +166,11 @@ export default function Offers() {
         <>
           <View style={ps.row}>
             <Text style={ps.meta}>{t("ofSort")}</Text>
-            <Pill label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
-            <Pill label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
-            <Pill label={t("ofSortInsurer")} selected={sort === "insurer"} onPress={() => setSort("insurer")} />
-            <Pill label={t("ofSortExcess")} selected={sort === "excess"} onPress={() => setSort("excess")} />
-            <Pill label={showFilters ? t("ofHideFilters") : t("ofFilters")} selected={showFilters || filtersActive} onPress={() => setShowFilters(!showFilters)} />
+            <Chip label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
+            <Chip label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
+            <Chip label={t("ofSortInsurer")} selected={sort === "insurer"} onPress={() => setSort("insurer")} />
+            <Chip label={t("ofSortExcess")} selected={sort === "excess"} onPress={() => setSort("excess")} />
+            <Chip label={showFilters ? t("ofHideFilters") : t("ofFilters")} selected={showFilters || filtersActive} onPress={() => setShowFilters(!showFilters)} />
           </View>
           {showFilters ? (
             <Card>
@@ -181,13 +181,13 @@ export default function Offers() {
               <Text style={ps.meta}>{t("ofInsurer")}</Text>
               <View style={ps.row}>
                 {insurers.map((i) => (
-                  <Pill key={i.carrierId} label={i.name} selected={providers.includes(i.carrierId)} onPress={() => setProviders((p) => toggle(p, i.carrierId))} />
+                  <Chip key={i.carrierId} label={i.name} selected={providers.includes(i.carrierId)} onPress={() => setProviders((p) => toggle(p, i.carrierId))} />
                 ))}
               </View>
               <Text style={ps.meta}>{t("ofCoverLevel")}</Text>
               <View style={ps.row}>
                 {LEVELS.map((l) => (
-                  <Pill key={l.key} label={t(l.label)} selected={levels.includes(l.key)} onPress={() => setLevels((x) => toggle(x, l.key))} />
+                  <Chip key={l.key} label={t(l.label)} selected={levels.includes(l.key)} onPress={() => setLevels((x) => toggle(x, l.key))} />
                 ))}
               </View>
               {paymentMethods.length ? (
@@ -195,7 +195,7 @@ export default function Offers() {
                   <Text style={ps.meta}>{t("ofPaymentOptions")}</Text>
                   <View style={ps.row}>
                     {paymentMethods.map((m) => (
-                      <Pill key={m} label={m.replace(/_/g, " ")} selected={methods.includes(m)} onPress={() => setMethods((x) => toggle(x, m))} />
+                      <Chip key={m} label={m.replace(/_/g, " ")} selected={methods.includes(m)} onPress={() => setMethods((x) => toggle(x, m))} />
                     ))}
                   </View>
                 </>

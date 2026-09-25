@@ -1,5 +1,5 @@
 import * as Crypto from "expo-crypto";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/security/secureStore";
 import { Platform } from "react-native";
 import { OfflineOperation } from "@/offline/types";
 import { environmentConfig } from "@/config/environment";

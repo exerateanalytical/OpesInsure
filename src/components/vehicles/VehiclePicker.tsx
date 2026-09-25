@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Car, Check, ChevronRight, CircleAlert, RefreshCw } from "lucide-react-native";
-import { Button, TextField } from "@/components/ui";
-import { PickerField, Pill } from "@/components/purchase/PurchaseUi";
+import { Button, TextField , Chip } from "@/components/ui";
+import { PickerField } from "@/components/purchase/PurchaseUi";
+
 import { VehiclesApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { useSession } from "@/store/session";
@@ -293,7 +294,7 @@ export function VehiclePicker({
           {header}
           <View style={st.years}>
             {genYears.map((y) => (
-              <Pill key={y} label={y} selected={value.year === y} onPress={() => pickYear(y)} />
+              <Chip key={y} label={y} selected={value.year === y} onPress={() => pickYear(y)} />
             ))}
           </View>
           {skip}
@@ -401,7 +402,7 @@ export function VehiclePicker({
     <View style={st.wrap}>
       <TextField label={t("vehicleMake")} value={query} onChangeText={setQuery} placeholder={t("vehicleSearchMake")} autoCorrect={false} autoCapitalize="words" error={error} />
       <View style={st.chips}>
-        <Pill label={t("vehicleChineseChip")} selected={chinese} onPress={() => setChinese((c) => !c)} />
+        <Chip label={t("vehicleChineseChip")} selected={chinese} onPress={() => setChinese((c) => !c)} />
       </View>
       {!query.trim() && !chinese ? <Text style={st.meta}>{t("vehicleCommonMakes")}</Text> : null}
       {makesState === "loading" && !makes.length ? (

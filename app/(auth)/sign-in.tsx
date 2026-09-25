@@ -4,21 +4,21 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
+  BadgeCheck,
   Building2,
   Handshake,
   KeyRound,
   LockKeyhole,
+  LucideIcon,
   Phone,
-  ShieldCheck,
-  UsersRound,
+  Ticket,
 } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
-import { TrustStrip } from "@/components/auth/TrustStrip";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
-import { authColors, authSpace, authType } from "@/theme/tokens";
+import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
 import { AuthApi, type AuthTokens, type OtpChannel } from "@/api/client";
 import { DemoAccountPicker } from "@/components/auth/DemoAccountPicker";
 import { demoCredential, normalizeDemoDirectory, type DemoAccountLike, type DemoDirectory } from "@/lib/demoLogin";
@@ -28,11 +28,12 @@ import type { CopyKey } from "@/i18n/strings";
 import { isLockout, lockoutSeconds } from "@/lib/customerLogic";
 
 const toInvitation = () => router.push("/(auth)/invitation");
-const audiences: { icon: typeof UsersRound; label: CopyKey; onPress?: () => void }[] = [
-  { icon: UsersRound, label: "audienceIndividuals" },
-  { icon: Building2, label: "audienceBusinesses" },
-  { icon: Handshake, label: "audienceIntermediaries", onPress: toInvitation },
-  { icon: ShieldCheck, label: "audienceInsurers", onPress: toInvitation },
+/** Public destinations that need no account: one tile each, not a stack of links. */
+const publicLinks: { icon: LucideIcon; label: CopyKey; onPress: () => void }[] = [
+  { icon: Building2, label: "insurers", onPress: () => router.push("/institutions/insurers") },
+  { icon: Handshake, label: "brokers", onPress: () => router.push("/institutions/brokers") },
+  { icon: BadgeCheck, label: "verifyCertificate", onPress: () => router.push("/verify") },
+  { icon: Ticket, label: "partnerJoinInvitation", onPress: toInvitation },
 ];
 const otpChannels: { key: OtpChannel; label: string }[] = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -231,55 +232,44 @@ export default function SignIn() {
                 {mode === "password" ? t("useOtpInstead") : t("usePasswordInstead")}
               </Text>
             </Pressable>
+
+            {demo && demo.accounts.length > 0 ? (
+              <DemoAccountPicker
+                accounts={demo.accounts}
+                busyPhone={demoAccountId}
+                disabled={busy || !!locked}
+                onPick={(account) => void signInAsDemoAccount(account)}
+              />
+            ) : null}
+
             <AuthSecondaryButton label={t("createAccount")} onPress={() => router.push("/(auth)/sign-up")} />
             <View style={styles.trustRow}>
               <LockKeyhole size={16} color={authColors.slate500} />
-              <Text style={styles.trustText}>
-                {t("authTrust")}
-              </Text>
+              <Text style={styles.trustText}>{t("authTrust")}</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push("/institutions/insurers")}
-              style={styles.linkRow}
-            >
-              <Text style={styles.link}>{t("browseInsurers")}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push("/institutions/brokers")}
-              style={styles.linkRow}
-            >
-              <Text style={styles.link}>{t("browseBrokers")}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push("/verify")}
-              style={styles.linkRow}
-            >
-              <Text style={styles.link}>{t("verifyCertificate")}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={toInvitation}
-              style={styles.linkRow}
-            >
-              <Text style={styles.link}>{t("partnerJoinInvitation")}</Text>
-            </Pressable>
 
             <View style={styles.divider} />
-            <Text style={styles.audienceCaption}>{t("audienceCaption")}</Text>
-            <TrustStrip items={audiences.map((a) => ({ ...a, label: t(a.label) }))} />
+            <Text style={styles.publicCaption}>{t("browseInsurers")}</Text>
+            <View style={styles.publicGrid}>
+              {publicLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Pressable
+                    key={link.label}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(link.label)}
+                    onPress={link.onPress}
+                    style={({ pressed }) => [styles.publicTile, pressed && styles.pressed]}
+                  >
+                    <View style={styles.publicIcon}>
+                      <Icon size={authIcon.normal} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
+                    </View>
+                    <Text style={styles.publicLabel} numberOfLines={2}>{t(link.label)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </AuthCard>
-
-          {demo && demo.accounts.length > 0 ? (
-            <DemoAccountPicker
-              accounts={demo.accounts}
-              busyPhone={demoAccountId}
-              disabled={busy || !!locked}
-              onPick={(account) => void signInAsDemoAccount(account)}
-            />
-          ) : null}
           <AuthFooterBranding />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -292,9 +282,34 @@ const styles = StyleSheet.create({
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
   trustRow: { flexDirection: "row", gap: authSpace[2], alignItems: "flex-start", paddingTop: authSpace[1] },
   trustText: { ...authType.body, fontSize: 13, color: authColors.textSecondary, flex: 1 },
-  linkRow: { alignItems: "center", paddingVertical: authSpace[2] },
+  linkRow: { alignItems: "center", paddingVertical: authSpace[1] },
   forgotRow: { alignSelf: "flex-end", paddingVertical: authSpace[1], marginTop: -authSpace[2] },
   link: { ...authType.label, color: authColors.blue500 },
+  pressed: { opacity: 0.85 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: authSpace[2] },
-  audienceCaption: { ...authType.label, fontSize: 12, color: authColors.slate500, textAlign: "center" },
+  publicCaption: { ...authType.label, fontSize: 12, color: authColors.slate500, textAlign: "center" },
+  publicGrid: { flexDirection: "row", flexWrap: "wrap", gap: authSpace[2] },
+  publicTile: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: authSpace[2],
+    paddingHorizontal: authSpace[3],
+    paddingVertical: authSpace[2],
+    borderRadius: authRadius.md,
+    borderWidth: 1,
+    borderColor: authColors.ice200,
+    backgroundColor: authColors.ice50,
+  },
+  publicIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: authColors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  publicLabel: { ...authType.label, fontSize: 13, lineHeight: 17, color: authColors.navy950, flex: 1 },
 });

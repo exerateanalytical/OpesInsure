@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Building2, ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react-native";
-import { AppHeader, Screen, StatusChip } from "@/components/ui";
+import { AppHeader, Chip, ChipRow, Screen, StatusChip } from "@/components/ui";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { CATEGORIES } from "@/components/customer/categories";
@@ -119,21 +119,17 @@ export default function Explore() {
       )}
 
       <Text accessibilityRole="header" style={styles.section}>{t("exploreProviders")}</Text>
-      <View style={styles.filters} accessibilityRole="tablist">
+      <ChipRow exclusive>
         {(["all", "insurer", "broker"] as Filter[]).map((f) => (
-          <Pressable
+          <Chip
             key={f}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: filter === f }}
+            role="tab"
+            label={t(f === "all" ? "filterAll" : f === "insurer" ? "insurers" : "brokers")}
+            selected={filter === f}
             onPress={() => setFilter(f)}
-            style={[styles.filter, filter === f && styles.filterOn]}
-          >
-            <Text style={[styles.filterText, filter === f && styles.filterTextOn]}>
-              {t(f === "all" ? "filterAll" : f === "insurer" ? "insurers" : "brokers")}
-            </Text>
-          </Pressable>
+          />
         ))}
-      </View>
+      </ChipRow>
       {providers.loading && !providers.data ? (
         <LoadingState label={t("exploreLoadingProviders")} />
       ) : providers.error && !providers.data ? (
@@ -228,19 +224,6 @@ const styles = StyleSheet.create({
   },
   label: { ...type.label, color: colors.navy950 },
   meta: { ...type.meta, color: colors.neutral600 },
-  filters: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
-  filter: {
-    minHeight: 44,
-    paddingHorizontal: space.x4,
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    backgroundColor: colors.white,
-  },
-  filterOn: { backgroundColor: colors.navy950, borderColor: colors.navy950 },
-  filterText: { ...type.label, color: colors.navy950 },
-  filterTextOn: { color: colors.white },
   provider: {
     minHeight: 72,
     flexDirection: "row",

@@ -235,6 +235,42 @@ export function StatusChip({
   );
 }
 
+/** Selectable filter chip (sort, status and category filters). */
+export function Chip({
+  label,
+  selected,
+  onPress,
+  role = "button",
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  /** "tab" inside an accessibilityRole="tablist" row of exclusive filters. */
+  role?: "button" | "tab";
+}) {
+  return (
+    <Pressable
+      accessibilityRole={role}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.chipSelect, selected && styles.chipSelectOn, pressed && styles.pressed]}
+    >
+      <Text allowFontScaling maxFontSizeMultiplier={1.6} style={[styles.chipSelectText, selected && styles.chipSelectTextOn]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** A wrapping row of Chips; `exclusive` marks it as a tablist. */
+export function ChipRow({ children, exclusive = false, style }: { children: ReactNode; exclusive?: boolean; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View accessibilityRole={exclusive ? "tablist" : undefined} style={[styles.chipRow, style]}>
+      {children}
+    </View>
+  );
+}
+
 export function SectionTitle({
   title,
   action,
@@ -368,6 +404,19 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   chipText: { ...type.caption },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
+  chipSelect: {
+    minHeight: 40,
+    paddingHorizontal: space.x4,
+    justifyContent: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.neutral300,
+    backgroundColor: colors.white,
+  },
+  chipSelectOn: { backgroundColor: colors.navy950, borderColor: colors.navy950 },
+  chipSelectText: { ...type.label, color: colors.neutral700 },
+  chipSelectTextOn: { color: colors.white },
   sectionRow: {
     flexDirection: "row",
     justifyContent: "space-between",

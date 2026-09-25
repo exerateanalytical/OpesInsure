@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import {
   ArrowRight,
@@ -102,6 +102,10 @@ export default function Onboarding() {
   const slides = buildSlides(t);
   const count = slides.length;
   const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Small phones and large system fonts: the action bar keeps 48dp targets
+  // and lets labels wrap instead of clipping.
+  const compact = window.width < 360 || window.fontScale > 1.2;
   // Page width is the pager's MEASURED width, not the window width: with
   // split-screen, foldables, display cut-outs or a landscape inset the two
   // differ and the pages drifted out of alignment ("Next broke the pager").
@@ -159,7 +163,7 @@ export default function Onboarding() {
   }, [goTo, count]);
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={styles.safe}>
+    <SafeAreaView edges={["top"]} style={styles.safe}>
       <View style={styles.topBar}>
       <Pressable
         accessibilityRole="button"
@@ -197,35 +201,52 @@ export default function Onboarding() {
               <Text style={styles.subheading}>{slide.subheading}</Text>
             </View>
             {slide.body}
-            <PaginationDots count={count} active={page} />
             <OnboardingFooter tagline={slide.footer} />
           </ScrollView>
         ))}
       </ScrollView>
-      <View style={styles.actions}>
-        {last ? (
-          <>
-            <AuthPrimaryButton
-              label={t("getStarted")}
-              icon={ArrowRight}
-              onPress={() => primary(() => leave("/(auth)/sign-up"))}
-            />
-            <AuthSecondaryButton label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
-          </>
-        ) : (
-          <AuthPrimaryButton
-            label={t("next")}
-            icon={ArrowRight}
-            onPress={() => primary(() => goTo(nextPage(pageRef.current, count)))}
-          />
-        )}
-        <View style={styles.links}>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/verify")}>
-            <Text style={styles.link}>{t("verifyCertificate")}</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/(auth)/invitation")}>
-            <Text style={styles.link}>{t("partnersJoin")}</Text>
-          </Pressable>
+      {/* Action bar: pinned above the home indicator / gesture bar. The bottom
+          inset is applied here (SafeAreaView only pads the top) so it is never
+          counted twice. */}
+      <View style={[styles.actions, { paddingBottom: authSpace[2] + insets.bottom }]}>
+        <View style={styles.actionsInner}>
+          {last ? (
+            <>
+              <AuthPrimaryButton
+                label={t("getStarted")}
+                onPress={() => primary(() => leave("/(auth)/sign-up"))}
+                icon={ArrowRight}
+              />
+              <AuthSecondaryButton label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
+            </>
+          ) : (
+            <View style={styles.stepRow}>
+              <PaginationDots count={count} active={page} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("next")}
+                hitSlop={4}
+                onPress={() => primary(() => goTo(nextPage(pageRef.current, count)))}
+                style={({ pressed }) => [styles.next, compact && styles.nextCompact, pressed && styles.nextPressed]}
+              >
+                <Text style={styles.nextLabel}>{t("next")}</Text>
+                <ArrowRight size={20} color={colors.white} />
+              </Pressable>
+            </View>
+          )}
+          <View style={[styles.links, compact && styles.linksCompact]}>
+            <Pressable accessibilityRole="button" hitSlop={8} style={styles.linkHit} onPress={() => router.push("/verify")}>
+              <Text style={styles.link}>{t("verifyCertificate")}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              style={styles.linkHit}
+              onPress={() => router.push("/(auth)/invitation")}
+            >
+              <Text style={styles.link}>{t("partnersJoin")}</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -256,14 +277,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: authSpace[2],
   },
-  links: { flexDirection: "row", justifyContent: "space-between", paddingVertical: authSpace[2] },
+  links: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: authSpace[3] },
+  linksCompact: { flexDirection: "column", alignItems: "stretch", gap: 0 },
+  linkHit: { minHeight: 44, justifyContent: "center", flexShrink: 1 },
   link: { ...authType.label, fontSize: 13, color: authColors.blue500 },
   actions: {
     paddingHorizontal: authSpace[5],
     paddingTop: authSpace[3],
-    gap: authSpace[2],
+    paddingBottom: authSpace[2],
     backgroundColor: colors.neutral50,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.neutral200,
   },
+  // Tablets: keep the controls a thumb-friendly width instead of edge to edge.
+  actionsInner: { width: "100%", maxWidth: 480, alignSelf: "center", gap: authSpace[2] },
+  stepRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: authSpace[3] },
+  next: {
+    minHeight: 48,
+    minWidth: 120,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: authSpace[2],
+    paddingHorizontal: authSpace[5],
+    paddingVertical: authSpace[2],
+    borderRadius: 999,
+    backgroundColor: colors.navy900,
+  },
+  nextCompact: { minWidth: 104, paddingHorizontal: authSpace[4], flexShrink: 1 },
+  nextPressed: { opacity: 0.85 },
+  nextLabel: { ...authType.button, color: colors.white, flexShrink: 1 },
 });

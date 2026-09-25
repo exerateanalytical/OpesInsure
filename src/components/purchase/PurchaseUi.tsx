@@ -174,15 +174,6 @@ export function YesNoField({ label, value, onChange, error }: { label: string; v
   );
 }
 
-/** Small selectable pill (filters, status chips). */
-export function Pill({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} style={[s.pill, selected && s.pillOn]}>
-      <Text style={[s.pillText, selected && s.pillTextOn]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 export const purchaseStyles = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral700 },
@@ -228,8 +219,4 @@ const s = StyleSheet.create({
   dateRow: { flexDirection: "row", gap: space.x2 },
   flex: { flex: 1 },
   choice: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
-  pill: { minHeight: 36, paddingHorizontal: space.x3, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.neutral300, justifyContent: "center", backgroundColor: colors.white },
-  pillOn: { backgroundColor: colors.navy950, borderColor: colors.navy950 },
-  pillText: { ...type.label, color: colors.neutral700 },
-  pillTextOn: { color: colors.white },
 });

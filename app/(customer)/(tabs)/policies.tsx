@@ -2,11 +2,10 @@ import React, { useMemo, useState } from "react";
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
-import { AppHeader, Button, Screen, SectionTitle } from "@/components/ui";
+import { AppHeader, Button, Screen, SectionTitle , Chip } from "@/components/ui";
 import { PolicyCard } from "@/components/InsuranceCards";
 import { usePolicies } from "@/hooks/usePolicies";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
-import { Pill } from "@/components/purchase/PurchaseUi";
 import { PolicyBucket, policyStatusInfo } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 import { space } from "@/theme/tokens";
@@ -62,7 +61,7 @@ export default function Policies() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
               {FILTERS.map((key) => {
                 const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
-                return <Pill key={key} label={`${label}${counts[key] ? ` (${counts[key]})` : ""}`} selected={filter === key} onPress={() => setFilter(key)} />;
+                return <Chip key={key} label={`${label}${counts[key] ? ` (${counts[key]})` : ""}`} selected={filter === key} onPress={() => setFilter(key)} />;
               })}
             </ScrollView>
             <SectionTitle title={t("policiesYours")} />

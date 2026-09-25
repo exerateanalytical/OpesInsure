@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/security/secureStore";
 import { chunkKey, countKey, joinChunks, splitChunks } from "@/lib/chunking";
 
 /**

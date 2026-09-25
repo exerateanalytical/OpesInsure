@@ -1,7 +1,7 @@
 import React from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ExternalLink, Phone } from "lucide-react-native";
+import { ExternalLink, Mail, MapPin, Phone } from "lucide-react-native";
 import {
   AppHeader,
   Button,
@@ -14,13 +14,19 @@ import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi } from "@/api/extra";
 import { useTranslation } from "@/i18n";
-import { REGISTER_SOURCE_KEY } from "@/lib/institutions";
+import {
+  REGISTER_SOURCE_KEY,
+  groupBranchesByCity,
+  readDirectory,
+  telUrl,
+  verificationText,
+} from "@/lib/institutions";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function InsurerDetail() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => InstitutionsApi.show(id), [id]);
   const status = useSession((s) => s.status);
@@ -58,31 +64,20 @@ export default function InsurerDetail() {
               </View>
               <Text style={styles.title}>{insurer.short_name ?? insurer.name}</Text>
               {insurer.legal_name ? <Text style={styles.body}>{insurer.legal_name}</Text> : null}
-              {insurer.city || insurer.phone ? (
-                <Text style={styles.body}>
-                  {[insurer.city, insurer.phone].filter(Boolean).join(" · ")}
-                </Text>
-              ) : null}
               {insurer.canonical_id ? (
                 <Text style={styles.canonical}>{t("canonicalId", { id: insurer.canonical_id })}</Text>
               ) : null}
-              {insurer.phone ? (
-                <Button
-                  label={t("callCompany")}
-                  icon={Phone}
-                  variant="secondary"
-                  onPress={() => void Linking.openURL(`tel:${insurer.phone}`)}
-                />
-              ) : null}
-              {insurer.website ? (
-                <Button
-                  label={t("openWebsite")}
-                  icon={ExternalLink}
-                  variant="tertiary"
-                  onPress={() => void Linking.openURL(insurer.website!)}
-                />
-              ) : null}
+              {(() => {
+                const v = readDirectory(insurer).verification;
+                return v ? (
+                  <View style={styles.row}>
+                    <StatusChip label={verificationText(v, language, t)} tone={v.tone} />
+                  </View>
+                ) : null;
+              })()}
             </Card>
+
+            <DirectorySections insurer={insurer} />
 
             {insurer.product_families?.length ? (
               <>
@@ -123,7 +118,102 @@ export default function InsurerDetail() {
     </Screen>
   );
 }
+const open = (url: string | null) => {
+  if (url) void Linking.openURL(url).catch(() => undefined);
+};
+
+function DirectorySections({ insurer }: { insurer: Parameters<typeof readDirectory>[0] }) {
+  const { t } = useTranslation();
+  const d = readDirectory(insurer);
+  const groups = groupBranchesByCity(d.branches);
+  const hasContacts = d.phones.length || d.emails.length || d.website;
+  return (
+    <>
+      {d.hq ? (
+        <>
+          <SectionTitle title={t("headOffice")} />
+          <Card>
+            <View style={styles.row}>
+              <MapPin size={18} color={colors.neutral600} />
+              <View style={styles.copy}>
+                {d.hq.address ? <Text style={styles.offer}>{d.hq.address}</Text> : null}
+                {d.hq.city ? <Text style={styles.body}>{d.hq.city}</Text> : null}
+                {d.hq.po_box ? <Text style={styles.body}>{t("poBox", { box: d.hq.po_box })}</Text> : null}
+              </View>
+            </View>
+          </Card>
+        </>
+      ) : null}
+      {hasContacts ? (
+        <>
+          <SectionTitle title={t("contactDetails")} />
+          <Card>
+            {d.phones.map((p) =>
+              telUrl(p) ? (
+                <Button
+                  key={p}
+                  label={t("callNumber", { phone: p })}
+                  icon={Phone}
+                  variant="secondary"
+                  onPress={() => open(telUrl(p))}
+                />
+              ) : null,
+            )}
+            {d.emails.map((e) => (
+              <Button
+                key={e}
+                label={t("sendEmail", { email: e })}
+                icon={Mail}
+                variant="secondary"
+                onPress={() => open(`mailto:${e}`)}
+              />
+            ))}
+            {d.website ? (
+              <Button label={t("openWebsite")} icon={ExternalLink} variant="tertiary" onPress={() => open(d.website)} />
+            ) : null}
+          </Card>
+        </>
+      ) : null}
+      {groups.length ? (
+        <>
+          <SectionTitle title={t("branchNetwork", { count: d.branches.length })} />
+          {groups.map((g) => (
+            <Card key={g.city ?? "_other"}>
+              <Text style={styles.offer}>{g.city ?? t("cityUnknown")}</Text>
+              {g.branches.map((b, i) => (
+                <View key={`${b.name}-${i}`} style={styles.branch}>
+                  {b.name ? <Text style={styles.branchName}>{b.name}</Text> : null}
+                  {b.address ? <Text style={styles.body}>{b.address}</Text> : null}
+                  {b.phone && telUrl(b.phone) ? (
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={t("callNumber", { phone: b.phone })}
+                      onPress={() => open(telUrl(b.phone!))}
+                      style={styles.row}
+                    >
+                      <Phone size={16} color={colors.blue700} />
+                      <Text style={styles.link}>{b.phone}</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+            </Card>
+          ))}
+        </>
+      ) : null}
+      {d.sources.length ? (
+        <Text style={styles.source}>{t("directorySources", { sources: d.sources.join(", ") })}</Text>
+      ) : null}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 32 },
+  copy: { flex: 1, gap: 3 },
+  branch: { gap: 2, paddingTop: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral100 },
+  branchName: { ...type.label, color: colors.navy950 },
+  link: { ...type.label, color: colors.blue700 },
   logo: {
     width: 56,
     height: 56,

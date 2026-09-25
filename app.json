@@ -98,7 +98,8 @@
         },
         "platforms": [
             "ios",
-            "android"
+            "android",
+            "web"
         ],
         "splash": {
             "image": "./assets/icon.png",

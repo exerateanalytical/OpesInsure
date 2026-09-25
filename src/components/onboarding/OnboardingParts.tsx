@@ -164,7 +164,8 @@ const styles = StyleSheet.create({
   },
   footerBand: { borderRadius: 3, overflow: "hidden" },
 
-  dots: { flexDirection: "row", justifyContent: "center", gap: 6, marginVertical: authSpace[3] },
+  // Lives in the welcome action bar (left of Next), so no outer margin.
+  dots: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: authColors.ice200 },
   dotActive: { backgroundColor: colors.terracotta500, width: 22 },
 });

@@ -148,6 +148,24 @@ export type Institution = {
   reference_year?: number | null;
   regulatory_status?: string | null;
   licensed?: boolean;
+  // Institutional directory (read via readDirectory(); every field nullable).
+  contacts?: { phones?: string[]; emails?: string[]; website?: string | null; po_box?: string | null } | null;
+  head_office?: { city?: string | null; address?: string | null; po_box?: string | null } | null;
+  /** Draft name of head_office; still accepted. */
+  hq?: { city?: string | null; address?: string | null; po_box?: string | null } | null;
+  branch_count?: number | null;
+  verification_label?: { en?: string | null; fr?: string | null } | null;
+  verified_at?: string | null;
+  directory_id?: string | null;
+  branches?: {
+    name?: string | null;
+    type?: string | null;
+    city?: string | null;
+    address?: string | null;
+    phone?: string | null;
+  }[];
+  verification_status?: string | null;
+  sources?: unknown[];
 };
 export type InsuranceClassRow = {
   id: string;
