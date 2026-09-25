@@ -32,7 +32,7 @@ final class ImportBatchController
 
     public function index(Request $r): JsonResponse
     {
-        $q = ImportBatch::where('tenant_id', $this->tenant->id())->when($r->query('target'), fn ($q, $t) => $q->where('target', $t))
+        $q = ImportBatch::where('tenant_id', $this->tenant->id())->where('pipeline', 'GENERIC')->when($r->query('target'), fn ($q, $t) => $q->where('target', $t))
             ->when($r->query('status'), fn ($q, $s) => $q->where('status', $s))->latest()->limit(100);
 
         return response()->json(['data' => $q->get()->map(fn ($b) => $this->present($b, false))]);
@@ -91,7 +91,7 @@ final class ImportBatchController
 
     private function find(string $id): ImportBatch
     {
-        return ImportBatch::where('tenant_id', $this->tenant->id())->whereKey($id)->firstOrFail();
+        return ImportBatch::where('tenant_id', $this->tenant->id())->where('pipeline', 'GENERIC')->whereKey($id)->firstOrFail();
     }
 
     private function present(ImportBatch $b, bool $full = true): array

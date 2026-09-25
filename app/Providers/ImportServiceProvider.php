@@ -20,6 +20,8 @@ final class ImportServiceProvider extends ServiceProvider
 {
     public const HANDLERS = [
         ImportPipeline::APPROVAL_ACTION => ImportBatchApprovalHandler::class,
+        // REQ-IMP-002 legacy migration commit approval.
+        \App\Application\Import\Legacy\LegacyMigrationPipeline::APPROVAL_ACTION => \App\Application\Import\Legacy\LegacyMigrationApprovalHandler::class,
         // entity.merge is shared: the router sends party merges to PartyMergeService and the rest to MasterDataMergeService.
         MasterDataMergeService::APPROVAL_ACTION => \App\Application\Customers\Matching\EntityMergeApprovalRouter::class,
     ];

@@ -291,6 +291,9 @@ final class DomainEventCatalogue
             $d('technical.actuarial_import.rejected', 'technical_actuarial_import', 'Actuarial import rejected.', [], [], true),
             $d('technical.upr.posted', 'technical_upr_posting', 'Period-end UPR computed and its movement posted to the ledger (REQ-ACC-004).', [], [], true),
             // Batch 9-1 — REQ-OBL-001 (App\Application\Finance\Obligations\ObligationService)
+            // Batch 17 B5 — REQ-IMP-002 legacy migration (App\Application\Import\Legacy\LegacyMigrationPipeline)
+            $d('legacy_migration.committed', 'import_batch', 'Approved legacy migration batch committed (records created, opening balances posted or CONFIG_REQUIRED).', [], [], true),
+            $d('legacy_migration.rolled_back', 'import_batch', 'Uncommitted legacy migration batch discarded.', [], [], true),
             $d('finance.obligation.created', 'financial_obligation', 'Financial obligation (receivable / payable) raised.', [], [], true),
             $d('finance.obligation.settled', 'financial_obligation', 'Financial obligation fully settled.', [], [], true),
             $d('finance.obligation.reopened', 'financial_obligation', 'A settlement on a financial obligation was reversed (obligation reopened).', [], [], true),
