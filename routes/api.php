@@ -666,3 +666,22 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $x = \App\Application\Claims\Adjusters\Http\ClaimExpertAssignmentController::class;
+    $a = \App\Application\Claims\Adjusters\Http\AdjusterAssignmentController::class;
+    Route::get('claims/{id}/assignments', [$x, 'index'])->middleware('permission:claims.view')->whereUuid('id');
+    Route::post('claims/{id}/assignments/experts', [$x, 'store'])->middleware('permission:claims.experts.assign')->whereUuid('id');
+    Route::get('claims/{id}/assignments/{assignment}', [$x, 'show'])->middleware('permission:claims.view')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/report/accept', [$x, 'acceptReport'])->middleware('permission:claims.experts.review')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/report/return', [$x, 'returnReport'])->middleware('permission:claims.experts.review')->whereUuid(['id', 'assignment']);
+    Route::post('claims/{id}/assignments/{assignment}/cancel', [$x, 'cancel'])->middleware('permission:claims.experts.assign')->whereUuid(['id', 'assignment']);
+    Route::get('adjuster/assignments', [$a, 'index'])->middleware('permission:claims.experts.work');
+    Route::get('adjuster/assignments/{assignment}', [$a, 'show'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/accept', [$a, 'accept'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/decline', [$a, 'decline'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/inspection', [$a, 'scheduleInspection'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/inspected', [$a, 'recordInspection'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+    Route::post('adjuster/assignments/{assignment}/report', [$a, 'submitReport'])->middleware('permission:claims.experts.work')->whereUuid('assignment');
+});
+// End Agent C9
