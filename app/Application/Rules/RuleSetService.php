@@ -174,6 +174,13 @@ final class RuleSetService
                 if (! in_array($outcome['result'], ['BLOCK', 'WARN'], true)) {
                     throw ValidationException::withMessages(["rules.{$i}.outcome.result" => 'Completeness outcome must be BLOCK or WARN.']);
                 }
+            } elseif ($domain === 'DOCUMENTS') {
+                $outcome['result'] = strtoupper((string) ($outcome['result'] ?? 'REQUIRE'));
+                $docCodes = $outcome['document_codes'] ?? null;
+                if (! in_array($outcome['result'], ['REQUIRE', 'WAIVE'], true) || ! is_array($docCodes) || $docCodes === [] || array_filter($docCodes, fn ($c) => ! is_string($c) || $c === '') !== []) {
+                    throw ValidationException::withMessages(["rules.{$i}.outcome" => 'A documents rule needs result REQUIRE or WAIVE and a non-empty document_codes list.']);
+                }
+                $outcome['document_codes'] = array_values(array_unique($docCodes));
             }
             if (blank($outcome['reason_code'] ?? null)) {
                 $outcome['reason_code'] = $code;

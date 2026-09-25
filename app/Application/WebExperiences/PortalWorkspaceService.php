@@ -1,7 +1,7 @@
 <?php
 namespace App\Application\WebExperiences;
 
-use App\Models\{MarketplacePublication,PortalWorkspace,SavedComparison};
+use App\Models\{MarketplacePublication,PortalWorkspace};
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -38,13 +38,5 @@ final class PortalWorkspaceService
         }
         $publication->forceFill(['status'=>'PUBLISHED','approved_by'=>$actor->getKey(),'approved_at'=>now(),'version'=>$expectedVersion + 1])->save();
         return $publication->refresh();
-    }
-
-    public function saveComparison(?string $tenantId, User $user, array $data): SavedComparison
-    {
-        return SavedComparison::query()->updateOrCreate(
-            ['user_id'=>$user->getKey(),'quote_request_id'=>$data['quote_request_id']],
-            ['tenant_id'=>$tenantId,'selected_offer_ids'=>$data['selected_offer_ids'],'expires_at'=>$data['expires_at']]
-        );
     }
 }
