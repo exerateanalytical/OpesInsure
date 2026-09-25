@@ -21,3 +21,9 @@ Artisan::command('policies:premium-cover-sweep', function (App\Application\Polic
     $this->info("Evaluated: {$s['evaluated']}. Grace: {$s['grace']}. Defaulted: {$s['defaulted']}. Suspended: {$s['suspended']}. Lapsed: {$s['lapsed']}.");
 })->purpose('Apply premium-cover rules to overdue instalments: grace, suspension on default, lapse.');
 Schedule::command('policies:premium-cover-sweep')->dailyAt('00:45')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+// REQ-ACC-003 (agent 10-8): open the current + next monthly accounting period for every period-controlled tenant.
+Artisan::command('ledger:open-periods', function (App\Application\Ledger\Periods\AccountingPeriodService $periods) {
+    $this->info('Periods opened: '.$periods->openUpcoming().'.');
+})->purpose('Automatically open the next accounting period per tenant.');
+Schedule::command('ledger:open-periods')->dailyAt('00:05')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();

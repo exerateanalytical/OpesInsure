@@ -7,8 +7,9 @@ final class LedgerService
 {
     public function post(?string $tenantId,string $referenceType,string $referenceId,string $currency,array $lines,string $correlationId):string
     {
+        $accountingDate=Periods\PeriodGuard::postingDate($tenantId,now());
         $domainLines=array_map(fn($x)=>new JournalLine($x['account_id'],(int)($x['debit_minor']??0),(int)($x['credit_minor']??0)),$lines);new Journal($currency,$domainLines);$id=(string)Str::uuid();
-        DB::transaction(function()use($id,$tenantId,$referenceType,$referenceId,$currency,$lines,$correlationId){DB::table('journals')->insert(['id'=>$id,'tenant_id'=>$tenantId,'reference_type'=>$referenceType,'reference_id'=>$referenceId,'currency'=>$currency,'status'=>'POSTED','correlation_id'=>$correlationId,'posted_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);foreach($lines as $line)DB::table('journal_lines')->insert(['id'=>(string)Str::uuid(),'journal_id'=>$id,'account_id'=>$line['account_id'],'debit_minor'=>$line['debit_minor']??0,'credit_minor'=>$line['credit_minor']??0,'dimensions'=>json_encode($line['dimensions']??[]),'created_at'=>now(),'updated_at'=>now()]);});return $id;
+        DB::transaction(function()use($id,$accountingDate,$tenantId,$referenceType,$referenceId,$currency,$lines,$correlationId){DB::table('journals')->insert(['id'=>$id,'tenant_id'=>$tenantId,'reference_type'=>$referenceType,'reference_id'=>$referenceId,'currency'=>$currency,'status'=>'POSTED','correlation_id'=>$correlationId,'posted_at'=>now(),'accounting_date'=>$accountingDate,'created_at'=>now(),'updated_at'=>now()]);foreach($lines as $line)DB::table('journal_lines')->insert(['id'=>(string)Str::uuid(),'journal_id'=>$id,'account_id'=>$line['account_id'],'debit_minor'=>$line['debit_minor']??0,'credit_minor'=>$line['credit_minor']??0,'dimensions'=>json_encode($line['dimensions']??[]),'created_at'=>now(),'updated_at'=>now()]);});return $id;
     }
     public function reverse(string $journalId,string $correlationId):string
     {
