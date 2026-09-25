@@ -82,7 +82,7 @@ final class PremiumCoverEvaluator
     {
         return [
             'outcome' => $outcome, 'cover_active' => $active,
-            'rule' => $rule ? ['id' => $rule->id, 'code' => $rule->code, 'is_exception' => (bool) $rule->is_exception, 'grace_days' => $rule->grace_days,
+            'rule' => $rule ? ['id' => $rule->id, 'code' => $rule->code, 'is_exception' => (bool) $rule->is_exception, 'grace_days' => $rule->grace_days, 'lapse_after_days' => $rule->lapse_after_days ?? null,
                 'legal_basis' => $rule->legal_basis, 'verification_status' => $rule->verification_status] : null,
             'missing_facts' => $missing, 'trace' => $trace,
         ];

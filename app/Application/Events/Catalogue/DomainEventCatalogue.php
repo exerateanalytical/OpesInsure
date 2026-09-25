@@ -157,6 +157,15 @@ final class DomainEventCatalogue
             $d('policy.cancellation.reviewed', 'policy', 'Policy cancellation reviewed, awaiting decision.', [], [], true),
             $d('policy.cancellation.rejected', 'policy', 'Policy cancellation rejected; policy back to ACTIVE.', [], [], true),
             $d('policy.cancelled', 'policy', 'Policy cancelled: refund requested, documents revoked (WF-045).', ['PolicyCancelled'], [], true),
+            // REQ-POL-008 / REQ-POL-010 (App\Application\Policies\Lapse — premium-cover sweep + recovery, WF-083)
+            $d('policy.premium.grace_started', 'policy', 'Overdue instalment entered its premium-cover grace window.', [], [], true),
+            $d('policy.premium.defaulted', 'policy', 'Overdue instalment defaulted (grace elapsed or NO_COVER / COVER_SUSPENDED rule).', [], [], true),
+            $d('policy.premium.suspended', 'policy', 'Policy suspended on premium default (SUSPEND_ON_DEFAULT).', [], [], true),
+            $d('policy.premium.lapsed', 'policy', 'Defaulted instalment lapsed after the rule lapse_after_days.', [], [], true),
+            $d('policy.premium.instalment_settled', 'policy', 'Instalment paid in full or waived.', [], [], true),
+            $d('policy.recovery.requested', 'policy', 'Recovery opened for a suspended / expired / lapsed policy.', [], [], true),
+            $d('policy.recovery.approved', 'policy', 'Recovery approved (maker-checker); policy active again.', [], [], true),
+            $d('policy.recovery.rejected', 'policy', 'Recovery case rejected.', [], [], true),
             $d('privacy.consent.changed', 'consent', 'Privacy consent changed.', [], [], true),
             $d('proposal.created', 'proposal', 'Proposal created.', [], [], true),
             // REQ-PRP-001 proposal machine (App\Application\Underwriting\ProposalMachine, published by the StateMachineEngine)
