@@ -295,7 +295,8 @@ final class CaseTypeCatalogue
             $t[] = [
                 'event' => $tr['event'], 'from' => (array) $tr['from'], 'to' => $tr['to'],
                 'actors' => $tr['actors'] ?? [], 'permission' => $tr['permission'] ?? null,
-                'guards' => ! empty($tr['requires_decision']) ? [self::DECISION_GUARD] : [],
+                // Named guards registered by CaseMachine (e.g. REQ-CPL-001 complaint facts) plus the decision guard.
+                'guards' => array_values(array_unique(array_merge(! empty($tr['requires_decision']) ? [self::DECISION_GUARD] : [], array_map('strval', (array) ($tr['guards'] ?? []))))),
                 'domain_event' => 'case.transitioned',
                 'failure_path' => ! empty($tr['requires_decision']) ? 'stay; record a decision first' : null,
             ];
