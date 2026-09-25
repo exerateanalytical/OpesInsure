@@ -483,16 +483,45 @@ return [
 
     // Batch 7D — issuance operations (routes/issuance_ops.php): REQ-POL-004 issuance exception queue, REQ-POL-007 sticker custody chain.
     'issuance_ops' => [
-        'policies.issuance_queue.view' => ['description' => 'List failed / paid-not-issued issuance exceptions and their trail.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE_MANAGER']],
-        'policies.issuance_queue.manage' => ['description' => 'Scan for paid-not-issued payments, retry the issuance request, escalate an exception.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'OPERATIONS_MANAGER']],
-        'policies.issuance_queue.resolve' => ['description' => 'Close an issuance exception (refund requested / resolved manually) with notes.', 'suggested_roles' => ['CARRIER_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE_MANAGER']],
-        'stickers.view' => ['description' => 'Sticker inventory by custody level, custody history, handovers.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
-        'stickers.handover' => ['description' => 'Initiate, accept, reject or cancel a sticker handover (receiver acknowledges; never the initiator).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
-        'stickers.allocate' => ['description' => 'Allocate stickers down the chain broker → branch → agent (agents may only return their own).', 'suggested_roles' => ['BROKER_ADMIN', 'BRANCH_MANAGER']],
+        'policies.issuance_queue.view' => ['description' => 'List failed / paid-not-issued issuance exceptions and their trail.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'BRANCH_MANAGER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'policies.issuance_queue.manage' => ['description' => 'Scan for paid-not-issued payments, retry the issuance request, escalate an exception.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'policies.issuance_queue.resolve' => ['description' => 'Close an issuance exception (refund requested / resolved manually) with notes.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'stickers.view' => ['description' => 'Sticker inventory by custody level, custody history, handovers.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.handover' => ['description' => 'Initiate, accept, reject or cancel a sticker handover (receiver acknowledges; never the initiator).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.allocate' => ['description' => 'Allocate stickers down the chain broker → branch → agent (agents may only return their own).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER']],
         'stickers.allocate.carrier' => ['description' => 'Release carrier sticker stock to a broker, or take it back.', 'suggested_roles' => ['CARRIER_ADMIN']],
-        'stickers.reconcile' => ['description' => 'Record a physical sticker count against the custody ledger (missing / damaged).', 'suggested_roles' => ['BROKER_ADMIN', 'BRANCH_MANAGER', 'CARRIER_ADMIN']],
-        'stickers.assign' => ['description' => 'Assign an in-stock sticker to an in-force motor policy.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT']],
-        'stickers.assign.any' => ['description' => 'Assign a sticker held by another agent.', 'suggested_roles' => ['BROKER_ADMIN']],
+        'stickers.reconcile' => ['description' => 'Record a physical sticker count against the custody ledger (missing / damaged).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER']],
+        'stickers.assign' => ['description' => 'Assign an in-stock sticker to an in-force motor policy.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.assign.any' => ['description' => 'Assign a sticker held by another agent.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR']],
+        'stickers.receive' => ['description' => 'Receive a printed sticker batch into carrier stock (CertificateController::receiveBatch).', 'suggested_roles' => ['CARRIER_ADMIN']],
+    ],
+
+    // Batch 7 — provider master / networks / tariffs (routes/api.php providers group). Provider master data.
+    'providers' => [
+        'providers.view' => ['description' => 'List and read healthcare providers and their credentialing state.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'providers.manage' => ['description' => 'Create and edit healthcare providers, sites and contacts.', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'providers.credential' => ['description' => 'Move a provider through credentialing (verify, suspend, reinstate).', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'provider_networks.view' => ['description' => 'Read provider networks, memberships and tariffs.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'provider_networks.manage' => ['description' => 'Maintain provider networks, memberships and draft tariffs (maker).', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'provider_tariffs.approve' => ['description' => 'Approve a provider tariff (checker; never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'CLAIMS_MANAGER']],
+    ],
+
+    // Batch 7 — coinsurance arrangements and apportionment (routes/api.php coinsurance group).
+    'coinsurance' => [
+        'coinsurance.view' => ['description' => 'Read coinsurance arrangements, shares and apportionments.', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER', 'CARRIER_SUPER_ADMIN', 'REINSURANCE_OFFICER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'coinsurance.manage' => ['description' => 'Create or terminate a coinsurance arrangement and its participant shares (maker).', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER']],
+        'coinsurance.approve' => ['description' => 'Activate a coinsurance arrangement (checker; never the maker).', 'suggested_roles' => ['SENIOR_UNDERWRITER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'coinsurance.apportion' => ['description' => 'Apportion premium / claims across coinsurance participants.', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+    ],
+
+    // Batch 7 — reinsurance reinsurers, treaties and cessions (routes/api.php reinsurance group).
+    'reinsurance' => [
+        'reinsurance.reinsurers.manage' => ['description' => 'Register reinsurers / reinsurance brokers and change their status.', 'suggested_roles' => ['REINSURANCE_OFFICER']],
+        'reinsurance.treaties.view' => ['description' => 'Read treaties and treaty versions.', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.treaties.manage' => ['description' => 'Create treaties and draft treaty versions (maker).', 'suggested_roles' => ['REINSURANCE_OFFICER']],
+        'reinsurance.treaties.approve' => ['description' => 'Activate a treaty version (checker; never the maker).', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.cessions.view' => ['description' => 'Read policy cessions.', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.cessions.calculate' => ['description' => 'Calculate and record the cessions of a policy.', 'suggested_roles' => ['REINSURANCE_OFFICER']],
     ],
 
     'business_data' => [
