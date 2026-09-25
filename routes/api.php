@@ -456,3 +456,11 @@ Route::prefix('v1/signature-requests')->middleware(['auth:api', 'json.api', 'thr
     Route::post('{request}/sign', [$g, 'sign'])->whereUuid('request');
     Route::post('{request}/decline', [$g, 'decline'])->whereUuid('request');
 });
+// Batch 9-8 — REQ-PAY-015 account statements (customer / broker / agent / carrier), derived, read-only; ?format=pdf for PDF.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $st = \App\Application\Finance\Statements\Http\AccountStatementController::class;
+    Route::get('finance/statements/{subjectType}/{subject}', [$st, 'show'])->middleware('permission:statements.read')->whereIn('subjectType', ['customer', 'broker', 'agent', 'carrier'])->whereUuid('subject');
+    Route::get('finance/partner-statements/{statement}', [$st, 'partnerStatement'])->middleware('permission:statements.read')->whereUuid('statement');
+    Route::get('mobile/statements', [$st, 'mine'])->middleware('throttle:30,1');
+});
+// End Batch 9-8
