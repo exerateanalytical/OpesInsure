@@ -101,6 +101,8 @@ Route::prefix('v1')->group(function (): void {
             ]]);
         })->middleware('throttle:30,1');
     }
+    // REQ-DUP-015: one PublicVerificationService; public/verify is canonical, the two below are aliases.
+    Route::post('public/verify', \App\Interfaces\Http\Controllers\Api\V1\Certificates\PublicVerifyController::class)->middleware('throttle:20,1');
     Route::post('public/certificates/verify', [CertificateController::class, 'verify'])->middleware('throttle:30,1');
     // Reference-only insurance check (no token): discloses validity, insurer and
     // product class only. Tighter limit than certificate verify to deter enumeration.
