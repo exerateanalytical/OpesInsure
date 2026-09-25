@@ -633,3 +633,11 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('broker-settlements/{batch}/reconcile', [$s, 'reconcile'])->middleware('permission:settlement.reconcile')->whereUuid('batch');
 });
 // End Batch 10-4
+// Agent 10-10 — REQ-ACC-005 finance exception centre (FIN-006) and finance reports registry (FIN-024), read-only.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::get('exception-centre', [\App\Application\Finance\ExceptionCentre\Http\FinanceExceptionCentreController::class, 'index'])->middleware('permission:finance.exceptions.view');
+    $fr = \App\Application\Finance\Reports\Http\FinanceReportController::class;
+    Route::get('reports', [$fr, 'index'])->middleware('permission:finance.reports.view');
+    Route::get('reports/{report}', [$fr, 'show'])->middleware('permission:finance.reports.view')->where('report', '[Ff][Rr]-[0-9]{2}');
+});
+// End Agent 10-10

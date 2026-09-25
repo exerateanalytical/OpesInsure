@@ -568,12 +568,43 @@ return [
         'policy.premium.waive' => ['description' => 'Waive an overdue premium instalment.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
     ],
 
+    // Batch 9 money chain (obligations, allocations, premium status, refunds, clearing, cashier, FX, statements) and
+    // Batch 10-10 exception centre + finance reports. Maker vs checker: approve / reconcile / reverse / close / rule and
+    // FX changes sit with CARRIER_SUPER_ADMIN, BRANCH_MANAGER (cashier supervisor) and the FINANCE_MANAGER / FINANCE_ADMIN wildcards.
+    'finance_money_chain' => [
+        'finance.obligations.view' => ['description' => 'Read financial obligations, aging and instalment schedules.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'BROKER_ADMIN', 'BRANCH_MANAGER']],
+        'finance.obligations.manage' => ['description' => 'Write off or cancel an obligation (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'payments.allocations.read' => ['description' => 'Read payment allocations and the active allocation rule.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN']],
+        'payments.allocations.manage' => ['description' => 'Allocate a payment across premium components / obligations (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'payments.allocations.reverse' => ['description' => 'Reverse an allocation run (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'finance.allocation_rules.manage' => ['description' => 'Publish a new allocation rule version.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'premium_status.read' => ['description' => 'Read a policy premium status and components.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_STAFF', 'CUSTOMER_SERVICE', 'BROKER_STAFF', 'BROKER_SUPERVISOR', 'BROKER_ADMIN', 'BRANCH_MANAGER']],
+        'premium_components.manage' => ['description' => 'Record premium components (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'premium_components.close' => ['description' => 'Close / waive a premium component (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'refund.view' => ['description' => 'Read the refund queue.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'CUSTOMER_SERVICE']],
+        'refund.review' => ['description' => 'Review a calculated refund.', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'refund.pay' => ['description' => 'Record the payout of an approved refund.', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'refund.reconcile' => ['description' => 'Reconcile a paid refund against the bank / provider (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'clearing.view' => ['description' => 'Read mobile-money clearing batches and suspense.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN']],
+        'clearing.manage' => ['description' => 'Create clearing batches, attach payments, record settlement (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'clearing.reconcile' => ['description' => 'Reconcile a settled clearing batch (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'cashier.sessions.view' => ['description' => 'Read cashier sessions and collections.', 'suggested_roles' => ['FINANCE_OFFICER', 'BRANCH_MANAGER', 'CARRIER_SUPER_ADMIN']],
+        'cashier.sessions.operate' => ['description' => 'Open a cashier session, collect cash / cheques, close with a count.', 'suggested_roles' => ['FINANCE_OFFICER', 'BRANCH_MANAGER']],
+        'cashier.sessions.approve' => ['description' => 'Approve or reject a closed cashier session (supervisor; never the cashier).', 'suggested_roles' => ['BRANCH_MANAGER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'fx.rates.view' => ['description' => 'Read FX rates.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER', 'BRANCH_MANAGER']],
+        'fx.rates.manage' => ['description' => 'Record a new (immutable) FX rate.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'statements.read' => ['description' => 'Read customer / broker / agent / carrier account statements.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'BROKER_ADMIN']],
+        'finance.exceptions.view' => ['description' => 'Read the finance exception centre.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'FINANCE_MANAGER']],
+        'finance.reports.view' => ['description' => 'Run the finance reports (JSON / CSV).', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER', 'FINANCE_MANAGER']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
             'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries', 'rating',
+            'finance', 'premium_status', 'premium_components', 'clearing', 'cashier',
         ],
         'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'attribution.transfer'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],
