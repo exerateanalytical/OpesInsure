@@ -62,3 +62,8 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - KYC defaults (UNVERIFIED, please confirm): EDD is triggered by a HIGH risk rating or any PEP/sanctions match; source of funds/wealth are required whenever EDD applies. All risk weights, bands and refresh/rescreen periods are empty until you set them.
 - Timestamp correction: after the next deploy I'll run the read-only affected-rows report on production and send it to you before any correction (the local run found 1,196 affected values in 55 tables).
 - Case families (8, RECONSTRUCTED_PENDING_OWNER, because the blueprint never lists its "8 case types"): Underwriting, Quotation, Claims, Complaints, Recovery & litigation, Compliance & KYC, Data quality, Operations. Confirm or replace.
+
+## Q8 — Canonical document specification (2026-09-25)
+- Document numbering conflict: the catalogue's DOC-### IDs come from your 220 register and differ from the canonical specification's DOC-### for 214 of 220 documents (e.g. spec DOC-036 = Motor Attestation, catalogue DOC-036 = Premium Schedule). Both are kept and linked. Which numbering is canonical for external use?
+- 17 spec documents have no catalogue type yet (DOC-014, 015, 138–140, 169, 179, 185, 196, 199, 200, 209, 213, 214, 218–220). Should they be added?
+- Document signing key: S3+ documents record their signature as CONFIG_REQUIRED until a platform Ed25519 key is provisioned. Generate one on the server (never committed)?

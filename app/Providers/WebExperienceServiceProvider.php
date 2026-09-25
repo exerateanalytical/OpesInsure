@@ -27,5 +27,8 @@ final class WebExperienceServiceProvider extends ServiceProvider
         Gate::before(fn ($user, string $ability, array $arguments = []) => $user instanceof User
             ? app(PortalAuthorization::class)->before($user, $ability, $arguments)
             : null);
+
+        // Owner decision D3: Lucide icons across every panel (central mapping, see LucideIcons).
+        \Filament\Facades\Filament::serving(fn () => \App\Filament\Shared\LucideIcons::apply());
     }
 }

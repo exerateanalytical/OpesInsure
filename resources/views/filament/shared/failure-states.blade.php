@@ -1,7 +1,11 @@
-{{-- SSR §30: explicit known-failure banners (never a generic error). $states: list<App\Application\WebExperiences\FailureState> --}}
+{{-- SSR §30 + canonical handoff "Required component states": explicit state banners, never a generic error.
+     $states: list<App\Application\WebExperiences\FailureState>. Danger/warning are announced (role=alert), others are status. --}}
 @foreach ($states as $state)
-    <div role="alert" data-failure="{{ $state->value }}" style="margin-top:.75rem;padding:.75rem 1rem;border-radius:.75rem;border:1px solid {{ $state->tone() === 'danger' ? '#E8A9AE' : '#EAC66F' }};background:{{ $state->tone() === 'danger' ? '#FDEDEF' : '#FFF6DD' }};color:{{ $state->tone() === 'danger' ? '#98272E' : '#764B00' }}">
-        <strong>{{ $state->title() }}</strong>
-        <div>{{ $state->message() }}</div>
+    <div class="oi-state oi-state--{{ $state->tone() }}" role="{{ in_array($state->tone(), ['danger', 'warning'], true) ? 'alert' : 'status' }}" data-failure="{{ $state->value }}">
+        {{ svg($state->icon(), '', ['aria-hidden' => 'true', 'focusable' => 'false']) }}
+        <div>
+            <p class="oi-state__title">{{ $state->title() }}</p>
+            <p class="oi-state__body">{{ $state->message() }}</p>
+        </div>
     </div>
 @endforeach

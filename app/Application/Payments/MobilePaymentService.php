@@ -105,7 +105,9 @@ final class MobilePaymentService
     {
         $intent = PaymentIntentRecord::findOrFail($paymentId);
         $receipt = $this->receiptData($intent, false);
-        $bytes = Pdf::loadView('pdf.payment-receipt', ['r' => $receipt])->setPaper('a5')->output();
+        $carrier = $intent->proposal?->offer?->carrier;
+        $letterhead = $carrier ? \App\Application\Documents\Letterhead\LetterheadResolver::forDocument('INSURER', (string) ($carrier->party?->display_name ?? 'Insurer'), $carrier->id, $carrier->party?->display_name, null, null) : null;
+        $bytes = Pdf::loadView('pdf.payment-receipt', ['r' => $receipt, 'letterhead' => $letterhead])->setPaper('a5')->output();
 
         return response($bytes, 200, [
             'Content-Type' => 'application/pdf',

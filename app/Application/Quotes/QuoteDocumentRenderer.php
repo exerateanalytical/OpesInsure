@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Quotes;
 
+use App\Application\Documents\Letterhead\LetterheadResolver;
 use App\Models\Quote;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -24,12 +25,19 @@ final class QuoteDocumentRenderer
                 .$e($money($o->premium_minor, $o->currency)).'</td><td class="n">'.$e($money($o->tax_minor + $o->fee_minor, $o->currency)).'</td><td class="n"><b>'
                 .$e($money($o->total_minor, $o->currency)).'</b></td><td>'.$e($o->valid_until?->format('Y-m-d')).'</td></tr>';
         }
-        $html = '<html><head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:4px}.n{text-align:right}</style></head><body>'.\App\Application\Documents\DemoDocumentMark::html()
+        // Shared letterhead: the quoting organisation (broker tenant) or the platform; text wordmark when no artwork.
+        $tenant = $quote->tenant_id ? \App\Models\Tenant::find($quote->tenant_id) : null;
+        $letterhead = $tenant?->type === 'BROKER'
+            ? LetterheadResolver::forDocument('BROKER', (string) $tenant->legal_name, null, null, $tenant->id, null)
+            : LetterheadResolver::forDocument('PLATFORM', 'OpesInsure', null, null, null, null);
+        $header = view('pdf._letterhead', ['letterhead' => $letterhead])->render();
+        $footer = view('pdf._letterhead_footer', ['letterhead' => $letterhead])->render();
+        $html = '<html><head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:4px}.n{text-align:right}</style></head><body>'.\App\Application\Documents\DemoDocumentMark::html().$header
             .'<h2>Devis / Quotation '.$e($quote->quote_number ?? $quote->id).'</h2>'
             .'<p>Client / Customer: '.$e($quote->party?->display_name).'<br>Branche / Line: '.$e($quote->line_code)
             .'<br>Valide jusqu&#39;au / Valid until: '.$e($quote->expires_at?->format('Y-m-d H:i T')).'</p>'
             .'<table><tr><th>#</th><th>Assureur / Insurer</th><th>Produit / Product</th><th>Prime nette / Net premium</th><th>Taxes &amp; frais / Taxes &amp; fees</th><th>Total</th><th>Validité / Valid until</th></tr>'
-            .$rows.'</table><p>Ce devis ne vaut pas attestation d&#39;assurance. / This quotation is not a certificate of insurance.</p></body></html>';
+            .$rows.'</table><p>Ce devis ne vaut pas attestation d&#39;assurance. / This quotation is not a certificate of insurance.</p>'.$footer.'</body></html>';
 
         return Pdf::loadHTML($html)->output();
     }

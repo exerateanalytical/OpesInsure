@@ -69,3 +69,9 @@ Stored at database/data/workflow_institutional_data_master_2026.json.
 - Rule: PENDING_SOURCE, CONFIG_REQUIRED, UNVERIFIED and DEMO_ONLY are not production values. Support them; never invent missing legal, regulatory, financial, tariff, authorization, SLA or KYC data.
 - Case families are now the owner's 10: KYC, UNDERWRITING, CLAIMS, FRAUD_REVIEW, COMPLAINT, FINANCE_EXCEPTION, PROVIDER, REINSURANCE, REGULATORY, OPERATIONS. They replace the 8 reconstructed families.
 - Beneficial ownership rule: MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS (VERIFIED_RULE).
+
+## UI decisions (owner, 2026-09-25)
+- D1 yes: move the public site to the canonical UI (Inter, blue #1769E0 for interactive, gold accent only, blue focus ring). The owner is supplying a folder of further public-site designs; follow them.
+- D2 yes: retire the placeholder /portal/{portal} page (redirect to the right panel).
+- D3 yes: adopt Lucide icons (composer package allowed).
+- D4 yes: build the missing broker and carrier web sections (contracts, bordereaux, settlements, receivables, staff), each with a tenant and permission review.

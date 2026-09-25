@@ -1,108 +1,219 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
-@source '../../../../app/Filament/Admin/**/*.php';
-@source '../../../../resources/views/filament/admin/**/*.blade.php';
-@source '../../../../resources/views/filament/auth/**/*.blade.php';
-
-/* Manrope Variable — self-hosted per v3 spec §5.1/§21 (no external font service calls) */
-@font-face{font-family:'Manrope Variable';font-style:normal;font-display:swap;font-weight:200 800;src:url('/fonts/manrope/manrope-latin-ext-variable.woff2') format('woff2-variations');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
-@font-face{font-family:'Manrope Variable';font-style:normal;font-display:swap;font-weight:200 800;src:url('/fonts/manrope/manrope-latin-variable.woff2') format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@source '../../../../app/Filament/**/*.php';
+@source '../../../../resources/views/filament/**/*.blade.php';
 
 /* ==========================================================================
-   OpesInsure v3 — Cameroon Modern Assurance design tokens
-   Source: OpesInsure_Premium_Visual_Identity_and_Dashboard_Specification_v3.docx
-   This file supersedes the v1 token set. Do not reintroduce --oi-* v1 names
-   or the Wave10 portal shell's teal/ink token set (see
-   docs/design/ROUTE_TO_SCREEN_REGISTER.md, style conflict register).
+   OpesInsure canonical web design tokens — ONE token set for every panel
+   (admin, insurer, broker).
+   Source: OpesInsure_Canonical_Implementation_Specification_v1.json →
+   ui_implementation_handoff ("Authoritative visual direction"). Supersedes
+   the v3 token set (#155FCC blue, brass, Manrope) — see
+   docs/spec/canonical/UI_GAP_AUDIT.md §A. Do not add aliases: extend these.
+   Font: Inter Variable, local WOFF2 already shipped by Filament at
+   /fonts/filament/filament/inter (font-display:swap, subsetted by
+   unicode-range), with system fallbacks. No external font service.
    ========================================================================== */
 :root{
-  /* institutional brand */
-  --oi-obsidian-1000:#04131F;
-  --oi-navy-950:#071A2B;
-  --oi-navy-850:#0E3048;
-  --oi-blue-650:#155FCC;
-  --oi-blue-550:#2F78E6;
-  --oi-blue-100:#DCEAFF;
-  --oi-blue-50:#EFF5FF;
-  --oi-brass-650:#A96F13;
-  --oi-brass-500:#D5A13C;
-  --oi-brass-100:#F3DFAF;
-  --oi-brass-50:#FCF7EA;
+  /* brand */
+  --oi-navy-950:#071A2B;      /* primary text, institutional navigation */
+  --oi-navy-850:#0E3048;      /* navigation hover/active surface */
+  --oi-blue-600:#1769E0;      /* the ONLY interactive colour: actions, links, focus, selection */
+  --oi-blue-700:#1256B8;      /* pressed / text-on-soft */
+  --oi-blue-50:#EEF5FF;
+  --oi-emerald-600:#07855B;   /* confirmed, verified, paid, active */
+  --oi-gold-500:#D99100;      /* restrained premium / attention accent only */
+  --oi-red-600:#C9363E;       /* danger, failure, destructive intent only */
 
-  /* mineral neutrals */
-  --oi-ink-950:#111820;
-  --oi-graphite-800:#26333F;
-  --oi-slate-700:#3C4C5B;
-  --oi-slate-600:#566776;
-  --oi-stone-400:#94A0AA;
-  --oi-mist-300:#C3CCD3;
-  --oi-mist-200:#DCE3E8;
-  --oi-mist-100:#ECF0F3;
-  --oi-mineral-50:#F5F7F8;
-  --oi-ivory-25:#FCFBF7;
-  --oi-white:#FFFFFF;
+  /* surfaces + neutrals */
+  --oi-canvas:#F6F8FA;
+  --oi-card:#FFFFFF;
+  --oi-border:#DCE3E8;
+  --oi-border-strong:#94A0AA;
+  --oi-text:#071A2B;
+  --oi-text-muted:#566776;    /* 5.9:1 on white */
 
-  /* semantic */
-  --oi-verified:#07855B; --oi-verified-soft:#E7F6F0; --oi-verified-border:#9DDAC6; --oi-verified-text:#056B49;
-  --oi-info:#155FCC; --oi-info-soft:#EFF5FF; --oi-info-border:#AFCDF7; --oi-info-text:#124FA9;
-  --oi-pending:#B77800; --oi-pending-soft:#FFF6DD; --oi-pending-border:#EAC66F; --oi-pending-text:#764B00;
-  --oi-failed:#C9363E; --oi-failed-soft:#FDEDEF; --oi-failed-border:#E8A9AE; --oi-failed-text:#98272E;
-  --oi-draft:#566776; --oi-draft-soft:#F1F4F6; --oi-draft-border:#CDD5DC; --oi-draft-text:#344454;
+  /* semantic (soft / border / text stops, text stops ≥ 4.5:1 on soft) */
+  --oi-success-soft:#E7F6F0; --oi-success-border:#9DDAC6; --oi-success-text:#056B49;
+  --oi-info-soft:#EEF5FF;    --oi-info-border:#AFCDF7;    --oi-info-text:#1256B8;
+  --oi-warning-soft:#FFF6DD; --oi-warning-border:#EAC66F; --oi-warning-text:#764B00;
+  --oi-danger-soft:#FDEDEF;  --oi-danger-border:#E8A9AE;  --oi-danger-text:#98272E;
+  --oi-neutral-soft:#F1F4F6; --oi-neutral-border:#CDD5DC; --oi-neutral-text:#344454;
 
-  /* identity thread */
-  --oi-heritage-green:#07855B; --oi-heritage-red:#C9363E; --oi-heritage-brass:#D5A13C;
+  /* shape, elevation, focus */
+  --oi-radius-control:8px; --oi-radius-card:12px; --oi-radius-feature:16px; --oi-radius-pill:999px;
+  --oi-shadow-lifted:0 8px 24px rgba(7,26,43,.10);   /* modals / drawers only; cards use borders */
+  --oi-focus-width:3px;
 
-  /* radius (v3 §9.2) */
-  --oi-radius-control:10px; --oi-radius-card:12px; --oi-radius-signature:16px; --oi-radius-hero:20px; --oi-radius-pill:999px;
+  /* spacing scale (4 px base) */
+  --oi-space-1:4px; --oi-space-2:8px; --oi-space-3:12px; --oi-space-4:16px; --oi-space-5:20px; --oi-space-6:24px; --oi-space-8:32px; --oi-space-10:40px;
 
-  /* fonts */
-  --oi-font-display:'Manrope Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-  --oi-font-body:'Inter Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  /* layout */
+  --oi-content-max:1440px; --oi-reading-max:760px;
+  --oi-gutter:16px; --oi-grid-gap:12px;
+  --oi-touch:44px;
+
+  --oi-font:'Inter Variable',Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+/* Responsive grid (handoff "Responsive grid"): margins / gutters per breakpoint. */
+@media (min-width:380px){:root{--oi-gutter:20px}}
+@media (min-width:480px){:root{--oi-gutter:24px;--oi-grid-gap:16px}}
+@media (min-width:768px){:root{--oi-grid-gap:20px}}
+@media (min-width:1024px){:root{--oi-gutter:32px;--oi-grid-gap:24px}}
+@media (min-width:1280px){:root{--oi-gutter:40px}}
+
+/* ==========================================================================
+   Foundation
+   ========================================================================== */
+.fi-body{background:var(--oi-canvas);color:var(--oi-text);font-family:var(--oi-font)}
+.fi-body,.fi-body h1,.fi-body h2,.fi-body h3,.fi-header-heading,.fi-section-header-heading,.fi-modal-heading{font-family:var(--oi-font)}
+
+/* Tabular numerals for money, numbers, references, dates, OTPs. */
+.fi-ta-text,.fi-wi-stats-overview-stat-value,.fi-in-text,.oi-num,.oi-money,[data-testid=record-identifier]{font-variant-numeric:tabular-nums}
+
+/* Visible 3 px blue focus (WCAG 2.4.7 / 2.4.11); never removed. */
+.fi-body :focus-visible{outline:var(--oi-focus-width) solid var(--oi-blue-600);outline-offset:2px}
+.fi-sidebar :focus-visible{outline-color:#8CB8F5}
+
+/* Page container: max 1440 content, responsive outer margins. */
+.fi-main{max-width:var(--oi-content-max);padding-inline:var(--oi-gutter)}
+.oi-reading{max-width:var(--oi-reading-max)}
+
+/* ==========================================================================
+   Shell: 264 px navy sidebar (80 px collapsed), 64 px desktop / 56 px mobile top bar.
+   ========================================================================== */
+.fi-sidebar{background:var(--oi-navy-950)}
+/* widths come from the panel config: sidebarWidth('264px') / collapsedSidebarWidth('80px') */
+.fi-sidebar-header{background:var(--oi-navy-950)}
+.fi-sidebar .fi-logo,.fi-sidebar-header .fi-logo{color:#FFFFFF}
+.fi-sidebar-item-label,.fi-sidebar-group-label,.fi-sidebar-item-icon,.fi-sidebar-group-collapse-btn{color:#DCE7EF}
+.fi-sidebar-item-btn,.fi-sidebar-item-button{min-height:var(--oi-touch);border-radius:var(--oi-radius-control)}
+.fi-sidebar-item.fi-active>.fi-sidebar-item-btn,.fi-sidebar-item.fi-active>.fi-sidebar-item-button{background:var(--oi-navy-850)}
+.fi-sidebar-item.fi-active .fi-sidebar-item-label,.fi-sidebar-item.fi-active .fi-sidebar-item-icon{color:#FFFFFF}
+.fi-sidebar-item-btn:hover,.fi-sidebar-item-button:hover{background:color-mix(in srgb,var(--oi-navy-850) 70%,transparent)}
+.fi-topbar,.fi-topbar-ctn{min-height:56px}
+@media (min-width:1024px){.fi-topbar,.fi-topbar-ctn{min-height:64px}}
+.fi-topbar{background:var(--oi-card);border-bottom:1px solid var(--oi-border)}
+
+/* Heading / breadcrumb / action bar: actions wrap instead of overflowing. */
+.fi-header{gap:var(--oi-space-4)}
+.fi-header .fi-ac{flex-wrap:wrap}
+.fi-breadcrumbs{font-size:.8125rem}
+
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+.fi-btn,.fi-icon-btn,.fi-link{min-height:var(--oi-touch)}
+.fi-icon-btn{min-width:var(--oi-touch)}
+.fi-btn{border-radius:var(--oi-radius-control);font-weight:600}
+.fi-input-wrp,.fi-select-input,.fi-fo-field-wrp .fi-input-wrp{border-radius:var(--oi-radius-control)}
+.fi-input,.fi-select-input,.fi-fo-textarea,.fi-fo-date-time-picker input{min-height:42px}
+/* ≥16 px inputs on phones: no browser zoom. */
+@media (max-width:767px){.fi-input,.fi-select-input,.fi-fo-textarea,textarea,select,input{font-size:16px!important}}
+
+/* Cards: borders carry structure, no default shadow. */
+.fi-section,.fi-wi-stats-overview-stat,.fi-ta-ctn{border:1px solid var(--oi-border);border-radius:var(--oi-radius-card);box-shadow:none;background:var(--oi-card)}
+.fi-modal-window,.fi-dropdown-panel{box-shadow:var(--oi-shadow-lifted);border-radius:var(--oi-radius-card)}
+.fi-badge{font-weight:600}
+
+/* Tables: contained horizontal scroll with a visible edge cue (never page overflow). */
+.fi-ta-content{overflow-x:auto;background:
+  linear-gradient(90deg,var(--oi-card) 30%,transparent) left/24px 100% no-repeat local,
+  linear-gradient(270deg,var(--oi-card) 30%,transparent) right/24px 100% no-repeat local,
+  radial-gradient(farthest-side at 0 50%,rgba(7,26,43,.14),transparent) left/10px 100% no-repeat scroll,
+  radial-gradient(farthest-side at 100% 50%,rgba(7,26,43,.14),transparent) right/10px 100% no-repeat scroll}
+
+/* ==========================================================================
+   Shared OpesInsure components (resources/views/filament/shared/*)
+   ========================================================================== */
+.oi-muted{color:var(--oi-text-muted)}
+.oi-stack{display:grid;gap:var(--oi-space-3)}
+.oi-card{background:var(--oi-card);border:1px solid var(--oi-border);border-radius:var(--oi-radius-card);padding:var(--oi-space-4)}
+@media (min-width:768px){.oi-card{padding:var(--oi-space-5)}}
+.oi-label{font-size:.75rem;line-height:1.3;color:var(--oi-text-muted);margin:0}
+.oi-value{margin:0;font-weight:600;overflow-wrap:anywhere}
+.oi-dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:var(--oi-space-3) var(--oi-space-6);margin:0}
+
+/* Status badge: icon + label + colour (never colour alone). */
+.oi-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:var(--oi-radius-pill);border:1px solid;font-size:.8125rem;font-weight:600;line-height:1.4;white-space:nowrap}
+.oi-status svg{width:14px;height:14px;flex:none}
+.oi-status--success{background:var(--oi-success-soft);border-color:var(--oi-success-border);color:var(--oi-success-text)}
+.oi-status--info{background:var(--oi-info-soft);border-color:var(--oi-info-border);color:var(--oi-info-text)}
+.oi-status--warning{background:var(--oi-warning-soft);border-color:var(--oi-warning-border);color:var(--oi-warning-text)}
+.oi-status--danger{background:var(--oi-danger-soft);border-color:var(--oi-danger-border);color:var(--oi-danger-text)}
+.oi-status--gray{background:var(--oi-neutral-soft);border-color:var(--oi-neutral-border);color:var(--oi-neutral-text)}
+
+/* Money: amount and FCFA never split. */
+.oi-money{white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Detail header */
+.oi-detail-header{display:flex;flex-wrap:wrap;gap:var(--oi-space-4) var(--oi-space-8);align-items:flex-start;justify-content:space-between}
+.oi-detail-header__entity{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--oi-text-muted)}
+.oi-detail-header__id{font-size:1.25rem;font-weight:700;overflow-wrap:anywhere}
+.oi-detail-header .oi-dl{flex:1 1 24rem}
+
+/* State / failure banners */
+.oi-state{display:flex;gap:var(--oi-space-3);align-items:flex-start;margin-top:var(--oi-space-3);padding:var(--oi-space-3) var(--oi-space-4);border-radius:var(--oi-radius-card);border:1px solid}
+.oi-state svg{width:20px;height:20px;flex:none;margin-top:2px}
+.oi-state__title{font-weight:700;margin:0}
+.oi-state__body{margin:0}
+.oi-state__actions{margin-top:var(--oi-space-2);display:flex;flex-wrap:wrap;gap:var(--oi-space-2)}
+.oi-state--danger{background:var(--oi-danger-soft);border-color:var(--oi-danger-border);color:var(--oi-danger-text)}
+.oi-state--warning{background:var(--oi-warning-soft);border-color:var(--oi-warning-border);color:var(--oi-warning-text)}
+.oi-state--info{background:var(--oi-info-soft);border-color:var(--oi-info-border);color:var(--oi-info-text)}
+.oi-state--success{background:var(--oi-success-soft);border-color:var(--oi-success-border);color:var(--oi-success-text)}
+.oi-state--gray{background:var(--oi-neutral-soft);border-color:var(--oi-neutral-border);color:var(--oi-neutral-text)}
+.oi-empty{padding:var(--oi-space-6) var(--oi-space-4);text-align:center;color:var(--oi-text-muted)}
+
+/* Record tables → labelled cards under 768 px (no desktop table squeezed into a phone). */
+.oi-records{width:100%;border-collapse:collapse;font-size:.875rem}
+.oi-records th{text-align:left;font-size:.75rem;font-weight:600;color:var(--oi-text-muted);padding:var(--oi-space-2);border-bottom:1px solid var(--oi-border)}
+.oi-records td{padding:var(--oi-space-2);border-bottom:1px solid var(--oi-border);vertical-align:top;overflow-wrap:anywhere}
+@media (max-width:767px){
+  .oi-records thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .oi-records,.oi-records tbody,.oi-records tr,.oi-records td{display:block;width:100%}
+  .oi-records tr{border:1px solid var(--oi-border);border-radius:var(--oi-radius-card);padding:var(--oi-space-3);margin-bottom:var(--oi-space-3);background:var(--oi-card)}
+  .oi-records td{border:0;padding:var(--oi-space-1) 0;display:grid;grid-template-columns:minmax(7rem,40%) 1fr;gap:var(--oi-space-2)}
+  .oi-records td::before{content:attr(data-label);font-size:.75rem;color:var(--oi-text-muted)}
+  .oi-records td[data-label=""]::before{content:none}
+  .oi-records td[data-label=""]{display:block}
 }
 
-/* ==========================================================================
-   Canvas — Mineral 50 is the operational canvas. Ivory is reserved for
-   signature/welcome surfaces only (v3 §9.1) — this was the #1 conflict
-   found in the audit (Ivory was previously used for the whole app body).
-   ========================================================================== */
-.fi-body{background:var(--oi-mineral-50);font-family:var(--oi-font-body)}
-.fi-main{max-width:1440px}
+/* Timeline */
+.oi-timeline__item{display:grid;grid-template-columns:1fr;gap:var(--oi-space-1);padding:var(--oi-space-3) 0;border-bottom:1px solid var(--oi-border)}
+@media (min-width:768px){.oi-timeline__item{grid-template-columns:11rem 1fr;gap:var(--oi-space-1) var(--oi-space-4)}}
+.oi-timeline__when{font-size:.8125rem;color:var(--oi-text-muted);font-variant-numeric:tabular-nums}
+.oi-timeline__event{font-weight:600;display:flex;flex-wrap:wrap;gap:var(--oi-space-2);align-items:center}
+.oi-timeline__meta{font-size:.8125rem;color:var(--oi-neutral-text)}
 
-/* Typography: Manrope for headings/titles/values, Inter for body (v3 §5.1) */
-.fi-header-heading,.fi-section-header-heading,.fi-modal-heading,.fi-page-header-heading,
-.fi-widget h1,.fi-widget h2,.fi-fo-field-wrp-label,.fi-ta-header-cell-label{
-  font-family:var(--oi-font-display);
+/* Financial breakdown: distinct labelled lines, total emphasised. */
+.oi-breakdown{margin:0;display:grid;gap:0}
+.oi-breakdown__row{display:flex;justify-content:space-between;gap:var(--oi-space-4);padding:var(--oi-space-2) 0;border-bottom:1px solid var(--oi-border)}
+.oi-breakdown__row dt{color:var(--oi-neutral-text)}
+.oi-breakdown__row dd{margin:0;font-weight:600}
+.oi-breakdown__row--total{border-bottom:0;border-top:2px solid var(--oi-navy-950);font-size:1.0625rem}
+.oi-breakdown__row--total dt{color:var(--oi-text);font-weight:700}
+
+/* Approval panel (maker / checker / change / evidence / before-after). */
+.oi-diff{width:100%;border-collapse:collapse;font-size:.875rem}
+.oi-diff th,.oi-diff td{padding:var(--oi-space-2);border-bottom:1px solid var(--oi-border);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.oi-diff__before{background:var(--oi-danger-soft)}
+.oi-diff__after{background:var(--oi-success-soft)}
+.oi-disabled-reason{display:flex;gap:var(--oi-space-2);align-items:flex-start;color:var(--oi-warning-text);background:var(--oi-warning-soft);border:1px solid var(--oi-warning-border);border-radius:var(--oi-radius-control);padding:var(--oi-space-2) var(--oi-space-3)}
+
+/* Language switch in the panel top bar. */
+.oi-lang{display:inline-flex;border:1px solid var(--oi-border);border-radius:var(--oi-radius-pill);overflow:hidden;font-size:.8125rem;font-weight:600}
+.oi-lang a{display:inline-flex;align-items:center;min-height:36px;min-width:44px;justify-content:center;padding:0 10px;color:var(--oi-neutral-text)}
+.oi-lang a[aria-current=true]{background:var(--oi-blue-600);color:#FFFFFF}
+
+/* KPI grid (portal dashboards): 1–2 columns on phones, 4 on desktop. */
+.oi-kpi-value{font-variant-numeric:tabular-nums}
+
+/* ==========================================================================
+   Preferences
+   ========================================================================== */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media (prefers-contrast:more){
+  :root{--oi-border:#566776;--oi-text-muted:#26333F}
+  .oi-status,.oi-state,.fi-badge{border-width:2px}
 }
-h1,h2,h3{font-family:var(--oi-font-display)}
-
-/* ==========================================================================
-   Sidebar — Assurance Navy 950, 264px / 80px collapsed, 44px item targets
-   (v3 §14.4)
-   ========================================================================== */
-.fi-sidebar{background:var(--oi-navy-950);width:264px}
-.fi-sidebar.fi-sidebar-collapsed{width:80px}
-.fi-sidebar-item-label,.fi-sidebar-group-label{color:#DCE7EF;font-family:var(--oi-font-body)}
-.fi-sidebar-item-button{min-height:44px;border-radius:var(--oi-radius-control)}
-.fi-sidebar-item.fi-active>.fi-sidebar-item-button{background:var(--oi-navy-850)}
-.fi-sidebar-item-button:hover{background:color-mix(in srgb,var(--oi-navy-850) 60%,transparent)}
-
-/* Topbar — 64–72px (v3 §14.4) */
-.fi-topbar,.fi-topbar-ctn{min-height:64px}
-
-/* ==========================================================================
-   Controls, cards, borders (v3 §9.2/9.3, §10.1)
-   ========================================================================== */
-.fi-btn{min-height:44px;border-radius:var(--oi-radius-control);font-family:var(--oi-font-body)}
-.fi-input-wrp{border-radius:var(--oi-radius-control)}
-.fi-section{border:1px solid var(--oi-mist-200);border-radius:var(--oi-radius-card);box-shadow:none;background:var(--oi-white)}
-.fi-ta-ctn{border-radius:var(--oi-radius-card)}
-
-/* Selected border uses Insurance Blue, not a glow (v3 §9.3) */
-*:focus-visible{outline:3px solid color-mix(in srgb,var(--oi-blue-650) 30%,transparent);outline-offset:2px}
-
-/* Status: icon + label always accompany color, never color alone (v3 §4.3) — enforced at
-   the component-authoring level; these tokens exist so future badge/status components pull
-   from one place instead of Filament's generic palette. */
-.fi-badge{font-family:var(--oi-font-body)}
-
-@media(max-width:768px){.fi-main{padding-inline:16px}.fi-ta-content{overflow-x:auto}}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@media (forced-colors:active){.oi-status,.oi-state{border:1px solid CanvasText}}

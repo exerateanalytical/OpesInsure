@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace App\Application\Documents\Engine;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Documents\Security\DocumentFieldRequirements;
+use App\Application\Documents\Security\DocumentSecurityProfile;
+use App\Application\Documents\Security\DocumentSigner;
+use App\Application\Documents\Security\VerificationCredentials;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Shared\CanonicalJson;
 use App\Models\Claim;
 use App\Models\Document;
 use App\Models\DocumentIssuanceProfile;
@@ -56,6 +61,10 @@ final class DocumentEngine
         private DocumentNumberAllocator $numbers,
         private AuditWriter $audit,
         private CustomerNotifier $notifier,
+        private DocumentSecurityProfile $security,
+        private DocumentFieldRequirements $fields,
+        private DocumentSigner $signer,
+        private CanonicalJson $json,
     ) {}
 
     /**
@@ -198,17 +207,10 @@ final class DocumentEngine
         };
     }
 
+    /** One short-code generator for every issuer (checksummed, crypto spec §12): VerificationCredentials. */
     public static function newVerificationCode(): string
     {
-        $alphabet = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
-        do {
-            $code = 'OV';
-            for ($i = 0; $i < 10; $i++) {
-                $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
-            }
-        } while (Document::where('verification_code', $code)->exists());
-
-        return $code;
+        return VerificationCredentials::newShortCode();
     }
 
     /** @return array<string, mixed> manifest item */
@@ -250,22 +252,71 @@ final class DocumentEngine
             return ['state' => $issuer === 'INSURER' ? 'AWAITING_CARRIER_DOCUMENT' : 'TEMPLATE_MISSING', 'reason' => 'NO_PUBLISHED_TEMPLATE'] + $base;
         }
 
-        $doc = $this->generate($policy, $manifest, $template, $type, $issuer, $profile, $subject, $item['per_subject'], $trigger, $ctx, $label, $actor);
+        try {
+            $doc = $this->generate($policy, $manifest, $template, $type, $issuer, $profile, $subject, $item['per_subject'], $trigger, $ctx, $label, $actor);
+        } catch (DocumentIssuanceBlocked $blocked) {
+            // Canonical spec: a missing required field / unmet required control blocks issuance with a clear
+            // reason — never a blank document. Nothing was numbered or stored (no numbering gap).
+            $this->audit->record('document.issuance.blocked', 'document_pack_manifest', $manifest->id, ['type' => $code, 'state' => $blocked->state, 'missing' => $blocked->missing, 'subject' => $subject['key'] ?? null]);
 
-        return ['state' => 'GENERATED', 'document_id' => $doc->id, 'template_id' => $template->id, 'template_version' => $template->version] + $base;
+            return ['state' => $blocked->state, 'reason' => $blocked->getMessage(), 'missing_fields' => $blocked->missing, 'template_id' => $template->id] + $base;
+        }
+
+        return ['state' => 'GENERATED', 'document_id' => $doc->id, 'template_id' => $template->id, 'template_version' => $template->version,
+            'security_tier' => $doc->security_tier] + $base;
     }
 
+    /**
+     * Canonical finalization sequence (crypto spec §4): template -> canonical entities -> required-field
+     * validation (before numbering: a blocked document consumes no number) -> number -> verification
+     * token + short code -> frozen issuance snapshot (+ snapshot hash) -> content hash -> deterministic
+     * render in the master shell with the tier's security controls -> final file SHA-256 -> platform
+     * signature (CONFIG_REQUIRED without a key) -> immutable registry record -> audit -> ISSUED/VALID.
+     */
     private function generate(Policy $policy, DocumentPackManifest $manifest, DocumentTemplate $template, array $type, string $issuer, ?DocumentIssuanceProfile $profile, ?array $subject, ?string $subjectType, string $trigger, array $ctx, string $label, ?User $actor): Document
     {
         $code = $type['code'];
-        $number = $this->numbers->allocate($policy->tenant_id, $code);
-        $verification = self::newVerificationCode();
-        $verifyUrl = rtrim((string) config('lifecycle.verify_url'), '/').'?code='.$verification;
         $certificateLike = $type['display_group'] === 'CERTIFICATES';
         $product = $policy->proposal?->offer?->product;
         $lang = $template->language;
         $carrierName = $policy->carrier?->party?->display_name ?? 'Insurer';
         $broker = $policy->tenant?->type === 'BROKER' ? ['name' => $policy->tenant->legal_name, 'licence' => $policy->tenant->getAttributes()['licence_number'] ?? null] : null;
+        $issuerName = $issuer === 'BROKER' && $broker ? $broker['name'] : ($issuer === 'PLATFORM' ? 'OpesInsure' : $carrierName);
+        $transaction = $ctx['transaction'] ?? null;
+        $claim = $ctx['claim'] ?? null;
+        // Letterhead (issuer + co-branding artwork); its version and file hashes are frozen into the snapshot and provenance.
+        $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forDocument($issuer, $issuerName, $policy->carrier_id, $carrierName, $policy->tenant_id, $broker);
+
+        // Security profile (never below the catalogue's canonical floor).
+        $evidence = $transaction instanceof PolicyTransaction && $transaction->approved_by && $transaction->approved_by !== $transaction->requested_by
+            ? 'POLICY_TRANSACTION_APPROVED:'.$transaction->id : null;
+        $security = $this->security->resolve($type, $profile, ['maker_checker_evidence' => $evidence]);
+
+        // Canonical field values + required-field validation (numbering not yet consumed).
+        $subjectFacts = $this->packs->subjectFacts($policy, $subject ? $subjectType : null, $subject['key'] ?? null);
+        $issuedAt = now();
+        $requirements = $this->fields->requiredKeys($type, $subject ? $subjectType : null);
+        $pendingNumber = '(pending)';
+        $values = $this->fields->resolve($policy, [
+            'document.number' => $pendingNumber, 'document.type_code' => $code, 'document.title' => trim($template->title_en.' / '.$template->title_fr, ' /'),
+            'document.template_version' => $template->version, 'document.issued_at' => $issuedAt->toIso8601String(), 'document.status' => $certificateLike ? 'VALID' : 'ISSUED',
+            'document.security_tier' => $security['tier'], 'issuer.legal_name' => $issuerName, 'verification.code' => 'pending', 'verification.token' => 'pending',
+            'template.reference' => $template->code.' v'.$template->version, 'confidentiality.class' => $security['confidentiality_class'],
+        ], $subject ? $subject + ['type' => $subjectType] : null, $subjectFacts, $ctx);
+        $missing = DocumentFieldRequirements::missing($requirements['required'], $values);
+        if ($missing !== [] && config('document_security.field_enforcement', 'block') === 'block') {
+            throw new DocumentIssuanceBlocked('BLOCKED_MISSING_FIELDS', $missing, 'Required document fields missing: '.DocumentFieldRequirements::describeMissing($missing));
+        }
+        if (config('document_security.enforce_controls') && $security['unmet_required_controls'] !== []) {
+            throw new DocumentIssuanceBlocked('BLOCKED_SECURITY_CONTROLS', $security['unmet_required_controls'], 'Required security controls not provisioned (CONFIG_REQUIRED): '.implode(', ', $security['unmet_required_controls']));
+        }
+
+        $number = $this->numbers->allocate($policy->tenant_id, $code);
+        $verification = self::newVerificationCode();
+        $token = VerificationCredentials::newToken();
+        $verifyBase = rtrim((string) config('document_security.verification.url', config('lifecycle.verify_url')), '/');
+        $verifyUrl = $verifyBase.'?code='.$verification.'&t='.$token;
+        $values = array_merge($values, ['document.number' => $number['number'], 'verification.code' => $verification, 'verification.token' => 'sha256:'.VerificationCredentials::tokenHash($token)]);
 
         $vars = [
             '{policy_number}' => (string) $policy->policy_number, '{insured_name}' => (string) ($policy->party?->display_name ?? ''),
@@ -285,33 +336,51 @@ final class DocumentEngine
             $sections[] = ['heading' => $heading, 'paragraphs' => $paragraphs];
         }
 
+        // Frozen issuance snapshot (document_implementation_policy §1.4) and its hashes (crypto spec §5).
+        $snapshot = [
+            'document' => ['type_code' => $code, 'type_id' => $type['id'], 'canonical_spec_id' => $security['canonical_spec_id'], 'number' => $number['number'],
+                'issued_at_utc' => $issuedAt->copy()->utc()->toIso8601String(), 'timezone' => config('app.timezone'), 'language' => $lang, 'event' => $label, 'trigger' => $trigger],
+            'template' => ['id' => $template->id, 'code' => $template->code, 'version' => $template->version, 'hash' => $template->content_hash, 'ownership' => $template->ownership],
+            'issuer' => ['type' => $issuer, 'name' => $issuerName, 'carrier_id' => $policy->carrier_id, 'tenant_id' => $policy->tenant_id, 'intermediary' => $broker,
+                'authorization_reference' => $profile?->authorization_reference, 'letterhead' => $letterhead['snapshot']],
+            'sources' => ['party_id' => $policy->party_id, 'policy_id' => $policy->id, 'policy_version' => (int) $policy->version, 'product_id' => $product?->id,
+                'product_version' => $product?->version, 'claim_id' => $claim?->id, 'policy_transaction_id' => $transaction?->id, 'payment_id' => ($ctx['payment'] ?? null)?->id],
+            'subject' => $subject ? ['type' => $subjectType, 'key' => $subject['key'], 'label' => $subject['label'], 'facts' => $subjectFacts] : null,
+            'fields' => $values, 'required_fields' => $requirements['required'],
+            'security' => ['tier' => $security['tier'], 'confidentiality_class' => $security['confidentiality_class'], 'access_profiles' => $security['access_profiles'], 'master_shell_code' => $security['master_shell_code']],
+        ];
+        $snapshotHash = $this->json->hash($snapshot);
+        $contentHash = $this->json->hash(['snapshot_hash' => $snapshotHash, 'template_hash' => $template->content_hash, 'sections' => $sections]);
+
         $qr = null;
-        if (! $profile || $profile->qr_enabled) {
+        if ($security['controls']['qr']['status'] === 'APPLIED' || ! $profile || $profile->qr_enabled) {
+            // The QR carries only the verifier URL + random token (crypto spec §11): no identity, no amounts.
             $qr = (new QRCode(new QROptions(['outputType' => QROutputInterface::MARKUP_SVG, 'outputBase64' => true, 'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true])))->render($verifyUrl);
         }
-        $issuedAt = now();
-        $bytes = Pdf::loadView('pdf.engine-document', [
-            'lang' => $lang, 'titleEn' => $template->title_en, 'titleFr' => $template->title_fr, 'documentNumber' => $number['number'],
-            'issuerName' => $issuer === 'BROKER' && $broker ? $broker['name'] : ($issuer === 'PLATFORM' ? 'OpesInsure' : $carrierName),
-            'intermediary' => $broker, 'carrierName' => $carrierName, 'policyNumber' => $policy->policy_number, 'policyVersion' => (int) $policy->version,
-            'insuredName' => $policy->party?->display_name ?? '', 'productName' => $product?->name, 'subjectLabel' => $subject['label'] ?? null,
-            'validFrom' => $policy->coverage_starts_at?->format('d/m/Y'), 'validUntil' => $policy->coverage_ends_at?->format('d/m/Y'),
-            'eventLabel' => $label, 'issuedAt' => $issuedAt->format('d/m/Y H:i'), 'verificationCode' => $verification, 'qr' => $qr, 'verifyUrl' => $verifyUrl,
-            'sections' => $sections, 'coverages' => $template->content['show_coverages'] ?? false ? ($policy->terms_snapshot['coverage_snapshot']['coverages'] ?? []) : [],
-            'signatory' => $profile && $profile->signature_mode !== 'NONE' && $profile->signatory_name ? ['name' => $profile->signatory_name, 'title' => (string) $profile->signatory_title] : null,
-            'templateRef' => $template->ownership.' template v'.$template->version,
-        ])->setPaper('a4')->output();
+        $bytes = Pdf::loadView('pdf.engine-shell', DocumentShellView::data([
+            'lang' => $lang, 'template' => $template, 'type' => $type, 'security' => $security, 'values' => $values, 'requirements' => $requirements,
+            'number' => $number['number'], 'issuerName' => $issuerName, 'carrierName' => $carrierName, 'intermediary' => $broker, 'policy' => $policy, 'product' => $product,
+            'subject' => $subject, 'subjectFacts' => $subjectFacts, 'label' => $label, 'issuedAt' => $issuedAt, 'verification' => $verification, 'qr' => $qr,
+            'verifyUrl' => $verifyBase, 'sections' => $sections, 'contentHash' => $contentHash, 'profile' => $profile, 'claim' => $claim, 'transaction' => $transaction,
+            'coverages' => (array) ($values['coverage.lines'] ?? []), 'status' => $certificateLike ? 'VALID' : 'ISSUED', 'letterhead' => $letterhead,
+        ]))->setPaper('a4')->output();
+
+        $sha = hash('sha256', $bytes);
+        $signature = $this->signer->sign([
+            'document_number' => $number['number'], 'document_type_code' => $code, 'final_file_hash' => $sha, 'content_hash' => $contentHash,
+            'snapshot_hash' => $snapshotHash, 'template_hash' => $template->content_hash, 'issued_at_utc' => $issuedAt->copy()->utc()->toIso8601String(),
+            'verification_token_hash' => VerificationCredentials::tokenHash($token), 'security_tier' => $security['tier'],
+        ]);
+        $security['controls']['signature']['status'] = $signature['status'] === 'SIGNED' ? 'APPLIED' : $security['controls']['signature']['status'];
 
         $key = 'documents/'.$policy->tenant_id.'/'.$policy->id.'/'.$number['number'].'.pdf';
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
         $status = $profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED');
-        $transaction = $ctx['transaction'] ?? null;
-        $claim = $ctx['claim'] ?? null;
 
-        $doc = Document::create([
+        $doc = new Document([
             'tenant_id' => $policy->tenant_id, 'party_id' => $policy->party_id, 'policy_id' => $policy->id,
-            'category' => 'ENGINE_'.$code, 'storage_key' => $key, 'mime_type' => 'application/pdf', 'size_bytes' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
+            'category' => 'ENGINE_'.$code, 'storage_key' => $key, 'mime_type' => 'application/pdf', 'size_bytes' => strlen($bytes), 'sha256' => $sha,
             'scan_status' => 'CLEAN', 'verification_status' => 'VERIFIED', 'ocr_data' => [],
             'document_type_code' => $code, 'document_type_id' => $type['id'], 'document_group' => $type['group_code'], 'pack_code' => $manifest->pack_code, 'pack_manifest_id' => $manifest->id,
             'document_template_id' => $template->id, 'template_version' => $template->version, 'template_hash' => $template->content_hash,
@@ -325,12 +394,23 @@ final class DocumentEngine
             'verification_code' => $verification, 'generation_trigger' => $trigger, 'issued_at' => $issuedAt,
             'valid_from' => $certificateLike ? $policy->coverage_starts_at : null, 'valid_until' => $certificateLike ? $policy->coverage_ends_at : null,
             'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label,
-                'demo_watermark' => \App\Application\Documents\DemoDocumentMark::active()],
+                'demo_watermark' => \App\Application\Documents\DemoDocumentMark::active(), 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']],
             'uploaded_by' => $actor?->id,
         ]);
+        // Canonical security record (columns of migration 2026_10_12_900001; frozen by the immutability trigger).
+        $doc->forceFill([
+            'security_tier' => $security['tier'], 'security_controls' => json_encode($security['controls']),
+            'confidentiality_class' => $security['confidentiality_class'], 'access_profiles' => json_encode($security['access_profiles']),
+            'master_shell_code' => $security['master_shell_code'], 'issuance_snapshot' => $this->json->encode($snapshot), 'snapshot_hash' => $snapshotHash,
+            'content_hash_sha256' => $contentHash, 'verification_token_hash' => VerificationCredentials::tokenHash($token),
+            'signature' => json_encode($signature), 'field_validation' => json_encode(['required' => $requirements['required'], 'missing' => $missing,
+                'groups' => $requirements['groups'], 'no_canonical_source' => $requirements['no_source'], 'unmapped_pending_verification' => $requirements['unmapped'],
+                'spec_id' => $requirements['spec_id'], 'enforcement' => config('document_security.field_enforcement', 'block')]),
+        ])->save();
 
         $this->supersedePrevious($policy, $doc, $actor);
-        $this->audit->record('document.generated', 'document', $doc->id, ['number' => $doc->document_number, 'type' => $code, 'template_version' => $template->version, 'trigger' => $trigger]);
+        $this->audit->record('document.generated', 'document', $doc->id, ['number' => $doc->document_number, 'type' => $code, 'template_version' => $template->version, 'trigger' => $trigger,
+            'security_tier' => $security['tier'], 'content_hash' => $contentHash, 'snapshot_hash' => $snapshotHash, 'sha256' => $sha, 'signature' => $signature['status']]);
 
         return $doc;
     }

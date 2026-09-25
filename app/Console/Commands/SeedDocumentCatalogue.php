@@ -25,6 +25,9 @@ final class SeedDocumentCatalogue extends Command
         try {
             $seeder = $this->laravel->make(DocumentCatalogueSeeder::class);
             $seeder->run();
+            // Canonical document spec (security profiles, field requirements, shells) onto the same catalogue.
+            $spec = $this->laravel->make(\Database\Seeders\CanonicalDocumentSpecSeeder::class);
+            $spec->run();
         } catch (Throwable $e) {
             // Never fail a deploy's optimize step; data already present stays intact.
             report($e);
@@ -34,6 +37,9 @@ final class SeedDocumentCatalogue extends Command
         }
         $created = array_filter($seeder->counts);
         $this->components->info('Document catalogue seeded'.($created === [] ? ' (no changes).' : ': '.collect($created)->map(fn ($n, $k) => "$k +$n")->join(', ')));
+        $r = $spec->report;
+        $this->components->info(isset($r['skipped']) ? 'Canonical document spec skipped: '.$r['skipped']
+            : sprintf('Canonical document spec: %d records (%d PENDING_VERIFICATION mapping), %d catalogue types profiled, %d updated.', $r['specs'] ?? 0, $r['pending_verification'] ?? 0, $r['catalogue_types_mapped'] ?? 0, $r['catalogue_types_updated'] ?? 0));
 
         return self::SUCCESS;
     }

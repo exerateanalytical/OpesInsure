@@ -18,6 +18,12 @@ final class PortalMetricsWidget extends StatsOverviewWidget
 
     protected ?string $pollingInterval = '120s';
 
+    /** Canonical handoff dashboard grid: one KPI column on narrow phones, two on larger phones/tablets, four on desktop. */
+    protected function getColumns(): int|array|null
+    {
+        return ['default' => 1, 'sm' => 2, 'lg' => 4];
+    }
+
     protected function getStats(): array
     {
         $tenantId = app(TenantContext::class)->id();

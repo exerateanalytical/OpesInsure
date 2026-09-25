@@ -4,7 +4,7 @@
 {{-- Document engine generic layout: every issued document carries issuer, number, verification code and (when configured) a QR. --}}
 <table style="width:100%"><tr>
   <td>
-    <div class="brand">{{ $issuerName }}</div>
+    @include('pdf._letterhead', ['lhFallbackName' => $issuerName])
     @if($lang !== 'EN')<div class="muted">{{ $titleFr }}</div>@endif
     @if($lang !== 'FR')<div class="muted">{{ $titleEn }}</div>@endif
   </td>
@@ -48,4 +48,5 @@
 <p style="margin-top:18px">{{ $signatory['name'] }}<br><span class="small muted">{{ $signatory['title'] }}</span></p>
 @endif
 <p class="small muted" style="margin-top:14px">{{ $verifyUrl }} · {{ $templateRef }}</p>
+@include('pdf._letterhead_footer')
 </body></html>

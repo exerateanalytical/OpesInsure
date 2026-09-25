@@ -44,7 +44,7 @@ final class ListScreen
     {
         return BulkAction::make('exportCsv')
             ->label(__('web_experience.list.export'))
-            ->icon('heroicon-o-arrow-down-tray')
+            ->icon('lucide-download')
             ->deselectRecordsAfterCompletion()
             ->action(fn (Collection $records, Table $table): StreamedResponse => self::csv($records, $table, $exportName ?? 'export'));
     }

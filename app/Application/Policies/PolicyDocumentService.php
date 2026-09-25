@@ -196,6 +196,7 @@ final class PolicyDocumentService
             'verifyUrl' => $verifyUrl,
             'verificationToken' => $token,
             'qr' => $qr,
+            'letterhead' => $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($policy),
         ];
 
         $view = $category === self::CERTIFICATE ? 'pdf.policy-certificate' : 'pdf.policy-schedule';
@@ -218,7 +219,7 @@ final class PolicyDocumentService
             'issued_at' => $certificate->issued_at ?? now(), 'generation_trigger' => 'POLICY_ISSUED',
             'valid_from' => $category === self::CERTIFICATE ? $policy->coverage_starts_at : null,
             'valid_until' => $category === self::CERTIFICATE ? $policy->coverage_ends_at : null,
-            'provenance' => ['rendered_by' => 'OPESINSURE', 'certificate_serial' => $certificate->serial_number],
+            'provenance' => ['rendered_by' => 'OPESINSURE', 'certificate_serial' => $certificate->serial_number, 'letterhead' => $letterhead['snapshot']],
         ];
 
         if ($existing) {

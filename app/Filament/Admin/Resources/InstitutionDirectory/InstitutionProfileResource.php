@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\InstitutionDirectory;
 
 use App\Application\Directory\InstitutionDirectoryService;
+use App\Filament\Admin\Actions\LetterheadActions;
 use App\Filament\Admin\Concerns\CimaRegulatoryAccess;
 use App\Filament\Admin\Concerns\ServiceValidation;
 use App\Models\Directory\InstitutionOffice;
@@ -62,7 +63,10 @@ final class InstitutionProfileResource extends Resource
             Tables\Columns\TextColumn::make('admin_edited_at')->label('Admin edited')->dateTime()->placeholder('From directory file'),
         ])->filters([
             Tables\Filters\SelectFilter::make('verification_status')->options(fn () => static::statusOptions()),
-        ])->recordActions([static::editAction()]);
+        ])->recordActions([static::editAction(),
+            LetterheadActions::edit('CARRIER', fn (InstitutionProfile $r) => $r->carrier_id),
+            LetterheadActions::approve('CARRIER', fn (InstitutionProfile $r) => $r->carrier_id),
+        ]);
     }
 
     public static function editAction(): Actions\Action

@@ -14,6 +14,12 @@ final class InsurerPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return PortalPanelFactory::configure($panel, 'insurer', [PolicyResource::class, ClaimResource::class]);
+        return PortalPanelFactory::configure($panel, 'insurer', [
+            PolicyResource::class, ClaimResource::class,
+            // Owner decision D4 (read-only in the portal, see PortalAuthorization::PORTAL_SECTIONS)
+            \App\Filament\Admin\Resources\CarrierBrokerAgreements\CarrierBrokerAgreementResource::class,
+            \App\Filament\Admin\Resources\Bordereaux\BordereauResource::class,
+            \App\Filament\Admin\Resources\CarrierSettlements\CarrierSettlementResource::class,
+        ]);
     }
 }

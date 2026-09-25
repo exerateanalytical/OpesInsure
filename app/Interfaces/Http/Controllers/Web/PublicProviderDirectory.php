@@ -55,6 +55,8 @@ final class PublicProviderDirectory
             $labels = \App\Models\Directory\InstitutionVerificationLabel::map();
             $branchCounts = DB::table('institution_offices')->selectRaw('carrier_id, count(*) as n')->groupBy('carrier_id')->pluck('n', 'carrier_id');
             $brokerCities = $cities('partners');
+            $logos = \App\Models\Letterhead\LetterheadAsset::where('owner_type', 'CARRIER')->where('status', 'ACTIVE')->where('public_display', true)
+                ->whereNotNull('logo_path')->orderBy('version')->get()->keyBy('carrier_id');
 
             $insurers = DB::table('carriers')->where('is_official_register', true)
                 ->orderBy('regulator_sequence')->get(['id', 'trade_name', 'legal_name', 'short_name', 'licence_branch'])
@@ -64,6 +66,7 @@ final class PublicProviderDirectory
                     'kind' => 'insurer',
                     'branch' => $r->licence_branch === 'LIFE' ? 'LIFE' : ($r->licence_branch ? 'IARD' : null),
                     'city' => $hq[$r->id] ?? $insurerCities[$r->id] ?? null,
+                    'logo_url' => \App\Application\Documents\Letterhead\LetterheadResolver::publicLogoUrl($logos->get($r->id)),
                 ] + self::contactOf($profiles->get($r->id), (int) ($branchCounts[$r->id] ?? 0), $labels));
 
             $brokers = DB::table('partners')->where('is_official_register', true)->where('type', 'BROKER')
@@ -74,6 +77,7 @@ final class PublicProviderDirectory
                     'kind' => 'broker',
                     'branch' => null,
                     'city' => $brokerCities[$r->id] ?? null,
+                    'logo_url' => null,
                 ] + self::contactOf(null, 0));
 
             return $insurers->concat($brokers)->values()->all();

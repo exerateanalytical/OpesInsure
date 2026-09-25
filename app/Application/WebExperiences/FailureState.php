@@ -28,22 +28,54 @@ enum FailureState: string
     case PermissionDenied = 'PERMISSION_DENIED';
     case NetworkFailure = 'NETWORK_FAILURE';
 
+    // Canonical UI handoff "Required component states": the remaining explicit
+    // (never generic) states any component can show. Copy: web_experience.states.
+    case DownstreamTimeout = 'DOWNSTREAM_TIMEOUT';
+    case OfflineQueued = 'OFFLINE_QUEUED';
+    case Retrying = 'RETRYING';
+    case PartialCompletion = 'PARTIAL_COMPLETION';
+    case Expired = 'EXPIRED';
+    case ReadOnlyLocked = 'READ_ONLY_LOCKED';
+    case Cancelled = 'CANCELLED';
+    case Archived = 'ARCHIVED';
+    case ValidationFailed = 'VALIDATION_FAILED';
+
     public function title(): string
     {
-        return __('web_experience.failure.'.$this->value.'.title');
+        return __($this->copyKey().'.title');
     }
 
     public function message(): string
     {
-        return __('web_experience.failure.'.$this->value.'.message');
+        return __($this->copyKey().'.message');
+    }
+
+    /** @return list<self> handoff component states (as opposed to known record failures). */
+    public static function componentStates(): array
+    {
+        return [self::DownstreamTimeout, self::OfflineQueued, self::Retrying, self::PartialCompletion, self::Expired, self::ReadOnlyLocked, self::Cancelled, self::Archived, self::ValidationFailed];
     }
 
     public function tone(): string
     {
         return match ($this) {
-            self::StaleRecord, self::DuplicateSubmission, self::CarrierApiDown, self::ReinsuranceApiDown, self::NetworkFailure => 'warning',
+            self::StaleRecord, self::DuplicateSubmission, self::CarrierApiDown, self::ReinsuranceApiDown, self::NetworkFailure,
+            self::DownstreamTimeout, self::PartialCompletion => 'warning',
+            self::OfflineQueued, self::Retrying => 'info',
+            self::Expired, self::ReadOnlyLocked, self::Cancelled, self::Archived => 'gray',
             default => 'danger',
         };
+    }
+
+    /** Outline icon for the banner: state is never conveyed by colour alone. */
+    public function icon(): string
+    {
+        return RecordSummary::iconFor($this->tone());
+    }
+
+    private function copyKey(): string
+    {
+        return 'web_experience.'.(in_array($this, self::componentStates(), true) ? 'states' : 'failure').'.'.$this->value;
     }
 
     /**

@@ -2,7 +2,7 @@
 <html><head><meta charset="utf-8"><title>Certificate {{ $certificate->serial_number }}</title>@include('pdf._style')</head>
 <body>@include('pdf._demo_overlay')
 <table style="width:100%"><tr>
-  <td><div class="brand">OpesInsure</div><div class="muted">Certificate of insurance / Attestation d'assurance</div></td>
+  <td>@include('pdf._letterhead', ['lhFallbackName' => 'OpesInsure'])<div class="muted">Certificate of insurance / Attestation d'assurance</div></td>
   <td style="text-align:right"><span class="status">{{ $policy->status }}</span></td>
 </tr></table>
 <div class="band" style="margin-top:12px">
@@ -30,4 +30,5 @@
 <h2>Verification</h2>
 <p>Verify this certificate at <strong>{{ $verifyUrl }}</strong>@if($verificationToken) — verification code: <span class="small">{{ $verificationToken }}</span>@endif.</p>
 <p class="small muted">This digital attestation is issued on behalf of {{ $carrierName }}. Coverage is subject to the policy terms, conditions and exclusions set out in the policy schedule.</p>
+@include('pdf._letterhead_footer')
 </body></html>

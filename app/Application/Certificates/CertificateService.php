@@ -111,7 +111,7 @@ final class CertificateService
             $token = Str::random(64);
             $number = $this->numbers->allocate($p->tenant_id, $type['code']);
             $verification = DocumentEngine::newVerificationCode();
-            [$key, $bytes] = $this->render($p, $type, $number['number'], $verification, $serial);
+            [$key, $bytes, $letterheadSnapshot] = $this->render($p, $type, $number['number'], $verification, $serial);
             $doc = Document::create([
                 'tenant_id' => $p->tenant_id, 'party_id' => $p->party_id, 'policy_id' => $p->id, 'category' => 'CERT_'.$type['code'],
                 'storage_key' => $key, 'mime_type' => 'application/pdf', 'size_bytes' => strlen($bytes), 'sha256' => hash('sha256', $bytes),
@@ -122,7 +122,7 @@ final class CertificateService
                 'numbering_family' => $number['family'], 'document_number' => $number['number'], 'document_sequence' => $number['sequence'],
                 'verification_code' => $verification, 'generation_trigger' => 'CERTIFICATE_ISSUE', 'issued_at' => now(),
                 'valid_from' => $p->coverage_starts_at, 'valid_until' => $p->coverage_ends_at, 'uploaded_by' => $actor->id,
-                'provenance' => ['source' => 'CERTIFICATE_ISSUE', 'certificate_serial' => $serial, 'verification_token_hash' => hash('sha256',$token),
+                'provenance' => ['source' => 'CERTIFICATE_ISSUE', 'certificate_serial' => $serial, 'letterhead' => $letterheadSnapshot, 'verification_token_hash' => hash('sha256',$token),
                     'legacy_certificate_template_id' => $legacyTemplate?->id, 'sticker_serial_number' => $d['sticker_serial_number'] ?? null, 'external_document_hash' => strtolower($d['document_hash']), 'rendered_by' => 'OPESINSURE'],
             ]);
             $this->engine->supersedePrevious($p, $doc, $actor);
@@ -196,7 +196,7 @@ final class CertificateService
      * layout, QR and verification code as engine-generated documents) and
      * stores it on the documents disk, so the signed download serves it.
      *
-     * @return array{0: string, 1: string} storage key, PDF bytes
+     * @return array{0: string, 1: string, 2: array<string, mixed>} storage key, PDF bytes, letterhead snapshot
      */
     private function render(Policy $p, array $type, string $number, string $verification, string $serial): array
     {
@@ -211,11 +211,12 @@ final class CertificateService
             'validFrom' => $p->coverage_starts_at?->format('d/m/Y'), 'validUntil' => $p->coverage_ends_at?->format('d/m/Y'),
             'eventLabel' => 'CERTIFICATE '.$serial, 'issuedAt' => now()->format('d/m/Y H:i'), 'verificationCode' => $verification, 'qr' => $qr, 'verifyUrl' => $verifyUrl,
             'sections' => [], 'coverages' => [], 'signatory' => null, 'templateRef' => 'Certificate serial '.$serial,
+            'letterhead' => $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($p),
         ])->setPaper('a4')->output();
         $key = 'documents/'.$p->tenant_id.'/'.$p->id.'/'.$number.'.pdf';
         \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
-        return [$key, $bytes];
+        return [$key, $bytes, $letterhead['snapshot']];
     }
 
     private static function inForce(Policy $p): bool

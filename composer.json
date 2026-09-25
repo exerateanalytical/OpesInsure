@@ -13,6 +13,7 @@
     "laravel/passport": "^13.0",
     "laravel/tinker": "^2.10",
     "league/flysystem-aws-s3-v3": "^3.0",
+    "mallardduck/blade-lucide-icons": "*",
     "nyholm/psr7": "^1.8",
     "spatie/laravel-data": "^4.0",
     "spatie/laravel-permission": "^6.0",

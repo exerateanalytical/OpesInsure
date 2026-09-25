@@ -61,6 +61,11 @@ final class CatalogueSource
                 'origin' => $r['document_origin'] ?? null, 'is_evidence' => (bool) ($r['is_evidence'] ?? false),
                 'security_level' => $r['security_level'] ?? null, 'numbering_family' => $r['numbering_family'] ?? null,
                 'verifiable' => (bool) ($r['verifiable'] ?? false), 'family' => $r['parent_type_id'] ?? null,
+                // Canonical spec security profile (CanonicalDocumentSpecSeeder); null before it is seeded.
+                'canonical_spec_id' => $r['canonical_spec_id'] ?? null, 'security_tier' => $r['security_tier'] ?? null,
+                'security_tier_ceiling' => $r['security_tier_ceiling'] ?? null, 'security_controls' => self::json($r['security_controls'] ?? null),
+                'confidentiality_class' => $r['confidentiality_class'] ?? null, 'access_profiles' => self::json($r['access_profiles'] ?? null),
+                'master_shell_code' => $r['master_shell_code'] ?? null,
             ];
         }
 
@@ -131,6 +136,11 @@ final class CatalogueSource
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private static function json(mixed $v): ?array
+    {
+        return is_array($v) ? $v : (is_string($v) && $v !== '' ? json_decode($v, true) : null);
     }
 
     private function service(): DocumentCatalogueService

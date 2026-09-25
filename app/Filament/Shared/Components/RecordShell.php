@@ -61,6 +61,37 @@ final class RecordShell
             ->columnSpanFull();
     }
 
+    /**
+     * Canonical handoff: distinct gross premium / fees / commission / carrier
+     * settlement lines. Default source is FinancialBreakdownQuery (persisted
+     * figures only); a resource may pass its own closure returning
+     * ['lines' => [key => ?minor], 'currency' => 'XAF', 'total' => ?minor] or null.
+     *
+     * @param  (Closure(Model): ?array)|null  $source
+     */
+    public static function financialBreakdown(?Closure $source = null): View
+    {
+        return View::make('filament.shared.financial-breakdown-slot')
+            ->viewData(function (?Model $record) use ($source): array {
+                $data = $record ? ($source ? $source($record) : app(\App\Application\WebExperiences\FinancialBreakdownQuery::class)->for($record)) : null;
+
+                return ['breakdown' => $data];
+            })
+            ->columnSpanFull();
+    }
+
+    /**
+     * Canonical handoff persistent payment state panel.
+     *
+     * @param  Closure(Model): ?array  $source  see resources/views/filament/shared/payment-state.blade.php
+     */
+    public static function paymentState(Closure $source): View
+    {
+        return View::make('filament.shared.payment-state-slot')
+            ->viewData(fn (?Model $record) => ['payment' => $record ? $source($record) : null])
+            ->columnSpanFull();
+    }
+
     /** @param  Closure(Model): ?int  $amountMinor */
     public static function authorityWidget(string $action, Closure $amountMinor, ?Closure $currency = null): View
     {
@@ -84,7 +115,7 @@ final class RecordShell
         }
         $tabs[] = Tabs\Tab::make(__('web_experience.tabs.timeline'))->schema([self::timeline($subjectType)]);
         $tabs[] = Tabs\Tab::make(__('web_experience.tabs.documents'))->schema([self::documentViewer()]);
-        $tabs[] = Tabs\Tab::make(__('web_experience.tabs.financial'))->schema([self::financialPanel()]);
+        $tabs[] = Tabs\Tab::make(__('web_experience.tabs.financial'))->schema([self::financialBreakdown(), self::financialPanel()]);
         if ($authority !== null) {
             $tabs[] = Tabs\Tab::make(__('web_experience.tabs.authority'))->schema([self::authorityWidget(...$authority)]);
         }

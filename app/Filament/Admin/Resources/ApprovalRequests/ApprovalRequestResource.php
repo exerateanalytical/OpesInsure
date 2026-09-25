@@ -97,12 +97,21 @@ final class ApprovalRequestResource extends Resource
             Tables\Filters\SelectFilter::make('status')->options(['PENDING' => 'Pending', 'APPROVED' => 'Approved', 'REJECTED' => 'Rejected', 'CANCELLED' => 'Cancelled', 'AUTO_APPROVED' => 'Auto-approved'])->default('PENDING'),
             Tables\Filters\SelectFilter::make('action_code')->options(fn () => collect(\App\Application\Approvals\ApprovalActionCatalogue::ACTIONS)->mapWithKeys(fn ($a, $k) => [$k => $k])->all()),
         ])->recordActions([
+            // Canonical UI handoff: maker, checker, requested change, evidence and before/after in one shared panel.
+            Actions\Action::make('details')->label(__('web_experience.approval.heading'))->icon('lucide-eye')->color('gray')
+                ->modalHeading(__('web_experience.approval.heading'))->modalSubmitAction(false)
+                ->modalContent(fn ($record) => view('filament.shared.approval-panel', ['approval' => app(\App\Application\WebExperiences\ApprovalPanelData::class)->for($record, auth()->user())])),
+            // Self-approval is disabled with an explanation (not hidden); ApprovalService still enforces it server-side.
             Actions\Action::make('approve')->color('success')->requiresConfirmation()
-                ->visible(fn ($record) => $record->status === 'PENDING' && $svc()->canDecide($record, auth()->user()))
+                ->visible(fn ($record) => $record->status === 'PENDING' && ($record->requested_by === auth()->id() || $svc()->canDecide($record, auth()->user())))
+                ->disabled(fn ($record) => $record->requested_by === auth()->id())
+                ->tooltip(fn ($record) => $record->requested_by === auth()->id() ? __('web_experience.approval.self_approval_disabled') : null)
                 ->schema([Forms\Components\Textarea::make('note')])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $svc()->approve($record, auth()->user(), $data['note'] ?? null))),
             Actions\Action::make('reject')->color('danger')
-                ->visible(fn ($record) => $record->status === 'PENDING' && $svc()->canDecide($record, auth()->user()))
+                ->visible(fn ($record) => $record->status === 'PENDING' && ($record->requested_by === auth()->id() || $svc()->canDecide($record, auth()->user())))
+                ->disabled(fn ($record) => $record->requested_by === auth()->id())
+                ->tooltip(fn ($record) => $record->requested_by === auth()->id() ? __('web_experience.approval.self_approval_disabled') : null)
                 ->schema([Forms\Components\Textarea::make('note')->required()])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $svc()->reject($record, auth()->user(), $data['note']))),
             Actions\Action::make('withdraw')->color('gray')->requiresConfirmation()

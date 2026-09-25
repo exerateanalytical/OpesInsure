@@ -8,7 +8,9 @@ use App\Models\Carrier;
 use App\Models\Directory\InstitutionOffice;
 use App\Models\Directory\InstitutionProfile;
 use App\Models\Directory\InstitutionVerificationLabel;
+use App\Application\Documents\Letterhead\LetterheadResolver;
 use App\Models\InsuranceClass;
+use App\Models\Letterhead\LetterheadAsset;
 use App\Models\Partner;
 use Database\Seeders\CameroonInsuranceRegisterSeeder as Register;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +34,9 @@ final class PublicInstitutionController
 
     /** @var array<string, array{en: string, fr: string}> Admin-controlled verification labels. */
     private array $labels = [];
+
+    /** @var array<string, LetterheadAsset> ACTIVE letterhead version keyed by carrier id. */
+    private array $letterheads = [];
 
     public function index(Request $request): JsonResponse
     {
@@ -188,6 +193,11 @@ final class PublicInstitutionController
             'verified_at' => $d['verified_at'] ?? null,
             'sources' => $d['sources'] ?? [],
             'directory_id' => $d['directory_id'] ?? null,
+            // Admin-uploaded, authorized artwork only: logo_url is set only when marked public-display.
+            'logo_url' => LetterheadResolver::publicLogoUrl($this->letterheads[$c->id] ?? null),
+            'letterhead_available' => isset($this->letterheads[$c->id]),
+            // Legal footer lines (registered address, RCCM, NIU, licence ref.) as entered by an admin; only for public-display letterheads.
+            'legal_footer' => ($lh = $this->letterheads[$c->id] ?? null) && $lh->public_display ? $lh->footerLines() : [],
         ] + $this->provenance($c);
     }
 
@@ -206,6 +216,10 @@ final class PublicInstitutionController
             'licence_number' => $p->licence_number,
             'licence_expires_on' => $p->licence_expires_on?->toDateString(),
             'regulator_number' => $p->regulator_sequence,
+            // Broker register rows are not linked to an organisation letterhead yet.
+            'logo_url' => null,
+            'letterhead_available' => false,
+            'legal_footer' => [],
         ] + $this->provenance($p);
     }
 
@@ -217,6 +231,8 @@ final class PublicInstitutionController
             return;
         }
         $this->labels = InstitutionVerificationLabel::map();
+        $this->letterheads = LetterheadAsset::where('owner_type', 'CARRIER')->where('status', 'ACTIVE')->whereIn('carrier_id', $ids)
+            ->orderBy('version')->get()->keyBy('carrier_id')->all();
         $profiles = InstitutionProfile::whereIn('carrier_id', $ids)->get()->keyBy('carrier_id');
         $offices = InstitutionOffice::whereIn('carrier_id', $ids)->orderBy('sort_order')->orderBy('name')->get()->groupBy('carrier_id');
         $addresses = DB::table('party_addresses')->where('type', 'HEAD_OFFICE')->whereIn('party_id', $carriers->pluck('party_id')->filter()->all())

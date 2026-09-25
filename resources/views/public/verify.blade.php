@@ -1,15 +1,15 @@
 @php
   $labels = [
-    'valid' => ['Valid — insured', 'Valide — assuré', '#0f766e', '&#10004;'],
-    'expired' => ['Expired', 'Expirée', '#b45309', '&#9888;'],
-    'not_yet_active' => ['Not yet active', 'Pas encore active', '#155FCC', '&#8987;'],
-    'revoked' => ['Revoked', 'Révoquée', '#b91c1c', '&#10006;'],
-    'superseded' => ['Superseded — a newer document exists', 'Remplacée par une version plus récente', '#b45309', '&#9888;'],
-    'replaced' => ['Replaced', 'Remplacée', '#b45309', '&#9888;'],
-    'suspended' => ['Suspended', 'Suspendue', '#b91c1c', '&#10006;'],
-    'cancelled' => ['Cancelled', 'Résiliée', '#b91c1c', '&#10006;'],
-    'invalid' => ['Not valid', 'Non valide', '#b91c1c', '&#10006;'],
-    'not_found' => ['Certificate not found', 'Attestation introuvable', '#566776', '?'],
+    'valid' => ['Valid — insured', 'Valide — assuré', '#07855B', 'circle-check'],
+    'expired' => ['Expired', 'Expirée', '#764B00', 'clock'],
+    'not_yet_active' => ['Not yet active', 'Pas encore active', '#1256B8', 'clock'],
+    'revoked' => ['Revoked', 'Révoquée', '#98272E', 'circle-x'],
+    'superseded' => ['Superseded — a newer document exists', 'Remplacée par une version plus récente', '#764B00', 'triangle-alert'],
+    'replaced' => ['Replaced', 'Remplacée', '#764B00', 'triangle-alert'],
+    'suspended' => ['Suspended', 'Suspendue', '#98272E', 'circle-x'],
+    'cancelled' => ['Cancelled', 'Résiliée', '#98272E', 'circle-x'],
+    'invalid' => ['Not valid', 'Non valide', '#98272E', 'circle-x'],
+    'not_found' => ['Certificate not found', 'Attestation introuvable', '#566776', 'circle-help'],
   ];
   $r = $result['result'] ?? 'not_found';
   [$en, $fr, $color, $icon] = $labels[$r] ?? $labels['not_found'];
@@ -29,9 +29,9 @@
       <span style="color:var(--muted)">Scannez le QR code imprimé sur une attestation OpesInsure pour la vérifier.</span></p>
     </div>
   @else
-    <div class="card" style="border-left:6px solid {{ $color }}">
+    <div class="card" role="status" data-result="{{ $r }}" style="border-left:6px solid {{ $color }}">
       <div style="display:flex;gap:14px;align-items:center">
-        <div style="font-size:2rem;color:{{ $color }}" aria-hidden="true">{!! $icon !!}</div>
+        <div style="width:2.25rem;height:2.25rem;flex:none;color:{{ $color }}">{{ svg('lucide-'.$icon, '', ['aria-hidden' => 'true', 'focusable' => 'false', 'style' => 'width:100%;height:100%']) }}</div>
         <div>
           <div style="font-size:1.35rem;font-weight:800;color:{{ $color }}">{{ $en }}</div>
           <div style="color:var(--muted)">{{ $fr }}</div>

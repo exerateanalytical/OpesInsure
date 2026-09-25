@@ -5,18 +5,16 @@ use App\Interfaces\Http\Middleware\ResolveAdminPanelTenant;use Filament\Http\Mid
 
 final class AdminPanelProvider extends PanelProvider
 {
-    public function panel(Panel $panel):Panel{return $panel->default()->id('admin')->path('admin')->login()->passwordReset()->profile()->brandName('OpesInsure')->brandLogoHeight('2.25rem')->darkMode(false)->colors(static::v3Colors())->viteTheme('resources/css/filament/admin/theme.css')->discoverResources(in:app_path('Filament/Admin/Resources'),for:'App\\Filament\\Admin\\Resources')->discoverPages(in:app_path('Filament/Admin/Pages'),for:'App\\Filament\\Admin\\Pages')->pages([Pages\Dashboard::class])->discoverWidgets(in:app_path('Filament/Admin/Widgets'),for:'App\\Filament\\Admin\\Widgets')->widgets([Widgets\AccountWidget::class,Widgets\FilamentInfoWidget::class])->middleware([EncryptCookies::class,AddQueuedCookiesToResponse::class,StartSession::class,AuthenticateSession::class,ShareErrorsFromSession::class,VerifyCsrfToken::class,SubstituteBindings::class,DisableBladeIconComponents::class,DispatchServingFilamentEvent::class])->authMiddleware([Authenticate::class,ResolveAdminPanelTenant::class]);}
+    public function panel(Panel $panel):Panel{return PortalPanelFactory::chrome($panel->default()->id('admin')->path('admin')->login()->passwordReset()->profile()->brandName('OpesInsure')->discoverResources(in:app_path('Filament/Admin/Resources'),for:'App\\Filament\\Admin\\Resources')->discoverPages(in:app_path('Filament/Admin/Pages'),for:'App\\Filament\\Admin\\Pages')->pages([Pages\Dashboard::class])->discoverWidgets(in:app_path('Filament/Admin/Widgets'),for:'App\\Filament\\Admin\\Widgets')->widgets([Widgets\AccountWidget::class,Widgets\FilamentInfoWidget::class])->middleware([EncryptCookies::class,AddQueuedCookiesToResponse::class,StartSession::class,AuthenticateSession::class,ShareErrorsFromSession::class,VerifyCsrfToken::class,SubstituteBindings::class,DisableBladeIconComponents::class,DispatchServingFilamentEvent::class,\App\Filament\Shared\Middleware\SetPanelLocale::class])->authMiddleware([Authenticate::class,ResolveAdminPanelTenant::class]));}
 
     /**
-     * Color::hex() only keeps the input's hue and applies a generic lightness/chroma
-     * ramp — none of the v3 spec's exact hex values survive at any shade. Filament
-     * components pull their "interactive" color from anywhere in the 400-700 range
-     * (e.g. the login submit button uses 400, most badges/links use 600), and v3 §2
-     * requires a single exact brand hue everywhere ("Insurance Blue is the only
-     * general interactive color") rather than a ramp of related blues. So 400-700 all
-     * get the exact base hex; 50/100 and 200/300 get the spec's soft/border stops.
+     * The one panel palette (admin, insurer, broker via PortalPanelFactory::chrome()).
+     * Canonical UI handoff visual direction: blue #1769E0 is the only interactive
+     * colour, emerald #07855B success, gold #D99100 restrained attention, red
+     * #C9363E danger. Color::hex() keeps only the hue, so exact stops are spliced
+     * in: 50/100 soft, 200/300 border, 400-600 base, 700/800 AA text stop.
+     * (Method name kept for existing callers; values are the canonical set.)
      */
-    /** Shared with the insurer / broker portals (PortalPanelFactory) so every panel keeps the one v3 palette. */
     public static function v3ColorPalette(): array
     {
         return self::v3Colors();
@@ -40,9 +38,9 @@ final class AdminPanelProvider extends PanelProvider
         };
 
         return [
-            'primary' => $withStops('#155FCC', '#EFF5FF', '#AFCDF7', '#124FA9'),
+            'primary' => $withStops('#1769E0', '#EEF5FF', '#AFCDF7', '#1256B8'),
             'success' => $withStops('#07855B', '#E7F6F0', '#9DDAC6', '#056B49'),
-            'warning' => $withStops('#B77800', '#FFF6DD', '#EAC66F', '#764B00'),
+            'warning' => $withStops('#D99100', '#FFF6DD', '#EAC66F', '#764B00'),
             'danger' => $withStops('#C9363E', '#FDEDEF', '#E8A9AE', '#98272E'),
             'gray' => [
                 50 => '#F5F7F8',

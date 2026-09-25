@@ -29,64 +29,7 @@ uses(RefreshDatabase::class);
 
 require_once __DIR__.'/../Wave12/Concerns/mobile_customer_helpers.php';
 
-function docUser(): User
-{
-    return User::create(['full_name' => 'Doc Staff '.Str::random(4), 'phone_e164' => '+2376'.random_int(10000000, 99999999), 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
-}
-
-/** An issued in-force policy of the given line with optional risk facts. */
-function docPolicy(string $line = 'AUTO', array $facts = [], ?array $fixture = null): array
-{
-    $f = $fixture ?? makeMobileCustomerFixture('+2376'.random_int(10000000, 99999999));
-    // Fixture only: published versions are frozen (REQ-PRD-001 trigger), so re-line it as a draft and republish.
-    $status = $f['product']->status;
-    $f['product']->update(['status' => 'DRAFT']);
-    $f['product']->update(['line_code' => $line]);
-    $f['product']->update(['status' => $status]);
-    $f['quote']->update(['line_code' => $line, 'risk_facts' => $facts]);
-    $policy = Policy::create([
-        'tenant_id' => $f['tenant']->id, 'proposal_id' => $f['proposal']->id, 'carrier_id' => $f['carrier']->id, 'party_id' => $f['party']->id,
-        'policy_number' => 'POL-'.Str::upper(Str::random(8)), 'status' => 'ACTIVE', 'coverage_starts_at' => now()->subDay(), 'coverage_ends_at' => now()->addYear(),
-        'terms_snapshot' => ['line_code' => $line], 'version' => 1, 'currency' => 'XAF', 'premium_minor' => 100000, 'issued_at' => now(),
-    ]);
-    $f['policy'] = $policy;
-
-    return $f;
-}
-
-function docAuthorize(array $f, array $overrides = []): DocumentIssuanceProfile
-{
-    return DocumentIssuanceProfile::create(array_merge(['carrier_id' => $f['carrier']->id, 'issuance_mode' => 'OPES_GENERATED', 'opes_rendering_authorized' => true, 'authorization_reference' => 'AUTH-1', 'default_language' => 'BILINGUAL'], $overrides));
-}
-
-/** Published template shortcut for fixtures (the workflow itself is tested separately). */
-function docTemplate(string $code, array $o = []): DocumentTemplate
-{
-    $author = $o['created_by'] ?? docUser()->id;
-    $d = array_merge(['document_type_code' => $code, 'ownership' => 'PLATFORM', 'language' => 'BILINGUAL', 'content' => ['sections' => [['heading_en' => 'Terms', 'heading_fr' => 'Conditions', 'body_en' => 'Policy {policy_number}', 'body_fr' => 'Police {policy_number}']]]], $o);
-    $svc = app(DocumentTemplateService::class);
-    $t = DocumentTemplate::create([
-        'code' => DocumentTemplateService::lineage($d), 'document_type_code' => $code, 'ownership' => $d['ownership'], 'carrier_id' => $d['carrier_id'] ?? null,
-        'broker_tenant_id' => $d['broker_tenant_id'] ?? null, 'product_id' => $d['product_id'] ?? null, 'insurance_class' => $d['insurance_class'] ?? null,
-        'language' => $d['language'], 'version' => $d['version'] ?? 1, 'status' => 'PUBLISHED', 'title_en' => $code, 'title_fr' => $code, 'content' => $d['content'],
-        'content_hash' => 'x', 'effective_from' => now()->subYear()->toDateString(), 'created_by' => $author,
-    ]);
-    $t->update(['content_hash' => $svc->hash($t)]);
-
-    return $t->refresh();
-}
-
-function docTemplates(array $codes, array $o = []): void
-{
-    foreach ($codes as $c) {
-        docTemplate($c, $o);
-    }
-}
-
-function docItems($manifest, ?string $code = null): array
-{
-    return array_values(array_filter($manifest->items, fn ($i) => $code === null || $i['document_type_code'] === $code));
-}
+require_once __DIR__.'/Concerns/document_engine_helpers.php';
 
 beforeEach(function () {
     // Isolated disk root: Storage::fake('local') shares one directory with concurrently running suites.
@@ -229,7 +172,7 @@ it('issues one attestation and one certificate per vehicle for a fleet', functio
     expect($atts)->toHaveCount(3)->and($atts->pluck('subject_key')->all())->toBe(['CE-001-A', 'CE-002-A', 'CE-003-A'])
         ->and($atts->pluck('document_sequence')->all())->toBe([1, 2, 3]) // continuous ATT-MOT numbering
         ->and(Document::where('policy_id', $f['policy']->id)->where('document_type_code', 'MOTOR_INSURANCE_CERTIFICATE')->count())->toBe(3)
-        ->and($atts->first()->subject_label)->toBe('Isuzu CE-001-A');
+        ->and($atts->first()->subject_label)->toBe('Isuzu Corolla CE-001-A');
 });
 
 it('numbers documents continuously per tenant and family, honours tenant prefixes, and leaves no gap on rollback', function () {
@@ -313,7 +256,8 @@ it('revokes and replaces through maker-checker, and verification reports SUPERSE
     $ok = $verify($att->verification_code);
     expect($ok['result'])->toBe('valid')->and($ok['document']['document_number'])->toBe($att->document_number)
         ->and($ok['document']['status'])->toBe('VALID')->and($ok['document']['sha256'])->toBe($att->sha256)
-        ->and($ok['document']['policy_reference'])->toBe($f['policy']->policy_number)->and($ok['document']['vehicle'])->toBe('LT-555-CM')
+        ->and($ok['document']['policy_reference'])->toEndWith(substr($f['policy']->policy_number, -4))->not->toBe($f['policy']->policy_number) // canonical crypto spec §27: masked publicly
+       ->and($ok['document']['vehicle'])->toBe('LT-555-CM')
         ->and($ok)->not->toHaveKey('insured_name');
     expect(DB::table('public_verification_lookups')->where('document_id', $att->id)->count())->toBe(1);
 
@@ -330,7 +274,7 @@ it('revokes and replaces through maker-checker, and verification reports SUPERSE
     // Replace the schedule with a carrier original → REPLACED, successor named.
     $carrier = app(CarrierDocumentService::class)->upload($f['policy'], '%PDF-1.4 carrier schedule', 'application/pdf', ['document_type_code' => 'POLICY_SCHEDULE', 'issue_date' => now()->toDateString(), 'carrier_document_number' => 'CP-2026-77'], $maker);
     $replaced = $verify($schedule->verification_code);
-    expect($replaced['result'])->toBe('replaced')->and($replaced['document']['replaced_by'])->toBe('CP-2026-77');
+    expect($replaced['result'])->toBe('replaced')->and($replaced['document']['replaced_by'])->toBe('******6-77'); // CUSTOMER_PRIVATE: successor number masked publicly (crypto spec §27)
 
     // Expired: validity ended.
     $cert->update(['valid_until' => now()->subDay()]);
@@ -367,6 +311,9 @@ it('serves the customer documents API grouped by stage with history, keeps evide
     $f = docPolicy('AUTO', ['registration_number' => 'LT-300-CC']);
     docAuthorize($f);
     docTemplates(['INSURANCE_POLICY', 'POLICY_SCHEDULE', 'MOTOR_INSURANCE_ATTESTATION', 'PREMIUM_RECEIPT']);
+    // Canonical spec (receipt shell): a premium receipt needs a reconciled payment.
+    $pay = \App\Models\PaymentIntentRecord::create(['tenant_id' => $f['tenant']->id, 'proposal_id' => $f['proposal']->id, 'provider' => 'MTN_MOMO', 'provider_reference' => 'MOMO-REF-1', 'payer_phone_e164' => '+237670000000', 'amount_minor' => 100000, 'currency' => 'XAF', 'status' => 'SUCCEEDED', 'idempotency_key' => (string) Str::uuid(), 'reconciled_at' => now()]);
+    $f['policy']->update(['payment_intent_id' => $pay->id]);
     $m = app(DocumentEngine::class)->fire('POLICY_ISSUED', $f['policy']);
     $staff = docUser();
     app(CarrierDocumentService::class)->upload($f['policy'], '%PDF-1.4 new att', 'application/pdf', ['document_type_code' => 'MOTOR_INSURANCE_ATTESTATION', 'issue_date' => now()->toDateString(), 'subject_key' => 'LT-300-CC'], $staff);

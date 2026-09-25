@@ -1,7 +1,7 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Receipt {{ $r['receipt_number'] }}</title>@include('pdf._style')</head>
 <body>@include('pdf._demo_overlay')
-<div class="brand">OpesInsure</div>
+@include('pdf._letterhead', ['lhFallbackName' => 'OpesInsure'])
 <div class="muted">Payment receipt / Reçu de paiement</div>
 <div class="band" style="margin-top:10px"><strong>{{ $r['receipt_number'] }}</strong> &nbsp;·&nbsp; {{ $r['status'] }}</div>
 <table class="kv">
@@ -15,4 +15,5 @@
   @if($r['policy_number'])<tr><td class="k">Policy</td><td>{{ $r['policy_number'] }}</td></tr>@endif
 </table>
 <p class="small muted" style="margin-top:16px">Receipt generated {{ now()->format('d M Y H:i') }}. Keep this receipt for your records.</p>
+@include('pdf._letterhead_footer')
 </body></html>

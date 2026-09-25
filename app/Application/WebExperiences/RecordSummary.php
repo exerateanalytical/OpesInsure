@@ -36,6 +36,24 @@ final readonly class RecordSummary
         };
     }
 
+    /** Outline status icon per tone (status = icon + label + colour, never colour alone). */
+    public static function iconFor(string $tone): string
+    {
+        return match ($tone) {
+            'success' => 'lucide-circle-check',
+            'warning' => 'lucide-clock',
+            'danger' => 'lucide-circle-x',
+            'info' => 'lucide-info',
+            default => 'lucide-circle-minus',
+        };
+    }
+
+    /** Readable label for a stable status code; the code itself remains the API value. */
+    public static function labelFor(string $status): string
+    {
+        return ucfirst(strtolower(str_replace(['_', '-'], ' ', $status)));
+    }
+
     public function toArray(): array
     {
         return [

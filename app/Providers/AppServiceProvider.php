@@ -103,38 +103,24 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Minimal, honest wiring for the wave10 portal shell: real dashboard
-     * metrics via PortalDashboardQuery, no invented navigation/business
-     * content. This is a placeholder for the separate design-system
-     * implementation described in OPESINSURE_CLAUDE_UI_IMPLEMENTATION_HANDOFF.md,
-     * not a finished portal experience.
+     * Owner decision D2 (canonical UI handoff): the Wave10 placeholder shell is
+     * retired. /portal/{portal} now redirects to the panel that owns that
+     * experience; customer and agent experiences are the mobile app.
      */
     private function registerPortalShellRoute(): void
     {
-        Route::middleware(['web', 'auth', ResolveAdminPanelTenant::class])
-            ->get('/portal/{portal}', function (string $portal, PortalDashboardQuery $query) {
+        Route::middleware(['web'])
+            ->get('/portal/{portal}', function (string $portal) {
                 $portal = strtoupper($portal);
                 abort_unless(in_array($portal, PortalWorkspaceService::PORTALS, true), 404);
 
-                $data = $query->handle(app(TenantContext::class)->id(), $portal);
-                $user = auth()->user();
-
-                return view('wave10.portal', [
-                    'title' => Str::title($portal) . ' Portal',
-                    'eyebrow' => 'OpesInsure',
-                    'initials' => Str::of($user->full_name)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode(''),
-                    'navigation' => [['url' => '#', 'label' => __('wave10.priority_work'), 'icon' => '◧', 'active' => true]],
-                    'metrics' => collect($data['metrics'])->map(fn ($count, $table) => [
-                        'label' => Str::headline($table),
-                        'value' => $count,
-                        'context' => __('wave10.account'),
-                    ])->values()->all(),
-                    'actions' => [],
-                    'slot' => 'Portal content design pending — see OPESINSURE_CLAUDE_UI_IMPLEMENTATION_HANDOFF.md.',
-                ]);
+                return redirect(self::PORTAL_REDIRECTS[$portal], 301);
             })
             ->name('portal.dashboard');
     }
+
+    /** @var array<string, string> Wave10 portal code => canonical web entry point. */
+    public const PORTAL_REDIRECTS = ['ADMIN' => '/admin', 'BROKER' => '/broker', 'CARRIER' => '/insurer', 'AGENT' => '/download', 'CUSTOMER' => '/download'];
 
     private function registerLocalDemoLogin(): void
     {

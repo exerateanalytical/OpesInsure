@@ -2,7 +2,7 @@
 <html><head><meta charset="utf-8"><title>Policy schedule {{ $policy->policy_number }}</title>@include('pdf._style')</head>
 <body>@include('pdf._demo_overlay')
 <table style="width:100%"><tr>
-  <td><div class="brand">OpesInsure</div><div class="muted">Policy schedule / Conditions particulières</div></td>
+  <td>@include('pdf._letterhead', ['lhFallbackName' => 'OpesInsure'])<div class="muted">Policy schedule / Conditions particulières</div></td>
   <td style="text-align:right"><img src="{{ $qr }}" style="width:80px;height:80px" alt="QR"></td>
 </tr></table>
 <div class="band" style="margin-top:8px"><strong>{{ $productName }}</strong> &nbsp;·&nbsp; {{ $carrierName }}</div>
@@ -39,4 +39,5 @@
 </table>
 @endif
 <p class="small muted" style="margin-top:18px">Verify at {{ $verifyUrl }}. This schedule forms part of your policy with {{ $carrierName }}.</p>
+@include('pdf._letterhead_footer')
 </body></html>

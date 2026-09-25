@@ -43,11 +43,12 @@ function b3cPolicy(): array
 {
     $f = makeMobileCustomerFixture('+2376'.random_int(10000000, 99999999));
     $f['product']->update(['line_code' => 'AUTO']);
-    $f['quote']->update(['line_code' => 'AUTO', 'risk_facts' => ['registration_number' => 'LT-777-CM']]);
+    $f['quote']->update(['line_code' => 'AUTO', 'risk_facts' => ['registration_number' => 'LT-777-CM', 'vin' => 'VF1TESTVIN0000002', 'make' => 'Toyota', 'model' => 'Corolla', 'usage' => 'PRIVATE']]);
+    \App\Models\QuoteOffer::whereKey($f['proposal']->quote_offer_id)->update(['tax_minor' => 0, 'fee_minor' => 0]);
     $f['policy'] = Policy::create([
         'tenant_id' => $f['tenant']->id, 'proposal_id' => $f['proposal']->id, 'carrier_id' => $f['carrier']->id, 'party_id' => $f['party']->id,
         'policy_number' => 'POL-'.Str::upper(Str::random(8)), 'status' => 'ACTIVE', 'coverage_starts_at' => now()->subDay(), 'coverage_ends_at' => now()->addYear(),
-        'terms_snapshot' => ['line_code' => 'AUTO'], 'version' => 1, 'currency' => 'XAF', 'premium_minor' => 100000, 'issued_at' => now(),
+        'terms_snapshot' => ['line_code' => 'AUTO', 'coverage_snapshot' => ['coverages' => [['code' => 'RC', 'name' => 'Third-party liability', 'limit_minor' => 500000000, 'deductible_minor' => 0]]]], 'version' => 1, 'currency' => 'XAF', 'premium_minor' => 100000, 'issued_at' => now(),
     ]);
 
     return $f;

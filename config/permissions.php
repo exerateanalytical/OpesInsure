@@ -481,6 +481,12 @@ return [
         'data_readiness.view' => ['description' => 'View the Data Readiness registry: every data-master domain with its status, owner, source and what is missing.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
+    // Document letterheads (insurer / organisation logo, header, legal footer). Platform configuration, not business data.
+    'letterheads' => [
+        'documents.letterheads.manage' => ['description' => 'Upload authorized letterhead artwork (logo, header, brand colour, legal footer) for insurers and organisations (audited, versioned).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'documents.letterheads.approve' => ['description' => 'Approve a pending letterhead version when maker-checker is on (never the uploader).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',

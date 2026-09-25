@@ -229,6 +229,27 @@ final class DocumentPackResolver
         return ['pack_code' => $packCode, 'insurance_class' => $class, 'items' => $result];
     }
 
+    /**
+     * Raw facts of one subject (vehicle / member / shipment) or, without a subject, the policy risk
+     * facts: the canonical risk source of an issued document (FG-05). Read-only.
+     *
+     * @return array<string, mixed>
+     */
+    public function subjectFacts(Policy $policy, ?string $type, ?string $key): array
+    {
+        $facts = $this->facts($policy);
+        if (! $type) {
+            return $facts;
+        }
+        foreach ($this->subjects($policy, $type) as $i => $s) {
+            if ($s['key'] === $key) {
+                return (array) ($this->rawSubjects($facts, $type)[$i] ?? []);
+            }
+        }
+
+        return [];
+    }
+
     /** @return array<string, mixed> */
     private function facts(Policy $policy): array
     {
@@ -239,7 +260,8 @@ final class DocumentPackResolver
     private function rawSubjects(array $facts, string $type): array
     {
         return match ($type) {
-            'VEHICLE' => (array) ($facts['vehicles'] ?? (isset($facts['registration_number']) ? [['registration_number' => $facts['registration_number'], 'make' => $facts['make'] ?? $facts['vehicle_make'] ?? null, 'model' => $facts['model'] ?? $facts['vehicle_model'] ?? null]] : [])),
+            'VEHICLE' => (array) ($facts['vehicles'] ?? (isset($facts['registration_number']) ? [['registration_number' => $facts['registration_number'], 'make' => $facts['make'] ?? $facts['vehicle_make'] ?? null, 'model' => $facts['model'] ?? $facts['vehicle_model'] ?? null,
+                'vin' => $facts['vin'] ?? $facts['chassis_number'] ?? null, 'usage' => $facts['usage'] ?? $facts['vehicle_use'] ?? $facts['use'] ?? null, 'model_year' => $facts['model_year'] ?? $facts['year'] ?? null]] : [])),
             'MEMBER' => (array) ($facts['members'] ?? []),
             default => (array) ($facts['shipments'] ?? []),
         };
