@@ -845,3 +845,22 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E3 — REQ-HLT-002 health preauthorization / guarantee of payment (App\Application\Health\Preauth).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $pa = \App\Application\Health\Preauth\Http\PreauthorizationController::class;
+    Route::get('health/preauthorizations', [$pa, 'index'])->middleware('permission:health.preauth.view');
+    Route::post('health/preauthorizations', [$pa, 'store'])->middleware('permission:health.preauth.request');
+    Route::get('health/preauthorizations/{preauth}', [$pa, 'show'])->middleware('permission:health.preauth.view')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/info-request', [$pa, 'requestInfo'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/info', [$pa, 'provideInfo'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/proposal', [$pa, 'propose'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/proposal/return', [$pa, 'returnProposal'])->middleware('permission:health.preauth.approve')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/decision', [$pa, 'decide'])->middleware('permission:health.preauth.approve')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/admission', [$pa, 'admit'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/discharge', [$pa, 'discharge'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/cancel', [$pa, 'cancel'])->middleware('permission:health.preauth.review')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/extensions', [$pa, 'requestExtension'])->middleware('permission:health.preauth.request')->whereUuid('preauth');
+    Route::post('health/preauthorizations/{preauth}/extensions/{extension}/proposal', [$pa, 'proposeExtension'])->middleware('permission:health.preauth.review')->whereUuid(['preauth', 'extension']);
+    Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
+});
+// End Agent E3
