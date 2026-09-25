@@ -40,7 +40,7 @@ final class EligibilityService
      * @return array{check_id: string, outcome: string, eligible: bool, reasons: list<array{code: string, outcome: string, message: string}>, service_date: string,
      *   member: ?array, policy_id: ?string, policy_version_id: ?string, coverage: ?array, benefit_code: ?string, service: ?array, waiting_period_ends_on: ?string}
      */
-    public function check(string $tenantId, string $memberRef, ?string $providerId, string $serviceCode, \DateTimeInterface|string|null $at = null, string $channel = 'API', ?string $actorId = null): array
+    public function check(string $tenantId, string $memberRef, ?string $providerId, string $serviceCode, \DateTimeInterface|string|null $at = null, string $channel = 'API', ?string $actorId = null, ?string $policyId = null): array
     {
         $day = CarbonImmutable::parse($at ?? now())->startOfDay();
         $date = $day->toDateString();
@@ -49,26 +49,41 @@ final class EligibilityService
         $add = function (string $outcome, string $code, string $message) use (&$reasons) {
             $reasons[] = ['code' => $code, 'outcome' => $outcome, 'message' => $message];
         };
-        $ctx = ['member' => null, 'policy_id' => null, 'policy_version_id' => null, 'coverage' => null, 'benefit_code' => null, 'service' => null, 'waiting_period_ends_on' => null];
+        $ctx = ['member' => null, 'health_member_id' => null, 'member_basis' => null, 'policy_id' => null, 'policy_version_id' => null, 'coverage' => null, 'benefit_code' => null, 'service' => null, 'waiting_period_ends_on' => null];
 
-        $member = $this->members->findByReference($tenantId, $memberRef);
+        $member = $this->memberFor($tenantId, $memberRef, $policyId);
+        $policyLevel = null;
         if (! $member) {
-            $add('NOT_ELIGIBLE', 'MEMBER_NOT_FOUND', 'No health member matches this reference.');
+            // A policy that does not use the member registry (no health_members enrolled) is checked at policy level
+            // when the caller names it; a policy with enrolled members only admits its enrolled members.
+            $policyLevel = $policyId !== null && ! DB::table('health_members')->where('policy_id', $policyId)->exists()
+                ? DB::table('policies')->where('tenant_id', $tenantId)->where('id', $policyId)->first() : null;
+            if (! $policyLevel) {
+                $add('NOT_ELIGIBLE', 'MEMBER_NOT_FOUND', 'No health member matches this reference.');
 
-            return $this->finish($tenantId, $memberRef, null, $providerId, $serviceCode, $date, $reasons, $ctx, $channel, $actorId);
+                return $this->finish($tenantId, $memberRef, null, $providerId, $serviceCode, $date, $reasons, $ctx, $channel, $actorId);
+            }
+            $ctx['member_basis'] = 'POLICY';
+            $ctx['policy_id'] = $policyLevel->id;
+        } else {
+            $ctx['member'] = ['id' => $member->id, 'member_number' => $member->member_number, 'card_number' => $member->card_number, 'relationship' => $member->relationship, 'display_name' => $member->display_name];
+            $ctx['health_member_id'] = $member->id;
+            $ctx['member_basis'] = 'MEMBER';
+            $ctx['policy_id'] = $member->policy_id;
+            if ($policyId !== null && $member->policy_id !== $policyId) {
+                $add('NOT_ELIGIBLE', 'MEMBER_POLICY_MISMATCH', 'The member is not enrolled on the named policy.');
+            }
         }
-        $ctx['member'] = ['member_number' => $member->member_number, 'card_number' => $member->card_number, 'relationship' => $member->relationship, 'display_name' => $member->display_name];
-        $ctx['policy_id'] = $member->policy_id;
 
         // ---- member enrolment at the service date
-        $mFrom = CarbonImmutable::parse($member->effective_from)->toDateString();
-        $mTo = $member->effective_to ? CarbonImmutable::parse($member->effective_to)->toDateString() : null;
-        if ($date < $mFrom || ($mTo !== null && $date >= $mTo)) {
+        $mFrom = CarbonImmutable::parse($member->effective_from ?? $policyLevel->coverage_starts_at ?? $date)->toDateString();
+        $mTo = $member?->effective_to ? CarbonImmutable::parse($member->effective_to)->toDateString() : null;
+        if ($member && ($date < $mFrom || ($mTo !== null && $date >= $mTo))) {
             $add('NOT_ELIGIBLE', 'MEMBER_NOT_COVERED_ON_DATE', "Member is covered from {$mFrom}".($mTo ? " until {$mTo}" : '').'.');
-        } elseif ($member->status === 'SUSPENDED') {
+        } elseif ($member?->status === 'SUSPENDED') {
             $add('NOT_ELIGIBLE', 'MEMBER_SUSPENDED', 'Member is suspended.');
         }
-        if ($member->schedule_item_id) {
+        if ($member?->schedule_item_id) {
             $item = DB::table('policy_schedule_items')->where('id', $member->schedule_item_id)->first();
             $iFrom = CarbonImmutable::parse($item->effective_from)->toDateString();
             $iTo = $item->effective_until ? CarbonImmutable::parse($item->effective_until)->toDateString() : null;
@@ -78,11 +93,14 @@ final class EligibilityService
         }
 
         // ---- policy status
-        $policy = DB::table('policies')->where('id', $member->policy_id)->first();
+        $policy = $policyLevel ?? DB::table('policies')->where('id', $member->policy_id)->first();
         if (in_array($policy->status, self::NOT_ISSUED, true)) {
             $add('NOT_ELIGIBLE', 'POLICY_NOT_ISSUED', "Policy is {$policy->status}.");
         } elseif ($policy->status === 'LAPSED') {
             $add('NOT_ELIGIBLE', 'POLICY_LAPSED', 'Policy has lapsed.');
+        } elseif ($policy->status === 'CANCELLED' && ! DB::table('policy_versions')->where('policy_id', $policy->id)->where('kind', 'CANCELLATION')->exists()) {
+            // Cancelled without a dated cancellation version: the effective date is unknown, so no service date is covered.
+            $add('NOT_ELIGIBLE', 'POLICY_CANCELLED', 'Policy is cancelled.');
         }
         $suspended = DB::table('policy_suspensions')->where('policy_id', $policy->id)->where('suspended_at', '<=', $day->endOfDay())
             ->where(fn ($q) => $q->whereIn('status', ['SUSPENDED', 'REINSTATEMENT_REQUESTED'])
@@ -128,13 +146,13 @@ final class EligibilityService
                     'deductible_minor' => $coverage->deductible_minor === null ? null : (int) $coverage->deductible_minor, 'currency' => $coverage->currency];
             }
             if ($rule->waiting_period_days !== null) {
-                $ends = CarbonImmutable::parse($member->effective_from)->addDays((int) $rule->waiting_period_days)->toDateString();
+                $ends = CarbonImmutable::parse($mFrom)->addDays((int) $rule->waiting_period_days)->toDateString();
                 if ($date < $ends) {
                     $ctx['waiting_period_ends_on'] = $ends;
                     $add('WAITING_PERIOD', 'WAITING_PERIOD', "Waiting period for {$rule->benefit_code} runs until {$ends}.");
                 }
             }
-            if ($this->exhausted($tenantId, $member, $rule, $coverage, $day)) {
+            if ($this->exhausted($tenantId, $member ? $member->id : ['member_ref' => $memberRef, 'policy_id' => $policy->id], $rule, $coverage, $day)) {
                 $add('BENEFIT_EXHAUSTED', 'BENEFIT_EXHAUSTED', "Benefit {$rule->benefit_code} is exhausted for the period.");
             }
         }
@@ -152,14 +170,15 @@ final class EligibilityService
         return $this->finish($tenantId, $memberRef, $member, $providerId, $serviceCode, $date, $reasons, $ctx, $channel, $actorId, $rule?->coverage_code);
     }
 
-    private function exhausted(string $tenantId, object $member, object $rule, ?object $coverage, CarbonImmutable $day): bool
+    /** @param string|array $member E5 member argument: the health_members id, or a policy-level member ref + policy */
+    private function exhausted(string $tenantId, string|array $member, object $rule, ?object $coverage, CarbonImmutable $day): bool
     {
         $acc = \App\Application\Health\Benefits\BenefitAccumulator::class;
         if (class_exists($acc)) {
             $svc = app($acc);
             if (method_exists($svc, 'remaining')) {
                 try {
-                    $left = $svc->remaining($tenantId, $member->id, $rule->benefit_code, $day);
+                    $left = $svc->remaining($tenantId, $member, $rule->benefit_code, $day);
                     if (is_array($left)) {
                         $left = $left['remaining_minor'] ?? null;
                     }
@@ -176,6 +195,22 @@ final class EligibilityService
         $agg = DB::table('policy_limits')->where('policy_coverage_id', $coverage->id)->where('limit_type', 'AGGREGATE')->first();
 
         return $agg !== null && (int) $agg->consumed_minor + (int) $agg->reserved_minor >= (int) $agg->amount_minor;
+    }
+
+    /**
+     * Resolve a member reference: member / card number, a health_members id, or (with the policy) the party id of a
+     * member of that policy — the references preauthorization and provider claims carry.
+     */
+    public function memberFor(string $tenantId, string $ref, ?string $policyId = null): ?object
+    {
+        $m = $this->members->findByReference($tenantId, $ref);
+        if ($m || ! \Illuminate\Support\Str::isUuid($ref)) {
+            return $m;
+        }
+
+        return DB::table('health_members')->where('tenant_id', $tenantId)->where('id', $ref)->first()
+            ?? ($policyId === null ? null : DB::table('health_members')->where('tenant_id', $tenantId)->where('policy_id', $policyId)->where('party_id', $ref)
+                ->where('status', '<>', 'ENDED')->orderByRaw("CASE WHEN relationship = 'PRINCIPAL' THEN 0 ELSE 1 END")->first());
     }
 
     private function finish(string $tenantId, string $memberRef, ?object $member, ?string $providerId, string $serviceCode, string $date, array $reasons, array $ctx, string $channel, ?string $actorId, ?string $coverageCode = null): array

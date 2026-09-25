@@ -9,6 +9,7 @@ use App\Application\Cases\CaseService;
 use App\Application\Events\OutboxWriter;
 use App\Application\Finance\Obligations\ObligationService;
 use App\Application\Ledger\FinancialPostingService;
+use App\Application\Providers\Portal\ProviderScope;
 use App\Application\Providers\ProviderNetworkService;
 use App\Application\Providers\ProviderRegistry;
 use App\Interfaces\Http\Errors\ApiProblemException;
@@ -48,8 +49,11 @@ final class ProviderClaimService
         'PAID' => [],
     ];
 
-    /** Candidate preauthorisation / guarantee-of-payment tables (Batch 14 E3); checked with Schema::hasTable. */
-    public const PREAUTH_TABLES = ['health_preauthorizations', 'health_preauthorisations', 'health_guarantees_of_payment'];
+    /** Batch 14 E3 preauthorization / guarantee-of-payment service (called guarded, Wave A contract). */
+    private const PREAUTH_SERVICE = 'App\\Application\\Health\\Preauth\\PreauthorizationService';
+
+    /** E2 eligibility outcomes that reject a line (same set as preauthorization). */
+    public const BLOCKING_OUTCOMES = ['NOT_ELIGIBLE', 'WAITING_PERIOD', 'BENEFIT_EXHAUSTED'];
 
     public function __construct(
         private readonly ProviderNetworkService $network,
@@ -69,6 +73,7 @@ final class ProviderClaimService
     public function create(string $tenantId, array $d, ?string $actorId): object
     {
         $provider = $this->providers->find($d['provider_id']);
+        ProviderScope::assertMayActFor($actorId ? User::find($actorId) : null, $provider->id);
         $contract = $this->network->contract($tenantId, $d['contract_id']);
         if ($contract->provider_profile_id !== $provider->id) {
             throw new ApiProblemException('CONTRACT_PROVIDER_MISMATCH', 422, 'The contract does not belong to this provider.');
@@ -137,12 +142,15 @@ final class ProviderClaimService
     {
         return DB::transaction(function () use ($tenantId, $id, $actorId): object {
             $c = $this->locked($tenantId, $id);
+            ProviderScope::assertMayActFor($actorId ? User::find($actorId) : null, $c->provider_profile_id);
             $this->assertTransition($c, 'SUBMITTED');
-            $preauthVerified = $this->verifyPreauth($tenantId, $c);
+            $preauthCheck = $this->verifyPreauth($tenantId, $c);
+            $preauthVerified = $preauthCheck === 'VERIFIED';
             $this->priceLines($tenantId, $c, [], $preauthVerified);
             $claimId = $c->claim_id ?? $this->linkMemberClaim($tenantId, $c);
-            DB::table('health_provider_claims')->where('id', $id)->update(['status' => 'SUBMITTED', 'submitted_at' => now(), 'preauth_verified' => $preauthVerified, 'claim_id' => $claimId, 'updated_at' => now()]);
-            $this->event($id, 'DRAFT', 'SUBMITTED', 'SUBMITTED', null, $actorId, ['claim_id' => $claimId, 'preauth_verified' => $preauthVerified]);
+            DB::table('health_provider_claims')->where('id', $id)->update(['status' => 'SUBMITTED', 'submitted_at' => now(), 'preauth_verified' => $preauthVerified, 'preauth_check' => $preauthCheck,
+                'claim_id' => $claimId, 'updated_at' => now()]);
+            $this->event($id, 'DRAFT', 'SUBMITTED', 'SUBMITTED', null, $actorId, ['claim_id' => $claimId, 'preauth_verified' => $preauthVerified, 'preauth_check' => $preauthCheck]);
             $this->audit->record('health.provider_claim.submitted', 'health_provider_claim', $id, ['claim_id' => $claimId]);
             $this->outbox->record('health.provider_claim.submitted', 'health_provider_claim', $id, ['provider_claim_id' => $id, 'provider_id' => $c->provider_profile_id, 'claim_id' => $claimId, 'billed_minor' => (int) $c->billed_minor]);
 
@@ -218,9 +226,10 @@ final class ProviderClaimService
                 'metadata' => ['provider_id' => $provider->id, 'claim_id' => $c->claim_id],
             ], $actorId);
             $journal = $this->posting->post($tenantId, 'health.provider_claim.approved', $c->id, $amount, $c->currency, 'health_provider_claim:'.$c->id);
+            $gop = $this->consumeGuarantee($tenantId, $c, $amount);
             $benefits = $this->consumeBenefits($tenantId, $c);
-            DB::table('health_provider_claims')->where('id', $id)->update(['financial_obligation_id' => $o->id]);
-            $this->move($c, 'PAYABLE', 'MADE_PAYABLE', null, $actorId, ['financial_obligation_id' => $o->id, 'journal_id' => $journal, 'benefits' => $benefits]);
+            DB::table('health_provider_claims')->where('id', $id)->update(['financial_obligation_id' => $o->id, 'preauth_consumed_minor' => $gop]);
+            $this->move($c, 'PAYABLE', 'MADE_PAYABLE', null, $actorId, ['financial_obligation_id' => $o->id, 'journal_id' => $journal, 'gop_consumed_minor' => $gop, 'benefits' => $benefits]);
             $this->outbox->record('health.provider_claim.payable', 'health_provider_claim', $id, ['provider_claim_id' => $id, 'financial_obligation_id' => $o->id, 'amount_minor' => $amount, 'currency' => $c->currency]);
 
             return $this->find($tenantId, $id);
@@ -232,6 +241,7 @@ final class ProviderClaimService
     {
         return DB::transaction(function () use ($tenantId, $id, $reason, $actor): object {
             $c = $this->locked($tenantId, $id);
+            ProviderScope::assertMayActFor($actor, $c->provider_profile_id);
             $this->assertTransition($c, 'DISPUTED');
             $case = $this->cases->open($tenantId, 'PROVIDER_DISPUTE', [
                 'title' => "Provider dispute — {$c->claim_number} (invoice {$c->invoice_reference})",
@@ -326,11 +336,13 @@ final class ProviderClaimService
             $o = $overrides[(int) $l->line_no] ?? [];
             $reject = ! empty($o['reject']) ? $o['reason_code'] : null;
             $note = $o['explanation'] ?? null;
-            if ($reject === null && ! $this->eligible($tenantId, $c, $l->service_code)) {
-                [$reject, $note] = ['NOT_ELIGIBLE', 'Member not eligible for this service on the service date.'];
+            $elig = $this->eligibility($tenantId, $c, $l->service_code);
+            if ($reject === null && $elig['blocking']) {
+                [$reject, $note] = [$elig['outcome'] === 'BENEFIT_EXHAUSTED' ? 'BENEFIT_LIMIT' : 'NOT_ELIGIBLE', 'Member not eligible for this service on the service date ('.$elig['outcome'].').'];
             }
             $eob = $this->pricer->price((int) $l->quantity, (int) $l->unit_price_minor, $tariff, isset($o['allowed_minor']) ? (int) $o['allowed_minor'] : null, $reject, $note);
             DB::table('health_provider_claim_lines')->where('id', $l->id)->update($eob + [
+                'eligibility_outcome' => $elig['outcome'], 'coverage_code' => $elig['coverage_code'], 'benefit_code' => $elig['benefit_code'],
                 'tariff_line_id' => $tariff?->id, 'tariff_version' => $tariff?->version, 'tariff_unit_price_minor' => $tariff?->contracted_price_minor, 'updated_at' => now(),
             ]);
             $totals['billed_minor'] += (int) $l->billed_minor;
@@ -343,47 +355,65 @@ final class ProviderClaimService
         return $totals;
     }
 
-    /** E2 EligibilityService when deployed; otherwise the policy must be in force on the service date. */
-    private function eligible(string $tenantId, object $c, string $serviceCode): bool
+    /**
+     * E2 EligibilityService when deployed (Wave A contract keys: outcome / eligible, coverage.code, benefit_code; blocking
+     * outcomes as for preauthorization); otherwise the policy must be in force on the service date.
+     *
+     * @return array{outcome: string, blocking: bool, coverage_code: ?string, benefit_code: ?string, health_member_id: ?string}
+     */
+    private function eligibility(string $tenantId, object $c, string $serviceCode): array
     {
         $svc = 'App\\Application\\Health\\Eligibility\\EligibilityService';
         if (class_exists($svc)) {
-            $r = app($svc)->check($tenantId, $c->member_reference ?? $c->member_party_id ?? $c->policy_id, $c->provider_profile_id, $serviceCode, $c->service_date);
+            $r = app($svc)->check($tenantId, (string) ($c->member_reference ?? $c->member_party_id ?? $c->policy_id), $c->provider_profile_id, $serviceCode, $c->service_date,
+                'PROVIDER_CLAIM', null, $c->policy_id);
+            $outcome = (string) ($r['outcome'] ?? (($r['eligible'] ?? true) ? 'ELIGIBLE' : 'NOT_ELIGIBLE'));
 
-            return (bool) ($r['eligible'] ?? $r['covered'] ?? true);
+            return ['outcome' => $outcome, 'blocking' => in_array($outcome, self::BLOCKING_OUTCOMES, true), 'coverage_code' => $r['coverage']['code'] ?? null,
+                'benefit_code' => $r['benefit_code'] ?? null, 'health_member_id' => $r['health_member_id'] ?? null];
         }
-        if (! $c->policy_id) {
-            return true; // member identified without a policy: eligibility is the adjudicator's call
+        $ok = true;
+        if ($c->policy_id) { // member identified without a policy: eligibility is the adjudicator's call
+            $p = DB::table('policies')->where(['id' => $c->policy_id, 'tenant_id' => $tenantId])->first();
+            $d = CarbonImmutable::parse($c->service_date)->endOfDay();
+            $ok = $p && in_array($p->status, ['ACTIVE', 'EXPIRING', 'ENDORSEMENT_PENDING'], true)
+                && ($p->coverage_starts_at === null || CarbonImmutable::parse($p->coverage_starts_at)->startOfDay()->lte($d))
+                && ($p->coverage_ends_at === null || CarbonImmutable::parse($p->coverage_ends_at)->gte(CarbonImmutable::parse($c->service_date)->startOfDay()));
         }
-        $p = DB::table('policies')->where(['id' => $c->policy_id, 'tenant_id' => $tenantId])->first();
-        $d = CarbonImmutable::parse($c->service_date)->endOfDay();
 
-        return $p && in_array($p->status, ['ACTIVE', 'EXPIRING', 'ENDORSEMENT_PENDING'], true)
-            && ($p->coverage_starts_at === null || CarbonImmutable::parse($p->coverage_starts_at)->startOfDay()->lte($d))
-            && ($p->coverage_ends_at === null || CarbonImmutable::parse($p->coverage_ends_at)->gte(CarbonImmutable::parse($c->service_date)->startOfDay()));
+        return ['outcome' => $ok ? 'ELIGIBLE' : 'NOT_ELIGIBLE', 'blocking' => ! $ok, 'coverage_code' => null, 'benefit_code' => null, 'health_member_id' => null];
     }
 
-    /** Links a preauthorisation / GOP when E3's table exists; an unknown or foreign preauth id is refused. */
-    private function verifyPreauth(string $tenantId, object $c): bool
+    /**
+     * Verifies the guarantee of payment against E3's health_preauthorizations (PreauthorizationService::guaranteeFor:
+     * approved, validity window, provider, policy, amount left). Returns VERIFIED, NONE (no preauth given / module not
+     * deployed) or the refusal reason; an unverified GOP leaves the claim adjudicable without a guarantee.
+     */
+    private function verifyPreauth(string $tenantId, object $c): string
     {
         if (! $c->preauth_id) {
-            return false;
+            return 'NONE';
         }
-        foreach (self::PREAUTH_TABLES as $table) {
-            if (Schema::hasTable($table)) {
-                $q = DB::table($table)->where('id', $c->preauth_id);
-                if (Schema::hasColumn($table, 'tenant_id')) {
-                    $q->where('tenant_id', $tenantId);
-                }
-                if (! $q->exists()) {
-                    throw new ApiProblemException('PREAUTH_NOT_FOUND', 422, 'Preauthorisation / guarantee of payment not found.');
-                }
-
-                return true;
-            }
+        if (! class_exists(self::PREAUTH_SERVICE) || ! Schema::hasTable('health_preauthorizations')) {
+            return 'NONE'; // preauth module not deployed: reference kept, unverified
         }
 
-        return false; // preauth module not deployed: reference kept, unverified
+        return app(self::PREAUTH_SERVICE)->guaranteeFor($tenantId, (string) $c->preauth_id, $c->provider_profile_id, $c->policy_id, (string) $c->service_date)['reason'];
+    }
+
+    /** Payable time: draw the insurer share from the verified GOP (E3). @return int amount taken from the guarantee */
+    private function consumeGuarantee(string $tenantId, object $c, int $amount): int
+    {
+        if (! $c->preauth_verified || ! $c->preauth_id || ! class_exists(self::PREAUTH_SERVICE)) {
+            return 0;
+        }
+        $svc = app(self::PREAUTH_SERVICE);
+        // Re-check at payable time: the GOP may have been cancelled or consumed by another invoice since submission.
+        if (! $svc->guaranteeFor($tenantId, (string) $c->preauth_id, $c->provider_profile_id, $c->policy_id, (string) $c->service_date)['verified']) {
+            return 0;
+        }
+
+        return $svc->consumeGuarantee($tenantId, (string) $c->preauth_id, $amount, $c->id);
     }
 
     private function linkMemberClaim(string $tenantId, object $c): ?string
@@ -396,7 +426,9 @@ final class ProviderClaimService
             'tenant_id' => $tenantId, 'policy_id' => $c->policy_id, 'claimant_party_id' => $c->member_party_id ?? $policy->party_id,
             'claim_number' => 'CLM-'.now()->format('Ym').'-'.strtoupper(Str::random(10)), 'status' => 'SUBMITTED',
             'loss_occurred_at' => CarbonImmutable::parse($c->service_date), 'loss_location' => null, 'currency' => $c->currency,
-            'loss_details' => ['description' => "Cashless health care billed by provider (invoice {$c->invoice_reference}).", 'type' => 'HEALTH_PROVIDER_CLAIM', 'provider_claim_id' => $c->id, 'provider_id' => $c->provider_profile_id],
+            'loss_details' => ['description' => "Cashless health care billed by provider (invoice {$c->invoice_reference}).", 'type' => 'HEALTH_PROVIDER_CLAIM', 'provider_claim_id' => $c->id, 'provider_id' => $c->provider_profile_id,
+                // E5 contract: a CASHLESS claim's benefits are consumed by the provider-claim flow, never by the reimbursement hook.
+                'health' => ['channel' => 'CASHLESS', 'member_ref' => $c->member_reference ?? $c->member_party_id, 'event_ref' => 'health_provider_claim:'.$c->id, 'preauth_id' => $c->preauth_id]],
             'estimated_loss_minor' => (int) DB::table('health_provider_claim_lines')->where('health_provider_claim_id', $c->id)->sum('billed_minor'),
             'submitted_at' => now(),
         ]);
@@ -405,7 +437,12 @@ final class ProviderClaimService
         return $claim->id;
     }
 
-    /** E5 BenefitAccumulator when deployed (guarded); the result is recorded in the claim history. */
+    /**
+     * E5 BenefitAccumulator when deployed (guarded): each paid line consumes the benefit E2 resolved for it (fallback: the
+     * medical service category) for the member E2 resolved. Under a verified GOP the consumption draws E3's reservation
+     * (holder preauth:<id>) first. Money now owed to the provider is always recorded (allow_overrun). A product with no
+     * benefit schedule accumulates nothing. The result is recorded in the claim history.
+     */
     private function consumeBenefits(string $tenantId, object $c): array
     {
         $acc = 'App\\Application\\Health\\Benefits\\BenefitAccumulator';
@@ -414,16 +451,42 @@ final class ProviderClaimService
         }
         $out = [];
         foreach (DB::table('health_provider_claim_lines as l')->join('medical_services as s', 's.id', '=', 'l.medical_service_id')
-            ->where('l.health_provider_claim_id', $c->id)->where('l.insurer_share_minor', '>', 0)->select('l.*', 's.code as service_code')->get() as $l) {
+            ->where('l.health_provider_claim_id', $c->id)->where('l.insurer_share_minor', '>', 0)->select('l.*', 's.code as service_code', 's.category_code')->orderBy('l.line_no')->get() as $l) {
+            $benefit = (string) ($l->benefit_code ?? $l->category_code);
+            $member = $this->benefitMember($tenantId, $c, $l->service_code);
+            $options = ['claim_id' => $c->claim_id, 'event_ref' => 'health_provider_claim:'.$c->id, 'reference_type' => 'health_provider_claim_line', 'reference_id' => $l->id,
+                'idempotency_key' => 'hpc-line:'.$l->id, 'reason' => 'Cashless provider claim '.$c->claim_number, 'allow_overrun' => true];
+            if ($c->preauth_verified && $c->preauth_id) {
+                $options['holder'] = 'preauth:'.$c->preauth_id;
+            }
             try {
-                app($acc)->consume($tenantId, $c->member_reference ?? $c->member_party_id ?? $c->policy_id, $l->service_code, (int) $l->insurer_share_minor, 'health_provider_claim_line:'.$l->id);
-                $out[] = ['line_no' => $l->line_no, 'status' => 'CONSUMED'];
-            } catch (Throwable $e) {
-                $out[] = ['line_no' => $l->line_no, 'status' => 'FAILED', 'error' => $e->getMessage()];
+                $r = app($acc)->consume($tenantId, $member, $benefit, (int) $l->insurer_share_minor, CarbonImmutable::parse($c->service_date), $options);
+                $out[] = ['line_no' => $l->line_no, 'benefit_code' => $benefit, 'status' => 'CONSUMED', 'group_id' => $r['group_id'] ?? null, 'overrun' => (bool) ($r['overrun'] ?? false)];
+            } catch (\App\Application\Health\Benefits\BenefitRefused $e) {
+                if ($e->reasonCode !== 'schedule_not_found') {
+                    throw $e;
+                }
+                $out[] = ['line_no' => $l->line_no, 'benefit_code' => $benefit, 'status' => 'NO_SCHEDULE'];
             }
         }
 
         return ['status' => 'DONE', 'lines' => $out];
+    }
+
+    /** E5 member argument: E2's health member id when resolved, else the member reference given on the invoice. */
+    private function benefitMember(string $tenantId, object $c, string $serviceCode): array
+    {
+        $svc = 'App\\Application\\Health\\Eligibility\\EligibilityService';
+        $given = $c->member_reference ?? $c->member_party_id;
+        $ref = $given !== null && class_exists($svc) && method_exists($svc, 'memberFor') ? app($svc)->memberFor($tenantId, (string) $given, $c->policy_id)?->id : null;
+        if ($ref === null && $c->preauth_verified && $c->preauth_id && class_exists(self::PREAUTH_SERVICE)) {
+            $pa = DB::table('health_preauthorizations')->where('id', $c->preauth_id)->first();
+            if ($pa) {
+                return \App\Application\Health\Preauth\PreauthorizationService::benefitMember($pa); // same accumulator as the reservation
+            }
+        }
+
+        return ['member_ref' => (string) ($ref ?? $c->member_reference ?? $c->member_party_id ?? $c->policy_id), 'policy_id' => $c->policy_id];
     }
 
     private function locked(string $tenantId, string $id): object
