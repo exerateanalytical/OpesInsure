@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Customer-facing "my claims" — the mobile front door onto the real claims
- * machinery in ClaimLifecycleService/ClaimStateMachine, not a parallel
+ * machinery in FnolService/ClaimLifecycleService/ClaimStateMachine, not a parallel
  * implementation. Ownership mirrors MobileWalletService/MobileDocumentService
  * exactly, scoped through Claim.claimant_party_id instead of a direct
  * party_id column.
@@ -31,7 +31,7 @@ final class MobileClaimService
 {
     public function __construct(
         private PartyResolver $parties,
-        private ClaimLifecycleService $lifecycle,
+        private Fnol\FnolService $fnol,
     ) {
     }
 
@@ -76,7 +76,9 @@ final class MobileClaimService
             'police_reference' => ($data['police_report_filed'] ?? false) ? ($data['police_reference'] ?? null) : null,
         ], static fn ($value) => $value !== null);
 
-        return $this->lifecycle->fnol($tenantId, [
+        // REQ-DUP-007: one FNOL path — FnolService (→ ClaimLifecycleService::fnol) also pins the
+        // capability and writes the immutable FNOL snapshot for the MOBILE channel.
+        return $this->fnol->submit($tenantId, [
             'policy_id' => $data['policy_id'],
             'claimant_party_id' => $party->id,
             'loss_occurred_at' => $data['incident_at'],
@@ -84,7 +86,7 @@ final class MobileClaimService
             'loss_location' => $data['incident_location'] ?? null,
             'estimated_loss_minor' => $data['estimated_loss_minor'] ?? null,
             'idempotency_key' => $data['idempotency_key'],
-        ], $user);
+        ], $user, ['channel' => 'MOBILE', 'role' => 'CUSTOMER']);
     }
 
     public function owned(string $claimId, User $user, string $tenantId): Claim

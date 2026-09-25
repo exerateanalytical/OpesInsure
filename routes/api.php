@@ -814,3 +814,9 @@ Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->grou
     Route::get('{id}/reserve-position', [\App\Application\Claims\Reserves\Http\ReservePositionController::class, 'show'])->middleware('permission:claims.view')->whereUuid('id');
 });
 // End Batch 11 C5
+// Agent C2 — REQ-CLM-002 FNOL: agent-assisted FNOL (AGT-052) + immutable FNOL snapshot read.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::post('mobile/partner/agent/claims', [\App\Interfaces\Http\Controllers\Api\V1\Claims\AgentFnolController::class, 'store'])->middleware(['permission:agent.clients.manage', 'throttle:10,1']);
+    Route::get('claims/{id}/fnol-snapshot', [\App\Interfaces\Http\Controllers\Api\V1\Claims\ClaimLifecycleController::class, 'fnolSnapshot'])->middleware('permission:claims.view')->whereUuid('id');
+});
+// End Agent C2
