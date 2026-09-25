@@ -222,7 +222,7 @@ final class VehicleMasterAdminService
         if (isset($attrs['power_kw'])) {
             $attrs['power_kw'] = is_numeric($attrs['power_kw']) && $attrs['power_kw'] > 0 ? round((float) $attrs['power_kw'], 2) : throw ValidationException::withMessages(['power_kw' => 'Invalid power (kW).']);
         } elseif (isset($attrs['power_hp']) && array_key_exists('power_hp', $data)) {
-            $attrs['power_kw'] = round($attrs['power_hp'] * 0.7457, 2); // mechanical hp -> kW
+            $attrs['power_kw'] = round($attrs['power_hp'] * \App\Application\Vehicles\Power\PowerUnits::MECHANICAL_HP_TO_KW, 2); // mechanical hp -> kW
         }
         [$attrs['year_from'], $attrs['year_to']] = $this->years($attrs);
 

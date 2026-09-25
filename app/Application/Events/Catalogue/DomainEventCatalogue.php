@@ -464,6 +464,12 @@ final class DomainEventCatalogue
             $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
             $d('commission.reopened', 'commission', 'Paid commission reopened to PAYABLE after its payout was reversed (D10).', [], [$C], true),
 
+            // Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power)
+            $d('vehicle.fiscal_power.verified', 'vehicle_fiscal_power_record', 'Cameroon fiscal power (CV fiscal) verified from an authoritative source (maker-checker).', [], [$C], true),
+            $d('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', 'Conflicting authoritative fiscal power values; conflict case opened.', [], [$C], true),
+            $d('vehicle.stamp_duty_schedule.approved', 'vehicle_stamp_duty_rate_schedule', 'Automobile stamp duty rate schedule version approved (effective-dated).', [], [$C], true),
+            $d('vehicle.transport_licence.verified', 'vehicle_transport_licence', 'Transport licence verified VALID (enables the transport stamp duty schedule).', [], [$C], true),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),

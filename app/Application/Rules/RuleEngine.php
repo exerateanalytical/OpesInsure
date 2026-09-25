@@ -153,6 +153,38 @@ final class RuleEngine
         return ['applies' => $sets->isNotEmpty(), 'require' => array_values(array_unique($require)), 'waive' => array_values(array_unique($waive)), 'trace' => $trace, 'versions' => $versions];
     }
 
+    /**
+     * TAX_EXEMPTION domain (Vehicle Power master exemption_handling RULE_ENGINE_REQUIRED): the charge codes an approved
+     * exemption rule exempts for these facts. Only a rule that evaluates TRUE exempts — an UNKNOWN condition (missing
+     * verified status) never does, and nothing is ever inferred from make / model.
+     *
+     * @return array{exempt: array<string, array{rule_code: string, reason_code: string, legal_basis: string}>, trace: list<array<string, mixed>>, versions: array<string, string>}
+     */
+    public function taxExemptions(string $lineCode, ?InsuranceProduct $product, array $facts, ?\DateTimeInterface $at = null): array
+    {
+        $at = $this->at($at);
+        $facts = $this->withContext($facts, $at, $lineCode, $product);
+        $exempt = [];
+        $trace = [];
+        $versions = [];
+        foreach ($this->resolver->resolve('TAX_EXEMPTION', $product?->id, $lineCode, $at) as $set) {
+            $ev = $this->evaluator->evaluate($this->sets->toDefinition($set), $facts);
+            $trace = [...$trace, ...$ev['trace']];
+            $versions['rule_set:'.$set->code] = (string) $set->version;
+            foreach ($ev['fired'] as $f) {
+                if ($f['unknown']) {
+                    continue;
+                }
+                foreach ((array) ($f['rule']->outcome['charge_codes'] ?? []) as $code) {
+                    $exempt[(string) $code] ??= ['rule_code' => $f['rule']->code, 'reason_code' => (string) ($f['rule']->outcome['reason_code'] ?? $f['rule']->code),
+                        'legal_basis' => (string) ($f['rule']->outcome['legal_basis'] ?? '')];
+                }
+            }
+        }
+
+        return ['exempt' => $exempt, 'trace' => $trace, 'versions' => $versions];
+    }
+
     /** Sandbox evaluation of one rule set version (any status) — no persistence (PRE §76 test sandbox). */
     public function simulate(RuleSet $set, array $facts, ?\DateTimeInterface $at = null): array
     {

@@ -174,7 +174,8 @@ final class QuoteService
                 // REQ-RAT-001/004: one rating path (RatingService) — versions via the Temporal engine, snapshot in rating_runs.
                 $run = $this->rating->rateQuote($quote, $tariff, $at);
                 if (! ($result = $run['pricing'])) {
-                    $skipped[] = ['product_id' => $product->id, 'reason' => 'RATING_FAILED'];
+                    // Vehicle Power master: unknown fiscal power routes the quote to verification / manual review (REFERRED).
+                    $skipped[] = ['product_id' => $product->id, 'reason' => str_starts_with((string) $run['failure'], \App\Application\Vehicles\Power\FiscalPowerReviewRequired::REASON) ? \App\Application\Vehicles\Power\FiscalPowerReviewRequired::REASON : 'RATING_FAILED'];
                     continue;
                 }
                 $offer = QuoteOffer::create([

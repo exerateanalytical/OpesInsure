@@ -80,6 +80,9 @@ final class PolicyIssuanceService
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($tenant->id, $proposal->party_id, 'BIND', 'proposal', $proposal->id);
             // REQ-AML-001 screening hold (tenant mode OFF | WARN | ENFORCE — App\Application\Compliance\Aml\Screening\ComplianceGate).
             app(\App\Application\Compliance\Aml\Screening\ComplianceGate::class)->assertMayProceed($tenant->id, [$proposal->party_id], 'BIND', 'proposal', $proposal->id);
+            // Vehicle Power master (motor_policy_issuance): the stamp duty needs a verified fiscal power — REVIEW_REQUIRED otherwise.
+            app(\App\Application\Vehicles\Power\VehicleStampDutyService::class)->assertIssuable($proposal->offer->rating_run_id, (string) $proposal->offer->quote->line_code,
+                (array) $proposal->offer->quote->risk_facts, $tenant->id);
 
             $authoritySnapshot = ['mode' => 'CARRIER_REVIEW_REQUIRED'];
             $status = 'CARRIER_REVIEW';
