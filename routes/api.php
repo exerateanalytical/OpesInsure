@@ -574,3 +574,11 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+// Agent 10-10 — REQ-ACC-005 finance exception centre (FIN-006) and finance reports registry (FIN-024), read-only.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    Route::get('exception-centre', [\App\Application\Finance\ExceptionCentre\Http\FinanceExceptionCentreController::class, 'index'])->middleware('permission:finance.exceptions.view');
+    $fr = \App\Application\Finance\Reports\Http\FinanceReportController::class;
+    Route::get('reports', [$fr, 'index'])->middleware('permission:finance.reports.view');
+    Route::get('reports/{report}', [$fr, 'show'])->middleware('permission:finance.reports.view')->where('report', '[Ff][Rr]-[0-9]{2}');
+});
+// End Agent 10-10
