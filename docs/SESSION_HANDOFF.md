@@ -29,10 +29,13 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 8 (10 agents: endorsements, cancellation, suspension, renewals, premium-to-cover/lapse, special products, portability, certificates/verification, document governance, roles+wiring) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH8.md |
 | Batch 8 wiring | cloud | DONE (on branch) |
 | Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH9.md |
-| Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | MERGED, NOT READY: 1 failing test + a commission double-payable fix in progress. Do NOT deploy past a108d38 until RELEASE_HANDOVER_BATCH10.md exists. |
+| Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: Batch 10 merged (10 agents + 1 fix agent). Full suite 1348 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH10.md
+- Merge fixes: commission accrual combines the 10-2 rule resolver with the 10-1 state machine; JournalLine split into its own file (it broke autoload); a single commission payable per partner statement (the per-accrual payable is removed); one rule selector.
 
 ### 2026-09-25 cloud: Batch 8 wiring + Batch 9 merged (10 agents). Full suite 1288 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH9.md
 - Merge fixes: duplicate payment_intents.financial_obligation_id column (9-4 vs 9-1), webhook/reconciliation obligation hooks re-applied on the new payment machine, refunds bound to obligations, reinstatement re-request bug fixed.
