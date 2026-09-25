@@ -113,6 +113,8 @@ final class DomainEventCatalogue
             $d('claim.settlement.discharge_signed', 'claim', 'Settlement discharge signed by the payee.', [], [$C], true),
             $d('claim.settlement.payment_requested', 'claim', 'Settlement payment, payable obligation and approval posting raised.', [], [$C], true),
             $d('claim.settlement.paid', 'claim', 'Claim settlement paid (obligation settled, paid posting).', [], [$C], true),
+            // Batch 14 E5 — REQ-HLT-004 (App\Application\Health\Benefits\BenefitAccumulator)
+            $d('health.benefit.overrun', 'claim', 'Paid health claim consumed benefits beyond the remaining limit (recorded as overrun).', [], [$C], true),
             $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P], true),
 
             // --- Already emitted by code, no spec alias ---

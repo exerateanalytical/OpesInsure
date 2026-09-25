@@ -985,3 +985,11 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::patch('compliance/governance/{register}/{id}', [$gv, 'update'])->middleware('permission:compliance.governance.manage')->where('register', $reg)->whereUuid('id');
 });
 // End Agent E10
+// Batch 14 E5 — REQ-HLT-004 health benefit schedules + accumulator (App\Application\Health\Benefits).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $hb = \App\Application\Health\Benefits\Http\BenefitController::class;
+    Route::get('health/benefits/remaining', [$hb, 'remaining'])->middleware('permission:health.benefits.view');
+    Route::get('health/benefit-schedules', [$hb, 'index'])->middleware('permission:health.benefits.view');
+    Route::post('health/benefit-schedules', [$hb, 'store'])->middleware('permission:health.benefits.manage');
+});
+// End Batch 14 E5
