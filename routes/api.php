@@ -456,3 +456,12 @@ Route::prefix('v1/signature-requests')->middleware(['auth:api', 'json.api', 'thr
     Route::post('{request}/sign', [$g, 'sign'])->whereUuid('request');
     Route::post('{request}/decline', [$g, 'decline'])->whereUuid('request');
 });
+// Batch 9-5 — REQ-PAY-007 reconciliation exceptions / unmatched-items workspace (manual match under maker-checker).
+Route::prefix('v1/reconciliation')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $w = \App\Application\Reconciliation\Http\ReconciliationWorkspaceController::class;
+    Route::get('workspace/items', [$w, 'search'])->middleware('permission:reconciliation.read');
+    Route::get('workspace/items/{item}/candidates', [$w, 'candidates'])->middleware('permission:reconciliation.read')->whereUuid('item');
+    Route::post('items/{item}/manual-matches', [$w, 'requestMatch'])->middleware('permission:reconciliation.resolve')->whereUuid('item');
+    Route::post('manual-matches/{match}/decide', [$w, 'decideMatch'])->middleware('permission:reconciliation.approve')->whereUuid('match');
+});
+// End Batch 9-5
