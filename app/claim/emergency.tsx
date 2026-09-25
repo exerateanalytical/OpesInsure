@@ -11,12 +11,14 @@ import {
 } from "@/components/ui";
 import { ClaimsCompletionApi } from "@/api/client";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 const options = [
-  ["MEDICAL", Ambulance, "Medical emergency"],
-  ["POLICE", ShieldAlert, "Police assistance"],
-  ["TOWING", Truck, "Vehicle towing"],
+  ["MEDICAL", Ambulance, "emMedical"],
+  ["POLICE", ShieldAlert, "emPolice"],
+  ["TOWING", Truck, "emTowing"],
 ] as const;
 export default function Emergency() {
+  const { t } = useTranslation();
   const [service, setService] = useState<"MEDICAL" | "POLICE" | "TOWING">(
     "TOWING",
   );
@@ -26,19 +28,15 @@ export default function Emergency() {
   return (
     <Screen>
       <AppHeader
-        title="Emergency assistance"
-        subtitle="Protect people first; report the claim when safe"
+        title={t("emTitle")}
+        subtitle={t("emSubtitle")}
         back
       />
       <Card feature>
-        <StatusChip label="EMERGENCY" tone="danger" />
-        <Text style={s.body}>
-          For immediate danger, serious injury or fire, call the competent
-          emergency service directly. OpesInsure does not replace emergency
-          authorities.
-        </Text>
+        <StatusChip label={t("emChip")} tone="danger" />
+        <Text style={s.body}>{t("emBody")}</Text>
         <Button
-          label="Call emergency services"
+          label={t("emCall")}
           icon={Phone}
           variant="danger"
           onPress={() => Linking.openURL("tel:112")}
@@ -54,22 +52,22 @@ export default function Emergency() {
             onPress={() => setService(key)}
           >
             <Icon size={22} color={colors.blue600} />
-            <Text>{label}</Text>
+            <Text>{t(label)}</Text>
           </Pressable>
         ))}
         <TextField
-          label="Current location or landmark"
+          label={t("emLocation")}
           value={location}
           onChangeText={setLocation}
         />
         <TextField
-          label="Callback phone"
+          label={t("emCallback")}
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
         />
         <Button
-          label="Request insured assistance"
+          label={t("emRequest")}
           disabled={location.trim().length < 4 || phone.length < 8}
           onPress={async () =>
             setReference(
@@ -84,7 +82,7 @@ export default function Emergency() {
             )
           }
         />
-        {reference ? <Text>Assistance reference: {reference}</Text> : null}
+        {reference ? <Text>{t("emReference", { reference })}</Text> : null}
       </Card>
     </Screen>
   );

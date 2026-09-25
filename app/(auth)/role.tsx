@@ -17,6 +17,7 @@ import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { portalRoute, roleToPortal, useSession } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 const icons: Record<string, any> = {
   customer: UserRound,
   agent: BriefcaseBusiness,
@@ -29,19 +30,9 @@ const icons: Record<string, any> = {
   claims: ReceiptText,
 };
 
-const labels: Record<string, [string, string]> = {
-  customer: ["Customer", "Buy and manage my insurance"],
-  agent: ["Insurance agent", "Serve clients and track commissions"],
-  broker_admin: ["Broker administrator", "Manage brokerage operations"],
-  broker_staff: ["Broker staff", "Work with authorised clients"],
-  carrier: ["Insurance company", "Manage products and referrals"],
-  platform_admin: ["Platform operations", "Secure administration"],
-  compliance: ["Compliance", "Oversight and regulatory checks"],
-  finance: ["Finance", "Collections, settlements and reconciliation"],
-  claims: ["Claims operations", "Assess and settle claims"],
-};
 
 export default function RoleSelect() {
+  const { t, td } = useTranslation();
   const status = useSession((s) => s.status);
   const bootstrap = useSession((s) => s.bootstrap);
   const active = useSession((s) => s.activeWorkspace);
@@ -60,7 +51,7 @@ export default function RoleSelect() {
       // on the "Access not available" screen rather than doing nothing.
       router.replace(portalRoute(workspace));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Workspace could not be opened.");
+      setError(e instanceof Error ? e.message : t("roleOpenFailed"));
     } finally {
       setBusy(null);
     }
@@ -75,31 +66,26 @@ export default function RoleSelect() {
   }, [status, only?.membership_id]);
 
   if (status === "anonymous") return <Redirect href="/(auth)/sign-in" />;
-  if (only) return <Screen><AppHeader title="Opening your workspace…" /></Screen>;
+  if (only) return <Screen><AppHeader title={t("roleOpening")} /></Screen>;
 
   return (
     <Screen>
       <AppHeader
-        title="Choose your workspace"
-        subtitle="Workspaces assigned securely by OpesInsure"
+        title={t("roleChoose")}
+        subtitle={t("roleChooseSubtitle")}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {workspaces.length === 0 ? (
         <Card>
-          <Text style={styles.title}>No active workspace</Text>
-          <Text style={styles.subtitle}>
-            Your account is verified, but no active customer or partner
-            membership has been assigned. Contact support.
-          </Text>
+          <Text style={styles.title}>{t("roleNone")}</Text>
+          <Text style={styles.subtitle}>{t("roleNoneBody")}</Text>
         </Card>
       ) : (
         workspaces.map((workspace) => {
           const portal = roleToPortal(workspace.role_code);
           const Icon = icons[portal ?? ""] ?? Building2;
-          const [label, subtitle] = labels[portal ?? ""] ?? [
-            workspace.role_code,
-            "Authorised workspace",
-          ];
+          const label = portal ? td(`role_${portal}`, workspace.role_code) : workspace.role_code;
+          const subtitle = portal ? td(`role_${portal}_sub`, t("roleAuthorised")) : t("roleAuthorised");
           return (
             <Pressable
               accessibilityRole="button"
@@ -117,7 +103,7 @@ export default function RoleSelect() {
                     <Text style={styles.title}>{label}</Text>
                     <Text style={styles.subtitle}>
                       {workspace.tenant_name} · {subtitle}
-                      {active?.membership_id === workspace.membership_id ? " · current" : ""}
+                      {active?.membership_id === workspace.membership_id ? ` · ${t("roleCurrent")}` : ""}
                     </Text>
                   </View>
                   <ChevronRight size={20} color={colors.neutral500} />
@@ -128,7 +114,7 @@ export default function RoleSelect() {
         })
       )}
       <Button
-        label="Sign out"
+        label={t("signOut")}
         icon={LogOut}
         variant="tertiary"
         onPress={async () => {

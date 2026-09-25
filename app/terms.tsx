@@ -4,6 +4,7 @@ import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
 import { SupportContactList } from "@/components/auth/SupportContacts";
 import { colors, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 // Placeholder legal copy. Must be reviewed and replaced by counsel before a
 // public production release. Keep TERMS_VERSION in sign-up.tsx in sync.
 const sections: [string, string][] = [
@@ -38,11 +39,12 @@ const sections: [string, string][] = [
 ];
 
 export default function Terms() {
+  const { t } = useTranslation();
   return (
     <Screen>
-      <AppHeader title="Terms & Privacy" subtitle="Version 2026-01-01" back />
+      <AppHeader title={t("termsTitle")} subtitle={t("termsVersion", { version: "2026-01-01" })} back />
       <Card>
-        <StatusChip label="DRAFT — PENDING LEGAL REVIEW" tone="warning" />
+        <StatusChip label={t("termsDraft")} tone="warning" />
         <Text style={styles.meta}>
           This text is a placeholder and has not yet been reviewed by legal
           counsel. The final terms will be published before general release.

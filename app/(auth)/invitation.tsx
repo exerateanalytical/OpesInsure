@@ -8,6 +8,7 @@ import { portalRoute, useSession } from "@/store/session";
 import { SupportContactList } from "@/components/auth/SupportContacts";
 import { colors, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 /**
  * Insurers, brokers and agents cannot self-register: an OpesInsure or
  * institution administrator sends an invitation addressed to their phone or
@@ -17,6 +18,7 @@ import { colors, type } from "@/theme/tokens";
  */
 export default function Invitation() {
   const params = useLocalSearchParams<{ token?: string; error?: string }>();
+  const { t } = useTranslation();
   const status = useSession((s) => s.status);
   const refreshWorkspaces = useSession((s) => s.refreshWorkspaces);
   const [token, setToken] = useState(params.token ?? "");
@@ -27,7 +29,7 @@ export default function Invitation() {
   const submit = async () => {
     const value = token.trim();
     if (!/^\S{64}$/.test(value)) {
-      setError("Enter the full 64-character invitation code from your invitation message.");
+      setError(t("invCodeInvalid"));
       return;
     }
     setError(null);
@@ -44,7 +46,7 @@ export default function Invitation() {
       else if (bootstrap.workspaces.length) router.replace("/(auth)/role");
       else router.replace("/access-denied");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The invitation could not be accepted.");
+      setError(e instanceof Error ? e.message : t("invAcceptFailed"));
     } finally {
       setBusy(false);
     }
@@ -52,47 +54,35 @@ export default function Invitation() {
 
   return (
     <Screen>
-      <AppHeader title="Partners join by invitation" subtitle="Insurers, brokers and agents" back />
+      <AppHeader title={t("invTitle")} subtitle={t("invSubtitle")} back />
       <Card feature>
         <Handshake size={32} color={colors.blue600} />
-        <Text style={styles.title}>How partner onboarding works</Text>
-        <Text style={styles.body}>
-          Insurance companies, brokers and agents are licensed and verified
-          before they can sell or service policies on OpesInsure. Your
-          institution administrator, or the OpesInsure partnerships team,
-          sends an invitation to your mobile number or email address.
-        </Text>
-        <Text style={styles.body}>
-          1. Enter the invitation code below.{"\n"}
-          2. Sign in with the phone number the invitation was sent to.{"\n"}
-          3. Your partner workspace opens automatically.
-        </Text>
+        <Text style={styles.title}>{t("invHow")}</Text>
+        <Text style={styles.body}>{t("invBody1")}</Text>
+        <Text style={styles.body}>{t("invSteps")}</Text>
       </Card>
       <Card>
         <TextField
-          label="Invitation code"
+          label={t("invCode")}
           value={token}
           onChangeText={setToken}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="Paste the code from your invitation"
+          placeholder={t("invCodePlaceholder")}
           error={error ?? undefined}
         />
         <Button
-          label={signedIn ? "Accept invitation" : "Continue to sign in"}
+          label={signedIn ? t("invAccept") : t("invContinue")}
           icon={KeyRound}
           loading={busy}
           disabled={!token.trim()}
           onPress={() => void submit()}
         />
-        <Text style={styles.meta}>
-          No invitation yet? Contact the OpesInsure partnerships team to start
-          licence verification. Customers can create an account directly.
-        </Text>
+        <Text style={styles.meta}>{t("invNoInvite")}</Text>
         <SupportContactList partner />
         {!signedIn ? (
           <Button
-            label="Create a customer account instead"
+            label={t("invCustomerInstead")}
             variant="tertiary"
             onPress={() => router.replace("/(auth)/sign-up")}
           />

@@ -10,12 +10,14 @@ import { RecentProposals } from "@/store/insurance";
 import { localized, mergePages, proposalStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 
+import { useTranslation } from "@/i18n";
 /**
  * "My applications". Uses GET /mobile/proposals when the backend has it;
  * otherwise falls back to the proposals this device opened (each re-read
  * from the server, so status is always current and ownership enforced).
  */
 export default function Applications() {
+  const { t } = useTranslation();
   const f = useFormatters();
   const [items, setItems] = useState<ProposalSummary[]>([]);
   const [page, setPage] = useState(1);
@@ -65,17 +67,17 @@ export default function Applications() {
 
   return (
     <Screen>
-      <AppHeader title="My applications" subtitle="Proposals waiting for review, documents or payment" back />
-      {loading && !items.length ? <LoadingState label="Loading applications…" /> : null}
-      {error ? <ErrorCard error={error} fallback="Applications could not be loaded." onRetry={() => void load()} /> : null}
+      <AppHeader title={t("propTitle")} subtitle={t("propSubtitle")} back />
+      {loading && !items.length ? <LoadingState label={t("propLoading")} /> : null}
+      {error ? <ErrorCard error={error} fallback={t("propLoadFailed")} onRetry={() => void load()} /> : null}
       {!loading && !error && !items.length ? (
-        <EmptyState title="No applications yet" message="When you choose an offer, your application appears here until the policy is issued." action="Get a quote" onPress={() => router.push("/quote/product")} />
+        <EmptyState title={t("propEmpty")} message={t("propEmptyBody")} action={t("propGetQuote")} onPress={() => router.push("/quote/product")} />
       ) : null}
       {items.length ? (
         <Card>
           {items.map((p) => {
             const info = proposalStatusInfo(p.status, f.language);
-            const name = p.product_name ?? (localized(p.offer?.product?.name, f.language) || "Insurance application");
+            const name = p.product_name ?? (localized(p.offer?.product?.name, f.language) || t("propFallbackName"));
             return (
               <FlowRow
                 key={p.id}

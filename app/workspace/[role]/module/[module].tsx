@@ -14,10 +14,12 @@ import { useLoad } from "@/hooks/useLoad";
 import { WorkspaceApi } from "@/api/client";
 import { colors, space, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 const cellText = (v: unknown) =>
   v === null || v === undefined || v === "" ? "" : String(v);
 
 export default function Module() {
+  const { t } = useTranslation();
   const { module } = useLocalSearchParams<{ module: string }>();
   const q = useLoad(() => WorkspaceApi.module(module), [module]);
   const { width } = useWindowDimensions();
@@ -33,7 +35,7 @@ export default function Module() {
         onRetry={q.reload}
         isEmpty={(d) => d.rows.length === 0}
         emptyTitle="No records"
-        emptyMessage="No authorised records were returned."
+        emptyMessage={t("wsNoRecords")}
       >
         {(data) =>
           narrow ? (
@@ -53,7 +55,7 @@ export default function Module() {
             <>
               <View style={styles.hint}>
                 <MoveHorizontal size={16} color={colors.neutral600} />
-                <Text style={styles.hintText}>Scroll sideways to see every column</Text>
+                <Text style={styles.hintText}>{t("wsScrollHint")}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator>
                 <View>

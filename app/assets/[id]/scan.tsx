@@ -5,8 +5,10 @@ import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { AssetsApi, AssetDocument } from "@/api/client";
 import { withoutRelock } from "@/lib/appLock";
+import { useTranslation } from "@/i18n";
 export default function Scan() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation();
   const [d, setD] = useState<AssetDocument>();
   const [f, setF] = useState<Record<string, string>>({});
   const capture = async () => {
@@ -29,41 +31,39 @@ export default function Scan() {
   return (
     <Screen>
       <AppHeader
-        title="Scan registration card"
-        subtitle="Review every extracted field before confirming"
+        title={t("scanTitle")}
+        subtitle={t("scanSubtitle")}
         back
       />
       <Card>
-        <Text>
-          Place the full document inside the frame. Avoid glare and blur.
-        </Text>
-        <Button label="Open camera" onPress={capture} />
+        <Text>{t("scanHint")}</Text>
+        <Button label={t("scanOpenCamera")} onPress={capture} />
       </Card>
       {d ? (
         <Card>
           <TextField
-            label="Registration"
+            label={t("scanRegistration")}
             value={f.registration_number}
             onChangeText={(v) => setF({ ...f, registration_number: v })}
           />
           <TextField
-            label="Make"
+            label={t("scanMake")}
             value={f.make}
             onChangeText={(v) => setF({ ...f, make: v })}
           />
           <TextField
-            label="Model"
+            label={t("scanModel")}
             value={f.model}
             onChangeText={(v) => setF({ ...f, model: v })}
           />
           <TextField
-            label="Year"
+            label={t("scanYear")}
             keyboardType="number-pad"
             value={f.year}
             onChangeText={(v) => setF({ ...f, year: v })}
           />
           <Button
-            label="Confirm extracted details"
+            label={t("scanConfirm")}
             onPress={async () => {
               await AssetsApi.confirmScan(id, d.id, f);
               router.replace(`/assets/${id}`);

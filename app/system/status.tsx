@@ -6,13 +6,15 @@ import { useRuntime } from "@/store/runtime";
 import { environmentConfig } from "@/config/environment";
 import { colors, space, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 export default function SystemStatus() {
+  const { t } = useTranslation();
   const runtime = useRuntime((s) => s.bootstrap);
   const check = useRuntime((s) => s.check);
   useEffect(() => void check(), [check]);
   return (
     <Screen>
-      <AppHeader title="Service status" subtitle="Server-confirmed availability for connected services" back />
+      <AppHeader title={t("statusTitle")} subtitle={t("statusSubtitle")} back />
       <Card>
         <View style={styles.row}>
           <Activity size={24} color={colors.blue600} />
@@ -33,7 +35,7 @@ export default function SystemStatus() {
           </View>
         </Card>
       ))}
-      <Button label="Refresh status" icon={RefreshCw} variant="secondary" onPress={() => void check()} />
+      <Button label={t("statusRefresh")} icon={RefreshCw} variant="secondary" onPress={() => void check()} />
       <Card>
         <Text style={styles.body}>A green provider status does not prove that a specific payment, policy, or claim succeeded. Always use the operation’s server-confirmed status.</Text>
       </Card>

@@ -7,7 +7,9 @@ import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { environmentConfig } from "@/config/environment";
 import { colors, type } from "@/theme/tokens";
 
+import { useTranslation } from "@/i18n";
 export default function DeviceStatus() {
+  const { t } = useTranslation();
   const [result, setResult] = useState<DeviceRiskResult>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -26,26 +28,27 @@ export default function DeviceStatus() {
         }),
       );
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Device assessment failed.");
+      setError(reason instanceof Error ? reason.message : t("devFailed"));
     } finally {
       setBusy(false);
     }
   };
   return (
     <Screen>
-      <AppHeader title="Device security" subtitle="Server-assessed mobile integrity and release status" back />
+      <AppHeader title={t("devTitle")} subtitle={t("devSubtitle")} back />
       <Card feature>
         <ShieldAlert size={34} color={colors.blue600} />
         <Text style={styles.title}>{Application.applicationName ?? "OpesInsure"}</Text>
-        <Text style={styles.body}>Package: {Application.applicationId ?? "development"}</Text>
-        <Text style={styles.body}>Version: {environmentConfig.appVersion} ({environmentConfig.buildVersion})</Text>
-        <Text style={styles.body}>Native Play Integrity or App Attest evidence must be supplied by an approved production native module. This screen never claims that a JavaScript check proves device integrity.</Text>
-        <Button label="Run server device check" loading={busy} onPress={() => void assess()} />
+        <Text style={styles.body}>{t("devPackage", { id: Application.applicationId ?? "development" })}</Text>
+        <Text style={styles.body}>{t("devVersion", { version: environmentConfig.appVersion, build: environmentConfig.buildVersion })}</Text>
+        {/* devBody: this screen never claims that a JavaScript check proves device integrity. */}
+        <Text style={styles.body}>{t("devBody")}</Text>
+        <Button label={t("devRun")} loading={busy} onPress={() => void assess()} />
       </Card>
       {result ? (
         <Card>
           <StatusChip label={result.action} tone={result.action === "ALLOW" ? "success" : result.action === "LIMIT" ? "warning" : "danger"} />
-          <Text style={styles.body}>Assessment: {result.assessment_id}</Text>
+          <Text style={styles.body}>{t("devAssessment", { id: result.assessment_id })}</Text>
           {result.reasons.map((reason) => <Text key={reason} style={styles.reason}>{reason.replaceAll("_", " ")}</Text>)}
         </Card>
       ) : null}

@@ -10,16 +10,18 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
 import { policyStatusInfo } from "@/lib/purchase";
 
+import { useTranslation } from "@/i18n";
 export default function Wallet() {
+  const { t } = useTranslation();
   const f = useFormatters();
   const list = usePagedList<WalletPolicy>((page) => WalletApi.list(page));
   return (
     <Screen>
-      <AppHeader title="Policy wallet" subtitle="Cover, documents and physical sticker delivery" back />
-      {list.loading && !list.items.length ? <LoadingState label="Loading your wallet…" /> : null}
-      {list.error && !list.items.length ? <ErrorCard error={list.error} fallback="Your wallet could not be loaded." onRetry={() => void list.reload()} /> : null}
+      <AppHeader title={t("walletTitle")} subtitle={t("walletSubtitle")} back />
+      {list.loading && !list.items.length ? <LoadingState label={t("walletLoading")} /> : null}
+      {list.error && !list.items.length ? <ErrorCard error={list.error} fallback={t("walletLoadFailed")} onRetry={() => void list.reload()} /> : null}
       {!list.loading && !list.error && !list.items.length ? (
-        <EmptyState title="Your wallet is empty" message="Issued policies and their documents will appear here." action="Compare insurance" onPress={() => router.push("/quote/product")} />
+        <EmptyState title={t("walletEmpty")} message={t("walletEmptyBody")} action={t("compareInsurance")} onPress={() => router.push("/quote/product")} />
       ) : null}
       {list.items.length ? (
         <Card>

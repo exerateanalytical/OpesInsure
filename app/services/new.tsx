@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { PolicyServicesApi } from "@/api/client";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { useTranslation } from "@/i18n";
 const types = [
   "ADDRESS_CHANGE",
   "VEHICLE_CHANGE",
@@ -12,17 +13,18 @@ const types = [
   "NO_CLAIMS_CERTIFICATE",
 ];
 export default function NewService() {
+  const { t, td } = useTranslation();
   const [typeValue, setType] = useState(types[0]!);
   const [reason, setReason] = useState("");
   return (
     <Screen>
       <AppHeader
-        title="New policy request"
-        subtitle="Changes apply only after insurer approval"
+        title={t("svcNewTitle")}
+        subtitle={t("svcNewSubtitle")}
         back
       />
       <Card>
-        <Text style={s.label}>Request type</Text>
+        <Text style={s.label}>{t("svcType")}</Text>
         <View style={s.wrap}>
           {types.map((x) => (
             <Pressable
@@ -32,18 +34,18 @@ export default function NewService() {
               onPress={() => setType(x)}
               style={[s.option, x === typeValue && s.selected]}
             >
-              <Text>{x.replaceAll("_", " ")}</Text>
+              <Text>{td(`svcType_${x}`, x)}</Text>
             </Pressable>
           ))}
         </View>
         <TextField
-          label="Reason and requested change"
+          label={t("svcReason")}
           multiline
           value={reason}
           onChangeText={setReason}
         />
         <Button
-          label="Submit request"
+          label={t("svcSubmit")}
           disabled={reason.trim().length < 10}
           onPress={async () => {
             const x = await PolicyServicesApi.create({
