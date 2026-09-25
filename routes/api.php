@@ -924,3 +924,24 @@ Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])-
     Route::post('treaties/{treaty}/large-loss-threshold', [$rc, 'threshold'])->middleware('permission:reinsurance.treaties.manage')->whereUuid('treaty');
 });
 // End Agent E7
+// Agent E11 — REQ-CAT-001/002/003 accumulation, capacity check, catastrophe events + large loss (App\Application\Accumulation).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Accumulation\Http\AccumulationController::class;
+    Route::get('accumulation/zones', [$a, 'zones'])->middleware('permission:accumulation.view');
+    Route::post('accumulation/zones', [$a, 'createZone'])->middleware('permission:accumulation.manage');
+    Route::post('accumulation/locations/rebuild', [$a, 'rebuild'])->middleware('permission:accumulation.manage');
+    Route::get('accumulation', [$a, 'accumulation'])->middleware('permission:accumulation.view');
+    Route::get('accumulation/snapshots', [$a, 'snapshots'])->middleware('permission:accumulation.view');
+    Route::post('accumulation/snapshots', [$a, 'snapshot'])->middleware('permission:accumulation.manage');
+    Route::get('accumulation/snapshots/{snapshot}', [$a, 'showSnapshot'])->middleware('permission:accumulation.view')->whereUuid('snapshot');
+    Route::post('accumulation/capacity-limits', [$a, 'setLimit'])->middleware('permission:accumulation.manage');
+    Route::post('capacity/check', [$a, 'check'])->middleware('permission:accumulation.capacity.check');
+    Route::post('catastrophe-events', [$a, 'declareEvent'])->middleware('permission:catastrophe.events.manage');
+    Route::get('catastrophe-events/{event}', [$a, 'showEvent'])->middleware('permission:catastrophe.events.view')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/claims', [$a, 'linkClaim'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/aggregate', [$a, 'aggregateEvent'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('catastrophe-events/{event}/close', [$a, 'closeEvent'])->middleware('permission:catastrophe.events.manage')->whereUuid('event');
+    Route::post('large-loss/threshold', [$a, 'largeLossThreshold'])->middleware('permission:catastrophe.events.manage');
+    Route::post('claims/{claim}/large-loss-check', [$a, 'largeLossCheck'])->middleware('permission:claims.view')->whereUuid('claim');
+});
+// End Agent E11
