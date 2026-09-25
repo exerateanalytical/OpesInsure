@@ -555,3 +555,11 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('premium-components/{component}/close', [$p, 'close'])->middleware('permission:premium_components.close')->whereUuid('component');
 });
 // End Batch 9-2
+// Batch 9-4 — REQ-PAY-008 failed-payment retry under the same intent/obligation, REQ-PAY-014 payment collection mode.
+Route::prefix('v1/payments')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $m = \App\Application\Payments\ExecutionModes\Http\PaymentModesController::class;
+    Route::post('{payment}/retry', [$m, 'retry'])->middleware('throttle:10,1')->whereUuid('payment');
+    Route::get('{payment}/attempts', [$m, 'attempts'])->whereUuid('payment');
+    Route::get('{payment}/collection-mode', [$m, 'collectionMode'])->whereUuid('payment');
+});
+// End Batch 9-4

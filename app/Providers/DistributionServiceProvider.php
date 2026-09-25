@@ -29,7 +29,7 @@ final class DistributionServiceProvider extends ServiceProvider
     public function register(): void
     {
         foreach ([SellabilityService::class, SellableCatalogue::class, ExecutionPlanner::class, TransactionPinner::class,
-            QuoteProviderRegistry::class, UnderwritingProviderRegistry::class, PolicyIssuerRegistry::class, ClaimProviderRegistry::class] as $class) {
+            QuoteProviderRegistry::class, UnderwritingProviderRegistry::class, PolicyIssuerRegistry::class, ClaimProviderRegistry::class, \App\Application\Payments\ExecutionModes\PaymentExecutionRegistry::class] as $class) {
             $this->app->singleton($class);
         }
     }
