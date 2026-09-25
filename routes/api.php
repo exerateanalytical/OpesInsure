@@ -1027,3 +1027,13 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
 });
 // End Agent E3
+// Agent B4 — REQ-API-004 missing API-family read endpoints (docs/audit/API_FAMILY_COVERAGE.md); thin controllers, no new logic.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rq = \App\Interfaces\Http\Controllers\Api\V1\ApiFamilies\UnderwritingReferralQueueController::class;
+    Route::get('underwriting/referrals', [$rq, 'index'])->middleware('permission:carrier.referrals.read');
+    Route::get('underwriting/referrals/{referral}', [$rq, 'show'])->middleware('permission:carrier.referrals.read')->whereUuid('referral');
+    $nd = \App\Interfaces\Http\Controllers\Api\V1\ApiFamilies\NotificationDeliveryQueryController::class;
+    Route::get('notifications', [$nd, 'index'])->middleware('permission:communications.manage');
+    Route::get('notifications/{d}', [$nd, 'show'])->middleware('permission:communications.manage')->whereUuid('d');
+});
+// End Agent B4
