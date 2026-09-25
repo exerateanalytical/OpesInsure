@@ -2,6 +2,8 @@
 namespace App\Interfaces\Http\Controllers\Api\V1\WebExperiences;
 
 use App\Application\WebExperiences\{PortalDashboardQuery,PortalWorkspaceService};
+use App\Application\Quotes\Http\QuoteWorkflowController;
+use App\Application\Quotes\QuoteComparisonService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\MarketplacePublication;
 use Illuminate\Http\{JsonResponse,Request};
@@ -48,9 +50,15 @@ final class Wave10Controller
         return response()->json($service->approve($publication, $request->user(), $data['expected_version']));
     }
 
-    public function saveComparison(Request $request, PortalWorkspaceService $service): JsonResponse
+    /**
+     * Legacy alias of POST /quote-comparisons (REQ-DST-003): maps the old field names onto the canonical endpoint so
+     * there is one comparison implementation (QuoteComparisonService) with its tenant/ownership scoping and offer
+     * validation. `expires_at` is accepted for compatibility but the service derives it from the offers' validity.
+     */
+    public function saveComparison(Request $request, QuoteWorkflowController $canonical, QuoteComparisonService $svc): JsonResponse
     {
-        $data = $request->validate(['quote_request_id'=>'required|uuid','selected_offer_ids'=>'required|array|min:1|max:5','selected_offer_ids.*'=>'uuid','expires_at'=>'required|date|after:now']);
-        return response()->json($service->saveComparison($this->tenant(), $request->user(), $data), 201);
+        $data = $request->validate(['quote_request_id'=>'required|uuid','selected_offer_ids'=>'required|array|min:1|max:'.QuoteComparisonService::MAX,'selected_offer_ids.*'=>'uuid','expires_at'=>'sometimes|date']);
+        $request->merge(['quote_id' => $data['quote_request_id'], 'offer_ids' => array_values($data['selected_offer_ids'])]);
+        return $canonical->storeComparison($request, $svc);
     }
 }

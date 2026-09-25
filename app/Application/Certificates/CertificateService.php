@@ -62,9 +62,13 @@ final class CertificateService
     {
         return DB::transaction(function () use ($d, $actor): StickerBatch {
             $b = StickerBatch::create([...$d, 'quantity' => count($d['stickers']), 'received_by' => $actor->id, 'received_at' => now(), 'status' => 'RECEIVED']);
+            $level = ! empty($d['custodian_tenant_id']) ? 'BROKER' : 'CARRIER';
             foreach ($d['stickers'] as $s) {
-                StickerStock::create(['serial_number' => $s['serial_number'], 'carrier_id' => $d['carrier_id'], 'batch_number' => $d['batch_number'], 'status' => 'IN_STOCK',
-                    'custodian_tenant_id' => $d['custodian_tenant_id'] ?? null, 'sticker_batch_id' => $b->id, 'security_code_hash' => hash('sha256', $s['security_code'])]);
+                $stock = StickerStock::create(['serial_number' => $s['serial_number'], 'carrier_id' => $d['carrier_id'], 'batch_number' => $d['batch_number'], 'status' => 'IN_STOCK',
+                    'custodian_tenant_id' => $d['custodian_tenant_id'] ?? null, 'sticker_batch_id' => $b->id, 'security_code_hash' => hash('sha256', $s['security_code']), 'custody_level' => $level]);
+                // REQ-POL-007: the custody chain starts at receipt.
+                DB::table('sticker_custody_events')->insert(['id' => (string) Str::uuid(), 'sticker_stock_id' => $stock->id, 'event_type' => 'RECEIVED', 'from_tenant_id' => null,
+                    'to_tenant_id' => $d['custodian_tenant_id'] ?? null, 'to_level' => $level, 'actor_id' => $actor->id, 'reason_code' => 'BATCH_RECEIVED', 'occurred_at' => now()]);
             }
             $this->audit->record('sticker.batch.received', 'sticker_batch', $b->id, ['quantity' => $b->quantity]);
 
@@ -128,13 +132,8 @@ final class CertificateService
             $this->engine->supersedePrevious($p, $doc, $actor);
 
             if (! empty($d['sticker_serial_number'])) {
-                $s = StickerStock::where(['serial_number' => $d['sticker_serial_number'], 'carrier_id' => $p->carrier_id, 'custodian_tenant_id' => $p->tenant_id, 'status' => 'IN_STOCK'])->lockForUpdate()->first();
-                if (! $s) {
-                    throw ValidationException::withMessages(['sticker_serial_number' => __('wave5.sticker_unavailable')]);
-                }
-                $s->update(['status' => 'ASSIGNED', 'assigned_policy_id' => $p->id, 'assigned_at' => now()]);
-                DB::table('sticker_custody_events')->insert(['id' => (string) Str::uuid(), 'sticker_stock_id' => $s->id, 'event_type' => 'ASSIGNED_TO_POLICY', 'from_tenant_id' => $s->custodian_tenant_id,
-                    'to_tenant_id' => $p->tenant_id, 'actor_id' => $actor->id, 'reason_code' => 'POLICY_ISSUANCE', 'occurred_at' => now()]);
+                // REQ-POL-007: one assign-to-policy path (custody checks + sticker_custody_events ASSIGNED_TO_POLICY).
+                app(\App\Application\Stickers\StickerCustodyService::class)->assignToPolicy($p, (string) $d['sticker_serial_number'], $actor);
             }
             $this->audit->record('certificate.issued', 'document', $doc->id, ['policy_id' => $p->id, 'document_number' => $doc->document_number, 'type' => $type['code']]);
             $this->outbox->record('certificate.issued', 'document', $doc->id, ['document_id' => $doc->id, 'policy_id' => $p->id]);
@@ -144,39 +143,16 @@ final class CertificateService
     }
 
     /**
-     * Serial + token verification: engine certificate documents first, then the
-     * legacy policy_certificates history.
+     * Serial + token verification. REQ-DUP-015: delegates to the one public
+     * verification service (engine certificate documents first, then legacy
+     * policy_certificates history). The fingerprint is only ever stored hashed
+     * (public_verification_lookups / certificate_verification_events.request_fingerprint_hash).
      *
      * @return array{serial_number: string, policy: Policy, issued_at: mixed, document_hash: string, document_id: ?string}
      */
     public function verify(string $serial, string $token, string $fingerprint): array
     {
-        $doc = Document::whereRaw("provenance->>'certificate_serial' = ?", [$serial])->whereRaw("jsonb_exists(provenance, 'verification_token_hash')")->latest('created_at')->first();
-        if ($doc) {
-            $policy = Policy::find($doc->policy_id);
-            $valid = hash_equals((string) $doc->provenance['verification_token_hash'], hash('sha256', $token))
-                && in_array(DocumentEngine::effectiveStatus($doc), ['VALID', 'ISSUED'], true)
-                && $policy && self::inForce($policy);
-            DB::table('public_verification_lookups')->insert(['id' => (string) Str::uuid(), 'channel' => 'API', 'reference_hash' => hash('sha256', mb_strtoupper($serial)),
-                'document_id' => $doc->id, 'result' => $valid ? 'valid' : 'not_found', 'token_presented' => true, 'request_fingerprint_hash' => hash('sha256', $fingerprint), 'occurred_at' => now()]);
-            if (! $valid) {
-                throw ValidationException::withMessages(['certificate' => __('wave5.certificate_not_verified')]);
-            }
-
-            return ['serial_number' => $serial, 'policy' => $policy, 'issued_at' => $doc->issued_at, 'document_hash' => $doc->sha256, 'document_id' => $doc->id];
-        }
-
-        $c = PolicyCertificate::with('policy')->where('serial_number', $serial)->first();
-        $valid = $c && hash_equals($c->verification_token_hash, hash('sha256', $token)) && $c->status === 'VALID' && self::inForce($c->policy);
-        if ($c) {
-            DB::table('certificate_verification_events')->insert(['id' => (string) Str::uuid(), 'policy_certificate_id' => $c->id, 'result' => $valid ? 'VERIFIED' : 'REJECTED',
-                'request_fingerprint_hash' => hash('sha256', $fingerprint), 'occurred_at' => now()]);
-        }
-        if (! $valid) {
-            throw ValidationException::withMessages(['certificate' => __('wave5.certificate_not_verified')]);
-        }
-
-        return ['serial_number' => $c->serial_number, 'policy' => $c->policy, 'issued_at' => $c->issued_at, 'document_hash' => $c->document_hash, 'document_id' => null];
+        return app(\App\Application\Documents\Verification\PublicVerificationService::class)->verifyCertificate($serial, $token, $fingerprint);
     }
 
     /** Voiding a LEGACY certificate (history row status only). Engine certificates are revoked via DocumentStatusService (maker-checker). */
@@ -217,10 +193,5 @@ final class CertificateService
         \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
         return [$key, $bytes, $letterhead['snapshot']];
-    }
-
-    private static function inForce(Policy $p): bool
-    {
-        return in_array($p->status, ['ACTIVE', 'EXPIRING'], true) && ! $p->coverage_starts_at->isFuture() && $p->coverage_ends_at->isFuture();
     }
 }

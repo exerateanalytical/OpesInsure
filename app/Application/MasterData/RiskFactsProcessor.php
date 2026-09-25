@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\MasterData;
 
-use App\Application\Catalogue\RiskSchemaCatalogue;
+use App\Application\Rules\QuestionSetCatalogue;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -43,13 +43,14 @@ final class RiskFactsProcessor
         private readonly MasterDataCatalogue $catalogue,
         private readonly MasterDataReviewService $reviews,
         private readonly VehicleMasterSource $vehicles,
+        private readonly QuestionSetCatalogue $questionSets,
     ) {}
 
     /** @return array<string, mixed> processed facts */
     public function process(string $lineCode, array $facts, ?string $tenantId = null, ?string $userId = null): array
     {
         $line = strtoupper($lineCode);
-        $schema = $line === 'MOTOR' ? null : RiskSchemaCatalogue::for($line);
+        $schema = $line === 'MOTOR' ? null : $this->questionSets->lineSchema($line); // question set → seed catalogue fallback
         if (! $schema) {
             return $facts;
         }

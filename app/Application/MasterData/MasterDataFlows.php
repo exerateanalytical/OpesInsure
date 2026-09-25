@@ -25,6 +25,9 @@ final class MasterDataFlows
         'vehicle.model' => ['vehicle', 'models'],
         'fleet.vehicle_class' => ['vehicle', 'vehicle_class'],
         'fleet.usage' => ['vehicle', 'usage'],
+        // Duplicate lists consolidated (see MasterDataSeeder::SUPERSEDED_LISTS); old codes are seeded aliases.
+        'life_insurance.relationship' => ['persons', 'relationship'],
+        'aviation.manufacturer' => ['aviation_insurance', 'manufacturer'],
     ];
 
     private const TYPES = [

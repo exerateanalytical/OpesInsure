@@ -36,6 +36,10 @@ final class PolicyServicingService
             $reinstatable = $data['type'] === 'REINSTATEMENT'
                 && in_array($policy->status, ['SUSPENDED', 'EXPIRED'], true);
 
+            if ($data['type'] === 'REINSTATEMENT' && $policy->status === 'LAPSED') {
+                // REQ-POL-010: a lapsed policy comes back only through premium recovery (arrears + maker-checker).
+                throw ValidationException::withMessages(['status' => 'RECOVERY_REQUIRED: a LAPSED policy is reinstated through a recovery case (POST policies/{policy}/recovery-cases).']);
+            }
             if ($policy->status !== 'ACTIVE' && ! $reinstatable) {
                 throw ValidationException::withMessages(['status' => __('wave5.policy_not_serviceable')]);
             }
@@ -54,11 +58,13 @@ final class PolicyServicingService
 
             $calculation = ['refund_minor' => 0, 'rule_id' => null];
             if ($data['type'] === 'CANCELLATION') {
-                $calculation = $this->cancellation->calculate($policy, $effectiveAt);
+                $calculation = $this->cancellation->calculate($policy, $effectiveAt, $data['initiated_by'] ?? null);
             }
 
             $termsAfter = array_replace_recursive($policy->terms_snapshot, $data['requested_changes'] ?? []);
-            $premiumDelta = $data['type'] === 'CANCELLATION' ? 0 : (int) $data['premium_delta_minor'];
+            // REQ-END-001: endorsement type rules + rerate decide the premium delta (Endorsements\EndorsementService).
+            $endorsement = $data['type'] === 'ENDORSEMENT' ? $this->endorsements()->prepare($policy, $data, $effectiveAt, $termsAfter) : null;
+            $premiumDelta = $data['type'] === 'CANCELLATION' ? 0 : (int) ($endorsement['premium_delta_minor'] ?? $data['premium_delta_minor']);
             $status = $premiumDelta > 0 ? 'PAYMENT_PENDING' : 'PENDING_APPROVAL';
 
             $transaction = PolicyTransaction::create([
@@ -80,6 +86,9 @@ final class PolicyServicingService
                 'refund_minor' => $calculation['refund_minor'],
                 'terms_hash' => $this->json->hash($termsAfter),
             ]);
+            if ($endorsement) {
+                $this->endorsements()->attach($transaction, $endorsement['columns'], $actor);
+            }
 
             $pendingStatus = match ($data['type']) {
                 'ENDORSEMENT' => 'ENDORSEMENT_PENDING',
@@ -181,7 +190,11 @@ final class PolicyServicingService
 
     public function approve(PolicyTransaction $transaction, User $actor): Policy
     {
-        return DB::transaction(function () use ($transaction, $actor): Policy {
+        // REQ-END-001: ENDORSE authority, checked before the approval transaction so a denial stays recorded.
+        $authorityCheckId = $transaction->type === 'ENDORSEMENT' && $transaction->status === 'PENDING_APPROVAL' && $transaction->requested_by !== $actor->id
+            ? $this->endorsements()->authorise($transaction->refresh(), $actor) : null;
+
+        return DB::transaction(function () use ($transaction, $actor, $authorityCheckId): Policy {
             $transaction = PolicyTransaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
 
             if ($transaction->status !== 'PENDING_APPROVAL') {
@@ -221,7 +234,15 @@ final class PolicyServicingService
             ]);
 
             $this->policyHistory($policy, $fromStatus, $toStatus, $transaction->reason_code, $actor, $transaction);
+            if ($fromStatus === 'SUSPENDED') {
+                // REQ-POL-006: a servicing-path reinstatement/cancellation closes the open suspension episode.
+                app(Suspension\PolicySuspensionService::class)->end($policy, $transaction->reason_code, $actor);
+            }
             $this->event($transaction, 'PENDING_APPROVAL', 'APPROVED', 'APPROVED', $actor);
+
+            if ($transaction->type === 'ENDORSEMENT') {
+                $this->endorsements()->finalise($policy->refresh(), $transaction, $actor, $authorityCheckId);
+            }
 
             if ($transaction->type === 'CANCELLATION' && $transaction->refund_minor > 0) {
                 $payment = PaymentIntentRecord::findOrFail($policy->payment_intent_id);
@@ -289,6 +310,23 @@ final class PolicyServicingService
 
             return $transaction->refresh();
         });
+    }
+
+    /** REQ-POL-006 suspension entry point (also used by premium-to-cover SUSPEND_ON_DEFAULT). */
+    public function suspend(Policy $policy, string $reasonCode, ?User $actor, array $options = []): Suspension\PolicySuspension
+    {
+        return app(Suspension\PolicySuspensionService::class)->suspend($policy, $reasonCode, $actor, $options);
+    }
+
+    /** REQ-POL-006 reinstatement entry point: checker approval of a queued request, or a system reinstatement (actor null). */
+    public function reinstate(Policy $policy, string $reasonCode, ?User $actor, ?\DateTimeInterface $effectiveAt = null): Policy
+    {
+        return app(Suspension\PolicySuspensionService::class)->reinstate($policy, $reasonCode, $actor, $effectiveAt);
+    }
+
+    private function endorsements(): Endorsements\EndorsementService
+    {
+        return app(Endorsements\EndorsementService::class);
     }
 
     private function event(PolicyTransaction $transaction, ?string $from, string $to, string $reason, ?User $actor): void

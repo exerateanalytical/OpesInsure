@@ -9,10 +9,10 @@ namespace App\Application\FinancialDistribution;
  * Data Master v1 ("reinsurance_coinsurance"), resolved onto the master-data
  * reinsurance domain and onto the codes stored in bordereaux.type.
  *
- * Bordereau engines stay as they are: the broker endpoint stores PREMIUM,
- * CLAIM, ENDORSEMENT, CANCELLATION; the carrier/partner endpoint stores
- * PREMIUM, COMMISSION. RISK bordereaux are reference-only until the
- * reinsurance engine (batches 9-14) produces them.
+ * Both bordereau endpoints (broker POST broker/bordereaux and finance POST
+ * bordereaux) accept exactly PRODUCIBLE_BORDEREAU_TYPES, after bordereauType()
+ * normalisation, through bordereauTypeRule(). RISK bordereaux are
+ * reference-only until the reinsurance engine (batches 9-14) produces them.
  */
 final class ReinsuranceReference
 {
@@ -26,7 +26,7 @@ final class ReinsuranceReference
     /** Workflow bordereau type => stored bordereaux.type / reinsurance.bordereau_type code. */
     public const BORDEREAU_TYPES = ['RISK' => 'RISK', 'PREMIUM' => 'PREMIUM', 'CLAIMS' => 'CLAIM'];
 
-    /** Bordereau types an existing endpoint can produce today. */
+    /** Bordereau types the bordereau endpoints accept (single source for both). */
     public const PRODUCIBLE_BORDEREAU_TYPES = ['PREMIUM', 'CLAIM', 'ENDORSEMENT', 'CANCELLATION', 'COMMISSION'];
 
     public const MASTER_STATUS = [
@@ -47,5 +47,11 @@ final class ReinsuranceReference
         $code = strtoupper($code);
 
         return self::BORDEREAU_TYPES[$code] ?? $code;
+    }
+
+    /** Validation rule shared by every bordereau-creating endpoint. */
+    public static function bordereauTypeRule(): \Illuminate\Validation\Rules\In
+    {
+        return \Illuminate\Validation\Rule::in(self::PRODUCIBLE_BORDEREAU_TYPES);
     }
 }

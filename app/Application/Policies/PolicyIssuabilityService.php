@@ -37,7 +37,10 @@ final class PolicyIssuabilityService
         $case = UnderwritingCase::where('proposal_id', $p->id)->latest('created_at')->first();
         $decision = $case ? UnderwritingDecision::where('underwriting_case_id', $case->id)->latest('decided_at')->first() : null;
         $counterAccepted = $decision?->decision === 'COUNTEROFFERED' && ($p->terms_snapshot['counter_offer_decision_id'] ?? null) === $decision->id;
-        if ($decision === null || ! ($decision->decision === 'APPROVED' || $counterAccepted)) {
+        // Straight-through: a proposal the proposal machine moved to PAYMENT_PENDING (auto_approve / approve /
+        // accept_counteroffer) without any underwriting case on record (pre-case / rules-only STP flows) is approved.
+        $stpWithoutCase = $case === null && $p->status === 'PAYMENT_PENDING';
+        if (! $stpWithoutCase && ($decision === null || ! ($decision->decision === 'APPROVED' || $counterAccepted))) {
             $blockers[] = 'UNDERWRITING_NOT_APPROVED';
         }
         if ($case && $case->referrals()->where('status', 'OPEN')->exists()) {

@@ -67,3 +67,18 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - Document numbering conflict: the catalogue's DOC-### IDs come from your 220 register and differ from the canonical specification's DOC-### for 214 of 220 documents (e.g. spec DOC-036 = Motor Attestation, catalogue DOC-036 = Premium Schedule). Both are kept and linked. Which numbering is canonical for external use?
 - 17 spec documents have no catalogue type yet (DOC-014, 015, 138–140, 169, 179, 185, 196, 199, 200, 209, 213, 214, 218–220). Should they be added?
 - Document signing key: S3+ documents record their signature as CONFIG_REQUIRED until a platform Ed25519 key is provisioned. Generate one on the server (never committed)?
+## Q8 — Batch 7 follow-ups (2026-09-25)
+Tags: **DECIDED** = owner already answered (recorded for history); **RECOMMENDED** = implemented with the coordinator's recommendation, confirm or change; unmarked = still open.
+- **DECIDED** — Intermediary register policy: an intermediary missing from, or not active in, the official register is referred for manual review (not hard-blocked, not ignored).
+- Finance bordereau: `prepare()` currently creates NEW_BUSINESS line items for every bordereau type (endorsements, cancellations, claims are not yet separated). Confirm the item types each bordereau type must carry.
+- **RECOMMENDED** — Reinsurance treaty application order: quota share → surplus → excess of loss → stop loss. Confirm.
+- **RECOMMENDED** — Coinsurance apportionment: the rounding remainder (minor units) goes to the lead insurer. Confirm.
+- Premium-to-cover: which field is the authoritative source of `class_code` for the rule lookup? And MORE_INFORMATION_REQUIRED currently does not block issuance — confirm it should not.
+- Legacy proposals in PAYMENT_PENDING with no underwriting case are treated as straight-through (STP) approved by the issuability gate. Confirm.
+- **RECOMMENDED** — Aviation: aircraft type and aircraft category are kept as separate fields (not merged). Confirm.
+- Policy blueprint state mappings: legacy statuses are mapped onto blueprint states (e.g. LAPSED → EXPIRED, and the other legacy→blueprint pairs in the policy state map). Confirm each mapping.
+- Underwriting risk-score weights are hard-coded (no configuration table, no source). Provide the weights/bands, or confirm they should become insurer-configurable.
+- Complaint categories have no source list (working set only). Please supply the official list.
+- SupportController can still change the status of support tickets that are bridged to a case, bypassing the case engine. Lock bridged tickets to the case workflow?
+- **DECIDED** — Sticker scoping: insurer staff linked to a carrier may move, reconcile and assign stickers of their own carrier only (enforced in StickerCustodyService).
+- Reinsurance, coinsurance and provider-master permissions are not in the REQ-RBAC-004 business-data module list, so SYSTEM_ADMIN's `*` still reaches them. Treat them as business data (platform admins then need a business role or break-glass)?

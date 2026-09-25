@@ -101,6 +101,8 @@ Route::prefix('v1')->group(function (): void {
             ]]);
         })->middleware('throttle:30,1');
     }
+    // REQ-DUP-015: one PublicVerificationService; public/verify is canonical, the two below are aliases.
+    Route::post('public/verify', \App\Interfaces\Http\Controllers\Api\V1\Certificates\PublicVerifyController::class)->middleware('throttle:20,1');
     Route::post('public/certificates/verify', [CertificateController::class, 'verify'])->middleware('throttle:30,1');
     // Reference-only insurance check (no token): discloses validity, insurer and
     // product class only. Tighter limit than certificate verify to deter enumeration.
@@ -190,6 +192,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('underwriting/cases/{case}/assign', [ProposalController::class, 'assign'])->middleware('permission:underwriting.assign');
         Route::post('underwriting/referrals/{referral}/resolve', [ProposalController::class, 'resolveReferral'])->middleware('permission:underwriting.decide');
         Route::post('underwriting/cases/{case}/decision', [ProposalController::class, 'decide'])->middleware('permission:underwriting.decide');
+        // Batch 7B — REQ-UW-001…005 underwriter workspace (queue, case file, system evaluate, review steps, WF-019 info request).
+        Route::get('underwriting/cases', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'index'])->middleware('permission:underwriting.decide');
+        Route::get('underwriting/cases/{case}', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'show'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/evaluate', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'evaluate'])->middleware(['permission:underwriting.decide', 'throttle:30,1']);
+        Route::post('underwriting/cases/{case}/start-review', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'startReview'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/ready-for-decision', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'readyForDecision'])->middleware('permission:underwriting.decide');
+        Route::post('underwriting/cases/{case}/information-requests', [\App\Application\Underwriting\Http\UnderwritingWorkspaceController::class, 'requestInformation'])->middleware('permission:underwriting.decide');
         Route::get('policies', [PolicyController::class, 'index']);
         Route::post('policy-issuance-requests', [PolicyController::class, 'requestIssuance'])->middleware('permission:policies.issue.request');
         Route::post('policy-issuance-requests/{issuance}/approve', [PolicyController::class, 'approveIssuance'])->middleware('permission:policies.issue.approve');
@@ -304,14 +313,25 @@ Route::prefix('v1')->group(function (): void {
         Route::get('integrations/health', [IntegrationController::class, 'health'])->middleware('permission:integrations.manage');
         Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware('permission:broker.bordereaux.manage');
         Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware('permission:broker.bordereaux.submit');
-        // REQ-DUP-010: canonical is renewals/seed (RenewalController). The broker variant
-        // writes renewal_work_items with a different body (days_ahead), so it stays on its
-        // own action until callers move; deprecated, logged, removal pending.
+        // REQ-DUP-010: canonical is renewals/seed (RenewalController). The broker variant is a
+        // deprecated alias: its action only maps the legacy body (days_ahead) onto the same
+        // RenewalService::sweep (which also keeps renewal_work_items); removal pending.
         Route::post('broker/renewals/seed', [BrokerOperationsController::class, 'seedRenewals'])->middleware(['permission:broker.renewals.manage', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('renewals/seed', 'REQ-DUP-010')]);
         Route::post('carrier/delegated-authorities', [CarrierOperationsController::class, 'createAuthority'])->middleware('permission:carrier.authority.manage');
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);
         Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
+
+        // Batch 13D — REQ-COI-001 co-insurance (apériteur + followers, share apportionment)
+        Route::get('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'index'])->middleware('permission:coinsurance.view');
+        Route::post('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'store'])->middleware('permission:coinsurance.manage');
+        Route::get('coinsurance/arrangements/{arrangement}', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'show'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/activate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'activate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/terminate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'terminate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/preview', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'preview'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportion'])->middleware('permission:coinsurance.apportion')->whereUuid('arrangement');
+        Route::get('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportionments'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        // End Batch 13D
     });
     Route::middleware('auth:api')->group(function (): void {
         Route::post('invitations/accept', [InvitationController::class, 'accept']);
@@ -333,3 +353,224 @@ Route::prefix('v1')->group(function (): void {
 });
 
 require __DIR__.'/wave6.php';
+
+// Batch 13A — REQ-PRV-001 / REQ-PRV-002 / REQ-PRV-004: provider master + network.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $p = \App\Application\Providers\Http\ProviderController::class;
+    $n = \App\Application\Providers\Http\ProviderNetworkController::class;
+    Route::get('providers', [$p, 'index'])->middleware('permission:providers.view');
+    Route::post('providers', [$p, 'store'])->middleware('permission:providers.manage');
+    Route::get('providers/{provider}', [$p, 'show'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::get('providers/{provider}/credentialing', [$p, 'history'])->middleware('permission:providers.view')->whereUuid('provider');
+    Route::post('providers/{provider}/credentialing', [$p, 'transition'])->middleware('permission:providers.credential')->whereUuid('provider');
+    Route::post('providers/{provider}/facilities', [$p, 'addFacility'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('provider-facilities/{facility}/services', [$p, 'addFacilityService'])->middleware('permission:providers.manage')->whereUuid('facility');
+    Route::post('providers/{provider}/code-mappings', [$p, 'mapCode'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::post('providers/{provider}/relationships', [$p, 'relate'])->middleware('permission:providers.manage')->whereUuid('provider');
+    Route::get('medical-services', [$n, 'services'])->middleware('permission:providers.view');
+    Route::post('medical-services', [$n, 'addService'])->middleware('permission:providers.manage');
+    Route::get('provider-networks', [$n, 'index'])->middleware('permission:provider_networks.view');
+    Route::post('provider-networks', [$n, 'store'])->middleware('permission:provider_networks.manage');
+    Route::get('provider-networks/{network}/members', [$n, 'members'])->middleware('permission:provider_networks.view')->whereUuid('network');
+    Route::post('provider-networks/{network}/members', [$n, 'addMember'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-network-memberships/{membership}/end', [$n, 'endMember'])->middleware('permission:provider_networks.manage')->whereUuid('membership');
+    Route::post('provider-networks/{network}/contracts', [$n, 'addContract'])->middleware('permission:provider_networks.manage')->whereUuid('network');
+    Route::post('provider-contracts/{contract}/tariffs', [$n, 'draftTariff'])->middleware('permission:provider_networks.manage')->whereUuid('contract');
+    Route::get('provider-contracts/{contract}/price', [$n, 'price'])->middleware('permission:provider_networks.view')->whereUuid('contract');
+    Route::post('provider-tariffs/{tariff}/approve', [$n, 'approveTariff'])->middleware('permission:provider_tariffs.approve')->whereUuid('tariff');
+});
+
+// Batch 13C — REQ-REI-001 treaties + REQ-REI-002 cessions / bordereaux.
+Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Reinsurance\Http\ReinsuranceController::class;
+    Route::get('reinsurers', [$c, 'reinsurers'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('reinsurers', [$c, 'createReinsurer'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::post('reinsurers/{reinsurer}/status', [$c, 'reinsurerStatus'])->middleware('permission:reinsurance.reinsurers.manage');
+    Route::get('treaties', [$c, 'treatiesIndex'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties', [$c, 'createTreaty'])->middleware('permission:reinsurance.treaties.manage');
+    Route::get('treaties/{treaty}', [$c, 'showTreaty'])->middleware('permission:reinsurance.treaties.view');
+    Route::post('treaties/{treaty}/versions', [$c, 'addVersion'])->middleware('permission:reinsurance.treaties.manage');
+    Route::post('treaty-versions/{version}/activate', [$c, 'activateVersion'])->middleware('permission:reinsurance.treaties.approve');
+    Route::get('treaties/{treaty}/bordereau', [$c, 'bordereau'])->middleware('permission:reinsurance.cessions.view');
+    Route::get('policies/{policy}/cessions', [$c, 'policyCessions'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
+    Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
+});
+
+// Batch 8-7 — REQ-POL-009 policy portfolio transfer (maker-checker, notice/consent) + portability export packs (ICE gaps 36, 42).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Policies\Portability\Http\PolicyPortabilityController::class;
+    Route::post('policy-portfolio-transfers/preview', [$c, 'preview'])->middleware('permission:policies.portfolio_transfer.request');
+    Route::post('policy-portfolio-transfers', [$c, 'store'])->middleware(['permission:policies.portfolio_transfer.request', 'throttle:10,1']);
+    Route::get('policy-portfolio-transfers', [$c, 'index'])->middleware('permission:policies.portfolio_transfer.read');
+    Route::get('policy-portfolio-transfers/{transfer}', [$c, 'show'])->middleware('permission:policies.portfolio_transfer.read')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/approve', [$c, 'approve'])->middleware('permission:policies.portfolio_transfer.approve')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/reject', [$c, 'reject'])->middleware('permission:policies.portfolio_transfer.approve')->whereUuid('transfer');
+    Route::post('policy-portfolio-transfers/{transfer}/policies/{policy}/consent', [$c, 'consent'])->middleware('permission:policies.portfolio_transfer.request')->whereUuid(['transfer', 'policy']);
+    Route::get('policies/{policy}/servicing-history', [$c, 'servicingHistory'])->middleware('permission:policies.portfolio_transfer.read')->whereUuid('policy');
+    Route::post('policies/{policy}/portability-exports', [$c, 'export'])->middleware(['permission:policies.portability.export', 'throttle:10,1'])->whereUuid('policy');
+    Route::get('policies/{policy}/portability-exports', [$c, 'exports'])->middleware('permission:policies.portability.export')->whereUuid('policy');
+    Route::get('policy-portability-exports/{export}', [$c, 'pack'])->middleware('permission:policies.portability.export')->whereUuid('export');
+    Route::get('policy-portability-exports/{export}/pdf', [$c, 'pdf'])->middleware('permission:policies.portability.export')->whereUuid('export');
+});
+// Batch 8-6 — REQ-PRD-011 life & special products (group master + members, fleet, open cover cargo, construction, agriculture, life surrender).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Policies\Special\Http\SpecialPolicyController::class;
+    Route::post('policies/{policy}/special-profile', [$s, 'createProfile'])->middleware('permission:special_policies.manage')->whereUuid('policy');
+    Route::get('policies/{policy}/special-profile', [$s, 'showProfile'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::get('policies/{policy}/schedule', [$s, 'schedule'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::post('policies/{policy}/schedule-items', [$s, 'addItem'])->middleware('permission:special_policies.schedule.manage')->whereUuid('policy');
+    Route::post('policy-schedule-items/{item}/remove', [$s, 'removeItem'])->middleware('permission:special_policies.schedule.manage')->whereUuid('item');
+    Route::get('policies/{policy}/cargo-declarations', [$s, 'declarations'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::post('policies/{policy}/cargo-declarations', [$s, 'declare'])->middleware('permission:cargo_declarations.declare')->whereUuid('policy');
+    Route::post('cargo-declarations/{declaration}/cancel', [$s, 'cancelDeclaration'])->middleware('permission:cargo_declarations.cancel')->whereUuid('declaration');
+    Route::post('life/surrender-scales', [$s, 'createScale'])->middleware('permission:life_surrender.scales.manage');
+    Route::post('life/surrender-scales/{scale}/activate', [$s, 'activateScale'])->middleware('permission:life_surrender.scales.approve')->whereUuid('scale');
+    Route::post('policies/{policy}/surrender-quotes', [$s, 'surrenderQuote'])->middleware('permission:life_surrender.quote')->whereUuid('policy');
+});
+// End Batch 8-6
+// Batch 8-9 — REQ-DOC-008 origin/evidence, REQ-DOC-009 access log/retention/legal hold/destruction, REQ-DOC-010 intake, REQ-DOC-012 e-signature.
+Route::prefix('v1/document-governance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $g = \App\Application\Documents\Http\DocumentGovernanceController::class;
+    Route::get('third-party-evidence', [$g, 'thirdPartyEvidence'])->middleware('permission:documents.read');
+    Route::get('intake', [$g, 'intakeIndex'])->middleware('permission:documents.intake.manage');
+    Route::post('intake', [$g, 'intakeReceive'])->middleware('permission:documents.intake.manage');
+    Route::post('intake/{item}/classify', [$g, 'intakeClassify'])->middleware('permission:documents.intake.manage')->whereUuid('item');
+    Route::post('intake/{item}/reject', [$g, 'intakeReject'])->middleware('permission:documents.intake.manage')->whereUuid('item');
+    Route::get('documents/{document}/access-log', [$g, 'accessLog'])->middleware('permission:documents.access_log.read')->whereUuid('document');
+    Route::get('documents/{document}/retention', [$g, 'retentionStatus'])->middleware('permission:documents.retention.manage')->whereUuid('document');
+    Route::post('documents/{document}/destruction-requests', [$g, 'destructionRequest'])->middleware('permission:documents.destruction.request')->whereUuid('document');
+    Route::post('destruction-requests/{request}/decide', [$g, 'destructionDecide'])->middleware('permission:documents.destruction.approve')->whereUuid('request');
+    Route::get('retention-schedules', [$g, 'retentionIndex'])->middleware('permission:documents.retention.manage');
+    Route::post('retention-schedules', [$g, 'retentionDraft'])->middleware('permission:documents.retention.manage');
+    Route::post('retention-schedules/{schedule}/approve', [$g, 'retentionApprove'])->middleware('permission:documents.retention.approve')->whereUuid('schedule');
+    Route::get('legal-holds', [$g, 'holdIndex'])->middleware('permission:documents.legal_hold.manage');
+    Route::post('legal-holds', [$g, 'holdPlace'])->middleware('permission:documents.legal_hold.manage');
+    Route::post('legal-holds/{hold}/release', [$g, 'holdRelease'])->middleware('permission:documents.legal_hold.manage')->whereUuid('hold');
+    Route::post('signature-requests', [$g, 'signatureCreate'])->middleware('permission:documents.signatures.manage');
+    Route::get('signature-requests/{request}', [$g, 'signatureShow'])->middleware('permission:documents.signatures.manage')->whereUuid('request');
+    Route::post('signature-requests/{request}/cancel', [$g, 'signatureCancel'])->middleware('permission:documents.signatures.manage')->whereUuid('request');
+});
+Route::prefix('v1/signature-requests')->middleware(['auth:api', 'json.api', 'throttle:30,1'])->group(function (): void {
+    $g = \App\Application\Documents\Http\DocumentGovernanceController::class;
+    Route::post('{request}/sign', [$g, 'sign'])->whereUuid('request');
+    Route::post('{request}/decline', [$g, 'decline'])->whereUuid('request');
+});
+// Batch 9-8 — REQ-PAY-015 account statements (customer / broker / agent / carrier), derived, read-only; ?format=pdf for PDF.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $st = \App\Application\Finance\Statements\Http\AccountStatementController::class;
+    Route::get('finance/statements/{subjectType}/{subject}', [$st, 'show'])->middleware('permission:statements.read')->whereIn('subjectType', ['customer', 'broker', 'agent', 'carrier'])->whereUuid('subject');
+    Route::get('finance/partner-statements/{statement}', [$st, 'partnerStatement'])->middleware('permission:statements.read')->whereUuid('statement');
+    Route::get('mobile/statements', [$st, 'mine'])->middleware('throttle:30,1');
+});
+// End Batch 9-8
+// Batch 9-7 — REQ-PAY-010 cashier sessions, REQ-PAY-013 multi-currency & immutable FX rates.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Finance\Cashier\Http\CashierSessionController::class;
+    Route::get('cashier-sessions', [$c, 'index'])->middleware('permission:cashier.sessions.view');
+    Route::post('cashier-sessions', [$c, 'open'])->middleware('permission:cashier.sessions.operate');
+    Route::get('cashier-sessions/{session}', [$c, 'show'])->middleware('permission:cashier.sessions.view')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/collections', [$c, 'collect'])->middleware('permission:cashier.sessions.operate')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/close', [$c, 'close'])->middleware('permission:cashier.sessions.operate')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/decide', [$c, 'decide'])->middleware('permission:cashier.sessions.approve')->whereUuid('session');
+    $f = \App\Application\Finance\Fx\Http\FxRateController::class;
+    Route::get('fx-rates', [$f, 'index'])->middleware('permission:fx.rates.view');
+    Route::post('fx-rates', [$f, 'store'])->middleware('permission:fx.rates.manage');
+    Route::get('fx-rates/lookup', [$f, 'lookup'])->middleware('permission:fx.rates.view');
+});
+// End Batch 9-7
+// Batch 9-5 — REQ-PAY-007 reconciliation exceptions / unmatched-items workspace (manual match under maker-checker).
+Route::prefix('v1/reconciliation')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $w = \App\Application\Reconciliation\Http\ReconciliationWorkspaceController::class;
+    Route::get('workspace/items', [$w, 'search'])->middleware('permission:reconciliation.read');
+    Route::get('workspace/items/{item}/candidates', [$w, 'candidates'])->middleware('permission:reconciliation.read')->whereUuid('item');
+    Route::post('items/{item}/manual-matches', [$w, 'requestMatch'])->middleware('permission:reconciliation.resolve')->whereUuid('item');
+    Route::post('manual-matches/{match}/decide', [$w, 'decideMatch'])->middleware('permission:reconciliation.approve')->whereUuid('match');
+});
+// End Batch 9-5
+// Batch 9-6 — REQ-PAY-009 refund engine / queue (WF-063) and REQ-PAY-011 mobile-money clearing + suspense.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rf = \App\Application\Finance\Refunds\Http\RefundQueueController::class;
+    Route::get('refunds', [$rf, 'index'])->middleware('permission:refund.view');
+    Route::get('refunds/{refund}', [$rf, 'show'])->middleware('permission:refund.view')->whereUuid('refund');
+    Route::post('payments/{payment}/refund-candidates', [$rf, 'candidate'])->middleware('permission:refund.request')->whereUuid('payment');
+    Route::post('refunds/{refund}/calculate', [$rf, 'calculate'])->middleware('permission:refund.request')->whereUuid('refund');
+    Route::post('refunds/{refund}/review', [$rf, 'review'])->middleware('permission:refund.review')->whereUuid('refund');
+    Route::post('refunds/{refund}/reject', [$rf, 'reject'])->middleware('permission:refund.approve')->whereUuid('refund');
+    Route::post('refunds/{refund}/pay', [$rf, 'pay'])->middleware('permission:refund.pay')->whereUuid('refund');
+    Route::post('refunds/{refund}/reconcile', [$rf, 'reconcile'])->middleware('permission:refund.reconcile')->whereUuid('refund');
+    $cl = \App\Application\Finance\Clearing\Http\ClearingController::class;
+    Route::get('clearing/suspense', [$cl, 'suspense'])->middleware('permission:clearing.view');
+    Route::get('clearing/batches', [$cl, 'index'])->middleware('permission:clearing.view');
+    Route::post('clearing/batches', [$cl, 'store'])->middleware('permission:clearing.manage');
+    Route::get('clearing/batches/{batch}', [$cl, 'show'])->middleware('permission:clearing.view')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/items', [$cl, 'attach'])->middleware('permission:clearing.manage')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/settle', [$cl, 'settle'])->middleware('permission:clearing.manage')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/reconcile', [$cl, 'reconcile'])->middleware('permission:clearing.reconcile')->whereUuid('batch');
+});
+// End Batch 9-6
+
+// Agent W1 — Batch 8 wiring: cancellation (REQ-CAN-001, BRK-062 approver queue), suspension/reinstatement (REQ-POL-006),
+// premium recovery (REQ-POL-010) and staff triage of customer service requests (REQ-DUP-014; conversion goes through
+// POST policies/{policy}/transactions with service_request_id).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $cn = \App\Application\Policies\Http\PolicyCancellationController::class;
+    Route::post('policies/{policy}/cancellations/preview', [$cn, 'preview'])->middleware('permission:policies.cancellation.request')->whereUuid('policy');
+    Route::post('policies/{policy}/cancellations', [$cn, 'store'])->middleware('permission:policies.cancellation.request')->whereUuid('policy');
+    Route::get('policy-cancellations', [$cn, 'index'])->middleware('permission:policies.cancellation.review');
+    Route::get('policy-cancellations/{cancellation}', [$cn, 'show'])->middleware('permission:policies.cancellation.review')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/review', [$cn, 'review'])->middleware('permission:policies.cancellation.review')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/approve', [$cn, 'approve'])->middleware('permission:policies.cancellation.approve')->whereUuid('cancellation');
+    Route::post('policy-cancellations/{cancellation}/reject', [$cn, 'reject'])->middleware('permission:policies.cancellation.approve')->whereUuid('cancellation');
+
+    $su = \App\Application\Policies\Http\PolicySuspensionController::class;
+    Route::post('policies/{policy}/suspend', [$su, 'suspend'])->middleware('permission:policies.suspend')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstatement-requests', [$su, 'requestReinstatement'])->middleware('permission:policies.reinstatement.request')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstatement-requests/reject', [$su, 'rejectReinstatement'])->middleware('permission:policies.reinstatement.approve')->whereUuid('policy');
+    Route::post('policies/{policy}/reinstate', [$su, 'reinstate'])->middleware('permission:policies.reinstatement.approve')->whereUuid('policy');
+    Route::get('policy-reinstatement-queue', [$su, 'queue'])->middleware('permission:policies.reinstatement.approve');
+
+    $rc = \App\Application\Policies\Http\PolicyRecoveryController::class;
+    Route::post('policies/{policy}/recovery-cases', [$rc, 'open'])->middleware('permission:policy.recovery.request')->whereUuid('policy');
+    Route::get('policy-recovery-cases', [$rc, 'index'])->middleware('permission:policy.recovery.approve');
+    Route::get('policy-recovery-cases/{case}', [$rc, 'show'])->middleware('permission:policy.recovery.request')->whereUuid('case');
+    Route::post('policy-recovery-cases/{case}/approve', [$rc, 'approve'])->middleware('permission:policy.recovery.approve')->whereUuid('case');
+    Route::post('policy-recovery-cases/{case}/reject', [$rc, 'reject'])->middleware('permission:policy.recovery.approve')->whereUuid('case');
+    Route::post('policy-premium-instalments/{instalment}/settle', [$rc, 'settleInstalment'])->middleware('permission:policy.recovery.request')->whereUuid('instalment');
+    Route::post('policy-premium-instalments/{instalment}/waive', [$rc, 'waiveInstalment'])->middleware('permission:policy.premium.waive')->whereUuid('instalment');
+
+    Route::get('policy-service-requests', [\App\Application\Policies\Http\ServiceRequestTriageController::class, 'index'])->middleware('permission:policies.service.approve');
+});
+// Batch 9-2 — REQ-PAY-004 payment allocations + versioned allocation rule, REQ-PAY-005 premium components/status.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Finance\Allocations\Http\AllocationController::class;
+    $p = \App\Application\Finance\PremiumStatus\Http\PremiumStatusController::class;
+    Route::get('payments/{payment}/allocations', [$a, 'show'])->middleware('permission:payments.allocations.read')->whereUuid('payment');
+    Route::post('payments/{payment}/allocations', [$a, 'allocate'])->middleware('permission:payments.allocations.manage')->whereUuid('payment');
+    Route::post('payment-allocation-runs/{run}/reverse', [$a, 'reverse'])->middleware('permission:payments.allocations.reverse')->whereUuid('run');
+    Route::get('finance/allocation-rule', [$a, 'rule'])->middleware('permission:payments.allocations.read');
+    Route::post('finance/allocation-rule', [$a, 'publishRule'])->middleware('permission:finance.allocation_rules.manage');
+    Route::get('policies/{policy}/premium-status', [$p, 'show'])->middleware('permission:premium_status.read')->whereUuid('policy');
+    Route::post('policies/{policy}/premium-components', [$p, 'record'])->middleware('permission:premium_components.manage')->whereUuid('policy');
+    Route::post('premium-components/{component}/close', [$p, 'close'])->middleware('permission:premium_components.close')->whereUuid('component');
+});
+// End Batch 9-2
+// Batch 9-4 — REQ-PAY-008 failed-payment retry under the same intent/obligation, REQ-PAY-014 payment collection mode.
+Route::prefix('v1/payments')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $m = \App\Application\Payments\ExecutionModes\Http\PaymentModesController::class;
+    Route::post('{payment}/retry', [$m, 'retry'])->middleware('throttle:10,1')->whereUuid('payment');
+    Route::get('{payment}/attempts', [$m, 'attempts'])->whereUuid('payment');
+    Route::get('{payment}/collection-mode', [$m, 'collectionMode'])->whereUuid('payment');
+});
+// End Batch 9-4
+// Batch 9-1 — REQ-OBL-001 financial obligations (money chain) + REQ-PAY-006 instalment schedules.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $o = \App\Application\Finance\Obligations\Http\ObligationController::class;
+    Route::get('obligations', [$o, 'index'])->middleware('permission:finance.obligations.view');
+    Route::get('obligations/aging', [$o, 'aging'])->middleware('permission:finance.obligations.view');
+    Route::get('obligations/{obligation}', [$o, 'show'])->middleware('permission:finance.obligations.view')->whereUuid('obligation');
+    Route::post('obligations/{obligation}/write-off', [$o, 'writeOff'])->middleware('permission:finance.obligations.manage')->whereUuid('obligation');
+    Route::post('obligations/{obligation}/cancel', [$o, 'cancel'])->middleware('permission:finance.obligations.manage')->whereUuid('obligation');
+    Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
+});
+// End Batch 9-1

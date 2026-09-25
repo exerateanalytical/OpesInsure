@@ -487,6 +487,93 @@ return [
         'documents.letterheads.approve' => ['description' => 'Approve a pending letterhead version when maker-checker is on (never the uploader).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
+    // Batch 7D — issuance operations (routes/issuance_ops.php): REQ-POL-004 issuance exception queue, REQ-POL-007 sticker custody chain.
+    'issuance_ops' => [
+        'policies.issuance_queue.view' => ['description' => 'List failed / paid-not-issued issuance exceptions and their trail.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'BRANCH_MANAGER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'policies.issuance_queue.manage' => ['description' => 'Scan for paid-not-issued payments, retry the issuance request, escalate an exception.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'policies.issuance_queue.resolve' => ['description' => 'Close an issuance exception (refund requested / resolved manually) with notes.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'stickers.view' => ['description' => 'Sticker inventory by custody level, custody history, handovers.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.handover' => ['description' => 'Initiate, accept, reject or cancel a sticker handover (receiver acknowledges; never the initiator).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.allocate' => ['description' => 'Allocate stickers down the chain broker → branch → agent (agents may only return their own).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER']],
+        'stickers.allocate.carrier' => ['description' => 'Release carrier sticker stock to a broker, or take it back.', 'suggested_roles' => ['CARRIER_ADMIN']],
+        'stickers.reconcile' => ['description' => 'Record a physical sticker count against the custody ledger (missing / damaged).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER']],
+        'stickers.assign' => ['description' => 'Assign an in-stock sticker to an in-force motor policy.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'stickers.assign.any' => ['description' => 'Assign a sticker held by another agent.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR']],
+        'stickers.receive' => ['description' => 'Receive a printed sticker batch into carrier stock (CertificateController::receiveBatch).', 'suggested_roles' => ['CARRIER_ADMIN']],
+    ],
+
+    // Batch 7 — provider master / networks / tariffs (routes/api.php providers group). Provider master data.
+    'providers' => [
+        'providers.view' => ['description' => 'List and read healthcare providers and their credentialing state.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'providers.manage' => ['description' => 'Create and edit healthcare providers, sites and contacts.', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'providers.credential' => ['description' => 'Move a provider through credentialing (verify, suspend, reinstate).', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'provider_networks.view' => ['description' => 'Read provider networks, memberships and tariffs.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'provider_networks.manage' => ['description' => 'Maintain provider networks, memberships and draft tariffs (maker).', 'suggested_roles' => ['CARRIER_ADMIN', 'CLAIMS_MANAGER']],
+        'provider_tariffs.approve' => ['description' => 'Approve a provider tariff (checker; never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'CLAIMS_MANAGER']],
+    ],
+
+    // Batch 7 — coinsurance arrangements and apportionment (routes/api.php coinsurance group).
+    'coinsurance' => [
+        'coinsurance.view' => ['description' => 'Read coinsurance arrangements, shares and apportionments.', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER', 'CARRIER_SUPER_ADMIN', 'REINSURANCE_OFFICER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'coinsurance.manage' => ['description' => 'Create or terminate a coinsurance arrangement and its participant shares (maker).', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER']],
+        'coinsurance.approve' => ['description' => 'Activate a coinsurance arrangement (checker; never the maker).', 'suggested_roles' => ['SENIOR_UNDERWRITER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'coinsurance.apportion' => ['description' => 'Apportion premium / claims across coinsurance participants.', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+    ],
+
+    // Batch 7 — reinsurance reinsurers, treaties and cessions (routes/api.php reinsurance group).
+    'reinsurance' => [
+        'reinsurance.reinsurers.manage' => ['description' => 'Register reinsurers / reinsurance brokers and change their status.', 'suggested_roles' => ['REINSURANCE_OFFICER']],
+        'reinsurance.treaties.view' => ['description' => 'Read treaties and treaty versions.', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.treaties.manage' => ['description' => 'Create treaties and draft treaty versions (maker).', 'suggested_roles' => ['REINSURANCE_OFFICER']],
+        'reinsurance.treaties.approve' => ['description' => 'Activate a treaty version (checker; never the maker).', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.cessions.view' => ['description' => 'Read policy cessions.', 'suggested_roles' => ['REINSURANCE_OFFICER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'reinsurance.cessions.calculate' => ['description' => 'Calculate and record the cessions of a policy.', 'suggested_roles' => ['REINSURANCE_OFFICER']],
+    ],
+
+    // Batch 8 — special policies (cargo, life surrender), portfolio transfer / portability, document governance,
+    // and the policy lifecycle (cancellation, suspension, reinstatement, recovery, waiver). Maker vs checker:
+    // *.request / *.manage sit with staff and officers, *.approve with senior / manager roles.
+    'special_policies' => [
+        'special_policies.view' => ['description' => 'Read special policies (open cover, schedules, declarations).', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'CUSTOMER_SERVICE', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER']],
+        'special_policies.manage' => ['description' => 'Set up and edit special policy terms.', 'suggested_roles' => ['CARRIER_ADMIN', 'SENIOR_UNDERWRITER']],
+        'special_policies.schedule.manage' => ['description' => 'Maintain the schedule (insured items / members) of a special policy.', 'suggested_roles' => ['CARRIER_ADMIN', 'UNDERWRITER', 'BROKER_ADMIN']],
+        'cargo_declarations.declare' => ['description' => 'Declare a shipment against an open cargo cover.', 'suggested_roles' => ['CARRIER_STAFF', 'UNDERWRITER', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF']],
+        'cargo_declarations.cancel' => ['description' => 'Cancel a cargo declaration.', 'suggested_roles' => ['CARRIER_ADMIN', 'SENIOR_UNDERWRITER', 'BROKER_ADMIN']],
+        'life_surrender.scales.manage' => ['description' => 'Draft life surrender value scales (maker).', 'suggested_roles' => ['CARRIER_ADMIN', 'UNDERWRITER']],
+        'life_surrender.scales.approve' => ['description' => 'Approve / activate a life surrender scale (checker, never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'SENIOR_UNDERWRITER']],
+        'life_surrender.quote' => ['description' => 'Quote a life policy surrender value.', 'suggested_roles' => ['CARRIER_STAFF', 'UNDERWRITER', 'CUSTOMER_SERVICE', 'FINANCE_OFFICER']],
+    ],
+
+    'policy_portfolio' => [
+        'policies.portfolio_transfer.read' => ['description' => 'Read portfolio transfer requests for policies in scope.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'CUSTOMER_SERVICE', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'policies.portfolio_transfer.request' => ['description' => 'Request the transfer of a policy portfolio to another intermediary (maker).', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER']],
+        'policies.portfolio_transfer.approve' => ['description' => 'Approve or reject a portfolio transfer (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN']],
+        'policies.portability.export' => ['description' => 'Export a policy portability pack for the customer or a new insurer.', 'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN']],
+    ],
+
+    'document_governance' => [
+        'documents.intake.manage' => ['description' => 'Run the document intake queue (classify, link, reject).', 'suggested_roles' => ['CARRIER_STAFF', 'CUSTOMER_SERVICE', 'BROKER_ADMIN', 'BROKER_SUPERVISOR']],
+        'documents.access_log.read' => ['description' => 'Read who accessed a document and when.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
+        'documents.retention.manage' => ['description' => 'Draft retention policies and schedules (maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
+        'documents.retention.approve' => ['description' => 'Approve a retention policy (checker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'documents.legal_hold.manage' => ['description' => 'Place and release legal holds on documents.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
+        'documents.destruction.request' => ['description' => 'Request destruction of documents past retention (maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
+        'documents.destruction.approve' => ['description' => 'Approve a destruction request (checker, never the requester).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'documents.signatures.manage' => ['description' => 'Request and track electronic signatures on documents.', 'suggested_roles' => ['CARRIER_STAFF', 'UNDERWRITER', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF']],
+    ],
+
+    'policy_lifecycle' => [
+        'policies.cancellation.request' => ['description' => 'Request the cancellation of a policy (brokers/agents: own policies only).', 'suggested_roles' => ['CARRIER_STAFF', 'CUSTOMER_SERVICE', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'policies.cancellation.review' => ['description' => 'Review a cancellation request (refund / notice computation).', 'suggested_roles' => ['CARRIER_ADMIN', 'UNDERWRITER']],
+        'policies.cancellation.approve' => ['description' => 'Approve a policy cancellation (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'SENIOR_UNDERWRITER']],
+        'policies.suspend' => ['description' => 'Suspend cover on a policy.', 'suggested_roles' => ['CARRIER_ADMIN', 'SENIOR_UNDERWRITER']],
+        'policies.reinstatement.request' => ['description' => 'Request reinstatement of a suspended / lapsed policy (brokers/agents: own policies only).', 'suggested_roles' => ['CARRIER_STAFF', 'UNDERWRITER', 'CUSTOMER_SERVICE', 'BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER', 'AGENT']],
+        'policies.reinstatement.approve' => ['description' => 'Approve a reinstatement (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'SENIOR_UNDERWRITER']],
+        'policy.recovery.request' => ['description' => 'Request recovery of a lapsed policy after premium default.', 'suggested_roles' => ['CARRIER_STAFF', 'UNDERWRITER', 'FINANCE_OFFICER', 'BROKER_ADMIN']],
+        'policy.recovery.approve' => ['description' => 'Approve a policy recovery (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'SENIOR_UNDERWRITER', 'FINANCE_MANAGER']],
+        'policy.premium.waive' => ['description' => 'Waive an overdue premium instalment.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',

@@ -7,7 +7,8 @@ namespace App\Application\Policies;
 use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\Shared\CanonicalJson;
-use App\Domain\CarrierOperations\AuthorityChecker;
+use App\Application\Authority\AuthorityDenied;
+use App\Application\Authority\AuthorityService;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\PolicyIssuanceRequest;
@@ -24,7 +25,7 @@ final class PolicyIssuanceService
 {
     public function __construct(
         private CanonicalJson $json,
-        private AuthorityChecker $authority,
+        private AuthorityService $authority, // wraps the legacy AuthorityChecker (REQ-DUP-023)
         private AuditWriter $audit,
         private OutboxWriter $outbox,
         private PolicyDocumentService $documents,
@@ -32,6 +33,18 @@ final class PolicyIssuanceService
     ) {}
 
     public function request(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
+    {
+        try {
+            return $this->requestInTransaction($tenant, $proposal, $payment, $data, $actor);
+        } catch (AuthorityDenied $denied) {
+            // Blocked attempts stay in the authority registry after the rollback.
+            $this->authority->record($denied->outcome);
+
+            throw $denied->error;
+        }
+    }
+
+    private function requestInTransaction(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
     {
         return DB::transaction(function () use ($tenant, $proposal, $payment, $data, $actor): PolicyIssuanceRequest {
             $proposal->load('offer.quote');
@@ -48,7 +61,8 @@ final class PolicyIssuanceService
                 || $proposal->status !== 'PAYMENT_PENDING'
                 || $payment->status !== 'SUCCEEDED'
                 || ! $payment->reconciled_at
-                || $payment->amount_minor !== (int) $terms['total_minor']
+                // REQ-PAY-006: an instalment plan binds on its first scheduled instalment (same rule as PolicyIssuabilityService).
+                || ! in_array($payment->amount_minor, array_filter([(int) $terms['total_minor'], count($proposal->cover_terms['schedule'] ?? []) > 1 ? (int) $proposal->cover_terms['schedule'][0]['amount_minor'] : null]), true)
                 || $payment->currency !== $terms['currency'];
 
             if ($invalidPayment) {
@@ -84,33 +98,31 @@ final class PolicyIssuanceService
                     ]);
                 }
 
-                $decision = $this->authority->check(
-                    [
-                        'status' => $agreement->status,
-                        'effective_from' => $agreement->effective_from,
-                        'effective_until' => $agreement->effective_until,
-                        'permitted_lines' => json_decode($agreement->permitted_lines, true),
-                        'max_policy_premium_minor' => $agreement->max_policy_premium_minor,
-                        'territories' => json_decode($agreement->territories, true),
-                    ],
+                // REQ-AUTH-001..003: AuthorityService reads authority_limits (legacy AuthorityChecker fallback) and the
+                // intermediary authorization; a threshold-exceed opens an AUTHORITY_REFERRAL case (carrier review).
+                $outcome = $this->authority->checkDelegatedIssuance(
+                    $tenant->id,
+                    $agreement,
                     $proposal->offer->quote->line_code,
                     (int) $terms['total_minor'],
                     $data['territory'],
                     $coverageStarts,
+                    ['type' => 'proposal', 'id' => $proposal->id, 'title' => 'Delegated issuance '.$agreement->agreement_number],
+                    $actor,
                 );
 
-                if (! $decision->allowed) {
-                    throw ValidationException::withMessages([
-                        'delegated_authority_agreement_id' => __('wave5.authority_denied', ['reason' => $decision->reason]),
-                    ]);
+                if ($outcome->denied()) {
+                    throw new AuthorityDenied($outcome, ValidationException::withMessages([
+                        'delegated_authority_agreement_id' => __('wave5.authority_denied', ['reason' => $outcome->reason]),
+                    ]));
                 }
 
                 $authoritySnapshot = [
-                    'mode' => 'DELEGATED_AUTHORITY',
+                    'mode' => $outcome->referred() ? 'AUTHORITY_REFERRAL' : 'DELEGATED_AUTHORITY',
                     'agreement_number' => $agreement->agreement_number,
-                    'decision' => $decision->reason,
+                    ...$outcome->snapshot(),
                 ];
-                $status = 'REQUESTED';
+                $status = $outcome->referred() ? 'CARRIER_REVIEW' : 'REQUESTED';
             }
 
             $request = PolicyIssuanceRequest::create([
@@ -213,6 +225,19 @@ final class PolicyIssuanceService
                 'metadata' => json_encode(['issuance_request_id' => $request->id]),
                 'occurred_at' => now(),
             ]);
+
+            // REQ-POL-002/003: immutable structured §84 snapshot = policy version 1 (bitemporal chronology).
+            app(\App\Application\Policies\Chronology\PolicyChronologyWriter::class)->record(
+                $policy, $policy->previous_policy_id ? 'RENEWAL' : 'ISSUANCE', $policy->coverage_starts_at,
+                ['source_type' => 'policy_issuance_request', 'source_id' => $request->id, 'actor_id' => $actor->id, 'authority' => $request->authority_snapshot],
+            );
+
+            // REQ-OBL-001 / REQ-PAY-006: premium obligations + instalment schedule; the bind payment settles the first (savepoint; never blocks issuance).
+            try {
+                DB::transaction(fn () => app(\App\Application\Finance\Obligations\PolicyPremiumObligations::class)->generate($policy));
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->event($request, $fromStatus, 'APPROVED', 'CARRIER_AUTHORIZED', $actor);
             $this->audit->record('policy.issued', 'policy', $policy->id, ['policy_number' => $policy->policy_number]);

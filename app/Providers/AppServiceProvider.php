@@ -49,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         // to switch to yet, so this always binds the honest placeholder.
         // See ManualReviewOcrAdapter and the KYC batch report.
         $this->app->bind(OcrAdapter::class, fn () => new ManualReviewOcrAdapter);
+        // Batch 9-2: allocation engine → financial obligations (agent 9-1), guarded until that service exists.
+        $this->app->bind(\App\Application\Finance\Allocations\ObligationGateway::class, \App\Application\Finance\Allocations\GuardedObligationGateway::class);
     }
 
     public function boot(): void

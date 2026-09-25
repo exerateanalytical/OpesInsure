@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Risks;
 
-use App\Application\Catalogue\RiskSchemaCatalogue;
+use App\Application\Rules\QuestionSetCatalogue;
 use App\Application\Vehicles\RiskAssetVehicleSync;
 
 /**
@@ -54,13 +54,15 @@ final class RiskAssetTypes
     /** @return list<array<string, mixed>> */
     public static function describe(): array
     {
+        $questionSets = app(QuestionSetCatalogue::class);
+
         return array_map(fn (string $code, array $t) => [
             'code' => $code,
             'category' => $t[0],
             'label' => $t[2],
             'line_code' => $t[1],
             'master_data_link' => $code === 'VEHICLE' ? 'risk_asset_vehicles' : 'risk_schema:'.$t[1],
-            'schema_available' => RiskSchemaCatalogue::for($t[1]) !== null,
+            'schema_available' => $questionSets->lineSchema($t[1]) !== null, // question set → seed catalogue fallback
         ], array_keys(self::TYPES), self::TYPES);
     }
 }
