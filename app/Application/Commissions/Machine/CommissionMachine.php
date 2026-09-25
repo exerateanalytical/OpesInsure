@@ -42,11 +42,38 @@ final class CommissionMachine
         'ADJUSTED' => 'ADJUSTED', 'DISPUTED' => 'DISPUTED',
     ];
 
+    /**
+     * Agent F1 — owner spec "Finance Counterparty Accounts & Commission Sub-Ledger v1" commission_engine.states, mapped from the
+     * stored status (a read-model projection: nothing is renamed). EARNED/APPROVED are still accrued-not-payable; ADJUSTED is HELD
+     * until re-approval. PARTIALLY_PAID is derived: a PAYABLE accrual with 0 < paid_minor < vested_minor (PayoutService pays FIFO).
+     * CANCELLED is a REVERSED accrual that never reached EARNED (reversed at CALCULATED/PENDING).
+     */
+    public const SPEC_STATE = [
+        'SALE' => 'EXPECTED', 'CALCULATED' => 'EXPECTED', 'PENDING' => 'ACCRUED', 'EARNED' => 'ACCRUED', 'APPROVED' => 'ACCRUED',
+        'VESTED' => 'PAYABLE', 'AVAILABLE' => 'PAYABLE', 'PAID' => 'PAID', 'ADJUSTED' => 'HELD', 'DISPUTED' => 'DISPUTED',
+        'REVERSED' => 'REVERSED', 'CLAWED_BACK' => 'CLAWED_BACK',
+    ];
+
     private static ?StateMachineDefinition $machine = null;
 
     public static function blueprintState(string $status): string
     {
         return self::BLUEPRINT[$status] ?? $status;
+    }
+
+    /** Spec commission state of a commission_accruals row (object or model). */
+    public static function specState(object $a): string
+    {
+        $state = self::SPEC_STATE[$a->status] ?? $a->status;
+        $paid = (int) ($a->paid_minor ?? 0);
+        if ($state === 'PAYABLE' && $paid > 0 && $paid < (int) ($a->vested_minor ?? 0)) {
+            return 'PARTIALLY_PAID';
+        }
+        if ($state === 'REVERSED' && ($a->earned_at ?? null) === null) {
+            return 'CANCELLED';
+        }
+
+        return $state;
     }
 
     public static function definition(): StateMachineDefinition
