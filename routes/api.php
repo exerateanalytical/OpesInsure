@@ -666,3 +666,12 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C6 — REQ-CLM-005 claim evidence rules / checklist / metadata / WF-051-052 review (App\Application\Claims\Evidence).
+Route::prefix('v1/claims/{id}/evidence')->middleware(['auth:api', 'tenant', 'json.api'])->whereUuid('id')->group(function (): void {
+    $e = \App\Application\Claims\Evidence\Http\ClaimEvidenceController::class;
+    Route::get('rules', [$e, 'rules'])->middleware('permission:claims.view');
+    Route::get('checklist', [$e, 'checklist'])->middleware('permission:claims.view');
+    Route::get('{document}', [$e, 'show'])->middleware('permission:claims.view')->whereUuid('document');
+    Route::post('{document}/review', [$e, 'review'])->middleware('permission:claims.evidence.verify')->whereUuid('document');
+});
+// End Agent C6
