@@ -9,7 +9,8 @@ import { compareRows } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-/** Side-by-side table for 2–3 selected offers with normalized rows. */
+/** Side-by-side table for the selected offers (2–3 ticked, or every
+ * insurer via "Compare all") with normalized rows; scrolls horizontally. */
 export default function CompareOffers() {
   const { ids = "" } = useLocalSearchParams<{ ids?: string }>();
   const all = useInsurance((s) => s.offers);
@@ -17,7 +18,7 @@ export default function CompareOffers() {
   const { width } = useWindowDimensions();
   const offers = useMemo(() => {
     const wanted = ids.split(",").filter(Boolean);
-    return all.filter((o) => wanted.includes(o.id)).slice(0, 3);
+    return all.filter((o) => wanted.includes(o.id));
   }, [all, ids]);
   const rows = useMemo(() => compareRows(offers, f.language), [offers, f.language]);
   const selectOffer = useInsurance((s) => s.selectOffer);
@@ -39,7 +40,9 @@ export default function CompareOffers() {
     }
   };
   const labelWidth = 120;
-  const colWidth = Math.max(130, Math.min(200, (width - 40 - labelWidth) / Math.max(offers.length, 1)));
+  // Columns never shrink below a readable 140dp; with many insurers the
+  // table scrolls horizontally instead of squeezing text.
+  const colWidth = Math.max(140, Math.min(200, (width - 40 - labelWidth) / Math.max(offers.length, 1)));
 
   if (offers.length < 2)
     return (
@@ -51,7 +54,7 @@ export default function CompareOffers() {
 
   return (
     <Screen>
-      <AppHeader title="Compare offers" subtitle="Same rows for every insurer · best value highlighted" back />
+      <AppHeader title="Compare offers" subtitle={`${offers.length} offers · same rows for every insurer · best value highlighted`} back />
       <ScrollView horizontal showsHorizontalScrollIndicator>
         <View style={st.table}>
           {rows.map((row, r) => (

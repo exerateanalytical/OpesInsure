@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
   Building2,
-  ChevronRight,
   Handshake,
   KeyRound,
   LockKeyhole,
@@ -20,7 +19,9 @@ import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { TrustStrip } from "@/components/auth/TrustStrip";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authSpace, authType } from "@/theme/tokens";
-import { AuthApi, type AuthTokens, type DemoAccount, type OtpChannel } from "@/api/client";
+import { AuthApi, type AuthTokens, type OtpChannel } from "@/api/client";
+import { DemoAccountPicker } from "@/components/auth/DemoAccountPicker";
+import { demoCredential, normalizeDemoDirectory, type DemoAccountLike, type DemoDirectory } from "@/lib/demoLogin";
 import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
@@ -48,7 +49,8 @@ export default function SignIn() {
   const [channel, setChannel] = useState<OtpChannel>("whatsapp");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [demo, setDemo] = useState<{ otp: string; accounts: DemoAccount[] } | null>(null);
+  const [demo, setDemo] = useState<DemoDirectory | null>(null);
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   // Server lockout (429 / 423): a dedicated countdown state, not a red line.
   const [locked, setLocked] = useState<number | null>(null);
@@ -62,7 +64,7 @@ export default function SignIn() {
     if (process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "false") return;
     AuthApi.demoAccounts()
       .then((d) => {
-        if (live) setDemo(d);
+        if (live) setDemo(normalizeDemoDirectory(d));
       })
       // Demo accounts are optional (server-gated); no list on failure.
       .catch(() => undefined);
@@ -71,26 +73,27 @@ export default function SignIn() {
     };
   }, []);
 
-  // One tap: phone + demo password against the live server. Falls back to
-  // the OTP pair (known demo code) for a server without password login.
+  // Picking an account signs in against the live server: the shared demo
+  // password (data.password, top level) via password login, else the OTP
+  // pair with the server's demo code (data.otp, 123456).
   const [demoAccountId, setDemoAccountId] = useState<string | null>(null);
-  const signInAsDemoAccount = async (account: DemoAccount) => {
-    if (!demo) return;
+  const signInAsDemoAccount = async (account: DemoAccountLike) => {
+    if (!demo || busy) return;
     setBusy(true);
     setDemoAccountId(account.phone_e164);
     setError(undefined);
     try {
-      // The password comes from the server's demo list (demo mode only);
-      // without it, use the OTP pair with the known demo code.
+      const credential = demoCredential(demo, account);
       let auth: AuthTokens;
-      if (account.password) {
-        auth = await AuthApi.passwordLogin(account.phone_e164, account.password);
+      if (credential.kind === "password") {
+        auth = await AuthApi.passwordLogin(credential.phone, credential.password);
       } else {
-        const challenge = await AuthApi.requestOtp(account.phone_e164);
-        auth = await AuthApi.verifyOtp(challenge.challenge_id, account.phone_e164, demo.otp);
+        const challenge = await AuthApi.requestOtp(credential.phone);
+        auth = await AuthApi.verifyOtp(challenge.challenge_id, credential.phone, credential.otp);
       }
       await finishSignIn(auth, invite);
     } catch (e) {
+      setPhone(account.phone_e164);
       if (isLockout(e)) setLocked(lockoutSeconds(e));
       else setError(e instanceof Error ? e.message : t("demoUnavailable"));
     } finally {
@@ -147,10 +150,15 @@ export default function SignIn() {
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ paddingBottom: insets.bottom + authSpace[3] }}
+        >
           <AuthHero
             heading={t("welcomeBack")}
             subheading={t("signInSubheading")}
@@ -265,38 +273,12 @@ export default function SignIn() {
           </AuthCard>
 
           {demo && demo.accounts.length > 0 ? (
-            <View style={styles.demoCard}>
-              <Text style={styles.demoTitle}>{t("demoAccounts")}</Text>
-              <Text style={styles.demoHint}>
-                {t("demoHint", { otp: demo.otp })}
-              </Text>
-              {demo.accounts.map((account) => (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy}
-                  key={account.phone_e164}
-                  onPress={() => void signInAsDemoAccount(account)}
-                  onLongPress={() => {
-                    setPhone(account.phone_e164);
-                    if (account.password) {
-                      setPassword(account.password);
-                      setMode("password");
-                    }
-                  }}
-                  style={styles.demoRow}
-                >
-                  <View style={styles.demoFlex}>
-                    <Text style={styles.demoRole}>{account.label}</Text>
-                    <Text style={styles.demoPhone}>{account.phone_e164}</Text>
-                  </View>
-                  {demoAccountId === account.phone_e164 ? (
-                    <Text style={styles.demoBusy}>{t("signingIn")}</Text>
-                  ) : (
-                    <ChevronRight size={20} color={authColors.slate500} />
-                  )}
-                </Pressable>
-              ))}
-            </View>
+            <DemoAccountPicker
+              accounts={demo.accounts}
+              busyPhone={demoAccountId}
+              disabled={busy || !!locked}
+              onPick={(account) => void signInAsDemoAccount(account)}
+            />
           ) : null}
           <AuthFooterBranding />
         </ScrollView>
@@ -315,26 +297,4 @@ const styles = StyleSheet.create({
   link: { ...authType.label, color: authColors.blue500 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: authSpace[2] },
   audienceCaption: { ...authType.label, fontSize: 12, color: authColors.slate500, textAlign: "center" },
-  demoCard: {
-    marginHorizontal: authSpace[5],
-    marginTop: authSpace[4],
-    backgroundColor: authColors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: authColors.ice200,
-    padding: authSpace[4],
-    gap: authSpace[1],
-  },
-  demoTitle: { ...authType.label, color: authColors.navy950 },
-  demoHint: { ...authType.body, fontSize: 13, color: authColors.textSecondary },
-  demoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: authSpace[3],
-    paddingVertical: authSpace[3],
-  },
-  demoFlex: { flex: 1 },
-  demoRole: { ...authType.body, color: authColors.navy950 },
-  demoPhone: { ...authType.label, fontSize: 12, color: authColors.slate500 },
-  demoBusy: { ...authType.label, fontSize: 12, color: authColors.blue500 },
 });

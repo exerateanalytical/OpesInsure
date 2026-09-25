@@ -8,6 +8,7 @@ import { Language } from "@/i18n/strings";
 import { OfflineVault } from "@/offline/vault";
 import { SecureJson } from "@/security/secureJson";
 import { PaymentAttemptKeys } from "@/store/insurance";
+import { hydrateStartStatus, statusAfterNetworkFailure } from "@/lib/navigationContinuity";
 
 export type SessionStatus =
   "booting" | "anonymous" | "authenticating" | "authenticated" | "error";
@@ -91,7 +92,11 @@ export const useSession = create<SessionState>((set, get) => ({
   language: deviceLanguage(),
   error: null,
   async hydrate() {
-    set({ status: "booting", error: null });
+    // A signed-in user is refreshed silently: flipping to "booting" would
+    // drop every guarded screen and lose the user's place (see
+    // src/lib/navigationContinuity.ts).
+    const previous = get().status;
+    set({ status: hydrateStartStatus(previous), error: null });
     const [token, refresh] = await Promise.all([TokenVault.access(), TokenVault.refresh()]);
     if (!token && !refresh) {
       set({ ...anonymousState });
@@ -128,6 +133,10 @@ export const useSession = create<SessionState>((set, get) => ({
           language: cached.user.locale,
           error: null,
         });
+        return;
+      }
+      if (statusAfterNetworkFailure(previous) === "authenticated") {
+        set({ offline: true, error: null });
         return;
       }
       set({

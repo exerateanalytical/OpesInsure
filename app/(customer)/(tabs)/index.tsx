@@ -29,7 +29,7 @@ import {
 } from "lucide-react-native";
 import { BrandMark } from "@/components/BrandMark";
 import { SearchBar } from "@/components/SearchBar";
-import { StatusChip } from "@/components/ui";
+import { HeritageAccent, StatusChip } from "@/components/ui";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useColumns } from "@/components/responsive";
 import { usePolicies } from "@/hooks/usePolicies";
@@ -41,6 +41,7 @@ import { Preferences } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
 import { claimStatusKey, claimTone, isActiveClaim } from "@/lib/claimStatus";
 import { daysUntil, isRenewalDue } from "@/lib/customerLogic";
+import { HeritagePattern, KenteBand } from "@/components/HeritagePattern";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const OPEN_QUOTE = /^(DRAFT|QUOTING|RATED|OFFERED|REFERRED|PENDING)/;
@@ -133,6 +134,7 @@ export default function CustomerHome() {
             {firstName ? t("homeGreetingName", { name: firstName }) : t("homeGreeting")}
           </Text>
           <Text style={styles.title}>{t("homeTitle")}</Text>
+          <HeritageAccent />
         </View>
 
         {/* Primary action: the largest control on the screen. */}
@@ -142,8 +144,10 @@ export default function CustomerHome() {
           onPress={() => router.push("/quote/product")}
           style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
         >
+          <HeritagePattern variant="ndop" opacity={0.1} />
+          <KenteBand height={5} style={styles.ctaBand} />
           <View style={styles.ctaIcon}>
-            <Scale size={28} color={colors.white} />
+            <Scale size={28} color={colors.navy950} />
           </View>
           <View style={styles.flex}>
             <Text style={styles.ctaTitle}>{t("compareInsurance")}</Text>
@@ -502,18 +506,20 @@ const styles = StyleSheet.create({
     gap: space.x4,
     padding: space.x5,
     borderRadius: radius.feature,
-    backgroundColor: colors.blue600,
+    backgroundColor: colors.navy950,
+    overflow: "hidden",
   },
+  ctaBand: { position: "absolute", left: 0, right: 0, bottom: 0 },
   ctaIcon: {
     width: 52,
     height: 52,
     borderRadius: radius.card,
-    backgroundColor: colors.blue700,
+    backgroundColor: colors.gold500,
     alignItems: "center",
     justifyContent: "center",
   },
   ctaTitle: { ...type.sectionTitle, color: colors.white },
-  ctaBody: { ...type.meta, color: colors.blue50, marginTop: 2 },
+  ctaBody: { ...type.meta, color: colors.gold100, marginTop: 2 },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {
     minHeight: 92,
@@ -531,7 +537,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: radius.control,
-    backgroundColor: colors.blue50,
+    backgroundColor: colors.gold50,
     alignItems: "center",
     justifyContent: "center",
   },

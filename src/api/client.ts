@@ -592,9 +592,10 @@ export const AuthApi = {
    * The endpoint only exists while the server has demo mode on, so a 404 here
    * is the normal answer in production and simply hides the affordance.
    */
-  demoAccounts: async (): Promise<{ otp: string; accounts: DemoAccount[] } | null> => {
+  demoAccounts: async (): Promise<{ otp: string; password?: string | null; accounts: DemoAccount[] } | null> => {
     try {
-      return await api<{ otp: string; accounts: DemoAccount[] }>("/public/demo-accounts", {
+      // data.password is the shared demo password (top level, not per account).
+      return await api<{ otp: string; password?: string | null; accounts: DemoAccount[] }>("/public/demo-accounts", {
         anonymous: true,
       });
     } catch {
@@ -1355,6 +1356,14 @@ export const VehiclesApi = {
   models: (makeCode: string, q = "") =>
     api<unknown>(`/public/vehicles/makes/${encodeURIComponent(makeCode)}/models${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`, { anonymous: true, envelope: true, timeoutMs: 8000 }),
   reference: () => api<unknown>("/public/vehicles/reference", { anonymous: true, envelope: true, timeoutMs: 8000 }),
+  /** CUST-007: empty list until the master has generations for the model. */
+  generations: (modelCode: string) =>
+    api<unknown>(`/public/vehicles/models/${encodeURIComponent(modelCode)}/generations`, { anonymous: true, envelope: true, timeoutMs: 8000 }),
+  variants: (modelCode: string, generationCode: string, year?: string) =>
+    api<unknown>(
+      `/public/vehicles/models/${encodeURIComponent(modelCode)}/generations/${encodeURIComponent(generationCode)}/variants${year ? `?year=${encodeURIComponent(year)}` : ""}`,
+      { anonymous: true, envelope: true, timeoutMs: 8000 },
+    ),
   submitReview: (payload: Record<string, string | number>) =>
     api<{ id: string; status: string; make: string; model: string }>("/mobile/vehicles/master-review", {
       method: "POST",

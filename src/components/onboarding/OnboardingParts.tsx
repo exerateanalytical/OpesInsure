@@ -1,47 +1,41 @@
 import React from "react";
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
-import { authColors, authIcon, authSpace, authType } from "@/theme/tokens";
+import { authColors, authIcon, authSpace, authType, colors, type } from "@/theme/tokens";
 import { useColumns } from "@/components/responsive";
+import { KenteBand, NdopSurface } from "@/components/HeritagePattern";
 
 const icon = require("../../../assets/icon.png");
 const map = require("../../../assets/auth/splash_map.png");
-const arcs = require("../../../assets/auth/splash_network_arcs.png");
-const safer = require("../../../assets/auth/splash_safer_brighter_africa.png");
-const tribalLeft = require("../../../assets/auth/splash_tribal_left.png");
-const tribalRight = require("../../../assets/auth/splash_tribal_right.png");
-const bottomWave = require("../../../assets/auth/splash_bottom_wave.png");
 
-/** Icon + wordmark + tagline + dotted-Africa/network accent, on a white/ice background. */
-export function OnboardingHero() {
-  // Decorations scale with the viewport so they never sit on the centred
-  // 108px icon on 320-360dp phones; the badge moves to the opposite corner
-  // (top-left) so it can no longer stack on top of the map/arcs art.
-  const { width } = useWindowDimensions();
-  const artSize = Math.max(96, Math.min(160, width / 2 - 58));
-  const badgeSize = width < 360 ? 56 : 78;
-  const showBadge = width >= 330;
-  const art = { width: artSize, height: artSize };
+/**
+ * Brand block over an indigo ndop panel with a kente strip. The decoration is
+ * vector (HeritagePattern), so nothing stretches on 360dp phones, tablets or
+ * foldables; the icon keeps a square box and scales with the viewport.
+ */
+export function OnboardingHero({ compact }: { compact?: boolean }) {
+  const { width, fontScale } = useWindowDimensions();
+  // Shorter hero on small phones and with large system fonts, so the slide
+  // copy and the actions stay on screen.
+  const small = compact || width < 360 || fontScale > 1.2;
+  const iconSize = small ? 64 : 84;
   return (
     <View style={styles.heroWrap}>
-      <Image source={tribalLeft} style={styles.tribalLeft} resizeMode="contain" />
-      <Image source={tribalRight} style={styles.tribalRight} resizeMode="contain" />
-      <Image source={map} style={[styles.map, art]} resizeMode="contain" />
-      <Image source={arcs} style={[styles.map, art]} resizeMode="contain" />
-      {showBadge ? (
-        <Image
-          source={safer}
-          style={[styles.safer, { width: badgeSize, height: badgeSize }]}
-          resizeMode="contain"
-        />
-      ) : null}
-      <View style={styles.brandBlock}>
-        <Image source={icon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.wordmark}>
-          Opes<Text style={styles.wordmarkAccent}>Insure</Text>
-        </Text>
-        <Text style={styles.tagline}>INSURANCE FOR A BRIGHTER TOMORROW</Text>
-      </View>
+      <NdopSurface style={[styles.heroPanel, small && styles.heroPanelSmall]} intensity={0.1}>
+        <KenteBand height={6} />
+        <View style={styles.brandBlock}>
+          <Image
+            source={icon}
+            style={{ width: iconSize, height: iconSize, borderRadius: iconSize * 0.24 }}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+          <Text style={styles.wordmark} numberOfLines={1} adjustsFontSizeToFit>
+            Opes<Text style={styles.wordmarkAccent}>Insure</Text>
+          </Text>
+          <Text style={styles.tagline}>INSURANCE FOR A BRIGHTER TOMORROW</Text>
+        </View>
+      </NdopSurface>
     </View>
   );
 }
@@ -100,7 +94,7 @@ export function OnboardingFooter({ tagline }: { tagline: string }) {
   return (
     <View style={styles.footerWrap}>
       <Text style={styles.footerTagline}>{tagline}</Text>
-      <Image source={bottomWave} style={styles.footerWave} resizeMode="cover" />
+      <KenteBand height={6} style={styles.footerBand} />
     </View>
   );
 }
@@ -116,16 +110,13 @@ export function PaginationDots({ count, active }: { count: number; active: numbe
 }
 
 const styles = StyleSheet.create({
-  heroWrap: { alignItems: "center", paddingTop: authSpace[5], overflow: "hidden" },
-  tribalLeft: { position: "absolute", left: -30, top: 0, width: 80, height: 320, opacity: 0.5 },
-  tribalRight: { position: "absolute", right: -30, top: 60, width: 80, height: 320, opacity: 0.5 },
-  map: { position: "absolute", right: 0, top: 0, opacity: 0.9 },
-  safer: { position: "absolute", left: authSpace[2], top: authSpace[1] },
-  brandBlock: { alignItems: "center", gap: authSpace[2] },
-  icon: { width: 108, height: 108, borderRadius: 26 },
-  wordmark: { ...authType.h2, color: authColors.navy950, marginTop: authSpace[1] },
-  wordmarkAccent: { color: authColors.blue500 },
-  tagline: { ...authType.label, color: authColors.navy800, letterSpacing: 2, fontSize: 11 },
+  heroWrap: { paddingTop: authSpace[2] },
+  heroPanel: { borderRadius: 24, paddingBottom: authSpace[5] },
+  heroPanelSmall: { paddingBottom: authSpace[3] },
+  brandBlock: { alignItems: "center", gap: authSpace[1], paddingTop: authSpace[4], paddingHorizontal: authSpace[3] },
+  wordmark: { ...authType.h2, color: authColors.white, marginTop: authSpace[1] },
+  wordmarkAccent: { color: authColors.azure500 },
+  tagline: { ...type.eyebrow, color: colors.gold100, textAlign: "center" },
 
   row: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center", paddingHorizontal: authSpace[2] },
   rowDivider: { width: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: 12, height: 60 },
@@ -134,7 +125,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: authColors.ice100,
+    backgroundColor: colors.gold50,
+    borderWidth: 1,
+    borderColor: colors.gold100,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -154,7 +147,7 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     backgroundColor: authColors.navy800,
     borderWidth: 2,
-    borderColor: authColors.gold300,
+    borderColor: colors.gold500,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -169,9 +162,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginBottom: authSpace[2],
   },
-  footerWave: { width: "100%", height: 46 },
+  footerBand: { borderRadius: 3, overflow: "hidden" },
 
   dots: { flexDirection: "row", justifyContent: "center", gap: 6, marginVertical: authSpace[3] },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: authColors.ice200 },
-  dotActive: { backgroundColor: authColors.gold500, width: 22 },
+  dotActive: { backgroundColor: colors.terracotta500, width: 22 },
 });

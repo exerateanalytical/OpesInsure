@@ -7,7 +7,14 @@ import { VehiclesApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { useSession } from "@/store/session";
 import {
+  applyVariant,
   emptyManualEntry,
+  generationYears,
+  normalizeGenerations,
+  normalizeVariants,
+  variantSummary,
+  VehicleGeneration,
+  VehicleVariant,
   filterByQuery,
   manualReviewPayload,
   ManualVehicleEntry,
@@ -50,7 +57,7 @@ export function useVehicleReference() {
 
 const toOptions = (rows: { code: string; label: string }[] | undefined) => (rows ?? []).map((r) => ({ value: r.code, label: r.label }));
 
-type Mode = "make" | "model" | "done" | "manual";
+type Mode = "make" | "model" | "generation" | "year" | "variant" | "done" | "manual";
 
 /**
  * Make → model picker backed by the vehicle master: searchable make
@@ -163,9 +170,67 @@ export function VehiclePicker({
     setMode("model");
   };
 
+  // --- generation → year → engine variant (CUST-007) -----------------------
+  // Each step only appears when the master has data; an empty list or a
+  // failed call skips straight to the next step / done.
+  const [generations, setGenerations] = useState<VehicleGeneration[]>([]);
+  const [generation, setGeneration] = useState<VehicleGeneration | null>(null);
+  const [variants, setVariants] = useState<VehicleVariant[]>([]);
+  const [stepLoading, setStepLoading] = useState(false);
+
   const pickModel = (m: VehicleModel) => {
     if (!make) return;
-    onChange({ ...(value ?? { make: make.name, model: "" }), make_code: make.code, make: make.name, model_code: m.code, model: m.name, manual: false, review_id: undefined });
+    const next: VehicleSelection = {
+      ...(value ?? { make: make.name, model: "" }),
+      make_code: make.code,
+      make: make.name,
+      model_code: m.code,
+      model: m.name,
+      manual: false,
+      review_id: undefined,
+      generation_code: undefined,
+      generation: undefined,
+      variant_code: undefined,
+      variant: undefined,
+    };
+    onChange(next);
+    setGeneration(null);
+    setStepLoading(true);
+    VehiclesApi.generations(m.code)
+      .then((p) => {
+        const list = normalizeGenerations(p);
+        setGenerations(list);
+        setMode(list.length ? "generation" : "done");
+      })
+      .catch(() => setMode("done"))
+      .finally(() => setStepLoading(false));
+  };
+
+  const pickGeneration = (g: VehicleGeneration) => {
+    if (!value) return;
+    setGeneration(g);
+    onChange({ ...value, generation_code: g.code, generation: g.name, body_type: g.body_type ?? value.body_type, variant_code: undefined, variant: undefined });
+    setMode("year");
+  };
+
+  const pickYear = (year: string) => {
+    if (!value || !generation || !value.model_code) return;
+    const withYear = { ...value, year };
+    onChange(withYear);
+    setStepLoading(true);
+    VehiclesApi.variants(value.model_code, generation.code, year)
+      .then((p) => {
+        const list = normalizeVariants(p);
+        setVariants(list);
+        setMode(list.length ? "variant" : "done");
+      })
+      .catch(() => setMode("done"))
+      .finally(() => setStepLoading(false));
+  };
+
+  const pickVariant = (v: VehicleVariant) => {
+    if (!value) return;
+    onChange(applyVariant(value, v));
     setMode("done");
   };
 
@@ -185,6 +250,71 @@ export function VehiclePicker({
     </View>
   );
 
+  if (stepLoading) return <View style={st.wrap}><Inline label={t("vehicleLoadingModels")} /></View>;
+
+  if ((mode === "generation" || mode === "year" || mode === "variant") && value?.make) {
+    const header = (
+      <View style={st.selected}>
+        <Car size={20} color={colors.blue600} />
+        <Text style={[st.rowTitle, st.flex]}>{selectionLabel(value)}</Text>
+        <Pressable accessibilityRole="button" onPress={reset} hitSlop={8}>
+          <Text style={st.link}>{t("vehicleChange")}</Text>
+        </Pressable>
+      </View>
+    );
+    const skip = (
+      <Button label={t("vehicleSkipStep")} variant="tertiary" onPress={() => setMode("done")} />
+    );
+    if (mode === "generation")
+      return (
+        <View style={st.wrap}>
+          <Text style={st.label}>{t("vehicleGeneration")}</Text>
+          {header}
+          <View style={st.list}>
+            {generations.map((g) => (
+              <Row
+                key={g.code}
+                title={g.name}
+                subtitle={g.year_from ? `${g.year_from}–${g.year_to ?? t("vehicleGenerationNow")}` : undefined}
+                selected={value.generation_code === g.code}
+                onPress={() => pickGeneration(g)}
+              />
+            ))}
+          </View>
+          {skip}
+        </View>
+      );
+    if (mode === "year" && generation) {
+      const genYears = generationYears(generation, reference?.model_years);
+      return (
+        <View style={st.wrap}>
+          <Text style={st.label}>{t("vehicleYear")}</Text>
+          {header}
+          <View style={st.years}>
+            {genYears.map((y) => (
+              <Pill key={y} label={y} selected={value.year === y} onPress={() => pickYear(y)} />
+            ))}
+          </View>
+          {skip}
+        </View>
+      );
+    }
+    if (mode === "variant")
+      return (
+        <View style={st.wrap}>
+          <Text style={st.label}>{t("vehicleEngineVariant")}</Text>
+          {header}
+          <Text style={st.meta}>{t("vehicleVariantHint")}</Text>
+          <View style={st.list}>
+            {variants.map((v) => (
+              <Row key={v.code} title={v.name} subtitle={variantSummary(v) || undefined} selected={value.variant_code === v.code} onPress={() => pickVariant(v)} />
+            ))}
+          </View>
+          {skip}
+        </View>
+      );
+  }
+
   if (mode === "done" && value?.make) {
     return (
       <View style={st.wrap}>
@@ -192,7 +322,13 @@ export function VehiclePicker({
         <View style={[st.selected, error ? st.errorBorder : null]}>
           <Car size={20} color={colors.blue600} />
           <View style={st.flex}>
-            <Text style={st.rowTitle}>{selectionLabel({ make: value.make, model: value.model })}</Text>
+            <Text style={st.rowTitle}>{selectionLabel({ make: value.make, model: value.model, generation: value.generation, variant: value.variant })}</Text>
+            {value.variant && (value.power_hp || value.engine_capacity_cc || value.powertrain) ? (
+              <Text style={st.meta}>
+                {t("vehicleSpecsAutoFilled")}{" "}
+                {[value.power_hp ? `${value.power_hp} hp` : null, value.engine_capacity_cc ? `${value.engine_capacity_cc} cc` : null, value.powertrain, value.transmission].filter(Boolean).join(" · ")}
+              </Text>
+            ) : null}
             {value.manual ? <Text style={st.pending}>{t("vehiclePendingReview")}</Text> : null}
           </View>
           <Pressable accessibilityRole="button" onPress={reset} hitSlop={8}>
@@ -329,6 +465,7 @@ const st = StyleSheet.create({
   link: { ...type.label, color: colors.blue600 },
   error: { ...type.meta, color: colors.dangerText },
   chips: { flexDirection: "row", gap: space.x2 },
+  years: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   list: { gap: space.x1 },
   row: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x3, paddingVertical: space.x2, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control },
   rowOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },

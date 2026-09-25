@@ -219,6 +219,9 @@ test("screens use the fixed contracts", () => {
   assert.match(read("src/hooks/usePolicies.ts"), /WalletApi/);
   assert.doesNotMatch(read("src/hooks/usePolicies.ts"), /InsuranceApi\.policies/);
   assert.match(read("src/components/policies/PolicyDetailView.tsx"), /openableUrl\(cert\.download_url\)/);
-  assert.match(read("app/quote/offers.tsx"), /snapToInterval/);
+  // 1.3.x: every insurer is listed vertically (the one-card carousel read
+  // as "only one insurer"); see tests/navigation-continuity.test.mjs.
+  assert.doesNotMatch(read("app/quote/offers.tsx"), /snapToInterval/);
+  assert.match(read("app/quote/offers.tsx"), /insurerSummary\(offers\)/);
   assert.match(read("app/quote/compare.tsx"), /compareRows/);
 });

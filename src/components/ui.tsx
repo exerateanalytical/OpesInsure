@@ -97,8 +97,21 @@ export function AppHeader({
         {subtitle ? (
           <Text style={styles.headerSubtitle}>{subtitle}</Text>
         ) : null}
+        <HeritageAccent />
       </View>
       {action}
+    </View>
+  );
+}
+
+/** Three woven segments (ochre, terracotta, indigo): the kente signature
+ * under every page title. Decorative, hidden from screen readers. */
+export function HeritageAccent({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[styles.accent, style]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={[styles.accentSeg, { backgroundColor: colors.gold500, width: 22 }]} />
+      <View style={[styles.accentSeg, { backgroundColor: colors.terracotta500 }]} />
+      <View style={[styles.accentSeg, { backgroundColor: colors.navy800 }]} />
     </View>
   );
 }
@@ -267,6 +280,8 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, gap: 2 },
   headerTitle: { ...type.pageTitle, color: colors.navy950 },
   headerSubtitle: { ...type.meta, color: colors.neutral600 },
+  accent: { flexDirection: "row", gap: 3, marginTop: space.x1 },
+  accentSeg: { height: 3, width: 10, borderRadius: 2 },
   iconButton: {
     width: 44,
     height: 44,
@@ -285,7 +300,18 @@ const styles = StyleSheet.create({
     padding: space.x4,
     gap: space.x3,
   },
-  featureCard: { borderRadius: radius.feature, padding: space.x5 },
+  // Feature cards carry an ochre top edge and a soft indigo shadow.
+  featureCard: {
+    borderRadius: radius.feature,
+    padding: space.x5,
+    borderTopWidth: 3,
+    borderTopColor: colors.gold500,
+    shadowColor: colors.navy950,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
   button: {
     minHeight: 50,
     borderRadius: radius.control,

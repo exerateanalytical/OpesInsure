@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
+  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -31,9 +33,10 @@ import {
   PaginationDots,
 } from "@/components/onboarding/OnboardingParts";
 import { AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthField";
-import { authColors, authSpace, authType } from "@/theme/tokens";
+import { authColors, authSpace, authType, colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { Preferences } from "@/store/preferences";
+import { nextPage, pageFromOffset, previousPage, tapAllowed } from "@/lib/pager";
 
 /** Leaving the slides by any route marks first run as done, so a returning
  * signed-out user lands on sign-in instead of the marketing pager. */
@@ -97,12 +100,19 @@ const buildSlides = (t: ReturnType<typeof useTranslation>["t"]) => [
 export default function Onboarding() {
   const { t } = useTranslation();
   const slides = buildSlides(t);
-  const { width } = useWindowDimensions();
+  const count = slides.length;
+  const window = useWindowDimensions();
+  // Page width is the pager's MEASURED width, not the window width: with
+  // split-screen, foldables, display cut-outs or a landscape inset the two
+  // differ and the pages drifted out of alignment ("Next broke the pager").
+  const [measured, setMeasured] = useState(0);
+  const width = measured || window.width;
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const last = page === slides.length - 1;
+  const last = page === count - 1;
   const pageRef = useRef(0);
   pageRef.current = page;
+  const lastTap = useRef(0);
 
   // Rotation / split-screen / foldables change the width: keep the pager on
   // the same slide instead of stranding it between two pages.
@@ -110,37 +120,73 @@ export default function Onboarding() {
     scrollRef.current?.scrollTo({ x: pageRef.current * width, animated: false });
   }, [width]);
 
-  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setPage(Math.round(e.nativeEvent.contentOffset.x / width));
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0 && w !== measured) setMeasured(w);
   };
 
-  const goTo = (index: number) => {
-    scrollRef.current?.scrollTo({ x: index * width, animated: true });
-    setPage(index);
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setPage(pageFromOffset(e.nativeEvent.contentOffset.x, width, count));
   };
+
+  // Every target is clamped to a real slide: rapid taps can never push the
+  // pager past the last slide (the old code reached page 3 of 3 and showed
+  // "Next" on a blank page).
+  const goTo = useCallback(
+    (index: number) => {
+      scrollRef.current?.scrollTo({ x: index * width, animated: true });
+      setPage(index);
+    },
+    [width],
+  );
+
+  /** Debounced primary action: one tap = one step. */
+  const primary = (action: () => void) => {
+    const now = Date.now();
+    if (!tapAllowed(lastTap.current, now)) return;
+    lastTap.current = now;
+    action();
+  };
+
+  // Android back steps back through the slides before leaving the screen.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (pageRef.current === 0) return false;
+      goTo(previousPage(pageRef.current, count));
+      return true;
+    });
+    return () => sub.remove();
+  }, [goTo, count]);
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.safe}>
+      <View style={styles.topBar}>
       <Pressable
         accessibilityRole="button"
+        hitSlop={8}
         style={styles.skip}
         accessibilityLabel={t("skip")}
         onPress={() => leave("/(auth)/sign-in")}
       >
         <Text style={styles.skipText}>{t("skip")}</Text>
       </Pressable>
+      </View>
       <ScrollView
         ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScrollEnd}
+        onLayout={onLayout}
         style={styles.pager}
+        // Programmatic scrollTo() + a fling in flight must not compete.
+        disableIntervalMomentum
       >
         {slides.map((slide) => (
           <ScrollView
             key={slide.key}
             style={{ width }}
+            nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.slideContent}
           >
@@ -151,7 +197,7 @@ export default function Onboarding() {
               <Text style={styles.subheading}>{slide.subheading}</Text>
             </View>
             {slide.body}
-            <PaginationDots count={slides.length} active={page} />
+            <PaginationDots count={count} active={page} />
             <OnboardingFooter tagline={slide.footer} />
           </ScrollView>
         ))}
@@ -162,12 +208,16 @@ export default function Onboarding() {
             <AuthPrimaryButton
               label={t("getStarted")}
               icon={ArrowRight}
-              onPress={() => leave("/(auth)/sign-up")}
+              onPress={() => primary(() => leave("/(auth)/sign-up"))}
             />
             <AuthSecondaryButton label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
           </>
         ) : (
-          <AuthPrimaryButton label={t("next")} icon={ArrowRight} onPress={() => goTo(page + 1)} />
+          <AuthPrimaryButton
+            label={t("next")}
+            icon={ArrowRight}
+            onPress={() => primary(() => goTo(nextPage(pageRef.current, count)))}
+          />
         )}
         <View style={styles.links}>
           <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push("/verify")}>
@@ -183,21 +233,23 @@ export default function Onboarding() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: authColors.white },
+  safe: { flex: 1, backgroundColor: colors.neutral50 },
   pager: { flex: 1 },
+  // In the layout flow (not absolute): an absolute Skip sat under the
+  // status bar on edge-to-edge Android.
+  topBar: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: authSpace[4], paddingTop: authSpace[1] },
   skip: {
-    position: "absolute",
-    right: authSpace[4],
-    top: authSpace[4],
-    zIndex: 10,
-    paddingHorizontal: authSpace[3],
-    paddingVertical: authSpace[1],
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: authSpace[4],
+    borderRadius: 999,
+    backgroundColor: colors.navy950,
   },
-  skipText: { ...authType.label, color: authColors.slate500 },
+  skipText: { ...authType.label, color: colors.white },
   slideContent: { paddingHorizontal: authSpace[5], paddingBottom: authSpace[4] },
   copyBlock: { alignItems: "center", gap: authSpace[2], marginTop: authSpace[6], marginBottom: authSpace[5] },
-  headingTop: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.navy950, textAlign: "center" },
-  headingBottom: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.blue500, textAlign: "center" },
+  headingTop: { ...authType.h1, fontSize: 28, lineHeight: 34, color: authColors.navy950, textAlign: "center" },
+  headingBottom: { ...authType.h1, fontSize: 28, lineHeight: 34, color: colors.terracotta700, textAlign: "center" },
   subheading: {
     ...authType.body,
     color: authColors.textSecondary,
@@ -206,5 +258,12 @@ const styles = StyleSheet.create({
   },
   links: { flexDirection: "row", justifyContent: "space-between", paddingVertical: authSpace[2] },
   link: { ...authType.label, fontSize: 13, color: authColors.blue500 },
-  actions: { paddingHorizontal: authSpace[5], paddingTop: authSpace[2], gap: authSpace[2] },
+  actions: {
+    paddingHorizontal: authSpace[5],
+    paddingTop: authSpace[3],
+    gap: authSpace[2],
+    backgroundColor: colors.neutral50,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.neutral200,
+  },
 });

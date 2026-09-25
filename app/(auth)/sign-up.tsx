@@ -153,12 +153,12 @@ export default function SignUp() {
   };
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView edges={["top", "bottom"]} style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <AuthHero
             heading={t("signUpHeading")}
             subheading={t("signUpSubheading")}

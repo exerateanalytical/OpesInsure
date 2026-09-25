@@ -49,9 +49,33 @@ export type VehicleSelection = {
   vin?: string;
   registration_number?: string;
   engine_number?: string;
+  /** Make → model → generation → year → engine variant (CUST-007). */
+  generation_code?: string;
+  generation?: string;
+  variant_code?: string;
+  variant?: string;
+  drive_type?: string;
+  engine_capacity_cc?: string;
+  power_hp?: string;
 };
 
+export type VehicleGeneration = { code: string; name: string; year_from: number | null; year_to: number | null; body_type?: string; variants_count: number };
+export type VehicleVariantSpecs = {
+  power_hp: number | null;
+  power_kw: number | null;
+  displacement_cc: number | null;
+  fuel_type: string | null;
+  transmission: string | null;
+  drivetrain: string | null;
+  body_type: string | null;
+  torque_nm: number | null;
+};
+export type VehicleVariant = { code: string; name: string; year_from: number | null; year_to: number | null; specs: VehicleVariantSpecs };
+
 export const MIN_MODEL_YEAR = 1950;
+
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() && Number.isFinite(Number(v)) ? Number(v) : null);
+const optStr = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
 
 const rows = (payload: unknown): unknown[] => {
   if (Array.isArray(payload)) return payload;
@@ -218,14 +242,101 @@ export function selectionFromManual(e: ManualVehicleEntry, reviewId?: string): V
 /** Selection → string values keyed by risk-fact key (wizard/asset form state). */
 export function selectionToValues(s: VehicleSelection): Record<string, string> {
   const out: Record<string, string> = { make: s.make, model: s.model, make_code: s.make_code ?? "", model_code: s.model_code ?? "" };
-  for (const k of ["year", "body_type", "powertrain", "transmission", "vehicle_usage", "vin", "registration_number", "engine_number", "review_id"] as const) {
+  for (const k of ["year", "body_type", "powertrain", "transmission", "vehicle_usage", "vin", "registration_number", "engine_number", "review_id", "drive_type", "engine_capacity_cc", "power_hp"] as const) {
     const v = s[k];
     if (v) out[k === "review_id" ? "vehicle_review_id" : k] = String(v);
   }
+  if (s.generation_code) out.vehicle_generation_code = s.generation_code;
+  if (s.variant_code) out.vehicle_variant_code = s.variant_code;
   return out;
 }
 
 /** Readable one-liner: "Toyota Land Cruiser Prado · 2020". */
 export function selectionLabel(s: Partial<VehicleSelection>): string {
-  return [[s.make, s.model].filter(Boolean).join(" "), s.year].filter(Boolean).join(" · ");
+  return [[s.make, s.model, s.generation].filter(Boolean).join(" "), s.year, s.variant].filter(Boolean).join(" · ");
+}
+
+// --- Generation → year → engine variant (CUST-007) --------------------------
+// GET /public/vehicles/models/{model}/generations and
+// /generations/{generation}/variants?year=. Both answer an empty list until
+// admins/imports add the data; the picker then skips those steps.
+
+export function normalizeGenerations(payload: unknown): VehicleGeneration[] {
+  return rows(payload)
+    .map((r) => {
+      const x = (r ?? {}) as Record<string, unknown>;
+      return {
+        code: str(x.code),
+        name: str(x.name),
+        year_from: num(x.year_from),
+        year_to: num(x.year_to),
+        body_type: optStr(x.body_type) ?? undefined,
+        variants_count: num(x.variants_count) ?? 0,
+      };
+    })
+    .filter((g) => g.code && g.name);
+}
+
+export function normalizeVariants(payload: unknown): VehicleVariant[] {
+  return rows(payload)
+    .map((r) => {
+      const x = (r ?? {}) as Record<string, unknown>;
+      const sp = (x.specs && typeof x.specs === "object" ? x.specs : {}) as Record<string, unknown>;
+      return {
+        code: str(x.code),
+        name: str(x.engine_label ?? x.name),
+        year_from: num(x.year_from),
+        year_to: num(x.year_to),
+        specs: {
+          power_hp: num(sp.power_hp),
+          power_kw: num(sp.power_kw),
+          displacement_cc: num(sp.displacement_cc ?? x.engine_capacity_cc),
+          fuel_type: optStr(sp.fuel_type ?? x.powertrain),
+          transmission: optStr(sp.transmission ?? x.transmission),
+          drivetrain: optStr(sp.drivetrain ?? x.drive_type),
+          body_type: optStr(sp.body_type ?? x.body_type),
+          torque_nm: num(sp.torque_nm),
+        },
+      };
+    })
+    .filter((v) => v.code && v.name);
+}
+
+/** Years a generation was sold, newest first, clamped to the model-year range. */
+export function generationYears(g: Pick<VehicleGeneration, "year_from" | "year_to">, range?: { min: number; max: number }, now = new Date()): string[] {
+  const all = modelYears(range, now);
+  if (g.year_from == null) return all;
+  const from = g.year_from;
+  const to = g.year_to ?? Number(all[0]);
+  return all.filter((y) => Number(y) >= from && Number(y) <= to);
+}
+
+/** "Label · 150 hp · 1998 cc · Automatic" for the variant list. */
+export function variantSummary(v: VehicleVariant): string {
+  return [
+    v.specs.power_hp != null ? `${v.specs.power_hp} hp` : null,
+    v.specs.displacement_cc != null ? `${v.specs.displacement_cc} cc` : null,
+    v.specs.fuel_type,
+    v.specs.transmission,
+    v.specs.drivetrain,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Engine variant → selection with specs auto-filled (unknown specs stay as
+ * they were, so the user is only asked for what the master does not know). */
+export function applyVariant(s: VehicleSelection, v: VehicleVariant): VehicleSelection {
+  const keep = <T,>(next: T | null, prev: T | undefined) => (next != null ? next : prev);
+  return {
+    ...s,
+    variant_code: v.code,
+    variant: v.name,
+    body_type: keep(v.specs.body_type, s.body_type) ?? undefined,
+    powertrain: keep(v.specs.fuel_type, s.powertrain) ?? undefined,
+    transmission: keep(v.specs.transmission, s.transmission) ?? undefined,
+    drive_type: keep(v.specs.drivetrain, s.drive_type) ?? undefined,
+    engine_capacity_cc: v.specs.displacement_cc != null ? String(v.specs.displacement_cc) : s.engine_capacity_cc,
+    power_hp: v.specs.power_hp != null ? String(v.specs.power_hp) : s.power_hp,
+  };
 }

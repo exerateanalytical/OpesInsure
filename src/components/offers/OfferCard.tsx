@@ -5,7 +5,7 @@ import { CheckSquare, ChevronDown, ChevronUp, Clock3, ExternalLink, FileText, Sq
 import { Button, Card, StatusChip } from "@/components/ui";
 import { InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { QuoteOffer } from "@/api/client";
-import { localized, normalizeCoverage, providerName, validityLeft } from "@/lib/purchase";
+import { carrierClaimsDays, carrierRating, localized, normalizeCoverage, providerName, validityLeft } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -63,6 +63,16 @@ export function OfferCard({
       <Pressable accessibilityRole="link" onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })}>
         <Text style={st.provider}>{providerName(offer)} ›</Text>
       </Pressable>
+      {carrierRating(offer) || carrierClaimsDays(offer) !== null ? (
+        <Text style={ps.meta}>
+          {[
+            carrierRating(offer) ? t("offerRating", { rating: carrierRating(offer) ?? "" }) : null,
+            carrierClaimsDays(offer) !== null ? t("offerClaimsDays", { days: carrierClaimsDays(offer) ?? 0 }) : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </Text>
+      ) : null}
       <Text style={ps.title}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
       <Text style={st.total}>{f.xaf(offer.total_minor)}</Text>
       <View style={ps.row}>

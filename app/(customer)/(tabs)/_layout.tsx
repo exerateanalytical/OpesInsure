@@ -28,13 +28,14 @@ export default function CustomerTabs() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.blue600,
+        tabBarActiveTintColor: colors.navy900,
         tabBarInactiveTintColor: colors.neutral500,
         tabBarStyle: {
           height: 60 + insets.bottom,
           paddingTop: 7,
           paddingBottom: 8 + insets.bottom,
-          borderTopColor: colors.neutral200,
+          borderTopColor: colors.gold100,
+          borderTopWidth: 2,
           backgroundColor: colors.white,
         },
         tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 11 },

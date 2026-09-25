@@ -195,25 +195,76 @@ export type OfferLike = {
   fee_minor: number;
   valid_until: string;
   coverage_snapshot: unknown;
-  carrier?: { party?: { display_name?: string } } | null;
+  carrier?: { id?: string; party?: { display_name?: string } } | null;
   product?: { name?: unknown } | null;
+  status?: string;
 };
 
 export const providerName = (o: {
   carrier?: { party?: { display_name?: string } } | null;
 }) => o.carrier?.party?.display_name ?? "Licensed insurance carrier";
 
-export type OfferSort = "price" | "cover";
+export type OfferSort = "price" | "cover" | "insurer" | "excess";
+export type CoverLevel = "essential" | "standard" | "full";
 export type OfferFilter = {
   providers?: string[];
+  minPremiumMinor?: number | null;
   maxPremiumMinor?: number | null;
   maxExcessMinor?: number | null;
+  coverLevels?: CoverLevel[];
+  paymentMethods?: string[];
+  /** Only offers still selectable (status OFFERED / not expired). */
+  selectableOnly?: boolean;
+};
+
+/** Stable carrier key: carrier_id, else the eager-loaded carrier.id. */
+export const carrierKey = (o: { carrier_id?: string | null; carrier?: { id?: string } | null }) =>
+  o.carrier_id || o.carrier?.id || "unknown";
+
+const includedCount = (o: OfferLike) =>
+  normalizeCoverage(o.coverage_snapshot).coverages.filter((c) => !c.optional).length;
+
+/**
+ * Cover level relative to the other offers on the same quote (products of
+ * one line are comparable): the widest included cover is "full", at least
+ * 60 % of it "standard", otherwise "essential".
+ */
+export function coverLevel(offer: OfferLike, all: OfferLike[]): CoverLevel {
+  const max = Math.max(1, ...all.map(includedCount));
+  const ratio = includedCount(offer) / max;
+  return ratio >= 0.999 ? "full" : ratio >= 0.6 ? "standard" : "essential";
+}
+
+/** Optional fields a future API version may add (see the backend gap note
+ * in the 1.3.x report). The UI only offers a filter when data exists. */
+export const offerPaymentMethods = (o: unknown): string[] => {
+  const x = o as { payment_options?: unknown; payment_methods?: unknown };
+  const v = Array.isArray(x?.payment_options) ? x.payment_options : Array.isArray(x?.payment_methods) ? x.payment_methods : [];
+  return (v as unknown[]).map((m) => (typeof m === "string" ? m : String((m as { code?: unknown })?.code ?? ""))).filter(Boolean);
+};
+export const carrierClaimsDays = (o: unknown): number | null => {
+  const c = (o as { carrier?: Record<string, unknown> | null })?.carrier;
+  const v = c?.claims_settlement_days ?? c?.average_claim_settlement_days;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+};
+export const carrierRating = (o: unknown): string | null => {
+  const c = (o as { carrier?: Record<string, unknown> | null })?.carrier;
+  const v = c?.financial_rating ?? c?.rating;
+  return typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : null;
 };
 
 export function sortOffers<T extends OfferLike>(offers: T[], by: OfferSort): T[] {
   const copy = [...offers];
   if (by === "price")
     return copy.sort((a, b) => a.total_minor - b.total_minor);
+  if (by === "insurer")
+    return copy.sort((a, b) => providerName(a).localeCompare(providerName(b)) || a.total_minor - b.total_minor);
+  if (by === "excess")
+    return copy.sort((a, b) => {
+      const ea = normalizeCoverage(a.coverage_snapshot).excessMinor ?? Number.MAX_SAFE_INTEGER;
+      const eb = normalizeCoverage(b.coverage_snapshot).excessMinor ?? Number.MAX_SAFE_INTEGER;
+      return ea - eb || a.total_minor - b.total_minor;
+    });
   return copy.sort((a, b) => {
     const ca = normalizeCoverage(a.coverage_snapshot);
     const cb = normalizeCoverage(b.coverage_snapshot);
@@ -227,7 +278,9 @@ export function sortOffers<T extends OfferLike>(offers: T[], by: OfferSort): T[]
 
 export function filterOffers<T extends OfferLike>(offers: T[], f: OfferFilter): T[] {
   return offers.filter((o) => {
-    if (f.providers && f.providers.length && !f.providers.includes(o.carrier_id))
+    if (f.providers && f.providers.length && !f.providers.includes(carrierKey(o)))
+      return false;
+    if (f.minPremiumMinor != null && o.total_minor < f.minPremiumMinor)
       return false;
     if (f.maxPremiumMinor != null && o.total_minor > f.maxPremiumMinor)
       return false;
@@ -235,8 +288,34 @@ export function filterOffers<T extends OfferLike>(offers: T[], f: OfferFilter): 
       const excess = normalizeCoverage(o.coverage_snapshot).excessMinor;
       if (excess != null && excess > f.maxExcessMinor) return false;
     }
+    if (f.coverLevels && f.coverLevels.length && !f.coverLevels.includes(coverLevel(o, offers)))
+      return false;
+    if (f.paymentMethods && f.paymentMethods.length) {
+      const methods = offerPaymentMethods(o);
+      if (!f.paymentMethods.some((m) => methods.includes(m))) return false;
+    }
+    if (f.selectableOnly) {
+      const status = String((o as { status?: unknown }).status ?? "OFFERED").toUpperCase();
+      if (status !== "OFFERED") return false;
+    }
     return true;
   });
+}
+
+/** One row per insurer (cheapest offer each): proves every insurer that
+ * answered is on screen, not only the first card of a carousel. */
+export function insurerSummary<T extends OfferLike>(offers: T[]): { carrierId: string; name: string; offers: number; cheapest: T }[] {
+  const map = new Map<string, { carrierId: string; name: string; offers: number; cheapest: T }>();
+  for (const o of offers) {
+    const key = carrierKey(o);
+    const row = map.get(key);
+    if (!row) map.set(key, { carrierId: key, name: providerName(o), offers: 1, cheapest: o });
+    else {
+      row.offers += 1;
+      if (o.total_minor < row.cheapest.total_minor) row.cheapest = o;
+    }
+  }
+  return [...map.values()].sort((a, b) => a.cheapest.total_minor - b.cheapest.total_minor);
 }
 
 export type CompareCell = { text: string; minor?: number | null; best?: boolean };
@@ -267,7 +346,19 @@ export function compareRows(offers: OfferLike[], language: string = "en"): Compa
     money("fees", "Fees", (o) => o.fee_minor),
     money("total", "Total payable", (o) => o.total_minor),
     money("excess", "Excess / deductible", (_o, i) => norm[i]?.excessMinor ?? null),
+    {
+      key: "level",
+      label: "Cover level",
+      cells: offers.map((o) => ({ text: { essential: "Essential", standard: "Standard", full: "Full" }[coverLevel(o, offers)] })),
+    },
   ];
+  // Only when the API supplies them (see the backend gap note).
+  if (offers.some((o) => carrierRating(o)))
+    rows.push({ key: "rating", label: "Insurer rating", cells: offers.map((o) => ({ text: carrierRating(o) ?? "—" })) });
+  if (offers.some((o) => carrierClaimsDays(o) !== null))
+    rows.push({ key: "claims_days", label: "Avg. claim settlement", cells: offers.map((o) => { const d = carrierClaimsDays(o); return { text: d === null ? "—" : `${d} days` }; }) });
+  if (offers.some((o) => offerPaymentMethods(o).length))
+    rows.push({ key: "payment", label: "Payment options", cells: offers.map((o) => ({ text: offerPaymentMethods(o).join(", ") || "—" })) });
   const codes: { code: string; name: string }[] = [];
   norm.forEach((n) =>
     n.coverages.forEach((c) => {

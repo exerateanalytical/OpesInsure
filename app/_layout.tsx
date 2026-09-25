@@ -52,6 +52,11 @@ export default function RootLayout() {
           animation: "slide_from_right",
         }}
       >
+        {/* index is declared FIRST and never guarded: when a guard removes the
+            current screen, expo-router falls back to the first allowed
+            declared screen. That must be the router (index → session home),
+            never "(auth)/invitation" (see src/lib/navigationContinuity.ts). */}
+        <Stack.Screen name="index" />
         {/* Signed-in users never see welcome or the sign-in/up/OTP screens:
             the guard sends them back to index, which routes to their portal
             (or the role picker). */}

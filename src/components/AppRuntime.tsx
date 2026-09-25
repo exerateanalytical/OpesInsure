@@ -70,6 +70,7 @@ export function AppRuntime({ children }: { children: ReactNode }) {
   const backgroundedAt = useRef<number | null>(null);
   const lastActiveAt = useRef<number>(Date.now());
   const authenticating = useRef(false);
+  const navigationMounted = useRef(false);
   const gate = useRuntime((s) => s.gate);
   const runtime = useRuntime((s) => s.bootstrap);
   const runtimeIssues = useRuntime((s) => s.issues);
@@ -224,7 +225,12 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     return () => clearInterval(timer);
   }, [status, expireIfIdle]);
 
-  if (gate !== "ready" && gate !== "checking")
+  const blocked = gate !== "ready" && gate !== "checking";
+  // Before the stack has ever mounted (cold start with a bad configuration,
+  // maintenance or forced update) the gate replaces it. Once mounted, a gate
+  // raised on resume is an overlay: unmounting would reset navigation and
+  // drop the user on the first allowed route.
+  if (blocked && !navigationMounted.current)
     return (
       <RuntimeGateView
         gate={gate}
@@ -233,7 +239,8 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         retry={() => void checkRuntime()}
       />
     );
-  const overlay = privacyCovered ? "privacy" : locked ? "lock" : null;
+  navigationMounted.current = true;
+  const overlay = blocked ? "gate" : privacyCovered ? "privacy" : locked ? "lock" : null;
   return (
     <View
       style={styles.flex}
@@ -267,7 +274,16 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         <IssueReportButton />
       </View>
       {/* Overlays: the stack underneath stays mounted (never unmount it). */}
-      {overlay === "privacy" ? (
+      {overlay === "gate" ? (
+        <View style={[StyleSheet.absoluteFill, styles.gate]} accessibilityViewIsModal>
+          <RuntimeGateView
+            gate={gate}
+            bootstrap={runtime}
+            issues={runtimeIssues}
+            retry={() => void checkRuntime()}
+          />
+        </View>
+      ) : overlay === "privacy" ? (
         <View style={[StyleSheet.absoluteFill, styles.privacy]} accessibilityViewIsModal>
           <Text style={styles.privacyTitle}>OpesInsure</Text>
           <Text style={styles.privacyBody}>{t("privacyCover")}</Text>
@@ -303,6 +319,7 @@ const styles = StyleSheet.create({
   },
   title: { ...type.pageTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
+  gate: { zIndex: 1002, elevation: 1002, backgroundColor: colors.neutral50 },
   privacy: {
     zIndex: 1001,
     elevation: 1001,
