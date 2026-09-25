@@ -467,6 +467,11 @@ final class DomainEventCatalogue
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),
+            // Agent B2 — REQ-RPT-003 KPI governance (App\Application\Reporting\Kpi\KpiCatalogueService)
+            $d('reporting.kpi_definition.submitted', 'kpi_definition', 'KPI definition version submitted for checker approval.', [], [$C], true),
+            $d('reporting.kpi_definition.approved', 'kpi_definition', 'KPI definition version approved by an independent checker (previous version retired).', [], [$C], true),
+            $d('reporting.kpi_definition.rejected', 'kpi_definition', 'KPI definition version rejected by the checker.', [], [$C], true),
+            $d('reporting.kpi_definition.retired', 'kpi_definition', 'Active KPI definition version retired (baseline applies again).', [], [$C], true),
         ];
     }
 
