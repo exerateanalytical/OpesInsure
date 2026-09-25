@@ -126,6 +126,11 @@ final class DomainEventCatalogue
             $d('policy.service.approved', 'policy_service_request', 'Policy servicing request approved.', [], [], true),
             $d('policy.service.payment_requested', 'policy_service_request', 'Payment requested for a servicing change.', [], [], true),
             $d('policy.service.rejected', 'policy_service_request', 'Policy servicing request rejected.', [], [], true),
+            // REQ-POL-006 (App\Application\Policies\Suspension\PolicySuspensionService)
+            $d('policy.suspended', 'policy', 'Policy cover suspended (manual, premium default, compliance or system).', ['PolicySuspended'], [], true),
+            $d('policy.reinstatement.requested', 'policy', 'Reinstatement of a suspended policy requested (queued as a POLICY_REINSTATEMENT case).', [], [], true),
+            $d('policy.reinstatement.rejected', 'policy', 'Reinstatement request rejected; policy stays suspended.', [], [], true),
+            $d('policy.reinstated', 'policy', 'Suspended policy reinstated to ACTIVE.', ['PolicyReinstated'], [], true),
             $d('privacy.consent.changed', 'consent', 'Privacy consent changed.', [], [], true),
             $d('proposal.created', 'proposal', 'Proposal created.', [], [], true),
             // REQ-PRP-001 proposal machine (App\Application\Underwriting\ProposalMachine, published by the StateMachineEngine)
