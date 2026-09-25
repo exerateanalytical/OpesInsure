@@ -221,6 +221,10 @@ final class PolicyServicingService
             ]);
 
             $this->policyHistory($policy, $fromStatus, $toStatus, $transaction->reason_code, $actor, $transaction);
+            if ($fromStatus === 'SUSPENDED') {
+                // REQ-POL-006: a servicing-path reinstatement/cancellation closes the open suspension episode.
+                app(Suspension\PolicySuspensionService::class)->end($policy, $transaction->reason_code, $actor);
+            }
             $this->event($transaction, 'PENDING_APPROVAL', 'APPROVED', 'APPROVED', $actor);
 
             if ($transaction->type === 'CANCELLATION' && $transaction->refund_minor > 0) {
@@ -289,6 +293,18 @@ final class PolicyServicingService
 
             return $transaction->refresh();
         });
+    }
+
+    /** REQ-POL-006 suspension entry point (also used by premium-to-cover SUSPEND_ON_DEFAULT). */
+    public function suspend(Policy $policy, string $reasonCode, ?User $actor, array $options = []): Suspension\PolicySuspension
+    {
+        return app(Suspension\PolicySuspensionService::class)->suspend($policy, $reasonCode, $actor, $options);
+    }
+
+    /** REQ-POL-006 reinstatement entry point: checker approval of a queued request, or a system reinstatement (actor null). */
+    public function reinstate(Policy $policy, string $reasonCode, ?User $actor, ?\DateTimeInterface $effectiveAt = null): Policy
+    {
+        return app(Suspension\PolicySuspensionService::class)->reinstate($policy, $reasonCode, $actor, $effectiveAt);
     }
 
     private function event(PolicyTransaction $transaction, ?string $from, string $to, string $reason, ?User $actor): void
