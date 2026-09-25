@@ -182,7 +182,6 @@ final class CommissionLifecycleService
             $this->machine->apply($a, 'make_payable', $actor, 'APPROVED_AND_VESTED', [
                 'vested_minor' => (int) $a->amount_minor - (int) $a->clawed_back_minor, 'payable_at' => now(),
             ]);
-            $this->machine->syncPayable($a, $actor?->id);
 
             return $a->refresh();
         });
@@ -209,7 +208,7 @@ final class CommissionLifecycleService
         return $this->step($a, 'dispute', $actor, $reason, fn () => ['disputed_at' => now(), 'dispute_reason' => $reason]);
     }
 
-    /** Resolution goes through ADJUSTED, so the (possibly corrected) figure is re-approved; a payable obligation is withdrawn meanwhile. */
+    /** Resolution goes through ADJUSTED, so the (possibly corrected) figure is re-approved. */
     public function resolveDispute(CommissionAccrual $a, ?int $newAmountMinor, string $note, User $actor): CommissionAccrual
     {
         return DB::transaction(function () use ($a, $newAmountMinor, $note, $actor): CommissionAccrual {
@@ -221,10 +220,6 @@ final class CommissionLifecycleService
             $this->machine->apply($a, 'resolve_dispute', $actor, $note, ['adjusted_by' => $actor->id] + ($delta !== 0 ? ['amount_minor' => $newAmountMinor] : []), null, ['delta_minor' => $delta]);
             if ($delta !== 0) {
                 $this->movement($a, 'ADJUSTMENT', $delta, 'DISPUTE_RESOLVED', $actor, $delta > 0 ? 'commission.accrued' : 'commission.clawed_back');
-            }
-            if ($a->financial_obligation_id && ($o = DB::table('financial_obligations')->where('id', $a->financial_obligation_id)->first()) && $o->status === 'OPEN') {
-                $this->obligations->cancel($o->id, 'Commission dispute resolved; awaiting re-approval.', $actor->id);
-                $a->update(['financial_obligation_id' => null]);
             }
 
             return $a->refresh();
@@ -240,18 +235,14 @@ final class CommissionLifecycleService
         });
     }
 
-    /** After a payout paid (part of) the accrual (PayoutService raises paid_minor): settle the payable obligation; PAYABLE → PAID when nothing is owed. */
+    /**
+     * After a payout paid (part of) the accrual (PayoutService::complete raises paid_minor and calls this): PAYABLE → PAID when nothing
+     * is owed. The money obligation is the partner statement's, settled by CommissionPayableLink::settlePayout — not here.
+     */
     public function settlePaid(CommissionAccrual $a, string $reference, ?User $actor = null): CommissionAccrual
     {
         return DB::transaction(function () use ($a, $reference, $actor): CommissionAccrual {
             $a = CommissionAccrual::lockForUpdate()->findOrFail($a->id);
-            if ($a->financial_obligation_id) {
-                $o = DB::table('financial_obligations')->where('id', $a->financial_obligation_id)->first();
-                $settle = (int) $o->outstanding_minor - CommissionTransitions::owed($a);
-                if ($settle > 0) {
-                    $this->obligations->settle($o->id, $settle, $reference, $actor?->id);
-                }
-            }
             if (CommissionTransitions::owed($a) === 0 && in_array($a->status, ['VESTED', 'AVAILABLE'], true)) {
                 $this->machine->apply($a, 'pay', $actor, 'PAYOUT_COMPLETED', ['paid_at' => now()], null, ['reference' => $reference]);
             }
