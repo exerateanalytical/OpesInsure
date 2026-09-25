@@ -88,9 +88,10 @@ it('accepts with four eyes, supersedes the previous accepted assessment and gate
     expect(ClaimAssessment::find($first)->status)->toBe('SUPERSEDED');
     $this->postJson("/api/v1/claims/assessments/{$second}/reject", ['reason' => 'Too late'], tenantHeaderFor($fx['tenant']))->assertUnprocessable();
 
-    if (interface_exists(\App\Domain\Claims\ClaimTransitionGuard::class)) {
-        expect(collect(app()->tagged('claims.transition_guards'))->contains(fn ($g) => $g instanceof ClaimAssessmentTransitionGuard))->toBeTrue();
-    }
+    $guard = collect(app()->tagged('claims.transition_guards'))->first(fn ($g) => $g instanceof ClaimAssessmentTransitionGuard);
+    expect($guard)->not->toBeNull()->and($guard->events())->toBe(['refer_for_decision'])
+        ->and($guard->check($claim, 'refer_for_decision', ['to' => 'DECISION_PENDING']))->toBeNull()
+        ->and($guard->check($claim, 'approve', ['to' => 'APPROVED']))->toBeNull();
 });
 
 it('opens an investigation through the case engine, keeps indicators immutable and blocks the decision while open', function () {

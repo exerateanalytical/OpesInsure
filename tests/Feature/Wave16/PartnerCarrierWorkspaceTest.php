@@ -128,6 +128,7 @@ it('runs the claim workflow: acknowledge, request information, propose then appr
     $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/acknowledge", [], $h)->assertStatus(200)->assertJsonPath('data.status', 'ACKNOWLEDGED');
     $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/request-information", ['note' => 'Please upload the police report.'], $h)->assertStatus(200)->assertJsonPath('data.status', 'EVIDENCE_PENDING');
 
+    w16AcceptedAssessment($claim, $w['staff']);
     $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/decisions", ['decision' => 'PARTIAL', 'approved_amount_minor' => 40000, 'reason_code' => 'PARTIAL_COVER', 'rationale' => 'Only the bumper is covered.'], $h)
         ->assertStatus(201)->assertJsonPath('data.status', 'CARRIER_REVIEW')->assertJsonPath('data.pending_decision.decision', 'PARTIAL');
     $decision = ClaimDecision::where('claim_id', $claim->id)->firstOrFail();
@@ -146,6 +147,7 @@ it('refuses self-approval of a claim decision even for an admin', function () {
     $h = w16CarrierHeaders($w['tenant']);
     $claim = makeMobileTestClaim($w['tenant'], $w['mine']['policy'], $w['mine']['party'], ['status' => 'ASSESSMENT']);
 
+    w16AcceptedAssessment($claim, $w['admin']);
     Passport::actingAs($w['admin']);
     $id = $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/decisions", ['decision' => 'DECLINE', 'approved_amount_minor' => 0, 'reason_code' => 'EXCLUDED', 'rationale' => 'Racing is excluded.'], $h)->assertStatus(201)->json('data.pending_decision.id');
     $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/decisions/{$id}/approve", [], $h)->assertStatus(422);
@@ -169,6 +171,14 @@ it('404s a claim detail for another insurer', function () {
 });
 
 // -------------------------------------------------------------- issuance
+
+/** REQ-CLM-010 (C10): a claim reaches DECISION_PENDING only with an ACCEPTED assessment on file. */
+function w16AcceptedAssessment(Claim $claim, User $assessor): void
+{
+    DB::table('claim_assessments')->insert(['id' => (string) Str::uuid(), 'tenant_id' => $claim->tenant_id, 'claim_id' => $claim->id,
+        'assessment_number' => 'ASM-'.Str::upper(Str::random(10)), 'status' => 'ACCEPTED', 'heads' => '[]', 'recommended_total_minor' => 40000,
+        'currency' => 'XAF', 'rationale' => 'Fixture assessment', 'assessor_user_id' => $assessor->id, 'reviewed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+}
 
 function w16IssuanceRequest(array $w, string $key): PolicyIssuanceRequest
 {

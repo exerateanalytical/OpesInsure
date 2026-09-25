@@ -121,10 +121,9 @@ it('REQ-FRD-001 / WF-089 blocks approval and settlement while the review is open
     }
     expect($hold->check($w['claim'], 'decline', ['to' => 'REJECTED']))->toBeNull()
         ->and($hold->check($w['claim'], 'investigate', ['to' => 'INVESTIGATING']))->toBeNull();
-    if (interface_exists(\App\Domain\Claims\ClaimTransitionGuard::class)) {
-        $guards = iterator_to_array(app()->tagged('claims.transition_guards'));
-        expect(collect($guards)->contains(fn ($g) => $g instanceof \App\Application\Fraud\FraudReviewClaimTransitionGuard))->toBeTrue();
-    }
+    $guard = collect(iterator_to_array(app()->tagged('claims.transition_guards')))->first(fn ($g) => $g instanceof \App\Application\Fraud\FraudReviewClaimTransitionGuard);
+    expect($guard)->not->toBeNull()->and($guard->events())->toBe(['approve', 'partially_approve', 'request_settlement', 'settle'])
+        ->and($guard->check($w['claim'], 'settle', ['to' => 'SETTLED']))->toBe('FRAUD_REVIEW_OPEN');
 
     $this->postJson("/api/v1/fraud/claim-reviews/{$alertId}/outcome", ['outcome' => 'CLEARED', 'rationale' => 'Checked documents and police report.'], $h)->assertForbidden();
     Passport::actingAs($reviewer);

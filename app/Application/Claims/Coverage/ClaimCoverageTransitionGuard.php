@@ -23,6 +23,10 @@ final class ClaimCoverageTransitionGuard implements ClaimTransitionGuard
 
     public function check(Claim $claim, string $event, array $context): ?string
     {
-        return in_array($event, ClaimCoverageCheckService::APPROVAL_EVENTS, true) ? $this->checks->approvalBlocker($claim) : null;
+        $to = $context['to'] ?? null;
+        $approving = is_string($to) ? in_array(strtoupper($to), ClaimCoverageCheckService::APPROVAL_STATES, true)
+            : in_array($event, ClaimCoverageCheckService::APPROVAL_EVENTS, true);
+
+        return $approving ? $this->checks->approvalBlocker($claim) : null;
     }
 }

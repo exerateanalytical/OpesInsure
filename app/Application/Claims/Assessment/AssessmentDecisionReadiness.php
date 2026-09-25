@@ -15,7 +15,7 @@ final class AssessmentDecisionReadiness
     public const TARGET_STATE = 'DECISION_PENDING';
 
     /** Event names that lead to DECISION_PENDING (the claim machine may also pass the target state in context). */
-    public const EVENTS = ['request_decision', 'submit_for_decision', 'decision_pending', 'DECISION_PENDING'];
+    public const EVENTS = ['refer_for_decision']; // ClaimMachine event whose target is DECISION_PENDING (stored CARRIER_REVIEW)
 
     public function __construct(private readonly ClaimAssessmentService $assessments, private readonly ClaimInvestigationService $investigations) {}
 

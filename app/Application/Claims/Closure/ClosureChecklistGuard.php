@@ -19,11 +19,15 @@ if (interface_exists(\App\Domain\Claims\ClaimTransitionGuard::class)) {
 
         public function events(): array
         {
-            return ['close', 'CLOSE', 'CLOSED'];
+            return ['close'];
         }
 
         public function check(Claim $claim, string $event, array $context): ?string
         {
+            if (isset($context['to']) && is_string($context['to']) && strtoupper($context['to']) !== 'CLOSED') {
+                return null;
+            }
+
             return $this->checklist->firstFailure($claim, $context['closure_reason'] ?? $context['reason_code'] ?? null);
         }
     }

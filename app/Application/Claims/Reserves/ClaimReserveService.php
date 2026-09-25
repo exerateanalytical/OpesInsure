@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Claims\Reserves;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Claims\Limits\LimitLedger;
 use App\Application\Events\OutboxWriter;
 use App\Application\Ledger\FinancialPostingService;
 use App\Application\Ledger\LedgerService;
@@ -175,13 +176,28 @@ final class ClaimReserveService
     /** Batch 11 C4 limit ledger, when present: reserve (or release) the movement against the policy limit. */
     private function reserveLimit(Claim $c, ClaimReserveChange $r, int $movement): ?string
     {
-        $class = 'App\\Application\\Claims\\Limits\\LimitLedger';
-        if ($movement === 0 || ! class_exists($class) || ! method_exists($class, 'reserve')) {
+        if ($movement === 0 || $r->coverage_code === null) {
             return null;
         }
-        $ref = app($class)->reserve($c, $r->coverage_code, $movement, 'claim_reserve_change', $r->id);
+        $ledger = app(LimitLedger::class);
+        $limitId = $ledger->perClaimLimitId($c, $r->coverage_code);
+        if ($limitId === null) {
+            return null; // no PER_CLAIM limit on this coverage at the loss date
+        }
+        $options = ['reference_type' => 'claim_reserve_change', 'reference_id' => $r->id, 'idempotency_key' => 'claim-reserve:'.$r->id, 'actor_id' => $r->approved_by ?? null];
+        if ($movement > 0) {
+            $res = $ledger->reserve($c, $limitId, $movement, $options);
+        } else {
+            // Only what this claim still holds on the limit can be given back.
+            $held = (int) (collect($ledger->claimBalances($c))->firstWhere('limit_id', $limitId)['reserved_minor'] ?? 0);
+            $amount = min(-$movement, $held);
+            if ($amount <= 0) {
+                return null;
+            }
+            $res = $ledger->release($c, $limitId, $amount, $options);
+        }
 
-        return is_scalar($ref) ? mb_substr((string) $ref, 0, 64) : (is_object($ref) && isset($ref->id) ? (string) $ref->id : null);
+        return $res['group_id'];
     }
 
     private function assertCoverage(Claim $c, string $coverage): void

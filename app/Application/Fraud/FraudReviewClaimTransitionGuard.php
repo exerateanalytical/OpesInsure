@@ -17,8 +17,7 @@ final class FraudReviewClaimTransitionGuard implements ClaimTransitionGuard
 
     public function events(): array
     {
-        return ['approve', 'partially_approve', 'partial_approve', 'request_settlement', 'settle', 'approve_settlement',
-            'APPROVE', 'PARTIALLY_APPROVE', 'PARTIAL_APPROVE', 'REQUEST_SETTLEMENT', 'SETTLE', 'APPROVE_SETTLEMENT'];
+        return ['approve', 'partially_approve', 'request_settlement', 'settle'];
     }
 
     public function check(Claim $claim, string $event, array $context): ?string
