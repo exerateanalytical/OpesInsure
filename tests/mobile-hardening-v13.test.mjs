@@ -182,16 +182,16 @@ test("new backend error codes map to specific EN/FR copy", () => {
 
 // --- OTA / release --------------------------------------------------------------
 
-test("release config: one version, fingerprint runtime, separate APK channel", () => {
+test("release config: one version, appVersion runtime, separate APK channel", () => {
   const pkg = json("package.json");
   const app = json("app.json");
   const eas = json("eas.json");
   assert.equal(pkg.version, "1.3.0");
   assert.equal(app.expo.version, pkg.version);
-  assert.deepEqual(app.expo.runtimeVersion, { policy: "fingerprint" });
+  assert.deepEqual(app.expo.runtimeVersion, { policy: "appVersion" });
   const config = read("app.config.js");
   assert.match(config, /require\("\.\/package\.json"\)/);
-  assert.match(config, /runtimeVersion: \{ policy: "fingerprint" \}/);
+  assert.match(config, /runtimeVersion: \{ policy: "appVersion" \}/);
   assert.doesNotMatch(config, /version: "1\.2\.2"/);
   assert.doesNotMatch(read("src/config/environment.ts"), /"1\.1\.0"/);
   assert.equal(eas.build.production.channel, "production");

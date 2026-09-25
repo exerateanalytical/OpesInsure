@@ -12,7 +12,7 @@ module.exports = () => {
     // Fingerprint: any native change (plugin, permission, native module)
     // produces a new runtime, so an OTA can never reach an incompatible
     // binary even if someone forgets to bump the version.
-    runtimeVersion: { policy: "fingerprint" },
+    runtimeVersion: { policy: "appVersion" },
     ios: {
       ...base.expo.ios,
       associatedDomains: ["applinks:insurance.opesdatacenter.tech"],

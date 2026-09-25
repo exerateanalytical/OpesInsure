@@ -26,7 +26,7 @@ if (apk && (apk.channel ?? eas.build[apk.extends]?.channel) === eas.build.produc
 const pkg = readJson("package.json");
 const app = readJson("app.json");
 if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${app.expo.version},package.json=${pkg.version}`);
-if (app.expo.runtimeVersion?.policy !== "fingerprint") errors.push("RUNTIME_POLICY_NOT_FINGERPRINT");
+if (app.expo.runtimeVersion?.policy !== "appVersion") errors.push("RUNTIME_POLICY_NOT_APPVERSION");
 const associations = readFileSync("store/associations/assetlinks.json", "utf8");
 if (profile === "production" && associations.includes("REPLACE_WITH_"))
   errors.push("ANDROID_ASSOCIATION_PLACEHOLDER");
