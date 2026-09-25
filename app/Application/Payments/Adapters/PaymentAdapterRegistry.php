@@ -25,6 +25,8 @@ final class PaymentAdapterRegistry
             'fake' => app()->environment('local', 'testing') ? new FakePaymentAdapter : throw new InvalidArgumentException('The fake payment provider is only available to demo accounts.'),
             'mtn_momo' => new MtnMomoAdapter,
             'orange_money' => new OrangeMoneyAdapter,
+            'bank_transfer' => new BankTransferAdapter,
+            'card_sandbox' => new SandboxCardCheckoutAdapter,
             'maviance', 'campay' => new ConfiguredJsonPaymentAdapter($p),
             default => throw new InvalidArgumentException('Unsupported payment provider.'),
         };

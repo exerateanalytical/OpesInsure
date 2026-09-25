@@ -2,6 +2,10 @@
 return [
 'webhook_tolerance_seconds'=>(int)env('PAYMENT_WEBHOOK_TOLERANCE_SECONDS',300),
 'providers'=>[
+// REQ-PAY-003 bank transfer: reference-based instruction; a signed bank-statement feed (webhook) or reconciliation settles it.
+'bank_transfer'=>['webhook_secret'=>env('BANK_TRANSFER_WEBHOOK_SECRET'),'bank_name'=>env('BANK_TRANSFER_BANK_NAME'),'account_name'=>env('BANK_TRANSFER_ACCOUNT_NAME'),'account_number'=>env('BANK_TRANSFER_ACCOUNT_NUMBER'),'swift'=>env('BANK_TRANSFER_SWIFT'),'validity_days'=>(int)env('BANK_TRANSFER_VALIDITY_DAYS',7)],
+// REQ-PAY-003 card: hosted-checkout sandbox (no real vendor). Enabled only in local/testing unless CARD_SANDBOX_ENABLED=true.
+'card_sandbox'=>['enabled'=>(bool)env('CARD_SANDBOX_ENABLED',false),'checkout_base_url'=>env('CARD_SANDBOX_CHECKOUT_URL','https://sandbox.checkout.invalid/pay'),'webhook_secret'=>env('CARD_SANDBOX_WEBHOOK_SECRET')],
 'fake'=>['webhook_secret'=>env('FAKE_PAYMENT_WEBHOOK_SECRET')],
 'maviance'=>['initiate_url'=>env('MAVIANCE_INITIATE_URL'),'api_token'=>env('MAVIANCE_API_TOKEN'),'webhook_secret'=>env('MAVIANCE_WEBHOOK_SECRET')],
 'campay'=>['initiate_url'=>env('CAMPAY_INITIATE_URL'),'api_token'=>env('CAMPAY_API_TOKEN'),'webhook_secret'=>env('CAMPAY_WEBHOOK_SECRET')],
