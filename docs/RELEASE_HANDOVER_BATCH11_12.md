@@ -38,3 +38,12 @@ The claims permissions added by these batches are granted by the follow-up role 
 
 ## Rollback
 DB backup + previous tarball. Migrations are additive; immutability triggers stay until the migrations are rolled back.
+
+## Follow-up included on the branch (after 1b8821a)
+- **Claims role pass:** 29 claims permissions catalogued + granted (checkers only CLAIMS_MANAGER / CARRIER_SUPER_ADMIN / FINANCE_MANAGER); `legal` and `collections` added to business-data modules.
+- **C8 claim types + reporting deadlines:** migration `2026_10_16_110801` (claim_type_versions with 14 platform defaults, claim_reporting_checks).
+  Every FNOL records a reporting check; a late claim is flagged (never refused), opens a CLAIM_COVERAGE_REVIEW / LATE_REPORTING case and cannot enter
+  ASSESSMENT until a manager approves. An FNOL naming a claim type not configured for the policy's line gets 422. Deadlines are platform defaults
+  (motor 5 days, theft 2, health/travel 30, life 90…), overridable per insurer/product with maker-checker; not legal deadlines.
+- Permissions: claims.types.manage|approve, claims.late_report.recommend|approve (catalogued; managers/officers hold them via their wildcard).
+- Run `rbac:sync-role-permissions` after deploy.

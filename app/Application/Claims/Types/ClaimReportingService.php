@@ -48,7 +48,8 @@ final class ClaimReportingService
         $days = $type['reporting_deadline_days'] ?? null;
         $deadline = $days === null ? null : $loss->addDays($days);
         $late = $deadline !== null && $reported->gt($deadline);
-        $daysLate = $late ? max(1, (int) ceil($deadline->diffInHours($reported) / 24)) : 0;
+        // whole calendar days past the deadline date (sub-day remainders never add a day)
+        $daysLate = $late ? max(1, (int) $deadline->copy()->startOfDay()->diffInDays($reported->copy()->startOfDay())) : 0;
 
         $id = (string) Str::uuid();
         DB::table('claim_reporting_checks')->insert([

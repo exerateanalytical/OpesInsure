@@ -37,7 +37,7 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 ## Log (newest first)
 
 ### 2026-09-25 cloud: Batches 11+12 (15 claims agents) + D10 decisions + integration fix merged. Full suite 1440 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH11_12.md
-- Pending in cloud: C8 claim types/deadlines + a claims role pass (next release).
+- Follow-up merged: C8 claim types/deadlines + claims role pass (see the handover's follow-up section). Full suite 1457 passed / 0 failed.
 
 ### 2026-09-25 cloud: Batch 10 merged (10 agents + 1 fix agent). Full suite 1348 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH10.md
 - Merge fixes: commission accrual combines the 10-2 rule resolver with the 10-1 state machine; JournalLine split into its own file (it broke autoload); a single commission payable per partner statement (the per-accrual payable is removed); one rule selector.
