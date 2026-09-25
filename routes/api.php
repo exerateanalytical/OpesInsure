@@ -541,3 +541,17 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
 
     Route::get('policy-service-requests', [\App\Application\Policies\Http\ServiceRequestTriageController::class, 'index'])->middleware('permission:policies.service.approve');
 });
+// Batch 9-2 — REQ-PAY-004 payment allocations + versioned allocation rule, REQ-PAY-005 premium components/status.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Finance\Allocations\Http\AllocationController::class;
+    $p = \App\Application\Finance\PremiumStatus\Http\PremiumStatusController::class;
+    Route::get('payments/{payment}/allocations', [$a, 'show'])->middleware('permission:payments.allocations.read')->whereUuid('payment');
+    Route::post('payments/{payment}/allocations', [$a, 'allocate'])->middleware('permission:payments.allocations.manage')->whereUuid('payment');
+    Route::post('payment-allocation-runs/{run}/reverse', [$a, 'reverse'])->middleware('permission:payments.allocations.reverse')->whereUuid('run');
+    Route::get('finance/allocation-rule', [$a, 'rule'])->middleware('permission:payments.allocations.read');
+    Route::post('finance/allocation-rule', [$a, 'publishRule'])->middleware('permission:finance.allocation_rules.manage');
+    Route::get('policies/{policy}/premium-status', [$p, 'show'])->middleware('permission:premium_status.read')->whereUuid('policy');
+    Route::post('policies/{policy}/premium-components', [$p, 'record'])->middleware('permission:premium_components.manage')->whereUuid('policy');
+    Route::post('premium-components/{component}/close', [$p, 'close'])->middleware('permission:premium_components.close')->whereUuid('component');
+});
+// End Batch 9-2
