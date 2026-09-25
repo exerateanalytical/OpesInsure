@@ -43,6 +43,13 @@ final class DomainEventCatalogue
             $d('kyc_submission.expired', 'kyc_submission', 'Approved KYC reached its expiry.', [], [$C], true),
             $d('kyc_submission.rescreen_started', 'kyc_submission', 'Manual (audited) rescreening round opened on an approved KYC.', [], [$C], true),
             $d('kyc_submission.rescreen_match', 'kyc_submission', 'Rescreening of an approved KYC recorded a possible / confirmed match.', [], [$C], true),
+            // Agent E8 — REQ-AML-001 / REQ-KYC-004 list screening (App\Application\Compliance\Aml\Screening).
+            $d('aml.screening.list_version_imported', 'screening_list_version', 'Screening list version imported; awaiting approval (maker-checker).', [], [$C], true),
+            $d('aml.screening.list_version_activated', 'screening_list_version', 'Screening list version approved and made active; the previous version is superseded.', [], [$C], true),
+            $d('aml.screening.list_version_rejected', 'screening_list_version', 'Screening list version rejected by the checker.', [], [$C], true),
+            $d('aml.screening.hit_raised', 'screening_hit', 'Party name matched a screening list entry at or above the match threshold.', [], [$C], true),
+            $d('aml.screening.hit_disposition_proposed', 'screening_hit', 'Maker proposed a disposition (FALSE_POSITIVE / TRUE_MATCH / ESCALATED) for a screening hit.', [], [$C], true),
+            $d('aml.screening.hit_disposed', 'screening_hit', 'Checker approved (or rejected) the proposed disposition of a screening hit.', [], [$C], true),
             $d('quote.rated', 'quote', 'Quote premium calculated by the rating engine.', ['QuoteCalculated', 'QuoteRated'], [$W, $P], true),
             $d('quote.offer.accepted', 'quote', 'Customer accepted the quote offer.', ['QuoteAccepted'], [$W], true),
             $d('proposal.submitted', 'proposal', 'Proposal submitted for underwriting.', ['ProposalSubmitted'], [$W], true),
