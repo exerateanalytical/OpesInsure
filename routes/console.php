@@ -34,3 +34,10 @@ Artisan::command('commissions:advance', function (App\Application\Commissions\Ma
     $this->info("Earned: {$s['earned']}. Payable: {$s['payable']}.");
 })->purpose('Advance the commission machine: ACCRUED → EARNED on settled premium, APPROVED → PAYABLE once vested.');
 Schedule::command('commissions:advance')->dailyAt('02:10')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+// Agent C14 — REQ-CLM-014: auto-close settled claims that have been inactive (closure checklist must pass).
+Artisan::command('claims:auto-close {--days=30 : inactivity window in days}', function (App\Application\Claims\Closure\ClaimAutoCloseSweep $sweep) {
+    $s = $sweep->run((int) $this->option('days'));
+    $this->info("Evaluated: {$s['evaluated']}. Closed: {$s['closed']}. Blocked: {$s['blocked']}. Skipped: {$s['skipped']}.");
+})->purpose('Close inactive settled claims whose closure checklist passes.');
+Schedule::command('claims:auto-close')->dailyAt('02:40')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();

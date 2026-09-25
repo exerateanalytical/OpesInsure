@@ -109,6 +109,12 @@ final class DomainEventCatalogue
             $d('claim.party.added', 'claim', 'Party (claimant, third party, payee, expert…) added to a claim.', [], [], true),
             $d('claim.party.updated', 'claim', 'Claim party details changed.', [], [], true),
             $d('claim.party.removed', 'claim', 'Claim party removed (dated, soft).', [], [], true),
+            // REQ-CLM-014 (agent C14) closure + reopening
+            $d('claim.closed', 'claim', 'Claim closed after the closure checklist passed (manual or auto).', [], [], true),
+            $d('claim.reopen.requested', 'claim', 'Claim reopening requested (maker).', [], [], true),
+            $d('claim.reopened', 'claim', 'Claim reopening approved (checker); reserve restored as a new movement.', [], [], true),
+            $d('claim.reopen.rejected', 'claim', 'Claim reopening request rejected.', [], [], true),
+            $d('claim.recovery.transferred', 'claim', 'Claim recovery transferred to another owner.', [], [], true),
             $d('commission.clawed_back', 'commission', 'Commission clawed back.', [], [], true),
             $d('commission.rule.approved', 'commission_rule', 'Commission rule approved.', [], [], true),
             // REQ-COM-003 (Batch 10-3) commission statements: adjustments (maker-checker), disputes, payable
