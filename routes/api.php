@@ -614,3 +614,22 @@ Route::prefix('v1/finance/technical')->middleware(['auth:api', 'tenant', 'json.a
     Route::post('upr-postings', [$t, 'postUpr'])->middleware('permission:technical_accounting.upr.post');
 });
 // End Batch 10-9
+// Batch 10-4 — REQ-STL-001 ledger-calculated broker–insurer settlement lifecycle; REQ-DUP-011 one settlement read:
+// GET carrier-settlements/{batch} and GET broker-settlements/{batch} are aliases of GET settlements/{batch}
+// (same SettlementService + SettlementResource). POST settlements/* stays retired (legacy write path).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Settlements\Http\SettlementLifecycleController::class;
+    Route::get('carrier-settlements/{batch}', [SettlementController::class, 'show'])->middleware(['permission:settlement.read', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('settlements/{batch}', 'REQ-DUP-011')])->whereUuid('batch');
+    Route::get('broker-settlements/{batch}', [SettlementController::class, 'show'])->middleware(['permission:settlement.read', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('settlements/{batch}', 'REQ-DUP-011')])->whereUuid('batch');
+    Route::post('broker-settlements', [$s, 'store'])->middleware('permission:settlement.prepare');
+    Route::post('broker-settlements/{batch}/calculate', [$s, 'calculate'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/review', [$s, 'review'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/cancel', [$s, 'cancel'])->middleware('permission:settlement.prepare')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/approve', [$s, 'approve'])->middleware('permission:settlement.approve')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/reject', [$s, 'reject'])->middleware('permission:settlement.approve')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/process', [$s, 'process'])->middleware('permission:settlement.submit')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/fail', [$s, 'fail'])->middleware('permission:settlement.confirm')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/settle', [$s, 'settle'])->middleware('permission:settlement.confirm')->whereUuid('batch');
+    Route::post('broker-settlements/{batch}/reconcile', [$s, 'reconcile'])->middleware('permission:settlement.reconcile')->whereUuid('batch');
+});
+// End Batch 10-4

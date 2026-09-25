@@ -194,6 +194,7 @@ final class AccountStatementService
         if ($this->obligations()) {
             $rows = DB::table('financial_obligations')->where('tenant_id', $tenantId)->where('currency', $cur)
                 ->where('creditor_type', 'carrier')->where('creditor_id', $carrierId)->whereIn('status', self::OBLIGATION_LIVE)
+                ->where('kind', 'RECEIVABLE') // Batch 10-4 settlement remittance PAYABLEs restate the same premium
                 ->whereNotIn('type', ['REFUND', 'COMMISSION', 'CLAIM'])->where('due_at', '<=', $end)->get();
             foreach ($rows as $o) {
                 $lines->push($this->line($o->due_at, 'PREMIUM_DUE', $o->description ?? $o->type, 'financial_obligation', $o->id, (int) $o->amount_minor));
@@ -214,7 +215,7 @@ final class AccountStatementService
             ->where('r.tenant_id', $tenantId)->where('p.carrier_id', $carrierId)->where('r.currency', $cur)->whereIn('r.status', self::REFUND_DONE)
             ->whereRaw('COALESCE(r.completed_at, r.updated_at) <= ?', [$end])->get(['r.id', 'r.refund_number', 'r.amount_minor', 'r.completed_at', 'r.updated_at'])
             ->each(fn ($r) => $lines->push($this->line($r->completed_at ?? $r->updated_at, 'REFUND', 'Refund '.$r->refund_number, 'refund', $r->id, -(int) $r->amount_minor)));
-        DB::table('settlement_batches')->where('tenant_id', $tenantId)->where('carrier_id', $carrierId)->where('currency', $cur)->where('status', 'PAID')
+        DB::table('settlement_batches')->where('tenant_id', $tenantId)->where('carrier_id', $carrierId)->where('currency', $cur)->whereIn('status', ['PAID', 'SETTLED', 'RECONCILED'])
             ->whereRaw('COALESCE(paid_at, updated_at) <= ?', [$end])->get()
             ->each(fn ($b) => $lines->push($this->line($b->paid_at ?? $b->updated_at, 'PAYMENT', 'Settlement '.($b->settlement_number ?? ''), 'settlement_batch', $b->id, -(int) $b->net_amount_minor)));
 
