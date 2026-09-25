@@ -334,12 +334,15 @@ final class MobileAuthService
     {
         return DB::transaction(function () use ($user, $deviceFingerprint, $ip, $deviceName, $platform, $method) {
             $device = UserDevice::firstOrNew(['user_id' => $user->id, 'device_fingerprint' => $deviceFingerprint]);
+            $isNewDevice = ! $device->exists;
             $device->name = $deviceName;
             $device->platform = $platform;
             $device->last_seen_at = now();
             $device->trusted_at ??= now();
             $device->security_metadata = ['last_ip_hash' => hash('sha256', $ip)];
             $device->save();
+            // REQ-SEC-001 login activity + anomaly flags (never blocks the sign-in).
+            app(\App\Application\Security\Login\LoginActivityRecorder::class)->record($user, $method, $device->id, $deviceFingerprint, $deviceName, $platform, $isNewDevice, $ip);
 
             [$accessToken, $refreshToken, $expiresIn] = $this->issueTokenPair($user, $device->id, (string) Str::uuid());
 

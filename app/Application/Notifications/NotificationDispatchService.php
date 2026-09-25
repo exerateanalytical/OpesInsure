@@ -85,6 +85,14 @@ final class NotificationDispatchService
     private function resolve(NotificationDelivery $delivery): array
     {
         $template = NotificationTemplate::findOrFail($delivery->template_id);
+        // REQ-SEC-003: marketing notifications only go out under a GRANTED MARKETING consent.
+        if (strtoupper((string) $template->purpose) === 'MARKETING') {
+            $decision = app(\App\Application\Security\Purpose\PurposeOfUseGuard::class)->check('MARKETING', 'notification.marketing.send', $delivery->party_id,
+                ['tenant_id' => $delivery->tenant_id, 'reference_type' => 'notification_delivery', 'reference_id' => $delivery->id]);
+            if (! $decision->allowed) {
+                throw new DomainException("Marketing notification blocked by purpose-of-use guard ({$decision->refusalCode}).");
+            }
+        }
         $destination = $this->resolveDestination($delivery);
 
         if (hash('sha256', mb_strtolower(trim($destination))) !== $delivery->destination_hash) {

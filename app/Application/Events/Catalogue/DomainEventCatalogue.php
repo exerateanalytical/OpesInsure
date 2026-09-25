@@ -312,6 +312,10 @@ final class DomainEventCatalogue
             $d('policy.recovery.approved', 'policy', 'Recovery approved (maker-checker); policy active again.', [], [], true),
             $d('policy.recovery.rejected', 'policy', 'Recovery case rejected.', [], [], true),
             $d('privacy.consent.changed', 'consent', 'Privacy consent changed.', [], [], true),
+            // Agent B7 — REQ-SEC-001 security centre (App\Application\Security)
+            $d('security.login.anomaly_detected', 'user', 'Sign-in flagged (new device / impossible travel).', [], [$C], true),
+            $d('security.privileged_access.expired', 'privileged_access_grant', 'Privileged-access grant window closed; grant expired.', [], [$C], true),
+            $d('security.finding.status_changed', 'security_finding', 'Security finding reported or moved in its lifecycle.', [], [$C], true),
             // REQ-CMP-001 compliance cases on the case engine (App\Application\Compliance\Cases\ComplianceCaseService, agent E10)
             $d('compliance.case.opened', 'compliance_case', 'Compliance case opened and linked to its COMPLIANCE_INVESTIGATION work case.', [], [$C], true),
             $d('compliance.case.transitioned', 'compliance_case', 'Compliance case status changed (work case driven in the same transaction).', [], [$C], true),
