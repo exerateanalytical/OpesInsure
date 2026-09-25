@@ -32,7 +32,7 @@ import { useSession } from "@/store/session";
 import { AuthApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
-import Constants from "expo-constants";
+import { BuildStamp } from "@/components/BuildStamp";
 import { colors, radius, space, type } from "@/theme/tokens";
 const groups: { title: CopyKey; links: [CopyKey, LucideIcon, string][] }[] = [
   {
@@ -159,9 +159,7 @@ export default function Profile() {
         <LogOut size={20} color={colors.danger} />
         <Text style={styles.logoutText}>{t("signOutSecurely")}</Text>
       </Pressable>
-      <Text style={styles.version}>
-        OpesInsure {Constants.expoConfig?.version ?? ""} · Opesware Technologies
-      </Text>
+      <BuildStamp />
     </Screen>
   );
 }
@@ -204,5 +202,4 @@ const styles = StyleSheet.create({
     gap: space.x2,
   },
   logoutText: { ...type.label, color: colors.dangerText },
-  version: { ...type.meta, color: colors.neutral500, textAlign: "center" },
 });

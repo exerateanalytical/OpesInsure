@@ -25,6 +25,7 @@ import {
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
 import { LegalLinks } from "@/components/LegalLinks";
+import { BuildStamp } from "@/components/BuildStamp";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export type PortalKey = "agent" | "broker" | "carrier";
@@ -348,6 +349,7 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
         <Text style={s.logoutText}>{t("portalSignOut")}</Text>
       </Pressable>
       <LegalLinks />
+      <BuildStamp />
     </PortalScreen>
   );
 }
