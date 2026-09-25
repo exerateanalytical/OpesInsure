@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Commissions\Machine;
 
-use App\Application\Finance\Obligations\ObligationService;
 use App\Application\Ledger\FinancialPostingService;
 use App\Domain\Shared\StateMachine\GuardResult;
 use App\Domain\Shared\StateMachine\StateMachineEngine;
@@ -22,7 +21,9 @@ use Illuminate\Validation\ValidationException;
  *               domain event) and the status write, inside the caller's transaction; the caller holds the row lock.
  *   post()    — FinancialPostingService::post for commission.accrued / commission.earned / commission.clawed_back (GL mapping is
  *               agent 10-6's posting profiles). A tenant without a posting profile for the event is skipped, not blocked.
- *   syncPayable() — keeps the PAYABLE COMMISSION financial obligation equal to what is still owed to the partner.
+ * The PAYABLE COMMISSION financial obligation is NOT kept per accrual: the single source of truth is the partner-statement-level
+ * obligation (Statements\CommissionPayableLink::openPayable), which carries adjustments / disputes and is what payouts settle.
+ * Accrual-level obligations are only RECEIVABLE recoveries of already-paid commission (clawback).
  */
 final class CommissionTransitions
 {
@@ -31,7 +32,6 @@ final class CommissionTransitions
     public function __construct(
         private readonly StateMachineEngine $engine,
         private readonly FinancialPostingService $posting,
-        private readonly ObligationService $obligations,
     ) {
         $engine->registerGuard('commission.premium_settled', fn (TransitionDefinition $t, TransitionContext $c) => self::premiumSettled($c->subject)
             ? GuardResult::pass() : GuardResult::fail('The premium this commission is based on is not settled yet.'));
@@ -80,41 +80,10 @@ final class CommissionTransitions
         }
     }
 
-    /** Still owed to the partner on a payable accrual. */
+    /** Still owed to the partner on a payable accrual (paid through the partner statement obligation). */
     public static function owed(CommissionAccrual $a): int
     {
         return max(0, (int) $a->amount_minor - (int) $a->clawed_back_minor - (int) $a->paid_minor);
-    }
-
-    /** Create (or re-size) the PAYABLE COMMISSION obligation of a payable accrual. */
-    public function syncPayable(CommissionAccrual $a, ?string $actorId = null): ?object
-    {
-        $owed = self::owed($a);
-        $current = $a->financial_obligation_id ? DB::table('financial_obligations')->where('id', $a->financial_obligation_id)->first() : null;
-        if ($current && in_array($current->status, ObligationService::OPEN_STATUSES, true)) {
-            if ((int) $current->outstanding_minor === $owed) {
-                return $current;
-            }
-            if ($current->status === 'PARTIALLY_SETTLED' && (int) $current->outstanding_minor < $owed) {
-                return $current;
-            }
-            $this->obligations->cancel($current->id, 'Commission re-sized (clawback / adjustment).', $actorId);
-        }
-        if ($owed <= 0) {
-            $a->update(['financial_obligation_id' => null]);
-
-            return null;
-        }
-        $seq = DB::table('financial_obligations')->where(['source_type' => self::OBLIGATION_SOURCE, 'source_id' => $a->id])->count();
-        $o = $this->obligations->create([
-            'tenant_id' => $a->tenant_id, 'kind' => 'PAYABLE', 'type' => 'COMMISSION', 'currency' => $a->currency, 'amount_minor' => $owed,
-            'creditor_type' => 'partner', 'creditor_id' => $a->partner_id, 'policy_id' => $a->policy_id,
-            'source_type' => self::OBLIGATION_SOURCE, 'source_id' => $a->id, 'source_reference' => $seq === 0 ? null : 'RESIZE:'.$seq,
-            'due_at' => now(), 'description' => 'Commission payable', 'metadata' => ['rule_version_id' => $a->rule_version_id],
-        ], $actorId);
-        $a->update(['financial_obligation_id' => $o->id]);
-
-        return $o;
     }
 
     /**

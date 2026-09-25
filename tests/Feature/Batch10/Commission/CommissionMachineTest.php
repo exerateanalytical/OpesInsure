@@ -123,11 +123,14 @@ it('REQ-COM-001 policy issuance accrues commission and a settled premium earns i
 it('REQ-COM-001 issuance without an attributed partner accrues nothing, and missing posting profiles do not block accrual', function () {
     expect(c101Issue(withPartner: false)['accrual'])->toBeNull();
     $x = c101Issue(postingProfiles: false);
-    expect($x['accrual']->status)->toBe('EARNED')
-        ->and(DB::table('journals')->where('reference_id', $x['accrual']->id)->exists())->toBeFalse();
+    // Batch 10-6: without a tenant posting profile the event falls back to the platform accounting event mapping, so the
+    // accrual still posts (through the mapping) instead of being skipped.
+    $journal = DB::table('journals')->where('reference_type', 'commission.accrued')->where('reference_id', $x['accrual']->id)->value('id');
+    expect($x['accrual']->status)->toBe('EARNED')->and($journal)->not->toBeNull()
+        ->and(json_decode(DB::table('journal_lines')->where('journal_id', $journal)->value('dimensions'), true)['source'])->toBe('event_mapping');
 });
 
-it('REQ-COM-001 approved commission becomes payable after vesting as a PAYABLE COMMISSION obligation', function () {
+it('REQ-COM-001 approved commission becomes payable after vesting; the PAYABLE obligation is the partner statement\'s, not the accrual\'s', function () {
     $x = c101Issue(vestingDays: 7);
     $svc = app(CommissionLifecycleService::class);
     $a = $svc->approve($x['accrual'], c101User(), 'ok');
@@ -138,17 +141,16 @@ it('REQ-COM-001 approved commission becomes payable after vesting as a PAYABLE C
     expect($svc->advance()['payable'])->toBe(1);
     $a->refresh();
     expect($a->status)->toBe('VESTED')->and(CommissionMachine::blueprintState($a->status))->toBe('PAYABLE')->and((int) $a->vested_minor)->toBe(10000);
-    $o = DB::table('financial_obligations')->where('id', $a->financial_obligation_id)->first();
-    expect($o->kind)->toBe('PAYABLE')->and($o->type)->toBe('COMMISSION')->and($o->creditor_type)->toBe('partner')
-        ->and($o->creditor_id)->toBe($x['partner_id'])->and((int) $o->amount_minor)->toBe(10000);
+    expect($a->financial_obligation_id)->toBeNull()
+        ->and(DB::table('financial_obligations')->where('kind', 'PAYABLE')->where('type', 'COMMISSION')->where('creditor_id', $x['partner_id'])->exists())->toBeFalse();
 
-    // A payout pays it (PayoutService raises paid_minor), then the machine settles the obligation and moves to PAID.
+    // A payout pays it (PayoutService raises paid_minor and calls settlePaid): PAYABLE → PAID, no obligation touched here.
     $a->update(['paid_minor' => 10000]);
     $a = $svc->settlePaid($a, 'payout:test');
-    expect($a->status)->toBe('PAID')->and(DB::table('financial_obligations')->where('id', $o->id)->value('status'))->toBe('SETTLED');
+    expect($a->status)->toBe('PAID');
 });
 
-it('REQ-COM-001 cancellation claws back commission pro-rata and re-sizes the payable', function () {
+it('REQ-COM-001 cancellation claws back commission pro-rata (no accrual-level payable obligation)', function () {
     $x = c101Issue();
     $p = $x['policy']->refresh();
     $svc = app(CommissionLifecycleService::class);
@@ -157,8 +159,8 @@ it('REQ-COM-001 cancellation claws back commission pro-rata and re-sizes the pay
     $svc->onPolicyCancelled($p, c101Cancellation($p, $mid->toIso8601String()));
     $a->refresh();
     expect((int) $a->clawed_back_minor)->toBeGreaterThanOrEqual(4900)->toBeLessThanOrEqual(5100);
-    $open = DB::table('financial_obligations')->where('source_type', 'commission_accrual')->where('source_id', $a->id)->where('status', 'OPEN')->get();
-    expect($open)->toHaveCount(1)->and((int) $open[0]->amount_minor)->toBe(10000 - (int) $a->clawed_back_minor);
+    expect(\App\Application\Commissions\Machine\CommissionTransitions::owed($a))->toBe(10000 - (int) $a->clawed_back_minor)
+        ->and(DB::table('financial_obligations')->where('source_type', 'commission_accrual')->where('source_id', $a->id)->exists())->toBeFalse();
     expect(DB::table('journals')->where('reference_type', 'commission.clawed_back')->exists())->toBeTrue();
     expect(DB::table('outbox_messages')->where('aggregate_id', $a->id)->where('event_name', 'commission.clawed_back')->exists())->toBeTrue();
 });
@@ -248,4 +250,32 @@ it('REQ-COM-001 lifecycle endpoints are tenant-scoped and permission-guarded', f
     $other = Tenant::create(['type' => 'BROKER', 'legal_name' => 'Other', 'slug' => 'o-'.Str::lower(Str::random(6)), 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en', 'settings' => []]);
     Passport::actingAs(c101Staff($other, ['commission.read']));
     $this->getJson("/api/v1/commissions/accruals/{$a->id}", ['X-Tenant-Id' => $other->id])->assertNotFound();
+});
+
+it('REQ-COM-001/003 one approved statement + payout yields exactly one PAYABLE COMMISSION obligation, settled, and the accrual PAID', function () {
+    $x = c101Issue();
+    $svc = app(CommissionLifecycleService::class);
+    $a = $svc->makePayable($svc->approve($x['accrual'], c101User()));
+    expect($a->status)->toBe('VESTED');
+    $maker = c101User();
+    $checker = c101User();
+    $day = now()->toDateString();
+    $statements = app(\App\Application\FinancialDistribution\PartnerStatementService::class);
+    $s = app(\App\Application\Commissions\Statements\CommissionStatementService::class)->generate($x['tenant']->id, $x['partner_id'], $day, $day, 'XAF', $maker);
+    $s = $statements->publish($statements->approve($s, $checker), $checker);
+    $amount = (int) $s->closing_balance_minor;
+    expect($amount)->toBe(10000);
+
+    $pay = app(\App\Application\FinancialDistribution\PayoutService::class);
+    $p = $pay->request($s, ['amount_minor' => $amount, 'destination_type' => 'BANK', 'destination' => 'CM00-TEST', 'idempotency_key' => 'po-'.Str::random(8)], $maker);
+    $p = $pay->markProcessing($pay->approve($p, $checker), ['provider' => 'BANK'], $checker);
+    $pay->complete($p, ['provider_reference' => 'ref-1'], $checker);
+
+    $payables = DB::table('financial_obligations')->where('tenant_id', $x['tenant']->id)->where('kind', 'PAYABLE')->where('type', 'COMMISSION')->get();
+    expect($payables)->toHaveCount(1)
+        ->and($payables[0]->id)->toBe($s->refresh()->obligation_id)
+        ->and($payables[0]->status)->toBe('SETTLED')->and((int) $payables[0]->outstanding_minor)->toBe(0);
+    $a->refresh();
+    expect($a->status)->toBe('PAID')->and((int) $a->paid_minor)->toBe(10000)->and($a->financial_obligation_id)->toBeNull();
+    expect(DB::table('workflow_transition_history')->where('subject_id', $a->id)->orderBy('occurred_at')->pluck('event')->last())->toBe('pay');
 });

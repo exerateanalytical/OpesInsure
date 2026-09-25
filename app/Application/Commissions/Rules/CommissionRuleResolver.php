@@ -30,11 +30,12 @@ final class CommissionRuleResolver
 {
     public function __construct(private CommissionRuleComponents $components, private TenantContext $tenant) {}
 
-    public function resolve(string $carrierId, ?string $agreementId, ?string $productOrLine, ?string $transactionType, DateTimeInterface|string|null $at = null, int $premiumMinor = 0, ?string $tenantId = null): ?CommissionResolution
+    public function resolve(string $carrierId, ?string $agreementId, ?string $productOrLine, ?string $transactionType, DateTimeInterface|string|null $at = null, int $premiumMinor = 0, ?string $tenantId = null, ?string $partnerId = null): ?CommissionResolution
     {
         $at = $at === null ? CarbonImmutable::now() : CarbonImmutable::parse($at);
         $tenantId ??= $this->tenant->id();
-        $partnerId = $agreementId === null ? null : DB::table('carrier_broker_agreements')->where('id', $agreementId)->where('carrier_id', $carrierId)->value('partner_id');
+        // Without an agreement, an explicit partner (e.g. the policy's attributed intermediary) still selects its partner-specific rules.
+        $partnerId = $agreementId === null ? $partnerId : DB::table('carrier_broker_agreements')->where('id', $agreementId)->where('carrier_id', $carrierId)->value('partner_id');
         if ($agreementId !== null && $partnerId === null) {
             return null; // agreement belongs to another carrier
         }
