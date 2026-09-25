@@ -64,7 +64,8 @@ final class ReferenceDateResolver
     public function for(string $operation, object|array $subject, string $artifactType = 'TERMS', ?string $category = null, ?string $timezone = null): ReferenceInstant
     {
         $rule = $this->rule($operation, $artifactType, $category);
-        $timezone ??= (string) (data_get($subject, 'timezone') ?: config('app.timezone', 'Africa/Douala'));
+        // REQ-TMP-003: subject's own timezone, else its branch, else its tenant, else the request context.
+        $timezone ??= (string) (data_get($subject, 'timezone') ?: $this->subjectTimezone($subject));
 
         if ($rule->anchor === 'REQUEST_AT') {
             return new ReferenceInstant($this->clock->now()->setTimezone($timezone), 'REQUEST_AT', (int) $rule->version, $timezone);
@@ -77,5 +78,21 @@ final class ReferenceDateResolver
         }
 
         throw new TemporalResolutionException(TemporalResolutionException::NO_ANCHOR, $artifactType, ['operation' => $operation, 'anchor' => $rule->anchor]);
+    }
+
+    private function subjectTimezone(object|array $subject): string
+    {
+        try {
+            $tz = app(TimezoneResolver::class);
+            $branch = data_get($subject, 'branch_id');
+            $tenant = data_get($subject, 'tenant_id');
+            if (is_string($branch) && $branch !== '') {
+                return $tz->forBranch($branch, is_string($tenant) ? $tenant : null);
+            }
+
+            return is_string($tenant) && $tenant !== '' ? $tz->forTenant($tenant) : $tz->current();
+        } catch (\Throwable) {
+            return (string) config('app.timezone', BusinessTime::DEFAULT_TIMEZONE);
+        }
     }
 }

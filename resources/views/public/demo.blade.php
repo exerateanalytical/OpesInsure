@@ -1,4 +1,6 @@
-<x-public.layout :title="__('public.demo_title')">
+@extends('public.layout')
+@section('title', __('public.demo_title'))
+@section('content')
 <div class="hero"><div class="wrap">
   <span class="eyebrow">{{ __('public.demo_eyebrow') }}</span>
   <h1>{{ __('public.demo_heading') }}</h1>
@@ -43,4 +45,4 @@
     <a class="btn btn-ghost" href="/admin/login" style="border-color:rgba(7,26,43,.25);color:var(--ink)">{{ __('public.nav_portal') }}</a>
   </div>
 </div></section>
-</x-public.layout>
+@endsection

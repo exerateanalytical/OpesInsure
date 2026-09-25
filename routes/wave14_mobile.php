@@ -45,7 +45,9 @@ Route::post('mobile/support/cases/{case}/attachments', [MobileSupportController:
 
 // services/* and the policy detail actions
 Route::get('mobile/policy-service-requests', [MobilePolicyServiceController::class, 'index']);
-Route::post('mobile/policy-service-requests', [MobilePolicyServiceController::class, 'store'])->middleware('throttle:10,1');
+// REQ-DUP-014: canonical create is policies/{policy}/service-requests (below); this alias
+// stays for installed app 1.2.2 (client.ts createServiceCase).
+Route::post('mobile/policy-service-requests', [MobilePolicyServiceController::class, 'store'])->middleware(['throttle:10,1', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('policies/{policy}/service-requests', 'REQ-DUP-014')]);
 Route::get('mobile/policy-service-requests/{id}', [MobilePolicyServiceController::class, 'show']);
 Route::post('mobile/policy-service-requests/{id}/messages', [MobilePolicyServiceController::class, 'message'])->middleware('throttle:30,1');
 Route::post('policies/{policy}/service-requests', [MobilePolicyServiceController::class, 'store'])->middleware('throttle:10,1');

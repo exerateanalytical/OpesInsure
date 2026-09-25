@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\Vehicles;
 
+use App\Models\Vehicles\VehicleGeneration;
 use App\Models\Vehicles\VehicleMake;
 use App\Models\Vehicles\VehicleMakeAlias;
 use App\Models\Vehicles\VehicleModel;
 use App\Models\Vehicles\VehicleModelAlias;
 use App\Models\Vehicles\VehicleReferenceValue;
+use App\Models\Vehicles\VehicleVariant;
 use Illuminate\Support\Collection;
 
 /**
@@ -142,6 +144,76 @@ final class VehicleCatalogueService
         $out['model_years'] = self::modelYearRange();
 
         return $out;
+    }
+
+    /** CUST-007: active generations of a model, oldest first (empty until an admin/import adds them). */
+    public function generationsFor(VehicleModel $model): Collection
+    {
+        return VehicleGeneration::where('model_id', $model->id)->where('active', true)
+            ->withCount(['variants' => fn ($q) => $q->where('active', true)])
+            ->orderByRaw('year_from IS NULL')->orderBy('year_from')->orderBy('name')->get();
+    }
+
+    /** Active variants of a generation; with $year, only those whose year range covers it. */
+    public function variantsFor(VehicleGeneration $generation, ?int $year = null): Collection
+    {
+        return VehicleVariant::where('generation_id', $generation->id)->where('active', true)
+            ->when($year, fn ($q) => $q
+                ->where(fn ($w) => $w->whereNull('year_from')->orWhere('year_from', '<=', $year))
+                ->where(fn ($w) => $w->whereNull('year_to')->orWhere('year_to', '>=', $year)))
+            ->orderBy('name')->get();
+    }
+
+    /**
+     * Model years a generation covers (newest first). Open-ended generations
+     * run to next year; a generation without a start year yields [] (the
+     * picker then asks for the year freely).
+     *
+     * @return array<int, int>
+     */
+    public function yearsFor(VehicleGeneration $generation): array
+    {
+        if (! $generation->year_from) {
+            return [];
+        }
+        $max = self::modelYearRange()['max'];
+        $to = min($generation->year_to ?? $max, $max);
+
+        return $to >= $generation->year_from ? range($to, $generation->year_from) : [];
+    }
+
+    /** @return array<string, mixed> */
+    public function presentGeneration(VehicleGeneration $generation): array
+    {
+        return [
+            'code' => $generation->code,
+            'name' => $generation->name,
+            'year_from' => $generation->year_from,
+            'year_to' => $generation->year_to,
+            'body_type' => $generation->body_type,
+            'variants_count' => (int) ($generation->variants_count ?? 0),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function presentVariant(VehicleVariant $variant): array
+    {
+        return $variant->only(['code', 'name', 'body_type', 'powertrain', 'hybrid_subtype', 'transmission', 'drive_type', 'engine_capacity_cc', 'year_from', 'year_to']) + [
+            // Auto-populate block (config auto_populate_from_engine_variant); null = unknown, ask the user.
+            'engine_label' => $variant->name,
+            'specs' => [
+                'power_hp' => $variant->power_hp,
+                'power_kw' => $variant->power_kw !== null ? (float) $variant->power_kw : null,
+                'displacement_cc' => $variant->engine_capacity_cc,
+                'fuel_type' => $variant->powertrain,
+                'transmission' => $variant->transmission,
+                'drivetrain' => $variant->drive_type,
+                'body_type' => $variant->body_type ?? $variant->generation?->body_type,
+                'torque_nm' => $variant->torque_nm,
+            ],
+            'cylinders' => $variant->cylinders,
+            'data_source' => $variant->data_source,
+        ];
     }
 
     /** @return array<string, mixed> */

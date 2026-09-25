@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class VehicleMake extends Model
 {
     use HasUuids;
+    use HasDataSource;
     use ProtectsMasterData;
 
     protected $table = 'vehicle_makes';

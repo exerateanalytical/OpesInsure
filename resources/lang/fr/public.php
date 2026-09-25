@@ -5,23 +5,8 @@ return [
     'nav_download' => 'Obtenir l\'application',
     'nav_portal' => 'Portail personnel',
 
-    'home_title' => 'OpesInsure — L\'assurance simplifiée',
-    'home_eyebrow' => 'Plateforme de distribution d\'assurance',
-    'home_heading' => 'Une assurance à la vitesse de votre téléphone',
-    'home_lede' => 'Comparez les garanties d\'assureurs agréés, payez avec MTN MoMo ou Orange Money, et gardez votre attestation dans votre poche. Auto, santé, voyage et habitation — au même endroit.',
     'home_cta_download' => 'Télécharger l\'application',
-    'home_cta_portal' => 'Portail personnel',
 
-    'features_heading' => 'Conçu pour l\'assurance telle qu\'elle se pratique ici',
-    'features_sub' => 'Une plateforme complète reliant clients, agents, courtiers et assureurs sur une infrastructure partagée et auditable.',
-    'features' => [
-        ['icon' => '⚡', 'title' => 'Des devis en quelques minutes', 'body' => 'Répondez à quelques questions et comparez côte à côte les offres tarifées de plusieurs assureurs agréés.'],
-        ['icon' => '₣', 'title' => 'Paiement mobile money', 'body' => 'Payez vos primes directement avec MTN Mobile Money ou Orange Money. Sans carte bancaire.'],
-        ['icon' => '⬛', 'title' => 'Portefeuille numérique', 'body' => 'Vos attestations et documents de police, disponibles hors ligne dès que vous devez les présenter.'],
-        ['icon' => '⇄', 'title' => 'Des sinistres suivis en direct', 'body' => 'Déclarez un sinistre avec des photos et suivez chaque changement de statut en temps réel.'],
-        ['icon' => '⌂', 'title' => 'Livraison à domicile', 'body' => 'Attestations et vignettes auto livrées, avec confirmation par code à la remise.'],
-        ['icon' => '◈', 'title' => 'Outils agents et courtiers', 'body' => 'Enregistrez vos clients, suivez vos commissions et continuez à travailler hors connexion.'],
-    ],
 
     'download_title' => 'Télécharger l\'application mobile OpesInsure',
     'download_eyebrow' => 'Application mobile',

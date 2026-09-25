@@ -304,7 +304,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('integrations/health', [IntegrationController::class, 'health'])->middleware('permission:integrations.manage');
         Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware('permission:broker.bordereaux.manage');
         Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware('permission:broker.bordereaux.submit');
-        Route::post('broker/renewals/seed', [BrokerOperationsController::class, 'seedRenewals'])->middleware('permission:broker.renewals.manage');
+        // REQ-DUP-010: canonical is renewals/seed (RenewalController). The broker variant
+        // writes renewal_work_items with a different body (days_ahead), so it stays on its
+        // own action until callers move; deprecated, logged, removal pending.
+        Route::post('broker/renewals/seed', [BrokerOperationsController::class, 'seedRenewals'])->middleware(['permission:broker.renewals.manage', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('renewals/seed', 'REQ-DUP-010')]);
         Route::post('carrier/delegated-authorities', [CarrierOperationsController::class, 'createAuthority'])->middleware('permission:carrier.authority.manage');
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);

@@ -277,7 +277,7 @@ it('serves the master-data risk schema, upgrading a stored free-text schema, wit
     $res = $this->withHeader('X-Tenant-Id', $tenant->id)->getJson('/api/v1/mobile/catalogue/lines/HOME/risk-schema')->assertOk();
     $fields = collect($res->json('data.fields'))->keyBy('key');
     expect($fields['building_type']['type'])->toBe('select_master')
-        ->and($fields['building_type']['source'])->toBe(['domain' => 'property', 'list' => 'property_type'])
+        ->and($fields['building_type']['source'])->toMatchArray(['domain' => 'property', 'list' => 'property_type'])
         ->and($fields['department']['parent_field'])->toBe('region')
         ->and($res->json('data.required'))->toBe(['property_type', 'occupancy', 'city', 'declared_value_minor']);
 

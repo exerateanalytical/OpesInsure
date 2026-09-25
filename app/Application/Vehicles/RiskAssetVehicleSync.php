@@ -6,9 +6,11 @@ namespace App\Application\Vehicles;
 
 use App\Models\RiskAsset;
 use App\Models\Vehicles\RiskAssetVehicle;
+use App\Models\Vehicles\VehicleGeneration;
 use App\Models\Vehicles\VehicleMake;
 use App\Models\Vehicles\VehicleMasterReview;
 use App\Models\Vehicles\VehicleModel;
+use App\Models\Vehicles\VehicleVariant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Throwable;
@@ -41,7 +43,7 @@ final class RiskAssetVehicleSync
         'engine_number' => ['engine_number'],
         'engine_capacity_cc' => ['engine_capacity_cc'],
         'engine_power_kw' => ['engine_power_kw'],
-        'horsepower' => ['horsepower'],
+        'horsepower' => ['horsepower', 'power_hp'],
         'fiscal_power' => ['fiscal_power'],
         'seat_count' => ['seat_count', 'seats'],
         'first_registration_date' => ['first_registration_date'],
@@ -64,6 +66,13 @@ final class RiskAssetVehicleSync
         'electric_range_km' => ['electric_range_km'],
         'charging_type' => ['charging_type'],
         'battery_ownership' => ['battery_ownership'],
+    ];
+
+    /** risk_asset_vehicles column => vehicle_variants column (filled only when empty). */
+    private const VARIANT_SPEC_COLUMNS = [
+        'engine_capacity_cc' => 'engine_capacity_cc', 'horsepower' => 'power_hp', 'engine_power_kw' => 'power_kw',
+        'powertrain' => 'powertrain', 'hybrid_subtype' => 'hybrid_subtype', 'transmission' => 'transmission',
+        'drive_type' => 'drive_type', 'body_type' => 'body_type',
     ];
 
     private const INTEGER_COLUMNS = ['model_year', 'engine_capacity_cc', 'horsepower', 'fiscal_power', 'seat_count', 'odometer_km', 'purchase_value', 'declared_value', 'market_value', 'assessed_value', 'sum_insured', 'gross_vehicle_weight_kg', 'payload_kg', 'axle_count', 'electric_range_km'];
@@ -119,6 +128,34 @@ final class RiskAssetVehicleSync
             if (! $make && $review->resolved_make_id && $review->status !== VehicleMasterReview::STATUS_PENDING) {
                 $make = VehicleMake::find($review->resolved_make_id);
                 $model = $review->resolved_model_id ? VehicleModel::find($review->resolved_model_id) : null;
+            }
+        }
+
+        // Generation / engine variant picked in the selector (codes); the variant's specs
+        // fill whatever the customer did not state (config auto_populate_from_engine_variant).
+        $generation = $variant = null;
+        if ($model) {
+            $genCode = $this->text($facts['vehicle_generation_code'] ?? $facts['generation_code'] ?? null);
+            $generation = $genCode ? VehicleGeneration::where('model_id', $model->id)->where('code', strtoupper($genCode))->first() : null;
+            $variantCode = $this->text($facts['vehicle_variant_code'] ?? $facts['variant_code'] ?? $facts['engine_variant_code'] ?? null);
+            $variant = $variantCode ? VehicleVariant::where('model_id', $model->id)->where('code', strtoupper($variantCode))->first() : null;
+            if ($variant && $variant->generation_id) {
+                $generation ??= VehicleGeneration::find($variant->generation_id);
+                if ($generation && $variant->generation_id !== $generation->id) {
+                    $variant = null; // inconsistent pick: keep the generation, drop the variant
+                }
+            }
+        }
+        $record->generation_id = $generation?->id;
+        $record->variant_id = $variant?->id;
+        if ($variant) {
+            foreach (self::VARIANT_SPEC_COLUMNS as $column => $source) {
+                if (($record->{$column} === null || $record->{$column} === '') && $variant->{$source} !== null) {
+                    $record->{$column} = $variant->{$source};
+                }
+            }
+            if (! $record->body_type && $generation?->body_type) {
+                $record->body_type = $generation->body_type;
             }
         }
 

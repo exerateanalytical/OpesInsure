@@ -58,7 +58,8 @@ it('seeds all 151 makes and every model from the canonical file', function () {
 
     expect(VehicleMake::count())->toBe(151)
         ->and(count($data['makes']))->toBe(151)
-        ->and(VehicleModel::count())->toBe($modelCount)
+        // Canonical file models plus the Cameroon & Africa config additions (data_source OPESINSURE_VERIFIED_OVERRIDE).
+        ->and(VehicleModel::count() - App\Models\Vehicles\VehicleMasterChange::where('action', 'SEEDED')->where('entity_type', 'vehicle_model')->where('after->source', 'data/vehicle_master_config_africa_2026.json')->count())->toBe($modelCount)
         ->and($modelCount)->toBe(446)
         ->and(VehicleModel::where('code', 'TOYOTA_LAND_CRUISER_PRADO')->exists())->toBeTrue()
         ->and(VehicleMake::where('code', 'TOYOTA')->first())
@@ -67,9 +68,9 @@ it('seeds all 151 makes and every model from the canonical file', function () {
         ->market_priority->toBe('HIGH')
         ->provenance->toBe('MANUAL_VERIFIED');
 
-    expect(VehicleReferenceValue::where('group', 'body_type')->count())->toBe(23)
+    expect(VehicleReferenceValue::where('group', 'body_type')->count())->toBe(29)
         ->and(VehicleReferenceValue::where('group', 'usage')->count())->toBe(28)
-        ->and(VehicleReferenceValue::where('group', 'vehicle_class')->count())->toBe(19);
+        ->and(VehicleReferenceValue::where('group', 'vehicle_class')->count())->toBe(23);
 });
 
 it('is idempotent and preserves admin edits', function () {
@@ -81,7 +82,7 @@ it('is idempotent and preserves admin edits', function () {
     vehicleSeed();
 
     expect(VehicleMake::count())->toBe(151)
-        ->and(VehicleModel::count())->toBe(446)
+        ->and(VehicleModel::count())->toBe(512) // 446 canonical + 66 from the Cameroon & Africa config
         ->and(VehicleMakeAlias::where('alias', 'VW')->count())->toBe(1)
         ->and($toyota->fresh()->market_priority)->toBe('NORMAL')
         ->and($toyota->fresh()->ui_rank_cameroon)->toBe(50);
@@ -142,7 +143,7 @@ it('lists models for a make with alias search', function () {
     vehicleSeed();
 
     $this->getJson('/api/v1/public/vehicles/makes/TOYOTA/models')->assertOk()
-        ->assertJsonCount(25, 'data')
+        ->assertJsonCount(28, 'data') // 25 canonical + Vitz, Corolla Verso, Avensis Verso (Africa config)
         ->assertJsonStructure(['data' => [['code', 'name', 'segment', 'aliases', 'status']], 'make' => ['code', 'name']]);
     $this->getJson('/api/v1/public/vehicles/makes/TOYOTA/models?q=prado')->assertOk()->assertJsonPath('data.0.code', 'TOYOTA_LAND_CRUISER_PRADO');
     $this->getJson('/api/v1/public/vehicles/makes/HYUNDAI/models?q=starex')->assertOk()->assertJsonPath('data.0.code', 'HYUNDAI_H1');
@@ -156,9 +157,9 @@ it('serves the reference enums with EN/FR labels and a computed model year range
     $year = (int) now()->year;
     expect($r->json('data.model_years.min'))->toBe(1950)
         ->and($r->json('data.model_years.max'))->toBe($year + 1)
-        ->and($r->json('data.body_types'))->toHaveCount(23)
+        ->and($r->json('data.body_types'))->toHaveCount(29)
         ->and($r->json('data.usage_types'))->toHaveCount(28)
-        ->and($r->json('data.vehicle_classes'))->toHaveCount(19)
+        ->and($r->json('data.vehicle_classes'))->toHaveCount(23)
         ->and($r->json('data.powertrains.*.code'))->toContain('BEV', 'PHEV', 'MILD_HYBRID')
         ->and($r->json('data.hybrid_subtypes.*.code'))->toBe(['HEV', 'MHEV', 'PHEV']);
 
@@ -291,7 +292,7 @@ it('exposes a MOTOR risk schema with make/model selectors and conditional commer
         ->and($fields['year']['options'][0]['value'])->toBe((string) (now()->year + 1))
         ->and(collect($fields['year']['options'])->last()['value'])->toBe('1950')
         ->and($fields['vehicle_usage']['options'])->toHaveCount(28)
-        ->and($fields['vehicle_class']['options'])->toHaveCount(19)
+        ->and($fields['vehicle_class']['options'])->toHaveCount(23)
         ->and($fields['battery_capacity_kwh']['visible_when'])->toBe(['powertrain' => ['PHEV', 'BEV']])
         ->and($fields['gross_vehicle_weight_kg']['visible_when'])->toHaveKey('vehicle_usage')
         ->and($schema['required'])->toContain('registration_number', 'fiscal_power', 'usage_type', 'zone');

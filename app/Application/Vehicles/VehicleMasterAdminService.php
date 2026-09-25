@@ -6,12 +6,14 @@ namespace App\Application\Vehicles;
 
 use App\Models\User;
 use App\Models\Vehicles\RiskAssetVehicle;
+use App\Models\Vehicles\VehicleGeneration;
 use App\Models\Vehicles\VehicleMake;
 use App\Models\Vehicles\VehicleMakeAlias;
 use App\Models\Vehicles\VehicleMasterChange;
 use App\Models\Vehicles\VehicleModel;
 use App\Models\Vehicles\VehicleModelAlias;
 use App\Models\Vehicles\VehicleReferenceValue;
+use App\Models\Vehicles\VehicleVariant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +28,13 @@ final class VehicleMasterAdminService
     public const MAKE_EDITABLE = ['name', 'country_of_origin', 'market_priority', 'cameroon_status', 'segment', 'ui_rank_cameroon', 'ui_rank_chinese', 'active', 'provenance'];
 
     public const MODEL_EDITABLE = ['name', 'segment', 'status', 'active'];
+
+    public const GENERATION_EDITABLE = ['name', 'year_from', 'year_to', 'active'];
+
+    /** Variant field => vehicle_reference_values group its code must exist in (null = free value). */
+    public const VARIANT_FIELDS = ['name' => null, 'year_from' => null, 'year_to' => null, 'engine_capacity_cc' => null, 'active' => null,
+        'power_hp' => null, 'power_kw' => null, 'torque_nm' => null, 'cylinders' => null,
+        'body_type' => 'body_type', 'powertrain' => 'powertrain', 'hybrid_subtype' => 'hybrid_subtype', 'transmission' => 'transmission', 'drive_type' => 'drive_type'];
 
     public function createMake(array $data, ?User $actor, string $provenance = 'MANUAL_VERIFIED'): VehicleMake
     {
@@ -116,6 +125,139 @@ final class VehicleMasterAdminService
         return $this->applyChanges($model, ['active' => false], $actor);
     }
 
+    /**
+     * CUST-007. Generations start empty and are only ever added by an admin,
+     * an import, or an approved review; nothing is inferred.
+     */
+    public function createGeneration(VehicleModel $model, array $data, ?User $actor, string $provenance = 'MANUAL_VERIFIED'): VehicleGeneration
+    {
+        return DB::transaction(function () use ($model, $data, $actor, $provenance) {
+            $name = trim((string) ($data['name'] ?? ''));
+            if (VehicleText::code($name) === '') {
+                throw ValidationException::withMessages(['name' => 'A generation name is required.']);
+            }
+            [$from, $to] = $this->years($data);
+            $normalized = VehicleText::normalize($name);
+            if ($model->generations()->get(['name'])->contains(fn ($g) => VehicleText::normalize($g->name) === $normalized)) {
+                throw ValidationException::withMessages(['name' => "{$model->name} $name already exists."]);
+            }
+            $code = $this->uniqueCode(VehicleGeneration::class, $model->code.'_'.VehicleText::code($name));
+
+            $generation = VehicleGeneration::create([
+                'model_id' => $model->id, 'code' => $code, 'name' => $name, 'year_from' => $from, 'year_to' => $to,
+                'provenance' => $data['provenance'] ?? $provenance, 'data_source' => $data['data_source'] ?? null, 'active' => true, 'admin_modified_at' => now(),
+            ]);
+            $this->log($generation, 'CREATED', null, $generation->only(['code', 'name', 'year_from', 'year_to', 'provenance']), $actor);
+
+            return $generation;
+        });
+    }
+
+    public function updateGeneration(VehicleGeneration $generation, array $changes, ?User $actor): VehicleGeneration
+    {
+        $changes = array_intersect_key($changes, array_flip(self::GENERATION_EDITABLE));
+        if (array_key_exists('year_from', $changes) || array_key_exists('year_to', $changes)) {
+            [$changes['year_from'], $changes['year_to']] = $this->years($changes + $generation->only(['year_from', 'year_to']));
+        }
+
+        return $this->applyChanges($generation, $changes, $actor);
+    }
+
+    /** A variant belongs to a model and optionally to one of that model's generations. */
+    public function createVariant(VehicleModel $model, ?VehicleGeneration $generation, array $data, ?User $actor, string $provenance = 'MANUAL_VERIFIED'): VehicleVariant
+    {
+        if ($generation && $generation->model_id !== $model->id) {
+            throw ValidationException::withMessages(['generation_id' => 'That generation belongs to another model.']);
+        }
+
+        return DB::transaction(function () use ($model, $generation, $data, $actor, $provenance) {
+            $attrs = $this->variantAttributes($data);
+            $name = trim((string) ($attrs['name'] ?? ''));
+            if (VehicleText::code($name) === '') {
+                throw ValidationException::withMessages(['name' => 'A variant name is required.']);
+            }
+            $attrs['name'] = $name;
+            $normalized = VehicleText::normalize($name);
+            $siblings = VehicleVariant::where('model_id', $model->id)->where('generation_id', $generation?->id)->get(['name']);
+            if ($siblings->contains(fn ($v) => VehicleText::normalize($v->name) === $normalized)) {
+                throw ValidationException::withMessages(['name' => "Variant $name already exists here."]);
+            }
+            $code = $this->uniqueCode(VehicleVariant::class, ($generation?->code ?? $model->code).'_'.VehicleText::code($name));
+            unset($attrs['active']);
+
+            $variant = VehicleVariant::create(['model_id' => $model->id, 'generation_id' => $generation?->id, 'code' => $code,
+                'provenance' => $data['provenance'] ?? $provenance, 'data_source' => $data['data_source'] ?? null, 'active' => true, 'admin_modified_at' => now()] + $attrs);
+            $this->log($variant, 'CREATED', null, $variant->only(['code', 'name', 'body_type', 'powertrain', 'provenance']), $actor);
+
+            return $variant;
+        });
+    }
+
+    public function updateVariant(VehicleVariant $variant, array $changes, ?User $actor): VehicleVariant
+    {
+        $keys = array_keys(array_intersect_key($changes, self::VARIANT_FIELDS));
+        $attrs = $this->variantAttributes($changes + $variant->only(['year_from', 'year_to']));
+
+        return $this->applyChanges($variant, array_intersect_key($attrs, array_flip($keys)), $actor);
+    }
+
+    /** @return array<string, mixed> known variant fields, reference codes checked, '' => null */
+    private function variantAttributes(array $data): array
+    {
+        $attrs = array_map(fn ($v) => $v === '' ? null : $v, array_intersect_key($data, self::VARIANT_FIELDS));
+        foreach (self::VARIANT_FIELDS as $field => $group) {
+            if ($group !== null && isset($attrs[$field]) && ! VehicleReferenceValue::where(['group' => $group, 'code' => $attrs[$field]])->exists()) {
+                throw ValidationException::withMessages([$field => "Unknown $group code {$attrs[$field]}."]);
+            }
+        }
+        foreach (['engine_capacity_cc' => 30000, 'power_hp' => 3000, 'torque_nm' => 5000, 'cylinders' => 24] as $field => $max) {
+            if (isset($attrs[$field])) {
+                $n = is_numeric($attrs[$field]) ? (int) $attrs[$field] : 0;
+                if ($n < 1 || $n > $max) {
+                    throw ValidationException::withMessages([$field => "$field must be between 1 and $max."]);
+                }
+                $attrs[$field] = $n;
+            }
+        }
+        if (isset($attrs['power_kw'])) {
+            $attrs['power_kw'] = is_numeric($attrs['power_kw']) && $attrs['power_kw'] > 0 ? round((float) $attrs['power_kw'], 2) : throw ValidationException::withMessages(['power_kw' => 'Invalid power (kW).']);
+        } elseif (isset($attrs['power_hp']) && array_key_exists('power_hp', $data)) {
+            $attrs['power_kw'] = round($attrs['power_hp'] * 0.7457, 2); // mechanical hp -> kW
+        }
+        [$attrs['year_from'], $attrs['year_to']] = $this->years($attrs);
+
+        return $attrs;
+    }
+
+    /** @return array{0: ?int, 1: ?int} */
+    private function years(array $data): array
+    {
+        $from = isset($data['year_from']) && $data['year_from'] !== '' ? (int) $data['year_from'] : null;
+        $to = isset($data['year_to']) && $data['year_to'] !== '' ? (int) $data['year_to'] : null;
+        $max = (int) now()->year + 1;
+        foreach (['year_from' => $from, 'year_to' => $to] as $k => $y) {
+            if ($y !== null && ($y < 1950 || $y > $max)) {
+                throw ValidationException::withMessages([$k => "Year must be between 1950 and $max."]);
+            }
+        }
+        if ($from !== null && $to !== null && $to < $from) {
+            throw ValidationException::withMessages(['year_to' => 'End year is before start year.']);
+        }
+
+        return [$from, $to];
+    }
+
+    /** @param class-string<Model> $class */
+    private function uniqueCode(string $class, string $code): string
+    {
+        $base = $code;
+        for ($i = 2; $class::where('code', $code)->exists(); $i++) {
+            $code = $base.'_'.$i;
+        }
+
+        return $code;
+    }
+
     public function updateReferenceValue(VehicleReferenceValue $value, array $changes, ?User $actor): VehicleReferenceValue
     {
         return $this->applyChanges($value, array_intersect_key($changes, array_flip(['label_en', 'label_fr', 'sort_order', 'active'])), $actor);
@@ -202,6 +344,8 @@ final class VehicleMasterAdminService
                 $entity instanceof VehicleMake => 'vehicle_make',
                 $entity instanceof VehicleModel => 'vehicle_model',
                 $entity instanceof VehicleReferenceValue => 'vehicle_reference_value',
+                $entity instanceof VehicleGeneration => 'vehicle_generation',
+                $entity instanceof VehicleVariant => 'vehicle_variant',
                 default => $entity->getTable(),
             },
             'entity_id' => $entity->getKey(),

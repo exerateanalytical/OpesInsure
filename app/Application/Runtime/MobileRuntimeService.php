@@ -49,6 +49,8 @@ final class MobileRuntimeService
                 'step_up_ttl_seconds' => (int) config('mobile_runtime.step_up.grant_ttl_seconds'),
                 'device_risk_action' => config('mobile_runtime.device_risk_action'),
             ],
+            // REQ-SEC-002: lets the client show a DEMO/STAGING banner.
+            'environment' => app(\App\Application\Demo\DemoEnvironment::class)->toArray(),
         ];
     }
 

@@ -1,5 +1,5 @@
 {
-  "_note": "REQ-DUP-019 / ADR-005: tables created in two migrations. Owner = the migration that creates the table on a fresh database (runs first); the later declaration is a hasTable-guarded no-op kept for history. Applied migrations are never edited.",
+  "_note": "REQ-DUP-019 / ADR-005: tables created in two migrations. The owner is the migration that actually creates the table on a fresh database (runs first); the later one is a hasTable-guarded no-op kept for history. Applied migrations are never edited.",
   "tables": {
     "communication_preferences": "2026_09_21_000006_complete_batch_five_trust_operations",
     "couriers": "2026_09_21_000006_complete_batch_five_trust_operations",

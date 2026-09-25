@@ -1,0 +1,1 @@
+<svg class="ic {{ $c ?? '' }}" aria-hidden="true" focusable="false"><use href="#i-{{ $n }}"/></svg>

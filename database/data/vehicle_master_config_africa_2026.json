@@ -1,0 +1,716 @@
+{
+  "catalogue": {
+    "name": "OpesInsure Cameroon & Africa Core Vehicle Master",
+    "version": "1.0.0",
+    "market": [
+      "CM",
+      "CEMAC",
+      "AFRICA"
+    ],
+    "default_country": "CM",
+    "selection_flow": [
+      "make",
+      "model",
+      "generation",
+      "model_year",
+      "engine_variant"
+    ],
+    "auto_populate_from_engine_variant": [
+      "power_hp",
+      "power_kw",
+      "displacement_cc",
+      "fuel_type",
+      "transmission",
+      "drivetrain",
+      "body_type",
+      "torque_nm"
+    ],
+    "manual_entry_policy": {
+      "enabled": true,
+      "show_only_when_not_found": true,
+      "manual_record_status": "PENDING_MASTER_REVIEW",
+      "auto_publish_to_master": false,
+      "duplicate_check_required": true,
+      "allowed_manual_fields": [
+        "make",
+        "model",
+        "model_year",
+        "generation",
+        "engine_label",
+        "power_hp",
+        "displacement_cc",
+        "fuel_type",
+        "transmission",
+        "drivetrain",
+        "body_type"
+      ]
+    },
+    "source_priority": [
+      "OPESINSURE_VERIFIED_OVERRIDE",
+      "CAMEROON_DISTRIBUTOR_VERIFIED",
+      "GLOBAL_VEHICLE_DATASET",
+      "MANUAL_PENDING_REVIEW"
+    ],
+    "global_vehicle_dataset": {
+      "repository": "gor3a/vehicle-makes-models",
+      "import_mode": "FILTER_BY_CORE_MAKES_AND_MODELS",
+      "import_generations": true,
+      "import_engines": true,
+      "import_year_ranges": true,
+      "import_horsepower": true,
+      "import_torque": true,
+      "import_transmission": true,
+      "import_drivetrain": true,
+      "import_body_type": true
+    },
+    "storage_policy": {
+      "store_vehicle_master_once": true,
+      "transaction_records_store_foreign_keys": true,
+      "policy_issue_snapshot_required": true,
+      "do_not_duplicate_make_model_specs_per_customer": true
+    }
+  },
+  "makes": [
+    {
+      "code": "TOYOTA",
+      "name": "Toyota",
+      "priority": 1,
+      "models": [
+        "Corolla",
+        "Yaris",
+        "Vitz",
+        "Avensis",
+        "Camry",
+        "RAV4",
+        "Land Cruiser Prado",
+        "Land Cruiser",
+        "Fortuner",
+        "Hilux",
+        "Hiace",
+        "Highlander",
+        "4Runner",
+        "Corolla Verso",
+        "Avensis Verso"
+      ]
+    },
+    {
+      "code": "MERCEDES_BENZ",
+      "name": "Mercedes-Benz",
+      "priority": 1,
+      "models": [
+        "A-Class",
+        "C-Class",
+        "E-Class",
+        "S-Class",
+        "CLA",
+        "GLA",
+        "GLC",
+        "M-Class",
+        "GLE",
+        "GL",
+        "GLS",
+        "G-Class",
+        "Vito",
+        "Sprinter"
+      ]
+    },
+    {
+      "code": "HYUNDAI",
+      "name": "Hyundai",
+      "priority": 1,
+      "models": [
+        "i10",
+        "i20",
+        "i30",
+        "Accent",
+        "Elantra",
+        "Sonata",
+        "Creta",
+        "Tucson",
+        "Santa Fe",
+        "Palisade",
+        "H-1",
+        "Staria"
+      ]
+    },
+    {
+      "code": "NISSAN",
+      "name": "Nissan",
+      "priority": 1,
+      "models": [
+        "Sunny",
+        "Almera",
+        "Tiida",
+        "Sentra",
+        "Altima",
+        "Qashqai",
+        "X-Trail",
+        "Pathfinder",
+        "Patrol",
+        "Navara",
+        "NP300",
+        "Urvan"
+      ]
+    },
+    {
+      "code": "KIA",
+      "name": "Kia",
+      "priority": 1,
+      "models": [
+        "Picanto",
+        "Rio",
+        "Cerato",
+        "Forte",
+        "Optima",
+        "K5",
+        "Sportage",
+        "Sorento",
+        "Seltos",
+        "Carens",
+        "Carnival"
+      ]
+    },
+    {
+      "code": "PEUGEOT",
+      "name": "Peugeot",
+      "priority": 1,
+      "models": [
+        "206",
+        "207",
+        "208",
+        "301",
+        "306",
+        "307",
+        "308",
+        "406",
+        "407",
+        "508",
+        "2008",
+        "3008",
+        "5008",
+        "Partner",
+        "Expert"
+      ]
+    },
+    {
+      "code": "LEXUS",
+      "name": "Lexus",
+      "priority": 1,
+      "models": [
+        "IS",
+        "ES",
+        "GS",
+        "LS",
+        "NX",
+        "RX",
+        "GX",
+        "LX"
+      ]
+    },
+    {
+      "code": "HONDA",
+      "name": "Honda",
+      "priority": 1,
+      "models": [
+        "Civic",
+        "Accord",
+        "City",
+        "Fit",
+        "Jazz",
+        "CR-V",
+        "HR-V",
+        "Pilot"
+      ]
+    },
+    {
+      "code": "MITSUBISHI",
+      "name": "Mitsubishi",
+      "priority": 1,
+      "models": [
+        "Lancer",
+        "Pajero",
+        "Pajero Sport",
+        "Outlander",
+        "ASX",
+        "L200",
+        "L300"
+      ]
+    },
+    {
+      "code": "FORD",
+      "name": "Ford",
+      "priority": 1,
+      "models": [
+        "Fiesta",
+        "Focus",
+        "Fusion",
+        "Mondeo",
+        "Escape",
+        "Kuga",
+        "Edge",
+        "Explorer",
+        "Everest",
+        "Ranger",
+        "Transit"
+      ]
+    },
+    {
+      "code": "RENAULT",
+      "name": "Renault",
+      "priority": 1,
+      "models": [
+        "Clio",
+        "Megane",
+        "Laguna",
+        "Fluence",
+        "Symbol",
+        "Logan",
+        "Duster",
+        "Koleos",
+        "Kangoo",
+        "Master"
+      ]
+    },
+    {
+      "code": "VOLKSWAGEN",
+      "name": "Volkswagen",
+      "priority": 1,
+      "models": [
+        "Polo",
+        "Golf",
+        "Jetta",
+        "Passat",
+        "Tiguan",
+        "Touareg",
+        "Transporter",
+        "Amarok"
+      ]
+    },
+    {
+      "code": "BMW",
+      "name": "BMW",
+      "priority": 2,
+      "models": [
+        "1 Series",
+        "3 Series",
+        "5 Series",
+        "7 Series",
+        "X1",
+        "X3",
+        "X5",
+        "X6"
+      ]
+    },
+    {
+      "code": "SUZUKI",
+      "name": "Suzuki",
+      "priority": 2,
+      "models": [
+        "Alto",
+        "Celerio",
+        "Swift",
+        "Dzire",
+        "Baleno",
+        "Vitara",
+        "Grand Vitara",
+        "Jimny",
+        "Ertiga"
+      ]
+    },
+    {
+      "code": "MAZDA",
+      "name": "Mazda",
+      "priority": 2,
+      "models": [
+        "Mazda2",
+        "Mazda3",
+        "Mazda6",
+        "CX-3",
+        "CX-5",
+        "CX-9",
+        "BT-50"
+      ]
+    },
+    {
+      "code": "CHEVROLET",
+      "name": "Chevrolet",
+      "priority": 2,
+      "models": [
+        "Spark",
+        "Aveo",
+        "Cruze",
+        "Malibu",
+        "Captiva",
+        "Trailblazer",
+        "Tahoe"
+      ]
+    },
+    {
+      "code": "OPEL",
+      "name": "Opel",
+      "priority": 2,
+      "models": [
+        "Corsa",
+        "Astra",
+        "Vectra",
+        "Insignia",
+        "Zafira"
+      ]
+    },
+    {
+      "code": "AUDI",
+      "name": "Audi",
+      "priority": 2,
+      "models": [
+        "A3",
+        "A4",
+        "A6",
+        "Q3",
+        "Q5",
+        "Q7"
+      ]
+    },
+    {
+      "code": "LAND_ROVER",
+      "name": "Land Rover",
+      "priority": 2,
+      "models": [
+        "Defender",
+        "Discovery",
+        "Freelander",
+        "Range Rover",
+        "Range Rover Sport",
+        "Range Rover Evoque"
+      ]
+    },
+    {
+      "code": "JEEP",
+      "name": "Jeep",
+      "priority": 2,
+      "models": [
+        "Compass",
+        "Cherokee",
+        "Grand Cherokee",
+        "Wrangler"
+      ]
+    },
+    {
+      "code": "SUBARU",
+      "name": "Subaru",
+      "priority": 2,
+      "models": [
+        "Impreza",
+        "Legacy",
+        "Forester",
+        "Outback"
+      ]
+    },
+    {
+      "code": "ISUZU",
+      "name": "Isuzu",
+      "priority": 2,
+      "models": [
+        "D-Max",
+        "MU-X",
+        "N-Series"
+      ]
+    },
+    {
+      "code": "FIAT",
+      "name": "Fiat",
+      "priority": 2,
+      "models": [
+        "Panda",
+        "Punto",
+        "Tipo",
+        "Doblo",
+        "Ducato"
+      ]
+    },
+    {
+      "code": "VOLVO",
+      "name": "Volvo",
+      "priority": 2,
+      "models": [
+        "S40",
+        "S60",
+        "S80",
+        "XC40",
+        "XC60",
+        "XC90"
+      ]
+    },
+    {
+      "code": "CHERY",
+      "name": "Chery",
+      "priority": 3,
+      "models": [
+        "Tiggo 2",
+        "Tiggo 3",
+        "Tiggo 4",
+        "Tiggo 7",
+        "Tiggo 8",
+        "Arrizo 5",
+        "Arrizo 8",
+        "Himla"
+      ]
+    },
+    {
+      "code": "CHANGAN",
+      "name": "Changan",
+      "priority": 3,
+      "models": [
+        "Alsvin",
+        "CS35 Plus",
+        "CS55 Plus",
+        "CS75 Plus",
+        "CS95",
+        "UNI-T",
+        "UNI-K",
+        "Hunter"
+      ]
+    },
+    {
+      "code": "JAC",
+      "name": "JAC",
+      "priority": 3,
+      "models": [
+        "JS2",
+        "JS3",
+        "JS4",
+        "JS6",
+        "JS8",
+        "J7",
+        "T6",
+        "T8",
+        "T8 Pro",
+        "T9",
+        "X200",
+        "Sunray"
+      ]
+    },
+    {
+      "code": "GWM",
+      "name": "GWM",
+      "priority": 3,
+      "models": [
+        "Poer",
+        "Cannon",
+        "Wingle 5",
+        "Wingle 6",
+        "Wingle 7",
+        "King Kong"
+      ]
+    },
+    {
+      "code": "HAVAL",
+      "name": "Haval",
+      "priority": 3,
+      "models": [
+        "H2",
+        "H6",
+        "H6 GT",
+        "Jolion",
+        "Jolion Pro",
+        "Dargo",
+        "H9"
+      ]
+    },
+    {
+      "code": "TANK",
+      "name": "Tank",
+      "priority": 3,
+      "models": [
+        "Tank 300",
+        "Tank 400",
+        "Tank 500",
+        "Tank 700"
+      ]
+    },
+    {
+      "code": "BYD",
+      "name": "BYD",
+      "priority": 3,
+      "models": [
+        "Seagull",
+        "Dolphin",
+        "Atto 3",
+        "Yuan Plus",
+        "Song Pro",
+        "Song Plus",
+        "Seal",
+        "Seal U",
+        "Han",
+        "Tang",
+        "Shark",
+        "M6"
+      ]
+    },
+    {
+      "code": "GEELY",
+      "name": "Geely",
+      "priority": 3,
+      "models": [
+        "Emgrand",
+        "Coolray",
+        "Atlas",
+        "Monjaro",
+        "Okavango",
+        "Azkarra"
+      ]
+    },
+    {
+      "code": "GAC",
+      "name": "GAC",
+      "priority": 3,
+      "models": [
+        "GS3",
+        "GS4",
+        "GS8",
+        "Emkoo",
+        "Empow",
+        "GN6",
+        "M8"
+      ]
+    },
+    {
+      "code": "DONGFENG",
+      "name": "Dongfeng",
+      "priority": 3,
+      "models": [
+        "Aeolus Yixuan",
+        "Aeolus Shine",
+        "Aeolus Huge",
+        "Rich 6",
+        "Rich 7"
+      ]
+    },
+    {
+      "code": "DFSK",
+      "name": "DFSK",
+      "priority": 3,
+      "models": [
+        "Glory 500",
+        "Glory 560",
+        "Glory 580",
+        "Fengon 500",
+        "Fengon 580",
+        "Fengon 600",
+        "Fengon ix5",
+        "Fengon ix7"
+      ]
+    },
+    {
+      "code": "FOTON",
+      "name": "Foton",
+      "priority": 3,
+      "models": [
+        "Tunland",
+        "Tunland G7",
+        "Tunland G9",
+        "View",
+        "Toano",
+        "Aumark"
+      ]
+    },
+    {
+      "code": "BAIC",
+      "name": "BAIC / Beijing",
+      "priority": 3,
+      "models": [
+        "X35",
+        "X55",
+        "X7",
+        "BJ40",
+        "BJ60",
+        "BJ80"
+      ]
+    },
+    {
+      "code": "JETOUR",
+      "name": "Jetour",
+      "priority": 3,
+      "models": [
+        "X50",
+        "X70",
+        "X70 Plus",
+        "X90",
+        "X90 Plus",
+        "T2"
+      ]
+    },
+    {
+      "code": "OMODA",
+      "name": "Omoda",
+      "priority": 3,
+      "models": [
+        "C5",
+        "C7",
+        "E5"
+      ]
+    },
+    {
+      "code": "JAECOO",
+      "name": "Jaecoo",
+      "priority": 3,
+      "models": [
+        "J7",
+        "J8"
+      ]
+    },
+    {
+      "code": "MG",
+      "name": "MG",
+      "priority": 3,
+      "models": [
+        "MG3",
+        "MG5",
+        "MG6",
+        "ZS",
+        "HS",
+        "RX5",
+        "MG4"
+      ]
+    },
+    {
+      "code": "MAXUS",
+      "name": "Maxus",
+      "priority": 3,
+      "models": [
+        "T60",
+        "T70",
+        "T90",
+        "G10",
+        "D90",
+        "Deliver 9"
+      ]
+    }
+  ],
+  "commercial_vehicle_makes": [
+    "Toyota",
+    "Isuzu",
+    "Mitsubishi Fuso",
+    "Hino",
+    "Hyundai Trucks",
+    "Mercedes-Benz Trucks",
+    "Foton",
+    "JAC",
+    "JMC",
+    "Dongfeng",
+    "Sinotruk / HOWO",
+    "Shacman",
+    "FAW",
+    "Iveco",
+    "MAN",
+    "DAF",
+    "Scania",
+    "Volvo Trucks",
+    "Renault Trucks"
+  ],
+  "fallback": {
+    "label_en": "Vehicle not listed",
+    "label_fr": "Véhicule non répertorié",
+    "action": "OPEN_MANUAL_VEHICLE_FORM",
+    "post_submit_action": "CREATE_MASTER_DATA_SUGGESTION"
+  }
+}

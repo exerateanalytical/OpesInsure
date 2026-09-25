@@ -9,6 +9,7 @@ use App\Application\MasterData\MasterDataCatalogue;
 use App\Application\MasterData\MasterDataReviewService;
 use App\Application\MasterData\MasterDataSearch;
 use App\Application\MasterData\VehicleMasterSource;
+use App\Application\Vehicles\VehicleSuggestionIntake;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -80,6 +81,14 @@ final class MasterDataController
 
     public function suggest(Request $request, MasterDataReviewService $reviews): JsonResponse
     {
+        // REQ-DUP-013: domain "vehicle" is owned by the vehicle master and has its own review queue.
+        if ($request->input('domain') === VehicleSuggestionIntake::DOMAIN) {
+            $d = $request->validate(['list' => 'required|string|max:64', 'text' => 'required|string|min:1|max:120', 'parent' => 'nullable|string|max:128', 'attributes' => 'nullable|array']
+                + VehicleSuggestionIntake::attributeRules('attributes.'));
+            $result = app(VehicleSuggestionIntake::class)->suggest($d, $request->user());
+
+            return response()->json(['data' => $result], $result['status'] === 'MATCHED' ? 200 : 201);
+        }
         $d = $request->validate([
             'domain' => 'required|string|max:64', 'list' => 'required|string|max:64', 'text' => 'required|string|max:200',
             'parent' => 'nullable|string|max:128', 'line_code' => 'nullable|string|max:32', 'field_key' => 'nullable|string|max:64',

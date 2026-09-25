@@ -16,7 +16,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
  * whose only active role in the current tenant is CUSTOMER is "owner
  * scoped": every query is narrowed to their own party, and a foreign record
  * is indistinguishable from a missing one (404). Any other role (staff,
- * partner, SYSTEM_ADMIN) keeps tenant-wide access, gated by permissions
+ * partner, platform admin) keeps tenant-wide access, gated by permissions
  * where the route asks for them via requireTenantWide().
  */
 final class OwnershipScope
@@ -25,15 +25,29 @@ final class OwnershipScope
 
     public function isOwnerScoped(User $user): bool
     {
-        if ($user->memberships()->where('status', 'ACTIVE')->where('role_code', 'SYSTEM_ADMIN')->exists()) {
-            return false;
-        }
-
+        // REQ-TEN-003 / REQ-RBAC-004: only memberships in the CURRENT tenant
+        // count. A SYSTEM_ADMIN membership elsewhere no longer lifts owner
+        // scoping here, and a platform admin inside this tenant is still gated
+        // by business-data permissions in requireTenantWide().
         return ! $user->memberships()
             ->where('tenant_id', $this->context->id())
             ->where('status', 'ACTIVE')
             ->where('role_code', '!=', 'CUSTOMER')
             ->exists();
+    }
+
+    /**
+     * REQ-RBAC-004: a caller whose only roles in this tenant are platform
+     * administration roles (SYSTEM_ADMIN, DEVELOPER) sees no business rows,
+     * unless a break-glass grant covers customers.read (audited by BreakGlass).
+     */
+    public function isPlatformOnly(User $user): bool
+    {
+        $roles = $user->memberships()->where('tenant_id', $this->context->id())->where('status', 'ACTIVE')->pluck('role_code');
+
+        return $roles->isNotEmpty()
+            && $roles->every(fn ($r) => RoleCatalogue::isPlatformOnly((string) $r))
+            && ! $user->hasPermission('customers.read');
     }
 
     public function partyId(User $user): ?string
@@ -45,7 +59,7 @@ final class OwnershipScope
     public function apply(Builder $query, User $user, string $column = 'party_id'): Builder
     {
         if (! $this->isOwnerScoped($user)) {
-            return $query;
+            return $this->isPlatformOnly($user) ? $query->whereRaw('1 = 0') : $query;
         }
         $partyId = $this->partyId($user);
 
@@ -56,7 +70,7 @@ final class OwnershipScope
     public function applyVia(Builder $query, User $user, string $relation, string $column = 'party_id'): Builder
     {
         if (! $this->isOwnerScoped($user)) {
-            return $query;
+            return $this->isPlatformOnly($user) ? $query->whereRaw('1 = 0') : $query;
         }
         $partyId = $this->partyId($user);
 
@@ -67,6 +81,9 @@ final class OwnershipScope
     public function assertOwnParty(User $user, ?string $partyId): void
     {
         if ($this->isOwnerScoped($user) && ($partyId === null || $partyId !== $this->partyId($user))) {
+            abort(404);
+        }
+        if (! $this->isOwnerScoped($user) && $this->isPlatformOnly($user)) {
             abort(404);
         }
     }

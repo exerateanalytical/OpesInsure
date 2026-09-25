@@ -25,7 +25,7 @@ namespace App\Application\Catalogue;
  */
 final class NonMotorRiskSchemas
 {
-    public const VERSION = 2;
+    public const VERSION = 3; // v3: selection-first audit (docs/audit/FREE_TEXT_FIELDS_AUDIT.md)
 
     /** @return array<string, array<string, mixed>> */
     public static function all(): array
@@ -62,7 +62,6 @@ final class NonMotorRiskSchemas
                 self::m('roof_type', 'Roof', 'Toiture', 'property', 'roof_type', true),
                 self::m('building_age_band', 'Building age', 'Âge du bâtiment', 'property', 'building_age_band', true),
                 self::m('floor_count', 'Number of floors', "Nombre d'étages", 'property', 'floor_count', false),
-                self::f('unusual_construction', 'Describe any unusual construction', 'Particularités de construction', 'text', false, ['visible_if' => ['construction_material' => 'OTHER']]),
             ]],
             ['protection', 'Security and fire protection', 'Sécurité et protection incendie', [
                 self::mm('security_measures', 'Security', 'Sécurité', 'property', 'security_measure', false, ['maps_to' => 'security_features']),
@@ -73,8 +72,8 @@ final class NonMotorRiskSchemas
             ['location', 'Location', 'Localisation', [
                 self::m('region', 'Region', 'Région', 'geography', 'cameroon_region', true),
                 self::m('department', 'Department', 'Département', 'geography', 'cameroon_department', false, ['parent_field' => 'region']),
-                self::f('city', 'City', 'Ville', 'text', true),
-                self::f('address', 'Address / landmark', 'Adresse / repère', 'text', false),
+                self::m('city', 'City', 'Ville', 'geography', 'city', true, ['parent_field' => 'department']),
+                self::f('address', 'Street / landmark', 'Rue / repère', 'text', false, ['max_length' => 255]),
                 self::f('floor_area_m2', 'Floor area (m²)', 'Surface (m²)', 'number', false, ['min' => 1, 'max' => 1000000]),
             ]],
             ['values', 'Values to insure', 'Valeurs à assurer', [
@@ -103,7 +102,8 @@ final class NonMotorRiskSchemas
             ['premises', 'Premises', 'Locaux', [
                 self::m('premises_type', 'Premises', 'Locaux', 'business', 'premises_type', true),
                 self::m('region', 'Region', 'Région', 'geography', 'cameroon_region', true),
-                self::f('city', 'City', 'Ville', 'text', true),
+                self::m('department', 'Department', 'Département', 'geography', 'cameroon_department', false, ['parent_field' => 'region']),
+                self::m('city', 'City', 'Ville', 'geography', 'city', true, ['parent_field' => 'department']),
                 self::m('construction_material', 'Construction material', 'Matériaux de construction', 'property', 'construction_material', false),
             ]],
             ['assets', 'Stock and equipment', 'Stock et équipements', [
@@ -131,7 +131,7 @@ final class NonMotorRiskSchemas
             'item_fields' => [
                 self::m('member_type', 'Member', 'Bénéficiaire', 'health', 'member_type', true),
                 self::f('full_name', 'Full name', 'Nom complet', 'text', true),
-                self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', true),
+                self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', true, ['min' => '1900-01-01', 'max' => 'today']),
                 self::m('sex', 'Sex', 'Sexe', 'persons', 'gender', false),
             ],
         ]);
@@ -165,7 +165,7 @@ final class NonMotorRiskSchemas
             'item_fields' => [
                 self::f('full_name', 'Full name', 'Nom complet', 'text', true, ['party_ref' => true]),
                 self::m('relationship', 'Relationship to the life assured', "Lien avec l'assuré", 'life_insurance', 'relationship', true),
-                self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', false),
+                self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', false, ['min' => '1900-01-01', 'max' => 'today']),
                 self::m('priority', 'Rank', 'Rang', 'life', 'beneficiary_priority', true),
                 self::f('share_pct', 'Share (%)', 'Quote-part (%)', 'number', true, ['min' => 1, 'max' => 100]),
             ],
@@ -179,7 +179,7 @@ final class NonMotorRiskSchemas
                 self::f('life_assured_is_policyholder', 'I am the person insured', "Je suis la personne assurée", 'boolean', true),
                 self::f('life_assured_name', 'Life assured — full name', "Assuré — nom complet", 'text', true, ['visible_if' => ['life_assured_is_policyholder' => false], 'party_ref' => true]),
                 self::m('life_assured_relationship', 'Relationship to you', 'Lien avec vous', 'persons', 'relationship', true, ['visible_if' => ['life_assured_is_policyholder' => false]]),
-                self::f('life_assured_date_of_birth', 'Life assured — date of birth', "Assuré — date de naissance", 'date', true, ['maps_to' => 'insured_age']),
+                self::f('life_assured_date_of_birth', 'Life assured — date of birth', "Assuré — date de naissance", 'date', true, ['maps_to' => 'insured_age', 'min' => '1900-01-01', 'max' => 'today']),
                 self::m('occupation', 'Occupation of the life assured', "Profession de l'assuré", 'occupations', 'occupation', true),
                 self::f('payer_is_policyholder', 'I pay the premiums', 'Je paie les primes', 'boolean', false),
                 self::f('payer_name', 'Premium payer', 'Payeur des primes', 'text', true, ['visible_if' => ['payer_is_policyholder' => false], 'party_ref' => true]),
@@ -204,8 +204,8 @@ final class NonMotorRiskSchemas
                 self::m('trip_purpose', 'Purpose of trip', 'Motif du voyage', 'travel', 'purpose', true),
                 self::m('trip_type', 'Trip type', 'Type de voyage', 'travel', 'trip_type', false),
                 self::m('destination_country', 'Destination country', 'Pays de destination', 'geography', 'country', true, ['maps_to' => 'schengen']),
-                self::f('departure_date', 'Departure date', 'Date de départ', 'date', true),
-                self::f('return_date', 'Return date', 'Date de retour', 'date', true),
+                self::f('departure_date', 'Departure date', 'Date de départ', 'date', true, ['min' => 'today']),
+                self::f('return_date', 'Return date', 'Date de retour', 'date', true, ['min' => 'today']),
             ]],
             ['travellers', 'Travellers', 'Voyageurs', [
                 self::f('traveller_count', 'Number of travellers', 'Nombre de voyageurs', 'number', true, ['min' => 1, 'max' => 50]),
@@ -256,7 +256,7 @@ final class NonMotorRiskSchemas
                 self::f('census_file', 'Member list (CSV/Excel)', 'Liste des adhérents (CSV/Excel)', 'file', false, ['bulk_import' => true, 'import_format' => ['csv', 'xlsx']]),
                 self::f('members', 'Members', 'Adhérents', 'repeater', false, ['max_items' => 200, 'item_fields' => [
                     self::f('full_name', 'Full name', 'Nom complet', 'text', true),
-                    self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', true),
+                    self::f('date_of_birth', 'Date of birth', 'Date de naissance', 'date', true, ['min' => '1900-01-01', 'max' => 'today']),
                     self::m('occupation', 'Occupation', 'Profession', 'occupations', 'occupation', true),
                     self::f('annual_salary_minor', 'Annual salary (FCFA)', 'Salaire annuel (FCFA)', 'money', false),
                 ]]),
@@ -281,7 +281,7 @@ final class NonMotorRiskSchemas
             ]],
             ['history', 'Claims history', 'Sinistralité', [
                 self::m('claims_history', 'Claims in the last 3 years', 'Sinistres sur 3 ans', 'common', 'claims_history_band', true),
-                self::f('claims_details', 'Describe the claims', 'Décrivez les sinistres', 'text', true, ['visible_if' => ['claims_history' => ['ONE', 'TWO_THREE', 'FOUR_PLUS']]]),
+                self::mm('claims_causes', 'Causes of the claims', 'Causes des sinistres', 'claims', 'cause_of_loss', true, ['parent' => 'LIABILITY', 'visible_if' => ['claims_history' => ['ONE', 'TWO_THREE', 'FOUR_PLUS']]]),
             ]],
             ['cover', 'Cover', 'Garanties', [
                 self::m('limit', 'Limit of liability', 'Plafond de garantie', 'common', 'liability_limit', true),
@@ -297,7 +297,7 @@ final class NonMotorRiskSchemas
         return self::schema([
             ['goods', 'Goods', 'Marchandises', [
                 self::m('cargo_category', 'Cargo type', 'Nature des marchandises', 'cargo', 'cargo_category', true),
-                self::f('commodity_description', 'Commodity description', 'Désignation des marchandises', 'text', false),
+                self::f('commodity_description', 'Commodity description', 'Désignation des marchandises', 'text', false, ['max_length' => 255]),
                 self::m('packaging', 'Packaging', 'Conditionnement', 'cargo', 'packaging', true),
             ]],
             ['transport', 'Transport', 'Transport', [
@@ -330,7 +330,9 @@ final class NonMotorRiskSchemas
                 self::m('structure_type', 'Structure', "Type d'ouvrage", 'construction', 'structure_type', false),
                 self::m('project_phase', 'Current phase', 'Phase actuelle', 'construction', 'project_phase', true),
                 self::m('region', 'Region', 'Région', 'geography', 'cameroon_region', true),
-                self::f('site_address', 'Site location', 'Localisation du chantier', 'text', true),
+                self::m('department', 'Department', 'Département', 'geography', 'cameroon_department', false, ['parent_field' => 'region']),
+                self::m('city', 'City / town', 'Ville', 'geography', 'city', true, ['parent_field' => 'department']),
+                self::f('site_address', 'Site landmark', 'Repère du chantier', 'text', false, ['max_length' => 255]),
             ]],
             ['contractor', 'Contractor', 'Entreprise', [
                 self::f('contractor_name', 'Contractor', 'Entreprise de travaux', 'text', true, ['institution_ref' => true]),
@@ -341,7 +343,7 @@ final class NonMotorRiskSchemas
             ['values', 'Values and duration', 'Montants et durée', [
                 self::f('contract_value_minor', 'Contract value (FCFA)', 'Montant du marché (FCFA)', 'money', true, ['min' => 1]),
                 self::m('duration_band', 'Duration', 'Durée', 'construction', 'duration_band', true),
-                self::f('start_date', 'Start date', 'Date de début', 'date', true),
+                self::f('start_date', 'Start date', 'Date de début', 'date', true, ['min' => 'today']),
             ]],
             ['cover', 'Cover', 'Garanties', [
                 self::mm('covers', 'Covers', 'Garanties', 'construction', 'engineering_cover', true),

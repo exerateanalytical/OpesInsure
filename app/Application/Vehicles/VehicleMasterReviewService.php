@@ -30,7 +30,7 @@ final class VehicleMasterReviewService
         $review = VehicleMasterReview::create([
             'status' => VehicleMasterReview::STATUS_PENDING,
             'make_text' => trim((string) $data['make']),
-            'model_text' => trim((string) $data['model']),
+            'model_text' => trim((string) ($data['model'] ?? '')),
             'model_year' => $data['model_year'] ?? null,
             'body_type' => $data['body_type'] ?? null,
             'powertrain' => $data['powertrain'] ?? null,
@@ -64,8 +64,10 @@ final class VehicleMasterReviewService
         return DB::transaction(function () use ($review, $admin, $makeDefaults, $notes) {
             $make = $this->catalogue->resolveMake($review->make_text)
                 ?? $this->admin->createMake(['name' => $review->make_text, 'cameroon_status' => 'UNVERIFIED'] + array_intersect_key($makeDefaults, array_flip(['segment', 'country_of_origin', 'code'])), $admin, 'CUSTOMER_SUBMITTED');
-            $model = $this->catalogue->resolveModel($make, $review->model_text)
-                ?? $this->admin->createModel($make, ['name' => $review->model_text], $admin, 'CUSTOMER_SUBMITTED');
+            // Make-only entries (empty model_text, e.g. catalogue candidates) approve just the make.
+            $model = trim((string) $review->model_text) === '' ? null
+                : ($this->catalogue->resolveModel($make, $review->model_text)
+                    ?? $this->admin->createModel($make, ['name' => $review->model_text], $admin, 'CUSTOMER_SUBMITTED'));
 
             return $this->resolve($review, 'APPROVED_NEW', $make, $model, $admin, $notes);
         });

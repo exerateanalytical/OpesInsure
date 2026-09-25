@@ -10,6 +10,13 @@ return [
     'enabled' => (bool) env('DEMO_MODE_ENABLED', false),
 
     /*
+     * REQ-SEC-002. demo:seed refuses when APP_ENV=production unless this is
+     * explicitly true. Keeps production and demo data apart by default; a
+     * production host that is deliberately a demo host must opt in here.
+     */
+    'allow_in_production' => (bool) env('DEMO_ALLOW_IN_PRODUCTION', false),
+
+    /*
      * Fixed OTP issued to demo accounts only, and only while demo mode is on.
      * This exists because the mobile app authenticates by SMS OTP and no SMS
      * provider is configured yet, so a demo tester has no way to receive a

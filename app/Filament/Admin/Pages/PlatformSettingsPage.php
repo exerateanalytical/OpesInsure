@@ -78,6 +78,9 @@ final class PlatformSettingsPage extends Page
         $secretHint = fn (string $field) => fn () => filled(app(PlatformSettings::class)->editable()->getAttribute($field)) ? 'Saved. Leave blank to keep it.' : 'Not set.';
 
         return $schema->statePath('data')->components([
+            Section::make('Regional')->description('REQ-TMP-003: platform default timezone for business dates. Organizations and branches may override it; empty = Africa/Douala (APP_TIMEZONE).')->columns(2)->schema([
+                Select::make('default_timezone')->label('Default timezone')->options(fn () => app(\App\Application\Settings\TimezoneCatalogue::class)->options())->searchable()->placeholder('Africa/Douala (APP_TIMEZONE)'),
+            ]),
             Section::make('Support contacts')->description('Shown in the mobile app (Terms, Support, Invitations, Access denied).')->columns(2)->schema([
                 TextInput::make('support_email')->email()->maxLength(190),
                 TextInput::make('support_phone')->tel()->maxLength(32)->placeholder('+2376...'),

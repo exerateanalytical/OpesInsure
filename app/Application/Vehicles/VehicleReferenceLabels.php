@@ -8,8 +8,13 @@ namespace App\Application\Vehicles;
  * EN/FR display labels for the canonical enumeration codes that the master
  * file ships without labels (body types carry their own). Codes come only
  * from database/data/cameroon_vehicle_master_2026.json; this class adds
- * translations, never new codes. Seeded into vehicle_reference_values, where
- * admins can edit them without a deploy.
+ * translations. Seeded into vehicle_reference_values, where admins can edit
+ * them without a deploy.
+ *
+ * EXTRA_VALUES is the one exception: two/three-wheeler classes and body types
+ * the 2026 master file lacks (the former specialty fleet list used MOTORCYCLE
+ * and TRICYCLE; those codes now resolve here directly). Classification codes
+ * only, no makes/models.
  */
 final class VehicleReferenceLabels
 {
@@ -153,6 +158,28 @@ final class VehicleReferenceLabels
             'IMPORTED' => ['Imported', 'Importé'],
             'HISTORICAL' => ['Historical', 'Historique'],
             'UNVERIFIED' => ['Unverified', 'Non vérifié'],
+        ],
+    ];
+
+    /**
+     * Codes added on top of the master file, appended after its entries.
+     *
+     * @var array<string, array<string, array{0: string, 1: string}>>
+     */
+    public const EXTRA_VALUES = [
+        'vehicle_class' => [
+            'MOPED' => ['Moped (up to 50 cc)', "Cyclomoteur (jusqu'à 50 cm³)"],
+            'MOTORCYCLE' => ['Motorcycle', 'Motocyclette'],
+            'TRICYCLE' => ['Tricycle (three-wheeler)', 'Tricycle (trois-roues)'],
+            'QUADRICYCLE' => ['Quadricycle / ATV', 'Quadricycle / quad'],
+        ],
+        'body_type' => [
+            'MOPED' => ['Moped', 'Cyclomoteur'],
+            'SCOOTER' => ['Scooter', 'Scooter'],
+            'MOTORCYCLE' => ['Motorcycle', 'Moto'],
+            'TRICYCLE_PASSENGER' => ['Passenger tricycle', 'Tricycle passagers'],
+            'TRICYCLE_CARGO' => ['Cargo tricycle', 'Tricycle de marchandises'],
+            'QUAD' => ['Quad / ATV', 'Quad'],
         ],
     ];
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\Catalogue;
 
 use App\Application\Catalogue\RiskSchemaCatalogue;
+use App\Application\MasterData\InputFieldContract;
 use App\Application\MasterData\MasterDataFlows;
 use App\Models\InsuranceLine;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,8 @@ final class MobileRiskSchemaController
 
         $storedIsCurrent = ! empty($stored['fields']) && (int) ($stored['version'] ?? 1) >= (int) ($defaults['version'] ?? 1);
         $schema = $storedIsCurrent ? $stored : array_merge($defaults ?? [], array_filter(['required' => $stored['required'] ?? null]));
+        // Selection-first contract on every served schema (stored, catalogue or flow): source/allow_other/input/free_text.
+        $schema = InputFieldContract::annotate($schema);
 
         return response()->json(['data' => [
             'line_code' => $code,
@@ -44,6 +47,7 @@ final class MobileRiskSchemaController
             'steps' => $schema['steps'] ?? [],
             'fields' => $schema['fields'] ?? [],
             'required' => array_values($schema['required'] ?? []),
+            'contract' => InputFieldContract::VERSION,
         ]]);
     }
 }

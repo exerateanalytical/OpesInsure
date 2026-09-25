@@ -15,7 +15,9 @@
   [$en, $fr, $color, $icon] = $labels[$r] ?? $labels['not_found'];
   $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->timezone(config('app.timezone'))->format('d/m/Y') : '—';
 @endphp
-<x-public.layout title="OpesInsure — Verify a certificate / Vérifier une attestation">
+@extends('public.layout')
+@section('title', 'OpesInsure — Verify a certificate / Vérifier une attestation')
+@section('content')
 <div class="hero" style="padding:48px 0 52px"><div class="wrap">
   <span class="eyebrow">Certificate verification · Vérification d'attestation</span>
   <h1 style="max-width:none">Is this cover valid?<br><span style="font-weight:600;opacity:.8">Cette assurance est-elle valide&nbsp;?</span></h1>
@@ -63,4 +65,4 @@
     </div>
   @endif
 </div></section>
-</x-public.layout>
+@endsection

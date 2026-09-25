@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Application\Vehicles\VehicleDataSource;
 use App\Application\Vehicles\VehicleReferenceLabels;
 use App\Application\Vehicles\VehicleText;
 use App\Models\Vehicles\VehicleMake;
 use App\Models\Vehicles\VehicleMakeAlias;
 use App\Models\Vehicles\VehicleManufacturer;
 use App\Models\Vehicles\VehicleMasterChange;
+use App\Models\Vehicles\VehicleMasterReview;
 use App\Models\Vehicles\VehicleMasterSource;
 use App\Models\Vehicles\VehicleModel;
 use App\Models\Vehicles\VehicleModelAlias;
@@ -109,13 +111,99 @@ final class VehicleMasterDataSeeder extends Seeder
                     }
                 }
             }
+
+            $this->seedAfricaConfig($provenance);
+            $this->seedCandidateMakes();
         });
+    }
+
+    public const AFRICA_CONFIG_FILE = 'data/vehicle_master_config_africa_2026.json';
+
+    /**
+     * Merges the owner-supplied Cameroon & Africa core list into the master:
+     * makes and models are matched by code, name and alias first (never
+     * duplicated); only genuinely missing ones are added, with data_source
+     * OPESINSURE_VERIFIED_OVERRIDE. Existing rows are left untouched.
+     */
+    private function seedAfricaConfig(string $provenance): void
+    {
+        $path = database_path(self::AFRICA_CONFIG_FILE);
+        if (! is_file($path)) {
+            return;
+        }
+        $config = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        $catalogue = app(\App\Application\Vehicles\VehicleCatalogueService::class);
+        $rows = [];
+        foreach ($config['makes'] ?? [] as $row) {
+            $rows[] = ['code' => $row['code'] ?? null, 'name' => $row['name'], 'models' => $row['models'] ?? [], 'segment' => 'PASSENGER'];
+        }
+        foreach ($config['commercial_vehicle_makes'] ?? [] as $row) {
+            $rows[] = is_array($row) ? ['code' => $row['code'] ?? null, 'name' => $row['name'], 'models' => $row['models'] ?? [], 'segment' => 'COMMERCIAL']
+                : ['code' => null, 'name' => (string) $row, 'models' => [], 'segment' => 'COMMERCIAL'];
+        }
+
+        foreach ($rows as $row) {
+            $make = ($row['code'] ? VehicleMake::where('code', VehicleText::code($row['code']))->first() : null)
+                ?? $catalogue->resolveMake($row['name']);
+            if (! $make) {
+                $code = VehicleText::code($row['code'] ?? $row['name']);
+                $make = VehicleMake::create(['code' => $code, 'name' => $row['name'], 'normalized_name' => VehicleText::normalize($row['name']),
+                    'segment' => $row['segment'], 'cameroon_status' => 'UNVERIFIED', 'market_priority' => 'NORMAL',
+                    'provenance' => $provenance, 'data_source' => VehicleDataSource::OVERRIDE, 'active' => true]);
+                $this->log('vehicle_make', $make->id, 'SEEDED', ['code' => $code, 'name' => $row['name'], 'source' => self::AFRICA_CONFIG_FILE]);
+                $this->counts['makes']++;
+            }
+            if ($make->merged_into_id) {
+                $make = VehicleMake::find($make->merged_into_id) ?? $make;
+            }
+            foreach ($row['models'] as $name) {
+                if ($catalogue->resolveModel($make, $name)) {
+                    continue;
+                }
+                $code = $make->code.'_'.VehicleText::code($name);
+                if (VehicleModel::where('code', $code)->exists()) {
+                    continue;
+                }
+                $model = VehicleModel::create(['code' => $code, 'make_id' => $make->id, 'name' => $name, 'normalized_name' => VehicleText::normalize($name),
+                    'segment' => $make->segment, 'status' => 'ACTIVE', 'provenance' => $provenance, 'data_source' => VehicleDataSource::OVERRIDE, 'active' => true]);
+                $this->log('vehicle_model', $model->id, 'SEEDED', ['code' => $code, 'make' => $make->code, 'name' => $name, 'source' => self::AFRICA_CONFIG_FILE]);
+                $this->counts['models']++;
+            }
+        }
+    }
+
+    /**
+     * Makes proposed for the catalogue but not in the verified master file.
+     * They are NOT added: each becomes a make-only review entry so an admin
+     * checks Cameroon market presence before approving, merging or rejecting.
+     */
+    public const CANDIDATE_MAKES = ['Datsun', 'McLaren', 'Mahindra', 'Lada', 'UAZ'];
+
+    private function seedCandidateMakes(): void
+    {
+        foreach (self::CANDIDATE_MAKES as $name) {
+            $normalized = VehicleText::normalize($name);
+            $known = VehicleMake::where('normalized_name', $normalized)->exists() || VehicleMakeAlias::where('normalized_alias', $normalized)->exists();
+            if ($known || VehicleMasterReview::where('make_text', $name)->where('model_text', '')->whereNull('submitted_by')->exists()) {
+                continue;
+            }
+            VehicleMasterReview::create([
+                'status' => VehicleMasterReview::STATUS_PENDING,
+                'make_text' => $name,
+                'model_text' => '',
+                'payload' => ['source' => 'CATALOGUE_CANDIDATE', 'note' => 'Candidate make not in the verified 2026 master file; verify Cameroon market presence before approving.'],
+            ]);
+        }
     }
 
     private function seedReferenceValues(array $enums): void
     {
         foreach (VehicleReferenceLabels::GROUPS as $key => $group) {
-            foreach (array_values($enums[$key] ?? []) as $i => $entry) {
+            $entries = array_values($enums[$key] ?? []);
+            foreach (VehicleReferenceLabels::EXTRA_VALUES[$group] ?? [] as $code => [$en, $fr]) {
+                $entries[] = [$code, $en, $fr];
+            }
+            foreach ($entries as $i => $entry) {
                 [$code, $en, $fr] = is_array($entry)
                     ? [$entry[0], $entry[1], $entry[2]]
                     : [$entry, ...VehicleReferenceLabels::for($group, $entry)];

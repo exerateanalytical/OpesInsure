@@ -96,8 +96,25 @@ final class MobileDisclosureController
             'questions' => collect($p->disclosureSchema?->questions ?? [])->map(fn ($q) => [
                 'id' => $q['code'], 'label' => is_array($q['label']) ? ($q['label'][$locale] ?? reset($q['label'])) : $q['label'], 'type' => $q['type'] ?? 'boolean', 'required' => (bool) ($q['required'] ?? true),
                 'answer' => $answers[$q['code']] ?? null,
-            ])->values(),
+            ] + self::inputContract($q))->values(),
             'referral_reason' => $p->underwritingCase?->referrals?->first()?->reason_code ?? ($p->disclosureResponse?->referral_flags[0] ?? null),
         ];
+    }
+
+    /**
+     * Selection-first contract for disclosure questions (InputFieldContract):
+     * input kind, and for select questions the master-data source / options and
+     * allow_other. Booleans stay booleans; admin-authored text questions are
+     * flagged free_text so the audit can list them.
+     */
+    private static function inputContract(array $q): array
+    {
+        $f = \App\Application\MasterData\InputFieldContract::field(array_filter([
+            'key' => $q['code'], 'type' => $q['type'] ?? 'boolean', 'source' => $q['source'] ?? null, 'parent_field' => $q['parent_field'] ?? null,
+            'other_allowed' => $q['other_allowed'] ?? null, 'options' => $q['options'] ?? null, 'min' => $q['min'] ?? null, 'max' => $q['max'] ?? null,
+            'free_text' => isset($q['free_text_reason']) ? ['reason' => $q['free_text_reason']] : null,
+        ], fn ($v) => $v !== null));
+
+        return array_intersect_key($f, array_flip(['input', 'source', 'allow_other', 'options', 'min', 'max', 'free_text']));
     }
 }

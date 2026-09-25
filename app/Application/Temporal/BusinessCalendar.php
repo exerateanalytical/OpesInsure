@@ -14,15 +14,19 @@ use Illuminate\Support\Facades\DB;
  * Weekend = Saturday/Sunday. Holidays are only what the table holds; no
  * public-holiday list is invented here. businessHoursBetween is deferred to
  * Engine 6 because working hours are not yet an agreed fact (UNVERIFIED).
+ *
+ * REQ-TMP-003: pass $timezone (e.g. TimezoneResolver::forBranch()) to count
+ * days in a tenant/branch timezone; otherwise the calendar row's timezone,
+ * then the current business timezone, is used.
  */
 final class BusinessCalendar
 {
     /** @var array<string, array{holidays: array<string, true>, timezone: string}> */
     private array $cache = [];
 
-    public function isBusinessDay(DateTimeInterface|string $date, string $jurisdiction = 'CM'): bool
+    public function isBusinessDay(DateTimeInterface|string $date, string $jurisdiction = 'CM', ?string $timezone = null): bool
     {
-        $d = BusinessTime::parse($date, $this->timezone($jurisdiction, $date));
+        $d = BusinessTime::parse($date, $timezone ?? $this->timezone($jurisdiction, $date));
         if ($d->isWeekend()) {
             return false;
         }
@@ -30,14 +34,14 @@ final class BusinessCalendar
         return ! isset($this->year($jurisdiction, $d->year)['holidays'][$d->toDateString()]);
     }
 
-    public function addBusinessDays(DateTimeInterface|string $date, int $n, string $jurisdiction = 'CM'): CarbonImmutable
+    public function addBusinessDays(DateTimeInterface|string $date, int $n, string $jurisdiction = 'CM', ?string $timezone = null): CarbonImmutable
     {
-        $d = BusinessTime::parse($date, $this->timezone($jurisdiction, $date))->startOfDay();
+        $d = BusinessTime::parse($date, $timezone ??= $this->timezone($jurisdiction, $date))->startOfDay();
         $step = $n >= 0 ? 1 : -1;
         $remaining = abs($n);
         while ($remaining > 0) {
             $d = $d->addDays($step);
-            if ($this->isBusinessDay($d, $jurisdiction)) {
+            if ($this->isBusinessDay($d, $jurisdiction, $timezone)) {
                 $remaining--;
             }
         }
@@ -65,7 +69,7 @@ final class BusinessCalendar
                 }
             }
 
-            return ['holidays' => $holidays, 'timezone' => $row->timezone ?? BusinessTime::DEFAULT_TIMEZONE];
+            return ['holidays' => $holidays, 'timezone' => $row->timezone ?? BusinessTime::defaultTimezone()];
         })();
     }
 }

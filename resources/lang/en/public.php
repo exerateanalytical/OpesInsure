@@ -5,23 +5,8 @@ return [
     'nav_download' => 'Get the app',
     'nav_portal' => 'Staff portal',
 
-    'home_title' => 'OpesInsure — Insurance, simplified',
-    'home_eyebrow' => 'Insurance distribution platform',
-    'home_heading' => 'Insurance that moves at the speed of your phone',
-    'home_lede' => 'Compare cover from licensed carriers, pay with MTN MoMo or Orange Money, and carry proof of insurance in your pocket. Motor, health, travel and property — all in one place.',
     'home_cta_download' => 'Download the mobile app',
-    'home_cta_portal' => 'Staff portal',
 
-    'features_heading' => 'Built for how insurance actually works here',
-    'features_sub' => 'A complete distribution platform connecting customers, agents, brokers and carriers on shared, auditable infrastructure.',
-    'features' => [
-        ['icon' => '⚡', 'title' => 'Quotes in minutes', 'body' => 'Answer a few questions and compare priced offers from multiple licensed carriers side by side.'],
-        ['icon' => '₣', 'title' => 'Mobile money payments', 'body' => 'Pay premiums directly with MTN Mobile Money or Orange Money. No card required.'],
-        ['icon' => '⬛', 'title' => 'Digital policy wallet', 'body' => 'Your certificates and policy documents, available offline whenever you need to show proof.'],
-        ['icon' => '⇄', 'title' => 'Claims that track themselves', 'body' => 'File a claim with photos from your phone and follow every status change as it happens.'],
-        ['icon' => '⌂', 'title' => 'Doorstep delivery', 'body' => 'Physical certificates and motor stickers delivered, with OTP confirmation on handover.'],
-        ['icon' => '◈', 'title' => 'Agent & broker tools', 'body' => 'Intake clients, track commission, and keep working when the network drops.'],
-    ],
 
     'download_title' => 'Download the OpesInsure mobile app',
     'download_eyebrow' => 'Mobile app',

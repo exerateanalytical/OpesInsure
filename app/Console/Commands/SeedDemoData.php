@@ -33,6 +33,14 @@ final class SeedDemoData extends Command
             return self::SUCCESS;
         }
 
+        // REQ-SEC-002: never seed demo data into production by accident.
+        $refusal = app(\App\Application\Demo\DemoEnvironment::class)->seedingRefusal();
+        if ($refusal !== null) {
+            $this->components->error($refusal);
+
+            return self::FAILURE;
+        }
+
         try {
             $this->call('db:seed', ['--class' => DatabaseSeeder::class, '--force' => true]);
             $this->call('db:seed', ['--class' => DemoScenarioSeeder::class, '--force' => true]);

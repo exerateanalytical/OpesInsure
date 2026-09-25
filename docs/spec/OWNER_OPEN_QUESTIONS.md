@@ -33,3 +33,11 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - ADRs: UUID vs bigint primary keys; audit_log (existing hash chain) vs audit_events; regulatory_branches vs insurance_branches naming.
 - CIMA Reg. 003-25 AML specifics (thresholds, PEP scope, FIU reporting, retention); Reg. 010-24 ICT obligations.
 - Complaint response deadlines; premium-to-cover legal basis; public-holiday and hazard-zone data sources.
+
+## Q6 — Decisions found during Batch 2 (2026-09-25)
+- Approval matrix: which role/permission approves each of the 38 maker-checker actions? (Today: two-person rule + segregation of duties only.)
+- Historical timestamps: production DB session is UTC while the app wrote Douala wall-clock without offset, so rows written before the Batch 2 deploy are 1 hour late. Proposed: a one-off, audited correction (subtract 1h on Eloquent-written timestamp columns before the fix date). Needs your OK before touching production data.
+- Vehicle makes missing from your file but in the old list: Datsun, McLaren, Mahindra, Lada, UAZ — add or leave to the review queue?
+- Insurer logos: supply licensed logo files for the landing page, or keep text wordmarks.
+- Business hours: do SLA clocks exclude an unpaid lunch hour? (Spec example ICE §6.11#1 implies yes: 16 business hours from Friday 16:00 lands Wednesday 15:00; continuous 08:00–17:00 gives 14:00.) Also: official working hours, public holidays and SLA targets per case type (OQ-6.2/6.3) — none are seeded until you confirm.
+- Global vehicle dataset (gor3a/vehicle-makes-models): code is MIT but the data is ODbL v1.0 — requires attribution to the project and autoevolution.com, and share-alike if we publicly use an adapted database. Accept these terms so we can import generations/engines/specs? (Importer ready: opesinsure:import-vehicle-dataset --accept-license.) Until then generations/variants are filled by admins.

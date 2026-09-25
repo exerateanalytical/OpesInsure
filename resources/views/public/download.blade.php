@@ -1,4 +1,6 @@
-<x-public.layout :title="__('public.download_title')">
+@extends('public.layout')
+@section('title', __('public.download_title'))
+@section('content')
 <div class="hero"><div class="wrap">
 <div class="hero-flex">
 <img class="app-icon" src="{{ asset('img/app-icon.png') }}" alt="{{ __('public.download_title') }}" width="1254" height="1254">
@@ -67,4 +69,4 @@
     @endforeach
   </div>
 </div></section>
-</x-public.layout>
+@endsection

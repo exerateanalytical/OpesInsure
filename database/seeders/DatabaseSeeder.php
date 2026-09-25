@@ -49,6 +49,8 @@ final class DatabaseSeeder extends Seeder
         // Vehicle master data (makes, models, aliases, enums) supersedes the legacy VEHICLE_MAKES reference set.
         $this->call(VehicleMasterDataSeeder::class);
         $this->call(MobileOAuthClientSeeder::class);
+        // REQ-RBAC-001: governed permission catalogue (upsert only, never deletes).
+        \App\Application\Identity\Rbac\PermissionCatalogue::sync();
 
         if (! app()->environment(['local', 'testing']) && ! config('demo.enabled')) {
             return;
@@ -110,6 +112,12 @@ final class DatabaseSeeder extends Seeder
         // them, so memberships created in the admin panel pick them up.
         foreach (RoleCatalogue::CARRIER_ROLES as $code) {
             Role::updateOrCreate(['tenant_id' => $tenant->id, 'code' => $code], ['permissions' => RoleCatalogue::defaultPermissions($code), 'is_system' => true]);
+        }
+
+        // REQ-RBAC-003: every other catalogue role exists too, with its
+        // default permissions. firstOrCreate — an administrator's edits win.
+        foreach (RoleCatalogue::codes() as $code) {
+            Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $code], ['id' => (string) Str::uuid(), 'permissions' => RoleCatalogue::defaultPermissions($code), 'is_system' => true]);
         }
 
         $this->call(DemoMobileAccountSeeder::class);

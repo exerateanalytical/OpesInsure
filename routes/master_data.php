@@ -18,12 +18,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('master-data/{domain}/search', [MasterDataController::class, 'search'])->where('domain', '[a-z0-9_]+');
         Route::get('master-data/{domain}/{id}', [MasterDataController::class, 'show'])->where('domain', '[a-z0-9_]+');
         // Aliases kept from the first brief.
-        Route::get('public/master-data/{domain}', [MasterDataController::class, 'domain'])->where('domain', '[a-z0-9_]+');
-        Route::get('public/master-data/{domain}/{id}', [MasterDataController::class, 'show'])->where('domain', '[a-z0-9_]+');
+        Route::get('public/master-data/{domain}', [MasterDataController::class, 'domain'])->where('domain', '[a-z0-9_]+')->middleware(\App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('master-data/{domain}', 'REQ-DUP-013'));
+        Route::get('public/master-data/{domain}/{id}', [MasterDataController::class, 'show'])->where('domain', '[a-z0-9_]+')->middleware(\App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('master-data/{domain}/{id}', 'REQ-DUP-013'));
     });
 
     Route::middleware(['auth:api', 'json.api', 'throttle:30,1'])->group(function (): void {
         Route::post('master-data/suggestions', [MasterDataController::class, 'suggest']);
-        Route::post('mobile/master-data/review', [MasterDataController::class, 'suggest']);
+        // REQ-DUP-013: canonical is master-data/suggestions.
+        Route::post('mobile/master-data/review', [MasterDataController::class, 'suggest'])->middleware(\App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('master-data/suggestions', 'REQ-DUP-013'));
     });
 });

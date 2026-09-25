@@ -46,13 +46,9 @@ final class DemoPurchaseSettler
             return;
         }
 
-        // Eloquent writes app-timezone wall-clock time into the timestamptz
-        // column with no offset, so the stored value reads back labelled UTC
-        // while actually being Africa/Douala. Re-interpret the wall clock in
-        // the app timezone before measuring age, or a fresh payment looks an
-        // hour in the future and never settles.
-        $createdLocal = \Carbon\Carbon::parse($payment->created_at->format('Y-m-d H:i:s'), config('app.timezone'));
-        $ageSeconds = $createdLocal->diffInSeconds(now(), false);
+        // REQ-TMP-003: timestamptz now stores true instants (explicit offset on
+        // write, see OffsetAwarePostgresConnection), so no wall-clock re-read.
+        $ageSeconds = $payment->created_at->diffInSeconds(now(), false);
         if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $ageSeconds >= self::CUSTOMER_PROMPT_SECONDS) {
             DB::transaction(function () use ($payment) {
                 $previous = $payment->status;

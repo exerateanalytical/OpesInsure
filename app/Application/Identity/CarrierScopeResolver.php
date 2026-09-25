@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Identity;
 
+use App\Application\Identity\Rbac\DataScope;
 use App\Models\Partner;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
@@ -25,7 +26,7 @@ use Illuminate\Auth\Access\AuthorizationException;
  */
 final class CarrierScopeResolver
 {
-    public const CARRIER_ROLES = ['CARRIER_ADMIN', 'CARRIER_STAFF'];
+    public const CARRIER_ROLES = RoleCatalogue::CARRIER_ROLES;
 
     public function __construct(private readonly PartyResolver $parties)
     {
@@ -46,9 +47,14 @@ final class CarrierScopeResolver
             return (string) $partner->compliance['carrier_id'];
         }
 
-        $isCarrierRole = $memberships->contains(fn ($m) => in_array($m->role_code, self::CARRIER_ROLES, true));
-        $isPrivileged = $memberships->contains(fn ($m) => ! in_array($m->role_code, [...self::CARRIER_ROLES, 'CUSTOMER', 'AGENT', 'BROKER_STAFF', 'BROKER_ADMIN'], true))
-            || $user->memberships()->where('status', 'ACTIVE')->where('role_code', 'SYSTEM_ADMIN')->exists();
+        // Insurer-side roles (every role whose default scope is the carrier
+        // relationship: carrier admins/staff, underwriters, customer service,
+        // reinsurance) must be linked; only TENANT-scope staff in THIS tenant
+        // keep the tenant-wide view (REQ-TEN-003 — a SYSTEM_ADMIN membership in
+        // another tenant no longer counts).
+        $isCarrierRole = $memberships->contains(fn ($m) => RoleCatalogue::defaultScope((string) $m->role_code) === DataScope::CARRIER_RELATIONSHIP);
+        $isPrivileged = $memberships->contains(fn ($m) => RoleCatalogue::defaultScope((string) $m->role_code) === DataScope::TENANT
+            && ! in_array($m->role_code, ['CUSTOMER', 'AGENT', 'BROKER_STAFF', 'BROKER_ADMIN'], true));
 
         if ($isCarrierRole && ! $isPrivileged && Tenant::whereKey($tenantId)->value('type') !== 'CARRIER') {
             throw new AuthorizationException('Your insurer account is not linked to a carrier yet.');

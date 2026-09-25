@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class VehicleModel extends Model
 {
     use HasUuids;
+    use HasDataSource;
     use ProtectsMasterData;
 
     protected $table = 'vehicle_models';
@@ -36,5 +37,10 @@ final class VehicleModel extends Model
     public function generations(): HasMany
     {
         return $this->hasMany(VehicleGeneration::class, 'model_id');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(VehicleVariant::class, 'model_id');
     }
 }

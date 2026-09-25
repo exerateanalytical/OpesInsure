@@ -81,7 +81,7 @@ it('keeps hierarchies consistent and offers an Other fallback on open lists', fu
 it('has flows whose master-data fields reference existing lists', function () {
     $data = specialtyMasterData();
     $known = [];
-    foreach ([...$data['domains'], ...specialtyMasterData('reference_2026')['domains']] as $d) {
+    foreach ([...$data['domains'], ...specialtyMasterData('reference_2026')['domains'], ...specialtyMasterData('core_2026')['domains']] as $d) {
         foreach ($d['lists'] as $l) {
             $known["{$d['code']}.{$l['code']}"] = array_column($l['values'], 'code');
         }

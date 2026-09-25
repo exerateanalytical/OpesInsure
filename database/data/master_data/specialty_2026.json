@@ -6393,11 +6393,49 @@
         "required": true
        },
        {
+        "key": "region",
+        "type": "SELECT_MASTER",
+        "label_en": "Region",
+        "label_fr": "Région",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_region"
+        },
+        "other_allowed": false
+       },
+       {
+        "key": "department",
+        "type": "SELECT_MASTER",
+        "label_en": "Department",
+        "label_fr": "Département",
+        "required": false,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_department"
+        },
+        "other_allowed": false,
+        "depends_on": "region"
+       },
+       {
+        "key": "city",
+        "type": "SELECT_MASTER",
+        "label_en": "City / town",
+        "label_fr": "Ville",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "city"
+        },
+        "other_allowed": true,
+        "depends_on": "department"
+       },
+       {
         "key": "site_location",
         "type": "TEXT",
-        "label_en": "Site location",
-        "label_fr": "Localisation du site",
-        "required": true
+        "label_en": "Site landmark",
+        "label_fr": "Repère du site",
+        "required": false
        }
       ]
      },
@@ -10802,11 +10840,49 @@
         "other_allowed": false
        },
        {
+        "key": "region",
+        "type": "SELECT_MASTER",
+        "label_en": "Region",
+        "label_fr": "Région",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_region"
+        },
+        "other_allowed": false
+       },
+       {
+        "key": "department",
+        "type": "SELECT_MASTER",
+        "label_en": "Department",
+        "label_fr": "Département",
+        "required": false,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_department"
+        },
+        "other_allowed": false,
+        "depends_on": "region"
+       },
+       {
+        "key": "city",
+        "type": "SELECT_MASTER",
+        "label_en": "City / town",
+        "label_fr": "Ville",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "city"
+        },
+        "other_allowed": true,
+        "depends_on": "department"
+       },
+       {
         "key": "address",
         "type": "TEXT",
-        "label_en": "Address",
-        "label_fr": "Adresse",
-        "required": true
+        "label_en": "Street / landmark",
+        "label_fr": "Rue / repère",
+        "required": false
        }
       ]
      },
@@ -12340,11 +12416,49 @@
         "other_allowed": true
        },
        {
+        "key": "region",
+        "type": "SELECT_MASTER",
+        "label_en": "Region",
+        "label_fr": "Région",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_region"
+        },
+        "other_allowed": false
+       },
+       {
+        "key": "department",
+        "type": "SELECT_MASTER",
+        "label_en": "Department",
+        "label_fr": "Département",
+        "required": false,
+        "source": {
+         "domain": "geography",
+         "list": "cameroon_department"
+        },
+        "other_allowed": false,
+        "depends_on": "region"
+       },
+       {
+        "key": "city",
+        "type": "SELECT_MASTER",
+        "label_en": "City / town",
+        "label_fr": "Ville",
+        "required": true,
+        "source": {
+         "domain": "geography",
+         "list": "city"
+        },
+        "other_allowed": true,
+        "depends_on": "department"
+       },
+       {
         "key": "venue_address",
         "type": "TEXT",
-        "label_en": "Venue address",
-        "label_fr": "Adresse du lieu",
-        "required": true
+        "label_en": "Venue street / landmark",
+        "label_fr": "Rue / repère du lieu",
+        "required": false
        },
        {
         "key": "outdoor",

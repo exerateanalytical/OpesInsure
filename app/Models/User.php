@@ -27,17 +27,13 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     /**
      * Ability check used by RequirePermission and the wave 10/11 policies.
-     * SYSTEM_ADMIN bypasses; everyone else needs the permission (or '*')
-     * on an active role within the current tenant context.
+     * Delegates to App\Application\Identity\Rbac\PermissionEvaluator:
+     * SYSTEM_ADMIN passes platform permissions only; business-data
+     * permissions need a business role in the current tenant or an approved,
+     * audited break-glass grant (REQ-RBAC-004).
      */
     public function hasPermission(string $permission): bool
     {
-        if ($this->memberships()->where('status', 'ACTIVE')->where('role_code', 'SYSTEM_ADMIN')->exists()) {
-            return true;
-        }
-        $tenantId = app(\App\Domain\Tenancy\TenantContext::class)->id();
-        return $this->memberships()->where('tenant_id', $tenantId)->where('status', 'ACTIVE')
-            ->whereHas('roles', fn ($q) => $q->whereJsonContains('permissions', $permission)->orWhereJsonContains('permissions', '*'))
-            ->exists();
+        return app(\App\Application\Identity\Rbac\PermissionEvaluator::class)->allows($this, $permission);
     }
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Application\Overrides;
 
+use App\Application\Approvals\ApprovalService;
 use App\Application\Audit\AuditWriter;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -14,10 +16,11 @@ use Illuminate\Validation\ValidationException;
  * Captures previous/new value, reason, requester, authority, time; maker-checker approval unless the
  * requester acts inside a recorded delegated-authority grant. Every step is written to the audit chain.
  * Callers must apply the new value only once isEffective() is true — no silent edits.
+ * REQ-RBAC-005: requests and decisions are mirrored through the central ApprovalService (action engine.override).
  */
 final class OverrideService
 {
-    public function __construct(private readonly AuditWriter $audit) {}
+    public function __construct(private readonly AuditWriter $audit, private readonly ApprovalService $approvals) {}
 
     /**
      * @param  array{override_type: string, subject_type: string, subject_id?: string|null, field?: string|null,
@@ -82,6 +85,9 @@ final class OverrideService
                 'new' => ['outcome' => $input['new_outcome'] ?? null, 'value' => $input['new_value'] ?? null],
                 'approval_id' => $id,
             ]);
+            if (! $selfAuthorised) {
+                $this->approvals->open($requestedBy, $this->approvalInput((object) [...$input, 'id' => $id, 'requested_by' => $requestedBy]));
+            }
         });
 
         return $this->find($id);
@@ -130,6 +136,12 @@ final class OverrideService
             if ($o->requested_by === $approverId) {
                 throw ValidationException::withMessages(['override' => 'Maker-checker: the requester cannot decide their own override.']);
             }
+            $approval = $this->approvals->recordDecision(
+                $this->approvals->forSource('engine_overrides', $o->id, fn () => [$o->requested_by, $this->approvalInput($o)]),
+                User::findOrFail($approverId), $status, $note);
+            if ($status === 'APPROVED' && ! $this->approvals->isApproved($approval)) {
+                return; // the matrix requires further approval levels
+            }
             $now = now();
             DB::table('engine_overrides')->where('id', $overrideId)->update($status === 'APPROVED'
                 ? ['status' => 'APPROVED', 'approved_by' => $approverId, 'approved_at' => $now, 'decision_note' => $note]
@@ -140,5 +152,12 @@ final class OverrideService
         });
 
         return $this->find($overrideId);
+    }
+
+    private function approvalInput(object $o): array
+    {
+        return ['action_code' => 'engine.override', 'subject_type' => $o->subject_type, 'subject_id' => $o->subject_id ?? null,
+            'source_table' => 'engine_overrides', 'source_id' => $o->id, 'reason' => $o->justification ?? null, 'tenant_id' => $o->tenant_id ?? null,
+            'payload' => ['override_type' => $o->override_type, 'field' => $o->field ?? null, 'reason_code' => $o->reason_code ?? null]];
     }
 }

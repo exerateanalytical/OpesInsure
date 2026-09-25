@@ -52,6 +52,12 @@ final class MotorRiskSchema
             self::f('powertrain', 'Fuel / powertrain', 'select', 'vehicle', true, self::options('powertrains')),
             self::f('hybrid_subtype', 'Hybrid type', 'select', 'vehicle', false, self::options('hybrid_subtypes'), ['visible_when' => ['powertrain' => self::HYBRID_POWERTRAINS]]),
             self::f('transmission', 'Transmission', 'select', 'vehicle', false, self::options('transmissions')),
+            // Optional picker steps (generation -> engine variant); the variant auto-fills the specs below.
+            self::f('vehicle_generation_code', 'Generation', 'VEHICLE_GENERATION', 'vehicle', false, null, ['source' => '/api/v1/public/vehicles/models/{model_code}/generations', 'depends_on' => 'model_code']),
+            self::f('vehicle_variant_code', 'Engine / version', 'VEHICLE_VARIANT', 'vehicle', false, null, ['source' => '/api/v1/public/vehicles/models/{model_code}/generations/{vehicle_generation_code}/variants?year={year}', 'depends_on' => 'vehicle_generation_code']),
+            self::f('engine_capacity_cc', 'Engine capacity (cc)', 'number', 'vehicle', false, null, ['min' => 1, 'max' => 30000]),
+            self::f('power_hp', 'Power (hp)', 'number', 'vehicle', false, null, ['min' => 1, 'max' => 3000]),
+            self::f('drive_type', 'Drive type', 'select', 'vehicle', false, self::options('drive_types')),
             self::f('registration_number', 'Registration number', 'text', 'vehicle', true, null, ['placeholder' => 'LT 000 AA']),
             self::f('vin', 'VIN / chassis number', 'text', 'vehicle', false, null, ['max_length' => 40]),
             self::f('fiscal_power', 'Fiscal power (CV)', 'number', 'vehicle', true, null, ['min' => 1, 'max' => 60]),
@@ -75,6 +81,44 @@ final class MotorRiskSchema
             'fields' => $fields,
             'required' => ['registration_number', 'fiscal_power', 'usage_type', 'zone'],
         ];
+    }
+
+    /**
+     * Optional picker facts: accepted when absent, validated when present.
+     * Generation/variant codes must exist, be active and belong to the chosen
+     * model (and variant to generation).
+     *
+     * @param  array<string, mixed>  $facts
+     */
+    public static function validateVehicleFacts(array $facts): void
+    {
+        $errors = [];
+        $modelCode = isset($facts['model_code']) && is_scalar($facts['model_code']) ? strtoupper((string) $facts['model_code']) : null;
+        $model = $modelCode ? \App\Models\Vehicles\VehicleModel::where('code', $modelCode)->first() : null;
+        $generation = null;
+        if (! empty($facts['vehicle_generation_code'])) {
+            $generation = is_scalar($facts['vehicle_generation_code']) ? \App\Models\Vehicles\VehicleGeneration::where('code', strtoupper((string) $facts['vehicle_generation_code']))->where('active', true)->first() : null;
+            if (! $generation || ($model && $generation->model_id !== $model->id)) {
+                $errors['risk_facts.vehicle_generation_code'] = 'Unknown vehicle generation for this model.';
+            }
+        }
+        if (! empty($facts['vehicle_variant_code'])) {
+            $variant = is_scalar($facts['vehicle_variant_code']) ? \App\Models\Vehicles\VehicleVariant::where('code', strtoupper((string) $facts['vehicle_variant_code']))->where('active', true)->first() : null;
+            if (! $variant || ($model && $variant->model_id !== $model->id) || ($generation && $variant->generation_id !== $generation->id)) {
+                $errors['risk_facts.vehicle_variant_code'] = 'Unknown engine variant for this vehicle.';
+            }
+        }
+        foreach (['engine_capacity_cc' => 30000, 'power_hp' => 3000] as $k => $max) {
+            if (isset($facts[$k]) && $facts[$k] !== '' && (! is_numeric($facts[$k]) || $facts[$k] < 1 || $facts[$k] > $max)) {
+                $errors["risk_facts.$k"] = "$k must be between 1 and $max.";
+            }
+        }
+        if (! empty($facts['drive_type']) && ! \App\Models\Vehicles\VehicleReferenceValue::where(['group' => 'drive_type', 'code' => $facts['drive_type']])->exists()) {
+            $errors['risk_facts.drive_type'] = 'Unknown drive type.';
+        }
+        if ($errors) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
+        }
     }
 
     /**
@@ -102,9 +146,14 @@ final class MotorRiskSchema
         self::$enums ??= json_decode((string) file_get_contents(database_path(VehicleMasterDataSeeder::DATA_FILE)), true, 512, JSON_THROW_ON_ERROR)['enums'];
         $group = VehicleReferenceLabels::GROUPS[$enumKey];
 
-        return array_map(fn ($e) => is_array($e)
+        $options = array_map(fn ($e) => is_array($e)
             ? ['value' => $e[0], 'label' => $e[1]]
             : ['value' => $e, 'label' => VehicleReferenceLabels::for($group, $e)[0]], self::$enums[$enumKey]);
+        foreach (VehicleReferenceLabels::EXTRA_VALUES[$group] ?? [] as $code => [$en]) {
+            $options[] = ['value' => $code, 'label' => $en];
+        }
+
+        return $options;
     }
 
     private static function f(string $key, string $label, string $type, string $step, bool $required, ?array $options = null, array $extra = []): array
