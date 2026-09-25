@@ -357,6 +357,10 @@ final class DomainEventCatalogue
             // Batch 13C — REQ-REI-001/002 reinsurance (App\Application\Reinsurance)
             $d('reinsurance.treaty_version.activated', 'reinsurance_treaty', 'Treaty version activated (maker-checker).', [], [], true),
             $d('reinsurance.policy.ceded', 'policy', 'Policy cession calculated against treaties in force.', [], [], true),
+            // Batch 14C — REQ-REI-003 facultative placements (App\Application\Reinsurance\Facultative\FacultativePlacementService)
+            $d('reinsurance.facultative.submitted', 'facultative_placement', 'Facultative slip submitted for approval with signed lines.', [], [], true),
+            $d('reinsurance.facultative.bound', 'facultative_placement', 'Facultative placement approved (maker-checker, FACULTATIVE_APPROVE) and bound; cession recorded.', [], [], true),
+            $d('reinsurance.facultative.rejected', 'facultative_placement', 'Facultative placement rejected by the checker.', [], [], true),
             // Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters)
             $d('claim.expert.assigned', 'claim', 'Expert / adjuster appointed on a claim.', [], [], true),
             $d('claim.expert.accepted', 'claim', 'Expert accepted the assignment.', [], [], true),
