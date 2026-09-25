@@ -703,3 +703,16 @@ Route::prefix('v1/claims/{id}/evidence')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{document}/review', [$e, 'review'])->middleware('permission:claims.evidence.verify')->whereUuid('document');
 });
 // End Agent C6
+// Agent C10 — REQ-CLM-010 claim assessment (recommendation) + investigation (App\Application\Claims\Assessment).
+Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $a = \App\Application\Claims\Assessment\Http\ClaimAssessmentController::class;
+    Route::get('{claim}/assessments', [$a, 'index'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('{claim}/assessments', [$a, 'store'])->middleware('permission:claims.assessment.record')->whereUuid('claim');
+    Route::post('assessments/{assessment}/accept', [$a, 'accept'])->middleware('permission:claims.assessment.review')->whereUuid('assessment');
+    Route::post('assessments/{assessment}/reject', [$a, 'reject'])->middleware('permission:claims.assessment.review')->whereUuid('assessment');
+    Route::post('{claim}/investigations', [$a, 'openInvestigation'])->middleware('permission:claims.investigation.manage')->whereUuid('claim');
+    Route::post('investigations/{investigation}/indicators', [$a, 'attachIndicators'])->middleware('permission:claims.investigation.manage')->whereUuid('investigation');
+    Route::post('investigations/{investigation}/findings', [$a, 'findings'])->middleware('permission:claims.investigation.manage')->whereUuid('investigation');
+    Route::post('investigations/{investigation}/conclude', [$a, 'conclude'])->middleware('permission:claims.investigation.conclude')->whereUuid('investigation');
+});
+// End Agent C10
