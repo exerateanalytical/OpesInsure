@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true">
   <testsuites><testsuite name="Unit"><directory>tests/Unit</directory></testsuite><testsuite name="Feature"><directory>tests/Feature</directory></testsuite><testsuite name="Architecture"><directory>tests/Architecture</directory></testsuite></testsuites>
-  <php><env name="APP_ENV" value="testing"/><env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/><env name="CACHE_STORE" value="array"/><env name="QUEUE_CONNECTION" value="sync"/></php>
+  <php><env name="APP_ENV" value="testing"/><env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/><env name="CACHE_STORE" value="array"/><env name="QUEUE_CONNECTION" value="sync"/>
+    <!-- Test-only provider placeholders the adapter/webhook tests assert against (previously only in a gitignored .env.testing,
+         so they failed in a clean/cloud checkout). Fake values; every HTTP call in these tests is Http::fake()d. -->
+    <env name="FILESYSTEM_DISK" value="local"/>
+    <env name="TWILIO_ACCOUNT_SID" value="ACtestingaccountsid00000000000000"/><env name="TWILIO_AUTH_TOKEN" value="testing-twilio-auth-token"/>
+    <env name="TWILIO_SMS_FROM" value="+15005550006"/><env name="TWILIO_WHATSAPP_FROM" value="whatsapp:+14155238886"/>
+    <env name="MTN_MOMO_SUBSCRIPTION_KEY" value="testing-subscription-key"/><env name="MTN_MOMO_API_USER" value="testing-api-user"/>
+    <env name="MTN_MOMO_API_KEY" value="testing-api-key"/><env name="MTN_MOMO_CALLBACK_TOKEN" value="testing-mtn-callback-token"/>
+    <env name="ORANGE_MONEY_MERCHANT_KEY" value="testing-merchant-key"/><env name="ORANGE_MONEY_CLIENT_ID" value="testing-client-id"/>
+    <env name="ORANGE_MONEY_CLIENT_SECRET" value="testing-client-secret"/><env name="ORANGE_MONEY_CALLBACK_TOKEN" value="testing-orange-callback-token"/>
+  </php>
 </phpunit>
