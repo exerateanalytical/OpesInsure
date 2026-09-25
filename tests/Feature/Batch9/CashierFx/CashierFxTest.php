@@ -88,7 +88,13 @@ it('REQ-PAY-010 runs a cashier session: float, collections, close with variance,
     $base = "/api/v1/finance/cashier-sessions/{$s['id']}";
     $this->postJson("$base/collections", ['method' => 'CASH', 'amount_minor' => 100000], tenantHeader($t))->assertStatus(422); // anonymous
     $this->postJson("$base/collections", ['method' => 'CHEQUE', 'amount_minor' => 1000, 'payer_name' => 'Jean'], tenantHeader($t))->assertStatus(422); // no cheque no
-    $this->postJson("$base/collections", ['method' => 'CASH', 'amount_minor' => 100000, 'payer_name' => 'Jean Mbarga', 'financial_obligation_id' => (string) Str::uuid()], tenantHeader($t))->assertCreated();
+    // a real receivable (Batch 9-1 ledger): the cash collection settles it
+    $obligation = app(\App\Application\Finance\Obligations\ObligationService::class)->create([
+        'tenant_id' => $t->id, 'kind' => 'RECEIVABLE', 'type' => 'PREMIUM', 'source_type' => 'test', 'source_id' => (string) Str::uuid(),
+        'currency' => 'XAF', 'amount_minor' => 100000, 'due_at' => now(),
+    ]);
+    $this->postJson("$base/collections", ['method' => 'CASH', 'amount_minor' => 100000, 'payer_name' => 'Jean Mbarga', 'financial_obligation_id' => $obligation->id], tenantHeader($t))->assertCreated();
+    expect(app(\App\Application\Finance\Obligations\ObligationService::class)->outstanding($obligation->id))->toBe(0);
     $this->postJson("$base/collections", ['method' => 'CHEQUE', 'amount_minor' => 250000, 'payer_name' => 'SARL Kribi', 'cheque_number' => 'CHQ-001', 'cheque_bank' => 'Afriland'], tenantHeader($t))->assertCreated();
     $eur = $this->postJson("$base/collections", ['method' => 'CASH', 'amount_minor' => 1000, 'currency' => 'EUR', 'payer_name' => 'Tourist'], tenantHeader($t))->assertCreated()->json('data');
     expect($eur['session_amount_minor'])->toBe(6560)->and($eur['fx_conversion_id'])->not->toBeNull();
