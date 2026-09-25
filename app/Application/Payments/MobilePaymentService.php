@@ -51,7 +51,8 @@ final class MobilePaymentService
             throw ValidationException::withMessages(['status' => __('wave12.payment_not_retryable')]);
         }
 
-        return $this->initiation->initiate($intent);
+        // REQ-PAY-008: a new attempt under the same intent, with retry limits and the no-double-charge guards.
+        return app(Retries\PaymentRetryService::class)->retry($intent, $user)['payment'];
     }
 
     /**

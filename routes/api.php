@@ -456,3 +456,11 @@ Route::prefix('v1/signature-requests')->middleware(['auth:api', 'json.api', 'thr
     Route::post('{request}/sign', [$g, 'sign'])->whereUuid('request');
     Route::post('{request}/decline', [$g, 'decline'])->whereUuid('request');
 });
+// Batch 9-4 — REQ-PAY-008 failed-payment retry under the same intent/obligation, REQ-PAY-014 payment collection mode.
+Route::prefix('v1/payments')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $m = \App\Application\Payments\ExecutionModes\Http\PaymentModesController::class;
+    Route::post('{payment}/retry', [$m, 'retry'])->middleware('throttle:10,1')->whereUuid('payment');
+    Route::get('{payment}/attempts', [$m, 'attempts'])->whereUuid('payment');
+    Route::get('{payment}/collection-mode', [$m, 'collectionMode'])->whereUuid('payment');
+});
+// End Batch 9-4

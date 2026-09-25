@@ -29,4 +29,14 @@ final class PaymentAdapterRegistry
             default => throw new InvalidArgumentException('Unsupported payment provider.'),
         };
     }
+
+    /**
+     * REQ-PAY-014 — every provider here is a PSP the platform prompts the payer through, i.e. the MOBILE_MONEY
+     * collection mode. The other modes (broker / insurer / bank / external) are chosen per payment by
+     * PaymentExecutionRegistry from the carrier capability profile and never reach this registry.
+     */
+    public function collectionMode(string $provider): string
+    {
+        return 'MOBILE_MONEY';
+    }
 }
