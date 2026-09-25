@@ -574,3 +574,16 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+
+// Batch 10-7 — REQ-ACC-002 manual journal lifecycle (maker-checker) + trial balance.
+Route::prefix('v1/ledger')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $m = \App\Interfaces\Http\Controllers\Api\V1\Ledger\ManualJournalController::class;
+    Route::post('manual-journals', [$m, 'store'])->middleware('permission:ledger.adjust');
+    Route::post('manual-journals/{journal}/validate', [$m, 'validateJournal'])->middleware('permission:ledger.adjust')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/approve', [$m, 'approve'])->middleware('permission:ledger.approve')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/reject', [$m, 'reject'])->middleware('permission:ledger.approve')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/post', [$m, 'post'])->middleware('permission:ledger.post')->whereUuid('journal');
+    Route::post('manual-journals/{journal}/reverse', [$m, 'reverse'])->middleware('permission:ledger.reverse')->whereUuid('journal');
+    Route::get('trial-balance', [$m, 'trialBalance'])->middleware('permission:ledger.read');
+});
+// End Batch 10-7

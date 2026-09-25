@@ -143,6 +143,13 @@ final class DomainEventCatalogue
             $d('document.signature.completed', 'signature_request', 'All signers signed.', [], [], true),
             $d('document.signature.declined', 'signature_request', 'A signer declined; request ended.', [], [], true),
             $d('ledger.event.posted', 'ledger', 'Ledger journal posted.', [], [], true),
+            // Batch 10-7 REQ-ACC-002 (App\Application\Ledger\Journals\ManualJournalService)
+            $d('ledger.journal.drafted', 'journal', 'Manual journal drafted.', [], [], true),
+            $d('ledger.journal.validated', 'journal', 'Manual journal validated (balanced, active accounts, open period).', [], [], true),
+            $d('ledger.journal.approved', 'journal', 'Manual journal approved by a checker other than the maker.', [], [], true),
+            $d('ledger.journal.rejected', 'journal', 'Manual journal sent back to DRAFT.', [], [], true),
+            $d('ledger.journal.posted', 'journal', 'Approved manual journal posted.', [], [], true),
+            $d('ledger.journal.reversed', 'journal', 'Journal reversed by a mirror journal.', [], [], true),
             $d('notification.delivery.requested', 'notification', 'Notification delivery requested.', [], [], true),
             $d('notification.delivery.sent', 'notification', 'Notification delivered to provider.', [], [], true),
             $d('partner.licence.decided', 'partner', 'Partner licence decision recorded.', [], [], true),
