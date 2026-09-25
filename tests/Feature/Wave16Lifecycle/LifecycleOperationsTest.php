@@ -47,9 +47,11 @@ it('only schedules commands that exist', function () {
         expect($registered)->toContain($m[1]);
     }
 
-    foreach (['policies:notify-expiry', 'policies:expire', 'settlements:prepare', 'reconciliation:run'] as $required) {
+    foreach (['policies:notify-expiry', 'policies:expire', 'reconciliation:run'] as $required) {
         expect(collect($events)->contains(fn ($e) => str_contains($e->command, $required)))->toBeTrue("{$required} is not scheduled");
     }
+    // D10 owner decision: the POLICY-basis weekly settlement schedule is retired.
+    expect(collect($events)->contains(fn ($e) => str_contains($e->command, 'settlements:prepare')))->toBeFalse();
 });
 
 it('sends 30/14/7/1-day renewal reminders once each, to inbox and Expo push', function () {

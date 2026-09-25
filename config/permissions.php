@@ -588,8 +588,8 @@ return [
         'clearing.view' => ['description' => 'Read mobile-money clearing batches and suspense.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN']],
         'clearing.manage' => ['description' => 'Create clearing batches, attach payments, record settlement (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
         'clearing.reconcile' => ['description' => 'Reconcile a settled clearing batch (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
-        'cashier.sessions.view' => ['description' => 'Read cashier sessions and collections.', 'suggested_roles' => ['FINANCE_OFFICER', 'BRANCH_MANAGER', 'CARRIER_SUPER_ADMIN']],
-        'cashier.sessions.operate' => ['description' => 'Open a cashier session, collect cash / cheques, close with a count.', 'suggested_roles' => ['FINANCE_OFFICER', 'BRANCH_MANAGER']],
+        'cashier.sessions.view' => ['description' => 'Read cashier sessions and collections.', 'suggested_roles' => ['FINANCE_OFFICER', 'BRANCH_MANAGER', 'CASHIER', 'CARRIER_SUPER_ADMIN']],
+        'cashier.sessions.operate' => ['description' => 'Open a cashier session, collect cash / cheques, close with a count.', 'suggested_roles' => ['FINANCE_OFFICER', 'CASHIER']],
         'cashier.sessions.approve' => ['description' => 'Approve or reject a closed cashier session (supervisor; never the cashier).', 'suggested_roles' => ['BRANCH_MANAGER', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
         'fx.rates.view' => ['description' => 'Read FX rates.', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER', 'BRANCH_MANAGER']],
         'fx.rates.manage' => ['description' => 'Record a new (immutable) FX rate.', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
@@ -598,13 +598,31 @@ return [
         'finance.reports.view' => ['description' => 'Run the finance reports (JSON / CSV).', 'suggested_roles' => ['FINANCE_OFFICER', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER', 'FINANCE_MANAGER']],
     ],
 
+    // D10 owner decision — Batch 10 finance / technical accounting / commission statement / bordereaux permissions.
+    'batch10_finance' => [
+        'ledger.periods.close' => ['description' => 'Close an accounting period (soft/hard close).', 'suggested_roles' => ['FINANCE_OFFICER', 'FINANCE_MANAGER']],
+        'ledger.periods.reopen' => ['description' => 'Reopen a closed accounting period (senior checker only).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'ledger.approve' => ['description' => 'Approve or reject a validated manual journal (checker; never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'ledger.post' => ['description' => 'Post an approved manual journal to the ledger (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'technical_accounting.read' => ['description' => 'Read technical accounting reports, UPR runs and actuarial imports.', 'suggested_roles' => ['FINANCE_OFFICER', 'REINSURANCE_OFFICER', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'technical_accounting.actuarial.import' => ['description' => 'Import actuarial reserve figures (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'technical_accounting.actuarial.approve' => ['description' => 'Approve an actuarial import (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'technical_accounting.upr.post' => ['description' => 'Post a UPR run to the ledger (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'commission.statements.adjust' => ['description' => 'Propose a commission statement adjustment (maker).', 'suggested_roles' => ['FINANCE_OFFICER']],
+        'commission.statements.adjustments.approve' => ['description' => 'Approve a commission statement adjustment (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'commission.statements.dispute' => ['description' => 'Raise a dispute on a commission statement.', 'suggested_roles' => ['BROKER_ADMIN', 'FINANCE_OFFICER']],
+        'commission.statements.dispute.resolve' => ['description' => 'Resolve a commission statement dispute (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'settlement.reconcile' => ['description' => 'Reconcile a settled settlement batch (checker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'bordereaux.view' => ['description' => 'Read bordereaux and their lines.', 'suggested_roles' => ['BROKER_STAFF', 'BROKER_SUPERVISOR', 'BROKER_ADMIN', 'CARRIER_STAFF', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN', 'FINANCE_OFFICER', 'FINANCE_MANAGER']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
             'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries', 'rating',
-            'finance', 'premium_status', 'premium_components', 'clearing', 'cashier',
+            'finance', 'premium_status', 'premium_components', 'clearing', 'cashier', 'technical_accounting',
         ],
         'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'attribution.transfer'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],

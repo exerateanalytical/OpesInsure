@@ -321,6 +321,7 @@ final class DomainEventCatalogue
             $d('commission.disputed', 'commission', 'Commission disputed.', [], [$C], true),
             $d('commission.dispute_resolved', 'commission', 'Commission dispute resolved; awaits re-approval.', [], [$C], true),
             $d('commission.reversed', 'commission', 'Commission reversed before it was earned or paid.', [], [$C], true),
+            $d('commission.reopened', 'commission', 'Paid commission reopened to PAYABLE after its payout was reversed (D10).', [], [$C], true),
 
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),

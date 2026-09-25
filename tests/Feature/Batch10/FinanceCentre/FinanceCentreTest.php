@@ -136,7 +136,9 @@ it('grants the Batch 9 / 10-10 finance permissions to the roles each suggests, k
     foreach (['FINANCE_OFFICER', 'CARRIER_STAFF', 'CARRIER_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'CUSTOMER_SERVICE', 'AGENT', 'CUSTOMER'] as $maker) {
         expect(array_intersect($checkers, RoleCatalogue::defaultPermissions($maker)))->toBe([], "{$maker} must not hold checker permissions");
     }
-    expect(RoleCatalogue::defaultPermissions('BRANCH_MANAGER'))->toContain('cashier.sessions.operate', 'cashier.sessions.approve')
+    // D10 owner decision: the till operator (CASHIER) and the approver (BRANCH_MANAGER) are distinct roles.
+    expect(RoleCatalogue::defaultPermissions('BRANCH_MANAGER'))->toContain('cashier.sessions.approve')->not->toContain('cashier.sessions.operate')
+        ->and(RoleCatalogue::defaultPermissions('CASHIER'))->toContain('cashier.sessions.operate')->not->toContain('cashier.sessions.approve')
         ->and(RoleCatalogue::defaultPermissions('BROKER_ADMIN'))->toContain('statements.read')
         ->and(RoleCatalogue::defaultPermissions('CARRIER_ADMIN'))->toContain('statements.read')
         ->and(RoleCatalogue::defaultPermissions('CUSTOMER'))->not->toContain('premium_status.read');

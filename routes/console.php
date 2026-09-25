@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 // Every command scheduled here must exist — tests/Feature/Wave16Lifecycle/ScheduleTest.php enforces it.
-Schedule::command('settlements:prepare')->weeklyOn(1, '02:00')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+// D10: the weekly POLICY-basis 'settlements:prepare' schedule is retired (double-remittance risk with OBLIGATIONS
+// batches); the command remains for manual catch-up and refuses policies already in an OBLIGATIONS batch.
 Schedule::command('reconciliation:run')->hourly()->withoutOverlapping()->onOneServer();
 Schedule::command('policies:expire')->dailyAt('00:15')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
 Schedule::command('policies:notify-expiry')->dailyAt('08:00')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();

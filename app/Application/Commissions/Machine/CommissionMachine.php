@@ -22,6 +22,8 @@ use App\Domain\Shared\StateMachine\StateMachineDefinition;
  *   PAID, REVERSED, CLAWED_BACK, ADJUSTED, DISPUTED → same name.
  * A partial clawback is a CLAWBACK movement that leaves the state unchanged; claw_back to CLAWED_BACK is the full one.
  * The legacy direct 'vest' (ACCRUED → PAYABLE once vests_at elapsed) stays for the wave-6 endpoint.
+ * D10 owner decision: 'reopen' PAID → PAYABLE (VESTED) when the payout that paid it is reversed
+ * (PayoutService::reverse, maker-checker). PAID is therefore no longer terminal.
  */
 final class CommissionMachine
 {
@@ -29,7 +31,7 @@ final class CommissionMachine
 
     public const SUBJECT = 'commission_accrual';
 
-    public const TERMINAL = ['PAID', 'REVERSED', 'CLAWED_BACK'];
+    public const TERMINAL = ['REVERSED', 'CLAWED_BACK'];
 
     /** Stored statuses that still carry commission that can be clawed back. */
     public const LIVE = ['CALCULATED', 'PENDING', 'EARNED', 'APPROVED', 'VESTED', 'AVAILABLE', 'ADJUSTED', 'DISPUTED'];
@@ -61,7 +63,7 @@ final class CommissionMachine
                 'AVAILABLE' => ['label' => 'Payable (legacy)'],
                 'ADJUSTED' => ['label' => 'Adjusted — awaiting re-approval'],
                 'DISPUTED' => ['label' => 'Disputed'],
-                'PAID' => ['terminal' => true, 'label' => 'Paid'],
+                'PAID' => ['label' => 'Paid'],
                 'REVERSED' => ['terminal' => true, 'label' => 'Reversed'],
                 'CLAWED_BACK' => ['terminal' => true, 'label' => 'Clawed back'],
             ],
@@ -77,6 +79,8 @@ final class CommissionMachine
                 ['event' => 'vest', 'from' => ['PENDING'], 'to' => 'VESTED', 'guards' => ['commission.vesting_elapsed'],
                     'side_effects' => ['partner_statement:PAYABLE/COMMISSION'], 'domain_event' => 'commission.payable'],
                 ['event' => 'pay', 'from' => ['VESTED', 'AVAILABLE'], 'to' => 'PAID', 'side_effects' => ['partner_statement_obligation:settled_by_payout'], 'domain_event' => 'commission.paid'],
+                ['event' => 'reopen', 'from' => ['PAID'], 'to' => 'VESTED', 'domain_event' => 'commission.reopened',
+                    'failure_path' => 'stay PAID; only a reversed payout reopens it'],
                 ['event' => 'adjust', 'from' => ['PENDING', 'EARNED', 'APPROVED'], 'to' => 'ADJUSTED', 'side_effects' => ['commission_movements:ADJUSTMENT'], 'domain_event' => 'commission.adjusted'],
                 ['event' => 'dispute', 'from' => ['PENDING', 'EARNED', 'APPROVED', 'VESTED', 'ADJUSTED'], 'to' => 'DISPUTED', 'domain_event' => 'commission.disputed'],
                 ['event' => 'resolve_dispute', 'from' => ['DISPUTED'], 'to' => 'ADJUSTED', 'domain_event' => 'commission.dispute_resolved'],

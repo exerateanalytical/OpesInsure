@@ -251,6 +251,22 @@ final class CommissionLifecycleService
         });
     }
 
+    /**
+     * D10: a reversed payout (PayoutService::reverse, which already lowered paid_minor) reopens an accrual it had PAID: PAID → PAYABLE.
+     * No-op when the accrual is not PAID or still nothing is owed.
+     */
+    public function reopenPaid(CommissionAccrual $a, string $reference, ?User $actor = null): CommissionAccrual
+    {
+        return DB::transaction(function () use ($a, $reference, $actor): CommissionAccrual {
+            $a = CommissionAccrual::lockForUpdate()->findOrFail($a->id);
+            if ($a->status === 'PAID' && CommissionTransitions::owed($a) > 0) {
+                $this->machine->apply($a, 'reopen', $actor, 'PAYOUT_REVERSED', ['paid_at' => null], null, ['reference' => $reference]);
+            }
+
+            return $a->refresh();
+        });
+    }
+
     /** @return array{earned:int, payable:int} scheduled sweep: settled premiums earn, approved + vested commission becomes payable. */
     public function advance(): array
     {
