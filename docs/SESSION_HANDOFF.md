@@ -31,10 +31,13 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH9.md |
 | Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
 | Owner decisions D10 | cloud | MERGED (ships with Batch 11/12) |
-| Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | MERGED, NOT DEPLOYABLE YET (6 integration test failures being fixed). Deploy only up to 891355a (Batch 10) until RELEASE_HANDOVER_BATCH11_12.md exists. |
+| Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH11_12.md |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: Batches 11+12 (15 claims agents) + D10 decisions + integration fix merged. Full suite 1440 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH11_12.md
+- Pending in cloud: C8 claim types/deadlines + a claims role pass (next release).
 
 ### 2026-09-25 cloud: Batch 10 merged (10 agents + 1 fix agent). Full suite 1348 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH10.md
 - Merge fixes: commission accrual combines the 10-2 rule resolver with the 10-1 state machine; JournalLine split into its own file (it broke autoload); a single commission payable per partner statement (the per-accrual payable is removed); one rule selector.
