@@ -7,6 +7,12 @@ namespace App\Application\Catalogue;
 use App\Application\MasterData\InputFieldContract;
 
 /**
+ * SEED DATA (REQ-DUP-020): the canonical risk questions are question_sets / product_questions
+ * (App\Application\Rules\QuestionSetCatalogue), versioned per product version with a line default.
+ * This class (with NonMotorRiskSchemas and MotorRiskSchema) is the seed those line defaults are
+ * synced from (new question-set version whenever this content changes; rules:sync-question-sets).
+ * Runtime readers should go through QuestionSetCatalogue::lineSchema() / questionnaire().
+ *
  * The quote wizard's question schema per insurance line: fields
  * {key,label,type,options,required,step} grouped into ordered steps.
  * PlatformCatalogueSeeder writes these onto insurance_lines.risk_schema

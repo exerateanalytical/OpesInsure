@@ -12,7 +12,7 @@ use App\Application\Audit\AuditWriter;
  */
 final class EngineResult
 {
-    public const ENGINES = ['TEMPORAL', 'COVERAGE', 'AUTHORITY', 'REGCHANGE', 'AML', 'CASE', 'ACCUMULATION', 'DOCUMENT', 'RATING', 'FRAUD'];
+    public const ENGINES = ['TEMPORAL', 'COVERAGE', 'AUTHORITY', 'REGCHANGE', 'AML', 'CASE', 'ACCUMULATION', 'DOCUMENT', 'RATING', 'FRAUD', 'RULES'];
 
     /**
      * @param  list<array{rule_code: string, rule_version?: string|int|null, source_table?: string|null, source_id?: string|null, condition?: string|null, input_values?: array, result: string|bool, message_key?: string|null}>  $trace

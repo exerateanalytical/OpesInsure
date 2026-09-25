@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Customers\Beneficiaries\Http;
 
 use App\Application\Customers\Beneficiaries\BeneficiaryService;
+use App\Application\Identity\OwnershipScope;
 use App\Domain\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,23 +21,35 @@ final class BeneficiaryController
         return app(TenantContext::class)->id();
     }
 
-    public function index(string $policy): JsonResponse
+    /** Tenant-scoped policy; owner-scoped callers (customers) only reach their own policy. */
+    private function scopedPolicy(string $policy)
     {
         $p = $this->beneficiaries->policy($policy, $this->tenant());
+        $user = request()->user();
+        if ($user !== null) {
+            app(OwnershipScope::class)->assertOwnParty($user, $p->party_id);
+        }
+
+        return $p;
+    }
+
+    public function index(string $policy): JsonResponse
+    {
+        $p = $this->scopedPolicy($policy);
 
         return response()->json(['data' => $this->beneficiaries->current($p)->map(fn ($b) => self::row($b))->values()]);
     }
 
     public function history(string $policy): JsonResponse
     {
-        $p = $this->beneficiaries->policy($policy, $this->tenant());
+        $p = $this->scopedPolicy($policy);
 
         return response()->json(['data' => $this->beneficiaries->history($p)->map(fn ($s) => ['designations' => array_map(fn ($b) => self::row($b), $s['designations'])] + $s)->values()]);
     }
 
     public function replace(Request $r, string $policy): JsonResponse
     {
-        $p = $this->beneficiaries->policy($policy, $this->tenant());
+        $p = $this->scopedPolicy($policy);
         $d = $r->validate([
             'beneficiaries' => 'present|array|max:20',
             'beneficiaries.*.designation' => ['required', Rule::in(BeneficiaryService::DESIGNATIONS)],

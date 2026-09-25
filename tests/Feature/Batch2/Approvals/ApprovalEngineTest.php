@@ -74,7 +74,7 @@ it('REQ-RBAC-005 enforces maker ≠ checker in the service and at the database',
     expect($done->status)->toBe('APPROVED')->and($done->decided_by)->toBe($checker->id);
     expect(fn () => $svc->reject($done, apUser(), 'too late'))->toThrow(ValidationException::class);
     apDbRejects(fn () => DB::table('approval_decisions')->where('approval_request_id', $req->id)->delete());
-    expect(DB::table('audit_log')->where('subject_type', 'approval_request')->where('subject_id', $req->id)->pluck('action')->all())
+    expect(DB::table('audit_log')->where('subject_type', 'approval_request')->where('subject_id', $req->id)->orderBy('sequence')->pluck('action')->all())
         ->toBe(['approval.requested', 'approval.approved']);
 });
 

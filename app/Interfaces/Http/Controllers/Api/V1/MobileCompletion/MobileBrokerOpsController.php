@@ -147,7 +147,7 @@ final class MobileBrokerOpsController
         $outstanding = (int) DB::table('payment_intents')->join('proposals', 'proposals.id', '=', 'payment_intents.proposal_id')->where('proposals.party_id', $c->party_id)->whereIn('payment_intents.status', ['CREATED', 'PENDING_CUSTOMER', 'PROCESSING', 'PENDING'])->sum('payment_intents.amount_minor');
 
         return [
-            'id' => $c->id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
+            'id' => $c->id, 'party_id' => $c->party_id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
             'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city'),
             'origin_locked' => DB::table('customer_attributions')->where('party_id', $c->party_id)->where('status', 'ACTIVE')->exists(),
             'policies' => (clone $policies)->where('status', 'ACTIVE')->count(), 'outstanding_minor' => $outstanding,

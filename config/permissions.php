@@ -281,6 +281,8 @@ return [
         'distribution.agreements.view' => ['description' => 'View carrier-broker agreements, product permissions and permit checks.', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN', 'BROKER_ADMIN']],
         'distribution.agreements.manage' => ['description' => 'Draft carrier-broker agreements and set product permissions/commission.', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
         'distribution.agreements.approve' => ['description' => 'Activate/suspend/terminate an agreement (maker cannot activate own).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        // Batch 5 / 5D — REQ-DST-001/002, REQ-AOM-002: sellable catalogue per viewer, sellability checks, execution plan.
+        'distribution.catalogue.view' => ['description' => 'View the sellable catalogue and sellability of carrier products for own partner (or tenant partners), and the execution adapters.', 'suggested_roles' => ['PLATFORM_ADMIN', 'BROKER_ADMIN', 'BROKER_STAFF', 'AGENT', 'BRANCH_MANAGER', 'CARRIER_ADMIN']],
     ],
 
     'regulator' => [
@@ -393,12 +395,38 @@ return [
         ],
     ],
 
+    // Batch 5A — product model (REQ-PRD-001…006): routes/product_model.php. Product configuration, not customer data.
+    'catalogue' => [
+        'catalogue.view' => ['description' => 'Read product families, carrier products, versions, hierarchy, snapshots, legal texts and indemnity previews (insurers: own carrier only).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'COMPLIANCE_ADMIN']],
+        'catalogue.manage' => ['description' => 'Create families, carrier products, draft versions, plans, coverage terms, limits, deductibles, exclusions and draft legal texts.', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN']],
+        'catalogue.publish' => ['description' => 'Checker: approve / publish / suspend / reinstate / retire versions and approve legal texts (maker-checker enforced).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_SUPER_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    /** Batch 5C — rating v2 (REQ-RAT-001..005). tariff.manage / tariff.approve already gate create/submit/approve in routes/api.php. */
+    'rating' => [
+        'tariff.manage' => ['description' => 'Create, submit and view tariff versions and their status history.', 'suggested_roles' => ['CARRIER_ADMIN', 'ACTUARY']],
+        'tariff.approve' => ['description' => 'Approve or reject a tariff version in review (checker; never the maker).', 'suggested_roles' => ['CARRIER_ADMIN']],
+        'tariff.publish' => ['description' => 'Schedule, activate or expire an approved tariff version (PRE §75).', 'suggested_roles' => ['CARRIER_ADMIN']],
+        'rating.charges.view' => ['description' => 'View the charge-code catalogue and tax/levy/fee tables (rates DEMO/UNVERIFIED until OQ-9).', 'suggested_roles' => ['CARRIER_ADMIN', 'FINANCE_ADMIN', 'COMPLIANCE_ADMIN']],
+        'rating.charges.manage' => ['description' => 'Draft tax/levy/fee table versions.', 'suggested_roles' => ['FINANCE_ADMIN']],
+        'rating.charges.approve' => ['description' => 'Approve a tax/levy/fee table version (checker; never the maker).', 'suggested_roles' => ['FINANCE_ADMIN', 'COMPLIANCE_ADMIN']],
+        'rating.runs.view' => ['description' => 'View a quote rating snapshot (versions, EngineResult, branch allocation) and reproduce it.', 'suggested_roles' => ['UNDERWRITER', 'CARRIER_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    // Batch 5B — rules engine + question sets (REQ-RUL-001…004, REQ-DUP-020): routes/rules.php. Product configuration, not customer data.
+    'rules' => [
+        'rules.view' => ['description' => 'Read rule sets, question sets, product questionnaires; sandbox-simulate a rule set (nothing persisted).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'UNDERWRITER', 'COMPLIANCE_ADMIN']],
+        'rules.manage' => ['description' => 'Draft and submit eligibility / completeness rule sets and question sets (maker).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN']],
+        'rules.approve' => ['description' => 'Approve, reject or retire rule sets and question sets (checker; never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'COMPLIANCE_ADMIN']],
+        'rules.evaluate' => ['description' => 'Run eligibility and completeness checks (POST /insurance/eligibility/check, /insurance/completeness/check); logged in engine_evaluations.', 'suggested_roles' => ['UNDERWRITER', 'BROKER_ADMIN', 'BROKER_STAFF', 'CARRIER_ADMIN']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
-            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries',
+            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries', 'rating',
         ],
         'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'attribution.transfer'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],

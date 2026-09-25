@@ -39,7 +39,7 @@ final class VehicleDuplicateGuard
                 ->whereRaw("regexp_replace(upper(v.{$column}), '[^A-Z0-9]', '', 'g') = ?", [$value])
                 ->value('a.id');
             if ($existing) {
-                throw ValidationException::withMessages([$column => [__('risks.duplicate_vehicle', ['field' => $column, 'id' => $existing])]])->status(409);
+                throw ValidationException::withMessages([$column => [__('risks.duplicate_vehicle', ['field' => $column, 'id' => $existing])], 'existing_asset_id' => [(string) $existing]])->status(409);
             }
         }
     }

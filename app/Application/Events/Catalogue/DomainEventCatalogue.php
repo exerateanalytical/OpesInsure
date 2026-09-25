@@ -69,10 +69,12 @@ final class DomainEventCatalogue
             // --- PRE 15 product events (QuoteRated, UnderwritingDecided aliased above) ---
             $d('catalogue.product.created', 'product', 'Product created.', ['ProductCreated'], [$P], true),
             $d('catalogue.product_version.submitted', 'product_version', 'Product version submitted for approval.', ['ProductVersionSubmitted'], [$P]),
-            $d('catalogue.product_version.approved', 'product_version', 'Product version approved.', ['ProductVersionApproved'], [$P]),
+            $d('catalogue.product_version.approved', 'product_version', 'Product version approved.', ['ProductVersionApproved'], [$P], true),
+            $d('catalogue.product_version.created', 'product_version', 'New draft product version created (Batch 5A).', ['ProductVersionCreated'], [$P], true),
+            $d('catalogue.product_version.reinstated', 'product_version', 'Suspended product version reinstated (Batch 5A).', ['ProductVersionReinstated'], [$P], true),
             $d('catalogue.product.published', 'product_version', 'Product version published.', ['ProductVersionPublished'], [$P], true),
-            $d('catalogue.product_version.suspended', 'product_version', 'Product version suspended.', ['ProductVersionSuspended'], [$P]),
-            $d('catalogue.product_version.retired', 'product_version', 'Product version retired.', ['ProductVersionRetired'], [$P]),
+            $d('catalogue.product_version.suspended', 'product_version', 'Product version suspended.', ['ProductVersionSuspended'], [$P], true),
+            $d('catalogue.product_version.retired', 'product_version', 'Product version retired.', ['ProductVersionRetired'], [$P], true),
             $d('tariff.approved', 'tariff', 'Tariff approved.', ['TariffApproved'], [$P], true),
             $d('tariff.activated', 'tariff', 'Tariff activated.', ['TariffActivated'], [$P]),
             $d('rules.eligibility.evaluated', 'eligibility', 'Eligibility evaluated.', ['EligibilityEvaluated'], [$P]),
@@ -129,6 +131,8 @@ final class DomainEventCatalogue
             $d('risk_asset.created', 'risk_asset', 'Risk asset created.', [], [], true),
             $d('risk_asset.updated', 'risk_asset', 'Risk asset updated.', [], [], true),
             $d('tariff.submitted', 'tariff', 'Tariff submitted for approval.', [], [], true),
+            $d('tariff.scheduled', 'tariff', 'Tariff version scheduled for its effective date (REQ-RAT-002).', [], [], true),
+            $d('tariff.expired', 'tariff', 'Tariff version expired (REQ-RAT-002).', [], [], true),
 
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),

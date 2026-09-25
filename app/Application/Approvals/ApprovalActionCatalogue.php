@@ -65,6 +65,9 @@ final class ApprovalActionCatalogue
         'master_data.import.approve' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Master-data import', 'sources' => 'MDC'],
         'entity.merge' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Duplicate entity merge', 'sources' => 'ICE gap 15'],
         'release.certify' => ['workflow' => 'RELEASE', 'category' => 'CONFIGURATION', 'description' => 'Release certification', 'sources' => 'Wave 11'],
+        // Batch 5B rules engine (REQ-RUL-001…004): rule sets and question sets are configuration, maker-checker governed.
+        'rule_set.approve' => ['workflow' => 'PRODUCT', 'category' => 'CONFIGURATION', 'description' => 'Eligibility / completeness rule set version approval', 'sources' => 'PRE §19-22, §74; REQ-RUL-002', 'checker_permission' => 'rules.approve'],
+        'question_set.approve' => ['workflow' => 'PRODUCT', 'category' => 'CONFIGURATION', 'description' => 'Product question set version approval', 'sources' => 'PRE §17-18, §74; REQ-RUL-001', 'checker_permission' => 'rules.approve'],
     ];
 
     /**

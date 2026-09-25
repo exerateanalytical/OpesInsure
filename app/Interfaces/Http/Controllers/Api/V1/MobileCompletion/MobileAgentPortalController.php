@@ -244,7 +244,7 @@ final class MobileAgentPortalController
         $policies = Policy::where('tenant_id', $t)->where('party_id', $c->party_id)->where('status', 'ACTIVE');
 
         return [
-            'id' => $c->id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
+            'id' => $c->id, 'party_id' => $c->party_id, 'full_name' => $c->party?->display_name ?? 'Client', 'phone_e164' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value ?? '',
             'city' => DB::table('party_addresses')->where('party_id', $c->party_id)->value('city'),
             'kyc_status' => DB::table('kyc_submissions')->where('party_id', $c->party_id)->orderByDesc('created_at')->value('status') ?? 'NOT_STARTED',
             'origin_locked' => DB::table('customer_attributions')->where('party_id', $c->party_id)->where('status', 'ACTIVE')->exists(),

@@ -22,6 +22,7 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
 - OTA published to channel production-apk (runtime 1.3.0): update group 6175be73-cb09-42c9-bd8f-219c6cda734e.
 
 ## Next
+- Known follow-ups: ClaimController::store raw insert bypasses CapabilityPinner (fix in Batch 11 claims); PaymentExecution adapter not wrapped (Batch 9); mobile agent/broker "what I can sell" list from GET distribution/catalogue.
 1. (done) OTA published.
 2. Mobile follow-ups:
    - render InputFieldContract `source` pickers in every form (docs/audit/FREE_TEXT_FIELDS_AUDIT.md "Mobile app changes");
@@ -29,4 +30,5 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
    - timezone picker (GET settings/timezones, PATCH me/settings);
    - vehicle suggestions via POST master-data/suggestions;
    - switch POST /mobile/policy-service-requests to /policies/{id}/service-requests.
-3. Phase 3 (2788750) LIVE (release r20260925-053120). Mobile OTA ea00d9ea published. Batch 4 IN PROGRESS (4A golden record, 4B KYC, 4C CRM, 4D insured objects + search, 4E web shell + insurer/broker portals).
+3. Phase 3 (2788750) LIVE. Phase 4 (581b900) LIVE (release r20260925-063819). Batch 5 IN PROGRESS (5A product model, 5B rules engine, 5C rating v2, 5D distribution + adapters) and a mobile agent on the Batch 4 screens (KYC, leads, beneficiaries, search, assets, Customer 360). Then Batch 6.
+- More follow-ups from Batch 5: hook RuleEngine::assertComplete into bind/issue/claim (Batches 6-7, 11); DocumentRequirementService::applicable should use the rules engine (DOCUMENTS domain); ProposalService should read PROPOSAL question sets instead of disclosure_schema_versions directly; RiskFactsProcessor and RiskAssetTypes should read via QuestionSetCatalogue; Filament UI for rules and question sets.

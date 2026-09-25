@@ -38,7 +38,11 @@ function docUser(): User
 function docPolicy(string $line = 'AUTO', array $facts = [], ?array $fixture = null): array
 {
     $f = $fixture ?? makeMobileCustomerFixture('+2376'.random_int(10000000, 99999999));
+    // Fixture only: published versions are frozen (REQ-PRD-001 trigger), so re-line it as a draft and republish.
+    $status = $f['product']->status;
+    $f['product']->update(['status' => 'DRAFT']);
     $f['product']->update(['line_code' => $line]);
+    $f['product']->update(['status' => $status]);
     $f['quote']->update(['line_code' => $line, 'risk_facts' => $facts]);
     $policy = Policy::create([
         'tenant_id' => $f['tenant']->id, 'proposal_id' => $f['proposal']->id, 'carrier_id' => $f['carrier']->id, 'party_id' => $f['party']->id,

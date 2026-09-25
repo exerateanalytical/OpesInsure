@@ -105,13 +105,13 @@ final class RoleCatalogue
     /** Explicit, audited break-glass permission (REQ-RBAC-004). */
     public const BREAK_GLASS_PERMISSION = 'platform.break-glass.use';
 
-    public const AGENT_PERMISSIONS = ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read' ];
+    public const AGENT_PERMISSIONS = ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'distribution.catalogue.view'];
 
-    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'beneficiaries.manage' ];
+    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'beneficiaries.manage', 'distribution.catalogue.view'];
 
-    public const BROKER_SUPERVISOR_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'beneficiaries.manage' ];
+    public const BROKER_SUPERVISOR_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'beneficiaries.manage', 'distribution.catalogue.view'];
 
-    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'attribution.transfer', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage' ];
+    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'attribution.transfer', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'distribution.catalogue.view'];
 
     public const CARRIER_STAFF_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read', 'carrier.finance.read', 'documents.carrier.upload'];
 
@@ -131,7 +131,7 @@ final class RoleCatalogue
 
     public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read'];
 
-    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read' ];
+    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view'];
 
     public const PROVIDER_PERMISSIONS = [
         'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read'],
@@ -191,7 +191,7 @@ final class RoleCatalogue
     private static function rawDefaultPermissions(string $roleCode): array
     {
         return match ($roleCode) {
-            'CUSTOMER' => ['quotes.rate'],
+            'CUSTOMER' => ['quotes.rate', 'beneficiaries.read'],
             'AGENT' => self::AGENT_PERMISSIONS,
             'BROKER_STAFF' => self::BROKER_STAFF_PERMISSIONS,
             'BROKER_SUPERVISOR' => self::BROKER_SUPERVISOR_PERMISSIONS,
