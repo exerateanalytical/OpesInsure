@@ -25,8 +25,20 @@ final class PaymentAdapterRegistry
             'fake' => app()->environment('local', 'testing') ? new FakePaymentAdapter : throw new InvalidArgumentException('The fake payment provider is only available to demo accounts.'),
             'mtn_momo' => new MtnMomoAdapter,
             'orange_money' => new OrangeMoneyAdapter,
+            'bank_transfer' => new BankTransferAdapter,
+            'card_sandbox' => new SandboxCardCheckoutAdapter,
             'maviance', 'campay' => new ConfiguredJsonPaymentAdapter($p),
             default => throw new InvalidArgumentException('Unsupported payment provider.'),
         };
+    }
+
+    /**
+     * REQ-PAY-014 — every provider here is a PSP the platform prompts the payer through, i.e. the MOBILE_MONEY
+     * collection mode. The other modes (broker / insurer / bank / external) are chosen per payment by
+     * PaymentExecutionRegistry from the carrier capability profile and never reach this registry.
+     */
+    public function collectionMode(string $provider): string
+    {
+        return 'MOBILE_MONEY';
     }
 }

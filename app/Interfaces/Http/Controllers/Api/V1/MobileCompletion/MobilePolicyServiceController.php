@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Policies\Endorsements\ServiceRequestIntake;
 use App\Application\Policies\MobileWalletService;
 use App\Application\Quotes\QuoteService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Policy;
 use App\Models\Quote;
 use App\Models\Tenant;
-use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,23 +47,12 @@ final class MobilePolicyServiceController
     {
         $data = $request->validate([
             'policy_id' => $policy ? 'nullable' : 'required|uuid',
-            'type' => 'required|string|in:ENDORSEMENT,CANCELLATION_REVIEW,ADDRESS_CHANGE,VEHICLE_CHANGE,BENEFICIARY_CHANGE,DOCUMENT_REISSUE',
+            'type' => 'required|string|in:'.implode(',', ServiceRequestIntake::TYPES),
             'reason' => 'required|string|min:5|max:4000',
         ]);
         $policyModel = $this->wallet->policy($policy ?? $data['policy_id'], $request->user(), app(TenantContext::class)->id());
-        $key = $request->header('Idempotency-Key') ?: (string) Str::uuid();
-        $id = (string) Str::uuid();
-        DB::transaction(function () use ($policyModel, $data, $id, $request, $key) {
-            DB::table('policy_transactions')->insert([
-                'id' => $id, 'tenant_id' => $policyModel->tenant_id, 'policy_id' => $policyModel->id, 'type' => $data['type'], 'status' => 'REQUESTED',
-                'transaction_number' => 'PTX-'.now()->format('Ym').'-'.strtoupper(Str::random(8)), 'effective_at' => now(), 'requested_changes' => json_encode(['reason' => $data['reason'], 'channel' => 'MOBILE', 'idempotency_key' => $key]),
-                'terms_before' => json_encode($policyModel->terms_snapshot), 'currency' => $policyModel->currency ?? 'XAF', 'reason_code' => $data['type'], 'notes' => $data['reason'], 'requested_by' => $request->user()->id,
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
-            DB::table('policy_transaction_events')->insert(['id' => (string) Str::uuid(), 'policy_transaction_id' => $id, 'from_status' => null, 'to_status' => 'REQUESTED', 'reason_code' => 'CUSTOMER_REQUEST', 'actor_id' => $request->user()->id, 'metadata' => json_encode(['message' => $data['reason']]), 'occurred_at' => now()]);
-            $this->audit->record('policy.service.requested', 'policy_transaction', $id, ['type' => $data['type'], 'channel' => 'MOBILE']);
-            UserNotification::notify($request->user(), 'SERVICE_REQUEST', 'Request received', 'We received your '.strtolower(str_replace('_', ' ', $data['type'])).' request for policy '.($policyModel->policy_number ?? '').'. Our team will review it within 2 business days.', 'INFO', "/services/$id", $policyModel->tenant_id);
-        });
+        // REQ-DUP-014: one intake for both the canonical and the deprecated mobile alias route.
+        $id = app(ServiceRequestIntake::class)->submit($policyModel, $data['type'], $data['reason'], $request->user(), $request->header('Idempotency-Key'));
 
         return response()->json(['data' => $this->present(DB::table('policy_transactions')->find($id), true)], 201);
     }

@@ -39,7 +39,7 @@ final class PremiumCoverController
             'carrier_id' => 'nullable|uuid', 'product_id' => 'nullable|uuid', 'class_code' => 'nullable|string|max:40', 'jurisdiction' => 'nullable|string|size:2',
             'premium_statuses' => 'nullable|array', 'premium_statuses.*' => ['string', Rule::in(PremiumCoverEvaluator::PREMIUM_STATUSES)],
             'is_exception' => 'nullable|boolean', 'activation_rule' => 'present',
-            'outcome' => ['required', Rule::in(PremiumCoverEvaluator::OUTCOMES)], 'grace_days' => 'nullable|integer|min:1|max:366|required_if:outcome,GRACE',
+            'outcome' => ['required', Rule::in(PremiumCoverEvaluator::OUTCOMES)], 'grace_days' => 'nullable|integer|min:1|max:366|required_if:outcome,GRACE', 'lapse_after_days' => 'nullable|integer|min:1|max:366',
             'priority' => 'nullable|integer|between:-1000,1000', 'legal_basis' => 'nullable|string|max:2000',
             'effective_from' => 'required|date', 'effective_until' => 'nullable|date|after_or_equal:effective_from',
         ]);
@@ -52,7 +52,7 @@ final class PremiumCoverController
             'id' => $id, 'code' => $d['code'], 'name' => $d['name'], 'carrier_id' => $d['carrier_id'] ?? null, 'product_id' => $d['product_id'] ?? null,
             'class_code' => $d['class_code'] ?? null, 'jurisdiction' => $d['jurisdiction'] ?? null,
             'premium_statuses' => json_encode(array_values($d['premium_statuses'] ?? [])), 'is_exception' => (bool) ($d['is_exception'] ?? false),
-            'activation_rule' => json_encode($d['activation_rule']), 'outcome' => $d['outcome'], 'grace_days' => $d['grace_days'] ?? null,
+            'activation_rule' => json_encode($d['activation_rule']), 'outcome' => $d['outcome'], 'grace_days' => $d['grace_days'] ?? null, 'lapse_after_days' => $d['lapse_after_days'] ?? null,
             'priority' => $d['priority'] ?? 100, 'legal_basis' => $d['legal_basis'] ?? null, 'verification_status' => 'UNVERIFIED',
             'effective_from' => $d['effective_from'], 'effective_until' => $d['effective_until'] ?? null, 'status' => 'DRAFT',
             'created_by' => $r->user()->id, 'created_at' => now(), 'updated_at' => now(),

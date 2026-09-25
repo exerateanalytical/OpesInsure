@@ -108,12 +108,21 @@ final class IssuanceQueueService
             && ! PolicyIssuanceRequest::where('proposal_id', $ex->proposal_id)->whereNotIn('status', ['REJECTED'])->exists()) {
             throw ValidationException::withMessages(['resolution' => 'A paid proposal can be closed manually only once an issuance request or policy exists; otherwise request a refund.']);
         }
-        $from = $ex->status;
-        $ex->update(['status' => 'RESOLVED', 'resolution' => $resolution, 'resolution_notes' => $notes, 'resolved_by' => $actor->id, 'resolved_at' => now()]);
-        $this->event($ex, 'RESOLVED', $from, 'RESOLVED', $actor, ['resolution' => $resolution]);
-        $this->audit->record('policy.issuance.exception_resolved', 'issuance_exception', $ex->id, ['resolution' => $resolution], $notes);
+        return DB::transaction(function () use ($ex, $actor, $resolution, $notes): IssuanceException {
+            // REQ-PAY-009 (Batch 9-6): a refund resolution raises a real refund candidate for the paid amount (WF-063 then
+            // calculates, reviews, approves, pays and reconciles it). Idempotent per exception.
+            $refundId = null;
+            if ($resolution === 'REFUND_REQUESTED') {
+                $refundId = app(\App\Application\Finance\Refunds\RefundEngine::class)->candidate(PaymentIntentRecord::findOrFail($ex->payment_intent_id),
+                    'issuance_exception', $ex->id, 'ISSUANCE_NOT_COMPLETED', $actor, null, $notes)->id;
+            }
+            $from = $ex->status;
+            $ex->update(['status' => 'RESOLVED', 'resolution' => $resolution, 'resolution_notes' => $notes, 'resolved_by' => $actor->id, 'resolved_at' => now()]);
+            $this->event($ex, 'RESOLVED', $from, 'RESOLVED', $actor, array_filter(['resolution' => $resolution, 'refund_id' => $refundId]));
+            $this->audit->record('policy.issuance.exception_resolved', 'issuance_exception', $ex->id, array_filter(['resolution' => $resolution, 'refund_id' => $refundId]), $notes);
 
-        return $ex->refresh();
+            return $ex->refresh();
+        });
     }
 
     /**
@@ -163,5 +172,7 @@ final class IssuanceQueueService
     {
         DB::table('issuance_exception_events')->insert(['id' => (string) \Illuminate\Support\Str::uuid(), 'issuance_exception_id' => $ex->id, 'action' => $action,
             'from_status' => $from, 'to_status' => $to, 'actor_id' => $actor?->id, 'metadata' => json_encode($meta), 'occurred_at' => now()]);
+        // REQ-REN-001 / WF-087: a paid renewal's issuance failure / recovery moves its renewal case.
+        app(\App\Application\Policies\Renewals\RenewalIssuanceFailureLink::class)->sync($ex, $action, $actor);
     }
 }

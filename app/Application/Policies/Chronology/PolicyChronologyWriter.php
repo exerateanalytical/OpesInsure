@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  */
 final class PolicyChronologyWriter
 {
-    public const KINDS = ['ISSUANCE', 'ENDORSEMENT', 'RENEWAL', 'REINSTATEMENT', 'CANCELLATION', 'BACKFILL'];
+    public const KINDS = ['ISSUANCE', 'ENDORSEMENT', 'RENEWAL', 'REINSTATEMENT', 'CANCELLATION', 'BACKFILL', 'SUSPENSION'];
 
     public function __construct(private IssuanceSnapshotBuilder $builder, private CanonicalJson $json) {}
 

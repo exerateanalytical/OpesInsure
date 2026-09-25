@@ -143,39 +143,16 @@ final class CertificateService
     }
 
     /**
-     * Serial + token verification: engine certificate documents first, then the
-     * legacy policy_certificates history.
+     * Serial + token verification. REQ-DUP-015: delegates to the one public
+     * verification service (engine certificate documents first, then legacy
+     * policy_certificates history). The fingerprint is only ever stored hashed
+     * (public_verification_lookups / certificate_verification_events.request_fingerprint_hash).
      *
      * @return array{serial_number: string, policy: Policy, issued_at: mixed, document_hash: string, document_id: ?string}
      */
     public function verify(string $serial, string $token, string $fingerprint): array
     {
-        $doc = Document::whereRaw("provenance->>'certificate_serial' = ?", [$serial])->whereRaw("jsonb_exists(provenance, 'verification_token_hash')")->latest('created_at')->first();
-        if ($doc) {
-            $policy = Policy::find($doc->policy_id);
-            $valid = hash_equals((string) $doc->provenance['verification_token_hash'], hash('sha256', $token))
-                && in_array(DocumentEngine::effectiveStatus($doc), ['VALID', 'ISSUED'], true)
-                && $policy && self::inForce($policy);
-            DB::table('public_verification_lookups')->insert(['id' => (string) Str::uuid(), 'channel' => 'API', 'reference_hash' => hash('sha256', mb_strtoupper($serial)),
-                'document_id' => $doc->id, 'result' => $valid ? 'valid' : 'not_found', 'token_presented' => true, 'request_fingerprint_hash' => hash('sha256', $fingerprint), 'occurred_at' => now()]);
-            if (! $valid) {
-                throw ValidationException::withMessages(['certificate' => __('wave5.certificate_not_verified')]);
-            }
-
-            return ['serial_number' => $serial, 'policy' => $policy, 'issued_at' => $doc->issued_at, 'document_hash' => $doc->sha256, 'document_id' => $doc->id];
-        }
-
-        $c = PolicyCertificate::with('policy')->where('serial_number', $serial)->first();
-        $valid = $c && hash_equals($c->verification_token_hash, hash('sha256', $token)) && $c->status === 'VALID' && self::inForce($c->policy);
-        if ($c) {
-            DB::table('certificate_verification_events')->insert(['id' => (string) Str::uuid(), 'policy_certificate_id' => $c->id, 'result' => $valid ? 'VERIFIED' : 'REJECTED',
-                'request_fingerprint_hash' => hash('sha256', $fingerprint), 'occurred_at' => now()]);
-        }
-        if (! $valid) {
-            throw ValidationException::withMessages(['certificate' => __('wave5.certificate_not_verified')]);
-        }
-
-        return ['serial_number' => $c->serial_number, 'policy' => $c->policy, 'issued_at' => $c->issued_at, 'document_hash' => $c->document_hash, 'document_id' => null];
+        return app(\App\Application\Documents\Verification\PublicVerificationService::class)->verifyCertificate($serial, $token, $fingerprint);
     }
 
     /** Voiding a LEGACY certificate (history row status only). Engine certificates are revoked via DocumentStatusService (maker-checker). */
@@ -215,10 +192,5 @@ final class CertificateService
         \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
         return [$key, $bytes];
-    }
-
-    private static function inForce(Policy $p): bool
-    {
-        return in_array($p->status, ['ACTIVE', 'EXPIRING'], true) && ! $p->coverage_starts_at->isFuture() && $p->coverage_ends_at->isFuture();
     }
 }

@@ -51,7 +51,8 @@ final class MobilePaymentService
             throw ValidationException::withMessages(['status' => __('wave12.payment_not_retryable')]);
         }
 
-        return $this->initiation->initiate($intent);
+        // REQ-PAY-008: a new attempt under the same intent, with retry limits and the no-double-charge guards.
+        return app(Retries\PaymentRetryService::class)->retry($intent, $user)['payment'];
     }
 
     /**
@@ -124,7 +125,7 @@ final class MobilePaymentService
     {
         $intent = $this->owned($paymentId, $user, $tenantId);
 
-        $alreadyRefunding = (int) Refund::where('payment_intent_id', $intent->id)->whereIn('status', ['REQUESTED', 'APPROVED', 'PROCESSING', 'COMPLETED'])->sum('amount_minor');
+        $alreadyRefunding = (int) Refund::where('payment_intent_id', $intent->id)->whereIn('status', Refund::ACTIVE_STATUSES)->sum('amount_minor');
         $key = $data['idempotency_key'] ?? hash('sha256', 'mobile-refund|'.$intent->id.'|'.$user->id.'|'.now()->toDateString());
         $existing = Refund::where('tenant_id', $intent->tenant_id)->where('idempotency_key', $key)->first();
         if ($existing) {
