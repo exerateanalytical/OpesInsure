@@ -26,7 +26,12 @@ final class CancellationCalculator
         private readonly ReferenceDateResolver $referenceDates,
     ) {}
 
-    public function calculate(Policy $p, CarbonInterface $effective): array
+    /**
+     * REQ-CAN-001: an insurer-initiated cancellation is always refunded pro-rata without the
+     * admin fee (the insured did not choose to leave); the rule's SHORT_RATE basis and fee
+     * apply to insured / intermediary-initiated cancellations only.
+     */
+    public function calculate(Policy $p, CarbonInterface $effective, ?string $initiatedBy = null): array
     {
         if ($effective->lessThan($p->coverage_starts_at) || $effective->greaterThan($p->coverage_ends_at)) {
             throw ValidationException::withMessages(['effective_at' => __('wave5.cancellation_date_invalid')]);
@@ -37,10 +42,12 @@ final class CancellationCalculator
         $total = max(1, $p->coverage_starts_at->diffInDays($p->coverage_ends_at));
         $unused = max(0, $effective->diffInDays($p->coverage_ends_at));
         $proRata = (int) round($p->premium_minor * $unused / $total);
-        $refund = $r->basis === 'SHORT_RATE' ? (int) round($proRata * $r->short_rate_basis_points / 10000) : $proRata;
-        $refund = max(0, min($p->premium_minor, $refund - $r->admin_fee_minor));
+        $insurer = $initiatedBy === 'INSURER';
+        $basis = $insurer ? 'PRO_RATA' : $r->basis;
+        $refund = $basis === 'SHORT_RATE' ? (int) round($proRata * $r->short_rate_basis_points / 10000) : $proRata;
+        $refund = max(0, min($p->premium_minor, $refund - ($insurer ? 0 : $r->admin_fee_minor)));
 
-        return ['refund_minor' => $refund, 'rule_id' => $r->id, 'basis' => $r->basis, 'unused_days' => $unused, 'total_days' => $total];
+        return ['refund_minor' => $refund, 'rule_id' => $r->id, 'basis' => $basis, 'unused_days' => $unused, 'total_days' => $total];
     }
 
     private function rule(string $line, CarbonInterface $effective): CancellationRuleVersion
