@@ -300,6 +300,12 @@ final class DomainEventCatalogue
             $d('policy.recovery.approved', 'policy', 'Recovery approved (maker-checker); policy active again.', [], [], true),
             $d('policy.recovery.rejected', 'policy', 'Recovery case rejected.', [], [], true),
             $d('privacy.consent.changed', 'consent', 'Privacy consent changed.', [], [], true),
+            // REQ-CMP-001 compliance cases on the case engine (App\Application\Compliance\Cases\ComplianceCaseService, agent E10)
+            $d('compliance.case.opened', 'compliance_case', 'Compliance case opened and linked to its COMPLIANCE_INVESTIGATION work case.', [], [$C], true),
+            $d('compliance.case.transitioned', 'compliance_case', 'Compliance case status changed (work case driven in the same transaction).', [], [$C], true),
+            $d('compliance.finding.recorded', 'compliance_finding', 'Compliance finding recorded with a severity.', [], [$C], true),
+            $d('compliance.corrective_action.planned', 'compliance_corrective_action', 'Corrective action planned for a finding (owner, due date; case task created).', [], [$C], true),
+            $d('compliance.corrective_action.verified', 'compliance_corrective_action', 'Corrective action verified by someone other than the completer.', [], [$C], true),
             $d('proposal.created', 'proposal', 'Proposal created.', [], [], true),
             // REQ-PRP-001 proposal machine (App\Application\Underwriting\ProposalMachine, published by the StateMachineEngine)
             $d('proposal.referred', 'proposal', 'Submitted proposal referred to an underwriter.', [], [$C], true),
