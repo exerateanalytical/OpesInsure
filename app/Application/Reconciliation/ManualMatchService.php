@@ -68,6 +68,8 @@ final class ManualMatchService
         if (DB::table('reconciliation_manual_matches')->where('reconciliation_item_id', $item->id)->where('status', 'PENDING')->exists()) {
             throw ValidationException::withMessages(['item' => 'A manual match is already pending for this line.']);
         }
+        // REQ-FRD-002 (agent C16): the collector / refunder of this money may not reconcile it.
+        app(\App\Application\Fraud\SegregationOfDutiesPolicy::class)->assertMay('RECONCILE', $payment->id, $maker);
 
         return DB::transaction(function () use ($tenantId, $item, $d, $maker, $payment) {
             $id = (string) Str::uuid();
@@ -95,7 +97,10 @@ final class ManualMatchService
             if ($m->requested_by === $checker->id) {
                 throw ValidationException::withMessages(['actor' => __('wave4.maker_checker')]);
             }
-            $item = ReconciliationItem::lockForUpdate()->findOrFail($m->reconciliation_item_id);
+            if ($approve && $m->matched_type === 'PAYMENT_INTENT') {
+                app(\App\Application\Fraud\SegregationOfDutiesPolicy::class)->assertMay('RECONCILE', $m->matched_id, $checker); // REQ-FRD-002
+            }
+            $item =ReconciliationItem::lockForUpdate()->findOrFail($m->reconciliation_item_id);
             $status = $approve ? 'APPROVED' : 'REJECTED';
             if ($approve) {
                 if ($item->status !== 'EXCEPTION') {

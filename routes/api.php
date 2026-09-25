@@ -666,3 +666,11 @@ Route::prefix('v1/commissions/accruals')->middleware(['auth:api', 'tenant', 'jso
     Route::post('{accrual}/reverse', [$c, 'reverse'])->middleware('permission:commission.clawback')->whereUuid('accrual');
 });
 // End Batch 10-1
+// Agent C16 — REQ-FRD-001 claim fraud review (WF-089) / REQ-FRD-002 SoD violation report (App\Application\Fraud).
+Route::prefix('v1/fraud')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Fraud\Http\FraudControlController::class;
+    Route::post('claims/{claim}/assess', [$c, 'assess'])->middleware('permission:fraud.alert.create')->whereUuid('claim');
+    Route::post('claim-reviews/{alert}/outcome', [$c, 'outcome'])->middleware('permission:fraud.alert.decide')->whereUuid('alert');
+    Route::get('sod-violations', [$c, 'sodViolations'])->middleware('permission:fraud.sod.report');
+});
+// End Agent C16
