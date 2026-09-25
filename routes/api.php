@@ -1027,3 +1027,29 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
 });
 // End Agent E3
+// Agent B1 — REQ-RPT-001 regulatory returns + lineage, REQ-RPT-002 regulatory change engine, REQ-RPT-006 inspection workspace + profitability.
+Route::prefix('v1/regulatory')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rg = \App\Application\Regulatory\Http\RegulatoryReturnsController::class;
+    Route::get('return-definitions', [$rg, 'definitions'])->middleware('permission:regulatory.returns.view');
+    Route::post('return-definitions', [$rg, 'define'])->middleware('permission:regulatory.returns.define');
+    Route::post('return-definitions/{definition}/approve', [$rg, 'approveDefinition'])->middleware('permission:regulatory.returns.approve')->whereUuid('definition');
+    Route::post('return-definitions/{definition}/runs', [$rg, 'generate'])->middleware('permission:trust.regulatory-reports.prepare')->whereUuid('definition');
+    Route::get('return-runs/{run}', [$rg, 'run'])->middleware('permission:regulatory.returns.view')->whereUuid('run');
+    Route::get('return-runs/{run}/lineage', [$rg, 'lineage'])->middleware('permission:regulatory.returns.view')->whereUuid('run');
+    Route::get('rules', [$rg, 'rules'])->middleware('permission:regulatory.rules.view');
+    Route::post('rules', [$rg, 'draftRule'])->middleware('permission:regulatory.rules.draft');
+    Route::get('rules/{rule}', [$rg, 'rule'])->middleware('permission:regulatory.rules.view')->whereUuid('rule');
+    Route::get('rules/{rule}/impact', [$rg, 'impact'])->middleware('permission:regulatory.rules.view')->whereUuid('rule');
+    Route::post('rules/{rule}/review', [$rg, 'reviewRule'])->middleware('permission:regulatory.rules.review')->whereUuid('rule');
+    Route::post('rules/{rule}/approve', [$rg, 'approveRule'])->middleware('permission:regulatory.rules.approve')->whereUuid('rule');
+    Route::post('rules/{rule}/activate', [$rg, 'activateRule'])->middleware('permission:regulatory.rules.approve')->whereUuid('rule');
+    Route::get('reference-sets/{set}/impact', [$rg, 'referenceSetImpact'])->middleware('permission:regulatory.rules.view')->whereUuid('set');
+    Route::post('inspections', [$rg, 'openInspection'])->middleware('permission:regulatory.inspections.manage');
+    Route::get('inspections/{inspection}', [$rg, 'inspection'])->middleware('permission:regulatory.inspections.view')->whereUuid('inspection');
+    Route::post('inspections/{inspection}/approve', [$rg, 'approveInspection'])->middleware('permission:regulatory.inspections.approve')->whereUuid('inspection');
+    Route::post('inspections/{inspection}/close', [$rg, 'closeInspection'])->middleware('permission:regulatory.inspections.manage')->whereUuid('inspection');
+    Route::get('inspections/{inspection}/workspace/{resource}', [$rg, 'inspectionRead'])->middleware('permission:regulatory.inspections.access')->whereUuid('inspection');
+    Route::get('inspections/{inspection}/workspace/{resource}/export', [$rg, 'inspectionExport'])->middleware('permission:regulatory.inspections.access')->whereUuid('inspection');
+    Route::get('profitability/policies', [$rg, 'profitability'])->middleware('permission:regulatory.profitability.view');
+});
+// End Agent B1

@@ -135,6 +135,51 @@ final class TechnicalAccountingService
         return $this->finish($out, fn ($r) => $r);
     }
 
+    /**
+     * Agent B1 — REQ-RPT-006: the same written / earned / paid / incurred bases as premiums() and claims(), kept per policy
+     * (read-only; used by the policy-level profitability report).
+     *
+     * @return array<string,array<string,mixed>> policy_id => figures
+     */
+    public function perPolicy(string $tenantId, CarbonImmutable $from, CarbonImmutable $to, ?string $policyId = null): array
+    {
+        [$start, $end] = $this->bounds($from, $to);
+        $out = [];
+        $zero = ['written_minor' => 0, 'earned_minor' => 0, 'claims' => 0, 'claims_paid_minor' => 0, 'claims_incurred_minor' => 0];
+        foreach ($this->policies($tenantId, null, null) as $p) {
+            if ($policyId !== null && $p->id !== $policyId) {
+                continue;
+            }
+            $out[$p->id] = ['policy_id' => $p->id, 'carrier_id' => $p->carrier_id, 'line_code' => $p->line_code, 'currency' => $p->currency] + $zero;
+            $out[$p->id]['written_minor'] = $p->written_at >= $start && $p->written_at < $end ? (int) $p->premium_minor : 0;
+            $out[$p->id]['earned_minor'] = $this->earnedCum($p, $end) - $this->earnedCum($p, $start);
+        }
+        $claims = DB::table('claims as c')->join('policies as p', 'p.id', '=', 'c.policy_id')->where('c.tenant_id', $tenantId)
+            ->when($policyId, fn ($q, $v) => $q->where('c.policy_id', $v))
+            ->get(['c.id', 'c.policy_id', 'c.currency', 'c.closed_at', 'c.submitted_at', 'c.created_at', 'p.carrier_id', 'p.currency as policy_currency', DB::raw($this->lineExpr().' as line_code')]);
+        if ($claims->isNotEmpty()) {
+            $ids = $claims->pluck('id')->all();
+            $payments = DB::table('claim_payments')->whereIn('claim_id', $ids)->whereIn('status', ['PAID', 'REVERSED'])->whereNotNull('paid_at')
+                ->get(['claim_id', 'amount_minor', 'paid_at', 'reversed_at'])->groupBy('claim_id');
+            $reserves = DB::table('claim_reserve_changes')->whereIn('claim_id', $ids)->where('status', 'APPROVED')->whereNotNull('approved_at')
+                ->orderBy('approved_at')->orderBy('created_at')->get(['claim_id', 'requested_amount_minor', 'approved_at'])->groupBy('claim_id');
+            foreach ($claims as $c) {
+                $pay = $payments->get($c->id, collect());
+                $res = $reserves->get($c->id, collect());
+                $paidOpen = $this->paidAt($pay, $start);
+                $paidClose = $this->paidAt($pay, $end);
+                $incurred = ($paidClose - $paidOpen) + ($this->outstandingAt($c, $res, $paidClose, $end) - $this->outstandingAt($c, $res, $paidOpen, $start));
+                $out[$c->policy_id] ??= ['policy_id' => $c->policy_id, 'carrier_id' => $c->carrier_id, 'line_code' => $c->line_code, 'currency' => $c->policy_currency] + $zero;
+                $out[$c->policy_id]['claims']++;
+                $out[$c->policy_id]['claims_paid_minor'] += $paidClose - $paidOpen;
+                $out[$c->policy_id]['claims_incurred_minor'] += $incurred;
+            }
+        }
+        ksort($out);
+
+        return $out;
+    }
+
     /** Total UPR at the end of $date per currency (for period-end posting). @return array<string,int> */
     public function uprTotals(string $tenantId, CarbonImmutable $date): array
     {
