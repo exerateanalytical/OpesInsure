@@ -311,8 +311,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('integrations/clients/{client}/webhooks', [IntegrationController::class, 'subscribe'])->middleware('permission:integrations.manage');
         Route::post('integrations/delivery-attempts/{attempt}/replay', [IntegrationController::class, 'replayDeliveryAttempt'])->middleware('permission:integrations.manage');
         Route::get('integrations/health', [IntegrationController::class, 'health'])->middleware('permission:integrations.manage');
-        Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware('permission:broker.bordereaux.manage');
-        Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware('permission:broker.bordereaux.submit');
+        // REQ-DUP-008: canonical is the `bordereaux` resource (routes/wave6.php + Batch 10-5 block); broker/carrier
+        // bordereau routes are deprecated aliases mapping their legacy bodies onto the one BordereauService.
+        Route::post('broker/bordereaux', [BrokerOperationsController::class, 'createBordereau'])->middleware(['permission:broker.bordereaux.manage', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux', 'REQ-DUP-008')]);
+        Route::post('broker/bordereaux/{bordereau}/submit', [BrokerOperationsController::class, 'submitBordereau'])->middleware(['permission:broker.bordereaux.submit', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux/{bordereau}/submit', 'REQ-DUP-008')]);
         // REQ-DUP-010: canonical is renewals/seed (RenewalController). The broker variant is a
         // deprecated alias: its action only maps the legacy body (days_ahead) onto the same
         // RenewalService::sweep (which also keeps renewal_work_items); removal pending.
@@ -320,7 +322,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/delegated-authorities', [CarrierOperationsController::class, 'createAuthority'])->middleware('permission:carrier.authority.manage');
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);
-        Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
+        Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware(['permission:carrier.bordereaux.decide', \App\Interfaces\Http\Middleware\DeprecatedRouteAlias::using('bordereaux/{bordereau}/acknowledge', 'REQ-DUP-008')]);
 
         // Batch 13D — REQ-COI-001 co-insurance (apériteur + followers, share apportionment)
         Route::get('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'index'])->middleware('permission:coinsurance.view');
@@ -574,3 +576,10 @@ Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->gro
     Route::get('policies/{policy}/instalments', [$o, 'policyInstalments'])->middleware('permission:finance.obligations.view')->whereUuid('policy');
 });
 // End Batch 9-1
+// Batch 10-5 — REQ-DUP-008 one `bordereaux` resource (reads; writes are in routes/wave6.php).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $f = \App\Interfaces\Http\Controllers\Api\V1\FinancialDistribution\FinancialDistributionController::class;
+    Route::get('bordereaux', [$f, 'bordereaux'])->middleware('permission:bordereaux.view');
+    Route::get('bordereaux/{bordereau}', [$f, 'showBordereau'])->middleware('permission:bordereaux.view')->whereUuid('bordereau');
+});
+// End Batch 10-5
