@@ -27,11 +27,14 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud | DONE (on branch) |
 | **Deploy release acedff7 (Batch 7 + cloud work)**: see docs/RELEASE_HANDOVER_BATCH7.md | local | TODO |
 | Batch 8 (10 agents: endorsements, cancellation, suspension, renewals, premium-to-cover/lapse, special products, portability, certificates/verification, document governance, roles+wiring) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH8.md |
-| Batch 8 wiring (APIs for cancellation/suspension/recovery, Batch 8 role grants, role sync command, renewal sweep schedule) | cloud | IN PROGRESS |
-| Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud (8 agents) | IN PROGRESS. Don't start locally. |
+| Batch 8 wiring | cloud | DONE (on branch) |
+| Batch 9 money chain (obligations+instalments, allocations+premium status, payment machine+bank/card, retries+execution modes, reconciliation, refunds+clearing, cashier+FX, statements) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH9.md |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: Batch 8 wiring + Batch 9 merged (10 agents). Full suite 1288 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH9.md
+- Merge fixes: duplicate payment_intents.financial_obligation_id column (9-4 vs 9-1), webhook/reconciliation obligation hooks re-applied on the new payment machine, refunds bound to obligations, reinstatement re-request bug fixed.
 
 ### 2026-09-25 cloud: Batch 8 merged (10 agents). Full suite 1228 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH8.md
 
