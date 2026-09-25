@@ -312,6 +312,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/delegated-authorities/{agreement}/approve', [CarrierOperationsController::class, 'approveAuthority'])->middleware('permission:carrier.authority.approve');
         Route::post('carrier/delegated-authorities/{agreement}/check', [CarrierOperationsController::class, 'checkAuthority']);
         Route::post('carrier/bordereaux/{bordereau}/decision', [CarrierOperationsController::class, 'acknowledgeBordereau'])->middleware('permission:carrier.bordereaux.decide');
+
+        // Batch 13D — REQ-COI-001 co-insurance (apériteur + followers, share apportionment)
+        Route::get('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'index'])->middleware('permission:coinsurance.view');
+        Route::post('coinsurance/arrangements', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'store'])->middleware('permission:coinsurance.manage');
+        Route::get('coinsurance/arrangements/{arrangement}', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'show'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/activate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'activate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/terminate', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'terminate'])->middleware('permission:coinsurance.approve')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/preview', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'preview'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        Route::post('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportion'])->middleware('permission:coinsurance.apportion')->whereUuid('arrangement');
+        Route::get('coinsurance/arrangements/{arrangement}/apportionments', [\App\Application\Coinsurance\Http\CoinsuranceController::class, 'apportionments'])->middleware('permission:coinsurance.view')->whereUuid('arrangement');
+        // End Batch 13D
     });
     Route::middleware('auth:api')->group(function (): void {
         Route::post('invitations/accept', [InvitationController::class, 'accept']);
