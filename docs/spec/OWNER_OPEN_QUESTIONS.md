@@ -1,5 +1,7 @@
 # Owner open questions — to be asked together later
 
+> **Status 2026-09-25:** the owner answered Q1–Q6 in docs/spec/OWNER_DECISIONS_2026-09-25.md. Those decisions are authoritative; the items below stay only as history. What remains externally blocked: official CIMA 003-25 / 010-24 texts, verified tax and levy rates, insurer authorization evidence, licensed logos, counsel review of legal wording, production credentials and a screening provider.
+
 Compiled for a single batch review with the owner. Do not implement answers until confirmed.
 
 ## Q1 — CIMA product mappings left open (CIMA dictionary, 2026-09-24)
@@ -47,3 +49,8 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - Party roles: the official CIMA list of person/party roles isn't in the repo; a 16-role working set is used with CIMA codes NULL. Please supply the official list.
 - Beneficial ownership threshold: 25% is configurable and marked UNVERIFIED (no CEMAC/CIMA source found). Confirm the legal threshold.
 - KYC: required documents per level (seeded as PLATFORM_DEFAULT_UNVERIFIED), KYC refresh periods (unset), and when to switch the bind/issue KYC gate from OFF to ENFORCE (per insurer). Also: which sanctions/PEP screening provider to integrate (only MANUAL screening exists).
+- Product governance: make the governance workflow (technical → compliance → business approval, sandbox tests, publication blockers) mandatory for all product publication? Today the old direct submit/publish path still exists so live products aren't broken. Also: insurers with no capability profile are blocked from publishing via governance ("missing underwriting mode") — keep that?
+- Direct (B2C) sales: enforce marketplace publication for direct quotes (quotes.enforce_direct_publication)? Off today because no live tenant has marketplace publications and it would block every direct quote.
+- Proposal declarations wording and missed-instalment consequences are placeholders (config/proposals.php, UNVERIFIED) — need counsel's review.
+- Mandatory pre-contract uploads (e.g. carte grise for motor) now apply to products with a document product type: submission accepts uploaded-not-yet-reviewed documents; issuance requires them accepted. Confirm this is the rule you want for straight-through motor sales.
+- Manual quotation SLA: how long should an insurer have to acknowledge and to answer a manual quote request? (No SLA targets are seeded until you confirm.)

@@ -117,6 +117,20 @@ final class ProductModelService
         });
     }
 
+    /** REVIEW/APPROVED → REJECTED (checker; terminal — rework happens on a new draft version). REQ-PRD-007 governance reviews. */
+    public function reject(InsuranceProduct $v, User $checker, string $reason): InsuranceProduct
+    {
+        $this->assertTransition($v, ProductVersionStatus::REJECTED);
+        if ($v->created_by === $checker->id) {
+            throw ValidationException::withMessages(['actor' => __('wave2.maker_checker')]);
+        }
+
+        $v = $this->move($v, 'REJECTED', 'REJECTED', $reason, $checker, []);
+        $this->outbox->record('catalogue.product_version.rejected', 'insurance_product', $v->id, ['product_id' => $v->id, 'reason' => $reason]);
+
+        return $v;
+    }
+
     public function suspend(InsuranceProduct $v, User $actor, string $reason): InsuranceProduct
     {
         $this->assertTransition($v, ProductVersionStatus::SUSPENDED);

@@ -14,38 +14,37 @@ use Illuminate\Http\Request;
  * The app's quote/questions and quote/terms screens speak a
  * "disclosure session" contract (GET /proposals/{id}/disclosure,
  * PUT .../disclosure/answers, POST .../disclosure/submit, POST .../terms).
- * This adapts that onto ProposalService's answer/attest/submit so the
- * underlying workflow, history and referral logic stay the platform's.
+ * This adapts that onto ProposalService's answer/attest/declare/submit so the
+ * underlying workflow, history and referral logic stay the platform's
+ * (REQ-DUP-007: no business rules here). Questions are the PROPOSAL-stage
+ * question set frozen on the proposal (ProposalService::questions).
  */
 final class MobileDisclosureController
 {
-    public function session(string $proposal, Request $request): JsonResponse
+    public function session(string $proposal, Request $request, ProposalService $service): JsonResponse
     {
-        return response()->json(['data' => $this->present($this->owned($proposal, $request))]);
+        return response()->json(['data' => $this->present($service, $this->owned($proposal, $request))]);
     }
 
     public function answers(string $proposal, Request $request, ProposalService $service): JsonResponse
     {
         $data = $request->validate(['answers' => 'required|array']);
         $p = $this->owned($proposal, $request);
-        if (in_array($p->status, ['DISCLOSURES_PENDING', 'DRAFT'], true)) {
-            $p = $service->answer($p, $this->normalise($p, $data['answers']), $request->user());
-        } else {
-            $p->update(['disclosures' => $this->normalise($p, $data['answers'])]);
-            $p->disclosureResponse?->update(['answers' => $p->disclosures]);
-        }
+        // Pre-submission (and information-required) answers go through the service: validation, referral flags,
+        // hash; changing answers resets the attestation. Submitted proposals are immutable (422 disclosures_locked).
+        $p = $service->answer($p, $this->normalise($service, $p, $data['answers']), $request->user());
 
-        return response()->json(['data' => $this->present($p->refresh())]);
+        return response()->json(['data' => $this->present($service, $this->owned($p->id, $request))]);
     }
 
     public function submit(string $proposal, Request $request, ProposalService $service): JsonResponse
     {
         $p = $this->owned($proposal, $request);
         if (! $p->attested_at) {
-            $p = $service->attest($p, $request->user());
+            $p = $service->attest($p, $request->user(), [], 'MOBILE', $this->evidence($request));
         }
 
-        return response()->json(['data' => $this->present($p->refresh())]);
+        return response()->json(['data' => $this->present($service, $this->owned($p->id, $request))]);
     }
 
     /** Accepting the terms is what actually submits the proposal for (straight-through) underwriting. */
@@ -54,8 +53,9 @@ final class MobileDisclosureController
         $data = $request->validate(['accepted' => 'required|accepted']);
         $p = $this->owned($proposal, $request);
         if (! $p->attested_at) {
-            $p = $service->attest($p, $request->user());
+            $p = $service->attest($p, $request->user(), [], 'MOBILE', $this->evidence($request));
         }
+        $service->declare($p, 'TERMS_ACCEPTANCE', $request->user(), 'MOBILE', $this->evidence($request));
         if ($p->status === 'DOCUMENTS_PENDING') {
             $p = $service->submit($p, $request->user());
         }
@@ -71,29 +71,39 @@ final class MobileDisclosureController
         return $p->load(['disclosureSchema', 'disclosureResponse', 'underwritingCase.referrals']);
     }
 
+    /** @return array{ip: ?string, user_agent: ?string} */
+    private function evidence(Request $request): array
+    {
+        return ['ip' => $request->ip(), 'user_agent' => $request->userAgent()];
+    }
+
     /** Booleans arrive as true/false or "true"/"false"/"yes"/"no" from the form. */
-    private function normalise(Proposal $p, array $answers): array
+    private function normalise(ProposalService $service, Proposal $p, array $answers): array
     {
         $out = [];
-        foreach ($p->disclosureSchema->questions ?? [] as $q) {
+        foreach ($service->questions($p) as $q) {
             if (! array_key_exists($q['code'], $answers)) {
                 continue;
             }
             $v = $answers[$q['code']];
-            $out[$q['code']] = ($q['type'] ?? 'boolean') === 'boolean' ? filter_var($v, FILTER_VALIDATE_BOOLEAN) : (string) $v;
+            $out[$q['code']] = match (true) {
+                ($q['type'] ?? 'boolean') === 'boolean' => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+                is_array($v) || $v === null => $v,
+                default => (string) $v,
+            };
         }
 
         return $out;
     }
 
-    private function present(Proposal $p): array
+    private function present(ProposalService $service, Proposal $p): array
     {
         $answers = $p->disclosures ?? [];
         $locale = app()->getLocale() === 'fr' ? 'fr' : 'en';
 
         return [
-            'id' => $p->disclosureSchema?->id ?? $p->id, 'proposal_id' => $p->id, 'status' => $p->status,
-            'questions' => collect($p->disclosureSchema?->questions ?? [])->map(fn ($q) => [
+            'id' => $p->question_set_id ?? $p->disclosure_schema_version_id ?? $p->id, 'proposal_id' => $p->id, 'status' => $p->status,
+            'questions' => collect($service->questions($p))->map(fn ($q) => [
                 'id' => $q['code'], 'label' => is_array($q['label']) ? ($q['label'][$locale] ?? reset($q['label'])) : $q['label'], 'type' => $q['type'] ?? 'boolean', 'required' => (bool) ($q['required'] ?? true),
                 'answer' => $answers[$q['code']] ?? null,
             ] + self::inputContract($q))->values(),

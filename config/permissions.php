@@ -402,6 +402,12 @@ return [
         'catalogue.publish' => ['description' => 'Checker: approve / publish / suspend / reinstate / retire versions and approve legal texts (maker-checker enforced).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_SUPER_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
+    // Batch 6A — product governance + sandbox (REQ-PRD-007…010): routes/product_governance.php. Product configuration, not customer data.
+    'catalogue_governance' => [
+        'catalogue.review' => ['description' => 'Governance reviewer: complete the technical and compliance review steps of a product version, or reject it (never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'UNDERWRITER', 'COMPLIANCE_ADMIN']],
+        'catalogue.test' => ['description' => 'Maintain a product version test policy pack and run it in the sandbox (rules + rating + documents, no business records written).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'ACTUARY', 'UNDERWRITER']],
+    ],
+
     /** Batch 5C — rating v2 (REQ-RAT-001..005). tariff.manage / tariff.approve already gate create/submit/approve in routes/api.php. */
     'rating' => [
         'tariff.manage' => ['description' => 'Create, submit and view tariff versions and their status history.', 'suggested_roles' => ['CARRIER_ADMIN', 'ACTUARY']],
@@ -413,12 +419,36 @@ return [
         'rating.runs.view' => ['description' => 'View a quote rating snapshot (versions, EngineResult, branch allocation) and reproduce it.', 'suggested_roles' => ['UNDERWRITER', 'CARRIER_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
+    // Batch 6D — proposal workflow (REQ-PRP-001…005): routes/proposals.php. Proposers act on their own proposals without these;
+    // the information request uses the existing underwriting.decide permission.
+    'proposals' => [
+        'proposals.issuability.read' => ['description' => 'View the POLICY_ISSUABLE evaluation (approval, payment condition, documents, underwriting, KYC) of a proposal.', 'suggested_roles' => ['UNDERWRITER', 'SENIOR_UNDERWRITER', 'CARRIER_ADMIN', 'FINANCE_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    // Batch 6B — quote workflow (REQ-QUO-001…005, REQ-DST-003): routes/quotes.php. Customers act on their own quotes without these.
+    'quotes' => [
+        'quotes.manage' => ['description' => 'Amend, generate, decline or cancel tenant quotes on behalf of customers (WF-010…014).', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT', 'CUSTOMER_SERVICE', 'UNDERWRITER']],
+        'quotes.send' => ['description' => 'Send/share a quotation to the customer (WF-012); creates a tracked share link.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT', 'CUSTOMER_SERVICE']],
+        'quotes.premium_override.request' => ['description' => 'Request a premium override on a quote offer (maker; BRK-035). Applies only after approval.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'UNDERWRITER']],
+        'quotes.premium_override.approve' => ['description' => 'Approve/reject a premium override (checker; never the requester) and apply an approved one.', 'suggested_roles' => ['BROKER_ADMIN', 'CARRIER_ADMIN', 'UNDERWRITER']],
+    ],
+
     // Batch 5B — rules engine + question sets (REQ-RUL-001…004, REQ-DUP-020): routes/rules.php. Product configuration, not customer data.
     'rules' => [
         'rules.view' => ['description' => 'Read rule sets, question sets, product questionnaires; sandbox-simulate a rule set (nothing persisted).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'UNDERWRITER', 'COMPLIANCE_ADMIN']],
         'rules.manage' => ['description' => 'Draft and submit eligibility / completeness rule sets and question sets (maker).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN']],
         'rules.approve' => ['description' => 'Approve, reject or retire rule sets and question sets (checker; never the maker).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'COMPLIANCE_ADMIN']],
         'rules.evaluate' => ['description' => 'Run eligibility and completeness checks (POST /insurance/eligibility/check, /insurance/completeness/check); logged in engine_evaluations.', 'suggested_roles' => ['UNDERWRITER', 'BROKER_ADMIN', 'BROKER_STAFF', 'CARRIER_ADMIN']],
+    ],
+
+    // Batch 6C — manual quotation, AOM Mode 1 (REQ-QUO-006): routes/carrier_quote_requests.php. Customer quote data
+    // (modules 'quotes' / 'carrier' are already business data).
+    'carrier_quote_requests' => [
+        'quotes.carrier_requests.view' => ['description' => 'List the manual quotation requests sent to insurers for a quote.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT', 'PLATFORM_ADMIN']],
+        'quotes.carrier_requests.create' => ['description' => 'Send a quote to an insurer whose quotation capability is MANUAL; cancel an open request.', 'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'AGENT', 'PLATFORM_ADMIN']],
+        'quotes.carrier_requests.record_on_behalf' => ['description' => 'Record an insurer offer/decline on its behalf, with the insurer\'s written answer as evidence.', 'suggested_roles' => ['BROKER_ADMIN']],
+        'carrier.quote_requests.view' => ['description' => 'Insurer work queue of manual quotation requests (own carrier only).', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER']],
+        'carrier.quote_requests.respond' => ['description' => 'Insurer staff: take a request, enter the offer (premium breakdown, conditions, validity, documents) or decline.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER']],
     ],
 
     'business_data' => [
