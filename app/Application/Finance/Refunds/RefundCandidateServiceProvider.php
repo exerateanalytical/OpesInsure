@@ -14,5 +14,7 @@ final class RefundCandidateServiceProvider extends ServiceProvider
         if (interface_exists('App\\Application\\Reconciliation\\RefundCandidateSink')) {
             $this->app->bind('App\\Application\\Reconciliation\\RefundCandidateSink', DuplicatePaymentRefundCandidateSink::class);
         }
+        // refunds open/settle a PAYABLE financial obligation (Batch 9-1 ledger)
+        $this->app->bind(RefundObligationLink::class, ObligationRefundLink::class);
     }
 }
