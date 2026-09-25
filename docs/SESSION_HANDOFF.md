@@ -20,7 +20,11 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Item | Owner | State |
 |---|---|---|
 | Deploy decisions batch `c0a8d01` | local | TODO: not confirmed live. Deploy before Batch 7 is merged. |
-| Batch 7 (authority, underwriting, policy core) | cloud | IN PROGRESS |
+| Batch 7A authority, 7B underwriting, 7C policy chronology, 7D issuance ops | cloud agents | IN PROGRESS |
+| Batch 5/6 rules-engine follow-ups (DocumentRequirementService, QuestionSetCatalogue, saveComparison alias) | cloud agent | IN PROGRESS |
+| Duplicate master-data lists + bordereau type set + cloud test baseline triage | cloud agent | IN PROGRESS |
+| Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud agents | IN PROGRESS |
+| Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
 
