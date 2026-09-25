@@ -7,7 +7,7 @@ namespace App\Domain\Rules;
 /** A versioned, effective-dated rule set as the evaluator sees it (already resolved for a reference date). */
 final class RuleSetDefinition
 {
-    public const DOMAINS = ['ELIGIBILITY', 'COMPLETENESS', 'UNDERWRITING', 'REFERRAL', 'DOCUMENTS', 'QUESTION_EFFECT'];
+    public const DOMAINS = ['ELIGIBILITY', 'COMPLETENESS', 'UNDERWRITING', 'REFERRAL', 'DOCUMENTS', 'QUESTION_EFFECT', 'TAX_EXEMPTION'];
 
     /** @param list<RuleDefinition> $rules */
     public function __construct(

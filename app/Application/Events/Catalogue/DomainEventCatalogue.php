@@ -492,6 +492,11 @@ final class DomainEventCatalogue
             $d('integration.carrier_message.fallback_resolved', 'carrier', 'Manual fallback carrier message resolved (sent manually, requeued or cancelled).', [], [$C], true),
             $d('integration.record_mapping.conflict_detected', 'integration_client', 'Carrier sync changed a record OpesInsure owns; conflict queued for review.', [], [$C], true),
             $d('integration.record_mapping.conflict_resolved', 'integration_client', 'External record mapping conflict resolved.', [], [$C], true),
+            // Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power)
+            $d('vehicle.fiscal_power.verified', 'vehicle_fiscal_power_record', 'Cameroon fiscal power (CV fiscal) verified from an authoritative source (maker-checker).', [], [$C], true),
+            $d('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', 'Conflicting authoritative fiscal power values; conflict case opened.', [], [$C], true),
+            $d('vehicle.stamp_duty_schedule.approved', 'vehicle_stamp_duty_rate_schedule', 'Automobile stamp duty rate schedule version approved (effective-dated).', [], [$C], true),
+            $d('vehicle.transport_licence.verified', 'vehicle_transport_licence', 'Transport licence verified VALID (enables the transport stamp duty schedule).', [], [$C], true),
 
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),

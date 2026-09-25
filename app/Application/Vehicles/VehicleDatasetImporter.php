@@ -176,7 +176,7 @@ final class VehicleDatasetImporter
             'drive_type' => $this->drivetrain($row['drivetrain'] ?? null),
             'body_type' => $this->bodyType($row['body_type'] ?? null) ?? $generation->body_type,
             'engine_capacity_cc' => $this->int($row['displacement_cc'] ?? null, 30000),
-            'power_hp' => $hp, 'power_kw' => $hp ? round($hp * 0.7457, 2) : null,
+            'power_hp' => $hp, 'power_kw' => $hp ? round($hp * \App\Application\Vehicles\Power\PowerUnits::MECHANICAL_HP_TO_KW, 2) : null,
             'torque_nm' => $this->int($row['torque_nm'] ?? null, 5000),
             'cylinders' => $this->int($row['cylinders'] ?? null, 24),
             'year_from' => $this->year($row['gen_year_start'] ?? null), 'year_to' => $this->year($row['gen_year_end'] ?? null),

@@ -181,6 +181,15 @@ final class RuleSetService
                     throw ValidationException::withMessages(["rules.{$i}.outcome" => 'A documents rule needs result REQUIRE or WAIVE and a non-empty document_codes list.']);
                 }
                 $outcome['document_codes'] = array_values(array_unique($docCodes));
+            } elseif ($domain === 'TAX_EXEMPTION') {
+                // Vehicle Power master exemption_handling: an exemption names the exempted charge codes and its legal basis.
+                $outcome['result'] = strtoupper((string) ($outcome['result'] ?? 'EXEMPT'));
+                $chargeCodes = $outcome['charge_codes'] ?? null;
+                if ($outcome['result'] !== 'EXEMPT' || ! is_array($chargeCodes) || $chargeCodes === [] || array_filter($chargeCodes, fn ($c) => ! is_string($c) || $c === '') !== []
+                    || blank($outcome['legal_basis'] ?? null)) {
+                    throw ValidationException::withMessages(["rules.{$i}.outcome" => 'A tax exemption rule needs result EXEMPT, a non-empty charge_codes list and a legal_basis.']);
+                }
+                $outcome['charge_codes'] = array_values(array_unique($chargeCodes));
             }
             if (blank($outcome['reason_code'] ?? null)) {
                 $outcome['reason_code'] = $code;

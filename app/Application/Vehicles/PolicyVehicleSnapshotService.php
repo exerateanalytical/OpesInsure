@@ -29,7 +29,7 @@ final class PolicyVehicleSnapshotService
         $quote = $policy->proposal_id ? DB::table('proposals')
             ->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')
             ->join('quotes', 'quotes.id', '=', 'quote_offers.quote_id')
-            ->where('proposals.id', $policy->proposal_id)->first(['quotes.risk_asset_id', 'quotes.risk_facts']) : null;
+            ->where('proposals.id', $policy->proposal_id)->first(['quotes.risk_asset_id', 'quotes.risk_facts', 'quote_offers.rating_run_id']) : null;
         $riskAssetId = $quote?->risk_asset_id;
         $quoteFacts = $quote && $quote->risk_facts ? (array) json_decode((string) $quote->risk_facts, true) : [];
         $record = $riskAssetId ? RiskAssetVehicle::where('risk_asset_id', $riskAssetId)->first() : null;
@@ -51,6 +51,8 @@ final class PolicyVehicleSnapshotService
             'vehicle' => collect($record->getAttributes())->except(['id', 'risk_asset_id', 'make_id', 'model_id', 'generation_id', 'variant_id', 'review_id', 'created_at', 'updated_at'])->all(),
             'reconciliation_status' => $record->reconciliation_status,
             // Picker facts as quoted (codes + stated specs).
+            // Vehicle Power master: fiscal power / band / schedule / rate used at rating, frozen with the policy.
+            'fiscal_power' => $quote?->rating_run_id ? json_decode((string) DB::table('rating_runs')->where('id', $quote->rating_run_id)->value('fiscal_power_snapshot'), true) : null,
             'quoted' => array_intersect_key($quoteFacts, array_flip(['make_code', 'model_code', 'vehicle_generation_code', 'vehicle_variant_code', 'year', 'engine_capacity_cc', 'power_hp', 'drive_type', 'powertrain', 'transmission', 'body_type'])),
         ];
 

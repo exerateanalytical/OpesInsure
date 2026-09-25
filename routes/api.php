@@ -1166,3 +1166,25 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::get('privacy/purpose-checks', [$sc, 'purposeChecks'])->middleware('permission:privacy.purposes.read');
 });
 // End Agent B7
+// Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $vp = \App\Application\Vehicles\Power\Http\VehiclePowerController::class;
+    Route::get('master-data/vehicles/power/search', [$vp, 'search'])->middleware('permission:vehicle_power.view');
+    Route::get('master-data/vehicles/{variant}/power', [$vp, 'show'])->middleware('permission:vehicle_power.view')->whereUuid('variant');
+    Route::get('master-data/fiscal-power/bands', [$vp, 'bands'])->middleware('permission:vehicle_power.view');
+    Route::get('master-data/fiscal-power/stamp-duty-rates', [$vp, 'rates'])->middleware('permission:vehicle_power.view');
+    Route::post('master-data/vehicles/{variant}/power', [$vp, 'recordPower'])->middleware('permission:vehicle_power.manage')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power', [$vp, 'submitFiscal'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power/verify', [$vp, 'verify'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('variant');
+    Route::post('master-data/vehicles/{variant}/fiscal-power/conflict', [$vp, 'conflict'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('variant');
+    Route::post('master-data/fiscal-power/records', [$vp, 'submitRecord'])->middleware('permission:vehicle_power.fiscal.submit');
+    Route::post('master-data/fiscal-power/records/{record}/source', [$vp, 'attachSource'])->middleware('permission:vehicle_power.fiscal.submit')->whereUuid('record');
+    Route::post('master-data/fiscal-power/records/{record}/verify', [$vp, 'verifyRecord'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('record');
+    Route::post('master-data/fiscal-power/records/{record}/reject', [$vp, 'reject'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('record');
+    Route::post('master-data/fiscal-power/conflicts/{conflict}/resolve', [$vp, 'resolveConflict'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('conflict');
+    Route::post('master-data/fiscal-power/rate-schedules/version', [$vp, 'scheduleVersion'])->middleware('permission:vehicle_power.stamp_duty.manage');
+    Route::post('master-data/fiscal-power/rate-schedules/{schedule}/approve', [$vp, 'approveSchedule'])->middleware('permission:vehicle_power.stamp_duty.approve')->whereUuid('schedule');
+    Route::post('master-data/vehicles/transport-licences', [$vp, 'recordLicence'])->middleware('permission:vehicle_power.fiscal.submit');
+    Route::post('master-data/vehicles/transport-licences/{licence}/decision', [$vp, 'decideLicence'])->middleware('permission:vehicle_power.fiscal.verify')->whereUuid('licence');
+});
+// End Agent V1
