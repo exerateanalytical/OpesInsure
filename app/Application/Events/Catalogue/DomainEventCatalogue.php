@@ -101,6 +101,13 @@ final class DomainEventCatalogue
             $d('chargeback.resolved', 'chargeback', 'Payment chargeback resolved.', [], [], true),
             $d('claim.carrier_message.queued', 'claim', 'Message to carrier queued for a claim.', [], [], true),
             $d('claim.dispute.resolved', 'claim', 'Claim dispute resolved.', [], [], true),
+            // REQ-CLM-010 (App\Application\Claims\Assessment)
+            $d('claim.assessment.recorded', 'claim', 'Claim assessment (recommendation) recorded.', [], [], true),
+            $d('claim.assessment.accepted', 'claim', 'Claim assessment accepted by a reviewer.', [], [], true),
+            $d('claim.assessment.rejected', 'claim', 'Claim assessment rejected by a reviewer.', [], [], true),
+            $d('claim.investigation.opened', 'claim', 'Claim investigation opened (case engine).', [], [], true),
+            $d('claim.investigation.indicators_attached', 'claim', 'Fraud indicators attached to a claim investigation.', [], [], true),
+            $d('claim.investigation.concluded', 'claim', 'Claim investigation concluded with an outcome.', [], [], true),
             $d('claim.payment.approved', 'claim', 'Claim payment approved.', [], [], true),
             $d('claim.payment.reversed', 'claim', 'Claim payment reversed.', [], [], true),
             $d('claim.reserve.approved', 'claim', 'Claim reserve approved.', [], [], true),
