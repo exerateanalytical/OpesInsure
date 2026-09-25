@@ -58,6 +58,8 @@ type Options = RequestInit & {
   envelope?: boolean;
   /** Extra same-key attempts after a network/timeout failure (default 1). */
   networkRetries?: number;
+  /** Return the body as a Blob (binary endpoints such as a quote PDF). */
+  raw?: boolean;
 };
 let refreshPromise: Promise<boolean> | null = null;
 const sessionExpiredListeners = new Set<() => void>();
@@ -257,6 +259,7 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
       anonymous: _anonymous,
       retryAuth: _retryAuth,
       stepUpPurpose: _stepUpPurpose,
+      raw: _raw,
       ...init
     } = options;
     const response = await fetch(`${API_URL}${path}`, {
@@ -287,6 +290,7 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
         "Your secure session has expired.",
       );
     }
+    if (options.raw && response.ok) return (await response.blob()) as T;
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw toError(response.status, payload, response);
     return (options.envelope ? payload : (payload as Envelope<T>).data) as T;
@@ -672,6 +676,9 @@ export type Quote = {
   version: number;
   risk_asset_id?: string | null;
   referral_reason?: string | null;
+  /** Batch 6: QuoteMachine state (DRAFT … GENERATED, SENT, VIEWED, ACCEPTED, DECLINED, EXPIRED, CANCELLED). */
+  lifecycle_state?: string | null;
+  quote_number?: string | null;
 };
 export type QuoteResult = { quote: Quote; offers: QuoteOffer[] };
 export type Proposal = {
@@ -716,6 +723,8 @@ export type ProposalRequirement = {
   label?: string;
   name?: unknown;
   mandatory?: boolean;
+  /** Batch 6 checklist: MISSING | REQUIRED | UPLOADED | REVIEWING | ACCEPTED | REJECTED | EXPIRED. */
+  status?: string | null;
 };
 export type ProposalDocumentLink = {
   id: string;

@@ -6,9 +6,10 @@ import { AppHeader, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { proposalStatusInfo } from "@/lib/purchase";
 
 export default function CarrierProposals() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.proposals(), []);
   return (
     <Screen>
@@ -27,7 +28,7 @@ export default function CarrierProposals() {
               id: p.id,
               title: `${p.reference} · ${p.customer_name}`,
               subtitle: `${p.product} · ${money(p.premium_minor)} · ${shortDate(p.submitted_at ?? p.created_at)}`,
-              status: p.status,
+              status: proposalStatusInfo(p.status, language).label,
             }))}
           />
         )}

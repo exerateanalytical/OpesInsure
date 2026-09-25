@@ -448,6 +448,7 @@ export function policyStatusInfo(status: string | null | undefined, language?: s
 export type ProposalStage =
   | "disclosures"
   | "documents"
+  | "information"
   | "review"
   | "counteroffer"
   | "declined"
@@ -462,6 +463,8 @@ const PROPOSAL: Record<string, { tone: Tone; stage: ProposalStage }> = {
   DOCUMENTS_PENDING: { tone: "warning", stage: "documents" },
   SUBMITTED: { tone: "info", stage: "review" },
   UNDER_REVIEW: { tone: "info", stage: "review" },
+  INFORMATION_REQUIRED: { tone: "warning", stage: "information" },
+  RESUBMITTED: { tone: "info", stage: "review" },
   COUNTEROFFERED: { tone: "warning", stage: "counteroffer" },
   DECLINED: { tone: "danger", stage: "declined" },
   APPROVED: { tone: "success", stage: "payable" },

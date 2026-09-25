@@ -11,6 +11,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
+import { quoteOutcome } from "@/lib/quoteWorkflow";
 import { colors, radius, space } from "@/theme/tokens";
 
 export default function QuoteHistory() {
@@ -42,13 +43,14 @@ export default function QuoteHistory() {
               icon={Clock3}
               title={q.product_name ?? humanize(q.line_code)}
               subtitle={[
+                q.quote_number,
                 q.vehicle_label,
                 q.offer_count != null ? t("quotesOfferCount", { count: q.offer_count }) : null,
                 q.expires_at ? t("quotesValidUntil", { date: f.date(q.expires_at) }) : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
-              status={td(`quoteStatus_${q.status}`, q.status)}
+              status={td(`quoteStatus_${quoteOutcome(q) ?? q.status}`, q.status)}
               onPress={() => router.push({ pathname: "/quotes/[id]", params: { id: q.id } })}
             />
           </View>

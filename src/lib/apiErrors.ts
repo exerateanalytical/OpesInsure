@@ -14,6 +14,10 @@ export const API_ERROR_COPY = {
   REQUEST_TIMEOUT: "errNetworkUnavailable",
   OFFLINE_QUEUE_FULL: "errOfflineQueueFull",
   KYC_REVIEW_IN_PROGRESS: "errKycReviewInProgress",
+  // Manual quotation offer (carrier/quote-requests/{id}/offer).
+  PREMIUM_INCONSISTENT: "errPremiumInconsistent",
+  BREAKDOWN_INCONSISTENT: "errBreakdownInconsistent",
+  VALIDITY_IN_PAST: "errValidityInPast",
 } as const;
 
 export type ApiErrorCopyKey = (typeof API_ERROR_COPY)[keyof typeof API_ERROR_COPY];

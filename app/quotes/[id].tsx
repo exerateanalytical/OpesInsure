@@ -11,6 +11,8 @@ import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, localized } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
+import { QuoteWorkflowPanel } from "@/components/offers/QuoteWorkflowPanel";
+import { quoteOutcome } from "@/lib/quoteWorkflow";
 
 /** Only in-app, customer-owned paths may come back from the server. */
 const SAFE_NEXT = /^\/(quote|proposals|checkout|payment|confirmation|policy)(\/|$|\?)/;
@@ -18,22 +20,25 @@ const SAFE_NEXT = /^\/(quote|proposals|checkout|payment|confirmation|policy)(\/|
 export default function QuoteDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFormatters();
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const setQuoteResult = useInsurance((s) => s.setQuoteResult);
   const loadQuote = useInsurance((s) => s.loadQuote);
   const rerate = useInsurance((s) => s.rerateQuote);
   const { data, loading, error, reload } = useLoad(() => QuotesApi.show(id), [id]);
   const [busy, setBusy] = useState<"resume" | "rerate" | "discard" | null>(null);
+  const [declinedNow, setDeclinedNow] = useState(false);
   const [actionError, setActionError] = useState<unknown>(null);
 
   const quote = data?.quote;
   const offers = data?.offers ?? [];
   const summary = data?.summary;
   const status = String(quote?.status ?? summary?.status ?? "").toUpperCase();
-  const expired = status === "EXPIRED" || (!!quote?.expires_at && Date.parse(quote.expires_at) < Date.now());
+  const outcome = declinedNow ? "DECLINED" : quoteOutcome(quote ?? summary);
+  const declined = outcome === "DECLINED" || outcome === "CANCELLED";
+  const expired = !declined && outcome === "EXPIRED";
   const referred = status === "REFERRED";
   const lowest = summary?.lowest_total_minor ?? (offers.length ? Math.min(...offers.map((o) => o.total_minor)) : null);
-  const canResume = summary?.can_resume ?? (["SUBMITTED", "OFFERED", "REFERRED"].includes(status) && !expired);
+  const canResume = !declined && (summary?.can_resume ?? (["SUBMITTED", "OFFERED", "REFERRED"].includes(status) && !expired));
   const name = summary?.product_name ?? (localized(offers[0]?.product?.name, f.language) || humanize(quote?.line_code));
 
   const run = async (kind: "resume" | "rerate", fn: () => Promise<void>) => {
@@ -70,36 +75,39 @@ export default function QuoteDetail() {
 
   return (
     <Screen>
-      <AppHeader title={name || "Quote"} back />
-      {loading && !data ? <LoadingState label="Loading quote…" /> : null}
-      {error && !data ? <ErrorCard error={error} fallback="This quote could not be loaded." onRetry={() => void reload()} /> : null}
+      <AppHeader title={name || t("pqTitle")} back />
+      {loading && !data ? <LoadingState label={t("qwLoading")} /> : null}
+      {error && !data ? <ErrorCard error={error} fallback={t("qwLoadFailed")} onRetry={() => void reload()} /> : null}
       {data ? (
         <>
           <Card feature>
-            <StatusChip label={expired ? "Expired" : humanize(status)} tone={expired ? "danger" : referred ? "warning" : canResume ? "success" : "neutral"} />
+            <StatusChip label={td(`quoteStatus_${outcome ?? status}`, outcome ?? status)} tone={declined || expired ? "danger" : referred ? "warning" : canResume ? "success" : "neutral"} />
             {summary?.vehicle_label ? <Text style={ps.body}>{summary.vehicle_label}</Text> : null}
-            {lowest !== null ? <Text style={ps.title}>From {f.xaf(lowest)}</Text> : null}
-            <InfoRow label="Insurer offers" value={String(summary?.offer_count ?? offers.length)} />
-            <InfoRow label={expired ? "Expired" : "Valid until"} value={f.dateTime(quote?.expires_at ?? summary?.expires_at)} />
+            {lowest !== null ? <Text style={ps.title}>{t("qwFrom", { amount: f.xaf(lowest) })}</Text> : null}
+            <InfoRow label={t("qwOffers")} value={String(summary?.offer_count ?? offers.length)} />
+            <InfoRow label={expired ? t("qwExpiredOn") : t("qwValidUntil")} value={f.dateTime(quote?.expires_at ?? summary?.expires_at)} />
           </Card>
-          {referred ? (
+          <QuoteWorkflowPanel quoteId={id} offerCount={summary?.offer_count ?? offers.length} onDeclined={() => setDeclinedNow(true)} />
+          {referred && !declined ? (
             <Card>
-              <Text style={ps.title}>Manual underwriting</Text>
-              <Text style={ps.body}>An underwriter must review this request before prices are confirmed.</Text>
-              <Button label="View underwriting status" variant="secondary" onPress={() => router.push({ pathname: "/quote/referral", params: { quoteId: id } })} />
+              <Text style={ps.title}>{t("qwManualTitle")}</Text>
+              <Text style={ps.body}>{t("qwManualBody")}</Text>
+              <Button label={t("qwManualStatus")} variant="secondary" onPress={() => router.push({ pathname: "/quote/referral", params: { quoteId: id } })} />
             </Card>
           ) : null}
-          {actionError ? <ErrorCard error={actionError} fallback="That action failed. Try again." /> : null}
-          {expired ? (
+          {actionError ? <ErrorCard error={actionError} fallback={t("qwActionFailed")} /> : null}
+          {declined ? (
+            <Button label={t("qwNewQuote")} icon={RefreshCcw} variant="secondary" onPress={() => router.push("/quote/product")} />
+          ) : expired ? (
             <Card>
-              <Text style={ps.body}>Prices expire to reflect current tariffs. Re-rate to get fresh offers with the same details.</Text>
-              <Button label="Re-rate this quote" icon={RefreshCcw} loading={busy === "rerate"} disabled={!!busy} onPress={() => void reRate()} />
+              <Text style={ps.body}>{t("qwExpiredBody")}</Text>
+              <Button label={t("qwRerate")} icon={RefreshCcw} loading={busy === "rerate"} disabled={!!busy} onPress={() => void reRate()} />
             </Card>
           ) : canResume && !referred ? (
-            <Button label="Resume comparison" loading={busy === "resume"} disabled={!!busy} onPress={() => void resume()} />
+            <Button label={t("qwResume")} loading={busy === "resume"} disabled={!!busy} onPress={() => void resume()} />
           ) : null}
           <Button
-            label="Remove saved quote"
+            label={t("qwRemove")}
             variant="danger"
             disabled={!!busy}
             onPress={() =>

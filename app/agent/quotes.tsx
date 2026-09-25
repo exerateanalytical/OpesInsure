@@ -7,9 +7,10 @@ import { AppHeader, Button, Screen } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { quoteOutcome } from "@/lib/quoteWorkflow";
 
 export default function AgentQuotes() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.quotes(), []);
   return (
     <Screen>
@@ -25,7 +26,10 @@ export default function AgentQuotes() {
         {(x) => (
           <OperationsList
             icon={FileSignature}
-            onPress={(id) => router.push(`/agent/sales/${id}`)}
+            onPress={(id) => {
+              const r = x.find((y) => y.id === id);
+              router.push({ pathname: "/agent/quotes/[id]", params: { id, title: r ? `${r.customer_name} · ${r.line_code}` : "" } });
+            }}
             rows={x.map((r) => ({
               id: r.id,
               title: `${r.customer_name} · ${r.line_code}`,
@@ -33,7 +37,7 @@ export default function AgentQuotes() {
                 r.best_premium_minor !== null ? money(r.best_premium_minor) : `${r.offers} offers`,
                 shortDate(r.created_at),
               ].join(" · "),
-              status: r.status,
+              status: td(`quoteStatus_${quoteOutcome(r) ?? r.status}`, r.status),
             }))}
           />
         )}

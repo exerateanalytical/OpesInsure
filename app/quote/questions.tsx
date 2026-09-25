@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Alert, StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
@@ -8,6 +8,7 @@ import { DisclosureApi, DisclosureSession } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { fieldFacts, isFieldVisible, parseContractField, validateStep, type RiskField } from "@/lib/riskSchema";
 import { colors, type } from "@/theme/tokens";
+import { isAnswersLocked } from "@/lib/quoteWorkflow";
 
 /** Disclosure questions carry InputFieldContract v1 (boolean, pickers, or free_text): one renderer. */
 function questionFields(session?: DisclosureSession): RiskField[] {
@@ -65,7 +66,13 @@ export default function Questions() {
       // Straight-through proposals become payable; flagged ones wait
       // for an underwriter; others need documents. The hub routes each.
       router.replace(x.status === "REFERRED" ? { pathname: "/quote/referral", params: { proposalId } } : { pathname: "/proposals/[id]", params: { id: proposalId } });
-    } catch {
+    } catch (e) {
+      // 422 on `status`: the proposal was already submitted, so answers are frozen. Reload the hub, never retry.
+      if (isAnswersLocked(e)) {
+        Alert.alert(t("disclosureTitle"), t("prAnswersLocked"));
+        router.replace({ pathname: "/proposals/[id]", params: { id: proposalId } });
+        return;
+      }
       setError(t("disclosureSubmitFailed"));
     } finally {
       setBusy(false);

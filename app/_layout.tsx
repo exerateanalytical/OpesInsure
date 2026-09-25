@@ -83,6 +83,8 @@ export default function RootLayout() {
           <Stack.Screen name="system/status" />
           {/* REQ-SRC-001: results are permission- and scope-filtered server-side. */}
           <Stack.Screen name="search" />
+          {/* Batch 6: customer, agent and broker quotes; the server scopes each quote to its owner. */}
+          <Stack.Screen name="quote-comparison/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
           <Stack.Screen name="(customer)" />
@@ -93,6 +95,7 @@ export default function RootLayout() {
           <Stack.Screen name="quote/compare" />
           <Stack.Screen name="proposals/index" />
           <Stack.Screen name="proposals/[id]" />
+          <Stack.Screen name="proposals/[id]/information" />
           <Stack.Screen name="checkout" />
           <Stack.Screen name="payment" />
           <Stack.Screen name="confirmation" />
@@ -163,6 +166,8 @@ export default function RootLayout() {
           <Stack.Screen name="agent/leads/new" />
           <Stack.Screen name="agent/leads/[id]" />
           <Stack.Screen name="agent/quotes" />
+          <Stack.Screen name="agent/quotes/[id]" />
+          <Stack.Screen name="agent/catalogue" />
           <Stack.Screen name="agent/policies" />
         </Stack.Protected>
         <Stack.Protected guard={broker}>
@@ -179,6 +184,8 @@ export default function RootLayout() {
           <Stack.Screen name="broker/compliance" />
           <Stack.Screen name="broker/publications" />
           <Stack.Screen name="broker/quotes" />
+          <Stack.Screen name="broker/quotes/[id]" />
+          <Stack.Screen name="broker/catalogue" />
           <Stack.Screen name="broker/policies" />
           <Stack.Screen name="broker/claims" />
           <Stack.Screen name="broker/staff" />
@@ -197,6 +204,8 @@ export default function RootLayout() {
           <Stack.Screen name="carrier/bordereaux" />
           <Stack.Screen name="carrier/products" />
           <Stack.Screen name="carrier/proposals" />
+          <Stack.Screen name="carrier/quote-requests/index" />
+          <Stack.Screen name="carrier/quote-requests/[id]" />
           <Stack.Screen name="carrier/policies" />
           <Stack.Screen name="carrier/claims/[id]" />
           <Stack.Screen name="carrier/payments" />

@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
+  Store,
   UserPlus,
   Search,
 } from "lucide-react-native";
@@ -57,6 +58,7 @@ export default function AgentHome() {
         items={[
           { label: t("searchTitle"), subtitle: t("searchOpenSubtitle"), icon: Search, href: "/search?role=agent" },
           { label: t("portalTab_Leads"), subtitle: t("agProspectsToFollow"), icon: UserPlus, href: "/agent/leads" },
+          { label: t("catTitle"), subtitle: t("catMenuSubtitle"), icon: Store, href: "/agent/catalogue" },
           { label: t("agQuotes"), subtitle: t("agQuotesPrepared"), icon: FileSignature, href: "/agent/quotes" },
           { label: t("portalTab_Customers"), subtitle: t("agOriginProtectedClients"), icon: ContactRound, href: "/agent/clients" },
           { label: t("policies"), subtitle: t("agClientsCover"), icon: FileText, href: "/agent/policies" },
