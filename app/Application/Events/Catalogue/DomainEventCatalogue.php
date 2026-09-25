@@ -357,6 +357,14 @@ final class DomainEventCatalogue
             // Batch 13C — REQ-REI-001/002 reinsurance (App\Application\Reinsurance)
             $d('reinsurance.treaty_version.activated', 'reinsurance_treaty', 'Treaty version activated (maker-checker).', [], [], true),
             $d('reinsurance.policy.ceded', 'policy', 'Policy cession calculated against treaties in force.', [], [], true),
+            // Agent E11 — REQ-CAT-001/002/003 accumulation + catastrophe events (App\Application\Accumulation)
+            $d('accumulation.snapshot.taken', 'accumulation_snapshot', 'Point-in-time accumulation snapshot per zone / peril (gross and net of reinsurance).', [], [], true),
+            $d('accumulation.capacity.breached', 'accumulation_capacity_check', 'Capacity check returned CAPACITY_EXCEEDED or FACULTATIVE_REQUIRED (LOCK-019).', [], [], true),
+            $d('catastrophe.event.declared', 'catastrophe_event', 'Catastrophe event declared (peril, zones, date window).', [], [], true),
+            $d('catastrophe.event.claim_linked', 'catastrophe_event', 'Claim linked to a catastrophe event.', [], [], true),
+            $d('catastrophe.event.losses_aggregated', 'catastrophe_event', 'Catastrophe event losses aggregated; carries the event id for reinsurance recoveries.', [], [], true),
+            $d('catastrophe.event.closed', 'catastrophe_event', 'Catastrophe event closed.', [], [], true),
+            $d('claim.large_loss.detected', 'claim', 'Claim loss reached the configured large-loss threshold; recipients notified.', [], [], true),
             // Agent C9 — REQ-CLM-009 / WF-053 expert & adjuster assignments (App\Application\Claims\Adjusters)
             $d('claim.expert.assigned', 'claim', 'Expert / adjuster appointed on a claim.', [], [], true),
             $d('claim.expert.accepted', 'claim', 'Expert accepted the assignment.', [], [], true),
