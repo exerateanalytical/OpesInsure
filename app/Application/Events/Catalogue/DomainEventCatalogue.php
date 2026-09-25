@@ -165,6 +165,23 @@ final class DomainEventCatalogue
             $d('tariff.scheduled', 'tariff', 'Tariff version scheduled for its effective date (REQ-RAT-002).', [], [], true),
             $d('tariff.expired', 'tariff', 'Tariff version expired (REQ-RAT-002).', [], [], true),
 
+            // Batch 13D — REQ-COI-001 co-insurance (App\Application\Coinsurance\CoinsuranceService)
+            $d('coinsurance.arrangement.created', 'coinsurance_arrangement', 'Co-insurance arrangement drafted.', [], [], true),
+            $d('coinsurance.arrangement.activated', 'coinsurance_arrangement', 'Co-insurance arrangement activated (maker-checker).', [], [], true),
+            $d('coinsurance.arrangement.terminated', 'coinsurance_arrangement', 'Co-insurance arrangement terminated.', [], [], true),
+            $d('coinsurance.apportioned', 'coinsurance_arrangement', 'Amount apportioned across co-insurers.', [], [], true),
+            // Batch 13C — REQ-REI-001/002 reinsurance (App\Application\Reinsurance)
+            $d('reinsurance.treaty_version.activated', 'reinsurance_treaty', 'Treaty version activated (maker-checker).', [], [], true),
+            $d('reinsurance.policy.ceded', 'policy', 'Policy cession calculated against treaties in force.', [], [], true),
+            // Batch 13A — REQ-PRV-001/002/004 providers (App\Application\Providers)
+            $d('provider.registered', 'provider', 'Provider registered in the provider master.', [], [], true),
+            $d('provider.credentialing_changed', 'provider', 'Provider credentialing status changed.', [], [], true),
+            $d('provider.relationship_added', 'provider', 'Provider relationship recorded.', [], [], true),
+            $d('provider_network.created', 'provider_network', 'Provider network created.', [], [], true),
+            $d('provider_network.member_added', 'provider_network', 'Provider added to a network.', [], [], true),
+            $d('provider_contract.created', 'provider_contract', 'Provider contract created.', [], [], true),
+            $d('provider_tariff.approved', 'provider_contract', 'Provider tariff version approved (maker-checker).', [], [], true),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),
