@@ -7,7 +7,7 @@ namespace App\Application\Policies;
 use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\Shared\CanonicalJson;
-use App\Domain\CarrierOperations\AuthorityChecker;
+use App\Application\Authority\AuthorityService;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\PolicyIssuanceRequest;
@@ -24,7 +24,7 @@ final class PolicyIssuanceService
 {
     public function __construct(
         private CanonicalJson $json,
-        private AuthorityChecker $authority,
+        private AuthorityService $authority, // wraps the legacy AuthorityChecker (REQ-DUP-023)
         private AuditWriter $audit,
         private OutboxWriter $outbox,
         private PolicyDocumentService $documents,
@@ -84,33 +84,31 @@ final class PolicyIssuanceService
                     ]);
                 }
 
-                $decision = $this->authority->check(
-                    [
-                        'status' => $agreement->status,
-                        'effective_from' => $agreement->effective_from,
-                        'effective_until' => $agreement->effective_until,
-                        'permitted_lines' => json_decode($agreement->permitted_lines, true),
-                        'max_policy_premium_minor' => $agreement->max_policy_premium_minor,
-                        'territories' => json_decode($agreement->territories, true),
-                    ],
+                // REQ-AUTH-001..003: AuthorityService reads authority_limits (legacy AuthorityChecker fallback) and the
+                // intermediary authorization; a threshold-exceed opens an AUTHORITY_REFERRAL case (carrier review).
+                $outcome = $this->authority->checkDelegatedIssuance(
+                    $tenant->id,
+                    $agreement,
                     $proposal->offer->quote->line_code,
                     (int) $terms['total_minor'],
                     $data['territory'],
                     $coverageStarts,
+                    ['type' => 'proposal', 'id' => $proposal->id, 'title' => 'Delegated issuance '.$agreement->agreement_number],
+                    $actor,
                 );
 
-                if (! $decision->allowed) {
+                if ($outcome->denied()) {
                     throw ValidationException::withMessages([
-                        'delegated_authority_agreement_id' => __('wave5.authority_denied', ['reason' => $decision->reason]),
+                        'delegated_authority_agreement_id' => __('wave5.authority_denied', ['reason' => $outcome->reason]),
                     ]);
                 }
 
                 $authoritySnapshot = [
-                    'mode' => 'DELEGATED_AUTHORITY',
+                    'mode' => $outcome->referred() ? 'AUTHORITY_REFERRAL' : 'DELEGATED_AUTHORITY',
                     'agreement_number' => $agreement->agreement_number,
-                    'decision' => $decision->reason,
+                    ...$outcome->snapshot(),
                 ];
-                $status = 'REQUESTED';
+                $status = $outcome->referred() ? 'CARRIER_REVIEW' : 'REQUESTED';
             }
 
             $request = PolicyIssuanceRequest::create([
