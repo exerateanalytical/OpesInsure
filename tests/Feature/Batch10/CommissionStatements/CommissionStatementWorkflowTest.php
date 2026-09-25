@@ -133,13 +133,15 @@ it('opens a PAYABLE obligation on approval; the payout settles it and posts comm
         ->and(DB::table('journals')->where('id', $p->journal_id)->value('status'))->toBe('REVERSED');
 });
 
-it('refuses to complete a payout without a commission.paid posting profile (nothing half-settled)', function () {
+it('completes a payout without a posting profile through the default GL mapping (Batch 10-6)', function () {
     $w = b103World(false);
     $s = app(CommissionStatementService::class)->generate($w['tenant']->id, $w['partners'][0]->id, $w['start'], $w['end'], 'XAF', $w['maker']);
     $s = app(PartnerStatementService::class)->publish(app(PartnerStatementService::class)->approve($s, $w['checker']), $w['checker']);
 
-    expect(fn () => b103Paid($w, $s, 10000))->toThrow(ValidationException::class)
-        ->and(DB::table('financial_obligations')->where('id', $s->obligation_id)->value('status'))->toBe('OPEN');
+    $p = b103Paid($w, $s, 10000);
+    expect($p->journal_id)->not->toBeNull()
+        ->and(DB::table('journals')->where('id', $p->journal_id)->value('status'))->toBe('POSTED')
+        ->and(DB::table('financial_obligations')->where('id', $s->obligation_id)->value('status'))->toBeIn(['PARTIALLY_SETTLED', 'SETTLED']);
 });
 
 it('disputes a published statement through a case, then re-approval after resolution opens a fresh payable', function () {
