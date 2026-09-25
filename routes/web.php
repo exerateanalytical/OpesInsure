@@ -76,3 +76,8 @@ Route::get('/download/android', function () {
         'Content-Type' => 'application/vnd.android.package-archive',
     ]);
 })->name('download.android');
+
+// Agent B7 — REQ-MOB-007 verified app links (config security_centre.app_links). Must live at the web root, not under /api.
+Route::get('/.well-known/assetlinks.json', [\App\Application\Security\AppLinks\AppLinksController::class, 'assetLinks'])->name('well-known.assetlinks');
+Route::get('/.well-known/apple-app-site-association', [\App\Application\Security\AppLinks\AppLinksController::class, 'appleAppSiteAssociation'])->name('well-known.aasa');
+// End Agent B7

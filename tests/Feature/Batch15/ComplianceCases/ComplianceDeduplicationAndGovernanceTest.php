@@ -56,8 +56,8 @@ it('REQ-DUP-009: legacy single-step privileged-access grant goes through Privile
     $body = ['user_id' => $target->id, 'tenant_id' => $tenant->id, 'purpose' => 'INCIDENT', 'justification' => str_repeat('Investigating production incident. ', 3),
         'starts_at' => now()->toISOString(), 'expires_at' => now()->addHour()->toISOString()];
 
-    $id = $this->postJson('/api/v1/compliance/privileged-access', $body, tenantHeader($tenant))->assertCreated()->assertJsonPath('data.status', 'APPROVED')->json('data.id');
-    expect(DB::table('privileged_access_events')->where('privileged_access_grant_id', $id)->where('event_type', 'APPROVED')->exists())->toBeTrue();
+    $id = $this->postJson('/api/v1/compliance/privileged-access', $body, tenantHeader($tenant))->assertCreated()->assertJsonPath('data.status', 'REQUESTED')->json('data.id'); // B7 / REQ-SEC-001: one-step grant retired → second-person approval
+    expect(DB::table('privileged_access_events')->where('privileged_access_grant_id', $id)->where('event_type', 'REQUESTED')->exists())->toBeTrue();
     $this->postJson('/api/v1/compliance/privileged-access', [...$body, 'tenant_id' => $other->id], tenantHeader($tenant))->assertNotFound();
     $this->postJson('/api/v1/compliance/privileged-access', [...$body, 'user_id' => $approver->id], tenantHeader($tenant))->assertForbidden();
 });

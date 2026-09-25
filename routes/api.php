@@ -1027,3 +1027,22 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
 });
 // End Agent E3
+// Agent B7 — REQ-SEC-001 security centre, REQ-SEC-003 purposes / purpose-of-use log, REQ-MOB-007 crash reports (App\Application\Security\Http).
+Route::prefix('v1')->group(function (): void {
+    Route::post('mobile/runtime/crash-reports', [\App\Application\Security\Http\SecurityCentreController::class, 'crashReport'])->middleware('throttle:30,1');
+});
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sc = \App\Application\Security\Http\SecurityCentreController::class;
+    Route::get('me/security/login-activity', [$sc, 'myLoginActivity']);
+    Route::get('security-centre/login-activity', [$sc, 'loginActivity'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/privileged-access', [$sc, 'privilegedAccess'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/crash-reports', [$sc, 'crashReports'])->middleware('permission:security.centre.read');
+    Route::get('security-centre/findings', [$sc, 'findings'])->middleware('permission:security.findings.read');
+    Route::post('security-centre/findings', [$sc, 'reportFinding'])->middleware('permission:security.findings.manage');
+    Route::get('security-centre/findings/{finding}', [$sc, 'finding'])->middleware('permission:security.findings.read')->whereUuid('finding');
+    Route::post('security-centre/findings/{finding}/transition', [$sc, 'transitionFinding'])->middleware('permission:security.findings.manage')->whereUuid('finding');
+    Route::get('privacy/purposes', [$sc, 'purposes'])->middleware('permission:privacy.purposes.read');
+    Route::patch('privacy/purposes/{code}', [$sc, 'updatePurpose'])->middleware('permission:privacy.purposes.manage')->where('code', '[A-Z0-9_]+');
+    Route::get('privacy/purpose-checks', [$sc, 'purposeChecks'])->middleware('permission:privacy.purposes.read');
+});
+// End Agent B7
