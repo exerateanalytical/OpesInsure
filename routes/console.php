@@ -34,3 +34,10 @@ Artisan::command('commissions:advance', function (App\Application\Commissions\Ma
     $this->info("Earned: {$s['earned']}. Payable: {$s['payable']}.");
 })->purpose('Advance the commission machine: ACCRUED → EARNED on settled premium, APPROVED → PAYABLE once vested.');
 Schedule::command('commissions:advance')->dailyAt('02:10')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+// Agent C15 — REQ-REC-003 dunning run (+ REQ-REC-002 legal deadline sweep).
+Artisan::command('collections:run', function (App\Application\Collections\CollectionService $service, App\Application\Claims\Recovery\Litigation\LegalMatterService $legal) {
+    $s = $service->run();
+    $missed = $legal->sweepDeadlines();
+    $this->info("Notices: {$s['notices']}. Escalated: {$s['escalated']}. Promises kept/broken: {$s['promises_kept']}/{$s['promises_broken']}. Closed: {$s['closed']}. Legal deadlines missed: {$missed}.");
+})->purpose('Advance overdue receivables through the dunning stages, evaluate promises-to-pay, escalate, and flag missed legal deadlines.');
+Schedule::command('collections:run')->dailyAt('03:20')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
