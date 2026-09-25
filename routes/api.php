@@ -464,3 +464,18 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::get('mobile/statements', [$st, 'mine'])->middleware('throttle:30,1');
 });
 // End Batch 9-8
+// Batch 9-7 — REQ-PAY-010 cashier sessions, REQ-PAY-013 multi-currency & immutable FX rates.
+Route::prefix('v1/finance')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $c = \App\Application\Finance\Cashier\Http\CashierSessionController::class;
+    Route::get('cashier-sessions', [$c, 'index'])->middleware('permission:cashier.sessions.view');
+    Route::post('cashier-sessions', [$c, 'open'])->middleware('permission:cashier.sessions.operate');
+    Route::get('cashier-sessions/{session}', [$c, 'show'])->middleware('permission:cashier.sessions.view')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/collections', [$c, 'collect'])->middleware('permission:cashier.sessions.operate')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/close', [$c, 'close'])->middleware('permission:cashier.sessions.operate')->whereUuid('session');
+    Route::post('cashier-sessions/{session}/decide', [$c, 'decide'])->middleware('permission:cashier.sessions.approve')->whereUuid('session');
+    $f = \App\Application\Finance\Fx\Http\FxRateController::class;
+    Route::get('fx-rates', [$f, 'index'])->middleware('permission:fx.rates.view');
+    Route::post('fx-rates', [$f, 'store'])->middleware('permission:fx.rates.manage');
+    Route::get('fx-rates/lookup', [$f, 'lookup'])->middleware('permission:fx.rates.view');
+});
+// End Batch 9-7

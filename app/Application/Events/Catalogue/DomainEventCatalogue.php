@@ -121,6 +121,13 @@ final class DomainEventCatalogue
             $d('document.destruction.requested', 'document', 'Document destruction requested; DOCUMENT_DESTRUCTION case opened.', [], [], true),
             $d('document.destruction.decided', 'document', 'Document destruction request approved/rejected/blocked.', [], [], true),
             $d('document.destroyed', 'document', 'Document content destroyed; tombstone kept.', [], [], true),
+            // Batch 9-7 REQ-PAY-010/013 (App\Application\Finance\Cashier|Fx)
+            $d('cashier.session.opened', 'cashier_session', 'Cashier session opened with a float (one open session per cashier per branch).', [], [], true),
+            $d('cashier.collection.recorded', 'cashier_collection', 'Cash or cheque collection recorded in a cashier session.', [], [], true),
+            $d('cashier.session.closed', 'cashier_session', 'Cashier session closed with counted cash and variance.', [], [], true),
+            $d('cashier.session.approved', 'cashier_session', 'Closed cashier session approved by a supervisor (not the cashier).', [], [], true),
+            $d('cashier.session.rejected', 'cashier_session', 'Closed cashier session rejected by a supervisor.', [], [], true),
+            $d('fx.rate.recorded', 'fx_rate', 'Immutable FX rate recorded (append-only).', [], [], true),
             $d('document.signature.requested', 'signature_request', 'Document sent for e-signature.', [], [], true),
             $d('document.signature.signed', 'signature_request', 'One signer signed.', [], [], true),
             $d('document.signature.completed', 'signature_request', 'All signers signed.', [], [], true),
