@@ -163,5 +163,7 @@ final class IssuanceQueueService
     {
         DB::table('issuance_exception_events')->insert(['id' => (string) \Illuminate\Support\Str::uuid(), 'issuance_exception_id' => $ex->id, 'action' => $action,
             'from_status' => $from, 'to_status' => $to, 'actor_id' => $actor?->id, 'metadata' => json_encode($meta), 'occurred_at' => now()]);
+        // REQ-REN-001 / WF-087: a paid renewal's issuance failure / recovery moves its renewal case.
+        app(\App\Application\Policies\Renewals\RenewalIssuanceFailureLink::class)->sync($ex, $action, $actor);
     }
 }
