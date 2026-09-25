@@ -834,3 +834,14 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claim-settlements/{settlement}/payment', [$s, 'requestPayment'])->middleware('permission:claims.settlement.pay')->whereUuid('settlement');
 });
 // End Batch 12 C13
+// Agent C8 — REQ-CLM-007 claim types per line/product + late-claim approval (App\Application\Claims\Types).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $ct = \App\Application\Claims\Types\Http\ClaimTypeController::class;
+    Route::get('claim-types', [$ct, 'index'])->middleware('permission:claims.view');
+    Route::post('claim-types', [$ct, 'store'])->middleware('permission:claims.types.manage');
+    Route::post('claim-types/{version}/approve', [$ct, 'approve'])->middleware('permission:claims.types.approve')->whereUuid('version');
+    Route::get('claims/{claim}/reporting-check', [$ct, 'reporting'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::post('claims/{claim}/late-report/recommend', [$ct, 'recommend'])->middleware('permission:claims.late_report.recommend')->whereUuid('claim');
+    Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
+});
+// End Agent C8
