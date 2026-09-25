@@ -76,6 +76,11 @@ final class DomainEventCatalogue
             // Agent C16 REQ-FRD-001 / WF-089 claim fraud review (App\Application\Fraud\ClaimFraudIndicatorService)
             $d('fraud.claim.review_required', 'claim', 'Fraud indicators fired; claim flagged REVIEW_REQUIRED and a suspicious-claim case opened (never auto-confirmed).', [], [$C], true),
             $d('fraud.claim.review_decided', 'claim', 'Human reviewer recorded the suspicious-claim review outcome.', [], [$C], true),
+            // Agent C8 — REQ-CLM-007 claim types + late-claim approval (App\Application\Claims\Types)
+            $d('claim.reported_late', 'claim', 'Claim reported after its configured (platform default / insurer) reporting period; flagged and a late-report case opened.', [], [$C], true),
+            $d('claim.late_report.recommended', 'claim', 'Handler (maker) recommended accepting or rejecting a late claim report.', [], [$C], true),
+            $d('claim.late_report.decided', 'claim', 'Checker approved or rejected a late claim report.', [], [$C], true),
+            $d('claim_type.version.approved', 'claim_type_version', 'Insurer claim type override version activated (maker-checker).', [], [$C], true),
             // Batch 9-6 REQ-PAY-011 mobile-money clearing (App\Application\Finance\Clearing\ClearingService)
             $d('payment.clearing.settled', 'clearing_batch', 'Provider settlement batch credited by the bank.', [], [$C], true),
             $d('payment.clearing.reconciled', 'clearing_batch', 'Provider settlement batch reconciled (matched or variance).', [], [$C], true),

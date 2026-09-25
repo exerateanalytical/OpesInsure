@@ -54,6 +54,8 @@ final class FnolService
             if (! DB::table('claim_fnol_snapshots')->where('claim_id', $claim->id)->exists()) {
                 $this->snapshot($claim, $data, $actor, $reporter);
             }
+            // REQ-CLM-007: claim type + reporting-deadline check (a late claim is flagged, never refused).
+            app(\App\Application\Claims\Types\ClaimReportingService::class)->atFnol($claim, $data['claim_type'] ?? $data['loss_details']['claim_type'] ?? null, $actor);
 
             return $claim;
         });
