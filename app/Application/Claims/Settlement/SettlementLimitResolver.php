@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Claims\Settlement;
 
+use App\Application\Claims\Limits\LimitLedger;
 use App\Application\Policies\Chronology\PolicyChronologyWriter;
 use App\Models\Claim;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Remaining limit and default deductible for a claim at its loss date.
  *
- *  1. App\Application\Claims\Limits\LimitLedger (C4) when present and it exposes remainingForClaim(Claim, ?string coverageCode): ?int.
+ *  1. With a coverage code: App\Application\Claims\Limits\LimitLedger::remaining() (C4), counting this claim's own reservation as available.
  *  2. Otherwise policy_limits of the policy version in force at the loss date (PolicyChronologyWriter::asOf):
  *     PER_CLAIM → amount − payments already made on this claim; AGGREGATE → amount − consumed; the smallest applies.
  *  No limit rows → null (uncapped).
@@ -38,12 +39,25 @@ final class SettlementLimitResolver
             $deductible = (int) $ded->amount_minor;
         }
 
-        $ledgerClass = 'App\\Application\\Claims\\Limits\\LimitLedger';
-        if (class_exists($ledgerClass) && method_exists($ledgerClass, 'remainingForClaim')) {
-            $remaining = app($ledgerClass)->remainingForClaim($claim, $coverageCode);
+        // C4 limit ledger: with a coverage, it lists the PER_CLAIM/AGGREGATE limits in force at the loss date
+        // with this claim's own reservation. The claim may settle into its own reservation, and payments made
+        // outside the ledger (priorPaid) still count against the per-claim limit.
+        if ($coverageCode !== null) {
+            $ledger = app(LimitLedger::class)->remaining($claim->policy_id, $coverageCode, $claim->loss_occurred_at ?? now(), $claim);
+            if ($ledger['limits'] !== []) {
+                $remaining = null;
+                $explained = [];
+                foreach ($ledger['limits'] as $l) {
+                    $left = $l['limit_type'] === 'PER_CLAIM'
+                        ? $l['amount_minor'] - max($priorPaid, $l['claim_consumed_minor'] ?? 0)
+                        : $l['remaining_minor'] + ($l['claim_reserved_minor'] ?? 0);
+                    $explained[] = $l + ['settleable_minor' => $left];
+                    $remaining = $remaining === null ? $left : min($remaining, $left);
+                }
 
-            return ['remaining_limit_minor' => $remaining === null ? null : (int) $remaining, 'source' => 'LIMIT_LEDGER', 'deductible_minor' => $deductible,
-                'policy_version_id' => $version?->id, 'limits' => []];
+                return ['remaining_limit_minor' => $remaining, 'source' => 'LIMIT_LEDGER', 'deductible_minor' => $deductible,
+                    'policy_version_id' => $ledger['policy_version_id'] ?? $version?->id, 'limits' => $explained];
+            }
         }
 
         $remaining = null;

@@ -81,7 +81,10 @@ it('blocks closure on each checklist item', function () {
     app(ClaimClosureService::class)->transferRecovery($rec, 'Carrier recovery unit', $x['maker']);
     expect(DB::table('claim_recoveries')->where('id', $rec)->value('status'))->toBe('TRANSFERRED')->and(failing($c))->toBe([]);
 
+    // Fixture tamper: C12's trigger makes an APPROVED decision immutable, so bypass user triggers for this one statement.
+    DB::statement('SET session_replication_role = replica');
     DB::table('claim_decisions')->where('claim_id', $c->id)->update(['status' => 'PENDING_APPROVAL', 'approved_by' => null]);
+    DB::statement('SET session_replication_role = origin');
     expect(failing($c))->toBe(['DECISION_RECORDED'])->and(failing($c, 'WITHDRAWN'))->toBe([]);
 
     expect(fn () => app(ClaimClosureService::class)->close($c, 'SETTLED_PAID', null, $x['maker']))->toThrow(ValidationException::class);
@@ -158,15 +161,12 @@ it('registers the sweep command, its schedule and the API routes', function () {
 });
 
 it('exposes the checklist as a ClaimTransitionGuard when the contract exists', function () {
-    if (! interface_exists(App\Domain\Claims\ClaimTransitionGuard::class)) {
-        expect(class_exists(App\Application\Claims\Closure\ClosureChecklistGuard::class))->toBeFalse();
-
-        return;
-    }
     $x = c14Claim();
     $guard = app(App\Application\Claims\Closure\ClosureChecklistGuard::class);
     expect($guard->check($x['claim'], 'close', []))->toBeNull();
     $x['claim']->update(['current_reserve_minor' => 1]);
-    expect($guard->check($x['claim'], 'close', []))->toBe('CLOSURE_RESERVES_ZERO');
+    expect($guard->events())->toBe(['close'])
+        ->and($guard->check($x['claim'], 'close', ['to' => 'CLOSED']))->toBe('CLOSURE_RESERVES_ZERO')
+        ->and($guard->check($x['claim'], 'close', []))->toBe('CLOSURE_RESERVES_ZERO');
     expect(collect(app()->tagged('claims.transition_guards'))->contains(fn ($g) => $g instanceof App\Application\Claims\Closure\ClosureChecklistGuard))->toBeTrue();
 });

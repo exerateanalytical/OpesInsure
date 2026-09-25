@@ -25,7 +25,10 @@ final class ClaimCoverageCheckService
     public const RESOLUTIONS = ['COVERED', 'NOT_COVERED', 'PARTIALLY_COVERED'];
 
     /** Approval events / target states under both the stored and the blueprint vocabularies. */
-    public const APPROVAL_EVENTS = ['APPROVED', 'PARTIALLY_APPROVED', 'APPROVE', 'PARTIAL', 'approve', 'partially_approve'];
+    public const APPROVAL_EVENTS = ['approve', 'partially_approve']; // ClaimMachine events
+
+    /** Blueprint target states that count as an approval (ClaimTransitions context 'to'). */
+    public const APPROVAL_STATES = ['APPROVED', 'PARTIALLY_APPROVED'];
 
     public const BLOCK_REASON = 'COVERAGE_REVIEW_UNRESOLVED';
 

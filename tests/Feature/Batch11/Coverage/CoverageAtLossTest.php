@@ -168,11 +168,13 @@ it('REQ-CLM-003 stores an immutable per-claim snapshot, blocks approval until a 
     expect(Claim::find($claim->id)->status)->toBe('CARRIER_REVIEW');
     expect(DB::table('outbox_messages')->where('event_name', 'claim.coverage.checked')->where('aggregate_id', $claim->id)->count())->toBe(2);
 
-    // The guard class needs agent C1's ClaimTransitionGuard contract; the gate logic is exercised either way.
-    $gate = interface_exists(\App\Domain\Claims\ClaimTransitionGuard::class)
-        ? fn (string $e) => app(ClaimCoverageTransitionGuard::class)->check($claim, $e, [])
-        : fn (string $e) => in_array($e, ClaimCoverageCheckService::APPROVAL_EVENTS, true) ? app(ClaimCoverageCheckService::class)->approvalBlocker($claim) : null;
-    expect($gate('APPROVED'))->toBe('COVERAGE_REVIEW_UNRESOLVED')->and($gate('CLOSED'))->toBeNull();
+    // ClaimMachine events with the ClaimTransitions context ('to' = blueprint target).
+    $guard = collect(app()->tagged('claims.transition_guards'))->first(fn ($g) => $g instanceof ClaimCoverageTransitionGuard);
+    expect($guard)->not->toBeNull()->and($guard->events())->toBe(['approve', 'partially_approve']);
+    $targets = ['approve' => 'APPROVED', 'partially_approve' => 'PARTIALLY_APPROVED', 'close' => 'CLOSED'];
+    $gate = fn (string $e) => $guard->check($claim, $e, ['to' => $targets[$e]]);
+    expect($gate('approve'))->toBe('COVERAGE_REVIEW_UNRESOLVED')->and($gate('partially_approve'))->toBe('COVERAGE_REVIEW_UNRESOLVED')
+        ->and($gate('close'))->toBeNull();
 
     expect(fn () => DB::transaction(fn () => DB::table('claim_coverage_checks')->where('id', $row['id'])->update(['outcome' => 'COVERAGE_CONFIRMED'])))->toThrow(Illuminate\Database\QueryException::class);
     expect(fn () => DB::transaction(fn () => DB::table('claim_coverage_checks')->where('id', $row['id'])->delete()))->toThrow(Illuminate\Database\QueryException::class);
@@ -181,7 +183,7 @@ it('REQ-CLM-003 stores an immutable per-claim snapshot, blocks approval until a 
 
     Passport::actingAs($resolver);
     $done = $this->postJson("/api/v1/claims/{$claim->id}/coverage-checks/{$row['id']}/resolve", ['resolution' => 'COVERED', 'note' => 'Loss maps to RC.'], tenantHeader($f['tenant']))->assertOk()->json('data');
-    expect($done['resolution'])->toBe('COVERED')->and($done['review_open'])->toBeFalse()->and($gate('APPROVED'))->toBeNull();
+    expect($done['resolution'])->toBe('COVERED')->and($done['review_open'])->toBeFalse()->and($gate('approve'))->toBeNull();
     $this->postJson("/api/v1/claims/{$claim->id}/coverage-checks/{$row['id']}/resolve", ['resolution' => 'NOT_COVERED', 'note' => 'changed mind'], tenantHeader($f['tenant']))->assertStatus(422);
 
     Passport::actingAs($checker);

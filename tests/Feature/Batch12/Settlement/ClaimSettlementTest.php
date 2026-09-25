@@ -162,7 +162,10 @@ it('REQ-CLM-013 a disputed offer can only be superseded by a recalculation; paym
     expect((int) $n->amount_minor)->toBe(70000)->and($svc->get($s->id)->status)->toBe('SUPERSEDED');
 
     // An offer above the approved decision is refused.
+    // Fixture tamper: C12's trigger makes an APPROVED decision immutable, so bypass user triggers for this one statement.
+    DB::statement('SET session_replication_role = replica');
     DB::table('claim_decisions')->where('claim_id', $w['claim']->id)->update(['approved_amount_minor' => 60000]);
+    DB::statement('SET session_replication_role = origin');
     expect(fn () => $svc->offer($n->id, $w['checker']))->toThrow(ValidationException::class);
 });
 

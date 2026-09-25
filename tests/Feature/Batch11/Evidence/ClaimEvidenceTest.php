@@ -141,14 +141,13 @@ it('gates DECISION_PENDING until every mandatory item is accepted', function () 
 });
 
 it('registers the transition guard with the claims contract when the contract exists', function () {
-    if (! interface_exists(\App\Domain\Claims\ClaimTransitionGuard::class)) {
-        $this->markTestSkipped('ClaimTransitionGuard contract (agent C1) not merged yet.');
-    }
     $guards = collect(app()->tagged('claims.transition_guards'))->filter(fn ($g) => $g instanceof \App\Application\Claims\Evidence\ClaimEvidenceTransitionGuard);
     expect($guards)->toHaveCount(1);
     $g = $guards->first();
-    expect($g->check($this->claim, 'submit_for_decision', ['to' => 'DECISION_PENDING']))->toBe(ClaimEvidenceGate::REASON)
-        ->and($g->check($this->claim, 'assess', ['to' => 'UNDER_ASSESSMENT']))->toBeNull();
+    expect($g->events())->toBe(['refer_for_decision'])
+        ->and($g->check($this->claim, 'refer_for_decision', ['to' => 'DECISION_PENDING']))->toBe(ClaimEvidenceGate::REASON)
+        ->and($g->check($this->claim, 'refer_for_decision', []))->toBe(ClaimEvidenceGate::REASON)
+        ->and($g->check($this->claim, 'start_assessment', ['to' => 'UNDER_ASSESSMENT']))->toBeNull();
 });
 
 it('exposes checklist, metadata and review over HTTP with permissions and tenant scoping', function () {

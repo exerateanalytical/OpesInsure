@@ -15,8 +15,8 @@ use App\Models\Claim;
  */
 final class ClaimEvidenceTransitionGuard implements ClaimTransitionGuard
 {
-    /** Events that can lead to DECISION_PENDING (names used by the claim machine, plus the target states). */
-    public const EVENTS = ['DECISION_PENDING', 'CARRIER_REVIEW', 'submit_for_decision', 'SUBMIT_FOR_DECISION', 'request_decision', 'REQUEST_DECISION', 'complete_assessment', 'COMPLETE_ASSESSMENT'];
+    /** The ClaimMachine event that leads to DECISION_PENDING (stored CARRIER_REVIEW). */
+    public const EVENTS = ['refer_for_decision'];
 
     public function __construct(private ClaimEvidenceGate $gate) {}
 

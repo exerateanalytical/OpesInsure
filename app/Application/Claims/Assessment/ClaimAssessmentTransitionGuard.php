@@ -26,6 +26,11 @@ final class ClaimAssessmentTransitionGuard implements ClaimTransitionGuard
         if (! AssessmentDecisionReadiness::targetsDecisionPending($event, $context)) {
             return null;
         }
+        // An appeal goes back to DECISION_PENDING from APPEALED: the assessment gate was already passed by the
+        // original decision, and the appeal is judged on the dispute (C12), not on a fresh assessment.
+        if (($context['from'] ?? null) === 'APPEALED') {
+            return null;
+        }
 
         return $this->readiness->blockingReason($claim);
     }

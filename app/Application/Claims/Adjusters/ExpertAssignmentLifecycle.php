@@ -9,7 +9,7 @@ namespace App\Application\Claims\Adjusters;
  *
  * ASSIGNMENT_PENDING → ACCEPTED | DECLINED → INSPECTION_SCHEDULED → INSPECTED → REPORT_SUBMITTED → REPORT_ACCEPTED | REPORT_RETURNED
  * (a returned report is resubmitted). The insurer can cancel any open assignment. The same states back the
- * CLAIM_EXPERT_ASSIGNMENT case type so the case engine runs the SLA clocks (PLATFORM_SLA, overridable per insurer).
+ * CLAIM_EXPERT_ASSIGNMENT case type so the case engine runs the SLA clocks (targets are insurer-configured; none seeded).
  */
 final class ExpertAssignmentLifecycle
 {
@@ -57,6 +57,13 @@ final class ExpertAssignmentLifecycle
         return $t !== null && in_array($from, $t[0], true) ? $t[1] : null;
     }
 
+    /** Unapproved suggestion (accept/decline 1 business day, report 10, insurer review 2); never seeded. */
+    public const SUGGESTED_SLA_POLICIES = [
+        ['metric' => 'FIRST_RESPONSE', 'target_business_minutes' => 480, 'label' => 'PLATFORM_SLA'],
+        ['metric' => 'RESOLUTION', 'target_business_days' => 10, 'label' => 'PLATFORM_SLA'],
+        ['metric' => 'STAGE:REPORT_SUBMITTED', 'target_business_days' => 2, 'label' => 'PLATFORM_SLA'],
+    ];
+
     /** @return array{states: list<array<string,mixed>>, transitions: list<array<string,mixed>>, sla_policies: list<array<string,mixed>>} */
     public static function caseDefinition(): array
     {
@@ -72,13 +79,10 @@ final class ExpertAssignmentLifecycle
         return [
             'states' => $states,
             'transitions' => $transitions,
-            // PLATFORM_SLA defaults (not legal deadlines): accept/decline within 1 business day,
-            // report accepted within 10 business days, insurer review of a submitted report within 2.
-            'sla_policies' => [
-                ['metric' => 'FIRST_RESPONSE', 'target_business_minutes' => 480, 'label' => 'PLATFORM_SLA'],
-                ['metric' => 'RESOLUTION', 'target_business_days' => 10, 'label' => 'PLATFORM_SLA'],
-                ['metric' => 'STAGE:REPORT_SUBMITTED', 'target_business_days' => 2, 'label' => 'PLATFORM_SLA'],
-            ],
+            // No SLA targets are seeded: the owner has not supplied expert-assignment targets and the platform
+            // never invents SLA data (OWNER_DECISIONS_2026-09-25). Insurers configure them by versioning the
+            // case type; SUGGESTED_SLA_POLICIES is a CONFIG_REQUIRED starting point, not a default.
+            'sla_policies' => [],
         ];
     }
 }

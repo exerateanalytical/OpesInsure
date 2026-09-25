@@ -60,6 +60,9 @@ beforeEach(function () {
         [['medical_service_id' => $this->service->id, 'price_minor' => 60000, 'contracted_price_minor' => 50000, 'insurer_share_percent' => 100]], $this->staff->id);
     $net->approveTariff($this->tenant->id, $tariff->id, $checker->id);
 
+    // SLA targets are insurer configuration (none seeded); configure them as an insurer would.
+    DB::table('case_types')->where('code', 'CLAIM_EXPERT_ASSIGNMENT')->where('status', 'EFFECTIVE')
+        ->update(['sla_policies' => json_encode(\App\Application\Claims\Adjusters\ExpertAssignmentLifecycle::SUGGESTED_SLA_POLICIES)]);
     $this->adjuster = c9AdjusterUser($this->tenant, $this->expert);
     Passport::actingAs($this->staff, [], 'api');
 });
