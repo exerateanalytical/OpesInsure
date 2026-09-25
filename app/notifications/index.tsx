@@ -95,7 +95,7 @@ export default function Notifications() {
               style={({ pressed }) => [styles.row, index === 0 && styles.first, index === items.length - 1 && styles.last, pressed && styles.pressed]}
             >
               <View style={[styles.icon, !n.read && styles.iconUnread]}>
-                <Icon size={18} color={n.severity === "CRITICAL" ? colors.dangerText : n.read ? colors.neutral600 : colors.blue600} />
+                <Icon size={26} color={n.severity === "CRITICAL" ? colors.dangerText : n.read ? colors.neutral600 : colors.blue600} />
               </View>
               <View style={styles.flex}>
                 <Text style={[styles.title, !n.read && styles.bold]} numberOfLines={2}>{n.title}</Text>
@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
   row: { backgroundColor: colors.white, paddingHorizontal: space.x4, minHeight: 64, flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderBottomWidth: 1, borderBottomColor: colors.neutral100 },
   pressed: { opacity: 0.82 },
   flex: { flex: 1 },
-  icon: { width: 36, height: 36, borderRadius: radius.control, backgroundColor: colors.neutral100, alignItems: "center", justifyContent: "center" },
-  iconUnread: { backgroundColor: colors.blue50 },
+  icon: { width: 36, height: 36, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
+  iconUnread: {},
   title: { ...type.label, color: colors.navy950, fontFamily: "Inter_500Medium" },
   bold: { fontFamily: "Inter_700Bold" },
   body: { ...type.meta, color: colors.neutral600 },

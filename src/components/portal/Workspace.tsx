@@ -124,7 +124,6 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.blue50,
     alignItems: "center",
     justifyContent: "center",
   },

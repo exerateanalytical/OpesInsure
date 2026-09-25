@@ -1,29 +1,119 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Building2, CheckCircle2, ChevronRight, MapPin, ShieldCheck } from 'lucide-react-native';
-import { Card, StatusChip } from './ui';
-import type { Institution } from '@/api/extra';
-import { Policy, WalletPolicy } from '@/api/client';
-import { policyStatusInfo } from '@/lib/purchase';
-import { useFormatters } from '@/hooks/useFormatters';
-import { colors, radius, space, type } from '@/theme/tokens';
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Building2, CheckCircle2, ChevronRight, MapPin, ShieldCheck } from "lucide-react-native";
+import { Card, StatusChip } from "./ui";
+import type { Institution } from "@/api/extra";
+import { Policy, WalletPolicy } from "@/api/client";
+import { policyStatusInfo } from "@/lib/purchase";
+import { useFormatters } from "@/hooks/useFormatters";
+import { useTranslation } from "@/i18n";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 export function InsurerCard({ insurer, onPress }: { insurer: Institution; onPress: () => void }) {
+  const { t } = useTranslation();
   const offers = insurer.products?.length ?? 0;
-  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.logo}><Text style={styles.logoText}>{insurer.initials}</Text></View><View style={styles.copy}><Text style={styles.title}>{insurer.name}</Text>{insurer.city ? <Text style={styles.meta}>{insurer.city}</Text> : null}</View><ChevronRight size={20} color={colors.neutral500}/></View>{offers > 0 && <View style={styles.verified}><CheckCircle2 size={16} color={colors.success}/><Text style={styles.verifiedText}>{offers} product{offers > 1 ? 's' : ''} available on OpesInsure</Text></View>}</Card></Pressable>;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button">
+      <Card>
+        <View style={styles.row}>
+          <View style={styles.initials}>
+            <Text style={styles.initialsText}>{insurer.initials}</Text>
+          </View>
+          <View style={styles.copy}>
+            <Text style={styles.title}>{insurer.name}</Text>
+            {insurer.city ? <Text style={styles.meta}>{insurer.city}</Text> : null}
+          </View>
+          <ChevronRight size={20} color={colors.neutral500} />
+        </View>
+        {offers > 0 ? (
+          <View style={styles.verified}>
+            <CheckCircle2 size={16} color={colors.success} />
+            <Text style={styles.verifiedText}>
+              {offers === 1 ? t("productAvailable") : t("productsAvailable", { count: offers })}
+            </Text>
+          </View>
+        ) : null}
+      </Card>
+    </Pressable>
+  );
 }
 
 export function BrokerCard({ broker, onPress }: { broker: Institution; onPress: () => void }) {
-  return <Pressable onPress={onPress} accessibilityRole="button"><Card><View style={styles.row}><View style={styles.brokerIcon}><Building2 size={20} color={colors.navy800}/></View><View style={styles.copy}><Text style={styles.title}>{broker.name}</Text>{broker.city ? <View style={styles.inline}><MapPin size={14} color={colors.neutral500}/><Text style={styles.meta}>{broker.city}</Text></View> : null}</View><ChevronRight size={20} color={colors.neutral500}/></View>{broker.licence_number ? <StatusChip label={`Licence ${broker.licence_number}`} tone="info"/> : null}</Card></Pressable>;
+  const { t } = useTranslation();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button">
+      <Card>
+        <View style={styles.row}>
+          <Building2 size={28} color={colors.navy800} />
+          <View style={styles.copy}>
+            <Text style={styles.title}>{broker.name}</Text>
+            {broker.city ? (
+              <View style={styles.inline}>
+                <MapPin size={14} color={colors.neutral500} />
+                <Text style={styles.meta}>{broker.city}</Text>
+              </View>
+            ) : null}
+          </View>
+          <ChevronRight size={20} color={colors.neutral500} />
+        </View>
+        {broker.licence_number ? (
+          <StatusChip label={t("licenceLabel", { number: broker.licence_number })} tone="info" />
+        ) : null}
+      </Card>
+    </Pressable>
+  );
 }
 
 /** Owned-policy card: provider, product, status label and localized cover dates. */
-export function PolicyCard({policy,onPress}:{policy:WalletPolicy|Policy;onPress?:()=>void}) {
-  const f=useFormatters();
-  const info=policyStatusInfo(policy.status, f.language);
-  const w=policy as WalletPolicy;
-  const provider=w.carrier_name??w.carrier?.party?.display_name??'Licensed insurance carrier';
-  return <Pressable accessibilityRole={onPress?'button':undefined} onPress={onPress}><Card><View style={styles.between}><View style={[styles.inline,styles.copy]}><View style={styles.logo}><ShieldCheck size={20} color={colors.blue600}/></View><View style={styles.copy}><Text style={styles.title}>{w.product_name??'Insurance policy'}</Text><Text style={styles.meta}>{provider}</Text></View></View><StatusChip label={info.label} tone={info.tone}/></View><Text style={styles.ref}>{policy.policy_number}</Text><View style={styles.between}><Text style={styles.meta}>{f.range(policy.coverage_starts_at,policy.coverage_ends_at)}</Text>{onPress&&<Text style={styles.link}>View policy</Text>}</View></Card></Pressable>;
+export function PolicyCard({ policy, onPress }: { policy: WalletPolicy | Policy; onPress?: () => void }) {
+  const f = useFormatters();
+  const { t } = useTranslation();
+  const info = policyStatusInfo(policy.status, f.language);
+  const w = policy as WalletPolicy;
+  const provider = w.carrier_name ?? w.carrier?.party?.display_name ?? t("licensedCarrier");
+  return (
+    <Pressable accessibilityRole={onPress ? "button" : undefined} onPress={onPress}>
+      <Card>
+        <View style={styles.between}>
+          <View style={[styles.inline, styles.copy]}>
+            <ShieldCheck size={28} color={colors.navy800} />
+            <View style={styles.copy}>
+              <Text style={styles.title}>{w.product_name ?? t("insurancePolicy")}</Text>
+              <Text style={styles.meta}>{provider}</Text>
+            </View>
+          </View>
+          <StatusChip label={info.label} tone={info.tone} />
+        </View>
+        <Text style={styles.ref}>{policy.policy_number}</Text>
+        <View style={styles.between}>
+          <Text style={styles.meta}>{f.range(policy.coverage_starts_at, policy.coverage_ends_at)}</Text>
+          {onPress ? <Text style={styles.link}>{t("viewPolicy")}</Text> : null}
+        </View>
+      </Card>
+    </Pressable>
+  );
 }
 
-const styles=StyleSheet.create({row:{flexDirection:'row',alignItems:'center',gap:space.x3},copy:{flex:1,gap:3},logo:{width:42,height:42,borderRadius:radius.control,backgroundColor:colors.blue50,alignItems:'center',justifyContent:'center'},logoText:{...type.caption,color:colors.blue700},brokerIcon:{width:42,height:42,borderRadius:radius.control,backgroundColor:colors.neutral100,alignItems:'center',justifyContent:'center'},title:{...type.label,color:colors.navy950},meta:{...type.meta,color:colors.neutral600},verified:{flexDirection:'row',alignItems:'center',gap:space.x2},verifiedText:{...type.meta,color:colors.successText},inline:{flexDirection:'row',alignItems:'center',gap:6},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:space.x3},ref:{...type.body,color:colors.navy950,fontVariant:['tabular-nums']},link:{...type.label,color:colors.blue600}});
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  copy: { flex: 1, gap: 3 },
+  // Initials read as a badge through the outline alone: no tinted fill.
+  initials: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.control,
+    borderWidth: 1,
+    borderColor: colors.neutral200,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  initialsText: { ...type.caption, color: colors.navy900 },
+  title: { ...type.label, color: colors.navy950 },
+  meta: { ...type.meta, color: colors.neutral600 },
+  verified: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  verifiedText: { ...type.meta, color: colors.successText },
+  inline: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x3 },
+  ref: { ...type.body, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  link: { ...type.label, color: colors.blue600 },
+});

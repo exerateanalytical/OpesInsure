@@ -125,5 +125,5 @@ export default function Payment() {
 const st = StyleSheet.create({
   center: { alignItems: "center" },
   text: { textAlign: "center" },
-  icon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  icon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
 });

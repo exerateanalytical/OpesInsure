@@ -111,7 +111,7 @@ export default function RoleSelect() {
               <Card>
                 <View style={styles.row}>
                   <View style={styles.icon}>
-                    <Icon size={22} color={colors.blue600} />
+                    <Icon size={30} color={colors.blue600} />
                   </View>
                   <View style={styles.copy}>
                     <Text style={styles.title}>{label}</Text>
@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.control,
-    backgroundColor: colors.blue50,
     alignItems: "center",
     justifyContent: "center",
   },

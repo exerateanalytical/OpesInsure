@@ -106,7 +106,7 @@ export default function Explore() {
                 style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
               >
                 <View style={styles.icon}>
-                  <Icon size={22} color={colors.blue600} />
+                  <Icon size={30} color={colors.blue600} />
                 </View>
                 <Text style={styles.label}>{t(c.label)}</Text>
                 <Text style={styles.meta}>{t(c.caption)}</Text>
@@ -217,7 +217,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.control,
-    backgroundColor: colors.blue50,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: space.x1,
@@ -239,7 +238,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.neutral100,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -139,7 +139,7 @@ export default function Profile() {
               onPress={() => router.push(path as never)}
             >
               <View style={styles.icon}>
-                <Icon size={20} color={colors.navy800} />
+                <Icon size={28} color={colors.navy800} />
               </View>
               <Text style={styles.label}>{t(label)}</Text>
               <ChevronRight size={19} color={colors.neutral500} />
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.control,
-    backgroundColor: colors.neutral50,
     alignItems: "center",
     justifyContent: "center",
   },

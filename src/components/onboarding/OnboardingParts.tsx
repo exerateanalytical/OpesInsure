@@ -53,7 +53,7 @@ export function OnboardingFeatureRow({ items }: { items: FeatureItem[] }) {
             {index > 0 ? <View style={styles.rowDivider} /> : null}
             <View style={styles.rowItem}>
               <View style={styles.rowBadge}>
-                <Icon size={authIcon.feature} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
+                <Icon size={authIcon.feature + 6} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
               </View>
               <Text style={styles.rowLabel}>{item.label}</Text>
               {item.caption ? <Text style={styles.rowCaption}>{item.caption}</Text> : null}
@@ -78,7 +78,7 @@ export function OnboardingNodeGrid({ items }: { items: FeatureItem[] }) {
           return (
             <View key={item.label} style={[styles.nodeItem, grid.item]}>
               <View style={styles.nodeBadge}>
-                <Icon size={authIcon.feature} strokeWidth={authIcon.strokeWidth} color={authColors.white} />
+                <Icon size={authIcon.feature + 8} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
               </View>
               <Text style={styles.rowLabel}>{item.label}</Text>
               {item.caption ? <Text style={styles.nodeCaption}>{item.caption}</Text> : null}
@@ -125,9 +125,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: colors.gold50,
-    borderWidth: 1,
-    borderColor: colors.gold100,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -145,9 +142,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: authColors.navy800,
-    borderWidth: 2,
-    borderColor: colors.gold500,
     alignItems: "center",
     justifyContent: "center",
   },

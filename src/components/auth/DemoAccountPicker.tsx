@@ -83,7 +83,7 @@ export function DemoAccountPicker({
                 style={({ pressed }) => [styles.option, index > 0 && styles.optionBorder, pressed && styles.optionPressed]}
               >
                 <View style={styles.optionIcon}>
-                  <Icon size={18} color={authColors.navy800} strokeWidth={1.8} />
+                  <Icon size={26} color={authColors.navy800} strokeWidth={1.8} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.optionLabel}>{item.label}</Text>
@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: authColors.ice50,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -233,7 +233,7 @@ export function PortalAccount({ tabs }: { tabs: PortalTab[] }) {
       <Card feature>
         <View style={s.profileRow}>
           <View style={s.avatar}>
-            <UserRound size={24} color={colors.white} />
+            <UserRound size={32} color={colors.navy950} />
           </View>
           <View style={s.flex}>
             <Text style={s.name}>{user?.full_name ?? t("portalPartnerUser")}</Text>
@@ -405,7 +405,6 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.navy950,
     alignItems: "center",
     justifyContent: "center",
   },
