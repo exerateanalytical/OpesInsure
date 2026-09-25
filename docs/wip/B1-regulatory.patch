@@ -1,0 +1,808 @@
+diff --git a/app/Application/Compliance/RegulatoryReportingService.php b/app/Application/Compliance/RegulatoryReportingService.php
+index 78c532f..4adb8fd 100644
+--- a/app/Application/Compliance/RegulatoryReportingService.php
++++ b/app/Application/Compliance/RegulatoryReportingService.php
+@@ -1,3 +1,3 @@
+ <?php
+ namespace App\Application\Compliance;use App\Application\Audit\AuditWriter;use App\Application\Events\OutboxWriter;use App\Models\{RegulatoryReportDefinition,RegulatoryReportRun,User};use Illuminate\Support\Facades\DB;use Illuminate\Validation\ValidationException;
+-final class RegulatoryReportingService{public function __construct(private AuditWriter$a,private OutboxWriter$o){}private function hash(array$d):string{ksort($d);return hash('sha256',json_encode($d,JSON_THROW_ON_ERROR));}public function define(array$d,User$u):RegulatoryReportDefinition{return RegulatoryReportDefinition::create([...$d,'status'=>'DRAFT','schema_hash'=>$this->hash($d['schema']),'created_by'=>$u->id]);}public function approveDefinition(RegulatoryReportDefinition$x,User$u):RegulatoryReportDefinition{if($x->status!=='DRAFT'||$x->created_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$overlap=RegulatoryReportDefinition::where('code',$x->code)->where('status','ACTIVE')->where('effective_from','<=',$x->effective_until??'9999-12-31')->where(fn($q)=>$q->whereNull('effective_until')->orWhere('effective_until','>=',$x->effective_from))->exists();if($overlap)throw ValidationException::withMessages(['effective_from'=>__('wave9.rule_overlap')]);$x->update(['status'=>'ACTIVE','approved_by'=>$u->id,'approved_at'=>now()]);return$x->refresh();}public function prepare(string$tenant,RegulatoryReportDefinition$d,array$in,User$u):RegulatoryReportRun{$hash=$this->hash($in['payload']);if($x=RegulatoryReportRun::where(['tenant_id'=>$tenant,'idempotency_key'=>$in['idempotency_key']])->first()){if(!hash_equals($x->payload_hash,$hash))throw ValidationException::withMessages(['idempotency_key'=>__('wave9.idempotency_conflict')]);return$x;}if($d->status!=='ACTIVE')throw ValidationException::withMessages(['definition'=>__('wave9.definition_inactive')]);return RegulatoryReportRun::create([...$in,'tenant_id'=>$tenant,'definition_id'=>$d->id,'status'=>'DRAFT','payload_hash'=>$hash,'prepared_by'=>$u->id]);}public function approve(RegulatoryReportRun$x,User$u):RegulatoryReportRun{if($x->status!=='DRAFT'||$x->prepared_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$x->update(['status'=>'APPROVED','approved_by'=>$u->id,'approved_at'=>now()]);$this->o->record('regulatory.report.approved','regulatory_report_run',$x->id,['run_id'=>$x->id]);return$x->refresh();}public function submit(RegulatoryReportRun$x):RegulatoryReportRun{if(!in_array($x->status,['APPROVED','RETRY_PENDING'],true))throw ValidationException::withMessages(['status'=>__('wave9.transition_invalid')]);$x->update(['status'=>'SUBMITTING','attempt_count'=>$x->attempt_count+1,'next_attempt_at'=>null]);return$x->refresh();}public function fail(RegulatoryReportRun$x,string$r):RegulatoryReportRun{$x->update(['status'=>'RETRY_PENDING','failure_reason'=>$r,'next_attempt_at'=>now()->addMinutes(15)]);return$x->refresh();}public function acknowledge(RegulatoryReportRun$x,string$r):RegulatoryReportRun{$x->update(['status'=>'ACKNOWLEDGED','external_reference'=>$r,'submitted_at'=>$x->submitted_at??now(),'acknowledged_at'=>now(),'failure_reason'=>null]);return$x->refresh();}public function reverse(RegulatoryReportRun$x,string$r,User$u):RegulatoryReportRun{if($x->status!=='ACKNOWLEDGED'||$x->approved_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$x->update(['status'=>'REVERSED','reversed_at'=>now(),'failure_reason'=>$r]);$this->a->record('regulatory.report.reversed','regulatory_report_run',$x->id,['reason'=>$r]);return$x->refresh();}}
++final class RegulatoryReportingService{public function __construct(private AuditWriter$a,private OutboxWriter$o){}private function hash(array$d):string{ksort($d);return hash('sha256',json_encode($d,JSON_THROW_ON_ERROR));}public function define(array$d,User$u):RegulatoryReportDefinition{return RegulatoryReportDefinition::create([...$d,'status'=>'DRAFT','schema_hash'=>$this->hash($d['schema']),'created_by'=>$u->id]);}public function approveDefinition(RegulatoryReportDefinition$x,User$u):RegulatoryReportDefinition{if($x->status!=='DRAFT'||$x->created_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$overlap=RegulatoryReportDefinition::where('code',$x->code)->where('status','ACTIVE')->where('effective_from','<=',$x->effective_until??'9999-12-31')->where(fn($q)=>$q->whereNull('effective_until')->orWhere('effective_until','>=',$x->effective_from))->exists();if($overlap)throw ValidationException::withMessages(['effective_from'=>__('wave9.rule_overlap')]);$x->update(['status'=>'ACTIVE','approved_by'=>$u->id,'approved_at'=>now()]);return$x->refresh();}public function prepare(string$tenant,RegulatoryReportDefinition$d,array$in,User$u):RegulatoryReportRun{$hash=$this->hash($in['payload']);if($x=RegulatoryReportRun::where(['tenant_id'=>$tenant,'idempotency_key'=>$in['idempotency_key']])->first()){if(!hash_equals($x->payload_hash,$hash))throw ValidationException::withMessages(['idempotency_key'=>__('wave9.idempotency_conflict')]);return$x;}if($d->status!=='ACTIVE')throw ValidationException::withMessages(['definition'=>__('wave9.definition_inactive')]);return RegulatoryReportRun::create([...$in,'tenant_id'=>$tenant,'definition_id'=>$d->id,'status'=>'DRAFT','payload_hash'=>$hash,'prepared_by'=>$u->id]);}public function approve(RegulatoryReportRun$x,User$u):RegulatoryReportRun{if($x->status!=='DRAFT'||$x->prepared_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$x->update(['status'=>'APPROVED','approved_by'=>$u->id,'approved_at'=>now()]);$this->o->record('regulatory.report.approved','regulatory_report_run',$x->id,['run_id'=>$x->id]);return$x->refresh();}public function submit(RegulatoryReportRun$x):RegulatoryReportRun{if(!in_array($x->status,['APPROVED','RETRY_PENDING'],true))throw ValidationException::withMessages(['status'=>__('wave9.transition_invalid')]);$x->update(['status'=>'SUBMITTING','attempt_count'=>$x->attempt_count+1,'next_attempt_at'=>null,'submitted_at'=>now()]);$this->o->record('regulatory.report.submitted','regulatory_report_run',$x->id,['run_id'=>$x->id,'attempt'=>$x->attempt_count]);return$x->refresh();}public function fail(RegulatoryReportRun$x,string$r):RegulatoryReportRun{$x->update(['status'=>'RETRY_PENDING','failure_reason'=>$r,'next_attempt_at'=>now()->addMinutes(15)]);return$x->refresh();}public function acknowledge(RegulatoryReportRun$x,string$r):RegulatoryReportRun{/* REQ-RPT-001: only a run the regulator received (SUBMITTING) can be acknowledged. */if($x->status!=='SUBMITTING')throw ValidationException::withMessages(['status'=>__('wave9.transition_invalid')]);$x->update(['status'=>'ACKNOWLEDGED','external_reference'=>$r,'submitted_at'=>$x->submitted_at??now(),'acknowledged_at'=>now(),'failure_reason'=>null]);$this->o->record('regulatory.report.acknowledged','regulatory_report_run',$x->id,['run_id'=>$x->id,'external_reference'=>$r]);return$x->refresh();}public function reverse(RegulatoryReportRun$x,string$r,User$u):RegulatoryReportRun{if($x->status!=='ACKNOWLEDGED'||$x->approved_by===$u->id)throw ValidationException::withMessages(['status'=>__('wave9.maker_checker')]);$x->update(['status'=>'REVERSED','reversed_at'=>now(),'failure_reason'=>$r]);$this->a->record('regulatory.report.reversed','regulatory_report_run',$x->id,['reason'=>$r]);return$x->refresh();}}
+diff --git a/app/Application/Ledger/Technical/TechnicalAccountingService.php b/app/Application/Ledger/Technical/TechnicalAccountingService.php
+index 7ad87bc..bff62e3 100644
+--- a/app/Application/Ledger/Technical/TechnicalAccountingService.php
++++ b/app/Application/Ledger/Technical/TechnicalAccountingService.php
+@@ -135,6 +135,51 @@ final class TechnicalAccountingService
+         return $this->finish($out, fn ($r) => $r);
+     }
+ 
++    /**
++     * Agent B1 — REQ-RPT-006: the same written / earned / paid / incurred bases as premiums() and claims(), kept per policy
++     * (read-only; used by the policy-level profitability report).
++     *
++     * @return array<string,array<string,mixed>> policy_id => figures
++     */
++    public function perPolicy(string $tenantId, CarbonImmutable $from, CarbonImmutable $to, ?string $policyId = null): array
++    {
++        [$start, $end] = $this->bounds($from, $to);
++        $out = [];
++        $zero = ['written_minor' => 0, 'earned_minor' => 0, 'claims' => 0, 'claims_paid_minor' => 0, 'claims_incurred_minor' => 0];
++        foreach ($this->policies($tenantId, null, null) as $p) {
++            if ($policyId !== null && $p->id !== $policyId) {
++                continue;
++            }
++            $out[$p->id] = ['policy_id' => $p->id, 'carrier_id' => $p->carrier_id, 'line_code' => $p->line_code, 'currency' => $p->currency] + $zero;
++            $out[$p->id]['written_minor'] = $p->written_at >= $start && $p->written_at < $end ? (int) $p->premium_minor : 0;
++            $out[$p->id]['earned_minor'] = $this->earnedCum($p, $end) - $this->earnedCum($p, $start);
++        }
++        $claims = DB::table('claims as c')->join('policies as p', 'p.id', '=', 'c.policy_id')->where('c.tenant_id', $tenantId)
++            ->when($policyId, fn ($q, $v) => $q->where('c.policy_id', $v))
++            ->get(['c.id', 'c.policy_id', 'c.currency', 'c.closed_at', 'c.submitted_at', 'c.created_at', 'p.carrier_id', 'p.currency as policy_currency', DB::raw($this->lineExpr().' as line_code')]);
++        if ($claims->isNotEmpty()) {
++            $ids = $claims->pluck('id')->all();
++            $payments = DB::table('claim_payments')->whereIn('claim_id', $ids)->whereIn('status', ['PAID', 'REVERSED'])->whereNotNull('paid_at')
++                ->get(['claim_id', 'amount_minor', 'paid_at', 'reversed_at'])->groupBy('claim_id');
++            $reserves = DB::table('claim_reserve_changes')->whereIn('claim_id', $ids)->where('status', 'APPROVED')->whereNotNull('approved_at')
++                ->orderBy('approved_at')->orderBy('created_at')->get(['claim_id', 'requested_amount_minor', 'approved_at'])->groupBy('claim_id');
++            foreach ($claims as $c) {
++                $pay = $payments->get($c->id, collect());
++                $res = $reserves->get($c->id, collect());
++                $paidOpen = $this->paidAt($pay, $start);
++                $paidClose = $this->paidAt($pay, $end);
++                $incurred = ($paidClose - $paidOpen) + ($this->outstandingAt($c, $res, $paidClose, $end) - $this->outstandingAt($c, $res, $paidOpen, $start));
++                $out[$c->policy_id] ??= ['policy_id' => $c->policy_id, 'carrier_id' => $c->carrier_id, 'line_code' => $c->line_code, 'currency' => $c->policy_currency] + $zero;
++                $out[$c->policy_id]['claims']++;
++                $out[$c->policy_id]['claims_paid_minor'] += $paidClose - $paidOpen;
++                $out[$c->policy_id]['claims_incurred_minor'] += $incurred;
++            }
++        }
++        ksort($out);
++
++        return $out;
++    }
++
+     /** Total UPR at the end of $date per currency (for period-end posting). @return array<string,int> */
+     public function uprTotals(string $tenantId, CarbonImmutable $date): array
+     {
+diff --git a/app/Application/Regulatory/Inspection/InspectionWorkspaceService.php b/app/Application/Regulatory/Inspection/InspectionWorkspaceService.php
+new file mode 100644
+index 0000000..86e1b11
+--- /dev/null
++++ b/app/Application/Regulatory/Inspection/InspectionWorkspaceService.php
+@@ -0,0 +1,157 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Regulatory\Inspection;
++
++use App\Application\Audit\AuditWriter;
++use App\Application\Events\OutboxWriter;
++use App\Application\Security\PrivilegedAccessService;
++use App\Models\PrivilegedAccessGrant;
++use App\Models\User;
++use Carbon\CarbonImmutable;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Agent B1 — REQ-RPT-006 regulatory inspection workspace.
++ *
++ * An inspection wraps a time-boxed privileged_access_grant (purpose REGULATORY_INSPECTION, scope = resources) requested
++ * by compliance and approved by a second person (PrivilegedAccessService maker-checker). While the grant is live the
++ * inspector can only READ the scoped resources of the tenant; every read is logged as a privileged-access USED event
++ * and every export is written to regulatory_inspection_exports (with a content hash).
++ */
++final class InspectionWorkspaceService
++{
++    public const PURPOSE = 'REGULATORY_INSPECTION';
++
++    /** resource => [table, columns, date column] (explicit columns: no free-text PII blobs). */
++    public const RESOURCES = [
++        'evaluations' => ['engine_evaluations', ['id', 'engine', 'operation', 'subject_type', 'subject_id', 'outcome', 'blocking', 'reference_at', 'inputs_hash', 'reasons', 'warnings', 'created_at'], 'created_at'],
++        'audit' => ['audit_log', ['id', 'sequence', 'actor_id', 'action', 'subject_type', 'subject_id', 'reason_code', 'entry_hash', 'previous_hash', 'created_at'], 'created_at'],
++        'engine-runs' => ['rating_runs', ['id', 'quote_id', 'tariff_version_id', 'status', 'engine_version', 'input_hash', 'output_hash', 'reference_at', 'completed_at', 'created_at'], 'created_at'],
++        'policies' => ['policies', ['id', 'policy_number', 'status', 'carrier_id', 'currency', 'premium_minor', 'issued_at', 'coverage_starts_at', 'coverage_ends_at', 'terms_hash', 'created_at'], 'created_at'],
++        'claims' => ['claims', ['id', 'claim_number', 'policy_id', 'status', 'currency', 'estimated_loss_minor', 'current_reserve_minor', 'approved_amount_minor', 'loss_occurred_at', 'submitted_at', 'closed_at', 'created_at'], 'created_at'],
++    ];
++
++    public function __construct(private readonly PrivilegedAccessService $access, private readonly AuditWriter $audit, private readonly OutboxWriter $outbox) {}
++
++    public function open(string $tenant, User $inspector, array $d, User $requester): object
++    {
++        $resources = array_values(array_unique($d['resources']));
++        sort($resources);
++        return DB::transaction(function () use ($tenant, $inspector, $d, $requester, $resources) {
++            $grant = $this->access->request($tenant, $inspector, [
++                'purpose' => self::PURPOSE, 'justification' => $d['justification'], 'scope' => $resources,
++                'starts_at' => CarbonImmutable::parse($d['starts_at']), 'expires_at' => CarbonImmutable::parse($d['expires_at']),
++            ], $requester);
++            $id = (string) Str::uuid();
++            DB::table('regulatory_inspections')->insert(['id' => $id, 'tenant_id' => $tenant, 'privileged_access_grant_id' => $grant->id,
++                'inspector_user_id' => $inspector->id, 'authority' => $d['authority'], 'reference' => $d['reference'] ?? null,
++                'resources' => json_encode($resources, JSON_THROW_ON_ERROR), 'status' => 'REQUESTED', 'opened_by' => $requester->id,
++                'created_at' => now(), 'updated_at' => now()]);
++            $this->audit->record('regulatory.inspection.requested', 'regulatory_inspection', $id, ['grant_id' => $grant->id, 'authority' => $d['authority']]);
++
++            return $this->find($tenant, $id);
++        });
++    }
++
++    public function approve(string $tenant, string $id, User $approver): object
++    {
++        $i = $this->find($tenant, $id);
++        $this->access->approve(PrivilegedAccessGrant::findOrFail($i->privileged_access_grant_id), $approver);
++        DB::table('regulatory_inspections')->where('id', $id)->update(['status' => 'ACTIVE', 'updated_at' => now()]);
++        $this->outbox->record('regulatory.inspection.opened', 'regulatory_inspection', $id, ['inspection_id' => $id, 'inspector_user_id' => $i->inspector_user_id, 'expires_at' => (string) $i->expires_at]);
++
++        return $this->find($tenant, $id);
++    }
++
++    public function close(string $tenant, string $id, string $reason, User $actor): object
++    {
++        $i = $this->find($tenant, $id);
++        if ($i->status === 'CLOSED') {
++            return $i;
++        }
++        $this->access->revoke(PrivilegedAccessGrant::findOrFail($i->privileged_access_grant_id), $reason, $actor);
++        DB::table('regulatory_inspections')->where('id', $id)->update(['status' => 'CLOSED', 'closed_by' => $actor->id, 'closed_at' => now(), 'updated_at' => now()]);
++        $this->outbox->record('regulatory.inspection.closed', 'regulatory_inspection', $id, ['inspection_id' => $id, 'reason' => $reason]);
++
++        return $this->find($tenant, $id);
++    }
++
++    public function find(string $tenant, string $id): object
++    {
++        $i = DB::table('regulatory_inspections as i')->join('privileged_access_grants as g', 'g.id', '=', 'i.privileged_access_grant_id')
++            ->where('i.tenant_id', $tenant)->where('i.id', $id)
++            ->first(['i.*', 'g.starts_at', 'g.expires_at', 'g.status as grant_status', 'g.revoked_at']);
++        abort_unless($i !== null, 404);
++        $i->resources = json_decode($i->resources, true);
++
++        return $i;
++    }
++
++    /** Read-only page of a scoped resource for the inspector (logged as privileged-access USED). */
++    public function read(string $tenant, string $id, string $resource, array $filters, User $inspector): array
++    {
++        [$i, $q] = $this->query($tenant, $id, $resource, $filters, $inspector);
++        $rows = $q->limit(min((int) ($filters['limit'] ?? 200), 1000))->get();
++
++        return ['inspection_id' => $i->id, 'resource' => $resource, 'read_only' => true, 'expires_at' => $i->expires_at, 'rows' => $rows];
++    }
++
++    /** CSV export of a scoped resource; every export is logged with its row count and content hash. */
++    public function export(string $tenant, string $id, string $resource, array $filters, User $inspector): array
++    {
++        [$i, $q] = $this->query($tenant, $id, $resource, $filters, $inspector);
++        $cols = self::RESOURCES[$resource][1];
++        $fh = fopen('php://temp', 'r+');
++        fputcsv($fh, $cols);
++        $count = 0;
++        foreach ($q->limit(50000)->cursor() as $row) {
++            fputcsv($fh, array_map(fn ($v) => is_scalar($v) || $v === null ? $v : json_encode($v), array_values((array) $row)));
++            $count++;
++        }
++        rewind($fh);
++        $csv = stream_get_contents($fh);
++        fclose($fh);
++        $hash = hash('sha256', $csv);
++        $exportId = (string) Str::uuid();
++        DB::table('regulatory_inspection_exports')->insert(['id' => $exportId, 'inspection_id' => $i->id, 'resource' => $resource, 'format' => 'csv',
++            'filters' => json_encode(array_intersect_key($filters, array_flip(['from', 'to'])), JSON_THROW_ON_ERROR), 'row_count' => $count,
++            'content_hash' => $hash, 'exported_by' => $inspector->id, 'exported_at' => now()]);
++        $this->audit->record('regulatory.inspection.exported', 'regulatory_inspection', $i->id, ['export_id' => $exportId, 'resource' => $resource, 'rows' => $count, 'content_hash' => $hash]);
++
++        return ['export_id' => $exportId, 'csv' => $csv, 'content_hash' => $hash, 'filename' => "inspection-{$resource}-".now()->format('Ymd-His').'.csv'];
++    }
++
++    public function exports(string $tenant, string $id): \Illuminate\Support\Collection
++    {
++        $this->find($tenant, $id);
++
++        return DB::table('regulatory_inspection_exports')->where('inspection_id', $id)->orderBy('exported_at')->get();
++    }
++
++    private function query(string $tenant, string $id, string $resource, array $filters, User $inspector): array
++    {
++        $i = $this->find($tenant, $id);
++        if (! isset(self::RESOURCES[$resource]) || ! in_array($resource, $i->resources, true)) {
++            abort(403, 'Resource outside the inspection scope.');
++        }
++        if ($i->inspector_user_id !== $inspector->id || $i->status !== 'ACTIVE') {
++            abort(403, 'Inspection is not active for this user.');
++        }
++        try {
++            $this->access->use(PrivilegedAccessGrant::findOrFail($i->privileged_access_grant_id), 'regulatory_inspection', $i->id, self::PURPOSE, $inspector);
++        } catch (ValidationException) {
++            abort(403, 'Inspection access window is closed.');
++        }
++        [$table, $cols, $date] = self::RESOURCES[$resource];
++        $q = DB::table($table)->where('tenant_id', $tenant)->select($cols)
++            ->when($filters['from'] ?? null, fn ($q, $v) => $q->where($date, '>=', CarbonImmutable::parse($v)->startOfDay()))
++            ->when($filters['to'] ?? null, fn ($q, $v) => $q->where($date, '<', CarbonImmutable::parse($v)->startOfDay()->addDay()))
++            ->orderBy($date)->orderBy('id');
++
++        return [$i, $q];
++    }
++}
+diff --git a/app/Application/Regulatory/Returns/RegulatoryReturnGenerator.php b/app/Application/Regulatory/Returns/RegulatoryReturnGenerator.php
+new file mode 100644
+index 0000000..bf6e25d
+--- /dev/null
++++ b/app/Application/Regulatory/Returns/RegulatoryReturnGenerator.php
+@@ -0,0 +1,165 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Regulatory\Returns;
++
++use App\Application\Compliance\RegulatoryReportingService;
++use App\Models\RegulatoryReportDefinition;
++use App\Models\RegulatoryReportRun;
++use App\Models\User;
++use Carbon\CarbonImmutable;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Agent B1 — REQ-RPT-001 regulatory returns with data lineage.
++ *
++ * A return is a configured regulatory_report_definition (maker-checker approved by RegulatoryReportingService) whose
++ * `schema` declares a whitelisted dataset, filters, optional group_by and columns. Art. 411 / Art. 557 mappings are
++ * expressed by pointing the definition at a regulatory_reporting_categories code — no CIMA return layout is built in.
++ *
++ * Schema: {dataset, columns:[{key, field, aggregate?: sum|count}], group_by?:[field], filters?:{field:[values]}}
++ * Each generated run stores the exact SQL it executed (source_query), the definition version it used (source_version)
++ * and one lineage row per (output row, source record) with a hash of the source record as read.
++ */
++final class RegulatoryReturnGenerator
++{
++    public const ENGINE_VERSION = 'rpt-gen-1';
++
++    /** dataset => [table, tenant column, period column, field => SQL expression] */
++    private const DATASETS = [
++        'policies' => ['policies', 'tenant_id', 'issued_at', [
++            'id' => 'id', 'policy_number' => 'policy_number', 'status' => 'status', 'carrier_id' => 'carrier_id', 'currency' => 'currency',
++            'premium_minor' => 'premium_minor', 'issued_at' => 'issued_at', 'coverage_starts_at' => 'coverage_starts_at', 'coverage_ends_at' => 'coverage_ends_at',
++            'line_code' => "COALESCE(NULLIF(terms_snapshot->>'line_code', ''), 'UNSPECIFIED')",
++        ]],
++        'claims' => ['claims', 'tenant_id', 'submitted_at', [
++            'id' => 'id', 'claim_number' => 'claim_number', 'policy_id' => 'policy_id', 'status' => 'status', 'currency' => 'currency',
++            'estimated_loss_minor' => 'estimated_loss_minor', 'current_reserve_minor' => 'current_reserve_minor', 'approved_amount_minor' => 'approved_amount_minor',
++            'loss_occurred_at' => 'loss_occurred_at', 'submitted_at' => 'submitted_at', 'closed_at' => 'closed_at',
++        ]],
++        'commission_accruals' => ['commission_accruals', 'tenant_id', 'created_at', [
++            'id' => 'id', 'policy_id' => 'policy_id', 'partner_id' => 'partner_id', 'status' => 'status', 'currency' => 'currency',
++            'amount_minor' => 'amount_minor', 'clawed_back_minor' => 'clawed_back_minor', 'paid_minor' => 'paid_minor', 'created_at' => 'created_at',
++        ]],
++    ];
++
++    public function __construct(private readonly RegulatoryReportingService $reports) {}
++
++    /** Validates a definition schema before it is stored (called from the definition endpoint). */
++    public function validateSchema(array $schema): void
++    {
++        $ds = self::DATASETS[$schema['dataset'] ?? ''] ?? null;
++        if ($ds === null) {
++            throw ValidationException::withMessages(['schema.dataset' => 'Unknown dataset; allowed: '.implode(', ', array_keys(self::DATASETS)).'.']);
++        }
++        $fields = $ds[3];
++        $group = $schema['group_by'] ?? [];
++        foreach ([...$group, ...array_keys($schema['filters'] ?? [])] as $f) {
++            if (! isset($fields[$f])) {
++                throw ValidationException::withMessages(['schema' => "Unknown field [{$f}] for dataset {$schema['dataset']}."]);
++            }
++        }
++        if (empty($schema['columns']) || ! is_array($schema['columns'])) {
++            throw ValidationException::withMessages(['schema.columns' => 'At least one column is required.']);
++        }
++        foreach ($schema['columns'] as $c) {
++            $agg = $c['aggregate'] ?? null;
++            if (! is_string($c['key'] ?? null) || ($agg !== 'count' && ! isset($fields[$c['field'] ?? '']))) {
++                throw ValidationException::withMessages(['schema.columns' => 'Each column needs a key and a known field.']);
++            }
++            if ($agg !== null && ! in_array($agg, ['sum', 'count'], true)) {
++                throw ValidationException::withMessages(['schema.columns' => 'aggregate must be sum or count.']);
++            }
++            if ($group !== [] && $agg === null && ! in_array($c['field'], $group, true)) {
++                throw ValidationException::withMessages(['schema.columns' => "Column [{$c['key']}] must be aggregated or grouped."]);
++            }
++            if ($group === [] && $agg !== null) {
++                throw ValidationException::withMessages(['schema.columns' => 'Aggregates need group_by.']);
++            }
++        }
++    }
++
++    public function generate(string $tenant, RegulatoryReportDefinition $def, array $in, User $actor): RegulatoryReportRun
++    {
++        if ($existing = RegulatoryReportRun::where(['tenant_id' => $tenant, 'idempotency_key' => $in['idempotency_key']])->first()) {
++            return $existing;
++        }
++        if (RegulatoryReportRun::where(['tenant_id' => $tenant, 'definition_id' => $def->id, 'period_key' => $in['period_key']])->exists()) {
++            throw ValidationException::withMessages(['period_key' => 'A run already exists for this definition and period.']);
++        }
++        $schema = $def->schema;
++        $this->validateSchema($schema);
++        [$table, $tenantCol, $periodCol, $fields] = self::DATASETS[$schema['dataset']];
++        $from = CarbonImmutable::parse($in['period_from'])->startOfDay();
++        $to = CarbonImmutable::parse($in['period_to'])->startOfDay()->addDay();
++
++        $select = collect($fields)->map(fn ($sql, $alias) => DB::raw("{$sql} as \"{$alias}\""))->values()->all();
++        $q = DB::table($table)->select($select)->where($tenantCol, $tenant)->where($periodCol, '>=', $from)->where($periodCol, '<', $to);
++        foreach ($schema['filters'] ?? [] as $f => $values) {
++            $q->whereIn(DB::raw($fields[$f]), (array) $values);
++        }
++        $q->orderBy('id');
++        $sql = $q->toRawSql();
++        $records = $q->get();
++
++        [$rows, $sources] = $this->shape($schema, $records);
++        $payload = ['definition' => ['code' => $def->code, 'version' => $def->version, 'regulatory_category_code' => $def->regulatory_category_code],
++            'period' => ['from' => $in['period_from'], 'to' => $in['period_to']], 'columns' => array_column($schema['columns'], 'key'), 'rows' => $rows];
++
++        return DB::transaction(function () use ($tenant, $def, $in, $actor, $payload, $sql, $rows, $sources, $table) {
++            $run = $this->reports->prepare($tenant, $def, [
++                'period_key' => $in['period_key'], 'idempotency_key' => $in['idempotency_key'], 'payload' => $payload,
++                'period_from' => $in['period_from'], 'period_to' => $in['period_to'], 'source_query' => $sql,
++                'source_version' => $def->code.'@v'.$def->version.'#'.substr($def->schema_hash, 0, 16).'/'.self::ENGINE_VERSION,
++                'row_count' => count($rows), 'generated_at' => now(),
++            ], $actor);
++            $lineage = [];
++            foreach ($sources as $i => $records) {
++                $rowHash = hash('sha256', json_encode($rows[$i], JSON_THROW_ON_ERROR));
++                foreach ($records as $r) {
++                    $lineage[] = ['id' => (string) Str::uuid(), 'run_id' => $run->id, 'row_index' => $i, 'row_hash' => $rowHash, 'source_table' => $table,
++                        'source_id' => $r->id, 'source_hash' => hash('sha256', json_encode((array) $r, JSON_THROW_ON_ERROR)), 'created_at' => now()];
++                }
++            }
++            foreach (array_chunk($lineage, 500) as $chunk) {
++                DB::table('regulatory_report_run_lineage')->insert($chunk);
++            }
++
++            return $run;
++        });
++    }
++
++    /** @return array{0:list<array<string,mixed>>,1:list<list<object>>} */
++    private function shape(array $schema, \Illuminate\Support\Collection $records): array
++    {
++        $group = $schema['group_by'] ?? [];
++        if ($group === []) {
++            $rows = $records->map(fn ($r) => collect($schema['columns'])->mapWithKeys(fn ($c) => [$c['key'] => $r->{$c['field']}])->all())->values()->all();
++
++            return [$rows, $records->map(fn ($r) => [$r])->values()->all()];
++        }
++        $rows = [];
++        $sources = [];
++        foreach ($records->groupBy(fn ($r) => implode('|', array_map(fn ($f) => (string) $r->{$f}, $group))) as $items) {
++            $first = $items->first();
++            $rows[] = collect($schema['columns'])->mapWithKeys(fn ($c) => [$c['key'] => match ($c['aggregate'] ?? null) {
++                'sum' => (int) $items->sum(fn ($x) => (int) $x->{$c['field']}),
++                'count' => $items->count(),
++                default => $first->{$c['field']},
++            }])->all();
++            $sources[] = $items->values()->all();
++        }
++
++        return [$rows, $sources];
++    }
++
++    /** Lineage rows of a run, optionally for one output row. */
++    public function lineage(RegulatoryReportRun $run, ?int $row = null): \Illuminate\Support\Collection
++    {
++        return DB::table('regulatory_report_run_lineage')->where('run_id', $run->id)->when($row !== null, fn ($q) => $q->where('row_index', $row))
++            ->orderBy('row_index')->orderBy('source_id')->get(['row_index', 'row_hash', 'source_table', 'source_id', 'source_hash']);
++    }
++}
+diff --git a/app/Application/Regulatory/Rules/RegulatoryImpactAnalyzer.php b/app/Application/Regulatory/Rules/RegulatoryImpactAnalyzer.php
+new file mode 100644
+index 0000000..47094e0
+--- /dev/null
++++ b/app/Application/Regulatory/Rules/RegulatoryImpactAnalyzer.php
+@@ -0,0 +1,107 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Regulatory\Rules;
++
++use Illuminate\Support\Facades\DB;
++
++/**
++ * Agent B1 — REQ-RPT-002 impact analysis of a regulatory change.
++ *
++ * Scope keys (all optional): line_codes, product_codes, branch_codes (product_regulatory_mappings.branch_code),
++ * document_type_codes, reference_set_code (regulatory_reference_sets.code).
++ * Returns the affected products, tariffs (live tariff_versions of those products), document templates and other
++ * regulatory rules / report definitions. Read-only.
++ */
++final class RegulatoryImpactAnalyzer
++{
++    private const LIVE_TARIFF_EXCLUDED = ['RETIRED', 'SUPERSEDED', 'EXPIRED', 'REJECTED', 'ARCHIVED'];
++
++    /** @return array{products:list<array>,tariffs:list<array>,documents:list<array>,rules:list<array>,report_definitions:list<array>,summary:array<string,int>} */
++    public function analyse(array $scope, string $jurisdiction = 'CM', ?string $code = null, ?string $excludeRuleId = null): array
++    {
++        $lines = array_values(array_filter((array) ($scope['line_codes'] ?? [])));
++        $productCodes = array_values(array_filter((array) ($scope['product_codes'] ?? [])));
++        $branches = array_values(array_filter((array) ($scope['branch_codes'] ?? [])));
++        $docTypes = array_values(array_filter((array) ($scope['document_type_codes'] ?? [])));
++        $refSet = $scope['reference_set_code'] ?? null;
++
++        $products = collect();
++        if ($lines !== [] || $productCodes !== [] || $branches !== []) {
++            $products = DB::table('insurance_products')
++                ->where(function ($q) use ($lines, $productCodes, $branches) {
++                    $q->whereRaw('1 = 0');
++                    if ($lines !== []) {
++                        $q->orWhereIn('line_code', $lines);
++                    }
++                    if ($productCodes !== []) {
++                        $q->orWhereIn('code', $productCodes);
++                    }
++                    if ($branches !== []) {
++                        $q->orWhereIn('id', DB::table('product_regulatory_mappings')->whereIn('branch_code', $branches)->whereNull('effective_until')->select('insurance_product_id'));
++                    }
++                })
++                ->whereNotIn('status', ['RETIRED', 'SUPERSEDED'])
++                ->orderBy('code')->orderBy('version')->get(['id', 'code', 'version', 'line_code', 'status', 'carrier_id']);
++        }
++        $productIds = $products->pluck('id')->all();
++
++        $tariffs = $productIds === [] ? collect() : DB::table('tariff_versions')->whereIn('insurance_product_id', $productIds)
++            ->whereNotIn('status', self::LIVE_TARIFF_EXCLUDED)->orderBy('insurance_product_id')->orderBy('version')
++            ->get(['id', 'insurance_product_id', 'version', 'status', 'effective_from', 'effective_until']);
++
++        $documents = collect();
++        if ($productIds !== [] || $lines !== [] || $docTypes !== []) {
++            $documents = DB::table('document_templates')
++                ->where(function ($q) use ($productIds, $lines, $docTypes) {
++                    $q->whereRaw('1 = 0');
++                    if ($productIds !== []) {
++                        $q->orWhereIn('product_id', $productIds);
++                    }
++                    if ($lines !== []) {
++                        $q->orWhereIn('insurance_class', $lines);
++                    }
++                    if ($docTypes !== []) {
++                        $q->orWhereIn('document_type_code', $docTypes);
++                    }
++                })
++                ->whereNull('retired_at')->orderBy('code')->orderBy('version')
++                ->get(['id', 'code', 'document_type_code', 'version', 'status', 'product_id', 'insurance_class', 'language']);
++        }
++
++        $rules = DB::table('regulatory_rules')->where('jurisdiction', $jurisdiction)->where('status', '!=', 'SUPERSEDED')
++            ->when($excludeRuleId, fn ($q, $v) => $q->where('id', '!=', $v))
++            ->where(function ($q) use ($code, $refSet, $lines, $productCodes) {
++                $q->whereRaw('1 = 0');
++                if ($code !== null) {
++                    $q->orWhere('code', $code);
++                }
++                if ($refSet !== null) {
++                    $q->orWhere('reference_set_code', $refSet);
++                }
++                foreach ($lines as $l) {
++                    $q->orWhereRaw("jsonb_exists(scope->'line_codes', ?)", [$l]);
++                }
++                foreach ($productCodes as $p) {
++                    $q->orWhereRaw("jsonb_exists(scope->'product_codes', ?)", [$p]);
++                }
++            })
++            ->orderBy('code')->orderBy('version')->get(['id', 'code', 'version', 'status', 'rule_type', 'effective_from']);
++
++        $definitions = $refSet === null && $code === null ? collect() : DB::table('regulatory_report_definitions')->whereIn('status', ['DRAFT', 'ACTIVE'])
++            ->where(function ($q) use ($refSet, $code) {
++                $q->whereRaw('1 = 0');
++                foreach (array_filter([$refSet, $code]) as $c) {
++                    $q->orWhereRaw("jsonb_exists(schema->'rule_codes', ?)", [$c])->orWhereRaw("jsonb_exists(schema->'reference_set_codes', ?)", [$c]);
++                }
++            })->orderBy('code')->get(['id', 'code', 'version', 'status', 'report_type']);
++
++        $out = ['products' => $products->map(fn ($x) => (array) $x)->all(), 'tariffs' => $tariffs->map(fn ($x) => (array) $x)->all(),
++            'documents' => $documents->map(fn ($x) => (array) $x)->all(), 'rules' => $rules->map(fn ($x) => (array) $x)->all(),
++            'report_definitions' => $definitions->map(fn ($x) => (array) $x)->all()];
++        $out['summary'] = array_map('count', $out);
++
++        return $out;
++    }
++}
+diff --git a/app/Application/Regulatory/Rules/RegulatoryRuleService.php b/app/Application/Regulatory/Rules/RegulatoryRuleService.php
+new file mode 100644
+index 0000000..b81def0
+--- /dev/null
++++ b/app/Application/Regulatory/Rules/RegulatoryRuleService.php
+@@ -0,0 +1,151 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Regulatory\Rules;
++
++use App\Application\Audit\AuditWriter;
++use App\Application\Events\OutboxWriter;
++use App\Models\User;
++use Carbon\CarbonImmutable;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Agent B1 — REQ-RPT-002 regulatory change engine.
++ *
++ * regulatory_rules: DRAFT → REVIEWED (reviewer ≠ author, impact analysis captured) → APPROVED (approver ≠ author and
++ * ≠ reviewer, impact re-computed and must be acknowledged by hash) → EFFECTIVE (on/after effective_from; the previous
++ * EFFECTIVE version of the same code becomes SUPERSEDED). Rule content is configured data; nothing is seeded.
++ */
++final class RegulatoryRuleService
++{
++    public const STATUSES = ['DRAFT', 'REVIEWED', 'APPROVED', 'EFFECTIVE', 'SUPERSEDED'];
++
++    public function __construct(private readonly RegulatoryImpactAnalyzer $impact, private readonly AuditWriter $audit, private readonly OutboxWriter $outbox) {}
++
++    public function draft(array $d, User $actor): object
++    {
++        $jurisdiction = strtoupper($d['jurisdiction'] ?? 'CM');
++        if (isset($d['reference_set_code']) && ! DB::table('regulatory_reference_sets')->where(['jurisdiction' => $jurisdiction, 'code' => $d['reference_set_code']])->exists()) {
++            throw ValidationException::withMessages(['reference_set_code' => 'Unknown regulatory reference set.']);
++        }
++        $version = (int) (DB::table('regulatory_rules')->where(['jurisdiction' => $jurisdiction, 'code' => $d['code']])->max('version') ?? 0) + 1;
++        $content = $d['content'] ?? [];
++        $scope = $d['scope'] ?? [];
++        if (isset($d['reference_set_code'])) {
++            $scope['reference_set_code'] = $d['reference_set_code'];
++        }
++        $id = (string) Str::uuid();
++        DB::table('regulatory_rules')->insert([
++            'id' => $id, 'jurisdiction' => $jurisdiction, 'code' => $d['code'], 'version' => $version, 'title' => $d['title'], 'rule_type' => $d['rule_type'],
++            'status' => 'DRAFT', 'legal_reference' => $d['legal_reference'] ?? null, 'reference_set_code' => $d['reference_set_code'] ?? null,
++            'scope' => json_encode($scope, JSON_THROW_ON_ERROR), 'content' => json_encode($content, JSON_THROW_ON_ERROR),
++            'content_hash' => hash('sha256', json_encode([$scope, $content], JSON_THROW_ON_ERROR)),
++            'effective_from' => $d['effective_from'], 'effective_until' => $d['effective_until'] ?? null, 'created_by' => $actor->id,
++            'created_at' => now(), 'updated_at' => now(),
++        ]);
++        $this->audit->record('regulatory.rule.drafted', 'regulatory_rule', $id, ['code' => $d['code'], 'version' => $version]);
++
++        return $this->find($id);
++    }
++
++    public function find(string $id): object
++    {
++        $r = DB::table('regulatory_rules')->where('id', $id)->first();
++        abort_unless($r !== null, 404);
++        foreach (['scope', 'content', 'impact'] as $k) {
++            $r->{$k} = $r->{$k} === null ? null : json_decode($r->{$k}, true);
++        }
++
++        return $r;
++    }
++
++    public function analyse(object $rule): array
++    {
++        return $this->impact->analyse((array) $rule->scope, $rule->jurisdiction, $rule->code, $rule->id);
++    }
++
++    public function review(string $id, User $actor, ?string $notes = null): object
++    {
++        $r = $this->find($id);
++        $this->guard($r, 'DRAFT', $actor, [$r->created_by]);
++        $impact = $this->analyse($r);
++        DB::table('regulatory_rules')->where('id', $id)->where('status', 'DRAFT')->update([
++            'status' => 'REVIEWED', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'updated_at' => now(),
++            'impact' => json_encode($impact, JSON_THROW_ON_ERROR), 'impact_hash' => $this->hash($impact),
++        ]);
++        $this->audit->record('regulatory.rule.reviewed', 'regulatory_rule', $id, ['notes' => $notes, 'impact' => $impact['summary']]);
++        $this->outbox->record('regulatory.rule.reviewed', 'regulatory_rule', $id, ['code' => $r->code, 'version' => $r->version, 'impact' => $impact['summary']]);
++
++        return $this->find($id);
++    }
++
++    /** The approver confirms the impact they saw (impact_hash); if the impact moved since review, approval is refused. */
++    public function approve(string $id, User $actor, string $impactHash): object
++    {
++        $r = $this->find($id);
++        $this->guard($r, 'REVIEWED', $actor, [$r->created_by, $r->reviewed_by]);
++        $impact = $this->analyse($r);
++        $current = $this->hash($impact);
++        if (! hash_equals($current, $impactHash)) {
++            DB::table('regulatory_rules')->where('id', $id)->update(['impact' => json_encode($impact, JSON_THROW_ON_ERROR), 'impact_hash' => $current, 'updated_at' => now()]);
++            throw ValidationException::withMessages(['impact_hash' => 'The impact analysis changed since it was reviewed; re-read the impact and confirm its current hash.']);
++        }
++        DB::table('regulatory_rules')->where('id', $id)->where('status', 'REVIEWED')->update(['status' => 'APPROVED', 'approved_by' => $actor->id, 'approved_at' => now(), 'updated_at' => now()]);
++        $this->audit->record('regulatory.rule.approved', 'regulatory_rule', $id, ['impact_hash' => $current]);
++        $this->outbox->record('regulatory.rule.approved', 'regulatory_rule', $id, ['code' => $r->code, 'version' => $r->version, 'effective_from' => $r->effective_from]);
++
++        return $this->find($id);
++    }
++
++    /** APPROVED → EFFECTIVE once effective_from is reached; the previous EFFECTIVE version of the code is SUPERSEDED. */
++    public function activate(string $id, User $actor, ?CarbonImmutable $asOf = null): object
++    {
++        $r = $this->find($id);
++        $this->guard($r, 'APPROVED', $actor, []);
++        $asOf ??= CarbonImmutable::now();
++        if (CarbonImmutable::parse($r->effective_from)->startOfDay() > $asOf) {
++            throw ValidationException::withMessages(['effective_from' => 'The rule is not effective yet.']);
++        }
++        DB::transaction(function () use ($r, $actor) {
++            $prev = DB::table('regulatory_rules')->where(['jurisdiction' => $r->jurisdiction, 'code' => $r->code, 'status' => 'EFFECTIVE'])->lockForUpdate()->first();
++            if ($prev !== null) {
++                DB::table('regulatory_rules')->where('id', $prev->id)->update(['status' => 'SUPERSEDED', 'superseded_at' => now(),
++                    'effective_until' => $prev->effective_until ?? CarbonImmutable::parse($r->effective_from)->subDay()->toDateString(), 'updated_at' => now()]);
++                $this->outbox->record('regulatory.rule.superseded', 'regulatory_rule', $prev->id, ['code' => $r->code, 'version' => $prev->version, 'superseded_by' => $r->id]);
++            }
++            DB::table('regulatory_rules')->where('id', $r->id)->update(['status' => 'EFFECTIVE', 'effective_at' => now(), 'supersedes_id' => $prev?->id, 'updated_at' => now()]);
++            $this->audit->record('regulatory.rule.effective', 'regulatory_rule', $r->id, ['supersedes_id' => $prev?->id, 'actor_id' => $actor->id]);
++            $this->outbox->record('regulatory.rule.effective', 'regulatory_rule', $r->id, ['code' => $r->code, 'version' => $r->version, 'supersedes_id' => $prev?->id]);
++        });
++
++        return $this->find($id);
++    }
++
++    /** Impact of a regulatory reference set change: rules and report definitions that reference its code. */
++    public function referenceSetImpact(string $setId): array
++    {
++        $set = DB::table('regulatory_reference_sets')->where('id', $setId)->first();
++        abort_unless($set !== null, 404);
++
++        return ['reference_set' => ['id' => $set->id, 'code' => $set->code, 'version' => $set->version, 'status' => $set->status]]
++            + $this->impact->analyse(['reference_set_code' => $set->code], $set->jurisdiction);
++    }
++
++    private function guard(object $r, string $from, User $actor, array $forbidden): void
++    {
++        if ($r->status !== $from) {
++            throw ValidationException::withMessages(['status' => "Rule must be {$from} (is {$r->status})."]);
++        }
++        if (in_array($actor->id, array_filter($forbidden), true)) {
++            throw ValidationException::withMessages(['status' => __('wave9.maker_checker')]);
++        }
++    }
++
++    private function hash(array $impact): string
++    {
++        return hash('sha256', json_encode($impact, JSON_THROW_ON_ERROR));
++    }
++}
+diff --git a/app/Models/RegulatoryReportDefinition.php b/app/Models/RegulatoryReportDefinition.php
+index 2575009..f843e9b 100644
+--- a/app/Models/RegulatoryReportDefinition.php
++++ b/app/Models/RegulatoryReportDefinition.php
+@@ -1,3 +1,3 @@
+ <?php
+ namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;
+-final class RegulatoryReportDefinition extends Model{use HasUuids;protected$fillable=['code','version','status','jurisdiction','report_type','schema','schema_hash','effective_from','effective_until','created_by','approved_by','approved_at'];protected function casts():array{return['schema'=>'array','effective_from'=>'date','effective_until'=>'date','approved_at'=>'datetime'];}}
++final class RegulatoryReportDefinition extends Model{use HasUuids;protected$fillable=['code','version','status','jurisdiction','report_type','schema','schema_hash','effective_from','effective_until','created_by','approved_by','approved_at','regime','regulatory_category_kind','regulatory_category_code','description'];protected function casts():array{return['schema'=>'array','effective_from'=>'date','effective_until'=>'date','approved_at'=>'datetime'];}}
+diff --git a/app/Models/RegulatoryReportRun.php b/app/Models/RegulatoryReportRun.php
+index b5ad051..35c3588 100644
+--- a/app/Models/RegulatoryReportRun.php
++++ b/app/Models/RegulatoryReportRun.php
+@@ -1,3 +1,3 @@
+ <?php
+ namespace App\Models;use Illuminate\Database\Eloquent\Concerns\HasUuids;use Illuminate\Database\Eloquent\Model;
+-final class RegulatoryReportRun extends Model{use HasUuids;protected$fillable=['tenant_id','definition_id','period_key','status','idempotency_key','payload_hash','payload','prepared_by','approved_by','approved_at','attempt_count','next_attempt_at','failure_reason','external_reference','submitted_at','acknowledged_at','reversed_at'];protected function casts():array{return['payload'=>'array','approved_at'=>'datetime','next_attempt_at'=>'datetime','submitted_at'=>'datetime','acknowledged_at'=>'datetime','reversed_at'=>'datetime'];}}
++final class RegulatoryReportRun extends Model{use HasUuids;protected$fillable=['tenant_id','definition_id','period_key','status','idempotency_key','payload_hash','payload','prepared_by','approved_by','approved_at','attempt_count','next_attempt_at','failure_reason','external_reference','submitted_at','acknowledged_at','reversed_at','period_from','period_to','source_query','source_version','row_count','generated_at'];protected function casts():array{return['payload'=>'array','approved_at'=>'datetime','next_attempt_at'=>'datetime','submitted_at'=>'datetime','acknowledged_at'=>'datetime','reversed_at'=>'datetime','generated_at'=>'datetime','period_from'=>'date','period_to'=>'date'];}}
+diff --git a/database/migrations/2026_10_18_160101_regulatory_returns_rules_inspections.php b/database/migrations/2026_10_18_160101_regulatory_returns_rules_inspections.php
+new file mode 100644
+index 0000000..f937f88
+--- /dev/null
++++ b/database/migrations/2026_10_18_160101_regulatory_returns_rules_inspections.php
+@@ -0,0 +1,115 @@
++<?php
++
++declare(strict_types=1);
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B1 — REQ-RPT-001 regulatory returns with data lineage (extends regulatory_report_definitions / _runs),
++ * REQ-RPT-002 regulatory change engine (regulatory_rules DRAFT→REVIEWED→APPROVED→EFFECTIVE→SUPERSEDED + impact),
++ * REQ-RPT-006 regulatory inspection workspace (time-boxed privileged_access_grants + export log).
++ * No CIMA return format is seeded: definitions are configured data (owner question).
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('regulatory_report_definitions', function (Blueprint $t): void {
++            $t->string('regime', 16)->nullable();
++            $t->string('regulatory_category_kind', 40)->nullable();   // e.g. ART_411_CATEGORY / ART_557_MEASURE (regulatory_reporting_categories.kind)
++            $t->string('regulatory_category_code', 64)->nullable();
++            $t->text('description')->nullable();
++        });
++        Schema::table('regulatory_report_runs', function (Blueprint $t): void {
++            $t->date('period_from')->nullable();
++            $t->date('period_to')->nullable();
++            $t->text('source_query')->nullable();
++            $t->string('source_version', 160)->nullable();
++            $t->unsignedInteger('row_count')->nullable();
++            $t->timestampTz('generated_at')->nullable();
++        });
++        Schema::create('regulatory_report_run_lineage', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('run_id')->constrained('regulatory_report_runs')->cascadeOnDelete();
++            $t->unsignedInteger('row_index');
++            $t->string('row_hash', 64);
++            $t->string('source_table', 64);
++            $t->uuid('source_id');
++            $t->string('source_hash', 64);
++            $t->timestampTz('created_at');
++            $t->index(['run_id', 'row_index']);
++            $t->index(['source_table', 'source_id']);
++        });
++
++        Schema::create('regulatory_rules', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->string('jurisdiction', 8)->default('CM');
++            $t->string('code', 80);
++            $t->unsignedInteger('version');
++            $t->string('title', 255);
++            $t->string('rule_type', 48);
++            $t->string('status', 24)->default('DRAFT');
++            $t->string('legal_reference', 255)->nullable();
++            $t->string('reference_set_code', 80)->nullable();
++            $t->jsonb('scope')->default('{}');
++            $t->jsonb('content')->default('{}');
++            $t->string('content_hash', 64);
++            $t->date('effective_from');
++            $t->date('effective_until')->nullable();
++            $t->jsonb('impact')->nullable();
++            $t->string('impact_hash', 64)->nullable();
++            $t->foreignUuid('supersedes_id')->nullable()->constrained('regulatory_rules');
++            $t->foreignUuid('created_by')->constrained('users');
++            $t->foreignUuid('reviewed_by')->nullable()->constrained('users');
++            $t->timestampTz('reviewed_at')->nullable();
++            $t->foreignUuid('approved_by')->nullable()->constrained('users');
++            $t->timestampTz('approved_at')->nullable();
++            $t->timestampTz('effective_at')->nullable();
++            $t->timestampTz('superseded_at')->nullable();
++            $t->timestampsTz();
++            $t->unique(['jurisdiction', 'code', 'version']);
++        });
++        DB::statement("ALTER TABLE regulatory_rules ADD CONSTRAINT regulatory_rules_status CHECK (status IN ('DRAFT','REVIEWED','APPROVED','EFFECTIVE','SUPERSEDED'))");
++        DB::statement('ALTER TABLE regulatory_rules ADD CONSTRAINT regulatory_rules_reviewer CHECK (reviewed_by IS NULL OR reviewed_by <> created_by)');
++        DB::statement('ALTER TABLE regulatory_rules ADD CONSTRAINT regulatory_rules_approver CHECK (approved_by IS NULL OR approved_by <> created_by)');
++        DB::statement("CREATE UNIQUE INDEX regulatory_rules_one_effective ON regulatory_rules (jurisdiction, code) WHERE status = 'EFFECTIVE'");
++
++        Schema::create('regulatory_inspections', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('tenant_id')->constrained();
++            $t->foreignUuid('privileged_access_grant_id')->unique()->constrained('privileged_access_grants');
++            $t->foreignUuid('inspector_user_id')->constrained('users');
++            $t->string('authority', 120);
++            $t->string('reference', 120)->nullable();
++            $t->jsonb('resources');
++            $t->string('status', 24)->default('REQUESTED');
++            $t->foreignUuid('opened_by')->constrained('users');
++            $t->foreignUuid('closed_by')->nullable()->constrained('users');
++            $t->timestampTz('closed_at')->nullable();
++            $t->timestampsTz();
++        });
++        Schema::create('regulatory_inspection_exports', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('inspection_id')->constrained('regulatory_inspections')->cascadeOnDelete();
++            $t->string('resource', 32);
++            $t->string('format', 8);
++            $t->jsonb('filters')->default('{}');
++            $t->unsignedInteger('row_count');
++            $t->string('content_hash', 64);
++            $t->foreignUuid('exported_by')->constrained('users');
++            $t->timestampTz('exported_at');
++        });
++    }
++
++    public function down(): void
++    {
++        foreach (['regulatory_inspection_exports', 'regulatory_inspections', 'regulatory_rules', 'regulatory_report_run_lineage'] as $x) {
++            Schema::dropIfExists($x);
++        }
++        Schema::table('regulatory_report_runs', fn (Blueprint $t) => $t->dropColumn(['period_from', 'period_to', 'source_query', 'source_version', 'row_count', 'generated_at']));
++        Schema::table('regulatory_report_definitions', fn (Blueprint $t) => $t->dropColumn(['regime', 'regulatory_category_kind', 'regulatory_category_code', 'description']));
++    }
++};

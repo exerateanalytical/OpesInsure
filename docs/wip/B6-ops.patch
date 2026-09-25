@@ -1,0 +1,691 @@
+diff --git a/app/Application/Operations/CorrelationViewService.php b/app/Application/Operations/CorrelationViewService.php
+new file mode 100644
+index 0000000..362d86f
+--- /dev/null
++++ b/app/Application/Operations/CorrelationViewService.php
+@@ -0,0 +1,122 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Operations;
++
++use Illuminate\Support\Collection;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B6 — REQ-OPS-001 correlation view (ESR OPS-012). Everything the platform recorded under one correlation id:
++ * every table that carries a `correlation_id` column (discovered from the schema, so new tables join automatically —
++ * audit_log, journals, case_events, approval_requests, engine_evaluations, …), outbox messages whose metadata carries it,
++ * and the workflow transitions of the subjects those audit rows touched (workflow_transition_history has no correlation
++ * column, so those rows are linked via the audited subject and marked linked_via=audit_subject).
++ * Tenant-safe: only tables with a tenant_id column are read, always filtered to the caller's tenant.
++ */
++final class CorrelationViewService
++{
++    private const LIMIT_PER_SOURCE = 200;
++
++    /** @return array{correlation_id:string, total:int, sources:array<string, list<object>>, timeline:list<array>, skipped:list<string>} */
++    public function show(string $tenantId, string $correlationId): array
++    {
++        $sources = [];
++        $skipped = [];
++        foreach ($this->correlatedTables() as $table) {
++            if (! Schema::hasColumn($table, 'tenant_id')) {
++                $skipped[] = $table;
++
++                continue;
++            }
++            $rows = DB::table($table)->where('tenant_id', $tenantId)->where('correlation_id', $correlationId)->limit(self::LIMIT_PER_SOURCE)->get();
++            if ($rows->isNotEmpty()) {
++                $sources[$table] = $rows->all();
++            }
++        }
++
++        $outbox = DB::table('outbox_messages')->whereRaw("metadata->>'correlation_id' = ?", [$correlationId])->limit(self::LIMIT_PER_SOURCE)->get()
++            ->filter(fn ($m) => $this->outboxInTenant($m, $tenantId, $sources));
++        if ($outbox->isNotEmpty()) {
++            $sources['outbox_messages'] = $outbox->values()->all();
++        }
++
++        $workflow = $this->workflowFor(collect($sources['audit_log'] ?? []));
++        if ($workflow->isNotEmpty()) {
++            $sources['workflow_transition_history'] = $workflow->all();
++        }
++
++        return [
++            'correlation_id' => $correlationId,
++            'total' => array_sum(array_map('count', $sources)),
++            'sources' => $sources,
++            'timeline' => $this->timeline($sources),
++            'skipped' => $skipped,
++        ];
++    }
++
++    /** @return list<string> */
++    private function correlatedTables(): array
++    {
++        return DB::table('information_schema.columns')->where('table_schema', DB::raw('current_schema()'))->where('column_name', 'correlation_id')
++            ->orderBy('table_name')->pluck('table_name')->reject(fn ($t) => $t === 'outbox_messages')->values()->all();
++    }
++
++    /** outbox_messages has no tenant column: keep a message only when it names the tenant or an aggregate already seen in this tenant's rows. */
++    private function outboxInTenant(object $m, string $tenantId, array $sources): bool
++    {
++        $payload = json_decode((string) $m->payload, true) ?: [];
++        $meta = json_decode((string) $m->metadata, true) ?: [];
++        if (($payload['tenant_id'] ?? $meta['tenant_id'] ?? null) === $tenantId) {
++            return true;
++        }
++        foreach ($sources as $rows) {
++            foreach ($rows as $r) {
++                if (($r->id ?? null) === $m->aggregate_id || ($r->subject_id ?? null) === $m->aggregate_id) {
++                    return true;
++                }
++            }
++        }
++
++        return false;
++    }
++
++    private function workflowFor(Collection $audit): Collection
++    {
++        $subjects = $audit->pluck('subject_id')->filter()->unique()->values();
++        if ($subjects->isEmpty() || ! Schema::hasTable('workflow_transition_history')) {
++            return collect();
++        }
++        $from = $audit->min('created_at');
++        $to = $audit->max('created_at');
++
++        return DB::table('workflow_transition_history')->whereIn('subject_id', $subjects->all())
++            ->whereBetween('occurred_at', [now()->parse($from)->subMinute(), now()->parse($to)->addMinute()])
++            ->orderBy('occurred_at')->limit(self::LIMIT_PER_SOURCE)->get()->map(function ($r) {
++                $r->linked_via = 'audit_subject';
++
++                return $r;
++            });
++    }
++
++    private function timeline(array $sources): array
++    {
++        $out = [];
++        foreach ($sources as $source => $rows) {
++            foreach ($rows as $r) {
++                $out[] = [
++                    'at' => $r->occurred_at ?? $r->created_at ?? $r->posted_at ?? null,
++                    'source' => $source,
++                    'id' => $r->id ?? null,
++                    'what' => $r->action ?? $r->event_name ?? $r->event ?? $r->status ?? null,
++                    'subject' => isset($r->subject_type) ? $r->subject_type.':'.($r->subject_id ?? '') : (isset($r->aggregate_type) ? $r->aggregate_type.':'.$r->aggregate_id : null),
++                ];
++            }
++        }
++        usort($out, fn ($a, $b) => strcmp((string) $a['at'], (string) $b['at']));
++
++        return $out;
++    }
++}
+diff --git a/app/Application/Operations/IntegrationMonitorService.php b/app/Application/Operations/IntegrationMonitorService.php
+new file mode 100644
+index 0000000..1e5df75
+--- /dev/null
++++ b/app/Application/Operations/IntegrationMonitorService.php
+@@ -0,0 +1,96 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Operations;
++
++use App\Application\Integrations\IntegrationHealthService;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B6 — REQ-OPS-001 integration / payment / webhook monitoring (ESR OPS-008..011). Extends the existing
++ * IntegrationHealthService summary (reused, not re-computed) with failed inbound webhooks, dead-lettered outbound
++ * deliveries and per-provider payment status. Payment figures are tenant-scoped; webhook_inbox and outbound
++ * deliveries are platform-level tables (no tenant column) and are shown to platform operators only.
++ */
++final class IntegrationMonitorService
++{
++    /** webhook_inbox lifecycle: RECEIVED → PROCESSED | FAILED. */
++    public const WEBHOOK_FAILED_STATUSES = ['FAILED'];
++
++    /** App\Domain\Payments\PaymentStatus values. */
++    public const PAYMENT_FAILED_STATUSES = ['FAILED', 'EXPIRED'];
++
++    public const PAYMENT_SUCCESS_STATUSES = ['SUCCEEDED'];
++
++    private const LIMIT = 50;
++
++    public function __construct(private IntegrationHealthService $integrations) {}
++
++    public function summary(string $tenantId): array
++    {
++        return [
++            'integrations' => $this->integrations->summary(),
++            'webhooks' => $this->webhooks(),
++            'payment_providers' => $this->paymentProviders($tenantId),
++        ];
++    }
++
++    public function failedWebhooks(?string $provider = null): array
++    {
++        return DB::table('webhook_inbox')->whereIn('status', self::WEBHOOK_FAILED_STATUSES)->when($provider, fn ($q) => $q->where('provider', $provider))
++            ->orderByDesc('received_at')->limit(self::LIMIT)
++            ->get(['id', 'provider', 'external_event_id', 'status', 'failure_reason', 'processing_attempts', 'next_attempt_at', 'received_at', 'processed_at'])->all();
++    }
++
++    /** Latest attempt per (subscription, event) that ended DEAD_LETTERED — the same definition IntegrationHealthService counts. */
++    public function deadLetteredDeliveries(): array
++    {
++        return DB::table('integration_delivery_attempts as a')
++            ->join('integration_webhook_subscriptions as s', 's.id', '=', 'a.integration_webhook_subscription_id')
++            ->where('a.status', 'DEAD_LETTERED')
++            ->whereRaw('a.attempt = (select max(b.attempt) from integration_delivery_attempts b where b.integration_webhook_subscription_id = a.integration_webhook_subscription_id and b.event_id = a.event_id)')
++            ->orderByDesc('a.created_at')->limit(self::LIMIT)
++            ->get(['a.id', 'a.integration_webhook_subscription_id', 'a.event_id', 'a.attempt', 'a.response_status', 'a.failure_reason', 'a.created_at'])->all();
++    }
++
++    private function webhooks(): array
++    {
++        $since = now()->subDay();
++
++        return [
++            'by_status' => DB::table('webhook_inbox')->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status')->map(fn ($n) => (int) $n)->all(),
++            'failed_by_provider' => DB::table('webhook_inbox')->whereIn('status', self::WEBHOOK_FAILED_STATUSES)->selectRaw('provider, count(*) as n')->groupBy('provider')->pluck('n', 'provider')->map(fn ($n) => (int) $n)->all(),
++            'received_24h' => DB::table('webhook_inbox')->where('received_at', '>=', $since)->count(),
++            'awaiting_retry' => DB::table('webhook_inbox')->whereNotNull('next_attempt_at')->whereNull('processed_at')->count(),
++        ];
++    }
++
++    private function paymentProviders(string $tenantId): array
++    {
++        if (! Schema::hasTable('payment_intents')) {
++            return [];
++        }
++        $rows = DB::table('payment_intents')->where('tenant_id', $tenantId)->where('updated_at', '>=', now()->subDay())
++            ->selectRaw('provider, status, count(*) as n, max(updated_at) as last_at')->groupBy('provider', 'status')->get();
++        $configured = array_keys((array) config('payments.providers', []));
++        $out = [];
++        foreach ($rows as $r) {
++            $p = $out[$r->provider] ??= ['provider' => $r->provider, 'configured' => in_array($r->provider, $configured, true), 'by_status_24h' => [], 'succeeded_24h' => 0, 'failed_24h' => 0, 'last_success_at' => null];
++            $p['by_status_24h'][$r->status] = (int) $r->n;
++            if (in_array(strtoupper($r->status), self::PAYMENT_SUCCESS_STATUSES, true)) {
++                $p['succeeded_24h'] += (int) $r->n;
++                $p['last_success_at'] = max($p['last_success_at'] ?? '', (string) $r->last_at);
++            } elseif (in_array(strtoupper($r->status), self::PAYMENT_FAILED_STATUSES, true)) {
++                $p['failed_24h'] += (int) $r->n;
++            }
++            $out[$r->provider] = $p;
++        }
++        foreach ($out as &$p) {
++            $p['status'] = $p['failed_24h'] > 0 && $p['succeeded_24h'] === 0 ? 'DOWN' : ($p['failed_24h'] > 0 ? 'DEGRADED' : 'OK');
++        }
++
++        return array_values($out);
++    }
++}
+diff --git a/app/Application/Operations/OperationalExceptionQueue.php b/app/Application/Operations/OperationalExceptionQueue.php
+new file mode 100644
+index 0000000..6abd105
+--- /dev/null
++++ b/app/Application/Operations/OperationalExceptionQueue.php
+@@ -0,0 +1,112 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Operations;
++
++use App\Application\Finance\ExceptionCentre\FinanceExceptionCentre;
++use Carbon\CarbonImmutable;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B6 — REQ-OPS-005 unified operational exception queue (MPS §86 failed-transaction recovery).
++ * Finance exceptions (issuance, reconciliation, refunds, clearing variances, overdue obligations, cashier sessions)
++ * come verbatim from the Batch 10 FinanceExceptionCentre — not re-queried here. This class only adds the technical
++ * sources the finance centre does not own: failed inbound webhooks, dead-lettered outbound deliveries, failed queue jobs,
++ * stuck outbox messages and failed/retrying carrier exchange messages. Each section has the same shape as the
++ * finance centre's (available, count, breakdown, items) so a client renders them uniformly.
++ */
++final class OperationalExceptionQueue
++{
++    public const OPERATIONAL_SOURCES = ['failed_webhooks', 'dead_lettered_deliveries', 'failed_jobs', 'stuck_outbox', 'carrier_exchange_failures'];
++
++    /** Outbox messages still unpublished after this many dispatch attempts are "stuck". Mirrors the dispatcher's retry window. */
++    public const STUCK_OUTBOX_ATTEMPTS = 3;
++
++    private const ITEM_LIMIT = 50;
++
++    public function __construct(private FinanceExceptionCentre $finance, private IntegrationMonitorService $integrations) {}
++
++    public static function sources(): array
++    {
++        return [...FinanceExceptionCentre::SOURCES, ...self::OPERATIONAL_SOURCES];
++    }
++
++    /** @param list<string>|null $only */
++    public function summary(string $tenantId, bool $platformSources, ?CarbonImmutable $asOf = null, ?array $only = null): array
++    {
++        $financeOnly = $only === null ? null : array_values(array_intersect($only, FinanceExceptionCentre::SOURCES));
++        $finance = $only !== null && $financeOnly === [] ? ['sources' => []] : $this->finance->summary($tenantId, $asOf, $financeOnly);
++        $sources = array_map(fn ($s) => ['domain' => 'finance'] + $s, $finance['sources']);
++
++        foreach (self::OPERATIONAL_SOURCES as $source) {
++            if ($only !== null && ! in_array($source, $only, true)) {
++                continue;
++            }
++            $sources[$source] = ['domain' => 'operations'] + match (true) {
++                $source === 'carrier_exchange_failures' => $this->carrierExchangeFailures($tenantId),
++                ! $platformSources => ['available' => false, 'reason' => 'Platform-level source: requires operations.platform.view.', 'count' => 0, 'breakdown' => [], 'items' => []],
++                default => $this->{lcfirst(str_replace('_', '', ucwords($source, '_')))}(),
++            };
++        }
++
++        return [
++            'as_of' => ($asOf ?? CarbonImmutable::now())->toIso8601String(),
++            'total_open' => array_sum(array_column($sources, 'count')),
++            'by_domain' => ['finance' => array_sum(array_column(array_filter($sources, fn ($s) => $s['domain'] === 'finance'), 'count')), 'operations' => array_sum(array_column(array_filter($sources, fn ($s) => $s['domain'] === 'operations'), 'count'))],
++            'sources' => $sources,
++        ];
++    }
++
++    private function failedWebhooks(): array
++    {
++        $base = DB::table('webhook_inbox')->whereIn('status', IntegrationMonitorService::WEBHOOK_FAILED_STATUSES);
++
++        return ['available' => true, 'count' => (clone $base)->count(),
++            'breakdown' => (clone $base)->selectRaw('provider as k, count(*) as n')->groupBy('provider')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
++            'items' => $this->integrations->failedWebhooks()];
++    }
++
++    private function deadLetteredDeliveries(): array
++    {
++        $items = $this->integrations->deadLetteredDeliveries();
++
++        return ['available' => true, 'count' => (int) ($this->integrations->summary('')['integrations']['dead_letter_queue_count'] ?? count($items)), 'breakdown' => [], 'items' => $items];
++    }
++
++    private function failedJobs(): array
++    {
++        if (! Schema::hasTable('failed_jobs')) {
++            return ['available' => false, 'reason' => 'Table failed_jobs is not installed.', 'count' => 0, 'breakdown' => [], 'items' => []];
++        }
++        $base = DB::table('failed_jobs');
++
++        return ['available' => true, 'count' => (clone $base)->count(),
++            'breakdown' => (clone $base)->selectRaw('queue as k, count(*) as n')->groupBy('queue')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
++            'items' => (clone $base)->orderByDesc('failed_at')->limit(self::ITEM_LIMIT)->get(['uuid', 'connection', 'queue', 'failed_at'])->all()];
++    }
++
++    private function stuckOutbox(): array
++    {
++        $base = DB::table('outbox_messages')->whereNull('published_at')->where('attempts', '>=', self::STUCK_OUTBOX_ATTEMPTS);
++
++        return ['available' => true, 'count' => (clone $base)->count(),
++            'breakdown' => (clone $base)->selectRaw('event_name as k, count(*) as n')->groupBy('event_name')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
++            'items' => (clone $base)->orderBy('occurred_at')->limit(self::ITEM_LIMIT)->get(['id', 'event_name', 'aggregate_type', 'aggregate_id', 'attempts', 'occurred_at'])->all()];
++    }
++
++    /** Tenant-scoped through the claim the message belongs to. */
++    private function carrierExchangeFailures(string $tenantId): array
++    {
++        if (! Schema::hasTable('carrier_exchange_messages') || ! Schema::hasColumn('carrier_exchange_messages', 'claim_id')) {
++            return ['available' => false, 'reason' => 'Table carrier_exchange_messages is not installed.', 'count' => 0, 'breakdown' => [], 'items' => []];
++        }
++        $base = DB::table('carrier_exchange_messages as m')->join('claims as c', 'c.id', '=', 'm.claim_id')->where('c.tenant_id', $tenantId)
++            ->whereIn('m.status', ['FAILED', 'RETRY_PENDING']);
++
++        return ['available' => true, 'count' => (clone $base)->count(),
++            'breakdown' => (clone $base)->selectRaw('m.status as k, count(*) as n')->groupBy('m.status')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
++            'items' => (clone $base)->orderBy('m.updated_at')->limit(self::ITEM_LIMIT)->get(['m.id', 'm.claim_id', 'm.message_type', 'm.direction', 'm.status', 'm.failure_reason', 'm.updated_at'])->all()];
++    }
++}
+diff --git a/app/Application/Operations/QueueConsoleService.php b/app/Application/Operations/QueueConsoleService.php
+new file mode 100644
+index 0000000..5d60840
+--- /dev/null
++++ b/app/Application/Operations/QueueConsoleService.php
+@@ -0,0 +1,63 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Operations;
++
++use App\Application\Audit\AuditWriter;
++use Illuminate\Contracts\Pagination\LengthAwarePaginator;
++use Illuminate\Support\Facades\Artisan;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Agent B6 — REQ-OPS-001 queues & failed jobs (ESR OPS-006/007). Retry and forget delegate to Laravel's own
++ * queue:retry / queue:forget (no parallel failed-job store) and are audited. Payload bodies are never returned:
++ * only the job's display name, queue and a truncated exception.
++ */
++final class QueueConsoleService
++{
++    public function __construct(private AuditWriter $audit) {}
++
++    public function failed(?string $queue = null, int $perPage = 25): LengthAwarePaginator
++    {
++        return DB::table('failed_jobs')->when($queue, fn ($q) => $q->where('queue', $queue))->orderByDesc('failed_at')
++            ->paginate(min(max($perPage, 1), 100), ['id', 'uuid', 'connection', 'queue', 'payload', 'exception', 'failed_at'])
++            ->through(fn ($r) => $this->present($r));
++    }
++
++    public function retry(string $uuid): array
++    {
++        $job = $this->find($uuid);
++        Artisan::call('queue:retry', ['id' => [$uuid]]);
++        $this->audit->record('operations.failed_job.retried', 'failed_job', null, ['uuid' => $uuid, 'queue' => $job->queue, 'job' => $this->present($job)['job']]);
++
++        return ['uuid' => $uuid, 'retried' => true, 'still_failed' => DB::table('failed_jobs')->where('uuid', $uuid)->exists()];
++    }
++
++    public function forget(string $uuid, string $reason): array
++    {
++        $job = $this->find($uuid);
++        Artisan::call('queue:forget', ['id' => $uuid]);
++        $this->audit->record('operations.failed_job.forgotten', 'failed_job', null, ['uuid' => $uuid, 'queue' => $job->queue, 'job' => $this->present($job)['job'], 'reason' => $reason]);
++
++        return ['uuid' => $uuid, 'forgotten' => ! DB::table('failed_jobs')->where('uuid', $uuid)->exists()];
++    }
++
++    private function find(string $uuid): object
++    {
++        return DB::table('failed_jobs')->where('uuid', $uuid)->first() ?? throw ValidationException::withMessages(['uuid' => 'Failed job not found.']);
++    }
++
++    private function present(object $r): array
++    {
++        $payload = json_decode((string) $r->payload, true) ?: [];
++
++        return [
++            'uuid' => $r->uuid, 'connection' => $r->connection, 'queue' => $r->queue,
++            'job' => $payload['displayName'] ?? ($payload['job'] ?? null), 'attempts' => $payload['attempts'] ?? null,
++            'exception' => Str::limit(strtok((string) $r->exception, "\n") ?: '', 300), 'failed_at' => $r->failed_at,
++        ];
++    }
++}
+diff --git a/app/Application/Operations/SystemHealthService.php b/app/Application/Operations/SystemHealthService.php
+new file mode 100644
+index 0000000..7acee95
+--- /dev/null
++++ b/app/Application/Operations/SystemHealthService.php
+@@ -0,0 +1,174 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Operations;
++
++use Carbon\CarbonImmutable;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Queue;
++use Illuminate\Support\Facades\Schema;
++use Illuminate\Support\Facades\Storage;
++use Illuminate\Support\Str;
++use Throwable;
++
++/**
++ * Agent B6 — REQ-OPS-001 system health (ESR OPS-001..005). Every check is a live probe or a direct query; a check that
++ * cannot run reports status UNKNOWN with the reason, never a fabricated OK. Overall = worst of the checks.
++ */
++final class SystemHealthService
++{
++    public const OK = 'OK';
++
++    public const DEGRADED = 'DEGRADED';
++
++    public const DOWN = 'DOWN';
++
++    public const UNKNOWN = 'UNKNOWN';
++
++    public const NOT_CONFIGURED = 'NOT_CONFIGURED';
++
++    public const HEARTBEAT = 'scheduler';
++
++    /** @return array{status:string, checked_at:string, checks:array<string, array<string, mixed>>} */
++    public function summary(): array
++    {
++        $checks = [
++            'database' => $this->database(),
++            'queue' => $this->queue(),
++            'scheduler' => $this->scheduler(),
++            'storage' => $this->storage(),
++            'mail' => $this->mail(),
++            'sms' => $this->sms(),
++        ];
++        $rank = [self::OK => 0, self::NOT_CONFIGURED => 1, self::UNKNOWN => 1, self::DEGRADED => 2, self::DOWN => 3];
++        $worst = self::OK;
++        foreach ($checks as $c) {
++            if ($rank[$c['status']] > $rank[$worst]) {
++                $worst = $c['status'] === self::NOT_CONFIGURED ? self::DEGRADED : $c['status'];
++            }
++        }
++
++        return ['status' => $worst, 'checked_at' => now()->toIso8601String(), 'checks' => $checks];
++    }
++
++    /** Record one scheduler heartbeat (called every minute by ops:heartbeat). */
++    public function beat(string $name = self::HEARTBEAT): void
++    {
++        DB::table('ops_scheduler_heartbeats')->upsert(
++            [['name' => $name, 'host' => gethostname() ?: null, 'last_beat_at' => now(), 'beats' => 1]],
++            ['name'],
++            ['host' => DB::raw('excluded.host'), 'last_beat_at' => DB::raw('excluded.last_beat_at'), 'beats' => DB::raw('ops_scheduler_heartbeats.beats + 1')],
++        );
++    }
++
++    private function database(): array
++    {
++        try {
++            $start = hrtime(true);
++            DB::select('select 1');
++            $ms = (int) round((hrtime(true) - $start) / 1e6);
++            return ['status' => self::OK, 'driver' => DB::getDriverName(), 'latency_ms' => $ms, 'migrations_recorded' => DB::table('migrations')->count(),'pending_migrations' => $this->pendingMigrations()];
++        } catch (Throwable $e) {
++            return ['status' => self::DOWN, 'error' => Str::limit($e->getMessage(), 200)];
++        }
++    }
++
++    private function pendingMigrations(): int
++    {
++        $files = collect(glob(database_path('migrations/*.php')) ?: [])->map(fn ($f) => basename($f, '.php'));
++        $ran = DB::table('migrations')->pluck('migration')->flip();
++
++        return $files->reject(fn ($m) => $ran->has($m))->count();
++    }
++
++    private function queue(): array
++    {
++        $connection = (string) config('queue.default');
++        $out = ['connection' => $connection, 'driver' => config("queue.connections.{$connection}.driver"), 'depth' => [], 'failed_jobs' => 0, 'failed_jobs_24h' => 0];
++        try {
++            foreach ((array) config('operations.queues.monitored', ['default']) as $queue) {
++                $out['depth'][$queue] = Queue::connection($connection)->size($queue);
++            }
++            if (Schema::hasTable('failed_jobs')) {
++                $out['failed_jobs'] = DB::table('failed_jobs')->count();
++                $out['failed_jobs_24h'] = DB::table('failed_jobs')->where('failed_at', '>=', now()->subDay())->count();
++            }
++            $out['status'] = $out['failed_jobs_24h'] > 0 ? self::DEGRADED : self::OK;
++            if ($out['driver'] === 'sync') {
++                $out['note'] = 'sync driver: jobs run inline, no worker or backlog.';
++            }
++        } catch (Throwable $e) {
++            $out['status'] = self::DOWN;
++            $out['error'] = Str::limit($e->getMessage(), 200);
++        }
++
++        return $out;
++    }
++
++    private function scheduler(): array
++    {
++        $stale = (int) config('operations.scheduler.heartbeat_stale_seconds', 180);
++        $row = Schema::hasTable('ops_scheduler_heartbeats') ? DB::table('ops_scheduler_heartbeats')->where('name', self::HEARTBEAT)->first() : null;
++        if (! $row) {
++            return ['status' => self::UNKNOWN, 'reason' => 'No scheduler heartbeat recorded yet (ops:heartbeat runs every minute under schedule:run).', 'stale_after_seconds' => $stale];
++        }
++        $age = (int) abs(now()->diffInSeconds(CarbonImmutable::parse($row->last_beat_at)));
++
++        return ['status' => $age > $stale ? self::DOWN : self::OK, 'last_beat_at' => CarbonImmutable::parse($row->last_beat_at)->toIso8601String(), 'age_seconds' => $age, 'stale_after_seconds' => $stale, 'host' => $row->host, 'beats' => (int) $row->beats];
++    }
++
++    private function storage(): array
++    {
++        $disk = (string) config('filesystems.default');
++        try {
++            $probe = '.ops-health/'.Str::uuid().'.txt';
++            Storage::disk($disk)->put($probe, 'ok');
++            $read = Storage::disk($disk)->get($probe);
++            Storage::disk($disk)->delete($probe);
++
++            return ['status' => $read === 'ok' ? self::OK : self::DEGRADED, 'disk' => $disk, 'driver' => config("filesystems.disks.{$disk}.driver")];
++        } catch (Throwable $e) {
++            return ['status' => self::DOWN, 'disk' => $disk, 'error' => Str::limit($e->getMessage(), 200)];
++        }
++    }
++
++    private function mail(): array
++    {
++        $mailer = (string) config('mail.default');
++
++        return $this->channelHealth('email', ['mailer' => $mailer, 'transport' => config("mail.mailers.{$mailer}.transport")], ! in_array($mailer, ['', 'log', 'array'], true));
++    }
++
++    private function sms(): array
++    {
++        $providers = [];
++        if (filled(config('services.etech.sms_login')) && filled(config('services.etech.sms_password'))) {
++            $providers[] = 'etech';
++        }
++        if (filled(config('services.twilio.account_sid')) && filled(config('services.twilio.sms_from'))) {
++            $providers[] = 'twilio';
++        }
++
++        return $this->channelHealth('sms', ['configured_providers' => $providers], $providers !== []);
++    }
++
++    /** Configuration presence + the real outcome of recent notification deliveries on that channel. */
++    private function channelHealth(string $channel, array $meta, bool $configured): array
++    {
++        $recent = ['sent_24h' => 0, 'failed_24h' => 0];
++        if (Schema::hasTable('notification_deliveries')) {
++            $rows = DB::table('notification_deliveries')->whereIn('channel', [strtoupper($channel), $channel])->where('updated_at', '>=', now()->subDay())->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status');
++            foreach ($rows as $status => $n) {
++                if (in_array(strtoupper((string) $status), ['FAILED', 'DEAD_LETTERED', 'UNDELIVERABLE'], true)) {
++                    $recent['failed_24h'] += (int) $n;
++                } elseif (in_array(strtoupper((string) $status), ['SENT', 'DELIVERED'], true)) {
++                    $recent['sent_24h'] += (int) $n;
++                }
++            }
++        }
++        $status = ! $configured ? self::NOT_CONFIGURED : ($recent['failed_24h'] > 0 && $recent['sent_24h'] === 0 ? self::DOWN : ($recent['failed_24h'] > 0 ? self::DEGRADED : self::OK));
++
++        return ['status' => $status, ...$meta, ...$recent];
++    }
++}
+diff --git a/config/operations.php b/config/operations.php
+new file mode 100644
+index 0000000..64fb372
+--- /dev/null
++++ b/config/operations.php
+@@ -0,0 +1,52 @@
++<?php
++
++/*
++ * Agent B6 — REQ-OPS-001/002/004/005 operations console configuration.
++ * Every threshold/target here is an operator setting. RPO/RTO targets have NO default: until the owner sets them,
++ * restore verifications are recorded without a target and the report says "target not configured".
++ */
++$optionalInt = static fn (string $key): ?int => ($v = env($key)) === null || $v === '' ? null : (int) $v;
++
++return [
++    'scheduler' => [
++        // The scheduler writes a heartbeat every minute (ops:heartbeat). Older than this = stale.
++        'heartbeat_stale_seconds' => (int) env('OPS_HEARTBEAT_STALE_SECONDS', 180),
++    ],
++
++    'queues' => [
++        // Queues whose pending depth the console reports.
++        'monitored' => array_values(array_filter(explode(',', (string) env('OPS_MONITORED_QUEUES', 'default')))),
++    ],
++
++    'dr' => [
++        'environment' => env('OPS_DR_ENVIRONMENT', env('APP_ENV', 'production')),
++        'target_rpo_minutes' => $optionalInt('OPS_DR_TARGET_RPO_MINUTES'),
++        'target_rto_minutes' => $optionalInt('OPS_DR_TARGET_RTO_MINUTES'),
++        'restore' => [
++            // Directory holding the backups; the newest file matching `pattern` is restored.
++            'backup_path' => env('OPS_DR_BACKUP_PATH'),
++            'pattern' => env('OPS_DR_BACKUP_PATTERN', '*.{dump,sql,backup}'),
++            // A database connection (config/database.php) pointing at a SCRATCH database. Never the primary.
++            'scratch_connection' => env('OPS_DR_SCRATCH_CONNECTION'),
++            // Shell template. Placeholders: {file} {host} {port} {database} {username}. The password is passed as PGPASSWORD.
++            'restore_command' => env('OPS_DR_RESTORE_COMMAND', 'pg_restore --clean --if-exists --no-owner --no-privileges -h {host} -p {port} -U {username} -d {database} {file}'),
++            'timeout_seconds' => (int) env('OPS_DR_RESTORE_TIMEOUT', 3600),
++            // Tables compared source vs restored copy, on rows created at or before the backup time.
++            // key = column hashed (ordered) into the checksum; created = cut-off column (null = whole table).
++            'tables' => [
++                'audit_log' => ['key' => 'entry_hash', 'created' => 'created_at'],
++                'journals' => ['key' => 'id', 'created' => 'created_at'],
++                'journal_lines' => ['key' => 'id', 'created' => 'created_at'],
++                'policies' => ['key' => 'id', 'created' => 'created_at'],
++                'payment_intents' => ['key' => 'id', 'created' => 'created_at'],
++                'claims' => ['key' => 'id', 'created' => 'created_at'],
++            ],
++        ],
++    ],
++
++    'readiness' => [
++        'report_path' => 'docs/audit/PRODUCTION_READINESS.md',
++        // A PASSED restore verification newer than this counts as DR evidence (criterion 16).
++        'restore_evidence_max_age_days' => (int) env('OPS_READINESS_RESTORE_MAX_AGE_DAYS', 90),
++    ],
++];
+diff --git a/database/migrations/2026_10_18_160601_create_operations_console_support.php b/database/migrations/2026_10_18_160601_create_operations_console_support.php
+new file mode 100644
+index 0000000..e94fd12
+--- /dev/null
++++ b/database/migrations/2026_10_18_160601_create_operations_console_support.php
+@@ -0,0 +1,30 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B6 — REQ-OPS-001 scheduler heartbeat. REQ-OPS-002 automated restore verifications are recorded in the existing
++ * recovery_exercises register, whose RPO/RTO targets become nullable: no target is invented when the owner has not set one.
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('ops_scheduler_heartbeats', function (Blueprint $t): void {
++            $t->string('name', 64)->primary();
++            $t->string('host', 255)->nullable();
++            $t->timestampTz('last_beat_at');
++            $t->unsignedBigInteger('beats')->default(0);
++        });
++        DB::statement('ALTER TABLE recovery_exercises ALTER COLUMN target_rto_minutes DROP NOT NULL');
++        DB::statement('ALTER TABLE recovery_exercises ALTER COLUMN target_rpo_minutes DROP NOT NULL');
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('ops_scheduler_heartbeats');
++    }
++};

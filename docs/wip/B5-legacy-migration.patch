@@ -1,0 +1,542 @@
+diff --git a/app/Application/Import/Legacy/Adapters/CustomerAdapter.php b/app/Application/Import/Legacy/Adapters/CustomerAdapter.php
+new file mode 100644
+index 0000000..c9f5fbc
+--- /dev/null
++++ b/app/Application/Import/Legacy/Adapters/CustomerAdapter.php
+@@ -0,0 +1,112 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Import\Legacy\Adapters;
++
++use App\Application\Customers\Matching\PartyMatcher;
++use App\Application\Customers\PartyService;
++use App\Application\Import\Legacy\LegacyAdapter;
++use App\Application\Import\Legacy\LegacyContext;
++use App\Models\Party;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++
++/**
++ * REQ-IMP-002 customers / parties. Golden record: a legacy customer is always created as its own party and then
++ * scanned by PartyMatcher; probable duplicates become entity_match_candidates (+ a DATA_STEWARD case) and are only
++ * ever merged by a human through PartyMergeService (maker-checker). The migration never merges and never
++ * overwrites an existing party. A phone / e-mail already held by another party is not copied (the contact is
++ * unique) and is reported as a golden-record hit instead.
++ */
++final class CustomerAdapter implements LegacyAdapter
++{
++    public const TYPES = ['INDIVIDUAL', 'ORGANIZATION'];
++
++    public function __construct(private readonly PartyService $parties, private readonly PartyMatcher $matcher) {}
++
++    public function key(): string
++    {
++        return 'legacy.customers';
++    }
++
++    public function label(): string
++    {
++        return 'Legacy customers / parties';
++    }
++
++    public function recordType(): string
++    {
++        return 'legacy.customer';
++    }
++
++    public function fields(): array
++    {
++        return ['legacy_id' => true, 'type' => true, 'display_name' => true, 'date_of_birth' => false, 'registration_number' => false,
++            'phone' => false, 'email' => false, 'identifier_type' => false, 'identifier_value' => false];
++    }
++
++    public function validate(array $row, LegacyContext $ctx): array
++    {
++        $e = [];
++        if (! in_array(strtoupper((string) $row['type']), self::TYPES, true)) {
++            $e[] = ['rule' => 'CUSTOMER_TYPE', 'field' => 'type', 'message' => 'Type must be INDIVIDUAL or ORGANIZATION.'];
++        }
++        if (mb_strlen((string) $row['display_name']) > 255) {
++            $e[] = ['rule' => 'NAME_LENGTH', 'field' => 'display_name', 'message' => 'Name is longer than 255 characters.'];
++        }
++        if ($row['date_of_birth'] !== null && (! ($d = LegacyContext::date($row['date_of_birth'])) || $d->isFuture())) {
++            $e[] = ['rule' => 'DATE_OF_BIRTH', 'field' => 'date_of_birth', 'message' => 'Date of birth is not a valid past date.'];
++        }
++        if ($row['phone'] !== null && ! preg_match('/^\+[1-9]\d{7,14}$/', (string) $row['phone'])) {
++            $e[] = ['rule' => 'PHONE_E164', 'field' => 'phone', 'message' => 'Phone must be in E.164 form (+237...).'];
++        }
++        if ($row['email'] !== null && ! filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
++            $e[] = ['rule' => 'EMAIL', 'field' => 'email', 'message' => 'E-mail is not valid.'];
++        }
++        if (($row['identifier_type'] === null) !== ($row['identifier_value'] === null)) {
++            $e[] = ['rule' => 'IDENTIFIER_PAIR', 'field' => 'identifier_value', 'message' => 'Identifier type and value go together.'];
++        }
++
++        return $e;
++    }
++
++    public function sourceAmount(array $row): int
++    {
++        return 0;
++    }
++
++    public function migrate(array $row, LegacyContext $ctx): array
++    {
++        $type = strtoupper((string) $row['type']);
++        $dob = LegacyContext::date($row['date_of_birth']);
++        $hits = [];
++        $phone = $row['phone'];
++        if ($phone && DB::table('party_contacts')->where(['type' => 'PHONE', 'normalized_value' => $phone])->exists()) {
++            $hits[] = 'PHONE';
++            $phone = null;
++        }
++        $email = $row['email'] ? mb_strtolower((string) $row['email']) : null;
++        if ($email && DB::table('party_contacts')->where(['type' => 'EMAIL', 'normalized_value' => $email])->exists()) {
++            $hits[] = 'EMAIL';
++            $email = null;
++        }
++        $party = $this->parties->create(['type' => $type, 'display_name' => $row['display_name'], 'date_of_birth' => $dob?->toDateString(),
++            'registration_number' => $row['registration_number'], 'phone_e164' => $phone, 'email' => $email,
++            'identifier_type' => $row['identifier_type'], 'identifier_value' => $row['identifier_value']]);
++        DB::table('tenant_customers')->insertOrIgnore(['id' => (string) Str::uuid(), 'tenant_id' => $ctx->tenantId, 'party_id' => $party->id,
++            'customer_number' => mb_substr('LEG-'.$row['legacy_id'], 0, 64), 'status' => 'ACTIVE', 'private_metadata' => json_encode(['legacy_id' => $row['legacy_id'], 'source' => $ctx->source->name]),
++            'created_at' => now(), 'updated_at' => now()]);
++        $candidates = $this->matcher->scan($party, $ctx->tenantId, $ctx->actor);
++
++        return ['id' => $party->id, 'notes' => array_filter([
++            'contact_hits' => $hits,
++            'match_candidates' => array_map(fn ($c) => ['candidate_id' => $c->id, 'score' => (float) $c->score, 'band' => $c->band], $candidates),
++        ])];
++    }
++
++    public function measure(string $id): ?int
++    {
++        return Party::whereKey($id)->exists() ? 0 : null;
++    }
++}
+diff --git a/app/Application/Import/Legacy/Adapters/PolicyAdapter.php b/app/Application/Import/Legacy/Adapters/PolicyAdapter.php
+new file mode 100644
+index 0000000..b76b9c7
+--- /dev/null
++++ b/app/Application/Import/Legacy/Adapters/PolicyAdapter.php
+@@ -0,0 +1,159 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Import\Legacy\Adapters;
++
++use App\Application\Import\Legacy\LegacyAdapter;
++use App\Application\Import\Legacy\LegacyContext;
++use App\Application\Policies\Chronology\PolicyChronologyWriter;
++use App\Models\Carrier;
++use App\Models\InsuranceProduct;
++use App\Models\Policy;
++use App\Models\Proposal;
++use App\Models\Quote;
++use App\Models\QuoteOffer;
++use Illuminate\Support\Facades\DB;
++
++/**
++ * REQ-IMP-002 policies. A legacy policy keeps its own number and dates; the quote → offer → proposal chain the
++ * data model requires is recorded as MIGRATED (origin / status), never re-rated. The structured chronology
++ * (policy_versions + policy_parties / risks / coverages) is written by PolicyChronologyWriter with kind BACKFILL
++ * and source_type legacy_migration, so the policy has a §84 snapshot like any issued one.
++ */
++final class PolicyAdapter implements LegacyAdapter
++{
++    public const STATUSES = ['ACTIVE', 'EXPIRED', 'CANCELLED', 'LAPSED', 'SUSPENDED'];
++
++    public const ORIGIN = 'LEGACY_MIGRATION';
++
++    public function __construct(private readonly PolicyChronologyWriter $chronology) {}
++
++    public function key(): string
++    {
++        return 'legacy.policies';
++    }
++
++    public function label(): string
++    {
++        return 'Legacy policies';
++    }
++
++    public function recordType(): string
++    {
++        return 'legacy.policy';
++    }
++
++    public function fields(): array
++    {
++        return ['legacy_id' => true, 'customer_legacy_id' => true, 'carrier_code' => true, 'product_code' => true, 'policy_number' => true,
++            'starts_at' => true, 'ends_at' => true, 'premium' => true, 'currency' => true, 'status' => true, 'coverages' => false, 'risk_description' => false];
++    }
++
++    public function validate(array $row, LegacyContext $ctx): array
++    {
++        $e = [];
++        if (! $ctx->resolve('legacy.customer', $row['customer_legacy_id'])) {
++            $e[] = ['rule' => 'CUSTOMER_MIGRATED', 'field' => 'customer_legacy_id', 'message' => "Customer {$row['customer_legacy_id']} has not been migrated yet."];
++        }
++        $carrier = $this->carrier($row['carrier_code']);
++        if (! $carrier) {
++            $e[] = ['rule' => 'CARRIER_KNOWN', 'field' => 'carrier_code', 'message' => "Unknown carrier {$row['carrier_code']}."];
++        } elseif (! $this->product($carrier->id, $row['product_code'])) {
++            $e[] = ['rule' => 'PRODUCT_KNOWN', 'field' => 'product_code', 'message' => "Unknown product {$row['product_code']} for this carrier."];
++        }
++        $start = LegacyContext::date($row['starts_at']);
++        $end = LegacyContext::date($row['ends_at']);
++        if (! $start || ! $end || $end->lte($start)) {
++            $e[] = ['rule' => 'PERIOD', 'field' => 'ends_at', 'message' => 'Start and end must be dates with end after start.'];
++        }
++        if (! preg_match('/^[A-Z]{3}$/', (string) $row['currency'])) {
++            $e[] = ['rule' => 'CURRENCY', 'field' => 'currency', 'message' => 'Currency must be an ISO 4217 code.'];
++        } elseif (($p = LegacyContext::minor($row['premium'], $row['currency'])) === null || $p < 0) {
++            $e[] = ['rule' => 'AMOUNT', 'field' => 'premium', 'message' => 'Premium must be a non-negative amount in the currency precision.'];
++        }
++        if (! in_array(strtoupper((string) $row['status']), self::STATUSES, true)) {
++            $e[] = ['rule' => 'POLICY_STATUS', 'field' => 'status', 'message' => 'Status must be one of '.implode(', ', self::STATUSES).'.'];
++        }
++        if (Policy::where('policy_number', $row['policy_number'])->exists()) {
++            $e[] = ['rule' => 'POLICY_NUMBER_UNIQUE', 'field' => 'policy_number', 'message' => "Policy number {$row['policy_number']} already exists."];
++        }
++        if ($row['coverages'] !== null && $this->coverages($row['coverages'], (string) $row['currency']) === null) {
++            $e[] = ['rule' => 'COVERAGES', 'field' => 'coverages', 'message' => 'Coverages must read CODE:premium|CODE:premium.'];
++        }
++
++        return $e;
++    }
++
++    public function sourceAmount(array $row): int
++    {
++        return (int) LegacyContext::minor($row['premium'], (string) $row['currency']);
++    }
++
++    public function migrate(array $row, LegacyContext $ctx): array
++    {
++        $partyId = $ctx->resolve('legacy.customer', $row['customer_legacy_id']);
++        $carrier = $this->carrier($row['carrier_code']);
++        $product = $this->product($carrier->id, $row['product_code']);
++        $start = LegacyContext::date($row['starts_at']);
++        $end = LegacyContext::date($row['ends_at']);
++        $currency = (string) $row['currency'];
++        $premium = $this->sourceAmount($row);
++        $coverages = $this->coverages($row['coverages'], $currency) ?? [];
++        $legacy = ['legacy_id' => $row['legacy_id'], 'source' => $ctx->source->name, 'batch_id' => $ctx->batchId];
++
++        $quote = Quote::create(['tenant_id' => $ctx->tenantId, 'party_id' => $partyId, 'line_code' => $product->line_code, 'status' => 'MIGRATED', 'currency' => $currency,
++            'risk_facts' => array_filter(['description' => $row['risk_description'], 'legacy' => $legacy]), 'data_origin' => self::ORIGIN]);
++        $offer = QuoteOffer::create(['quote_id' => $quote->id, 'carrier_id' => $carrier->id, 'product_id' => $product->id, 'premium_minor' => $premium, 'total_minor' => $premium,
++            'currency' => $currency, 'status' => 'MIGRATED', 'origin' => 'MIGRATED', 'calculation_breakdown' => ['legacy' => $legacy], 'coverage_snapshot' => $coverages,
++            'valid_until' => $start, 'data_origin' => self::ORIGIN]);
++        $proposal = Proposal::create(['tenant_id' => $ctx->tenantId, 'quote_offer_id' => $offer->id, 'party_id' => $partyId, 'status' => 'MIGRATED']);
++        $policy = Policy::create([
++            'tenant_id' => $ctx->tenantId, 'proposal_id' => $proposal->id, 'carrier_id' => $carrier->id, 'party_id' => $partyId,
++            'policy_number' => $row['policy_number'], 'status' => strtoupper((string) $row['status']), 'coverage_starts_at' => $start, 'coverage_ends_at' => $end,
++            'terms_snapshot' => ['quote_id' => $quote->id, 'currency' => $currency, 'premium_minor' => $premium, 'product_id' => $product->id,
++                'coverage_snapshot' => ['coverages' => $coverages], 'legacy' => $legacy],
++            'version' => 1, 'currency' => $currency, 'premium_minor' => $premium, 'issued_at' => $start, 'issuance_reference' => 'LEGACY:'.$row['legacy_id'],
++            'data_origin' => self::ORIGIN,
++        ]);
++        $versionId = $this->chronology->record($policy, 'BACKFILL', $start, ['source_type' => 'legacy_migration', 'source_id' => $ctx->batchId, 'actor_id' => $ctx->actor->id]);
++
++        return ['id' => $policy->id, 'notes' => ['policy_version_id' => $versionId, 'coverages' => count($coverages)]];
++    }
++
++    public function measure(string $id): ?int
++    {
++        $p = DB::table('policies')->where('id', $id)->value('premium_minor');
++
++        return $p === null ? null : (int) $p;
++    }
++
++    private function carrier(?string $code): ?Carrier
++    {
++        return $code ? Carrier::where('cima_code', $code)->orWhere('insurer_code', $code)->first() : null;
++    }
++
++    private function product(string $carrierId, ?string $code): ?InsuranceProduct
++    {
++        return $code ? InsuranceProduct::where(['carrier_id' => $carrierId, 'code' => $code])->orderByDesc('version')->first() : null;
++    }
++
++    /** "TPL:60000|FIRE:5000" → coverage snapshot rows; null when malformed. */
++    private function coverages(?string $raw, string $currency): ?array
++    {
++        if ($raw === null) {
++            return [];
++        }
++        $out = [];
++        foreach (array_filter(array_map('trim', explode('|', $raw))) as $part) {
++            [$code, $amount] = array_pad(explode(':', $part, 2), 2, null);
++            $minor = $amount === null ? null : LegacyContext::minor($amount, $currency);
++            if (! preg_match('/^[A-Z0-9_]{1,64}$/', (string) $code) || $minor === null || $minor < 0) {
++                return null;
++            }
++            $out[] = ['code' => $code, 'name' => $code, 'mandatory' => false, 'optional' => false, 'premium_minor' => $minor];
++        }
++
++        return $out;
++    }
++}
+diff --git a/app/Application/Import/Legacy/LegacyAdapter.php b/app/Application/Import/Legacy/LegacyAdapter.php
+new file mode 100644
+index 0000000..c737e17
+--- /dev/null
++++ b/app/Application/Import/Legacy/LegacyAdapter.php
+@@ -0,0 +1,47 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Import\Legacy;
++
++/**
++ * REQ-IMP-002 — one legacy entity the LegacyMigrationPipeline can migrate. An adapter knows its fields, its
++ * validation rules, the legacy id and the amount it carries (for reconciliation), how to create the record
++ * through the owning domain service, and how to re-measure a migrated record from the database.
++ * Idempotency (external_record_mappings by legacy id), staging, approval, audit and batch bookkeeping stay in
++ * the pipeline.
++ */
++interface LegacyAdapter
++{
++    /** Stable key stored on import_batches.target (legacy.customers, legacy.policies, ...). */
++    public function key(): string;
++
++    public function label(): string;
++
++    /** external_record_mappings.record_type for this entity. */
++    public function recordType(): string;
++
++    /** @return array<string, bool> field => required */
++    public function fields(): array;
++
++    /**
++     * Rule report for one mapped row. Each failure names the rule broken.
++     *
++     * @return list<array{rule: string, field: string, message: string}>
++     */
++    public function validate(array $row, LegacyContext $ctx): array;
++
++    /** Amount the row carries, in minor units (0 when the entity has no amount: customers). */
++    public function sourceAmount(array $row): int;
++
++    /**
++     * Creates the record(s) through the domain services. Returns the new record id plus notes for the report
++     * (match candidates, CONFIG_REQUIRED postings, ...).
++     *
++     * @return array{id: string, notes?: array}
++     */
++    public function migrate(array $row, LegacyContext $ctx): array;
++
++    /** Re-reads a migrated record's amount (minor units) from the database for reconciliation; null if missing. */
++    public function measure(string $id): ?int;
++}
+diff --git a/app/Application/Import/Legacy/LegacyContext.php b/app/Application/Import/Legacy/LegacyContext.php
+new file mode 100644
+index 0000000..b64b647
+--- /dev/null
++++ b/app/Application/Import/Legacy/LegacyContext.php
+@@ -0,0 +1,77 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Import\Legacy;
++
++use App\Models\ExternalRecordMapping;
++use App\Models\IntegrationClient;
++use App\Models\User;
++use Carbon\CarbonImmutable;
++
++/**
++ * REQ-IMP-002 — what an adapter sees while one legacy batch runs: the tenant, the batch, the actor, the legacy
++ * source (its integration client owns the external_record_mappings) and helpers to resolve other legacy ids
++ * already migrated (customers before policies, policies before premiums / claims).
++ */
++final class LegacyContext
++{
++    /** Currencies without minor units (ISO 4217 exponent 0). */
++    private const ZERO_DECIMAL = ['XAF', 'XOF', 'JPY', 'KRW', 'CLP', 'GNF', 'RWF', 'KMF', 'DJF', 'UGX', 'VND'];
++
++    public function __construct(
++        public readonly string $tenantId,
++        public readonly string $batchId,
++        public readonly User $actor,
++        public readonly IntegrationClient $source,
++        public readonly bool $dryRun,
++    ) {}
++
++    /** OpesInsure id of a legacy record already migrated from the same source (any batch), or null. */
++    public function resolve(string $recordType, ?string $legacyId): ?string
++    {
++        if ($legacyId === null || $legacyId === '') {
++            return null;
++        }
++
++        return ExternalRecordMapping::where(['integration_client_id' => $this->source->id, 'record_type' => $recordType, 'external_record_id' => $legacyId])
++            ->value('opesinsure_record_id');
++    }
++
++    /** Decimal legacy amount → integer minor units of the currency (never floats in storage). */
++    public static function minor(?string $amount, string $currency): ?int
++    {
++        $amount = str_replace([' ', "\u{00A0}"], '', (string) $amount);
++        if ($amount === '' || ! preg_match('/^-?\d+([.,]\d+)?$/', $amount)) {
++            return null;
++        }
++        $amount = str_replace(',', '.', $amount);
++        $exp = in_array(strtoupper($currency), self::ZERO_DECIMAL, true) ? 0 : 2;
++        [$int, $frac] = array_pad(explode('.', ltrim($amount, '-')), 2, '');
++        if (strlen(rtrim($frac, '0')) > $exp) {
++            return null;   // more precision than the currency carries: reject rather than round money
++        }
++        $minor = (int) $int * (10 ** $exp) + (int) str_pad(substr($frac, 0, $exp), $exp, '0');
++
++        return str_starts_with($amount, '-') ? -$minor : $minor;
++    }
++
++    public static function date(?string $value): ?CarbonImmutable
++    {
++        if ($value === null || $value === '') {
++            return null;
++        }
++        foreach (['Y-m-d', 'd/m/Y', 'Y-m-d H:i:s', DATE_ATOM] as $f) {
++            try {
++                $d = CarbonImmutable::createFromFormat('!'.$f, $value);
++            } catch (\Throwable) {
++                continue;
++            }
++            if ($d instanceof CarbonImmutable && $d->format($f) === $value) {
++                return $d;
++            }
++        }
++
++        return null;
++    }
++}
+diff --git a/app/Application/Import/Legacy/OpeningBalancePoster.php b/app/Application/Import/Legacy/OpeningBalancePoster.php
+new file mode 100644
+index 0000000..fb30e9a
+--- /dev/null
++++ b/app/Application/Import/Legacy/OpeningBalancePoster.php
+@@ -0,0 +1,59 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Import\Legacy;
++
++use App\Application\Ledger\FinancialPostingService;
++use App\Application\Ledger\Posting\AccountingEventMappingService;
++use App\Models\FinancialPostingProfile;
++use Illuminate\Support\Facades\DB;
++
++/**
++ * REQ-IMP-002 — migrated opening balances go to the ledger through FinancialPostingService, accounting event
++ * migration.opening_balance. The migration / suspense clearing account is a chart-of-accounts decision owned by
++ * finance: this class never provisions one. It posts only when the event is configured (an approved posting
++ * profile or an active event mapping); otherwise the balance is reported CONFIG_REQUIRED and nothing is posted.
++ * Idempotent per reference (FinancialPostingService dedupes on event + reference).
++ */
++final class OpeningBalancePoster
++{
++    public const EVENT = 'migration.opening_balance';
++
++    public function __construct(private readonly FinancialPostingService $posting, private readonly AccountingEventMappingService $mappings) {}
++
++    public function configured(string $tenantId, string $currency): bool
++    {
++        $profile = FinancialPostingProfile::where(['event_type' => self::EVENT, 'currency' => $currency, 'status' => 'APPROVED'])
++            ->where(fn ($q) => $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id'))->exists();
++        if ($profile) {
++            return true;
++        }
++        try {
++            return $this->mappings->resolve($tenantId, self::EVENT, $currency) !== null;
++        } catch (\Throwable) {
++            return false;   // mapping names an account missing from the chart: still a configuration gap
++        }
++    }
++
++    /** @return array{status: 'POSTED'|'CONFIG_REQUIRED'|'NOTHING_TO_POST', journal_id?: string, event: string, amount_minor: int, currency: string} */
++    public function post(string $tenantId, string $referenceId, int $amountMinor, string $currency, string $correlation): array
++    {
++        $out = ['event' => self::EVENT, 'amount_minor' => $amountMinor, 'currency' => $currency];
++        if ($amountMinor <= 0) {
++            return ['status' => 'NOTHING_TO_POST'] + $out;
++        }
++        if (! $this->configured($tenantId, $currency)) {
++            return ['status' => 'CONFIG_REQUIRED'] + $out;
++        }
++
++        return ['status' => 'POSTED', 'journal_id' => $this->posting->post($tenantId, self::EVENT, $referenceId, $amountMinor, $currency, $correlation)] + $out;
++    }
++
++    public static function journalAmount(string $referenceId): ?int
++    {
++        $j = DB::table('journals')->where(['reference_type' => self::EVENT, 'reference_id' => $referenceId, 'status' => 'POSTED'])->value('id');
++
++        return $j ? (int) DB::table('journal_lines')->where('journal_id', $j)->sum('debit_minor') : null;
++    }
++}
+diff --git a/app/Models/Import/ImportBatch.php b/app/Models/Import/ImportBatch.php
+index 0c1a4bb..5025fc6 100644
+--- a/app/Models/Import/ImportBatch.php
++++ b/app/Models/Import/ImportBatch.php
+@@ -19,7 +19,8 @@ final class ImportBatch extends Model
+     protected function casts(): array
+     {
+         return ['target_params' => 'array', 'source_columns' => 'array', 'mapping' => 'array', 'raw_rows' => 'array', 'rows' => 'array',
+-            'report' => 'array', 'result' => 'array', 'imported_at' => 'datetime', 'imported_count' => 'integer'];
++            'report' => 'array', 'result' => 'array', 'imported_at' => 'datetime',
++            'control_totals' => 'array', 'dry_run' => 'array', 'reconciliation' => 'array', 'reconciled_at' => 'datetime', 'rolled_back_at' => 'datetime', 'imported_count' => 'integer'];
+     }
+ 
+     protected static function booted(): void
+diff --git a/database/migrations/2026_10_18_160501_legacy_migration_staging_on_import_batches.php b/database/migrations/2026_10_18_160501_legacy_migration_staging_on_import_batches.php
+new file mode 100644
+index 0000000..4d83e0d
+--- /dev/null
++++ b/database/migrations/2026_10_18_160501_legacy_migration_staging_on_import_batches.php
+@@ -0,0 +1,38 @@
++<?php
++
++declare(strict_types=1);
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * REQ-IMP-002 legacy integration & data migration (BP W26, MPS §92). Additive: legacy batches reuse import_batches
++ * (same upload / audit trail as REQ-IMP-001) with the extra stages upload → validate → dry-run → reconcile →
++ * approve (maker-checker) → commit, and rollback of an uncommitted batch.
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('import_batches', function (Blueprint $t) {
++            $t->string('pipeline', 16)->default('GENERIC');     // GENERIC (REQ-IMP-001) | LEGACY (REQ-IMP-002)
++            $t->string('source_system', 64)->nullable();         // legacy system code (one integration client per system)
++            $t->jsonb('control_totals')->nullable();             // totals declared by the legacy system {count, amount_minor}
++            $t->jsonb('dry_run')->nullable();                    // per-row outcome of the last dry run (nothing persisted)
++            $t->jsonb('reconciliation')->nullable();             // source vs migrated totals per entity
++            $t->timestampTz('reconciled_at')->nullable();
++            $t->timestampTz('rolled_back_at')->nullable();
++            $t->uuid('rolled_back_by')->nullable();
++            $t->index(['pipeline', 'source_system', 'status']);
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('import_batches', function (Blueprint $t) {
++            $t->dropIndex(['pipeline', 'source_system', 'status']);
++            $t->dropColumn(['pipeline', 'source_system', 'control_totals', 'dry_run', 'reconciliation', 'reconciled_at', 'rolled_back_at', 'rolled_back_by']);
++        });
++    }
++};

@@ -1,0 +1,736 @@
+diff --git a/app/Application/Integrations/Developer/DeveloperPortalService.php b/app/Application/Integrations/Developer/DeveloperPortalService.php
+new file mode 100644
+index 0000000..588b1e6
+--- /dev/null
++++ b/app/Application/Integrations/Developer/DeveloperPortalService.php
+@@ -0,0 +1,180 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Integrations\Developer;
++
++use App\Application\Audit\AuditWriter;
++use App\Application\Events\OutboxWriter;
++use App\Models\{IntegrationClient,User};
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++use Laravel\Passport\ClientRepository;
++
++/**
++ * REQ-API-006 developer portal API on top of the existing integration_clients lifecycle
++ * (IntegrationClientLifecycleService stays the only place that registers / transitions a client):
++ *  - extra credentials per client (sandbox keys; additional production keys) — each a real Passport
++ *    client-credentials client recorded in integration_client_keys;
++ *  - per-client usage metering (integration_client_usage daily buckets) and per-environment rate limits;
++ *  - tenant API consent: a tenant grants a client scoped, delegated access to its data (scopes ⊆ the
++ *    client's own scopes); AuthenticateIntegrationClient enforces it on "on behalf of tenant" calls.
++ */
++final class DeveloperPortalService
++{
++    /** Statuses in which a sandbox key may be issued / used. */
++    public const SANDBOX_STATUSES = ['SANDBOX_ENABLED', 'CERTIFICATION', 'PRODUCTION_APPROVED', 'ACTIVE'];
++
++    public function __construct(private readonly AuditWriter $audit, private readonly OutboxWriter $outbox, private readonly ClientRepository $clients) {}
++
++    /** @return array{key:object, client_id:string, client_secret:string} */
++    public function issueKey(IntegrationClient $client, string $environment, ?string $label, User $actor): array
++    {
++        $allowed = $environment === 'sandbox' ? self::SANDBOX_STATUSES : ['PRODUCTION_APPROVED', 'ACTIVE'];
++        if (! in_array($client->status, $allowed, true)) {
++            throw ValidationException::withMessages(['environment' => "A {$environment} key cannot be issued while the connection is {$client->status}."]);
++        }
++
++        return DB::transaction(function () use ($client, $environment, $label, $actor) {
++            $oauth = $this->clients->createClientCredentialsGrantClient($client->name.' ('.$environment.')');
++            $id = (string) Str::uuid();
++            DB::table('integration_client_keys')->insert([
++                'id' => $id, 'integration_client_id' => $client->id, 'environment' => $environment, 'oauth_client_id' => $oauth->getKey(),
++                'label' => $label, 'status' => 'ACTIVE', 'created_by' => $actor->id, 'created_at' => now(), 'updated_at' => now(),
++            ]);
++            $meta = ['integration_client_id' => $client->id, 'environment' => $environment];
++            $this->audit->record('integration.client_key.issued', 'integration_client_key', $id, $meta);
++            $this->outbox->record('integration.client_key.issued', 'integration_client_key', $id, $meta);
++
++            return ['key' => DB::table('integration_client_keys')->find($id), 'client_id' => (string) $oauth->getKey(), 'client_secret' => (string) $oauth->plainSecret];
++        });
++    }
++
++    public function revokeKey(IntegrationClient $client, string $keyId, User $actor): object
++    {
++        return DB::transaction(function () use ($client, $keyId, $actor) {
++            $key = DB::table('integration_client_keys')->where(['id' => $keyId, 'integration_client_id' => $client->id])->lockForUpdate()->first();
++            abort_if($key === null, 404);
++            if ($key->status !== 'REVOKED') {
++                DB::table('integration_client_keys')->where('id', $keyId)->update(['status' => 'REVOKED', 'revoked_at' => now(), 'revoked_by' => $actor->id, 'updated_at' => now()]);
++                DB::table('oauth_clients')->where('id', $key->oauth_client_id)->update(['revoked' => true]);
++                DB::table('oauth_access_tokens')->where('client_id', $key->oauth_client_id)->update(['revoked' => true]);
++                $meta = ['integration_client_id' => $client->id, 'environment' => $key->environment];
++                $this->audit->record('integration.client_key.revoked', 'integration_client_key', $keyId, $meta);
++                $this->outbox->record('integration.client_key.revoked', 'integration_client_key', $keyId, $meta);
++            }
++
++            return DB::table('integration_client_keys')->find($keyId);
++        });
++    }
++
++    public function setRateLimits(IntegrationClient $client, int $production, int $sandbox, User $actor): IntegrationClient
++    {
++        $old = ['rate_limit_per_minute' => $client->rate_limit_per_minute, 'sandbox_rate_limit_per_minute' => $client->sandbox_rate_limit_per_minute];
++        $client->update(['rate_limit_per_minute' => $production, 'sandbox_rate_limit_per_minute' => $sandbox]);
++        $this->audit->recordChange('integration.client.rate_limits_changed', 'integration_client', $client->id, $old,
++            ['rate_limit_per_minute' => $production, 'sandbox_rate_limit_per_minute' => $sandbox], 'rate_limit_update', ['actor_id' => $actor->id]);
++
++        return $client->refresh();
++    }
++
++    /**
++     * Resolves which integration client (and environment) an OAuth client id belongs to: the primary
++     * credential on integration_clients, or an ACTIVE row in integration_client_keys.
++     *
++     * @return array{client:IntegrationClient, environment:string, key_id:?string}|null
++     */
++    public function resolveCredential(string $oauthClientId): ?array
++    {
++        $client = IntegrationClient::where('oauth_client_id', $oauthClientId)->first();
++        if ($client !== null) {
++            return ['client' => $client, 'environment' => (string) ($client->environment ?: 'production'), 'key_id' => null];
++        }
++        $key = DB::table('integration_client_keys')->where(['oauth_client_id' => $oauthClientId, 'status' => 'ACTIVE'])->first();
++        if ($key === null || ! ($client = IntegrationClient::find($key->integration_client_id))) {
++            return null;
++        }
++
++        return ['client' => $client, 'environment' => (string) $key->environment, 'key_id' => (string) $key->id];
++    }
++
++    /** @param 'allowed'|'denied'|'rate_limited' $outcome */
++    public function meter(IntegrationClient $client, string $environment, string $scope, string $outcome): void
++    {
++        $col = ['allowed' => 'allowed_count', 'denied' => 'denied_count', 'rate_limited' => 'rate_limited_count'][$outcome];
++        DB::statement(
++            "insert into integration_client_usage (id, integration_client_id, usage_date, environment, scope, {$col}, created_at, updated_at)
++             values (?, ?, ?, ?, ?, 1, now(), now())
++             on conflict (integration_client_id, usage_date, environment, scope)
++             do update set {$col} = integration_client_usage.{$col} + 1, updated_at = now()",
++            [(string) Str::uuid(), $client->id, now()->toDateString(), $environment, Str::limit($scope, 120, '')],
++        );
++    }
++
++    /** @return list<object> */
++    public function usage(IntegrationClient $client, string $from, string $to): array
++    {
++        return DB::table('integration_client_usage')->where('integration_client_id', $client->id)
++            ->whereBetween('usage_date', [$from, $to])->orderBy('usage_date')->orderBy('environment')->orderBy('scope')
++            ->get(['usage_date', 'environment', 'scope', 'allowed_count', 'denied_count', 'rate_limited_count'])->all();
++    }
++
++    /** @param list<string> $scopes */
++    public function grantConsent(IntegrationClient $client, string $tenantId, array $scopes, ?string $expiresAt, User $actor): object
++    {
++        if ($client->status !== 'ACTIVE') {
++            throw ValidationException::withMessages(['integration_client' => 'Consent can only be granted to an ACTIVE connection.']);
++        }
++        $scopes = array_values(array_unique($scopes));
++        $beyond = array_values(array_filter($scopes, fn (string $s) => ! $client->hasScope($s)));
++        if ($beyond !== []) {
++            throw ValidationException::withMessages(['scopes' => 'Consent cannot exceed the connection\'s own scopes: '.implode(', ', $beyond)]);
++        }
++
++        return DB::transaction(function () use ($client, $tenantId, $scopes, $expiresAt, $actor) {
++            DB::table('integration_client_consents')->where(['integration_client_id' => $client->id, 'tenant_id' => $tenantId, 'status' => 'GRANTED'])
++                ->update(['status' => 'REVOKED', 'revoked_at' => now(), 'revoked_by' => $actor->id, 'revocation_reason' => 'superseded', 'updated_at' => now()]);
++            $id = (string) Str::uuid();
++            DB::table('integration_client_consents')->insert([
++                'id' => $id, 'integration_client_id' => $client->id, 'tenant_id' => $tenantId, 'scopes' => json_encode($scopes, JSON_THROW_ON_ERROR),
++                'status' => 'GRANTED', 'granted_by' => $actor->id, 'granted_at' => now(), 'expires_at' => $expiresAt, 'created_at' => now(), 'updated_at' => now(),
++            ]);
++            $meta = ['integration_client_id' => $client->id, 'tenant_id' => $tenantId, 'scopes' => $scopes, 'expires_at' => $expiresAt];
++            $this->audit->record('integration.consent.granted', 'integration_client_consent', $id, $meta);
++            $this->outbox->record('integration.consent.granted', 'integration_client_consent', $id, $meta);
++
++            return DB::table('integration_client_consents')->find($id);
++        });
++    }
++
++    public function revokeConsent(string $consentId, string $tenantId, string $reason, User $actor): object
++    {
++        return DB::transaction(function () use ($consentId, $tenantId, $reason, $actor) {
++            $consent = DB::table('integration_client_consents')->where(['id' => $consentId, 'tenant_id' => $tenantId])->lockForUpdate()->first();
++            abort_if($consent === null, 404);
++            if ($consent->status !== 'GRANTED') {
++                throw ValidationException::withMessages(['status' => 'Only a granted consent can be revoked.']);
++            }
++            DB::table('integration_client_consents')->where('id', $consentId)->update(['status' => 'REVOKED', 'revoked_at' => now(), 'revoked_by' => $actor->id, 'revocation_reason' => $reason, 'updated_at' => now()]);
++            $meta = ['integration_client_id' => $consent->integration_client_id, 'tenant_id' => $tenantId];
++            $this->audit->record('integration.consent.revoked', 'integration_client_consent', $consentId, $meta, $reason);
++            $this->outbox->record('integration.consent.revoked', 'integration_client_consent', $consentId, $meta);
++
++            return DB::table('integration_client_consents')->find($consentId);
++        });
++    }
++
++    /** The live consent letting $client act for $tenantId with $scope ('*' = any scope the consent holds). */
++    public function activeConsent(IntegrationClient $client, string $tenantId, string $scope): ?object
++    {
++        $consent = DB::table('integration_client_consents')->where(['integration_client_id' => $client->id, 'tenant_id' => $tenantId, 'status' => 'GRANTED'])
++            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->orderByDesc('granted_at')->first();
++        if ($consent === null) {
++            return null;
++        }
++        $scopes = (array) json_decode((string) $consent->scopes, true);
++
++        return ($scope === '*' || in_array($scope, $scopes, true)) ? $consent : null;
++    }
++}
+diff --git a/app/Application/Integrations/Developer/Http/DeveloperPortalController.php b/app/Application/Integrations/Developer/Http/DeveloperPortalController.php
+new file mode 100644
+index 0000000..d85478e
+--- /dev/null
++++ b/app/Application/Integrations/Developer/Http/DeveloperPortalController.php
+@@ -0,0 +1,124 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Integrations\Developer\Http;
++
++use App\Application\Integrations\Developer\{DeveloperPortalService,OAuthScopeCatalogue,OidcDiscoveryService};
++use App\Domain\Tenancy\TenantContext;
++use App\Models\IntegrationClient;
++use Illuminate\Http\{JsonResponse,Request};
++use Illuminate\Support\Facades\DB;
++use Illuminate\Validation\Rule;
++
++/** REQ-API-006 / REQ-IAM-004 — developer portal API (agent B3). */
++final class DeveloperPortalController
++{
++    public function __construct(private readonly DeveloperPortalService $portal) {}
++
++    public function openidConfiguration(OidcDiscoveryService $oidc): JsonResponse
++    {
++        return response()->json($oidc->configuration())->header('Cache-Control', 'public, max-age=3600');
++    }
++
++    public function jwks(OidcDiscoveryService $oidc): JsonResponse
++    {
++        return response()->json($oidc->jwks())->header('Cache-Control', 'public, max-age=3600');
++    }
++
++    public function openapi(): JsonResponse
++    {
++        $path = base_path('docs/api/openapi.json');
++        abort_unless(is_file($path), 404);
++
++        return response()->json(json_decode((string) file_get_contents($path), true));
++    }
++
++    public function scopes(): JsonResponse
++    {
++        $data = [];
++        foreach (OAuthScopeCatalogue::SCOPES as $scope => $def) {
++            $data[] = ['scope' => $scope, 'description' => $def['description'], 'permissions' => $def['permissions']];
++        }
++
++        return response()->json(['data' => $data]);
++    }
++
++    public function clients(): JsonResponse
++    {
++        $keys = DB::table('integration_client_keys')->orderBy('created_at')->get(['id', 'integration_client_id', 'environment', 'oauth_client_id', 'label', 'status', 'last_used_at', 'revoked_at', 'created_at'])->groupBy('integration_client_id');
++
++        return response()->json(['data' => IntegrationClient::query()->orderBy('name')->get()->map(fn (IntegrationClient $c) => [
++            'id' => $c->id, 'name' => $c->name, 'status' => $c->status, 'environment' => $c->environment, 'client_id' => $c->client_id,
++            'scopes' => $c->scopes, 'permissions' => OAuthScopeCatalogue::permissionsFor((array) $c->scopes),
++            'rate_limit_per_minute' => $c->rate_limit_per_minute, 'sandbox_rate_limit_per_minute' => $c->sandbox_rate_limit_per_minute,
++            'last_used_at' => $c->last_used_at, 'keys' => array_values(($keys[$c->id] ?? collect())->all()),
++        ])->values()]);
++    }
++
++    public function issueKey(Request $r, IntegrationClient $client): JsonResponse
++    {
++        $d = $r->validate(['environment' => 'required|in:sandbox,production', 'label' => 'nullable|string|max:120']);
++        $out = $this->portal->issueKey($client, $d['environment'], $d['label'] ?? null, $r->user());
++
++        return response()->json(['data' => ['id' => $out['key']->id, 'environment' => $out['key']->environment, 'client_id' => $out['client_id'], 'client_secret' => $out['client_secret'], 'status' => $out['key']->status]], 201);
++    }
++
++    public function revokeKey(Request $r, IntegrationClient $client, string $key): JsonResponse
++    {
++        return response()->json(['data' => $this->portal->revokeKey($client, $key, $r->user())]);
++    }
++
++    public function rateLimits(Request $r, IntegrationClient $client): JsonResponse
++    {
++        $d = $r->validate(['rate_limit_per_minute' => 'required|integer|min:1|max:1000', 'sandbox_rate_limit_per_minute' => 'required|integer|min:1|max:1000']);
++        $c = $this->portal->setRateLimits($client, (int) $d['rate_limit_per_minute'], (int) $d['sandbox_rate_limit_per_minute'], $r->user());
++
++        return response()->json(['data' => ['id' => $c->id, 'rate_limit_per_minute' => $c->rate_limit_per_minute, 'sandbox_rate_limit_per_minute' => $c->sandbox_rate_limit_per_minute]]);
++    }
++
++    public function usage(Request $r, IntegrationClient $client): JsonResponse
++    {
++        $d = $r->validate(['from' => 'nullable|date', 'to' => 'nullable|date|after_or_equal:from']);
++
++        return response()->json(['data' => $this->portal->usage($client, $d['from'] ?? now()->subDays(30)->toDateString(), $d['to'] ?? now()->toDateString())]);
++    }
++
++    public function partnerUsage(Request $r): JsonResponse
++    {
++        /** @var IntegrationClient $client */
++        $client = $r->attributes->get('integration_client');
++
++        return response()->json(['data' => [
++            'environment' => $r->attributes->get('integration_environment'),
++            'permissions' => $r->attributes->get('integration_permissions'),
++            'usage' => $this->portal->usage($client, now()->subDays(30)->toDateString(), now()->toDateString()),
++        ]]);
++    }
++
++    public function consents(TenantContext $tenant): JsonResponse
++    {
++        return response()->json(['data' => DB::table('integration_client_consents')->where('tenant_id', $tenant->id())->orderByDesc('granted_at')->get()
++            ->map(fn ($c) => [...(array) $c, 'scopes' => json_decode((string) $c->scopes, true)])->values()]);
++    }
++
++    public function grantConsent(Request $r, TenantContext $tenant): JsonResponse
++    {
++        $d = $r->validate([
++            'integration_client_id' => 'required|uuid|exists:integration_clients,id',
++            'scopes' => 'required|array|min:1',
++            'scopes.*' => ['string', Rule::in(OAuthScopeCatalogue::scopes())],
++            'expires_at' => 'nullable|date|after:now',
++        ]);
++        $c = $this->portal->grantConsent(IntegrationClient::findOrFail($d['integration_client_id']), $tenant->id(), $d['scopes'], $d['expires_at'] ?? null, $r->user());
++
++        return response()->json(['data' => [...(array) $c, 'scopes' => json_decode((string) $c->scopes, true)]], 201);
++    }
++
++    public function revokeConsent(Request $r, TenantContext $tenant, string $consent): JsonResponse
++    {
++        $d = $r->validate(['reason' => 'required|string|max:500']);
++
++        return response()->json(['data' => $this->portal->revokeConsent($consent, $tenant->id(), $d['reason'], $r->user())]);
++    }
++}
+diff --git a/app/Application/Integrations/Developer/OAuthScopeCatalogue.php b/app/Application/Integrations/Developer/OAuthScopeCatalogue.php
+new file mode 100644
+index 0000000..f7f640a
+--- /dev/null
++++ b/app/Application/Integrations/Developer/OAuthScopeCatalogue.php
+@@ -0,0 +1,65 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Integrations\Developer;
++
++use App\Application\Identity\Rbac\PermissionCatalogue;
++
++/**
++ * REQ-IAM-004 — the OAuth scopes a client-credentials (partner) token may carry, each mapped to the
++ * permission strings it stands for. Every mapped permission MUST exist in the governed permission
++ * catalogue (PermissionCatalogue::all()) — enforced by tests/Feature/Batch16/DeveloperPlatform — so a
++ * scope can never grant something the RBAC model does not know about. This is the single list used by
++ * Passport::tokensCan(), client registration validation, OIDC discovery and the OpenAPI generator.
++ */
++final class OAuthScopeCatalogue
++{
++    /** @var array<string, array{description:string, permissions:list<string>}> */
++    public const SCOPES = [
++        'quotes.read' => ['description' => 'Read quote requests and offers', 'permissions' => ['quotes.read']],
++        'quotes.write' => ['description' => 'Submit quote requests', 'permissions' => ['quotes.manage', 'quotes.rate']],
++        'policies.read' => ['description' => 'Read policy and certificate data', 'permissions' => ['policies.read']],
++        'policies.write' => ['description' => 'Submit issuance, endorsement and cancellation requests', 'permissions' => ['policies.cancellation.request', 'policies.reinstatement.request']],
++        'claims.read' => ['description' => 'Read claim status', 'permissions' => ['claims.view']],
++        'claims.write' => ['description' => 'Submit FNOL and claim updates', 'permissions' => ['claims.evidence.manage']],
++        'settlements.read' => ['description' => 'Read settlement and bordereau data', 'permissions' => ['settlement.read', 'bordereaux.view']],
++        'webhooks.manage' => ['description' => 'Manage webhook subscriptions', 'permissions' => ['integrations.manage']],
++    ];
++
++    /** @return list<string> */
++    public static function scopes(): array
++    {
++        return array_keys(self::SCOPES);
++    }
++
++    /** @return array<string,string> scope => description (Passport::tokensCan shape) */
++    public static function descriptions(): array
++    {
++        return array_map(static fn (array $s) => $s['description'], self::SCOPES);
++    }
++
++    /** @param list<string> $scopes @return list<string> */
++    public static function permissionsFor(array $scopes): array
++    {
++        $out = [];
++        foreach ($scopes as $scope) {
++            $defs = $scope === '*' ? array_values(self::SCOPES) : (isset(self::SCOPES[$scope]) ? [self::SCOPES[$scope]] : []);
++            foreach ($defs as $def) {
++                array_push($out, ...$def['permissions']);
++            }
++        }
++        $out = array_values(array_unique($out));
++        sort($out);
++
++        return $out;
++    }
++
++    /** Permissions referenced by a scope but missing from the governed catalogue (must be empty). @return list<string> */
++    public static function unknownPermissions(): array
++    {
++        $catalogue = PermissionCatalogue::all();
++
++        return array_values(array_filter(self::permissionsFor(['*']), static fn (string $p) => ! isset($catalogue[$p])));
++    }
++}
+diff --git a/app/Application/Integrations/Developer/OidcDiscoveryService.php b/app/Application/Integrations/Developer/OidcDiscoveryService.php
+new file mode 100644
+index 0000000..f024e7c
+--- /dev/null
++++ b/app/Application/Integrations/Developer/OidcDiscoveryService.php
+@@ -0,0 +1,74 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Integrations\Developer;
++
++use Laravel\Passport\Passport;
++use RuntimeException;
++
++/**
++ * REQ-IAM-004 — OAuth 2.1 / OIDC discovery metadata and the JWKS derived from Passport's own RSA
++ * signing key (the key Passport signs every access token with), so relying parties can verify tokens
++ * without a shared secret. Only endpoints that really exist are advertised (Passport's /oauth/token and
++ * /oauth/authorize); no userinfo endpoint is claimed because none is implemented.
++ */
++final class OidcDiscoveryService
++{
++    public function configuration(): array
++    {
++        $issuer = rtrim((string) config('app.url'), '/');
++
++        return [
++            'issuer' => $issuer,
++            'authorization_endpoint' => $issuer.'/oauth/authorize',
++            'token_endpoint' => $issuer.'/oauth/token',
++            'jwks_uri' => $issuer.'/.well-known/jwks.json',
++            'scopes_supported' => OAuthScopeCatalogue::scopes(),
++            'response_types_supported' => ['code'],
++            'grant_types_supported' => ['authorization_code', 'client_credentials', 'refresh_token'],
++            'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post'],
++            'code_challenge_methods_supported' => ['S256'],
++            'subject_types_supported' => ['public'],
++            'id_token_signing_alg_values_supported' => ['RS256'],
++            'token_endpoint_auth_signing_alg_values_supported' => ['RS256'],
++            'service_documentation' => $issuer.'/api/v1/developer/openapi.json',
++        ];
++    }
++
++    /** @return array{keys: list<array<string,string>>} */
++    public function jwks(): array
++    {
++        $pem = $this->publicKeyPem();
++        $key = openssl_pkey_get_public($pem);
++        $details = $key ? openssl_pkey_get_details($key) : false;
++        if (! $details || ($details['type'] ?? null) !== OPENSSL_KEYTYPE_RSA) {
++            throw new RuntimeException('Passport public key is missing or not an RSA key.');
++        }
++        $n = self::b64url($details['rsa']['n']);
++        $e = self::b64url($details['rsa']['e']);
++        // RFC 7638 JWK thumbprint as the key id.
++        $kid = self::b64url(hash('sha256', json_encode(['e' => $e, 'kty' => 'RSA', 'n' => $n], JSON_UNESCAPED_SLASHES), true));
++
++        return ['keys' => [['kty' => 'RSA', 'use' => 'sig', 'alg' => 'RS256', 'kid' => $kid, 'n' => $n, 'e' => $e]]];
++    }
++
++    private function publicKeyPem(): string
++    {
++        $configured = config('passport.public_key');
++        if (is_string($configured) && $configured !== '') {
++            return str_replace('\\n', "\n", $configured);
++        }
++        $path = Passport::keyPath('oauth-public.key');
++        if (! is_file($path)) {
++            throw new RuntimeException('Passport public key not found.');
++        }
++
++        return (string) file_get_contents($path);
++    }
++
++    private static function b64url(string $bin): string
++    {
++        return rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
++    }
++}
+diff --git a/app/Interfaces/Http/Middleware/AuthenticateIntegrationClient.php b/app/Interfaces/Http/Middleware/AuthenticateIntegrationClient.php
+index ae65626..8b28cd3 100644
+--- a/app/Interfaces/Http/Middleware/AuthenticateIntegrationClient.php
++++ b/app/Interfaces/Http/Middleware/AuthenticateIntegrationClient.php
+@@ -5,10 +5,11 @@ declare(strict_types=1);
+ namespace App\Interfaces\Http\Middleware;
+ 
+ use App\Application\Audit\AuditWriter;
++use App\Application\Integrations\Developer\{DeveloperPortalService,OAuthScopeCatalogue};
+ use App\Models\IntegrationClient;
+ use Closure;
+ use Illuminate\Http\Request;
+-use Illuminate\Support\Facades\{Auth,RateLimiter};
++use Illuminate\Support\Facades\{Auth,DB,RateLimiter};
+ use Symfony\Component\HttpFoundation\Response;
+ 
+ /**
+@@ -23,9 +24,17 @@ use Symfony\Component\HttpFoundation\Response;
+  * limit. integration_clients is the authorization source of truth
+  * regardless of what the token itself claims — a revoked or suspended
+  * connection is rejected even with an otherwise-valid token.
++ *
++ * REQ-API-006 (agent B3): the token may also belong to an additional key of the
++ * client (integration_client_keys — e.g. a sandbox key, usable from SANDBOX_ENABLED
++ * onwards with its own sandbox rate limit); every decision is metered per client /
++ * environment / scope; and a call carrying X-OpesInsure-On-Behalf-Of: <tenant id>
++ * needs that tenant's live consent covering the required scope (delegated access).
+  */
+ final class AuthenticateIntegrationClient
+ {
++    public const ON_BEHALF_OF_HEADER = 'X-OpesInsure-On-Behalf-Of';
++
+     public function handle(Request $request, Closure $next, string $requiredScope): Response
+     {
+         $oauthClient = Auth::guard('api')->client();
+@@ -36,38 +45,75 @@ final class AuthenticateIntegrationClient
+             return response()->json(['error' => 'unauthenticated', 'message' => 'A valid bearer token is required.'], 401);
+         }
+ 
+-        $client = IntegrationClient::where('oauth_client_id', $oauthClient->getKey())->first();
++        $portal = app(DeveloperPortalService::class);
++        $credential = $portal->resolveCredential((string) $oauthClient->getKey());
++        $client = $credential['client'] ?? null;
++        $environment = $credential['environment'] ?? 'production';
++        $isKey = ($credential['key_id'] ?? null) !== null;
++        $allowedStatuses = $isKey && $environment === 'sandbox' ? DeveloperPortalService::SANDBOX_STATUSES : ['ACTIVE'];
++        $onBehalfOf = $request->header(self::ON_BEHALF_OF_HEADER);
++        $consent = null;
+ 
+         $denialReason = match (true) {
+             $client === null => 'unknown_client',
+-            $client->status !== 'ACTIVE' => 'connection_not_active',
++            ! in_array($client->status, $allowedStatuses, true) => 'connection_not_active',
+             $requiredScope !== '*' && ! $client->hasScope($requiredScope) => 'scope_not_granted',
+             $client->allowed_ips && ! in_array($request->ip(), $client->allowed_ips, true) => 'ip_not_allowed',
+-            ! $this->withinRateLimit($client) => 'rate_limited',
++            $onBehalfOf !== null && ($consent = $this->consent($portal, $client, (string) $onBehalfOf, $requiredScope)) === null => 'consent_missing',
+             default => null,
+         };
+ 
++        $limit = $client ? ($isKey && $environment === 'sandbox' ? (int) $client->sandbox_rate_limit_per_minute : (int) $client->rate_limit_per_minute) : 0;
++        $limiterKey = $client ? 'integration-client:'.$client->id.($isKey ? ':'.$environment : '') : '';
++        if ($denialReason === null && ! $this->withinRateLimit($limiterKey, $limit)) {
++            $denialReason = 'rate_limited';
++        }
++
+         if ($denialReason !== null) {
+             app(AuditWriter::class)->record('integration.request.denied', 'integration_client', $client?->id, ['scope' => $requiredScope, 'ip' => $request->ip()], $denialReason);
++            if ($client !== null) {
++                $portal->meter($client, $environment, $requiredScope, $denialReason === 'rate_limited' ? 'rate_limited' : 'denied');
++            }
++
++            $response = response()->json(['error' => 'access_denied', 'message' => 'Request denied.'], $denialReason === 'rate_limited' ? 429 : 403);
+ 
+-            return response()->json(['error' => 'access_denied', 'message' => 'Request denied.'], $denialReason === 'rate_limited' ? 429 : 403);
++            return $denialReason === 'rate_limited' ? $this->withLimitHeaders($response, $limiterKey, $limit) : $response;
+         }
+ 
+         $client->update(['last_used_at' => now()]);
+-        app(AuditWriter::class)->record('integration.request.allowed', 'integration_client', $client->id, ['scope' => $requiredScope]);
++        if ($isKey) {
++            DB::table('integration_client_keys')->where('id', $credential['key_id'])->update(['last_used_at' => now()]);
++        }
++        app(AuditWriter::class)->record('integration.request.allowed', 'integration_client', $client->id, ['scope' => $requiredScope, 'environment' => $environment]);
++        $portal->meter($client, $environment, $requiredScope, 'allowed');
+ 
++        $scopes = $consent !== null ? array_values(array_filter((array) json_decode((string) $consent->scopes, true), fn ($s) => $client->hasScope($s))) : (array) $client->scopes;
+         $request->attributes->set('integration_client', $client);
++        $request->attributes->set('integration_environment', $environment);
++        $request->attributes->set('integration_permissions', OAuthScopeCatalogue::permissionsFor($scopes));
++        if ($consent !== null) {
++            $request->attributes->set('delegated_tenant_id', (string) $onBehalfOf);
++            $request->attributes->set('integration_consent_id', $consent->id);
++        }
+ 
+-        return $next($request);
++        return $this->withLimitHeaders($next($request), $limiterKey, $limit);
+     }
+ 
+-    private function withinRateLimit(IntegrationClient $client): bool
++    private function consent(DeveloperPortalService $portal, IntegrationClient $client, string $tenantId, string $scope): ?object
+     {
+-        return RateLimiter::attempt(
+-            'integration-client:'.$client->id,
+-            $client->rate_limit_per_minute,
+-            fn () => true,
+-            60,
+-        );
++        return preg_match('/^[0-9a-f-]{36}$/i', $tenantId) ? $portal->activeConsent($client, $tenantId, $scope) : null;
++    }
++
++    private function withinRateLimit(string $key, int $limit): bool
++    {
++        return RateLimiter::attempt($key, max(1, $limit), fn () => true, 60);
++    }
++
++    private function withLimitHeaders(Response $response, string $key, int $limit): Response
++    {
++        $response->headers->set('X-RateLimit-Limit', (string) $limit);
++        $response->headers->set('X-RateLimit-Remaining', (string) max(0, RateLimiter::remaining($key, max(1, $limit))));
++
++        return $response;
+     }
+ }
+diff --git a/app/Models/IntegrationClient.php b/app/Models/IntegrationClient.php
+index 499dd7f..17d7127 100644
+--- a/app/Models/IntegrationClient.php
++++ b/app/Models/IntegrationClient.php
+@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo,HasMany};
+ final class IntegrationClient extends Model
+ {
+     use HasUuids;
+-    protected $fillable = ['partner_id','name','client_id','client_secret_hash','oauth_client_id','scopes','allowed_ips','status','rate_limit_per_minute','environment','certified_at','certified_by','activated_at','revoked_at','revoked_by','revocation_reason','last_used_at'];
++    protected $fillable = ['partner_id','name','client_id','client_secret_hash','oauth_client_id','scopes','allowed_ips','status','rate_limit_per_minute','sandbox_rate_limit_per_minute','environment','certified_at','certified_by','activated_at','revoked_at','revoked_by','revocation_reason','last_used_at'];
+     protected function casts(): array { return ['scopes'=>'array','allowed_ips'=>'array','certified_at'=>'datetime','activated_at'=>'datetime','revoked_at'=>'datetime','last_used_at'=>'datetime']; }
+     public function partner(): BelongsTo { return $this->belongsTo(Partner::class); }
+     public function webhookSubscriptions(): HasMany { return $this->hasMany(IntegrationWebhookSubscription::class); }
+diff --git a/database/migrations/2026_10_18_160301_developer_platform_and_carrier_connectors.php b/database/migrations/2026_10_18_160301_developer_platform_and_carrier_connectors.php
+new file mode 100644
+index 0000000..f4d2e44
+--- /dev/null
++++ b/database/migrations/2026_10_18_160301_developer_platform_and_carrier_connectors.php
+@@ -0,0 +1,126 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++/**
++ * Agent B3 — REQ-API-006 (developer portal: sandbox keys, usage metering, per-client limits, consent),
++ * REQ-API-007 (carrier connector framework) and REQ-IAM-004 support columns.
++ *
++ * Extends existing tables wherever possible: integration_clients (limits), carrier_exchange_messages
++ * (retry/backoff + manual fallback queue — no separate queue table), external_record_mappings (conflict
++ * resolution). claim_carrier_signing_keys stays the one carrier key table (reused for all carrier traffic).
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('integration_clients', function (Blueprint $t): void {
++            $t->unsignedInteger('sandbox_rate_limit_per_minute')->default(30);
++        });
++
++        // Additional credentials of one integration client (sandbox keys, rotated production keys).
++        // Each row is a real Passport client-credentials client.
++        Schema::create('integration_client_keys', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('integration_client_id')->constrained()->cascadeOnDelete();
++            $t->string('environment', 16); // sandbox|production
++            $t->uuid('oauth_client_id')->unique();
++            $t->string('label', 120)->nullable();
++            $t->string('status', 16)->default('ACTIVE'); // ACTIVE|REVOKED
++            $t->foreignUuid('created_by')->nullable()->constrained('users');
++            $t->timestampTz('last_used_at')->nullable();
++            $t->timestampTz('revoked_at')->nullable();
++            $t->foreignUuid('revoked_by')->nullable()->constrained('users');
++            $t->timestampsTz();
++            $t->index(['integration_client_id', 'status']);
++        });
++
++        // Daily usage buckets per client / environment / scope (metering).
++        Schema::create('integration_client_usage', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('integration_client_id')->constrained()->cascadeOnDelete();
++            $t->date('usage_date');
++            $t->string('environment', 16);
++            $t->string('scope', 120);
++            $t->unsignedBigInteger('allowed_count')->default(0);
++            $t->unsignedBigInteger('denied_count')->default(0);
++            $t->unsignedBigInteger('rate_limited_count')->default(0);
++            $t->timestampsTz();
++            $t->unique(['integration_client_id', 'usage_date', 'environment', 'scope'], 'icu_client_day_env_scope_unique');
++        });
++
++        // A tenant's consent for a partner client to act on its data, limited to a subset of the client's scopes.
++        Schema::create('integration_client_consents', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('integration_client_id')->constrained()->cascadeOnDelete();
++            $t->foreignUuid('tenant_id')->constrained();
++            $t->jsonb('scopes');
++            $t->string('status', 16)->default('GRANTED'); // GRANTED|REVOKED
++            $t->foreignUuid('granted_by')->constrained('users');
++            $t->timestampTz('granted_at');
++            $t->timestampTz('expires_at')->nullable();
++            $t->timestampTz('revoked_at')->nullable();
++            $t->foreignUuid('revoked_by')->nullable()->constrained('users');
++            $t->text('revocation_reason')->nullable();
++            $t->timestampsTz();
++            $t->index(['integration_client_id', 'tenant_id', 'status']);
++        });
++
++        Schema::create('carrier_connector_configs', function (Blueprint $t): void {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('carrier_id')->unique()->constrained();
++            $t->foreignUuid('integration_client_id')->nullable()->constrained(); // for external_record_mappings
++            $t->string('transport', 16); // API|MANUAL
++            $t->text('base_url_encrypted')->nullable();
++            $t->jsonb('endpoints')->default('{}'); // message_type => path
++            $t->string('signing_key_id', 64)->nullable(); // claim_carrier_signing_keys.key_id
++            $t->unsignedSmallInteger('timeout_seconds')->default(15);
++            $t->unsignedSmallInteger('max_attempts')->default(5);
++            $t->unsignedInteger('base_backoff_seconds')->default(60);
++            $t->string('status', 16)->default('ACTIVE'); // ACTIVE|DISABLED
++            $t->foreignUuid('updated_by')->nullable()->constrained('users');
++            $t->timestampsTz();
++        });
++
++        Schema::table('carrier_exchange_messages', function (Blueprint $t): void {
++            $t->timestampTz('last_attempted_at')->nullable();
++            $t->unsignedSmallInteger('last_response_status')->nullable();
++            $t->timestampTz('fallback_queued_at')->nullable();
++            $t->text('fallback_reason')->nullable();
++            $t->timestampTz('fallback_resolved_at')->nullable();
++            $t->foreignUuid('fallback_resolved_by')->nullable()->constrained('users');
++            $t->string('fallback_resolution', 32)->nullable(); // SENT_MANUALLY|REQUEUED|CANCELLED
++            $t->text('fallback_note')->nullable();
++            $t->index(['status', 'next_attempt_at']);
++        });
++
++        Schema::table('external_record_mappings', function (Blueprint $t): void {
++            $t->timestampTz('conflict_detected_at')->nullable();
++            $t->timestampTz('conflict_resolved_at')->nullable();
++            $t->foreignUuid('conflict_resolved_by')->nullable()->constrained('users');
++            $t->string('conflict_resolution', 32)->nullable(); // KEEP_OPESINSURE|ACCEPT_EXTERNAL
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('external_record_mappings', function (Blueprint $t): void {
++            $t->dropConstrainedForeignId('conflict_resolved_by');
++            $t->dropColumn(['conflict_detected_at', 'conflict_resolved_at', 'conflict_resolution']);
++        });
++        Schema::table('carrier_exchange_messages', function (Blueprint $t): void {
++            $t->dropIndex(['status', 'next_attempt_at']);
++            $t->dropConstrainedForeignId('fallback_resolved_by');
++            $t->dropColumn(['last_attempted_at', 'last_response_status', 'fallback_queued_at', 'fallback_reason', 'fallback_resolved_at', 'fallback_resolution', 'fallback_note']);
++        });
++        Schema::dropIfExists('carrier_connector_configs');
++        Schema::dropIfExists('integration_client_consents');
++        Schema::dropIfExists('integration_client_usage');
++        Schema::dropIfExists('integration_client_keys');
++        Schema::table('integration_clients', function (Blueprint $t): void {
++            $t->dropColumn('sandbox_rate_limit_per_minute');
++        });
++    }
++};

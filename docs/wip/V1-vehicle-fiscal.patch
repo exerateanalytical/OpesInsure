@@ -1,0 +1,968 @@
+diff --git a/app/Application/Vehicles/Power/FiscalPowerBands.php b/app/Application/Vehicles/Power/FiscalPowerBands.php
+new file mode 100644
+index 0000000..bc2ab8d
+--- /dev/null
++++ b/app/Application/Vehicles/Power/FiscalPowerBands.php
+@@ -0,0 +1,36 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Vehicles\Power;
++
++use Illuminate\Support\Facades\DB;
++use InvalidArgumentException;
++
++/**
++ * Automobile stamp duty fiscal-power bands (vehicle_fiscal_power_bands: CV_02_07, CV_08_13, CV_14_20, CV_GT_20).
++ * VPWR-008: the band is derived from the verified fiscal_power_cv only — this class has no hp / kW / PS input.
++ */
++final class FiscalPowerBands
++{
++    /** @return list<object> */
++    public function all(): array
++    {
++        return DB::table('vehicle_fiscal_power_bands')->orderBy('sort_order')->get()->all();
++    }
++
++    /** Band code for a fiscal CV, or null when the value is below the lowest band (no band = no automatic duty). */
++    public function codeFor(int $fiscalPowerCv): ?string
++    {
++        if ($fiscalPowerCv <= 0) {
++            throw new InvalidArgumentException('VPWR-004: fiscal_power_cv must be a positive integer.');
++        }
++        foreach ($this->all() as $band) {
++            if ($fiscalPowerCv >= (int) $band->min_cv && ($band->max_cv === null || $fiscalPowerCv <= (int) $band->max_cv)) {
++                return $band->code;
++            }
++        }
++
++        return null;
++    }
++}
+diff --git a/app/Application/Vehicles/Power/FiscalPowerService.php b/app/Application/Vehicles/Power/FiscalPowerService.php
+new file mode 100644
+index 0000000..0df3cbe
+--- /dev/null
++++ b/app/Application/Vehicles/Power/FiscalPowerService.php
+@@ -0,0 +1,374 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Vehicles\Power;
++
++use App\Application\Cases\CaseService;
++use App\Application\Events\OutboxWriter;
++use App\Models\User;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++use Throwable;
++
++/**
++ * Cameroon fiscal power (puissance administrative / CV fiscal) — vehicle_fiscal_power_records.
++ *
++ * Sources: CIVIC > Cameroon registration document > Cameroon authority data > manual entry backed by an uploaded
++ * authoritative document under maker-checker. There is NO calculation path (calculation_policy
++ * NO_AUTOMATIC_CALCULATION_UNTIL_OFFICIAL_FORMULA_VERIFIED): the value is never derived from hp, kW, PS, displacement,
++ * cylinders or model name (VPWR-003/006), and a technical unit is refused on input.
++ *
++ * Review workflow: DRAFT → SOURCE_ATTACHED (provenance) → PENDING_REVIEW (required fields) → VERIFIED (authorized
++ * reviewer ≠ maker) | REJECTED; a VERIFIED value is never overwritten (DB trigger, VPWR-007) — a new version
++ * supersedes it; conflicting authoritative values → CONFLICT_REVIEW_REQUIRED + a DATA_STEWARD case.
++ */
++final class FiscalPowerService
++{
++    public const SOURCE_PRIORITY = ['CIVIC' => 1, 'CAMEROON_REGISTRATION_DOCUMENT' => 2, 'CAMEROON_AUTHORITY_DATA' => 3, 'MANUAL_VERIFIED' => 4];
++
++    public const VERIFIED_STATUS = ['CIVIC' => 'VERIFIED_CIVIC', 'CAMEROON_REGISTRATION_DOCUMENT' => 'VERIFIED_REGISTRATION',
++        'CAMEROON_AUTHORITY_DATA' => 'VERIFIED_AUTHORITY_DATA', 'MANUAL_VERIFIED' => 'VERIFIED_MANUAL_DOCUMENT'];
++
++    /** Units / keys that are technical power and must never land in fiscal_power_cv (VPWR-003). */
++    private const TECHNICAL_UNITS = ['PS', 'CV_DIN', 'CV DIN', 'METRIC_PS', 'METRIC_HP', 'HP', 'BHP', 'MECHANICAL_HP', 'KW', 'KILOWATT'];
++
++    private const DERIVATION_KEYS = ['power_ps', 'power_hp', 'power_kw', 'displacement_cc', 'engine_capacity_cc', 'cylinder_count', 'derived_from', 'formula'];
++
++    public function __construct(
++        private readonly FiscalPowerBands $bands,
++        private readonly VehiclePowerAudit $audit,
++        private readonly OutboxWriter $outbox,
++    ) {}
++
++    public static function normalizeRegistration(?string $reg): ?string
++    {
++        $r = $reg === null ? '' : strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $reg));
++
++        return $r === '' ? null : $r;
++    }
++
++    /**
++     * Maker step: capture a fiscal power value. The record advances as far as its content allows
++     * (DRAFT → SOURCE_ATTACHED → PENDING_REVIEW); it never becomes VERIFIED here.
++     *
++     * @param  array{variant_id?: ?string, registration_number?: ?string, vin?: ?string, fiscal_power_cv: mixed, fiscal_power_unit?: string,
++     *   source_type?: string, source_reference?: string, source_document_id?: string, source_url?: string, effective_from?: string, effective_until?: string, notes?: string}  $d
++     */
++    public function submit(array $d, User $actor, ?string $tenantId = null): object
++    {
++        $this->guardNotTechnical($d);
++        $cv = $this->cv($d['fiscal_power_cv'] ?? null);
++        $source = $this->sourceType($d['source_type'] ?? null);
++        $reg = self::normalizeRegistration($d['registration_number'] ?? null);
++        if (empty($d['variant_id']) && $reg === null && empty($d['vin'])) {
++            throw ValidationException::withMessages(['variant_id' => 'A variant, registration number or VIN is required.']);
++        }
++
++        return DB::transaction(function () use ($d, $actor, $tenantId, $cv, $source, $reg) {
++            $key = $this->subjectKey($d['variant_id'] ?? null, $reg);
++            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['fiscal_power:'.$key]);
++            $version = (int) $this->subjectQuery($d['variant_id'] ?? null, $reg)->max('version') + 1;
++            $id = (string) Str::uuid();
++            DB::table('vehicle_fiscal_power_records')->insert([
++                'id' => $id, 'tenant_id' => $reg !== null ? $tenantId : null, 'variant_id' => $d['variant_id'] ?? null, 'registration_number' => $reg, 'vin' => $d['vin'] ?? null,
++                'version' => $version, 'review_state' => 'DRAFT', 'fiscal_power_cv' => $cv, 'fiscal_power_band_code' => null,
++                'source_type' => $source, 'source_reference' => $d['source_reference'] ?? null, 'source_document_id' => $d['source_document_id'] ?? null,
++                'source_url' => $d['source_url'] ?? null, 'jurisdiction' => 'CM', 'effective_from' => $d['effective_from'] ?? now()->toDateString(),
++                'effective_until' => $d['effective_until'] ?? null, 'verification_status' => 'PENDING_FISCAL_POWER_VERIFICATION',
++                'created_by' => $actor->id, 'notes' => $d['notes'] ?? null, 'created_at' => now(), 'updated_at' => now(),
++            ]);
++            $this->audit->record('vehicle_fiscal_power_record', $id, 'fiscal_power.drafted', null, 'DRAFT', $actor->id, ['fiscal_power_cv' => $cv, 'source_type' => $source, 'version' => $version]);
++            $this->advance($id, $actor);
++
++            return $this->find($id);
++        });
++    }
++
++    /** DRAFT → SOURCE_ATTACHED: attach provenance to a draft (then auto-advances to PENDING_REVIEW when complete). */
++    public function attachSource(string $id, array $d, User $actor): object
++    {
++        $this->guardNotTechnical($d);
++
++        return DB::transaction(function () use ($id, $d, $actor) {
++            $r = $this->lock($id);
++            if ($r->review_state !== 'DRAFT') {
++                throw ValidationException::withMessages(['review_state' => "Provenance can only be attached to a DRAFT record (is {$r->review_state})."]);
++            }
++            $upd = array_filter(['source_type' => isset($d['source_type']) ? $this->sourceType($d['source_type']) : null, 'source_reference' => $d['source_reference'] ?? null,
++                'source_document_id' => $d['source_document_id'] ?? null, 'source_url' => $d['source_url'] ?? null,
++                'fiscal_power_cv' => array_key_exists('fiscal_power_cv', $d) ? $this->cv($d['fiscal_power_cv']) : null], fn ($v) => $v !== null);
++            DB::table('vehicle_fiscal_power_records')->where('id', $id)->update($upd + ['updated_at' => now()]);
++            $this->advance($id, $actor);
++
++            return $this->find($id);
++        });
++    }
++
++    /**
++     * Checker step (POST .../fiscal-power/verify): PENDING_REVIEW → VERIFIED by an authorized reviewer who is not the
++     * maker; the previous VERIFIED version is SUPERSEDED (history kept). A different verified value for the same subject
++     * is not overwritten: the record goes to CONFLICT_REVIEW_REQUIRED and a conflict case is opened.
++     */
++    public function verify(string $id, User $actor, ?string $notes = null, ?string $tenantId = null): object
++    {
++        return DB::transaction(function () use ($id, $actor, $notes, $tenantId) {
++            $r = $this->lock($id);
++            if ($r->review_state !== 'PENDING_REVIEW') {
++                throw ValidationException::withMessages(['review_state' => "Only a PENDING_REVIEW record can be verified (is {$r->review_state})."]);
++            }
++            if (in_array($actor->id, array_filter([$r->created_by, $r->submitted_by]), true)) {
++                throw ValidationException::withMessages(['actor' => 'Maker-checker: the reviewer must differ from the person who captured the fiscal power.']);
++            }
++            $this->assertProvenance($r);
++            $current = $this->currentRow($r->variant_id, $r->registration_number, null, $r->id);
++            if ($current && (int) $current->fiscal_power_cv !== (int) $r->fiscal_power_cv) {
++                $this->conflict($r, $current, $actor, $tenantId, 'Two authoritative fiscal power values disagree.');
++
++                return $this->find($id);
++            }
++
++            return $this->markVerified($r, $current, $actor, $notes);
++        });
++    }
++
++    public function reject(string $id, User $actor, string $reason): object
++    {
++        return DB::transaction(function () use ($id, $actor, $reason) {
++            $r = $this->lock($id);
++            if (! in_array($r->review_state, ['DRAFT', 'SOURCE_ATTACHED', 'PENDING_REVIEW', 'CONFLICT_REVIEW_REQUIRED'], true)) {
++                throw ValidationException::withMessages(['review_state' => "A {$r->review_state} record cannot be rejected."]);
++            }
++            DB::table('vehicle_fiscal_power_records')->where('id', $id)->update(['review_state' => 'REJECTED', 'verification_status' => 'RETIRED', 'updated_at' => now()]);
++            DB::table('vehicle_fiscal_power_conflicts')->where('status', 'OPEN')->where('record_id', $id)
++                ->update(['status' => 'RESOLVED', 'resolved_by' => $actor->id, 'resolved_at' => now(), 'resolution' => 'Challenger rejected: '.$reason, 'updated_at' => now()]);
++            $this->audit->record('vehicle_fiscal_power_record', $id, 'fiscal_power.rejected', $r->review_state, 'REJECTED', $actor->id, [], $reason);
++
++            return $this->find($id);
++        });
++    }
++
++    /**
++     * POST .../fiscal-power/conflict: an authoritative source reports a value different from the verified one. The
++     * challenger is stored as a new version in CONFLICT_REVIEW_REQUIRED (never overwriting) and a case is opened.
++     */
++    public function reportConflict(array $d, User $actor, ?string $tenantId = null): object
++    {
++        $this->guardNotTechnical($d);
++        $cv = $this->cv($d['fiscal_power_cv'] ?? null);
++        $source = $this->sourceType($d['source_type'] ?? null);
++        if ($cv === null || $source === null || blank($d['source_reference'] ?? null)) {
++            throw ValidationException::withMessages(['source_reference' => 'A conflicting value needs fiscal_power_cv, source_type and source_reference.']);
++        }
++        $reg = self::normalizeRegistration($d['registration_number'] ?? null);
++
++        return DB::transaction(function () use ($d, $actor, $tenantId, $cv, $source, $reg) {
++            $current = $this->currentRow($d['variant_id'] ?? null, $reg) ?? throw ValidationException::withMessages(['variant_id' => 'No verified fiscal power to conflict with.']);
++            $version = (int) $this->subjectQuery($d['variant_id'] ?? null, $reg)->max('version') + 1;
++            $id = (string) Str::uuid();
++            DB::table('vehicle_fiscal_power_records')->insert([
++                'id' => $id, 'tenant_id' => $reg !== null ? $tenantId : null, 'variant_id' => $d['variant_id'] ?? null, 'registration_number' => $reg, 'vin' => $d['vin'] ?? null,
++                'version' => $version, 'review_state' => 'PENDING_REVIEW', 'fiscal_power_cv' => $cv, 'source_type' => $source, 'source_reference' => $d['source_reference'],
++                'source_document_id' => $d['source_document_id'] ?? null, 'source_url' => $d['source_url'] ?? null, 'jurisdiction' => 'CM',
++                'effective_from' => $d['effective_from'] ?? now()->toDateString(), 'verification_status' => 'PENDING_FISCAL_POWER_VERIFICATION',
++                'created_by' => $actor->id, 'submitted_by' => $actor->id, 'notes' => $d['notes'] ?? null, 'created_at' => now(), 'updated_at' => now(),
++            ]);
++            $this->conflict($this->find($id), $current, $actor, $tenantId, $d['notes'] ?? 'Conflicting authoritative fiscal power reported.');
++
++            return $this->find($id);
++        });
++    }
++
++    /** Checker resolves a conflict: keep the verified value (challenger rejected) or accept the challenger (new version supersedes). */
++    public function resolveConflict(string $conflictId, bool $acceptChallenger, User $actor, string $reason): object
++    {
++        return DB::transaction(function () use ($conflictId, $acceptChallenger, $actor, $reason) {
++            $c = DB::table('vehicle_fiscal_power_conflicts')->where('id', $conflictId)->lockForUpdate()->first() ?? abort(404);
++            if ($c->status !== 'OPEN') {
++                throw ValidationException::withMessages(['status' => 'The conflict is already resolved.']);
++            }
++            $challenger = $this->lock($c->record_id);
++            if (in_array($actor->id, array_filter([$challenger->created_by, $challenger->submitted_by]), true)) {
++                throw ValidationException::withMessages(['actor' => 'Maker-checker: the reviewer must differ from the person who captured the fiscal power.']);
++            }
++            if ($acceptChallenger) {
++                $this->assertProvenance($challenger);
++                $this->markVerified($challenger, $this->currentRow($challenger->variant_id, $challenger->registration_number, null, $challenger->id), $actor, $reason);
++            } else {
++                DB::table('vehicle_fiscal_power_records')->where('id', $challenger->id)->update(['review_state' => 'REJECTED', 'verification_status' => 'RETIRED', 'updated_at' => now()]);
++            }
++            DB::table('vehicle_fiscal_power_conflicts')->where('id', $conflictId)->update(['status' => 'RESOLVED', 'resolved_by' => $actor->id, 'resolved_at' => now(),
++                'resolution' => ($acceptChallenger ? 'CHALLENGER_ACCEPTED: ' : 'VERIFIED_VALUE_KEPT: ').$reason, 'updated_at' => now()]);
++            $this->audit->record('vehicle_fiscal_power_conflict', $conflictId, 'fiscal_power.conflict_resolved', 'OPEN', 'RESOLVED', $actor->id, ['accept_challenger' => $acceptChallenger], $reason);
++
++            return DB::table('vehicle_fiscal_power_conflicts')->where('id', $conflictId)->first();
++        });
++    }
++
++    /**
++     * The VERIFIED fiscal power applicable on $at: a vehicle-specific record (registration) first, else the variant's.
++     *
++     * @return array{record_id: string, fiscal_power_cv: int, fiscal_power_band_code: ?string, source_type: string, source_reference: string, verification_status: string, verified_at: ?string, version: int}|null
++     */
++    public function currentFor(?string $variantId, ?string $registration, ?string $at = null): ?array
++    {
++        $reg = self::normalizeRegistration($registration);
++        $row = ($reg !== null ? $this->currentRow(null, $reg, $at) : null) ?? ($variantId ? $this->currentRow($variantId, null, $at) : null);
++
++        return $row ? ['record_id' => $row->id, 'fiscal_power_cv' => (int) $row->fiscal_power_cv, 'fiscal_power_band_code' => $row->fiscal_power_band_code,
++            'source_type' => $row->source_type, 'source_reference' => $row->source_reference, 'source_document_id' => $row->source_document_id,
++            'verification_status' => $row->verification_status, 'verified_at' => $row->verified_at, 'version' => (int) $row->version,
++            'subject' => $row->registration_number !== null ? 'REGISTRATION' : 'VARIANT'] : null;
++    }
++
++    public function find(string $id): object
++    {
++        return DB::table('vehicle_fiscal_power_records')->where('id', $id)->first() ?? abort(404);
++    }
++
++    // ------------------------------------------------------------------ internals
++
++    private function advance(string $id, User $actor): void
++    {
++        $r = $this->find($id);
++        if ($r->review_state === 'DRAFT' && $this->hasProvenance($r)) {
++            DB::table('vehicle_fiscal_power_records')->where('id', $id)->update(['review_state' => 'SOURCE_ATTACHED', 'updated_at' => now()]);
++            $this->audit->record('vehicle_fiscal_power_record', $id, 'fiscal_power.source_attached', 'DRAFT', 'SOURCE_ATTACHED', $actor->id, ['source_type' => $r->source_type, 'source_reference' => $r->source_reference]);
++            $r = $this->find($id);
++        }
++        if ($r->review_state === 'SOURCE_ATTACHED' && $r->fiscal_power_cv !== null && $r->effective_from !== null && $r->jurisdiction !== null) {
++            DB::table('vehicle_fiscal_power_records')->where('id', $id)->update(['review_state' => 'PENDING_REVIEW', 'submitted_by' => $actor->id, 'updated_at' => now()]);
++            $this->audit->record('vehicle_fiscal_power_record', $id, 'fiscal_power.submitted', 'SOURCE_ATTACHED', 'PENDING_REVIEW', $actor->id);
++        }
++    }
++
++    private function markVerified(object $r, ?object $current, User $actor, ?string $notes): object
++    {
++        $band = $this->bands->codeFor((int) $r->fiscal_power_cv);
++        if ($current) {
++            $until = now()->parse($r->effective_from)->subDay()->toDateString();
++            DB::table('vehicle_fiscal_power_records')->where('id', $current->id)->update(['review_state' => 'SUPERSEDED',
++                'effective_until' => $current->effective_from <= $until ? $until : $current->effective_from, 'updated_at' => now()]);
++            $this->audit->record('vehicle_fiscal_power_record', $current->id, 'fiscal_power.superseded', 'VERIFIED', 'SUPERSEDED', $actor->id, ['superseded_by' => $r->id]);
++        }
++        DB::table('vehicle_fiscal_power_records')->where('id', $r->id)->update(['review_state' => 'VERIFIED', 'verification_status' => self::VERIFIED_STATUS[$r->source_type],
++            'fiscal_power_band_code' => $band, 'verified_by' => $actor->id, 'verified_at' => now(), 'supersedes_id' => $current?->id, 'updated_at' => now()]);
++        $this->audit->record('vehicle_fiscal_power_record', $r->id, 'fiscal_power.verified', $r->review_state, 'VERIFIED', $actor->id,
++            ['fiscal_power_cv' => (int) $r->fiscal_power_cv, 'band' => $band, 'source_type' => $r->source_type, 'source_reference' => $r->source_reference], $notes);
++        $this->outbox->record('vehicle.fiscal_power.verified', 'vehicle_fiscal_power_record', $r->id, ['variant_id' => $r->variant_id, 'fiscal_power_cv' => (int) $r->fiscal_power_cv,
++            'fiscal_power_band_code' => $band, 'verification_status' => self::VERIFIED_STATUS[$r->source_type], 'version' => (int) $r->version, 'supersedes_id' => $current?->id]);
++
++        return $this->find($r->id);
++    }
++
++    private function conflict(object $challenger, object $current, User $actor, ?string $tenantId, string $note): void
++    {
++        DB::table('vehicle_fiscal_power_records')->where('id', $challenger->id)->update(['review_state' => 'CONFLICT_REVIEW_REQUIRED', 'verification_status' => 'CONFLICT_REVIEW_REQUIRED', 'updated_at' => now()]);
++        $conflictId = (string) Str::uuid();
++        $caseId = null;
++        if ($tenantId !== null) {
++            try {
++                $caseId = app(CaseService::class)->open($tenantId, 'DATA_STEWARD', [
++                    'title' => 'Fiscal power conflict: '.($challenger->registration_number ?? $challenger->variant_id)." ({$current->fiscal_power_cv} CV vs {$challenger->fiscal_power_cv} CV)",
++                    'subject_type' => 'vehicle_fiscal_power_record', 'subject_id' => $challenger->id, 'source_type' => 'vehicle_fiscal_power_conflict', 'source_id' => $conflictId,
++                    'idempotency_key' => 'fiscal-power-conflict:'.$challenger->id,
++                ], $actor)->id;
++            } catch (Throwable $e) {
++                report($e);
++            }
++        }
++        DB::table('vehicle_fiscal_power_conflicts')->insert(['id' => $conflictId, 'record_id' => $challenger->id, 'conflicting_record_id' => $current->id,
++            'values' => json_encode(['verified' => ['fiscal_power_cv' => (int) $current->fiscal_power_cv, 'source_type' => $current->source_type, 'source_reference' => $current->source_reference],
++                'challenger' => ['fiscal_power_cv' => (int) $challenger->fiscal_power_cv, 'source_type' => $challenger->source_type, 'source_reference' => $challenger->source_reference]]),
++            'case_id' => $caseId, 'status' => 'OPEN', 'created_by' => $actor->id, 'created_at' => now(), 'updated_at' => now()]);
++        $this->audit->record('vehicle_fiscal_power_record', $challenger->id, 'fiscal_power.conflict_detected', $challenger->review_state, 'CONFLICT_REVIEW_REQUIRED', $actor->id,
++            ['conflict_id' => $conflictId, 'verified_record_id' => $current->id, 'case_id' => $caseId], $note);
++        $this->outbox->record('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', $challenger->id, ['conflict_id' => $conflictId,
++            'verified_record_id' => $current->id, 'verified_cv' => (int) $current->fiscal_power_cv, 'challenger_cv' => (int) $challenger->fiscal_power_cv, 'case_id' => $caseId]);
++    }
++
++    private function currentRow(?string $variantId, ?string $reg, ?string $at = null, ?string $exceptId = null): ?object
++    {
++        $at ??= now()->toDateString();
++
++        return $this->subjectQuery($variantId, $reg)->where('review_state', 'VERIFIED')
++            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
++            ->whereDate('effective_from', '<=', $at)->where(fn ($q) => $q->whereNull('effective_until')->orWhereDate('effective_until', '>=', $at))
++            ->orderByDesc('version')->first()
++            // A just-verified future-dated value still counts as "the verified value" for conflict detection.
++            ?? ($exceptId ? $this->subjectQuery($variantId, $reg)->where('review_state', 'VERIFIED')->where('id', '!=', $exceptId)->orderByDesc('version')->first() : null);
++    }
++
++    private function subjectQuery(?string $variantId, ?string $reg)
++    {
++        $q = DB::table('vehicle_fiscal_power_records');
++
++        return $reg !== null ? $q->where('registration_number', $reg) : $q->where('variant_id', $variantId)->whereNull('registration_number');
++    }
++
++    private function subjectKey(?string $variantId, ?string $reg): string
++    {
++        return $reg !== null ? 'REG:'.$reg : 'VAR:'.$variantId;
++    }
++
++    private function lock(string $id): object
++    {
++        return DB::table('vehicle_fiscal_power_records')->where('id', $id)->lockForUpdate()->first() ?? abort(404);
++    }
++
++    private function hasProvenance(object $r): bool
++    {
++        return $r->source_type !== null && filled($r->source_reference) && ($r->source_type !== 'MANUAL_VERIFIED' || $r->source_document_id !== null);
++    }
++
++    /** VPWR-005: no VERIFIED status without approved provenance. */
++    private function assertProvenance(object $r): void
++    {
++        if (! $this->hasProvenance($r) || ! isset(self::SOURCE_PRIORITY[$r->source_type])) {
++            throw ValidationException::withMessages(['source_type' => 'VPWR-005: fiscal power without authoritative provenance cannot be VERIFIED.']);
++        }
++        if ($r->fiscal_power_cv === null || (int) $r->fiscal_power_cv <= 0) {
++            throw ValidationException::withMessages(['fiscal_power_cv' => 'VPWR-004: fiscal_power_cv must be a positive integer when verified.']);
++        }
++    }
++
++    /** VPWR-003 / VPWR-006: a technical unit or a derivation input is never accepted as fiscal power. */
++    private function guardNotTechnical(array $d): void
++    {
++        $unit = strtoupper(trim((string) ($d['fiscal_power_unit'] ?? $d['unit'] ?? 'CV_FISCAL')));
++        if ($unit !== 'CV_FISCAL') {
++            throw ValidationException::withMessages(['fiscal_power_unit' => in_array($unit, self::TECHNICAL_UNITS, true)
++                ? "VPWR-003: {$unit} is technical power and must never be stored in fiscal_power_cv." : 'fiscal_power_cv is expressed in CV_FISCAL only.']);
++        }
++        foreach (self::DERIVATION_KEYS as $k) {
++            if (array_key_exists($k, $d)) {
++                throw ValidationException::withMessages([$k => 'VPWR-006: fiscal power is never inferred from hp, kW, PS, displacement, cylinders or model; supply it from an authoritative source.']);
++            }
++        }
++    }
++
++    private function cv(mixed $v): ?int
++    {
++        if ($v === null || $v === '') {
++            return null;
++        }
++        if (is_int($v) || (is_string($v) && ctype_digit($v))) {
++            $n = (int) $v;
++            if ($n > 0 && $n <= 999) {
++                return $n;
++            }
++        }
++        throw ValidationException::withMessages(['fiscal_power_cv' => 'VPWR-004: fiscal_power_cv must be a positive integer (CV fiscal).']);
++    }
++
++    private function sourceType(mixed $v): ?string
++    {
++        if ($v === null || $v === '') {
++            return null;
++        }
++        $s = strtoupper((string) $v);
++
++        return isset(self::SOURCE_PRIORITY[$s]) ? $s : throw ValidationException::withMessages(['source_type' => 'Fiscal power source must be CIVIC, CAMEROON_REGISTRATION_DOCUMENT, CAMEROON_AUTHORITY_DATA or MANUAL_VERIFIED.']);
++    }
++}
+diff --git a/app/Application/Vehicles/Power/PowerUnits.php b/app/Application/Vehicles/Power/PowerUnits.php
+new file mode 100644
+index 0000000..58d0f5d
+--- /dev/null
++++ b/app/Application/Vehicles/Power/PowerUnits.php
+@@ -0,0 +1,83 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Vehicles\Power;
++
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Technical power units (Vehicle Power master technical_power_conversions). kW is canonical; mechanical hp and
++ * metric PS (CV DIN) are derived from kW with the configured constants and stored distinctly. The source value and
++ * unit are preserved separately. There is deliberately NO conversion to Cameroon fiscal CV (VPWR-006):
++ * fiscal power comes only from an authoritative source (FiscalPowerService).
++ */
++final class PowerUnits
++{
++    public const KW_TO_MECHANICAL_HP = 1.3410220896;
++
++    public const MECHANICAL_HP_TO_KW = 0.7456998716;
++
++    public const KW_TO_METRIC_PS = 1.3596216173;
++
++    public const METRIC_PS_TO_KW = 0.73549875;
++
++    public const STORAGE_DECIMALS = 3;
++
++    public const DISPLAY_DECIMALS = 1;
++
++    public const CONVERSION_METHOD = 'VPWR_CONV_V1_KW_CANONICAL';
++
++    public const SOURCE_UNITS = ['KW', 'MECHANICAL_HP', 'METRIC_PS'];
++
++    /** Unit aliases accepted on input; "CV" alone is ambiguous (fiscal vs DIN) and refused. */
++    private const ALIASES = ['KW' => 'KW', 'KILOWATT' => 'KW', 'HP' => 'MECHANICAL_HP', 'BHP' => 'MECHANICAL_HP', 'MECHANICAL_HP' => 'MECHANICAL_HP',
++        'PS' => 'METRIC_PS', 'CV_DIN' => 'METRIC_PS', 'CV DIN' => 'METRIC_PS', 'METRIC_PS' => 'METRIC_PS', 'METRIC_HP' => 'METRIC_PS'];
++
++    public static function unit(string $unit): string
++    {
++        return self::ALIASES[strtoupper(trim($unit))] ?? throw ValidationException::withMessages(['power_source_unit' => 'Unknown technical power unit (KW, MECHANICAL_HP or METRIC_PS). Fiscal CV is not a technical power unit.']);
++    }
++
++    public static function toKw(float $value, string $unit): float
++    {
++        return match (self::unit($unit)) {
++            'KW' => $value,
++            'MECHANICAL_HP' => $value * self::MECHANICAL_HP_TO_KW,
++            'METRIC_PS' => $value * self::METRIC_PS_TO_KW,
++        };
++    }
++
++    /**
++     * Normalize once from the source value (never re-convert a normalized value). A source hp / PS value is kept as
++     * given for its own unit; the other units are derived from kW.
++     *
++     * @return array{power_kw: float, power_hp: float, power_ps: float, power_source_value: float, power_source_unit: string, conversion_method: string}
++     */
++    public static function normalize(float $value, string $unit): array
++    {
++        if ($value <= 0) {
++            throw ValidationException::withMessages(['power_source_value' => 'VPWR-001: technical power must be greater than zero when known.']);
++        }
++        $unit = self::unit($unit);
++        $kw = self::toKw($value, $unit);
++
++        return [
++            'power_kw' => round($kw, self::STORAGE_DECIMALS),
++            'power_hp' => round($unit === 'MECHANICAL_HP' ? $value : $kw * self::KW_TO_MECHANICAL_HP, self::STORAGE_DECIMALS),
++            'power_ps' => round($unit === 'METRIC_PS' ? $value : $kw * self::KW_TO_METRIC_PS, self::STORAGE_DECIMALS),
++            'power_source_value' => round($value, self::STORAGE_DECIMALS),
++            'power_source_unit' => $unit,
++            'conversion_method' => self::CONVERSION_METHOD,
++        ];
++    }
++
++    public static function display(?float $value, bool $sourceInteger = false): ?string
++    {
++        if ($value === null) {
++            return null;
++        }
++
++        return $sourceInteger && floor($value) === $value ? (string) (int) $value : number_format($value, self::DISPLAY_DECIMALS, '.', '');
++    }
++}
+diff --git a/app/Application/Vehicles/Power/VehiclePowerAudit.php b/app/Application/Vehicles/Power/VehiclePowerAudit.php
+new file mode 100644
+index 0000000..ceb52c0
+--- /dev/null
++++ b/app/Application/Vehicles/Power/VehiclePowerAudit.php
+@@ -0,0 +1,22 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Vehicles\Power;
++
++use App\Application\Audit\AuditWriter;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++
++/** Append-only verification trail (vehicle_power_verification_audits) mirrored into the platform audit log. */
++final class VehiclePowerAudit
++{
++    public function __construct(private readonly AuditWriter $audit) {}
++
++    public function record(string $subjectType, string $subjectId, string $action, ?string $from, ?string $to, ?string $actorId, array $payload = [], ?string $reason = null): void
++    {
++        DB::table('vehicle_power_verification_audits')->insert(['id' => (string) Str::uuid(), 'subject_type' => $subjectType, 'subject_id' => $subjectId,
++            'action' => $action, 'from_state' => $from, 'to_state' => $to, 'actor_id' => $actorId, 'payload' => json_encode($payload, JSON_THROW_ON_ERROR), 'created_at' => now()]);
++        $this->audit->record('vehicle_power.'.$action, $subjectType, $subjectId, ['from' => $from, 'to' => $to] + $payload, $reason);
++    }
++}
+diff --git a/app/Application/Vehicles/Power/VehiclePowerService.php b/app/Application/Vehicles/Power/VehiclePowerService.php
+new file mode 100644
+index 0000000..a0652b7
+--- /dev/null
++++ b/app/Application/Vehicles/Power/VehiclePowerService.php
+@@ -0,0 +1,115 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Application\Vehicles\Power;
++
++use App\Models\User;
++use App\Models\Vehicles\VehicleVariant;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Str;
++use Illuminate\Validation\ValidationException;
++
++/**
++ * Technical power master (vehicle_power_specs) linked make → model → generation → variant → power specification.
++ * Normalizes once to kW (PowerUnits), preserves the source value / unit / provenance, versions every change and keeps
++ * vehicle_variants.power_kw / power_hp in sync for the existing pickers. Never touches fiscal power (VPWR-003/006).
++ */
++final class VehiclePowerService
++{
++    public const SOURCE_TYPES = ['OFFICIAL_MANUFACTURER_SPECIFICATION', 'TYPE_APPROVAL_OR_HOMOLOGATION', 'OFFICIAL_VEHICLE_DOCUMENT',
++        'TRUSTED_TECHNICAL_DATABASE', 'AUTHORIZED_DISTRIBUTOR', 'MANUAL_VERIFIED_ENTRY'];
++
++    public function __construct(private readonly VehiclePowerAudit $audit, private readonly FiscalPowerService $fiscal) {}
++
++    public function record(VehicleVariant $variant, array $d, User $actor): object
++    {
++        foreach (['fiscal_power_cv', 'fiscal_power', 'cv_fiscal', 'puissance_fiscale', 'puissance_administrative'] as $k) {
++            if (array_key_exists($k, $d)) {
++                throw ValidationException::withMessages([$k => 'VPWR-003: fiscal power is not technical power; record it through the fiscal-power workflow with an authoritative source.']);
++            }
++        }
++        if (! isset($d['power_source_value'], $d['power_source_unit']) || ! is_numeric($d['power_source_value'])) {
++            throw ValidationException::withMessages(['power_source_value' => 'A source power value and unit are required.']);
++        }
++        $sourceType = isset($d['power_source_type']) ? strtoupper((string) $d['power_source_type']) : null;
++        if ($sourceType !== null && ! in_array($sourceType, self::SOURCE_TYPES, true)) {
++            throw ValidationException::withMessages(['power_source_type' => 'Unknown technical power source type.']);
++        }
++        $n = PowerUnits::normalize((float) $d['power_source_value'], (string) $d['power_source_unit']);
++
++        return DB::transaction(function () use ($variant, $d, $actor, $n, $sourceType) {
++            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['vehicle_power_specs:'.$variant->id]);
++            $version = (int) DB::table('vehicle_power_specs')->where('variant_id', $variant->id)->max('version') + 1;
++            $id = (string) Str::uuid();
++            $status = $sourceType !== null && filled($d['power_source_reference'] ?? null) ? 'SOURCE_ATTACHED' : 'DRAFT';
++            DB::table('vehicle_power_specs')->insert([...$n, 'id' => $id, 'variant_id' => $variant->id, 'version' => $version, 'status' => $status,
++                'power_rpm' => $d['power_rpm'] ?? null, 'torque_nm' => $d['torque_nm'] ?? null, 'torque_rpm' => $d['torque_rpm'] ?? null,
++                'displacement_cc' => $d['displacement_cc'] ?? $variant->engine_capacity_cc,
++                'power_source_type' => $sourceType, 'power_source_name' => $d['power_source_name'] ?? null, 'power_source_reference' => $d['power_source_reference'] ?? null,
++                'power_source_url' => $d['power_source_url'] ?? null, 'power_verification_status' => 'UNVERIFIED',
++                'effective_from' => $d['effective_from'] ?? now()->toDateString(), 'effective_until' => $d['effective_until'] ?? null,
++                'created_by' => $actor->id, 'notes' => $d['notes'] ?? null, 'created_at' => now(), 'updated_at' => now()]);
++            // Existing picker columns keep working (power_hp there is an integer mechanical hp).
++            $variant->forceFill(['power_kw' => round($n['power_kw'], 2), 'power_hp' => (int) round($n['power_hp'])])->save();
++            $this->audit->record('vehicle_power_spec', $id, 'technical_power.recorded', null, $status, $actor->id,
++                ['variant_id' => $variant->id, 'version' => $version, 'source_value' => $n['power_source_value'], 'source_unit' => $n['power_source_unit'], 'power_kw' => $n['power_kw']]);
++
++            return DB::table('vehicle_power_specs')->where('id', $id)->first();
++        });
++    }
++
++    /** GET master-data/vehicles/{variant}/power */
++    public function show(VehicleVariant $variant): array
++    {
++        $specs = DB::table('vehicle_power_specs')->where('variant_id', $variant->id)->orderByDesc('version')->get();
++        $current = $specs->first();
++
++        return [
++            'variant_id' => $variant->id, 'variant_code' => $variant->code, 'model_id' => $variant->model_id, 'generation_id' => $variant->generation_id,
++            'technical_power' => $current ? $this->technical($current) : ($variant->power_kw !== null ? ['power_kw' => (float) $variant->power_kw, 'power_hp' => $variant->power_hp, 'power_ps' => null, 'source' => 'vehicle_variants'] : null),
++            'technical_power_versions' => $specs->map(fn ($s) => $this->technical($s))->values()->all(),
++            'fiscal_power' => $this->fiscal->currentFor($variant->id, null),
++            'fiscal_power_versions' => DB::table('vehicle_fiscal_power_records')->where('variant_id', $variant->id)->whereNull('registration_number')->orderByDesc('version')->get()->all(),
++        ];
++    }
++
++    /** GET master-data/vehicles/power/search */
++    public function search(array $f, int $limit = 50): array
++    {
++        $q = DB::table('vehicle_variants as v')->join('vehicle_models as m', 'm.id', '=', 'v.model_id')
++            ->leftJoin('vehicle_power_specs as s', fn ($j) => $j->on('s.variant_id', '=', 'v.id')->whereRaw('s.version = (SELECT max(version) FROM vehicle_power_specs x WHERE x.variant_id = v.id)'))
++            ->leftJoin('vehicle_fiscal_power_records as f', fn ($j) => $j->on('f.variant_id', '=', 'v.id')->whereNull('f.registration_number')->where('f.review_state', 'VERIFIED'))
++            ->select(['v.id as variant_id', 'v.code as variant_code', 'v.name as variant_name', 'm.code as model_code', 'm.make_id', 'v.model_id', 'v.generation_id',
++                's.power_kw', 's.power_hp', 's.power_ps', 's.power_source_unit', 'f.fiscal_power_cv', 'f.fiscal_power_band_code', 'f.verification_status as fiscal_power_verification_status']);
++        foreach (['make_id' => 'm.make_id', 'model_id' => 'v.model_id', 'generation_id' => 'v.generation_id', 'variant_id' => 'v.id', 'fiscal_power_cv' => 'f.fiscal_power_cv',
++            'fiscal_power_band_code' => 'f.fiscal_power_band_code', 'verification_status' => 'f.verification_status'] as $key => $col) {
++            if (filled($f[$key] ?? null)) {
++                $q->where($col, $f[$key]);
++            }
++        }
++        if (filled($f['q'] ?? null)) {
++            $q->where(fn ($w) => $w->where('v.name', 'ilike', '%'.$f['q'].'%')->orWhere('v.code', 'ilike', '%'.$f['q'].'%'));
++        }
++        foreach (['min_kw' => '>=', 'max_kw' => '<='] as $key => $op) {
++            if (is_numeric($f[$key] ?? null)) {
++                $q->where('s.power_kw', $op, (float) $f[$key]);
++            }
++        }
++
++        return $q->orderBy('v.code')->limit(min(max($limit, 1), 200))->get()->all();
++    }
++
++    private function technical(object $s): array
++    {
++        return ['id' => $s->id, 'version' => (int) $s->version, 'status' => $s->status,
++            'power_kw' => $s->power_kw !== null ? (float) $s->power_kw : null, 'power_hp' => $s->power_hp !== null ? (float) $s->power_hp : null,
++            'power_ps' => $s->power_ps !== null ? (float) $s->power_ps : null,
++            'display' => ['kw' => PowerUnits::display($s->power_kw !== null ? (float) $s->power_kw : null), 'hp' => PowerUnits::display($s->power_hp !== null ? (float) $s->power_hp : null),
++                'ps' => PowerUnits::display($s->power_ps !== null ? (float) $s->power_ps : null)],
++            'source' => ['value' => $s->power_source_value !== null ? (float) $s->power_source_value : null, 'unit' => $s->power_source_unit, 'type' => $s->power_source_type,
++                'name' => $s->power_source_name, 'reference' => $s->power_source_reference, 'url' => $s->power_source_url],
++            'conversion_method' => $s->conversion_method, 'power_verification_status' => $s->power_verification_status,
++            'effective_from' => $s->effective_from, 'effective_until' => $s->effective_until];
++    }
++}
+diff --git a/app/Application/Vehicles/VehicleDatasetImporter.php b/app/Application/Vehicles/VehicleDatasetImporter.php
+index 18c8f56..80cb779 100644
+--- a/app/Application/Vehicles/VehicleDatasetImporter.php
++++ b/app/Application/Vehicles/VehicleDatasetImporter.php
+@@ -176,7 +176,7 @@ final class VehicleDatasetImporter
+             'drive_type' => $this->drivetrain($row['drivetrain'] ?? null),
+             'body_type' => $this->bodyType($row['body_type'] ?? null) ?? $generation->body_type,
+             'engine_capacity_cc' => $this->int($row['displacement_cc'] ?? null, 30000),
+-            'power_hp' => $hp, 'power_kw' => $hp ? round($hp * 0.7457, 2) : null,
++            'power_hp' => $hp, 'power_kw' => $hp ? round($hp * \App\Application\Vehicles\Power\PowerUnits::MECHANICAL_HP_TO_KW, 2) : null,
+             'torque_nm' => $this->int($row['torque_nm'] ?? null, 5000),
+             'cylinders' => $this->int($row['cylinders'] ?? null, 24),
+             'year_from' => $this->year($row['gen_year_start'] ?? null), 'year_to' => $this->year($row['gen_year_end'] ?? null),
+diff --git a/app/Application/Vehicles/VehicleMasterAdminService.php b/app/Application/Vehicles/VehicleMasterAdminService.php
+index b2779f1..1b8e165 100644
+--- a/app/Application/Vehicles/VehicleMasterAdminService.php
++++ b/app/Application/Vehicles/VehicleMasterAdminService.php
+@@ -222,7 +222,7 @@ final class VehicleMasterAdminService
+         if (isset($attrs['power_kw'])) {
+             $attrs['power_kw'] = is_numeric($attrs['power_kw']) && $attrs['power_kw'] > 0 ? round((float) $attrs['power_kw'], 2) : throw ValidationException::withMessages(['power_kw' => 'Invalid power (kW).']);
+         } elseif (isset($attrs['power_hp']) && array_key_exists('power_hp', $data)) {
+-            $attrs['power_kw'] = round($attrs['power_hp'] * 0.7457, 2); // mechanical hp -> kW
++            $attrs['power_kw'] = round($attrs['power_hp'] * \App\Application\Vehicles\Power\PowerUnits::MECHANICAL_HP_TO_KW, 2); // mechanical hp -> kW
+         }
+         [$attrs['year_from'], $attrs['year_to']] = $this->years($attrs);
+ 
+diff --git a/database/migrations/2026_10_17_140101_create_vehicle_power_and_fiscal_power.php b/database/migrations/2026_10_17_140101_create_vehicle_power_and_fiscal_power.php
+new file mode 100644
+index 0000000..0b37049
+--- /dev/null
++++ b/database/migrations/2026_10_17_140101_create_vehicle_power_and_fiscal_power.php
+@@ -0,0 +1,276 @@
++<?php
++
++declare(strict_types=1);
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++use Illuminate\Support\Str;
++
++/**
++ * Agent V1 — Cameroon Vehicle Power & Fiscal Power Institutional Master v1
++ * (docs/spec/canonical/OpesInsure_Cameroon_Vehicle_Power_Fiscal_Power_Institutional_Master_v1.json).
++ *
++ * Additive; the existing vehicle master (vehicle_makes → models → generations → variants, risk_asset_vehicles,
++ * policy_vehicle_snapshots) and rating v2 (rating_charge_codes, rating_runs, rule_sets) are reused:
++ *  - vehicle_power_specs: technical power per variant, kW canonical, hp / PS derived, source value + unit preserved.
++ *  - vehicle_fiscal_power_records: Cameroon puissance administrative (CV fiscal) from authoritative sources only,
++ *    effective-dated versions, review workflow; a VERIFIED row is immutable (VPWR-007, DB trigger).
++ *  - vehicle_fiscal_power_conflicts: conflicting authoritative values (linked to a DATA_STEWARD case).
++ *  - vehicle_fiscal_power_bands, vehicle_stamp_duty_rate_schedules, vehicle_stamp_duty_rates: owner-provided baseline
++ *    (source_registry CM-DGI-CGI-2026, CM-DGI-LF2023-CIRCULAR). Schedules are seeded DRAFT and must be approved by a
++ *    checker in each environment before rating applies them.
++ *  - vehicle_power_verification_audits: append-only verification trail.
++ *  - Provenance is stored inline on each record (spec source_value_model); no separate vehicle_power_sources table
++ *    (vehicle_master_sources already registers dataset sources).
++ */
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('vehicle_power_specs', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('variant_id')->constrained('vehicle_variants');
++            $t->unsignedInteger('version');
++            $t->string('status', 32)->default('DRAFT');
++            $t->decimal('power_kw', 10, 3)->nullable();
++            $t->decimal('power_hp', 10, 3)->nullable();
++            $t->decimal('power_ps', 10, 3)->nullable();
++            $t->unsignedInteger('power_rpm')->nullable();
++            $t->unsignedInteger('torque_nm')->nullable();
++            $t->unsignedInteger('torque_rpm')->nullable();
++            $t->unsignedInteger('displacement_cc')->nullable();
++            $t->decimal('power_source_value', 12, 3)->nullable();
++            $t->string('power_source_unit', 16)->nullable();
++            $t->string('power_source_type', 48)->nullable();
++            $t->string('power_source_name', 191)->nullable();
++            $t->string('power_source_reference', 191)->nullable();
++            $t->string('power_source_url', 500)->nullable();
++            $t->timestampTz('power_verified_at')->nullable();
++            $t->string('power_verification_status', 32)->default('UNVERIFIED');
++            $t->string('conversion_method', 48);
++            $t->date('effective_from');
++            $t->date('effective_until')->nullable();
++            $t->foreignUuid('created_by')->nullable()->constrained('users');
++            $t->text('notes')->nullable();
++            $t->timestampsTz();
++            $t->unique(['variant_id', 'version']);
++            $t->index(['effective_from', 'effective_until']);
++        });
++        DB::statement("ALTER TABLE vehicle_power_specs ADD CONSTRAINT vps_unit_allowed CHECK (power_source_unit IS NULL OR power_source_unit IN ('KW','MECHANICAL_HP','METRIC_PS'))");
++        DB::statement('ALTER TABLE vehicle_power_specs ADD CONSTRAINT vps_kw_positive CHECK (power_kw IS NULL OR power_kw > 0)');
++        DB::statement("ALTER TABLE vehicle_power_specs ADD CONSTRAINT vps_status_allowed CHECK (status IN ('DRAFT','SOURCE_ATTACHED','PENDING_REVIEW','VERIFIED','SUPERSEDED','REJECTED'))");
++
++        Schema::create('vehicle_fiscal_power_bands', function (Blueprint $t) {
++            $t->string('code', 16)->primary();
++            $t->unsignedSmallInteger('min_cv');
++            $t->unsignedSmallInteger('max_cv')->nullable();
++            $t->string('label_fr', 80);
++            $t->string('label_en', 80);
++            $t->string('jurisdiction', 2)->default('CM');
++            $t->string('source_id', 64);
++            $t->unsignedSmallInteger('sort_order');
++            $t->timestampsTz();
++        });
++
++        Schema::create('vehicle_fiscal_power_records', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('tenant_id')->nullable()->constrained('tenants');
++            $t->foreignUuid('variant_id')->nullable()->constrained('vehicle_variants');
++            $t->string('registration_number', 40)->nullable();
++            $t->string('vin', 40)->nullable();
++            $t->unsignedInteger('version');
++            $t->string('review_state', 32)->default('DRAFT');
++            $t->unsignedSmallInteger('fiscal_power_cv')->nullable();
++            $t->string('fiscal_power_band_code', 16)->nullable();
++            $t->foreign('fiscal_power_band_code')->references('code')->on('vehicle_fiscal_power_bands');
++            $t->string('source_type', 40)->nullable();
++            $t->string('source_reference', 191)->nullable();
++            $t->uuid('source_document_id')->nullable();
++            $t->string('source_url', 500)->nullable();
++            $t->string('jurisdiction', 2)->default('CM');
++            $t->date('effective_from');
++            $t->date('effective_until')->nullable();
++            $t->string('verification_status', 40)->default('PENDING_FISCAL_POWER_VERIFICATION');
++            $t->foreignUuid('created_by')->nullable()->constrained('users');
++            $t->foreignUuid('submitted_by')->nullable()->constrained('users');
++            $t->foreignUuid('verified_by')->nullable()->constrained('users');
++            $t->timestampTz('verified_at')->nullable();
++            $t->uuid('supersedes_id')->nullable();
++            $t->text('notes')->nullable();
++            $t->timestampsTz();
++            $t->index('fiscal_power_cv');
++            $t->index('fiscal_power_band_code');
++            $t->index('verification_status');
++            $t->index('registration_number');
++            $t->index(['effective_from', 'effective_until']);
++        });
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_subject CHECK (variant_id IS NOT NULL OR registration_number IS NOT NULL OR vin IS NOT NULL)");
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_state_allowed CHECK (review_state IN ('DRAFT','SOURCE_ATTACHED','PENDING_REVIEW','VERIFIED','CONFLICT_REVIEW_REQUIRED','SUPERSEDED','REJECTED'))");
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_source_allowed CHECK (source_type IS NULL OR source_type IN ('CIVIC','CAMEROON_REGISTRATION_DOCUMENT','CAMEROON_AUTHORITY_DATA','MANUAL_VERIFIED'))");
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_verification_allowed CHECK (verification_status IN ('VERIFIED_CIVIC','VERIFIED_REGISTRATION','VERIFIED_AUTHORITY_DATA','VERIFIED_MANUAL_DOCUMENT','CONFLICT_REVIEW_REQUIRED','PENDING_FISCAL_POWER_VERIFICATION','RETIRED'))");
++        // VPWR-004 / VPWR-005: a VERIFIED value is a positive integer with provenance and a checker.
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_verified_provenance CHECK (review_state <> 'VERIFIED' OR (fiscal_power_cv > 0 AND source_type IS NOT NULL AND source_reference IS NOT NULL AND verified_by IS NOT NULL AND verified_at IS NOT NULL AND verification_status LIKE 'VERIFIED_%'))");
++        DB::statement("ALTER TABLE vehicle_fiscal_power_records ADD CONSTRAINT vfpr_manual_document CHECK (source_type IS DISTINCT FROM 'MANUAL_VERIFIED' OR review_state IN ('DRAFT','REJECTED') OR source_document_id IS NOT NULL)");
++        // VPWR-007: a VERIFIED value is never overwritten — only superseded by a new version.
++        DB::unprepared(<<<'SQL'
++CREATE OR REPLACE FUNCTION vfpr_verified_immutable() RETURNS trigger AS $$
++BEGIN
++  IF TG_OP = 'DELETE' THEN
++    IF OLD.review_state IN ('VERIFIED','SUPERSEDED') THEN RAISE EXCEPTION 'VPWR-007: verified fiscal power records cannot be deleted'; END IF;
++    RETURN OLD;
++  END IF;
++  IF OLD.review_state IN ('VERIFIED','SUPERSEDED') AND (
++       NEW.fiscal_power_cv IS DISTINCT FROM OLD.fiscal_power_cv OR NEW.source_type IS DISTINCT FROM OLD.source_type
++    OR NEW.source_reference IS DISTINCT FROM OLD.source_reference OR NEW.source_document_id IS DISTINCT FROM OLD.source_document_id
++    OR NEW.effective_from IS DISTINCT FROM OLD.effective_from OR NEW.verified_by IS DISTINCT FROM OLD.verified_by
++    OR NEW.verified_at IS DISTINCT FROM OLD.verified_at OR NEW.variant_id IS DISTINCT FROM OLD.variant_id
++    OR NEW.registration_number IS DISTINCT FROM OLD.registration_number
++    OR (OLD.review_state = 'SUPERSEDED' AND NEW.review_state <> 'SUPERSEDED')
++    OR (OLD.review_state = 'VERIFIED' AND NEW.review_state NOT IN ('VERIFIED','SUPERSEDED','CONFLICT_REVIEW_REQUIRED'))) THEN
++    RAISE EXCEPTION 'VPWR-007: a verified fiscal power value cannot be overwritten; create a new version';
++  END IF;
++  RETURN NEW;
++END $$ LANGUAGE plpgsql;
++CREATE TRIGGER vfpr_verified_immutable BEFORE UPDATE OR DELETE ON vehicle_fiscal_power_records FOR EACH ROW EXECUTE FUNCTION vfpr_verified_immutable();
++SQL);
++
++        Schema::create('vehicle_fiscal_power_conflicts', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('record_id')->constrained('vehicle_fiscal_power_records');
++            $t->foreignUuid('conflicting_record_id')->constrained('vehicle_fiscal_power_records');
++            $t->jsonb('values');
++            $t->uuid('case_id')->nullable();
++            $t->string('status', 16)->default('OPEN');
++            $t->foreignUuid('resolved_by')->nullable()->constrained('users');
++            $t->timestampTz('resolved_at')->nullable();
++            $t->text('resolution')->nullable();
++            $t->foreignUuid('created_by')->nullable()->constrained('users');
++            $t->timestampsTz();
++        });
++        DB::statement("ALTER TABLE vehicle_fiscal_power_conflicts ADD CONSTRAINT vfpc_status_allowed CHECK (status IN ('OPEN','RESOLVED'))");
++
++        Schema::create('vehicle_stamp_duty_rate_schedules', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->string('schedule_code', 64);
++            $t->unsignedInteger('version');
++            $t->string('status', 16)->default('DRAFT');
++            $t->string('label_fr', 191);
++            $t->string('jurisdiction', 2)->default('CM');
++            $t->string('currency', 3)->default('XAF');
++            $t->boolean('transport_license_required')->default(false);
++            $t->string('license_verification_status_required', 16)->nullable();
++            $t->date('effective_from');
++            $t->date('effective_until')->nullable();
++            $t->string('data_status', 32)->default('OWNER_PROVIDED');
++            $t->string('source_status', 48)->nullable();
++            $t->jsonb('source_ids')->default('[]');
++            $t->string('legal_reference', 255)->nullable();
++            $t->foreignUuid('created_by')->nullable()->constrained('users');
++            $t->foreignUuid('approved_by')->nullable()->constrained('users');
++            $t->timestampTz('approved_at')->nullable();
++            $t->timestampsTz();
++            $t->unique(['schedule_code', 'version']);
++            $t->index(['effective_from', 'effective_until']);
++        });
++        DB::statement("ALTER TABLE vehicle_stamp_duty_rate_schedules ADD CONSTRAINT vsds_status_allowed CHECK (status IN ('DRAFT','APPROVED','REJECTED'))");
++        DB::statement("ALTER TABLE vehicle_stamp_duty_rate_schedules ADD CONSTRAINT vsds_code_allowed CHECK (schedule_code IN ('PUBLIC_PASSENGER_AND_GOODS_TRANSPORT','OTHER_VEHICLES'))");
++        DB::statement('ALTER TABLE vehicle_stamp_duty_rate_schedules ADD CONSTRAINT vsds_maker_checker CHECK (approved_by IS NULL OR created_by IS NULL OR approved_by <> created_by)');
++
++        Schema::create('vehicle_stamp_duty_rates', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->foreignUuid('schedule_id')->constrained('vehicle_stamp_duty_rate_schedules')->cascadeOnDelete();
++            $t->string('band_code', 16);
++            $t->foreign('band_code')->references('code')->on('vehicle_fiscal_power_bands');
++            $t->unsignedBigInteger('rate_xaf');
++            $t->timestampsTz();
++            $t->unique(['schedule_id', 'band_code']);
++        });
++        // Approved rate versions are history: never edited (a change is a new schedule version).
++        DB::unprepared(<<<'SQL'
++CREATE OR REPLACE FUNCTION vsdr_approved_immutable() RETURNS trigger AS $$
++DECLARE s text;
++BEGIN
++  SELECT status INTO s FROM vehicle_stamp_duty_rate_schedules WHERE id = OLD.schedule_id;
++  IF s IS DISTINCT FROM 'DRAFT' THEN RAISE EXCEPTION 'Approved stamp duty rates are immutable; create a new schedule version'; END IF;
++  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
++  RETURN NEW;
++END $$ LANGUAGE plpgsql;
++CREATE TRIGGER vsdr_approved_immutable BEFORE UPDATE OR DELETE ON vehicle_stamp_duty_rates FOR EACH ROW EXECUTE FUNCTION vsdr_approved_immutable();
++SQL);
++
++        Schema::create('vehicle_power_verification_audits', function (Blueprint $t) {
++            $t->uuid('id')->primary();
++            $t->string('subject_type', 48);
++            $t->uuid('subject_id');
++            $t->string('action', 64);
++            $t->string('from_state', 32)->nullable();
++            $t->string('to_state', 32)->nullable();
++            $t->foreignUuid('actor_id')->nullable()->constrained('users');
++            $t->jsonb('payload')->default('{}');
++            $t->timestampTz('created_at');
++            $t->index(['subject_type', 'subject_id']);
++        });
++
++        Schema::table('rating_runs', fn (Blueprint $t) => $t->jsonb('fiscal_power_snapshot')->nullable());
++
++        // Rule engine: exemptions come only from rules (spec exemption_handling RULE_ENGINE_REQUIRED).
++        DB::statement('ALTER TABLE rule_sets DROP CONSTRAINT IF EXISTS rule_sets_domain_allowed');
++        DB::statement("ALTER TABLE rule_sets ADD CONSTRAINT rule_sets_domain_allowed CHECK (domain IN ('ELIGIBILITY','COMPLETENESS','UNDERWRITING','REFERRAL','DOCUMENTS','QUESTION_EFFECT','TAX_EXEMPTION'))");
++
++        $now = now();
++        DB::table('rating_charge_codes')->insertOrIgnore([
++            'code' => 'AUTOMOBILE_STAMP_DUTY', 'kind' => 'TAX', 'jurisdiction' => 'CM', 'name' => 'Droit de timbre automobile (automobile stamp duty)',
++            'default_basis' => 'FIXED', 'legal_reference' => 'Cameroon General Tax Code, automobile stamp duty provisions (CM-DGI-CGI-2026; CM-DGI-LF2023-CIRCULAR)',
++            'verification_status' => 'VERIFIED', 'open_question' => null, 'created_at' => $now, 'updated_at' => $now,
++        ]);
++
++        // Owner-provided baseline (spec cameroon_automobile_stamp_duty, source_registry CM-DGI-LF2023-CIRCULAR).
++        foreach ([
++            ['CV_02_07', 2, 7, '02 à 7 CV', '2 to 7 fiscal HP'],
++            ['CV_08_13', 8, 13, '08 à 13 CV', '8 to 13 fiscal HP'],
++            ['CV_14_20', 14, 20, '14 à 20 CV', '14 to 20 fiscal HP'],
++            ['CV_GT_20', 21, null, 'Plus de 20 CV', 'More than 20 fiscal HP'],
++        ] as $i => [$code, $min, $max, $fr, $en]) {
++            DB::table('vehicle_fiscal_power_bands')->insertOrIgnore(['code' => $code, 'min_cv' => $min, 'max_cv' => $max, 'label_fr' => $fr, 'label_en' => $en,
++                'jurisdiction' => 'CM', 'source_id' => 'CM-DGI-LF2023-CIRCULAR', 'sort_order' => $i + 1, 'created_at' => $now, 'updated_at' => $now]);
++        }
++        foreach ([
++            ['PUBLIC_PASSENGER_AND_GOODS_TRANSPORT', 'Véhicules de transport en commun de personnes et de marchandises', true, 'VALID', ['CV_02_07' => 15000, 'CV_08_13' => 25000, 'CV_14_20' => 50000, 'CV_GT_20' => 150000]],
++            ['OTHER_VEHICLES', 'Autres véhicules', false, null, ['CV_02_07' => 30000, 'CV_08_13' => 50000, 'CV_14_20' => 75000, 'CV_GT_20' => 200000]],
++        ] as [$code, $label, $licence, $licenceStatus, $rates]) {
++            if (DB::table('vehicle_stamp_duty_rate_schedules')->where('schedule_code', $code)->exists()) {
++                continue;
++            }
++            $id = (string) Str::uuid();
++            DB::table('vehicle_stamp_duty_rate_schedules')->insert(['id' => $id, 'schedule_code' => $code, 'version' => 1, 'status' => 'DRAFT', 'label_fr' => $label,
++                'jurisdiction' => 'CM', 'currency' => 'XAF', 'transport_license_required' => $licence, 'license_verification_status_required' => $licenceStatus,
++                // Effective date of the baseline is an owner question (OQ-VPWR-1): the current CGI (2026) is the cited primary source.
++                'effective_from' => '2026-01-01', 'data_status' => 'OWNER_PROVIDED', 'source_status' => 'VERIFIED_CURRENT_RULE_BASELINE',
++                'source_ids' => json_encode(['CM-DGI-CGI-2026', 'CM-DGI-LF2023-CIRCULAR']),
++                'legal_reference' => 'Cameroon General Tax Code, automobile stamp duty provisions', 'created_at' => $now, 'updated_at' => $now]);
++            foreach ($rates as $band => $xaf) {
++                DB::table('vehicle_stamp_duty_rates')->insert(['id' => (string) Str::uuid(), 'schedule_id' => $id, 'band_code' => $band, 'rate_xaf' => $xaf, 'created_at' => $now, 'updated_at' => $now]);
++            }
++        }
++    }
++
++    public function down(): void
++    {
++        DB::table('rule_sets')->where('domain', 'TAX_EXEMPTION')->delete();
++        DB::statement('ALTER TABLE rule_sets DROP CONSTRAINT IF EXISTS rule_sets_domain_allowed');
++        DB::statement("ALTER TABLE rule_sets ADD CONSTRAINT rule_sets_domain_allowed CHECK (domain IN ('ELIGIBILITY','COMPLETENESS','UNDERWRITING','REFERRAL','DOCUMENTS','QUESTION_EFFECT'))");
++        Schema::table('rating_runs', fn (Blueprint $t) => $t->dropColumn('fiscal_power_snapshot'));
++        DB::table('rating_charge_codes')->where('code', 'AUTOMOBILE_STAMP_DUTY')->delete();
++        Schema::dropIfExists('vehicle_power_verification_audits');
++        DB::unprepared('DROP TRIGGER IF EXISTS vsdr_approved_immutable ON vehicle_stamp_duty_rates; DROP FUNCTION IF EXISTS vsdr_approved_immutable();');
++        Schema::dropIfExists('vehicle_stamp_duty_rates');
++        Schema::dropIfExists('vehicle_stamp_duty_rate_schedules');
++        Schema::dropIfExists('vehicle_fiscal_power_conflicts');
++        DB::unprepared('DROP TRIGGER IF EXISTS vfpr_verified_immutable ON vehicle_fiscal_power_records; DROP FUNCTION IF EXISTS vfpr_verified_immutable();');
++        Schema::dropIfExists('vehicle_fiscal_power_records');
++        Schema::dropIfExists('vehicle_fiscal_power_bands');
++        Schema::dropIfExists('vehicle_power_specs');
++    }
++};
