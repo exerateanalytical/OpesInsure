@@ -212,6 +212,12 @@ final class PolicyIssuanceService
                 'occurred_at' => now(),
             ]);
 
+            // REQ-POL-002/003: immutable structured §84 snapshot = policy version 1 (bitemporal chronology).
+            app(\App\Application\Policies\Chronology\PolicyChronologyWriter::class)->record(
+                $policy, $policy->previous_policy_id ? 'RENEWAL' : 'ISSUANCE', $policy->coverage_starts_at,
+                ['source_type' => 'policy_issuance_request', 'source_id' => $request->id, 'actor_id' => $actor->id, 'authority' => $request->authority_snapshot],
+            );
+
             $this->event($request, $fromStatus, 'APPROVED', 'CARRIER_AUTHORIZED', $actor);
             $this->audit->record('policy.issued', 'policy', $policy->id, ['policy_number' => $policy->policy_number]);
             $this->outbox->record('policy.issued', 'policy', $policy->id, [
