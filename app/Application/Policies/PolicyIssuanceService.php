@@ -78,6 +78,8 @@ final class PolicyIssuanceService
 
             // REQ-KYC-001 gate on bind (tenant mode OFF | WARN | ENFORCE — App\Application\Kyc\KycGate).
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($tenant->id, $proposal->party_id, 'BIND', 'proposal', $proposal->id);
+            // REQ-AML-001 screening hold (tenant mode OFF | WARN | ENFORCE — App\Application\Compliance\Aml\Screening\ComplianceGate).
+            app(\App\Application\Compliance\Aml\Screening\ComplianceGate::class)->assertMayProceed($tenant->id, [$proposal->party_id], 'BIND', 'proposal', $proposal->id);
 
             $authoritySnapshot = ['mode' => 'CARRIER_REVIEW_REQUIRED'];
             $status = 'CARRIER_REVIEW';
@@ -170,6 +172,7 @@ final class PolicyIssuanceService
             }
             // REQ-KYC-001 gate on issue (KYC may have expired since the bind request).
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($request->tenant_id, $proposal->party_id, 'ISSUE', 'policy_issuance_request', $request->id);
+            app(\App\Application\Compliance\Aml\Screening\ComplianceGate::class)->assertMayProceed($request->tenant_id, [$proposal->party_id], 'ISSUE', 'policy_issuance_request', $request->id);
 
             // Renewals: when the proposal's quote came from a renewal case,
             // link the successor to the policy it renews (B14).

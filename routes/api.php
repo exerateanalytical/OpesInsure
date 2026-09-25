@@ -845,3 +845,18 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('claims/{claim}/late-report/decide', [$ct, 'decide'])->middleware('permission:claims.late_report.approve')->whereUuid('claim');
 });
 // End Agent C8
+// Agent E8 — REQ-AML-001 / REQ-KYC-004 PEP / sanctions / watchlist screening (App\Application\Compliance\Aml\Screening).
+Route::prefix('v1/aml/screening')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $sc = \App\Application\Compliance\Aml\Screening\Http\ScreeningController::class;
+    Route::get('lists', [$sc, 'sources'])->middleware('permission:aml.screening.view');
+    Route::post('lists', [$sc, 'storeSource'])->middleware('permission:aml.screening.lists.manage');
+    Route::post('lists/{source}/versions', [$sc, 'import'])->middleware('permission:aml.screening.lists.manage')->whereUuid('source');
+    Route::get('list-versions/{version}', [$sc, 'showVersion'])->middleware('permission:aml.screening.view')->whereUuid('version');
+    Route::post('list-versions/{version}/decide', [$sc, 'decideVersion'])->middleware('permission:aml.screening.lists.approve')->whereUuid('version');
+    Route::post('parties/{party}/screen', [$sc, 'screenParty'])->middleware('permission:aml.screening.run')->whereUuid('party');
+    Route::get('parties/{party}/status', [$sc, 'partyStatus'])->middleware('permission:aml.screening.view')->whereUuid('party');
+    Route::get('hits', [$sc, 'hits'])->middleware('permission:aml.screening.view');
+    Route::post('hits/{hit}/disposition', [$sc, 'propose'])->middleware('permission:aml.screening.disposition.propose')->whereUuid('hit');
+    Route::post('hits/{hit}/disposition/decide', [$sc, 'decide'])->middleware('permission:aml.screening.disposition.approve')->whereUuid('hit');
+});
+// End Agent E8
