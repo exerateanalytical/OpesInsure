@@ -617,6 +617,12 @@ return [
     ],
 
     // Agent CR — Batch 11/12 claims, legal, collections and SoD permissions (maker vs checker).
+    'claims_types' => [
+        'claims.types.manage' => ['description' => 'Draft claim type / reporting-deadline overrides for the tenant or a product (maker).', 'suggested_roles' => ['CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'claims.types.approve' => ['description' => 'Approve a claim type version (checker; must differ from the maker).', 'suggested_roles' => ['CLAIMS_MANAGER']],
+        'claims.late_report.recommend' => ['description' => 'Recommend accepting or rejecting a late-reported claim (maker).', 'suggested_roles' => ['CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
+        'claims.late_report.approve' => ['description' => 'Decide a late-reported claim (checker; must differ from the recommender).', 'suggested_roles' => ['CLAIMS_MANAGER']],
+    ],
     'claims_batch11_12' => [
         'claims.parties.manage' => ['description' => 'Add, update or remove parties (claimant, witness, third party) on a claim (maker).', 'suggested_roles' => ['CLAIMS_OFFICER', 'CLAIMS_MANAGER']],
         'claims.coverage.check' => ['description' => 'Run a coverage check against the policy as at the loss date.', 'suggested_roles' => ['CLAIMS_OFFICER', 'CLAIMS_MANAGER', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
