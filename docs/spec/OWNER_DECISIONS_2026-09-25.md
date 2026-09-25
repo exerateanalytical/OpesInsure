@@ -69,3 +69,10 @@ Stored at database/data/workflow_institutional_data_master_2026.json.
 - Rule: PENDING_SOURCE, CONFIG_REQUIRED, UNVERIFIED and DEMO_ONLY are not production values. Support them; never invent missing legal, regulatory, financial, tariff, authorization, SLA or KYC data.
 - Case families are now the owner's 10: KYC, UNDERWRITING, CLAIMS, FRAUD_REVIEW, COMPLAINT, FINANCE_EXCEPTION, PROVIDER, REINSURANCE, REGULATORY, OPERATIONS. They replace the 8 reconstructed families.
 - Beneficial ownership rule: MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS (VERIFIED_RULE).
+
+## Addendum 2026-09-25 (owner, via cloud session)
+- **Decision 27 clarified (AML screening):** automated name matching against sanction/PEP/watchlists that the tenant itself imports and approves
+  is compatible with decision 27, because every hit is dispositioned by a human (maker-checker). User-facing wording must say
+  "screened against your approved lists; matches reviewed by your compliance team", never that the platform performs or guarantees screening.
+- **Claims officers cannot approve a colleague's claim:** CLAIMS_OFFICER loses `*` and gets an explicit maker-only permission list (Batch 13–15 role pass).
+- **Permission catalogue:** every permission used by a route must be catalogued (drift test enforces it).
