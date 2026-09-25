@@ -102,6 +102,11 @@ final class DomainEventCatalogue
             // --- Already emitted by code, no spec alias ---
             $d('chargeback.resolved', 'chargeback', 'Payment chargeback resolved.', [], [], true),
             $d('claim.carrier_message.queued', 'claim', 'Message to carrier queued for a claim.', [], [], true),
+            $d('claim.carrier_message.received', 'claim', 'Inbound carrier message (signed API or approved manual entry) recorded for a claim.', [], [], true),
+            $d('claim.carrier_decision.received', 'claim', 'Carrier claim decision received through the claims execution mode.', [], [], true),
+            $d('claim.carrier_entry.proposed', 'claim', 'Manual entry of a carrier claim response proposed (maker).', [], [], true),
+            $d('claim.carrier_entry.approved', 'claim', 'Manual entry of a carrier claim response approved (checker).', [], [], true),
+            $d('claim.carrier_entry.rejected', 'claim', 'Manual entry of a carrier claim response rejected (checker).', [], [], true),
             $d('claim.dispute.resolved', 'claim', 'Claim dispute resolved.', [], [], true),
             // REQ-CLM-010 (App\Application\Claims\Assessment)
             $d('claim.assessment.recorded', 'claim', 'Claim assessment (recommendation) recorded.', [], [], true),

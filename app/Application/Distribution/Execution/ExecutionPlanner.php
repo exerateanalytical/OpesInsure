@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Distribution\Execution;
 
 use App\Application\Claims\Adapters\ClaimProviderRegistry;
+use App\Application\Claims\Execution\ClaimExecutionRegistry;
 use App\Application\Payments\ExecutionModes\PaymentExecutionRegistry;
 use App\Application\Policies\Adapters\PolicyIssuerRegistry;
 use App\Application\Quotes\Adapters\QuoteProviderRegistry;
@@ -18,7 +19,8 @@ use InvalidArgumentException;
 final class ExecutionPlanner
 {
     public const PORTS = ['quote' => QuoteProviderRegistry::class, 'underwriting' => UnderwritingProviderRegistry::class,
-        'issuance' => PolicyIssuerRegistry::class, 'claim' => ClaimProviderRegistry::class, 'payment' => PaymentExecutionRegistry::class];
+        'issuance' => PolicyIssuerRegistry::class, 'claim' => ClaimProviderRegistry::class, 'payment' => PaymentExecutionRegistry::class,
+        'claims' => ClaimExecutionRegistry::class];
 
     public function registry(string $port): AdapterRegistry
     {
