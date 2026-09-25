@@ -44,3 +44,6 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - CIMA readiness checklist (your spec §60, 28 items): the text isn't in the repo; a 29-item reconstruction is marked UNVERIFIED on the CIMA dashboard. Please paste the original list.
 - Insurer setup checklist (23 items) and broker setup checklist (19 items): mapped to SETUP_CONFIGURATION_FRAMEWORK steps (counts match). Confirm the wording.
 - Broker CIMA reporting subject codes (ISSUED/COLLECTED, BROKER_COMMISSION/AGENT_COMMISSION) are platform labels; rename if you prefer.
+- Party roles: the official CIMA list of person/party roles isn't in the repo; a 16-role working set is used with CIMA codes NULL. Please supply the official list.
+- Beneficial ownership threshold: 25% is configurable and marked UNVERIFIED (no CEMAC/CIMA source found). Confirm the legal threshold.
+- KYC: required documents per level (seeded as PLATFORM_DEFAULT_UNVERIFIED), KYC refresh periods (unset), and when to switch the bind/issue KYC gate from OFF to ENFORCE (per insurer). Also: which sanctions/PEP screening provider to integrate (only MANUAL screening exists).

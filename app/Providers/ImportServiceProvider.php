@@ -20,7 +20,8 @@ final class ImportServiceProvider extends ServiceProvider
 {
     public const HANDLERS = [
         ImportPipeline::APPROVAL_ACTION => ImportBatchApprovalHandler::class,
-        MasterDataMergeService::APPROVAL_ACTION => MasterDataMergeService::class,
+        // entity.merge is shared: the router sends party merges to PartyMergeService and the rest to MasterDataMergeService.
+        MasterDataMergeService::APPROVAL_ACTION => \App\Application\Customers\Matching\EntityMergeApprovalRouter::class,
     ];
 
     public function register(): void

@@ -245,6 +245,15 @@ return [
         'cases.str.view' => ['description' => 'View suspicious transaction report cases.', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
     ],
 
+    /** KYC on the case engine (REQ-KYC-001..003). kyc.review (maker) and kyc.decide (checker) are separate people per submission. */
+    'kyc' => [
+        'kyc.view' => ['description' => 'View KYC submissions, requirements, expiring KYC and party KYC status.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN']],
+        'kyc.manage' => ['description' => 'Open staff-assisted KYC, attach documents, submit, start remediation.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN']],
+        'kyc.review' => ['description' => 'Review KYC: start review, request information, set level, recommend (maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
+        'kyc.screen' => ['description' => 'Record sanctions / PEP screening results (MANUAL mode).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
+        'kyc.decide' => ['description' => 'Confirm or return a KYC recommendation (checker).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
+    ],
+
     /** Capability profile (REQ-AOM-001), insurer setup (REQ-SET-002), broker setup (REQ-SET-003). Platform configuration, not business data. */
     'capabilities_setup' => [
         'capability_profiles.view' => ['description' => 'View insurer capability profiles, resolved modes, maturity and pins.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN']],
@@ -317,14 +326,81 @@ return [
         ],
     ],
 
+    // Batch 4A — party golden record (REQ-PTY-002/003/004). Business data (module 'parties'). Reads use the
+    // existing parties.manage; merges are additionally bound by the approval matrix (entity.merge: maker ≠ checker).
+    'party_golden_record' => [
+        'parties.roles.manage' => [
+            'description' => 'Assign and end bitemporal party roles (policyholder, insured, beneficiary, payer …).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN', 'UNDERWRITER'],
+        ],
+        'parties.relationships.manage' => [
+            'description' => 'Record / end party relationships and ownership interests (UBO graph).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN'],
+        ],
+        'parties.match.review' => [
+            'description' => 'Run duplicate scans, review and dismiss probable-match candidates (data steward).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'COMPLIANCE_ADMIN', 'DATA_STEWARD'],
+        ],
+        'parties.merge.request' => [
+            'description' => 'Request a party merge with survivorship rules (entity.merge maker).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'COMPLIANCE_ADMIN', 'DATA_STEWARD'],
+        ],
+        'parties.merge.approve' => [
+            'description' => 'Approve / reject a party merge and reverse (unmerge) an applied one (entity.merge checker).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+    ],
+
+    'crm' => [
+        // Batch 4C — REQ-CRM-001/003/004 (routes/crm.php).
+        'crm.leads.read' => [
+            'description' => 'List/view the lead directory and its activities (a broker user sees only its own firm leads).',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER'],
+        ],
+        'crm.leads.manage' => [
+            'description' => 'Create leads, move them through the pipeline and log activities/follow-ups.',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER'],
+        ],
+        'crm.leads.assign' => [
+            'description' => 'Assign/reassign leads to an intermediary and/or a user (brokers only within their own firm).',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BRANCH_MANAGER'],
+        ],
+        'attribution.transfer' => [
+            'description' => 'Preview and execute a portfolio transfer between intermediaries (WF-079).',
+            'suggested_roles' => ['BROKER_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+        'beneficiaries.read' => [
+            'description' => 'View a policy current beneficiary designations and their history.',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'CARRIER_ADMIN', 'CLAIMS_OFFICER'],
+        ],
+        'beneficiaries.manage' => [
+            'description' => 'Replace a policy beneficiary designations (versioned; allocations must total 100 %).',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_STAFF', 'CARRIER_ADMIN'],
+        ],
+    ],
+
+    // Batch 4D — REQ-SRC-001 global search: each entity is searched only with its read permission
+    // (customers.read, policies.read, claims.view, risk_assets.read and the two below), then narrowed
+    // by DataScopeResolver. A caller whose widest scope is OWN searches only their own rows.
+    'risks_search' => [
+        'quotes.read' => [
+            'description' => 'Read quote requests and offers; includes quotes in GET /api/v1/search.',
+            'suggested_roles' => ['BRANCH_MANAGER', 'CUSTOMER_SERVICE', 'UNDERWRITER'],
+        ],
+        'documents.read' => [
+            'description' => 'Read documents (restricted levels also need documents.medical/financial/confidential/regulatory.read); includes documents in GET /api/v1/search.',
+            'suggested_roles' => ['CUSTOMER_SERVICE', 'CLAIMS_OFFICER', 'UNDERWRITER'],
+        ],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
-            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution',
+            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries',
         ],
-        'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve'],
+        'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'attribution.transfer'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],
     ],
 

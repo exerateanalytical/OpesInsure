@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\Kyc;
 
-use App\Application\Audit\AuditWriter;
 use App\Application\Customers\PartyService;
 use App\Application\Documents\MobileDocumentService;
-use App\Application\Events\OutboxWriter;
 use App\Application\Identity\PartyResolver;
 use App\Models\KycSubmission;
 use App\Models\Party;
 use App\Models\User;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -32,8 +28,11 @@ use Illuminate\Validation\ValidationException;
  * There is no OCR/identity-verification provider anywhere in this codebase
  * (confirmed by grep before writing this batch — see OcrAdapter's
  * docblock). A submission therefore only ever reaches DRAFT or SUBMITTED
- * here; APPROVED/REJECTED are reserved columns for a future staff decision
- * endpoint that does not exist yet — see the batch report.
+ * here.
+ *
+ * REQ-DUP-007 (KYC): this is now a thin customer adapter. Every rule — attach, submit, the KYC_REVIEW
+ * case, levels, screening, maker-checker decisions, expiry and remediation — lives in the canonical
+ * App\Application\Kyc\KycService; this class only resolves the caller's Party and Document ownership.
  */
 final class MobileKycService
 {
@@ -41,8 +40,7 @@ final class MobileKycService
         private PartyResolver $parties,
         private PartyService $partyService,
         private MobileDocumentService $documents,
-        private AuditWriter $audit,
-        private OutboxWriter $outbox,
+        private KycService $kyc,
     ) {
     }
 
@@ -86,81 +84,23 @@ final class MobileKycService
     {
         $party = $this->requireParty($user);
 
-        // Ownership (403 vs 404) reused from MobileDocumentService rather
-        // than re-implementing the owned()/ownedQuery() pair a third time.
+        // Ownership (403 vs 404) reused from MobileDocumentService; the attach rules live in KycService.
         $document = $this->documents->show($documentId, $user, $tenantId);
+        $submission = $this->kyc->attachDocument($this->kyc->draftFor($party, $tenantId), $document, $purpose, $user);
 
-        if ($document->scan_status === 'INFECTED') {
-            throw ValidationException::withMessages(['document_id' => [__('wave12.kyc_document_infected')]]);
-        }
-
-        $submission = $this->draftSubmission($party, $tenantId);
-
-        // Pre-check rather than catching the pivot's unique violation as
-        // flow control: on Postgres a constraint violation aborts the whole
-        // surrounding transaction (SQLSTATE 25P02), so every later statement
-        // fails until rollback — which would silently break any caller that
-        // composes this inside a DB::transaction(). Same explicit-duplicate-
-        // check shape MobileDocumentService::upload() already uses.
-        // 409, not the default 422: a conflict with the submission's current
-        // state, matching that duplicate-upload check and
-        // EnforcesOptimisticConcurrency's stale-write status.
-        if ($submission->documents()->where('documents.id', $document->id)->exists()) {
-            throw ValidationException::withMessages(['document_id' => [__('wave12.kyc_document_already_attached')]])->status(409);
-        }
-
-        try {
-            // Wrapped so that if a concurrent request wins the race between
-            // the check above and this insert, the violation rolls back to
-            // this statement's own savepoint instead of poisoning an
-            // enclosing transaction.
-            DB::transaction(fn () => $submission->documents()->attach($document->id, ['purpose' => $purpose]));
-        } catch (QueryException $e) {
-            if (! self::isUniqueViolation($e)) {
-                throw $e;
-            }
-
-            throw ValidationException::withMessages(['document_id' => [__('wave12.kyc_document_already_attached')]])->status(409);
-        }
-
-        $this->audit->record('kyc_submission.document_attached', 'kyc_submission', $submission->id, ['document_id' => $document->id, 'purpose' => $purpose]);
-
-        return $this->presentSubmission($submission->fresh());
+        return $this->presentSubmission($submission);
     }
 
     /** @return array<string, mixed> */
     public function submit(?string $notes, User $user, string $tenantId): array
     {
         $party = $this->requireParty($user);
-
-        $submission = KycSubmission::where('tenant_id', $tenantId)->where('party_id', $party->id)->where('status', 'DRAFT')->latest('created_at')->first();
-
-        // Validate everything before the transaction opens — throwing
-        // inside DB::transaction() would roll back writes made earlier in
-        // the same closure (see the batch instructions' DB::transaction
-        // hazard note); there is nothing to roll back here because nothing
-        // has been mutated yet.
-        if (! $submission || $submission->documents()->count() === 0) {
+        $submission = KycSubmission::where('tenant_id', $tenantId)->where('party_id', $party->id)->whereIn('status', KycService::EDITABLE)->latest('created_at')->first();
+        if (! $submission) {
             throw ValidationException::withMessages(['submission' => [__('wave12.kyc_no_documents')]]);
         }
 
-        if ($submission->documents()->where('scan_status', '!=', 'CLEAN')->exists()) {
-            throw ValidationException::withMessages(['submission' => [__('wave12.kyc_documents_not_ready')]]);
-        }
-
-        DB::transaction(function () use ($submission, $notes, $party, $tenantId) {
-            $submission->update(['status' => 'SUBMITTED', 'submitted_at' => now(), 'notes' => $notes]);
-            $this->audit->record('kyc_submission.submitted', 'kyc_submission', $submission->id, ['party_id' => $party->id]);
-            $this->outbox->record('kyc_submission.submitted', 'kyc_submission', $submission->id, ['kyc_submission_id' => $submission->id, 'tenant_id' => $tenantId]);
-        });
-
-        return $this->presentSubmission($submission->fresh());
-    }
-
-    private function draftSubmission(Party $party, string $tenantId): KycSubmission
-    {
-        return KycSubmission::where('tenant_id', $tenantId)->where('party_id', $party->id)->where('status', 'DRAFT')->latest('created_at')->first()
-            ?? KycSubmission::create(['tenant_id' => $tenantId, 'party_id' => $party->id, 'status' => 'DRAFT']);
+        return $this->presentSubmission($this->kyc->submit($submission, $notes, $user));
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -177,30 +117,11 @@ final class MobileKycService
     /** @return array<string, mixed> */
     private function presentSubmission(KycSubmission $submission): array
     {
-        return [
-            'id' => $submission->id,
-            'status' => $submission->status,
-            'notes' => $submission->notes,
-            'submitted_at' => $submission->submitted_at?->toIso8601String(),
-            'reviewed_at' => $submission->reviewed_at?->toIso8601String(),
-            'documents' => $submission->documents()->get()->map(fn ($document) => [
-                'id' => $document->id,
-                'purpose' => $document->pivot->purpose,
-                'category' => $document->category,
-                'scan_status' => $document->scan_status,
-                'verification_status' => $document->verification_status,
-                'ocr_data' => $document->ocr_data,
-            ])->all(),
-        ];
+        return $this->kyc->present($submission);
     }
 
     private function requireParty(User $user): Party
     {
         return $this->parties->forUser($user) ?? throw ValidationException::withMessages(['party' => [__('wave12.document_no_party')]]);
-    }
-
-    private static function isUniqueViolation(QueryException $e): bool
-    {
-        return ($e->errorInfo[0] ?? null) === '23505';
     }
 }

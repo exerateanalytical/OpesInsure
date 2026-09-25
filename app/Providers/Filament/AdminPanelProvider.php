@@ -16,6 +16,12 @@ final class AdminPanelProvider extends PanelProvider
      * general interactive color") rather than a ramp of related blues. So 400-700 all
      * get the exact base hex; 50/100 and 200/300 get the spec's soft/border stops.
      */
+    /** Shared with the insurer / broker portals (PortalPanelFactory) so every panel keeps the one v3 palette. */
+    public static function v3ColorPalette(): array
+    {
+        return self::v3Colors();
+    }
+
     private static function v3Colors(): array
     {
         $withStops = function (string $base, string $soft, string $border, string $text): array {

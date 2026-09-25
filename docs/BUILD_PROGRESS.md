@@ -29,4 +29,4 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
    - timezone picker (GET settings/timezones, PATCH me/settings);
    - vehicle suggestions via POST master-data/suggestions;
    - switch POST /mobile/policy-service-requests to /policies/{id}/service-requests.
-3. Batch 3 DONE (uncommitted): combined full suite running, then commit + rehearse + deploy. Mobile OTA ea00d9ea published (server forms, timezone, i18n). Next: Batch 4 (4A golden record, 4B KYC, 4C CRM, 4D insured objects + search, 4E web experience shell).
+3. Phase 3 (2788750) LIVE (release r20260925-053120). Mobile OTA ea00d9ea published. Batch 4 IN PROGRESS (4A golden record, 4B KYC, 4C CRM, 4D insured objects + search, 4E web shell + insurer/broker portals).

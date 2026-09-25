@@ -48,7 +48,7 @@ final class PartnerAgentWorkspaceController
     public function updateLead(string $lead, Request $request): JsonResponse
     {
         $data = $request->validate([
-            'status' => ['sometimes', Rule::in(AgentLeadService::MANUAL_STATUSES)], 'notes' => 'sometimes|nullable|string|max:2000',
+            'status' => ['sometimes', Rule::in(AgentLeadService::MANUAL_STATUSES)], 'notes' => 'sometimes|nullable|string|max:2000', 'lost_reason' => 'sometimes|nullable|string|max:255',
             'city' => 'sometimes|nullable|string|max:80', 'product_interest' => 'sometimes|nullable|string|max:32',
         ]);
 
@@ -102,7 +102,7 @@ final class PartnerAgentWorkspaceController
     {
         return [
             'id' => $l->id, 'full_name' => $l->full_name, 'phone_e164' => $l->phone_e164, 'city' => $l->city, 'product_interest' => $l->product_interest,
-            'notes' => $l->notes, 'status' => $l->status, 'converted_customer_id' => $l->converted_customer_id,
+            'notes' => $l->notes, 'status' => $l->status, 'next_statuses' => \App\Application\PartnerWorkspace\LeadPipeline::next($l->status), 'lost_reason' => $l->lost_reason ?? null, 'converted_customer_id' => $l->converted_customer_id,
             'created_at' => \Carbon\Carbon::parse($l->created_at)->toIso8601String(), 'updated_at' => \Carbon\Carbon::parse($l->updated_at)->toIso8601String(),
         ];
     }

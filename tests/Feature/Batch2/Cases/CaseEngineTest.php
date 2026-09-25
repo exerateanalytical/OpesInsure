@@ -177,7 +177,8 @@ it('REQ-CAS-001: overdue tasks, due follow-ups and orphaned cases are flagged on
 // ---------------------------------------------------------------- types, versions, engine
 
 it('REQ-CAS-001: seeds the ICE 6.2 codes as sub-types with an UNVERIFIED blueprint family (OQ-6.4) and no invented SLA targets', function () {
-    expect(CaseType::where('status', 'EFFECTIVE')->count())->toBe(15)
+    // Other domains add their own types (e.g. KYC_REVIEW, REQ-KYC-001); the ICE 6.2 seed itself stays 15.
+    expect(CaseType::where('status', 'EFFECTIVE')->whereIn('code', array_keys(\App\Application\Cases\CaseTypeCatalogue::SEED))->count())->toBe(15)
         ->and(CaseType::whereNotNull('family_code')->count())->toBe(0)
         ->and(CaseType::where('sla_policies', '!=', '[]')->count())->toBe(0)
         ->and(CaseType::where('code', 'STR')->value('default_confidentiality'))->toBe('STR_RESTRICTED')

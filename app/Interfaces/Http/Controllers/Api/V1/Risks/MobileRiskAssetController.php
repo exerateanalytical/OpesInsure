@@ -24,7 +24,7 @@ final class MobileRiskAssetController
     public function store(Request $request, MobileRiskAssetService $service): JsonResponse
     {
         $data = $request->validate([
-            'type' => 'required|in:VEHICLE,PROPERTY,TRAVELLER,HEALTH_MEMBER',
+            'type' => ['required', \Illuminate\Validation\Rule::in(\App\Application\Risks\RiskAssetTypes::codes())],
             'external_reference' => 'nullable|string|max:100',
             'display_name' => 'required|string|max:160',
             'facts' => 'required|array',

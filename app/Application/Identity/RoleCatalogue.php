@@ -105,19 +105,19 @@ final class RoleCatalogue
     /** Explicit, audited break-glass permission (REQ-RBAC-004). */
     public const BREAK_GLASS_PERMISSION = 'platform.break-glass.use';
 
-    public const AGENT_PERMISSIONS = ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch'];
+    public const AGENT_PERMISSIONS = ['agent.clients.read', 'agent.clients.manage', 'agent.commissions.read', 'agent.withdrawals.read', 'agent.withdrawals.request', 'agent.sync.read', 'agent.sync.retry', 'agent.sync.dispatch', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read' ];
 
-    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate'];
+    public const BROKER_STAFF_PERMISSIONS = ['broker.portal.read', 'broker.finance.read', 'broker.bordereaux.manage', 'broker.bordereaux.submit', 'broker.renewals.manage', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'beneficiaries.read', 'beneficiaries.manage' ];
 
-    public const BROKER_SUPERVISOR_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS];
+    public const BROKER_SUPERVISOR_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'beneficiaries.manage' ];
 
-    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage'];
+    public const BROKER_ADMIN_PERMISSIONS = [...self::BROKER_STAFF_PERMISSIONS, 'broker.marketplace.manage', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'attribution.transfer', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage' ];
 
     public const CARRIER_STAFF_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'carrier.issuance.read', 'carrier.claims.read', 'carrier.finance.read', 'documents.carrier.upload'];
 
-    public const CARRIER_ADMIN_PERMISSIONS = [...self::CARRIER_STAFF_PERMISSIONS, 'carrier.bordereaux.decide', 'carrier.authority.manage', 'carrier.authority.approve', 'documents.status.request', 'documents.confidential.read', 'documents.financial.read', 'approvals.inbox.view', 'approvals.decide'];
+    public const CARRIER_ADMIN_PERMISSIONS = [...self::CARRIER_STAFF_PERMISSIONS, 'carrier.bordereaux.decide', 'carrier.authority.manage', 'carrier.authority.approve', 'documents.status.request', 'documents.confidential.read', 'documents.financial.read', 'approvals.inbox.view', 'approvals.decide', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request' ];
 
-    public const CARRIER_SUPER_ADMIN_PERMISSIONS = [...self::CARRIER_ADMIN_PERMISSIONS, 'documents.status.approve', 'documents.medical.read', 'documents.regulatory.read', 'approvals.matrix.view'];
+    public const CARRIER_SUPER_ADMIN_PERMISSIONS = [...self::CARRIER_ADMIN_PERMISSIONS, 'documents.status.approve', 'documents.medical.read', 'documents.regulatory.read', 'approvals.matrix.view', 'beneficiaries.read', 'beneficiaries.manage', 'parties.roles.manage', 'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'parties.merge.approve' ];
 
     public const UNDERWRITER_PERMISSIONS = ['carrier.dashboard.read', 'carrier.referrals.read', 'carrier.referrals.decide', 'underwriting.decide', 'documents.review', 'documents.confidential.read', 'policies.read', 'risk_assets.read'];
 
@@ -125,13 +125,13 @@ final class RoleCatalogue
 
     public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload'];
 
-    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage'];
+    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' ];
 
     public const REINSURANCE_OFFICER_PERMISSIONS = ['policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read'];
 
     public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read'];
 
-    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate'];
+    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read' ];
 
     public const PROVIDER_PERMISSIONS = [
         'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read'],
@@ -183,6 +183,12 @@ final class RoleCatalogue
 
     /** @return list<string> */
     public static function defaultPermissions(string $roleCode): array
+    {
+        // Role sets build on each other (spread), so drop repeats.
+        return array_values(array_unique(self::rawDefaultPermissions($roleCode)));
+    }
+
+    private static function rawDefaultPermissions(string $roleCode): array
     {
         return match ($roleCode) {
             'CUSTOMER' => ['quotes.rate'],

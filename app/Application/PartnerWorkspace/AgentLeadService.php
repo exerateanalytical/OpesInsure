@@ -26,7 +26,7 @@ final class AgentLeadService
     public const NOTICE_VERSION = 'agent-2026-01';
 
     /** Statuses an agent may set directly; CONVERTED only via convert(). */
-    public const MANUAL_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'LOST'];
+    public const MANUAL_STATUSES = LeadPipeline::MANUAL_STATUSES;
 
     public function __construct(
         private readonly PartnerWorkspaceScope $scope,
@@ -50,7 +50,7 @@ final class AgentLeadService
         DB::table('partner_leads')->insert([
             'id' => $id, 'tenant_id' => $tenantId, 'partner_id' => $partner->id, 'full_name' => $data['full_name'], 'phone_e164' => $data['phone_e164'],
             'city' => $data['city'] ?? null, 'product_interest' => isset($data['product_interest']) ? strtoupper($data['product_interest']) : null, 'notes' => $data['notes'] ?? null,
-            'status' => 'NEW', 'created_by' => $user->id, 'created_at' => now(), 'updated_at' => now(),
+            'status' => 'NEW', 'assigned_user_id' => $user->id, 'source' => 'AGENT', 'status_changed_at' => now(), 'created_by' => $user->id, 'created_at' => now(), 'updated_at' => now(),
         ]);
         $this->audit->record('agent.lead.created', 'partner_lead', $id, []);
 
@@ -63,7 +63,11 @@ final class AgentLeadService
         if ($lead->status === 'CONVERTED') {
             throw ValidationException::withMessages(['status' => ['This lead is already a client.']]);
         }
-        $changes = array_intersect_key($data, array_flip(['status', 'notes', 'city', 'product_interest']));
+        $changes = array_intersect_key($data, array_flip(['status', 'notes', 'city', 'product_interest', 'lost_reason']));
+        if (isset($changes['status']) && $changes['status'] !== $lead->status) {
+            LeadPipeline::assert($lead->status, $changes['status']);
+            $changes['status_changed_at'] = now();
+        }
         DB::table('partner_leads')->where('id', $lead->id)->update([...$changes, 'updated_at' => now()]);
         $this->audit->record('agent.lead.updated', 'partner_lead', $lead->id, ['fields' => array_keys($changes)]);
 
