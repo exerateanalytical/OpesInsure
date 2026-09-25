@@ -8,7 +8,7 @@ import { OperationsList } from "@/components/OperationsList";
 import { CarrierQuoteRequestsApi } from "@/api/workflow";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
-import { slaState } from "@/lib/quoteWorkflow";
+import { caseWaitingState, slaChipText } from "@/lib/quoteWorkflow";
 
 /** Insurer work queue for manual quotation (REQ-QUO-006), soonest deadline first. */
 export default function CarrierQuoteRequests() {
@@ -26,17 +26,17 @@ export default function CarrierQuoteRequests() {
             icon={Inbox}
             onPress={(id) => router.push({ pathname: "/carrier/quote-requests/[id]", params: { id } })}
             rows={rows.map((r) => {
-              const sla = slaState(r);
+              const waiting = caseWaitingState(r);
               return {
                 id: r.id,
                 title: r.request_number,
                 subtitle: [
                   r.response_due_at ? t("cqrDue", { date: f.dateTime(r.response_due_at) }) : null,
-                  td(`cqrSla_${sla.state}`, sla.state).replace("{hours}", String(sla.hoursLeft ?? 0)),
+                  slaChipText(r, td),
                 ]
                   .filter(Boolean)
                   .join(" · "),
-                status: td(`cqrStatus_${r.status}`, r.status),
+                status: waiting ? td(`cqrWait_${waiting}`, waiting) : td(`cqrStatus_${r.status}`, r.status),
               };
             })}
           />

@@ -9,7 +9,7 @@ import { DateField, ErrorCard, InfoRow, PickerField, purchaseStyles as ps } from
 import { CarrierQuoteRequest, CarrierQuoteRequestsApi } from "@/api/workflow";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
-import { buildCarrierOffer, CARRIER_DECLINE_REASONS, isOpenCarrierRequest, slaState, slaTone, toMinor } from "@/lib/quoteWorkflow";
+import { buildCarrierOffer, CARRIER_DECLINE_REASONS, caseKindParts, caseWaitingState, isOpenCarrierRequest, slaChipText, slaState, slaTone, toMinor } from "@/lib/quoteWorkflow";
 
 type Line = { code: string; label: string; amount: string };
 
@@ -63,6 +63,8 @@ export default function CarrierQuoteRequestDetail() {
   const setLine = (i: number, patch: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
 
   const sla = x ? slaState(x) : null;
+  const waiting = x ? caseWaitingState(x) : null;
+  const kind = x ? caseKindParts(x) : null;
   const open = x ? isOpenCarrierRequest(x) : false;
   const risk = Object.entries((x?.risk_snapshot ?? {}) as Record<string, unknown>).filter(([, v]) => v !== null && typeof v !== "object");
 
@@ -78,8 +80,15 @@ export default function CarrierQuoteRequestDetail() {
           <Card feature>
             <View style={ps.between}>
               <StatusChip label={td(`cqrStatus_${x.status}`, x.status)} tone={open ? "warning" : x.status === "OFFERED" ? "success" : "neutral"} />
-              {sla ? <StatusChip label={td(`cqrSla_${sla.state}`, sla.state).replace("{hours}", String(sla.hoursLeft ?? 0))} tone={slaTone(sla.state)} /> : null}
+              {waiting ? <StatusChip label={td(`cqrWait_${waiting}`, waiting)} tone="warning" /> : null}
+              {sla ? <StatusChip label={slaChipText(x, td)} tone={slaTone(sla.state)} /> : null}
             </View>
+            {kind ? (
+              <InfoRow
+                label={t("cqrCaseKind")}
+                value={[kind.family ? td(`cqrFamily_${kind.family}`, kind.family) : null, kind.subtype ? td(`cqrSubtype_${kind.subtype}`, kind.subtype) : null].filter(Boolean).join(" · ")}
+              />
+            ) : null}
             <InfoRow label={t("cqrRequested")} value={f.dateTime(x.requested_at)} />
             <InfoRow label={t("cqrResponseDue")} value={f.dateTime(x.response_due_at)} />
             {x.notes ? <InfoRow label={t("cqrNotes")} value={x.notes} /> : null}

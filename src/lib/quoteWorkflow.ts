@@ -57,7 +57,40 @@ export function hasQuoteDocument(q: QuoteLike): boolean {
 
 // --- Manual quotation: carrier quote requests (REQ-QUO-006) ------------------
 
-export type CarrierRequestLike = { status?: string | null; response_due_at?: string | null; responded_at?: string | null };
+export type CarrierRequestLike = {
+  status?: string | null;
+  response_due_at?: string | null;
+  responded_at?: string | null;
+  /** Case status behind the request (WAITING_FOR_CUSTOMER, WAITING_FOR_EXTERNAL_EVIDENCE, ...). */
+  case_status?: string | null;
+  case_family?: string | null;
+  case_subtype?: string | null;
+  sla?: { metric?: string; due_at?: string | null; stopped_at?: string | null; breached_at?: string | null; label?: string | null; deadline_label?: string | null }[] | null;
+};
+
+/** Waiting states pause the SLA; legacy names from older case types are mapped to the current ones. */
+const WAITING_STATES: Record<string, "WAITING_FOR_CUSTOMER" | "WAITING_FOR_EXTERNAL_EVIDENCE"> = {
+  WAITING_FOR_CUSTOMER: "WAITING_FOR_CUSTOMER",
+  WAITING_CUSTOMER: "WAITING_FOR_CUSTOMER",
+  WAITING_FOR_EXTERNAL_EVIDENCE: "WAITING_FOR_EXTERNAL_EVIDENCE",
+  WAITING_THIRD_PARTY: "WAITING_FOR_EXTERNAL_EVIDENCE",
+};
+/** Canonical waiting state of the request's case, or null when it is not waiting. */
+export const caseWaitingState = (r: Pick<CarrierRequestLike, "case_status">) => WAITING_STATES[up(r.case_status)] ?? null;
+
+/** SLA label of the running clock: PLATFORM_SLA (internal target) or REGULATORY_DEADLINE (legal basis). */
+export function slaLabel(r: Pick<CarrierRequestLike, "sla">): "PLATFORM_SLA" | "REGULATORY_DEADLINE" | null {
+  const labels = (r.sla ?? []).map((c) => up(c.label ?? c.deadline_label ?? "")).filter(Boolean);
+  if (!labels.length) return null;
+  return labels.includes("REGULATORY_DEADLINE") ? "REGULATORY_DEADLINE" : "PLATFORM_SLA";
+}
+
+/** Case family / subtype of the request; null when the API sends neither. */
+export function caseKindParts(r: Pick<CarrierRequestLike, "case_family" | "case_subtype">): { family: string | null; subtype: string | null } | null {
+  const family = up(r.case_family) || null;
+  const subtype = up(r.case_subtype) || null;
+  return family || subtype ? { family, subtype } : null;
+}
 export const CARRIER_REQUEST_OPEN = ["REQUESTED", "IN_PROGRESS"] as const;
 export const CARRIER_DECLINE_REASONS = ["OUT_OF_APPETITE", "INSUFFICIENT_INFORMATION", "RISK_TOO_HIGH", "NO_CAPACITY", "OTHER"] as const;
 
@@ -81,12 +114,13 @@ export function sentToInsurer(requests: CarrierRequestLike[] | null | undefined)
   };
 }
 
-export type SlaState = { state: "none" | "on_track" | "due_soon" | "breached" | "met"; hoursLeft: number | null };
+export type SlaState = { state: "none" | "on_track" | "due_soon" | "breached" | "met" | "paused"; hoursLeft: number | null };
 
-/** SLA of an insurer response: breached past due, due_soon inside 4 h. */
-export function slaState(r: CarrierRequestLike & { sla?: { breached_at?: string | null }[] | null }, now = Date.now()): SlaState {
+/** SLA of an insurer response: breached past due, due_soon inside 4 h, paused while the case waits on someone else. */
+export function slaState(r: CarrierRequestLike, now = Date.now()): SlaState {
   if (!isOpenCarrierRequest(r)) return { state: r.responded_at ? "met" : "none", hoursLeft: null };
   if ((r.sla ?? []).some((c) => !!c.breached_at)) return { state: "breached", hoursLeft: 0 };
+  if (caseWaitingState(r)) return { state: "paused", hoursLeft: null };
   if (!r.response_due_at) return { state: "none", hoursLeft: null };
   const hours = (Date.parse(r.response_due_at) - now) / 3_600_000;
   if (hours <= 0) return { state: "breached", hoursLeft: 0 };
@@ -94,6 +128,14 @@ export function slaState(r: CarrierRequestLike & { sla?: { breached_at?: string 
 }
 
 export const slaTone = (s: SlaState["state"]): Tone => (s === "breached" ? "danger" : s === "due_soon" ? "warning" : s === "met" ? "success" : s === "on_track" ? "info" : "neutral");
+
+/** Chip text for an SLA state, prefixed with the clock's label when the API sends one. */
+export function slaChipText(r: CarrierRequestLike, td: (key: string, fallback: string) => string, now = Date.now()): string {
+  const s = slaState(r, now);
+  const base = td(`cqrSla_${s.state}`, s.state).replace("{hours}", String(s.hoursLeft ?? 0));
+  const label = slaLabel(r);
+  return label ? `${td(`cqrSlaLabel_${label}`, label)} · ${base}` : base;
+}
 
 export type BreakdownLine = { code: string; label?: string; amount_minor: number };
 

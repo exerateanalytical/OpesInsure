@@ -19,6 +19,10 @@ import {
   requiredDocumentInfo,
   sentToInsurer,
   slaState,
+  caseWaitingState,
+  slaLabel,
+  slaChipText,
+  caseKindParts,
   toMinor,
 } from "../src/lib/quoteWorkflow.ts";
 import { API_ERROR_COPY } from "../src/lib/apiErrors.ts";
@@ -67,6 +71,30 @@ test("carrier SLA: on track, due soon, breached, answered", () => {
   assert.equal(slaState({ status: "REQUESTED", response_due_at: "2026-09-30T09:00:00Z", sla: [{ breached_at: "x" }] }, NOW).state, "breached");
   assert.equal(slaState({ status: "OFFERED", responded_at: "2026-09-24T09:00:00Z" }, NOW).state, "met");
   assert.equal(slaState({ status: "REQUESTED" }, NOW).state, "none");
+});
+
+test("manual quote waiting states pause the SLA; PLATFORM_SLA label and case family/subtype are read when sent", () => {
+  assert.equal(caseWaitingState({ case_status: "WAITING_FOR_CUSTOMER" }), "WAITING_FOR_CUSTOMER");
+  assert.equal(caseWaitingState({ case_status: "waiting_third_party" }), "WAITING_FOR_EXTERNAL_EVIDENCE");
+  assert.equal(caseWaitingState({ case_status: "IN_PROGRESS" }), null);
+  assert.equal(caseWaitingState({}), null);
+  const waiting = { status: "IN_PROGRESS", response_due_at: "2026-09-25T12:00:00Z", case_status: "WAITING_FOR_EXTERNAL_EVIDENCE", sla: [{ metric: "FIRST_RESPONSE", label: "PLATFORM_SLA", stopped_at: "2026-09-25T09:30:00Z" }] };
+  assert.deepEqual(slaState(waiting, NOW), { state: "paused", hoursLeft: null });
+  assert.equal(slaLabel(waiting), "PLATFORM_SLA");
+  assert.equal(slaLabel({ sla: [{ deadline_label: "REGULATORY_DEADLINE" }, { label: "PLATFORM_SLA" }] }), "REGULATORY_DEADLINE");
+  assert.equal(slaLabel({ sla: [] }), null);
+  const td = (k, f) => ({ cqrSla_paused: "SLA paused", cqrSlaLabel_PLATFORM_SLA: "Platform SLA", cqrSla_on_track: "On track · {hours} h left" })[k] ?? f;
+  assert.equal(slaChipText(waiting, td, NOW), "Platform SLA · SLA paused");
+  assert.equal(slaChipText({ status: "REQUESTED", response_due_at: "2026-09-26T10:00:00Z" }, td, NOW), "On track · 24 h left");
+  assert.deepEqual(caseKindParts({ case_family: "MANUAL_QUOTE", case_subtype: "complex" }), { family: "MANUAL_QUOTE", subtype: "COMPLEX" });
+  assert.equal(caseKindParts({}), null);
+  for (const key of ["cqrSla_paused", "cqrWait_WAITING_FOR_CUSTOMER", "cqrWait_WAITING_FOR_EXTERNAL_EVIDENCE", "cqrSlaLabel_PLATFORM_SLA", "cqrFamily_MANUAL_QUOTE", "cqrSubtype_COMPLEX"]) {
+    assert.ok(hasKey(read("src/i18n/en.ts"), key) && hasKey(read("src/i18n/fr.ts"), key), key);
+  }
+  const detail = read("app/carrier/quote-requests/[id].tsx");
+  assert.match(detail, /caseWaitingState\(x\)/);
+  assert.match(detail, /slaChipText\(x, td\)/);
+  assert.match(read("app/carrier/quote-requests/index.tsx"), /cqrWait_/);
 });
 
 test("carrier offer: total = premium + tax + fees and the breakdown must sum to it", () => {

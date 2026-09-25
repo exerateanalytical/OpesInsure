@@ -24,7 +24,11 @@ export type CarrierQuoteRequest = {
   version?: number;
   risk_snapshot?: Record<string, unknown> | null;
   notes?: string | null;
-  sla?: { metric: string; due_at: string | null; stopped_at: string | null; breached_at: string | null }[];
+  /** Case-engine fields (owner decisions #13/#32): present once the API sends them. */
+  case_status?: string | null;
+  case_family?: string | null;
+  case_subtype?: string | null;
+  sla?: { metric: string; due_at: string | null; stopped_at: string | null; breached_at: string | null; label?: string | null; deadline_label?: string | null }[];
   responses?: {
     id: string;
     response_type: string;
