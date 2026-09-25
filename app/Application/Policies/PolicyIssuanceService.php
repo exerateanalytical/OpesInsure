@@ -29,6 +29,7 @@ final class PolicyIssuanceService
         private OutboxWriter $outbox,
         private PolicyDocumentService $documents,
         private CustomerNotifier $notifier,
+        private PolicyIssuabilityService $issuability,
     ) {}
 
     public function request(Tenant $tenant, Proposal $proposal, PaymentIntentRecord $payment, array $data, User $actor): PolicyIssuanceRequest
@@ -61,6 +62,9 @@ final class PolicyIssuanceService
                 || PolicyIssuanceRequest::where('proposal_id', $proposal->id)->exists()) {
                 throw ValidationException::withMessages(['proposal_id' => __('wave5.issuance_exists')]);
             }
+
+            // Batch 7C/7D (REQ-PRP-004): one issuability gate (approval, underwriting, payment, accepted documents, KYC).
+            $this->issuability->assertIssuable($proposal);
 
             // REQ-KYC-001 gate on bind (tenant mode OFF | WARN | ENFORCE — App\Application\Kyc\KycGate).
             app(\App\Application\Kyc\KycGate::class)->assertMayProceed($tenant->id, $proposal->party_id, 'BIND', 'proposal', $proposal->id);
