@@ -182,6 +182,19 @@ final class DomainEventCatalogue
             $d('provider_contract.created', 'provider_contract', 'Provider contract created.', [], [], true),
             $d('provider_tariff.approved', 'provider_contract', 'Provider tariff version approved (maker-checker).', [], [], true),
 
+            // Batch 8-6 — REQ-PRD-011 life & special products (App\Application\Policies\Special)
+            $d('special_policy.profile.created', 'policy', 'Special product profile (group/fleet/open cover/construction/agriculture/life) attached to a policy.', [], [$P], true),
+            $d('group_policy.member.added', 'policy', 'Member added to a group master policy schedule (dated, pro-rata premium).', [], [$P], true),
+            $d('group_policy.member.removed', 'policy', 'Member removed from a group master policy schedule (dated, return premium).', [], [$P], true),
+            $d('fleet_policy.vehicle.added', 'policy', 'Vehicle added to a fleet policy schedule.', [], [$P], true),
+            $d('fleet_policy.vehicle.removed', 'policy', 'Vehicle removed from a fleet policy schedule.', [], [$P], true),
+            $d('special_policy.schedule_item.added', 'policy', 'Construction/agriculture schedule entry added.', [], [$P], true),
+            $d('special_policy.schedule_item.removed', 'policy', 'Construction/agriculture schedule entry removed.', [], [$P], true),
+            $d('cargo_declaration.declared', 'policy', 'Shipment declared under a marine open cover.', [], [$P], true),
+            $d('cargo_declaration.cancelled', 'policy', 'Cargo declaration cancelled.', [], [$P], true),
+            $d('life_surrender_scale.activated', 'life_surrender_scale', 'Carrier surrender scale activated (maker-checker).', [], [$P], true),
+            $d('life_surrender.quoted', 'policy', 'Life surrender value computed (rules-driven, carrier scale).', [], [$P], true),
+
             // --- Engine events ---
             $d('workflow.transition.applied', 'workflow', 'Generic state-machine transition applied (fallback when a transition names no domain event).', [], [$E]),
             $d('workflow.transition.rejected', 'workflow', 'State-machine transition rejected by guard/permission/authority.', [], [$E]),

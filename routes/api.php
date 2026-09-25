@@ -394,3 +394,20 @@ Route::prefix('v1/reinsurance')->middleware(['auth:api', 'tenant', 'json.api'])-
     Route::post('policies/{policy}/cessions/preview', [$c, 'previewCession'])->middleware('permission:reinsurance.cessions.view');
     Route::post('policies/{policy}/cessions', [$c, 'cede'])->middleware('permission:reinsurance.cessions.calculate');
 });
+
+// Batch 8-6 — REQ-PRD-011 life & special products (group master + members, fleet, open cover cargo, construction, agriculture, life surrender).
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $s = \App\Application\Policies\Special\Http\SpecialPolicyController::class;
+    Route::post('policies/{policy}/special-profile', [$s, 'createProfile'])->middleware('permission:special_policies.manage')->whereUuid('policy');
+    Route::get('policies/{policy}/special-profile', [$s, 'showProfile'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::get('policies/{policy}/schedule', [$s, 'schedule'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::post('policies/{policy}/schedule-items', [$s, 'addItem'])->middleware('permission:special_policies.schedule.manage')->whereUuid('policy');
+    Route::post('policy-schedule-items/{item}/remove', [$s, 'removeItem'])->middleware('permission:special_policies.schedule.manage')->whereUuid('item');
+    Route::get('policies/{policy}/cargo-declarations', [$s, 'declarations'])->middleware('permission:special_policies.view')->whereUuid('policy');
+    Route::post('policies/{policy}/cargo-declarations', [$s, 'declare'])->middleware('permission:cargo_declarations.declare')->whereUuid('policy');
+    Route::post('cargo-declarations/{declaration}/cancel', [$s, 'cancelDeclaration'])->middleware('permission:cargo_declarations.cancel')->whereUuid('declaration');
+    Route::post('life/surrender-scales', [$s, 'createScale'])->middleware('permission:life_surrender.scales.manage');
+    Route::post('life/surrender-scales/{scale}/activate', [$s, 'activateScale'])->middleware('permission:life_surrender.scales.approve')->whereUuid('scale');
+    Route::post('policies/{policy}/surrender-quotes', [$s, 'surrenderQuote'])->middleware('permission:life_surrender.quote')->whereUuid('policy');
+});
+// End Batch 8-6
