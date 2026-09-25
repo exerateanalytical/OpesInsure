@@ -205,6 +205,12 @@ final class DomainEventCatalogue
             $d('carrier_quote_request.cancelled', 'carrier_quote_request', 'Manual quotation request cancelled.', [], [], true),
             $d('carrier_quote_request.expired', 'carrier_quote_request', 'Manual quotation request closed because the quote expired.', [], [], true),
             $d('reconciliation.approved', 'reconciliation', 'Reconciliation approved.', [], [], true),
+            // Batch 9-5 — REQ-PAY-007 reconciliation outcomes / exceptions queue / manual match
+            $d('reconciliation.exception.raised', 'reconciliation_item', 'Statement line not MATCHED (PARTIAL/UNMATCHED/DUPLICATE/OVER/UNDER); RECONCILIATION_EXCEPTION case opened.', [], [], true),
+            $d('reconciliation.refund_candidate.flagged', 'reconciliation_item', 'Duplicate payment flagged as refund candidate (DUPLICATE_PAYMENT, WF-026/027/086).', [], [], true),
+            $d('reconciliation.manual_match.requested', 'reconciliation_item', 'Manual match of a statement line to a payment requested (maker).', [], [], true),
+            $d('reconciliation.manual_match.approved', 'reconciliation_item', 'Manual match approved by an independent checker; line MATCHED.', [], [], true),
+            $d('reconciliation.manual_match.rejected', 'reconciliation_item', 'Manual match rejected by the checker.', [], [], true),
             $d('renewal.quoted', 'policy', 'Renewal quote produced.', [], [], true),
             // REQ-REN-001 renewal machine (RenewalService, Renewals\RenewalIssuanceFailureLink)
             $d('renewal.window_reached', 'renewal_case', 'Renewal case reached a reminder window (90/60/30/15/7 days).', [], [], true),
