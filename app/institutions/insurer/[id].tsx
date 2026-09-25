@@ -11,6 +11,7 @@ import {
   StatusChip,
 } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
+import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi } from "@/api/extra";
 import { useTranslation } from "@/i18n";
@@ -47,9 +48,7 @@ export default function InsurerDetail() {
           <>
             <Card feature>
               <View style={styles.between}>
-                <View style={styles.logo}>
-                  <Text style={styles.logoText}>{insurer.initials}</Text>
-                </View>
+                <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} size={56} />
                 <View style={styles.badges}>
                   {insurer.branch ? (
                     <StatusChip
@@ -214,16 +213,6 @@ const styles = StyleSheet.create({
   branch: { gap: 2, paddingTop: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral100 },
   branchName: { ...type.label, color: colors.navy950 },
   link: { ...type.label, color: colors.blue700 },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.card,
-    borderWidth: 1.5,
-    borderColor: colors.navy800,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: { ...type.label, color: colors.navy900 },
   badges: { flexDirection: "row", gap: space.x2, flexWrap: "wrap", justifyContent: "flex-end", flex: 1 },
   title: { ...type.pageTitle, color: colors.navy950 },
   offer: { ...type.cardTitle, color: colors.navy950, flex: 1 },

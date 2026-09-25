@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { AppHeader, Button, Card, Chip, ChipRow, Screen, StatusChip, TextField } from "@/components/ui";
+import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi, type Institution } from "@/api/extra";
@@ -122,9 +123,7 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
     >
       <Card>
         <View style={styles.row}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>{insurer.initials}</Text>
-          </View>
+          <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} />
           <View style={styles.copy}>
             <Text style={styles.name}>{insurer.short_name ?? insurer.name}</Text>
             {insurer.short_name ? <Text style={styles.meta}>{insurer.name}</Text> : null}
@@ -168,14 +167,6 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   copy: { flex: 1, gap: 3 },
-  logo: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.control,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: { ...type.caption, color: colors.blue700 },
   name: { ...type.label, color: colors.navy950 },
   meta: { ...type.meta, color: colors.neutral600 },
   families: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

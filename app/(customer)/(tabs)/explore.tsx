@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Building2, ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react-native";
 import { AppHeader, Chip, ChipRow, Screen, StatusChip } from "@/components/ui";
+import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { CATEGORIES } from "@/components/customer/categories";
@@ -155,13 +156,17 @@ export default function Explore() {
             }
             style={({ pressed }) => [styles.provider, pressed && styles.pressed]}
           >
-            <View style={styles.initials}>
-              {p.type === "insurer" ? (
-                <Building2 size={20} color={colors.navy800} />
-              ) : (
-                <Handshake size={20} color={colors.navy800} />
-              )}
-            </View>
+            {institutionLogo(p) ? (
+              <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={44} />
+            ) : (
+              <View style={styles.initials}>
+                {p.type === "insurer" ? (
+                  <Building2 size={20} color={colors.navy800} />
+                ) : (
+                  <Handshake size={20} color={colors.navy800} />
+                )}
+              </View>
+            )}
             <View style={styles.flex}>
               <Text style={styles.label}>{p.name}</Text>
               <Text style={styles.meta}>

@@ -124,6 +124,8 @@ export type Institution = {
   type: "insurer" | "broker";
   name: string;
   initials: string;
+  /** Licensed logo (admin-uploaded); null until the institution has one. */
+  logo_url?: string | null;
   city: string | null;
   code?: string;
   phone?: string | null;

@@ -2,12 +2,13 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Building2, CheckCircle2, ChevronRight, MapPin, ShieldCheck } from "lucide-react-native";
 import { Card, StatusChip } from "./ui";
+import { InstitutionMark, institutionLogo } from "./InstitutionMark";
 import type { Institution } from "@/api/extra";
 import { Policy, WalletPolicy } from "@/api/client";
 import { policyStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 
 export function InsurerCard({ insurer, onPress }: { insurer: Institution; onPress: () => void }) {
   const { t } = useTranslation();
@@ -16,9 +17,7 @@ export function InsurerCard({ insurer, onPress }: { insurer: Institution; onPres
     <Pressable onPress={onPress} accessibilityRole="button">
       <Card>
         <View style={styles.row}>
-          <View style={styles.initials}>
-            <Text style={styles.initialsText}>{insurer.initials}</Text>
-          </View>
+          <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} />
           <View style={styles.copy}>
             <Text style={styles.title}>{insurer.name}</Text>
             {insurer.city ? <Text style={styles.meta}>{insurer.city}</Text> : null}
@@ -97,17 +96,6 @@ export function PolicyCard({ policy, onPress }: { policy: WalletPolicy | Policy;
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   copy: { flex: 1, gap: 3 },
-  // Initials read as a badge through the outline alone: no tinted fill.
-  initials: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.control,
-    borderWidth: 1,
-    borderColor: colors.neutral200,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initialsText: { ...type.caption, color: colors.navy900 },
   title: { ...type.label, color: colors.navy950 },
   meta: { ...type.meta, color: colors.neutral600 },
   verified: { flexDirection: "row", alignItems: "center", gap: space.x2 },
