@@ -1053,3 +1053,24 @@ Route::prefix('v1/operations')->middleware(['auth:api', 'tenant', 'json.api'])->
     Route::get('restore-verifications', [$op, 'restoreVerifications'])->middleware('permission:operations.console.view');
 });
 // End Agent B6
+// Agent B2 — REQ-RPT-003 KPI governance catalogue, REQ-RPT-004 dashboard registry + data API, REQ-RPT-005 unified report catalogue.
+Route::prefix('v1/reporting')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rp = \App\Application\Reporting\Http\ReportingController::class;
+    $kpi = '[a-z][a-z0-9_]*(\.[a-z0-9_]+)*';
+    Route::get('kpi-queries', [$rp, 'queries'])->middleware('permission:reporting.kpis.view');
+    Route::get('kpis', [$rp, 'kpis'])->middleware('permission:reporting.kpis.view');
+    Route::post('kpis', [$rp, 'draft'])->middleware('permission:reporting.kpis.manage');
+    Route::get('kpis/{code}', [$rp, 'kpi'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::get('kpis/{code}/value', [$rp, 'value'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::get('kpis/{code}/drill', [$rp, 'drill'])->middleware('permission:reporting.kpis.view')->where('code', $kpi);
+    Route::post('kpi-definitions/{definition}/submit', [$rp, 'submit'])->middleware('permission:reporting.kpis.manage')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/approve', [$rp, 'approve'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/reject', [$rp, 'reject'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::post('kpi-definitions/{definition}/retire', [$rp, 'retire'])->middleware('permission:reporting.kpis.approve')->whereUuid('definition');
+    Route::get('dashboards', [$rp, 'dashboards'])->middleware('permission:reporting.dashboards.view');
+    Route::get('dashboards/{dashboard}', [$rp, 'dashboard'])->middleware('permission:reporting.dashboards.view')->where('dashboard', '[a-z_]+');
+    Route::get('dashboards/{dashboard}/tiles/{tile}/drill', [$rp, 'dashboardDrill'])->middleware('permission:reporting.dashboards.view')->where(['dashboard' => '[a-z_]+', 'tile' => '[a-z0-9_]+']);
+    Route::get('reports', [$rp, 'reports'])->middleware('permission:reporting.reports.view');
+    Route::get('reports/{report}', [$rp, 'report'])->middleware('permission:reporting.reports.view')->where('report', '[A-Za-z]{2,3}-[0-9]{2,3}');
+});
+// End Agent B2
