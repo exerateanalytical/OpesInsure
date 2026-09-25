@@ -1027,3 +1027,19 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('health/preauthorizations/{preauth}/extensions/{extension}/decision', [$pa, 'decideExtension'])->middleware('permission:health.preauth.approve')->whereUuid(['preauth', 'extension']);
 });
 // End Agent E3
+// Agent B6 — REQ-OPS-001/002/005 operations console (App\Application\Operations).
+Route::prefix('v1/operations')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $op = \App\Application\Operations\Http\OperationsConsoleController::class;
+    Route::get('health', [$op, 'health'])->middleware('permission:operations.console.view');
+    Route::get('integrations', [$op, 'integrations'])->middleware('permission:operations.console.view');
+    Route::get('exceptions', [$op, 'exceptions'])->middleware('permission:operations.console.view');
+    Route::get('correlations/{correlationId}', [$op, 'correlation'])->middleware('permission:operations.console.view')->where('correlationId', '[A-Za-z0-9._:-]{1,128}');
+    Route::get('failed-jobs', [$op, 'failedJobs'])->middleware('permission:operations.platform.view');
+    Route::post('failed-jobs/{uuid}/retry', [$op, 'retryJob'])->middleware('permission:operations.jobs.manage')->whereUuid('uuid');
+    Route::post('failed-jobs/{uuid}/forget', [$op, 'forgetJob'])->middleware('permission:operations.jobs.manage')->whereUuid('uuid');
+    Route::get('incidents', [$op, 'incidents'])->middleware('permission:operations.console.view');
+    Route::post('incidents', [$op, 'storeIncident'])->middleware('permission:operations.incidents.manage');
+    Route::patch('incidents/{id}', [$op, 'updateIncident'])->middleware('permission:operations.incidents.manage')->whereUuid('id');
+    Route::get('restore-verifications', [$op, 'restoreVerifications'])->middleware('permission:operations.console.view');
+});
+// End Agent B6
