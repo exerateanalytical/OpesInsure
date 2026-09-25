@@ -6,8 +6,7 @@ Read this file first, then `docs/SESSION_HANDOFF.md` (the live log), then the re
 ## 1. Where things stand
 - **Production:** Phase 6 is live (r20260925-093812). The decisions batch `c0a8d01` is **not confirmed live**.
 - **Branch with all new work:** `origin/claude/charming-bohr-2fd2hk` (cloud pushes only here). `origin/master` is still `c0a8d01`.
-- **Deployable, green commit:** `0a284da` (full pest suite 1457 passed in the cloud). The cloud keeps building Batches 13–17 on the same branch:
-  **only deploy a commit that has a matching `docs/RELEASE_HANDOVER_*.md` and a "DONE" row in SESSION_HANDOFF.md.**
+- **Deployable, green commit:** the branch head (all batches through 17 are built; full pest suite 1636 passed / 0 failed in the cloud). The cloud build is finished.
 
 ## 2. What to deploy, in order (one deploy is fine)
 | # | Guide | Contents |
@@ -18,13 +17,14 @@ Read this file first, then `docs/SESSION_HANDOFF.md` (the live log), then the re
 | 3 | docs/RELEASE_HANDOVER_BATCH9.md | money chain (obligations, allocations, payments, reconciliation, refunds, cashier, FX, statements) + Batch 8 APIs |
 | 4 | docs/RELEASE_HANDOVER_BATCH10.md | commission, settlement, bordereaux, GL mapping, journals, periods, technical accounting, finance centre |
 | 5 | docs/RELEASE_HANDOVER_BATCH11_12.md | claims end to end + owner decisions D10 + claim types + claims roles |
+| 6 | docs/RELEASE_HANDOVER_BATCH13_17.md | provider portal, cashless health, facultative/recoveries, AML/compliance, accumulation, regulatory, developer platform, hardening, vehicle power, finance sub-ledger |
 
 ## 3. Deploy chain (standing order, unchanged)
 1. `git fetch origin && git checkout master && git merge --no-ff origin/claude/charming-bohr-2fd2hk` (up to the deployable commit)
 2. `composer install && composer dump-autoload && vendor/bin/pest --parallel`: must be green
 3. `git push origin master`
 4. `/srv/opesinsure/backup.sh`
-5. Rehearse migrations on a copy of prod (about 55 new migrations, all additive, Postgres triggers/checks)
+5. Rehearse migrations on a copy of prod (about 74 new migrations, all additive, Postgres triggers/checks)
 6. Build the tarball from the `C:\laragon\www\opesinsure-deploy-snap` worktree (**run `composer dump-autoload` there first**), then `deploy.sh`
 7. After migrate on prod, run **in this order**, each with `--dry-run` first:
    - `php artisan policies:backfill-chronology`
@@ -33,7 +33,7 @@ Read this file first, then `docs/SESSION_HANDOFF.md` (the live log), then the re
 8. Manual: remove `cashier.sessions.operate` from existing BRANCH_MANAGER roles (owner decision; the sync only adds).
 9. Configure CLAIM_SETTLE and RESERVE_APPROVE `authority_limits` per role/carrier. Without them, every claim decision is referred to a supervisor.
 10. Make sure the **scheduler** runs. New jobs: issuance-queue scan (hourly), premium-cover sweep 00:45, ledger periods 00:05, renewals sweep 01:15,
-    commissions advance 02:10, claims auto-close 02:40, collections 03:20. The weekly `settlements:prepare` is retired.
+    commissions advance 02:10, claims auto-close 02:40, collections 03:20, aml:rescreen 02:45, security:sweep every 15 min, ops:heartbeat and carriers:dispatch-messages every minute. The weekly `settlements:prepare` is retired.
 11. `node docs/audit/verify-live.mjs` (75/76 expected) + one live purchase + one FNOL on a demo policy.
 12. Record the release id in SESSION_HANDOFF.md, update BUILD_PROGRESS.md "Status", commit and push.
 

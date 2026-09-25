@@ -34,10 +34,14 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Batch 10 (commission machine/rules/statements, settlement + bordereaux consolidation, GL mapping, journal lifecycle, period close, technical accounting, finance centre + Batch 9 roles) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH10.md |
 | Owner decisions D10 | cloud | MERGED (ships with Batch 11/12) |
 | Batches 11+12 claims (16 agents: machine, FNOL, coverage, limits, reserves, evidence, parties, types, adjusters, assessment, execution, decision, settlement, closure, recovery/litigation/collections, fraud) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH11_12.md |
-| Batches 13B–17 (provider portal, cashless health, facultative/recoveries, compliance/AML, accumulation, regulatory reporting, KPIs, developer platform, API families, legacy migration, hardening) | cloud | IN PROGRESS. Don't start locally. |
+| Batches 13B–17 (provider portal, cashless health, facultative/recoveries, compliance/AML, accumulation, regulatory reporting, KPIs, developer platform, API families, legacy migration, hardening) | cloud | DONE, on branch. Deploy per docs/RELEASE_HANDOVER_BATCH13_17.md |
+| Owner specs V1 (vehicle/fiscal power) + F1 (finance sub-ledger) | cloud | DONE, on branch (same handover) |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: Batches 13B–17 + V1 + F1 merged. ALL BATCHES BUILT. Full suite 1636 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH13_17.md
+- Route permissions all catalogued (config/permissions.php); OpenAPI regenerated. Cloud build is complete; the rest is local deploy.
 
 ### 2026-09-25 cloud: Batches 11+12 (15 claims agents) + D10 decisions + integration fix merged. Full suite 1440 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH11_12.md
 - Follow-up merged: C8 claim types/deadlines + claims role pass (see the handover's follow-up section). Full suite 1457 passed / 0 failed.
