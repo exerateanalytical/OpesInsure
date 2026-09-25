@@ -20,13 +20,37 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 | Item | Owner | State |
 |---|---|---|
 | Deploy decisions batch `c0a8d01` | local | TODO: not confirmed live. Deploy before Batch 7 is merged. |
-| Batch 7A authority, 7B underwriting, 7C policy chronology, 7D issuance ops | cloud agents | IN PROGRESS |
-| Batch 5/6 rules-engine follow-ups (DocumentRequirementService, QuestionSetCatalogue, saveComparison alias) | cloud agent | IN PROGRESS |
-| Duplicate master-data lists + bordereau type set + cloud test baseline triage | cloud agent | IN PROGRESS |
-| Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud agents | IN PROGRESS |
+| Batch 7A authority, 7B underwriting, 7C policy chronology | cloud | DONE (on branch, needs deploy) |
+| Batch 7D issuance ops (+ issuability gate on the payment→issuance path) | cloud agent | IN PROGRESS |
+| Batch 5/6 rules-engine follow-ups | cloud | DONE (on branch) |
+| Duplicate master-data lists + bordereau type set + test baseline triage | cloud | DONE (on branch) |
+| Batch 13A providers, 13C reinsurance, 13D co-insurance, 12C complaints/correspondence | cloud | DONE (on branch) |
 | Mobile app | app session (local) | Not on GitHub, so cloud can't reach it |
 
 ## Log (newest first)
+
+### 2026-09-25 cloud: merged 9 work items. Full pest suite 1151 passed / 0 failed.
+**Local, to deploy:** merge `origin/claude/charming-bohr-2fd2hk` into master, run the full suite, then the normal chain (backup → rehearse → deploy → verify-live).
+New migrations (additive; Postgres triggers/checks), in order:
+`2026_10_12_710001` authority_checks · `720001` underwriting case workflow/outcome · `730001` policy chronology tables · `750001` provider master/network ·
+`760001` reinsurance treaties/cessions · `770001` coinsurance · `780001` complaints + correspondence register + COMPLAINT case type v2.
+After migrate: `php artisan policies:backfill-chronology --dry-run`, then run it for real. Master-data seed on deploy marks aviation.manufacturer and
+life_insurance.relationship INACTIVE (aliases keep old codes working).
+
+Behaviour changes to watch in production:
+- Authority (7A): premium over delegated limit → issuance request goes to CARRIER_REVIEW + AUTHORITY_REFERRAL case (no longer a 422). Partner with no
+  intermediary authorization → referred (owner decision). Lapsed/suspended intermediary → denied. Every decision, including denials, is logged in `authority_checks`.
+- Underwriting (7B): decide() goes through the proposal state machine; new CONDITIONAL outcome; `assign` no longer auto-moves to IN_REVIEW (use start-review);
+  new workspace routes under underwriting/cases/* (evaluate, start-review, ready-for-decision, information-requests).
+- Policies (7C): each issuance writes an immutable policy_versions row + structured parties/risks/coverages/limits.
+- Legacy POST /web-experiences/marketplace/comparisons is now an alias of /quote-comparisons (stricter validation, tenant-checked, new response shape).
+- Bordereau endpoints share one type set (PREMIUM, CLAIM, ENDORSEMENT, CANCELLATION, COMMISSION).
+- phpunit.xml now carries the test placeholders that only lived in local .env.testing (see docs/audit/CLOUD_BASELINE_TRIAGE.md).
+
+New permissions not yet granted to any role (wildcard admins only): providers.*, provider_networks.*, provider_tariffs.approve,
+reinsurance.*, coinsurance.*. Owner to decide which roles get them.
+Reverted: my issuability gate in PolicyIssuanceService::request (it blocked straight-through approvals); 7D re-does it on the payment path.
+Open owner questions collected in the cloud session's chat; the ones still open go into OWNER_OPEN_QUESTIONS.md next.
 
 ### 2026-09-25 cloud: session start
 - Reviewed BUILD_PROGRESS.md; origin/master == c0a8d01 (decisions batch). No local work newer than that is visible on GitHub.
