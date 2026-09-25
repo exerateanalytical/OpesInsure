@@ -165,12 +165,17 @@ final class QuoteRequestController
             'responded_at' => $x->responded_at?->toIso8601String(), 'quote_offer_id' => $x->quote_offer_id,
             'decline_reason_code' => $x->decline_reason_code, 'version' => $x->version,
         ];
+        // Case context for the app: waiting states (e.g. WAITING_FOR_CUSTOMER) and the owner's case family/subtype.
+        $case = $x->case_id ? \Illuminate\Support\Facades\DB::table('cases')->where('id', $x->case_id)->first(['status', 'case_family', 'case_subtype']) : null;
+        $out['case_status'] = $case?->status;
+        $out['case_family'] = $case?->case_family;
+        $out['case_subtype'] = $case?->case_subtype;
         if ($detail) {
             $out['risk_snapshot'] = $x->risk_snapshot;
             $out['notes'] = $x->notes;
             $out['sla'] = $x->case_id ? SlaClock::where('case_id', $x->case_id)->get()->map(fn ($c) => [
                 'metric' => $c->metric, 'due_at' => $c->due_at?->toIso8601String(), 'stopped_at' => $c->stopped_at?->toIso8601String(),
-                'breached_at' => $c->breached_at?->toIso8601String(),
+                'breached_at' => $c->breached_at?->toIso8601String(), 'label' => $c->deadline_label ?? 'PLATFORM_SLA',
             ])->values() : [];
             $out['responses'] = CarrierQuoteResponse::where('carrier_quote_request_id', $x->id)->orderBy('responded_at')->get()->map(fn ($p) => [
                 'id' => $p->id, 'response_type' => $p->response_type, 'source' => $p->source, 'product_id' => $p->product_id,
