@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, Text, View } from "react-native";
 import { router } from "expo-router";
+import { openDocumentUrl } from "@/components/documents/openDocument";
 import { CreditCard, Download, FileText, Phone, RefreshCcw, Settings2, ShieldAlert, Truck } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
@@ -92,7 +93,7 @@ export function PolicyDetailView({ id }: { id: string }) {
     try {
       const cert = await PolicyApi.certificate(id);
       const url = openableUrl(cert.download_url);
-      if (url) await Linking.openURL(url);
+      if (url) openDocumentUrl(url, t("pdCertificate"), cert.serial_number ? `certificate-${cert.serial_number}` : undefined);
       else setCertMessage(t("pdCertPending", { serial: cert.serial_number ?? "" }).replace("  ", " "));
     } catch (e) {
       const status = (e as { status?: number }).status;
@@ -184,7 +185,7 @@ export function PolicyDetailView({ id }: { id: string }) {
               title={d.label || humanize(d.type) || t("pdDocument")}
               subtitle={d.issued_at ? f.date(d.issued_at) : undefined}
               status={d.status}
-              onPress={() => (url ? void Linking.openURL(url) : router.push({ pathname: "/documents/[id]", params: { id: d.id } }))}
+              onPress={() => (url ? openDocumentUrl(url, d.label || humanize(d.type) || t("pdDocument")) : router.push({ pathname: "/documents/[id]", params: { id: d.id } }))}
             />
           );
         })}

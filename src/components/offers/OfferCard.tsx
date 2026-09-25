@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { openDocumentUrl } from "@/components/documents/openDocument";
 import { CheckSquare, ChevronDown, ChevronUp, Clock3, ExternalLink, FileText, Square } from "lucide-react-native";
 import { Button, Card, StatusChip } from "@/components/ui";
 import { InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -122,7 +123,7 @@ export function OfferCard({
           <Text style={st.section}>{t("sumKeyExclusions")}</Text>
           {cover.exclusions.length ? cover.exclusions.map((e) => <Text key={e.code} style={ps.meta}>• {e.name}</Text>) : <Text style={ps.meta}>{t("offerNoExclusions")}</Text>}
           {cover.documents.map((d) => (
-            <Pressable key={d.url} accessibilityRole="link" style={ps.row} onPress={() => void Linking.openURL(d.url)}>
+            <Pressable key={d.url} accessibilityRole="link" style={ps.row} onPress={() => openDocumentUrl(d.url, d.label)}>
               <FileText size={16} color={colors.blue600} />
               <Text style={ps.link}>{d.label}</Text>
               <ExternalLink size={14} color={colors.blue600} />

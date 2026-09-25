@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Linking, Share, Text } from "react-native";
+import { Share, Text } from "react-native";
+import { openDocumentUrl } from "@/components/documents/openDocument";
 import { useLocalSearchParams } from "expo-router";
 import { FileCheck2 } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -27,7 +28,7 @@ export default function DocumentPreview() {
       const x = await DocumentsApi.access(id);
       setData(x);
       const url = openableUrl(x.signed_url);
-      if (url) await Linking.openURL(url);
+      if (url) openDocumentUrl(url, x.label, x.share_reference);
       else setOpenError(new Error(t("docNoFile")));
     } catch (e) {
       setOpenError(e);

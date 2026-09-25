@@ -216,8 +216,18 @@ test("Batch 6 copy exists in English and French", () => {
   }
 });
 
-test("Batch 6 stays JS-only: no native config or dependency changes needed", () => {
+test("1.4.0 native build: in-app document viewer depends on webview, file-system and sharing", () => {
   const pkg = JSON.parse(read("package.json"));
-  assert.equal(pkg.version, "1.3.0");
-  for (const dep of ["react-native-webview", "expo-file-system", "expo-sharing", "expo-print"]) assert.equal(pkg.dependencies[dep], undefined, dep);
+  assert.equal(pkg.version, "1.4.0");
+  for (const dep of ["react-native-webview", "expo-file-system", "expo-sharing"]) assert.ok(pkg.dependencies[dep], dep);
+  assert.equal(pkg.dependencies["expo-print"], undefined);
+  const viewer = read("app/documents/view.tsx");
+  assert.match(viewer, /react-native-webview/);
+  assert.match(viewer, /StorageAccessFramework\.requestDirectoryPermissionsAsync/);
+  assert.match(viewer, /Sharing\.shareAsync/);
+  assert.match(read("app/_layout.tsx"), /documents\/view/);
+  // No screen hands a PDF to the system browser any more.
+  for (const f of ["app/documents/[id].tsx", "src/components/policies/PolicyDetailView.tsx", "src/components/policies/PolicyDocumentsSection.tsx", "app/payments/[id]/receipt.tsx", "src/components/offers/OfferCard.tsx", "src/components/offers/QuoteWorkflowPanel.tsx"]) {
+    assert.match(read(f), /openDocument(Url)?\(/, f);
+  }
 });

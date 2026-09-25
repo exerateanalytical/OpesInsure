@@ -138,6 +138,7 @@ export default function RootLayout() {
           <Stack.Screen name="quotes/index" />
           <Stack.Screen name="quotes/[id]" />
           <Stack.Screen name="documents/[id]" />
+          <Stack.Screen name="documents/view" />
           <Stack.Screen name="services/index" />
           <Stack.Screen name="services/new" />
           <Stack.Screen name="services/[id]" />

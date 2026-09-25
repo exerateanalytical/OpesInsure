@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
+import { openDocumentUrl } from "@/components/documents/openDocument";
 import { Archive, FileText, History } from "lucide-react-native";
 import { Button, Card, StatusChip } from "@/components/ui";
 import { purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -66,7 +67,7 @@ export function PolicyDocumentsSection({ policyId }: { policyId: string }) {
   const awaiting = data ? awaitingCount(data) : 0;
 
   const row = (d: IssuedDocument) => (
-    <Pressable key={d.id} accessibilityRole="button" onPress={() => void Linking.openURL(d.download_url)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.neutral200, gap: 4 }}>
+    <Pressable key={d.id} accessibilityRole="button" onPress={() => openDocumentUrl(d.download_url, documentTitle(d, language), d.document_number ?? undefined)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.neutral200, gap: 4 }}>
       <View style={[ps.row, { justifyContent: "space-between" }]}>
         <View style={[ps.row, { flex: 1 }]}>
           <FileText size={16} color={colors.blue600} />

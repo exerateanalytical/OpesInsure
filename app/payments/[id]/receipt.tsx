@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Linking, Share, Text } from "react-native";
+import { Share, Text } from "react-native";
+import { openDocumentUrl } from "@/components/documents/openDocument";
 import { useLocalSearchParams } from "expo-router";
 import { Download, Share2 } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -23,7 +24,7 @@ export default function Receipt() {
     setOpenError(null);
     if (!r?.downloadUrl) return;
     try {
-      await Linking.openURL(r.downloadUrl);
+      openDocumentUrl(r.downloadUrl, t("rcTitle"), r.number && r.number !== "—" ? `receipt-${r.number}` : undefined);
     } catch {
       setOpenError(t("rcPdfFailed"));
     }

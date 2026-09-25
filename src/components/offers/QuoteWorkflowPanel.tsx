@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Linking, Platform, Share, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { openDocument } from "@/components/documents/openDocument";
 import { router } from "expo-router";
 import { Columns3, FileDown, Send, XCircle } from "lucide-react-native";
 import { Button, Card, StatusChip, TextField } from "@/components/ui";
@@ -11,15 +12,6 @@ import { useTranslation } from "@/i18n";
 import { colors } from "@/theme/tokens";
 import { canDeclineQuote, hasQuoteDocument, QUOTE_DECLINE_REASONS, quoteOutcome, quoteStateKey, quoteTone, sentToInsurer } from "@/lib/quoteWorkflow";
 
-/** Opens a PDF held as a data: URI (the endpoint needs the bearer token, so no plain link). */
-async function openPdf(dataUri: string, title: string, unavailable: string) {
-  try {
-    await Linking.openURL(dataUri);
-  } catch {
-    if (Platform.OS === "ios") await Share.share({ url: dataUri, title });
-    else throw new Error(unavailable);
-  }
-}
 
 /** "Sent to insurer" summary from GET quotes/{id}/carrier-requests; renders nothing for auto-rated quotes. */
 export function SentToInsurerCard({ quoteId }: { quoteId: string }) {
@@ -64,8 +56,8 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
     setBusy("pdf");
     setError(null);
     try {
-      const doc = await QuoteWorkflowApi.document(quoteId);
-      await openPdf(doc.dataUri, quote.quote_number ?? t("qwDocument"), t("qwDocumentFailed"));
+      // The viewer fetches GET quotes/{q}/document itself (bearer token) and renders it in-app.
+      openDocument({ kind: "quote", quoteId }, quote.quote_number ?? t("qwDocument"), quote.quote_number ? `quote-${quote.quote_number}` : undefined);
     } catch (e) {
       setError({ e, fallback: t("qwDocumentFailed") });
     } finally {
