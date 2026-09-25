@@ -488,3 +488,24 @@ Route::prefix('v1/reconciliation')->middleware(['auth:api', 'tenant', 'json.api'
     Route::post('manual-matches/{match}/decide', [$w, 'decideMatch'])->middleware('permission:reconciliation.approve')->whereUuid('match');
 });
 // End Batch 9-5
+// Batch 9-6 — REQ-PAY-009 refund engine / queue (WF-063) and REQ-PAY-011 mobile-money clearing + suspense.
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+    $rf = \App\Application\Finance\Refunds\Http\RefundQueueController::class;
+    Route::get('refunds', [$rf, 'index'])->middleware('permission:refund.view');
+    Route::get('refunds/{refund}', [$rf, 'show'])->middleware('permission:refund.view')->whereUuid('refund');
+    Route::post('payments/{payment}/refund-candidates', [$rf, 'candidate'])->middleware('permission:refund.request')->whereUuid('payment');
+    Route::post('refunds/{refund}/calculate', [$rf, 'calculate'])->middleware('permission:refund.request')->whereUuid('refund');
+    Route::post('refunds/{refund}/review', [$rf, 'review'])->middleware('permission:refund.review')->whereUuid('refund');
+    Route::post('refunds/{refund}/reject', [$rf, 'reject'])->middleware('permission:refund.approve')->whereUuid('refund');
+    Route::post('refunds/{refund}/pay', [$rf, 'pay'])->middleware('permission:refund.pay')->whereUuid('refund');
+    Route::post('refunds/{refund}/reconcile', [$rf, 'reconcile'])->middleware('permission:refund.reconcile')->whereUuid('refund');
+    $cl = \App\Application\Finance\Clearing\Http\ClearingController::class;
+    Route::get('clearing/suspense', [$cl, 'suspense'])->middleware('permission:clearing.view');
+    Route::get('clearing/batches', [$cl, 'index'])->middleware('permission:clearing.view');
+    Route::post('clearing/batches', [$cl, 'store'])->middleware('permission:clearing.manage');
+    Route::get('clearing/batches/{batch}', [$cl, 'show'])->middleware('permission:clearing.view')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/items', [$cl, 'attach'])->middleware('permission:clearing.manage')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/settle', [$cl, 'settle'])->middleware('permission:clearing.manage')->whereUuid('batch');
+    Route::post('clearing/batches/{batch}/reconcile', [$cl, 'reconcile'])->middleware('permission:clearing.reconcile')->whereUuid('batch');
+});
+// End Batch 9-6

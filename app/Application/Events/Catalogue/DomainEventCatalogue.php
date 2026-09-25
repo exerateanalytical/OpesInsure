@@ -64,6 +64,16 @@ final class DomainEventCatalogue
             $d('claim.decision.rejected', 'claim', 'Claim rejected/declined.', ['ClaimRejected'], [$W]),
             $d('claim.payment.paid', 'claim', 'Claim settlement paid.', ['ClaimSettled'], [$W], true),
             $d('refund.approved', 'refund', 'Refund approved.', ['RefundApproved'], [$W], true),
+            // Batch 9-6 REQ-PAY-009 / WF-063 refund engine (App\Application\Finance\Refunds\RefundEngine)
+            $d('refund.candidate_created', 'refund', 'Refund candidate raised (cancellation, endorsement, issuance exception or manual).', [], [$C], true),
+            $d('refund.calculated', 'refund', 'Refund amount calculated by the maker.', [], [$C], true),
+            $d('refund.reviewed', 'refund', 'Refund calculation reviewed and sent for approval.', [], [$C], true),
+            $d('refund.rejected', 'refund', 'Refund rejected before payout.', [], [$C], true),
+            $d('refund.paid', 'refund', 'Approved refund paid out to the customer.', [], [$C], true),
+            $d('refund.reconciled', 'refund', 'Refund payout matched to the bank / provider statement.', [], [$C], true),
+            // Batch 9-6 REQ-PAY-011 mobile-money clearing (App\Application\Finance\Clearing\ClearingService)
+            $d('payment.clearing.settled', 'clearing_batch', 'Provider settlement batch credited by the bank.', [], [$C], true),
+            $d('payment.clearing.reconciled', 'clearing_batch', 'Provider settlement batch reconciled (matched or variance).', [], [$C], true),
             $d('commission.accrued', 'commission', 'Commission accrued.', ['CommissionAccrued'], [$W], true),
             $d('commission.settled', 'commission', 'Commission settled to the intermediary.', ['CommissionSettled'], [$W]),
             $d('settlement.completed', 'settlement', 'Financial settlement completed (scope UNVERIFIED: WRS gives no definition).', ['SettlementCompleted'], [$W]),
