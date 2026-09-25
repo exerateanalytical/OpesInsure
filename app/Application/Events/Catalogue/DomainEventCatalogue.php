@@ -99,7 +99,15 @@ final class DomainEventCatalogue
             $d('rules.eligibility.evaluated', 'eligibility', 'Eligibility evaluated.', ['EligibilityEvaluated'], [$P]),
             $d('policy.snapshot.created', 'policy', 'Immutable policy product snapshot created.', ['PolicySnapshotCreated'], [$P]),
             $d('claim.coverage.evaluated', 'claim', 'Claim coverage evaluated.', ['ClaimCoverageEvaluated'], [$P]),
-            $d('claim.settlement.calculated', 'claim', 'Claim settlement amount calculated.', ['ClaimSettlementCalculated'], [$P]),
+            $d('claim.settlement.calculated', 'claim', 'Claim settlement amount calculated.', ['ClaimSettlementCalculated'], [$P], true),
+            // Batch 12 C13 — REQ-CLM-013 settlement lifecycle (App\Application\Claims\Settlement\ClaimSettlementService)
+            $d('claim.settlement.offered', 'claim', 'Claim settlement offered to the payee.', [], [$C], true),
+            $d('claim.settlement.accepted', 'claim', 'Claim settlement offer accepted.', [], [$C], true),
+            $d('claim.settlement.disputed', 'claim', 'Claim settlement offer disputed.', [], [$C], true),
+            $d('claim.settlement.discharge_requested', 'claim', 'Settlement discharge (quittance) generated and sent for signature.', [], [$C], true),
+            $d('claim.settlement.discharge_signed', 'claim', 'Settlement discharge signed by the payee.', [], [$C], true),
+            $d('claim.settlement.payment_requested', 'claim', 'Settlement payment, payable obligation and approval posting raised.', [], [$C], true),
+            $d('claim.settlement.paid', 'claim', 'Claim settlement paid (obligation settled, paid posting).', [], [$C], true),
             $d('commission.calculated', 'commission', 'Commission calculated.', ['CommissionCalculated'], [$P], true),
 
             // --- Already emitted by code, no spec alias ---
