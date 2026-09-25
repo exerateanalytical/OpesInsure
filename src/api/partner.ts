@@ -59,7 +59,8 @@ export const humanize = (s: string) =>
   s.charAt(0) + s.slice(1).toLowerCase().replaceAll("_", " ");
 
 // ------------------------------------------------------------------- agent
-export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "CONVERTED" | "LOST";
+/** REQ-CRM-001 pipeline: NEW → CONTACTED → QUALIFIED → QUOTE → NEGOTIATION → WON (CONVERTED) / LOST. */
+export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "QUOTE" | "NEGOTIATION" | "CONVERTED" | "LOST";
 export type AgentLead = {
   id: string;
   full_name: string;
@@ -68,6 +69,9 @@ export type AgentLead = {
   product_interest: string | null;
   notes: string | null;
   status: LeadStatus;
+  /** Allowed manual moves from the server (LeadPipeline::next); never CONVERTED. */
+  next_statuses?: LeadStatus[];
+  lost_reason?: string | null;
   converted_customer_id: string | null;
   created_at: string;
   updated_at: string;
@@ -92,7 +96,7 @@ export const AgentWorkspaceApi = {
   }) => api<AgentLead>("/mobile/partner/agent/leads", post(payload)),
   updateLead: (
     id: string,
-    payload: { status?: Exclude<LeadStatus, "CONVERTED">; notes?: string },
+    payload: { status?: Exclude<LeadStatus, "CONVERTED">; notes?: string; lost_reason?: string | null },
   ) =>
     api<AgentLead>(`/mobile/partner/agent/leads/${id}`, {
       method: "PATCH",

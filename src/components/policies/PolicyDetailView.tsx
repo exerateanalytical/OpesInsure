@@ -13,6 +13,7 @@ import { policyHeaderLabels, RegulatoryTerm } from "@/lib/regulatoryTerms";
 import { humanize, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo, unwrapPage } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { PolicyDocumentsSection } from "@/components/policies/PolicyDocumentsSection";
+import { BeneficiariesSection } from "@/components/policies/BeneficiariesSection";
 import { colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -191,6 +192,8 @@ export function PolicyDetailView({ id }: { id: string }) {
       </Card>
 
       <PolicyDocumentsSection policyId={id} />
+
+      <BeneficiariesSection policyId={p.id} />
 
       {delivery ? (
         <Card>

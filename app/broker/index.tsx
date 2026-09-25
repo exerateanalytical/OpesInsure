@@ -14,6 +14,8 @@ import {
   Store,
   Users,
   Wallet,
+  Search,
+  UserPlus,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui";
@@ -56,6 +58,8 @@ export default function BrokerHome() {
       </StatePanel>
       <WorkspaceMenu
         items={[
+          { label: t("searchTitle"), subtitle: t("searchOpenSubtitle"), icon: Search, href: "/search?role=broker" },
+          { label: t("brLeads"), subtitle: t("brLeadsSubtitle"), icon: UserPlus, href: "/broker/leads" },
           { label: t("portalTab_Customers"), subtitle: t("brPrivateLedger"), icon: ContactRound, href: "/broker/clients" },
           { label: t("brSales"), subtitle: t("brProductionRegister"), icon: BookOpenCheck, href: "/broker/production" },
           { label: t("agQuotes"), subtitle: t("brQuotesForClients"), icon: FileSignature, href: "/broker/quotes" },

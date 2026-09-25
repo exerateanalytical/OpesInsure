@@ -13,6 +13,7 @@ export const API_ERROR_COPY = {
   NETWORK_UNAVAILABLE: "errNetworkUnavailable",
   REQUEST_TIMEOUT: "errNetworkUnavailable",
   OFFLINE_QUEUE_FULL: "errOfflineQueueFull",
+  KYC_REVIEW_IN_PROGRESS: "errKycReviewInProgress",
 } as const;
 
 export type ApiErrorCopyKey = (typeof API_ERROR_COPY)[keyof typeof API_ERROR_COPY];
@@ -21,6 +22,9 @@ export function apiErrorCopyKey(code: string | null | undefined): ApiErrorCopyKe
   if (!code) return null;
   return (API_ERROR_COPY as Record<string, ApiErrorCopyKey>)[code.toUpperCase()] ?? null;
 }
+
+/** 409: another KYC submission of this party is already under review — reload, do not resubmit. */
+export const isKycReviewInProgress = (code: string | null | undefined) => (code ?? "").toUpperCase() === "KYC_REVIEW_IN_PROGRESS";
 
 /** Codes where the user should reload the record rather than resubmit. */
 export const isStaleRecord = (code: string | null | undefined) => (code ?? "").toUpperCase() === "STALE_RECORD";

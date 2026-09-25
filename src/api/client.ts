@@ -1046,6 +1046,8 @@ export type AgentClient = {
   kyc_status: string;
   origin_locked: boolean;
   active_policies: number;
+  /** Party id for Customer 360, when the server includes it. */
+  party_id?: string | null;
   renewal_due_at?: string | null;
 };
 export type AgentSale = {
@@ -1165,6 +1167,8 @@ export type BrokerClient = {
   origin_locked: boolean;
   policies: number;
   outstanding_minor: number;
+  /** Party id for Customer 360, when the server includes it. */
+  party_id?: string | null;
   renewal_due_at?: string | null;
 };
 export type BrokerProduction = {
@@ -1535,6 +1539,13 @@ export const AssetsApi = {
         external_reference: payload.registration_number || null,
         facts: payload.facts,
       }),
+      idempotent: true,
+    }),
+  /** Any insured-object type from GET /risk-asset-types (PROPERTY, CARGO, LIVESTOCK, ...). */
+  createObject: (payload: { type: string; display_name: string; external_reference?: string | null; facts?: Record<string, unknown> }) =>
+    api<RiskAsset>("/mobile/assets", {
+      method: "POST",
+      body: JSON.stringify({ ...payload, external_reference: payload.external_reference || null, facts: payload.facts ?? {} }),
       idempotent: true,
     }),
   uploadDocument: (id: string, form: FormData) =>

@@ -6,9 +6,10 @@ import { Text } from "react-native";
 import { AppHeader, Card, Money, Screen, StatusChip } from "@/components/ui";
 import { BrokerApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
+import { Customer360Panel } from "@/components/crm/Customer360Panel";
 export default function BrokerClientDetail() {
   const { t } = useTranslation();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
   const q = useLoad(() => BrokerApi.client(id), [id]);
   const x = q.data;
   return (
@@ -30,6 +31,7 @@ export default function BrokerClientDetail() {
             {x ? <Money amount={x.outstanding_minor / 100} size="large" /> : null}
             <Text>Next renewal: {x?.renewal_due_at ?? t("agNone")}</Text>
           </Card>
+          <Customer360Panel partyId={x?.party_id ?? partyId ?? null} />
           </>
         )}
       </StatePanel>

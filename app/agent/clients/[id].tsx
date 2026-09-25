@@ -6,9 +6,10 @@ import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { AgentApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
+import { Customer360Panel } from "@/components/crm/Customer360Panel";
 export default function AgentClientDetail() {
   const { t } = useTranslation();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
   const q = useLoad(() => AgentApi.client(id), [id]);
   const x = q.data;
   return (
@@ -29,6 +30,7 @@ export default function AgentClientDetail() {
             <Text>Active policies: {x?.active_policies ?? 0}</Text>
             <Text>Renewal due: {x?.renewal_due_at ?? t("agNone")}</Text>
           </Card>
+          <Customer360Panel partyId={x?.party_id ?? partyId ?? null} />
           <Button
             label={t("agStartAssistedSale")}
             onPress={() => router.push(`/agent/sales/new?customerId=${id}`)}

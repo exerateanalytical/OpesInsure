@@ -6,6 +6,8 @@ import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
 import { DateField, ErrorCard, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { AssetsApi, CatalogueApi, RiskAsset } from "@/api/client";
+import { RiskAssetTypesApi } from "@/api/crm";
+import { assetTypesForLine } from "@/lib/crm";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { unwrapPage } from "@/lib/purchase";
@@ -17,7 +19,6 @@ import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/veh
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const ASSET_LINES: Record<string, string[]> = { MOTOR: ["VEHICLE", "MOTOR", "CAR", "MOTORCYCLE"], HOME: ["PROPERTY", "HOME", "BUILDING"] };
 
 function prefillFromAsset(asset: RiskAsset): Record<string, string> {
   const out: Record<string, string> = {};
@@ -44,6 +45,7 @@ export default function Risk() {
   const [schema, setSchema] = useState<RiskSchema | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(true);
   const [assets, setAssets] = useState<RiskAsset[]>([]);
+  const [assetType, setAssetType] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
@@ -65,10 +67,18 @@ export default function Risk() {
 
   useEffect(() => {
     void loadSchema();
-    if (ASSET_LINES[line])
-      AssetsApi.list()
-        .then((x) => setAssets(unwrapPage<RiskAsset>(x).items.filter((a) => ASSET_LINES[line]!.includes(String(a.type).toUpperCase()) || line === "MOTOR" && !!a.registration_number)))
-        .catch(() => setAssets([]));
+    // Insurable object types per line come from GET /risk-asset-types (REQ-RSK-001).
+    void RiskAssetTypesApi.list()
+      .catch(() => [])
+      .then(async (types) => {
+        const codes = assetTypesForLine(types, line);
+        const own = types.find((x) => x.line_code === line);
+        setAssetType(own?.code ?? (line === "MOTOR" ? "VEHICLE" : null));
+        if (!codes.length) return setAssets([]);
+        const x = await AssetsApi.list();
+        setAssets(unwrapPage<RiskAsset>(x).items.filter((a) => codes.includes(String(a.type).toUpperCase()) || (line === "MOTOR" && !!a.registration_number)));
+      })
+      .catch(() => setAssets([]));
   }, [line, loadSchema]);
 
   // Step 0 is "who / what is insured"; schema steps follow.
@@ -163,7 +173,7 @@ export default function Risk() {
               </Card>
               {assets.length ? (
                 <Card>
-                  <Text style={ps.title}>{t(line === "MOTOR" ? "qtUseSavedVehicle" : "qtUseSavedProperty")}</Text>
+                  <Text style={ps.title}>{t(line === "MOTOR" ? "qtUseSavedVehicle" : line === "HOME" ? "qtUseSavedProperty" : "qtUseSavedObject")}</Text>
                   <Text style={ps.meta}>{t("qtAssetPrefilled")}</Text>
                   {assets.map((a) => {
                     const on = riskAssetId === a.id;
@@ -187,7 +197,7 @@ export default function Risk() {
                       </Pressable>
                     );
                   })}
-                  <Button label={t("qtAddNew")} variant="tertiary" onPress={() => router.push("/assets/new")} />
+                  <Button label={t("qtAddNew")} variant="tertiary" onPress={() => router.push(assetType ? { pathname: "/assets/new", params: { type: assetType } } : "/assets/new")} />
                 </Card>
               ) : null}
             </>

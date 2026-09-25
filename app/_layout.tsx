@@ -81,6 +81,8 @@ export default function RootLayout() {
           <Stack.Screen name="account/security" />
           <Stack.Screen name="account/devices" />
           <Stack.Screen name="system/status" />
+          {/* REQ-SRC-001: results are permission- and scope-filtered server-side. */}
+          <Stack.Screen name="search" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
           <Stack.Screen name="(customer)" />
@@ -169,6 +171,8 @@ export default function RootLayout() {
           <Stack.Screen name="broker/notifications" />
           <Stack.Screen name="broker/clients" />
           <Stack.Screen name="broker/clients/[id]" />
+          <Stack.Screen name="broker/leads/index" />
+          <Stack.Screen name="broker/leads/[id]" />
           <Stack.Screen name="broker/production" />
           <Stack.Screen name="broker/renewals" />
           <Stack.Screen name="broker/receivables" />

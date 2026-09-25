@@ -18,6 +18,7 @@ import {
   Eye,
   BellRing,
   ShieldCheck,
+  Search,
   UserRound,
   WalletCards,
   CloudCog,
@@ -40,6 +41,7 @@ const groups: { title: CopyKey; links: [CopyKey, LucideIcon, string][] }[] = [
       ["personalInformation", UserRound, "/account/profile"],
       ["identityVerification", ShieldCheck, "/onboarding/kyc"],
       ["myAssets", CarFront, "/assets"],
+      ["searchTitle", Search, "/search"],
     ],
   },
   {

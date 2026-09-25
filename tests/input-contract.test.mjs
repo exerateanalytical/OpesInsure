@@ -219,7 +219,8 @@ test("screens render the server forms with the shared renderer; timezone, canoni
   assert.match(read("app/account/profile.tsx"), /<TimezonePicker/);
   assert.match(read("app/account/profile.tsx"), /updateCustomerProfile/);
   assert.match(read("app/onboarding/kyc.tsx"), /form="kyc_identifier"/);
-  assert.match(read("app/onboarding/kyc.tsx"), /form="kyc_document"/);
+  // Batch 4: the KYC case engine takes explicit purposes (ID_FRONT, ID_BACK, PASSPORT, PROOF_OF_ADDRESS, RCCM, NIU).
+  assert.match(read("app/onboarding/kyc.tsx"), /KYC_DOCUMENT_PURPOSES/);
   assert.match(read("app/claim/new.tsx"), /form="claim_fnol"/);
   assert.match(read("app/agent/leads/new.tsx"), /form="agent_lead"/);
   const form = read("src/components/forms/SchemaForm.tsx");

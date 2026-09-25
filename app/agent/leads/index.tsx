@@ -10,15 +10,16 @@ import { AppHeader, Button } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { AgentWorkspaceApi, LeadStatus, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { isOpenLead } from "@/lib/crm";
 
 type Filter = "OPEN" | LeadStatus;
 
 export default function AgentLeads() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.leads(), []);
   const [filter, setFilter] = useState<Filter>("OPEN");
   const rows = (q.data ?? []).filter((l) =>
-    filter === "OPEN" ? !["CONVERTED", "LOST"].includes(l.status) : l.status === filter,
+    filter === "OPEN" ? isOpenLead(l.status) : l.status === filter,
   );
   return (
     <PortalScreen tabs={agentTabs}>
@@ -49,8 +50,8 @@ export default function AgentLeads() {
             rows={x.map((l) => ({
               id: l.id,
               title: l.full_name,
-              subtitle: [l.phone_e164, l.product_interest, `added ${shortDate(l.created_at)}`].filter(Boolean).join(" · "),
-              status: l.status,
+              subtitle: [l.phone_e164, l.product_interest, t("agLeadAdded", { date: shortDate(l.created_at) })].filter(Boolean).join(" · "),
+              status: td(`leadStatus_${l.status}`, l.status),
             }))}
           />
         )}

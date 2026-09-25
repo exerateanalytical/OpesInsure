@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { api, type Claim, type CustomerNotification, type EvidenceRequirement } from "./client";
 import { rows, type Institution } from "./extra";
+import type { KycRequirement } from "@/lib/kyc";
 
 /**
  * Customer-shell API calls (home, explore, profile/KYC, claims evidence,
@@ -34,7 +35,15 @@ export type KycSubmission = {
   notes: string | null;
   submitted_at: string | null;
   reviewed_at: string | null;
-  documents: { id: string; purpose: string; category: string; scan_status: string }[];
+  /** KYC case engine (Batch 4): level, requirements and expiry. */
+  kyc_level?: string | null;
+  approved_at?: string | null;
+  expires_at?: string | null;
+  expired_at?: string | null;
+  remediation_reason?: string | null;
+  requirements?: KycRequirement[];
+  missing_requirements?: string[];
+  documents: { id: string; purpose: string; category: string; scan_status: string; verification_status?: string | null }[];
 };
 /** GET /mobile/kyc/profile (App\Application\Kyc\MobileKycService::profile). */
 export type KycState = {

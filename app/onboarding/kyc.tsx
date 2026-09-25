@@ -2,25 +2,30 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Camera, CheckCircle2, Images, UserRound } from "lucide-react-native";
+import { Camera, CheckCircle2, CircleAlert, Images, UserRound } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { SchemaForm } from "@/components/forms/SchemaForm";
+import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { colors, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
+import { isKycReviewInProgress } from "@/lib/apiErrors";
+import { canSubmitKyc, daysUntil, KYC_DOCUMENT_PURPOSES, KycPurpose, kycPhase, suggestedPurposes } from "@/lib/kyc";
 
 /**
- * Identity verification (MobileKycService):
+ * Identity verification on the KYC case engine (KycService):
  *  1. add an identifier: server form kyc_identifier -> PATCH /mobile/kyc/profile,
- *  2. photograph the document: form kyc_document (type picker) + photo
- *     -> POST /mobile/documents -> POST /mobile/kyc/documents,
- *  3. submit (POST /mobile/kyc/submission). Address, occupation and
- *     beneficiaries now live on the server profile (form customer_profile).
- * With ?first=1 (right after sign-up) the step can be skipped and finished
- * later from Profile.
+ *  2. photograph a document for a purpose (ID_FRONT, ID_BACK, PASSPORT,
+ *     PROOF_OF_ADDRESS, RCCM, NIU) -> POST /mobile/documents -> POST /mobile/kyc/documents,
+ *  3. submit / resubmit (POST /mobile/kyc/submission).
+ * Shows kyc_level, requirements / missing_requirements and expires_at, and
+ * every status: DRAFT, SUBMITTED, REVIEWING, MORE_INFO_REQUIRED (add documents
+ * and resubmit), PENDING_APPROVAL, APPROVED, REJECTED, EXPIRED. A 409
+ * KYC_REVIEW_IN_PROGRESS reloads the live submission instead of resubmitting.
+ * With ?first=1 (right after sign-up) the step can be skipped.
  */
 export default function Kyc() {
   const { first } = useLocalSearchParams<{ first?: string }>();
@@ -28,17 +33,20 @@ export default function Kyc() {
   const { t, td, date } = useTranslation();
   const q = useLoad(() => CustomerApi.kyc());
   const [photo, setPhoto] = useState<{ base64: string; mime: "image/png" | "image/jpeg" } | null>(null);
-  const [busy, setBusy] = useState<"photo" | "submit" | null>(null);
+  const [purpose, setPurpose] = useState<KycPurpose | null>(null);
+  const [busy, setBusy] = useState<"photo" | "attach" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const run = async (kind: "photo" | "submit", fn: () => Promise<void>) => {
+  const run = async (kind: "photo" | "attach" | "submit", fn: () => Promise<void>) => {
     setBusy(kind);
     setError(null);
     setNotice(null);
     try {
       await fn();
     } catch (e) {
+      const code = (e as { code?: string } | null)?.code;
+      if (isKycReviewInProgress(code)) void q.reload();
       setError(e instanceof Error ? e.message : t("actionFailed"));
     } finally {
       setBusy(null);
@@ -57,6 +65,16 @@ export default function Kyc() {
       setPhoto({ base64: asset.base64, mime: asset.mimeType === "image/png" ? "image/png" : "image/jpeg" });
       setNotice(t("kycPhotoReady"));
     });
+  const attach = () =>
+    run("attach", async () => {
+      if (!photo || !purpose) throw new Error(t("kycChooseTypeFirst"));
+      const doc = await CustomerApi.uploadDocument({ category: "KYC_IDENTITY", mime_type: photo.mime, file_base64: photo.base64 });
+      await CustomerApi.attachKycDocument(doc.id, purpose);
+      setPhoto(null);
+      setPurpose(null);
+      q.setData(await CustomerApi.kyc());
+      setNotice(t("kycDocumentAdded"));
+    });
   const submit = () =>
     run("submit", async () => {
       await CustomerApi.submitKyc();
@@ -74,19 +92,46 @@ export default function Kyc() {
       />
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(k) => {
-          const status = k.submission?.status ?? "NOT_STARTED";
-          const locked = status === "SUBMITTED" || status === "UNDER_REVIEW" || status === "APPROVED" || status === "VERIFIED";
-          const docs = k.submission?.documents ?? [];
+          const sub = k.submission;
+          const status = sub?.status ?? "NOT_STARTED";
+          const { phase, editable, tone } = kycPhase(status, sub?.expires_at);
+          // A new verification starts from a fresh draft: old documents do not count.
+          const restart = phase === "expired" || phase === "rejected";
+          const docs = restart ? [] : (sub?.documents ?? []);
+          const requirements = restart ? [] : (sub?.requirements ?? []);
+          const suggested = suggestedPurposes(restart ? [] : sub?.missing_requirements);
+          const days = daysUntil(sub?.expires_at);
+          const ready = canSubmitKyc(editable, docs.length, requirements) && k.identifiers.length > 0;
+          const reviewerNote = sub?.remediation_reason ?? (phase === "more_info" || phase === "rejected" ? sub?.notes : null);
           return (
             <>
               <Card>
-                <StatusChip
-                  label={td(`kycStatus_${status}`, status)}
-                  tone={status === "APPROVED" || status === "VERIFIED" ? "success" : status === "REJECTED" ? "danger" : locked ? "info" : "warning"}
-                />
-                <Text style={styles.body}>{t(locked ? "kycLockedBody" : "kycIntro")}</Text>
-                {k.submission?.submitted_at ? <Text style={styles.meta}>{t("kycSubmittedOn", { date: date(k.submission.submitted_at) })}</Text> : null}
+                <StatusChip label={td(`kycStatus_${phase === "expired" ? "EXPIRED" : status}`, status)} tone={tone} />
+                <Text style={styles.body}>{t(`kycPhase_${phase}`)}</Text>
+                {sub?.kyc_level ? <Text style={styles.meta}>{t("kycLevel", { level: td(`kycLevel_${sub.kyc_level}`, sub.kyc_level) })}</Text> : null}
+                {sub?.submitted_at ? <Text style={styles.meta}>{t("kycSubmittedOn", { date: date(sub.submitted_at) })}</Text> : null}
+                {sub?.expires_at && phase === "approved" ? (
+                  <Text style={days !== null && days <= 30 ? styles.warn : styles.meta}>
+                    {days !== null && days <= 30 ? t("kycExpiresSoon", { days: Math.max(days, 0) }) : t("kycExpiresOn", { date: date(sub.expires_at) })}
+                  </Text>
+                ) : null}
+                {phase === "expired" && sub?.expires_at ? <Text style={styles.warn}>{t("kycExpiredOn", { date: date(sub.expired_at ?? sub.expires_at) })}</Text> : null}
+                {reviewerNote ? <Text style={styles.warn}>{t("kycReviewerNote", { note: reviewerNote })}</Text> : null}
               </Card>
+
+              {requirements.length ? (
+                <Card>
+                  <Text style={styles.title}>{t("kycRequirementsTitle")}</Text>
+                  {requirements.map((r) => (
+                    <View key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={styles.row}>
+                      {r.satisfied ? <CheckCircle2 size={18} color={colors.success} /> : <CircleAlert size={18} color={r.mandatory ? colors.dangerText : colors.neutral500} />}
+                      <Text style={styles.body}>
+                        {td(`kycReq_${r.requirement_code}`, r.requirement_code)} · {t(r.satisfied ? "kycReqSatisfied" : r.mandatory ? "kycReqMissing" : "kycReqOptional")}
+                      </Text>
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
 
               <Card>
                 <Text style={styles.title}>{t("kycStep1")}</Text>
@@ -99,7 +144,7 @@ export default function Kyc() {
                   </View>
                 ))}
               </Card>
-              {!locked ? (
+              {editable ? (
                 <SchemaForm
                   form="kyc_identifier"
                   submitLabel={t("kycSaveIdentifier")}
@@ -118,49 +163,44 @@ export default function Kyc() {
                 {docs.map((d) => (
                   <View key={d.id} style={styles.row}>
                     <CheckCircle2 size={18} color={d.scan_status === "CLEAN" ? colors.success : colors.neutral500} />
-                    <Text style={styles.body}>{td(`scan_${d.scan_status}`, d.scan_status)}</Text>
+                    <Text style={styles.body}>
+                      {td(`kycPurpose_${d.purpose}`, d.purpose)} · {td(`scan_${d.scan_status}`, d.scan_status)}
+                    </Text>
                   </View>
                 ))}
-                {!locked ? <Text style={styles.meta}>{t("kycChooseTypeFirst")}</Text> : null}
+                {editable ? (
+                  <>
+                    {suggested.length ? (
+                      <Text style={styles.meta}>{t("kycSuggested", { list: suggested.map((p) => td(`kycPurpose_${p}`, p)).join(", ") })}</Text>
+                    ) : null}
+                    <ChoiceChips<KycPurpose>
+                      label={t("kycPurposeLabel")}
+                      value={purpose}
+                      onChange={setPurpose}
+                      options={KYC_DOCUMENT_PURPOSES.map((p) => ({ value: p, label: td(`kycPurpose_${p}`, p) }))}
+                    />
+                    {photo ? <Text style={styles.body}>{t("kycPhotoReady")}</Text> : null}
+                    <Button label={t("kycTakePhoto")} icon={Camera} variant="secondary" loading={busy === "photo"} disabled={!!busy} onPress={() => void takePhoto("camera")} />
+                    <Button label={t("evidenceFromLibrary")} icon={Images} variant="tertiary" disabled={!!busy} onPress={() => void takePhoto("library")} />
+                    <Button label={t("kycSaveDocument")} loading={busy === "attach"} disabled={!photo || !purpose || !!busy} onPress={() => void attach()} />
+                    {!purpose ? <Text style={styles.meta}>{t("kycChooseTypeFirst")}</Text> : null}
+                  </>
+                ) : null}
               </Card>
-              {!locked ? (
-                <SchemaForm
-                  form="kyc_document"
-                  hide={["document_id"]}
-                  submitLabel={t("kycSaveDocument")}
-                  disabled={!photo}
-                  resetOnSuccess
-                  footer={
-                    <Card>
-                      {photo ? <Text style={styles.body}>{t("kycPhotoReady")}</Text> : null}
-                      <Button label={t("kycTakePhoto")} icon={Camera} variant="secondary" loading={busy === "photo"} disabled={!!busy} onPress={() => void takePhoto("camera")} />
-                      <Button label={t("evidenceFromLibrary")} icon={Images} variant="tertiary" disabled={!!busy} onPress={() => void takePhoto("library")} />
-                    </Card>
-                  }
-                  onSubmit={async ({ purpose, ...rest }) => {
-                    if (!photo) throw new Error(t("kycChooseTypeFirst"));
-                    const doc = await CustomerApi.uploadDocument({ category: "KYC_IDENTITY", mime_type: photo.mime, file_base64: photo.base64 });
-                    await CustomerApi.attachKycDocument(doc.id, String(purpose ?? "IDENTITY_DOCUMENT"), rest);
-                    setPhoto(null);
-                    q.setData(await CustomerApi.kyc());
-                    setNotice(t("kycDocumentAdded"));
-                  }}
-                />
-              ) : null}
 
               <Card>
                 <Text style={styles.title}>{t("kycStep3")}</Text>
                 <Text style={styles.body}>{t("kycProfileBody")}</Text>
                 <Button label={t("personalInformation")} icon={UserRound} variant="tertiary" onPress={() => router.push("/account/profile")} />
-                {!locked ? (
+                {editable ? (
                   <Button
-                    label={t("kycSubmit")}
+                    label={t(phase === "more_info" ? "kycResubmit" : restart ? "kycRenew" : "kycSubmit")}
                     loading={busy === "submit"}
-                    disabled={!k.identifiers.length || !docs.length || !!busy}
+                    disabled={!ready || !!busy}
                     onPress={() => void submit()}
                   />
                 ) : null}
-                {!locked && (!k.identifiers.length || !docs.length) ? <Text style={styles.meta}>{t("kycSubmitHint")}</Text> : null}
+                {editable && !ready ? <Text style={styles.meta}>{t("kycSubmitHint")}</Text> : null}
               </Card>
             </>
           );
@@ -182,6 +222,7 @@ const styles = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
+  warn: { ...type.meta, color: colors.warningText },
   row: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },

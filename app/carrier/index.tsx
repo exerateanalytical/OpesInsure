@@ -13,6 +13,7 @@ import {
   Landmark,
   Package,
   ShieldAlert,
+  Search,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui";
@@ -55,6 +56,7 @@ export default function CarrierHome() {
       </StatePanel>
       <WorkspaceMenu
         items={[
+          { label: t("searchTitle"), subtitle: t("searchOpenSubtitle"), icon: Search, href: "/search?role=carrier" },
           { label: t("caProducts"), subtitle: t("caProductsTariffs"), icon: Package, href: "/carrier/products" },
           { label: t("caQuotesProposals"), subtitle: t("caProposalsForProducts"), icon: FileSignature, href: "/carrier/proposals" },
           { label: t("portalTab_Underwriting"), subtitle: t("caReferralsToDecide"), icon: ClipboardCheck, href: "/carrier/referrals" },

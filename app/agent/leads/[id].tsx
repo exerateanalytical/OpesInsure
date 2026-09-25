@@ -4,12 +4,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen, SectionTitle, StatusChip, TextField } from "@/components/ui";
-import { ChoiceChips, ConsentCheckbox, errorMessage, Notice } from "@/components/portal/Workspace";
-import { AgentLead, AgentWorkspaceApi, humanize, LeadStatus, shortDate } from "@/api/partner";
+import { ConsentCheckbox, errorMessage, Notice } from "@/components/portal/Workspace";
+import { AgentLead, AgentWorkspaceApi, LeadStatus, shortDate } from "@/api/partner";
+import { LeadActivityApi } from "@/api/crm";
+import { LeadActivityLog, LeadStageMover } from "@/components/crm/LeadPipeline";
 import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
-
-type Manual = Exclude<LeadStatus, "CONVERTED">;
 
 export default function LeadDetail() {
   const { t } = useTranslation();
@@ -26,8 +26,7 @@ export default function LeadDetail() {
 }
 
 function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead) => void }) {
-  const { t } = useTranslation();
-  const [status, setStatus] = useState<Manual | null>(lead.status === "CONVERTED" ? null : lead.status);
+  const { t, td } = useTranslation();
   const [notes, setNotes] = useState(lead.notes ?? "");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState<"save" | "convert" | null>(null);
@@ -38,8 +37,8 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
       <Card>
         <Text style={s.name}>{lead.full_name}</Text>
         <Text style={s.meta}>{[lead.phone_e164, lead.city, lead.product_interest].filter(Boolean).join(" · ")}</Text>
-        <Text style={s.meta}>Added {shortDate(lead.created_at)}</Text>
-        <StatusChip label={humanize(lead.status)} tone={converted ? "success" : lead.status === "LOST" ? "danger" : "info"} />
+        <Text style={s.meta}>{t("agLeadAdded", { date: shortDate(lead.created_at) })}</Text>
+        <StatusChip label={td(`leadStatus_${lead.status}`, lead.status)} tone={converted ? "success" : lead.status === "LOST" ? "danger" : "info"} />
       </Card>
 
       {converted ? (
@@ -51,19 +50,17 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
         </Card>
       ) : (
         <>
+          <SectionTitle title={t("agLeadStatus")} />
+          <LeadStageMover
+            status={lead.status}
+            nextStatuses={lead.next_statuses}
+            lostReason={lead.lost_reason}
+            onMove={async (to, lost_reason) =>
+              onChange(await AgentWorkspaceApi.updateLead(lead.id, { status: to as Exclude<LeadStatus, "CONVERTED">, lost_reason: lost_reason ?? null }))
+            }
+          />
           <SectionTitle title={t("agFollowUp")} />
           <Card>
-            <ChoiceChips<Manual>
-              label={t("agLeadStatus")}
-              value={status}
-              onChange={setStatus}
-              options={[
-                { value: "NEW", label: t("agLeadNew") },
-                { value: "CONTACTED", label: t("agLeadContacted") },
-                { value: "QUALIFIED", label: t("agLeadQualified") },
-                { value: "LOST", label: t("agLeadLost") },
-              ]}
-            />
             <TextField label={t("agNotes")} value={notes} onChangeText={setNotes} multiline />
             <Button
               label={t("agSaveFollowUp")}
@@ -73,7 +70,7 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
                 setBusy("save");
                 setMsg(null);
                 try {
-                  onChange(await AgentWorkspaceApi.updateLead(lead.id, { status: status ?? undefined, notes }));
+                  onChange(await AgentWorkspaceApi.updateLead(lead.id, { notes }));
                   setMsg({ text: t("settingsSavedShort"), tone: "ok" });
                 } catch (e) {
                   setMsg({ text: errorMessage(e), tone: "error" });
@@ -116,6 +113,7 @@ function LeadBody({ lead, onChange }: { lead: AgentLead; onChange: (l: AgentLead
         </>
       )}
       <Notice text={msg?.text ?? null} tone={msg?.tone ?? "ok"} />
+      <LeadActivityLog leadId={lead.id} load={LeadActivityApi.agentList} add={LeadActivityApi.agentAdd} />
     </>
   );
 }
