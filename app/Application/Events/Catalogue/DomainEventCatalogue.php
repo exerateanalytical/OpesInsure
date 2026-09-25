@@ -54,7 +54,7 @@ final class DomainEventCatalogue
             $d('policy.issued', 'policy', 'Policy issued.', ['PolicyIssued'], [$W], true),
             $d('policy.activated', 'policy', 'Policy cover became active.', ['PolicyActivated'], [$W]),
             $d('certificate.issued', 'certificate', 'Attestation/certificate generated.', ['AttestationGenerated'], [$W], true),
-            $d('policy.endorsement.issued', 'policy', 'Endorsement issued on a policy.', ['EndorsementIssued'], [$W]),
+            $d('policy.endorsement.issued', 'policy', 'Endorsement issued on a policy.', ['EndorsementIssued'], [$W, $C], true),
             $d('renewal.due', 'policy', 'Policy entered its renewal window.', ['RenewalDue'], [$W]),
             $d('renewal.completed', 'policy', 'Policy renewed.', ['PolicyRenewed'], [$W], true),
             $d('claim.fnol.submitted', 'claim', 'Claim reported (FNOL).', ['ClaimReported'], [$W], true),
