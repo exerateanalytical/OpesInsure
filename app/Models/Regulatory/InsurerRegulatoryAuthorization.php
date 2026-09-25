@@ -28,6 +28,12 @@ final class InsurerRegulatoryAuthorization extends Model
         return $this->belongsTo(Carrier::class);
     }
 
+    /** Register-year source row (official register) that fed this record — REQ-DUP-017. */
+    public function registerAuthorization(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\InsurerAuthorization::class, 'register_authorization_id');
+    }
+
     public function branches(): HasMany
     {
         return $this->hasMany(InsurerAuthorizedBranch::class, 'authorization_id');

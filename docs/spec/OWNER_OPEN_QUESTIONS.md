@@ -41,3 +41,6 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - Insurer logos: supply licensed logo files for the landing page, or keep text wordmarks.
 - Business hours: do SLA clocks exclude an unpaid lunch hour? (Spec example ICE §6.11#1 implies yes: 16 business hours from Friday 16:00 lands Wednesday 15:00; continuous 08:00–17:00 gives 14:00.) Also: official working hours, public holidays and SLA targets per case type (OQ-6.2/6.3) — none are seeded until you confirm.
 - Global vehicle dataset (gor3a/vehicle-makes-models): code is MIT but the data is ODbL v1.0 — requires attribution to the project and autoevolution.com, and share-alike if we publicly use an adapted database. Accept these terms so we can import generations/engines/specs? (Importer ready: opesinsure:import-vehicle-dataset --accept-license.) Until then generations/variants are filled by admins.
+- CIMA readiness checklist (your spec §60, 28 items): the text isn't in the repo; a 29-item reconstruction is marked UNVERIFIED on the CIMA dashboard. Please paste the original list.
+- Insurer setup checklist (23 items) and broker setup checklist (19 items): mapped to SETUP_CONFIGURATION_FRAMEWORK steps (counts match). Confirm the wording.
+- Broker CIMA reporting subject codes (ISSUED/COLLECTED, BROKER_COMMISSION/AGENT_COMMISSION) are platform labels; rename if you prefer.

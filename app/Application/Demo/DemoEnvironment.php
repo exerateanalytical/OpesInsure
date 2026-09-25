@@ -15,6 +15,17 @@ namespace App\Application\Demo;
  */
 final class DemoEnvironment
 {
+    /** REQ-SEED-005 — fixed demo-layer labels (INSTITUTIONAL_SEED_SPEC_V1 rule 8). */
+    public const BANNER_TEXT = 'DEMONSTRATION ENVIRONMENT — NO REAL INSURANCE COVER IS CREATED';
+
+    public const DOCUMENT_WATERMARK = 'DEMONSTRATION — NOT VALID / DÉMONSTRATION — NON VALABLE';
+
+    public const TARIFF_LABEL = 'DEMO — NOT AN INSURER QUOTE';
+
+    public const QR_VERIFICATION_STATUS = 'DEMO_VALID';
+
+    public const IDENTITY_DOMAIN = 'opesinsure-demo.invalid';
+
     public function name(): string
     {
         return (string) app()->environment();
@@ -67,9 +78,10 @@ final class DemoEnvironment
         };
     }
 
-    /** @return array{name: string, demo_mode: bool, banner: string|null} */
+    /** @return array{name: string, demo_mode: bool, banner: string|null, banner_text: string|null} */
     public function toArray(): array
     {
-        return ['name' => $this->name(), 'demo_mode' => $this->demoEnabled(), 'banner' => $this->bannerLabel()];
+        return ['name' => $this->name(), 'demo_mode' => $this->demoEnabled(), 'banner' => $this->bannerLabel(),
+            'banner_text' => $this->demoEnabled() ? self::BANNER_TEXT : null];
     }
 }

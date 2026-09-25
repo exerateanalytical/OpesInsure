@@ -14,6 +14,7 @@ use App\Models\TenantCustomer;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -61,6 +62,15 @@ final class DemoScenarioSeeder extends Seeder
         $agentPartner = $this->agentScenario($agent, $chanas);
         $this->brokerScenario($broker, $chanas, $sanlam);
         $this->carrierScenario($insurer, $chanas, $customer);
+
+        // REQ-SEED-001: customers created via Eloquent above inherit the demo flag of their party.
+        if (Schema::hasColumn('tenant_customers', 'is_demo')) {
+            DB::table('tenant_customers')->where('tenant_id', $this->tenant->id)
+                ->whereIn('party_id', DB::table('parties')->where('is_demo', true)->select('id'))
+                ->update(['is_demo' => true, 'data_origin' => 'DEMO_SYNTHETIC']);
+        }
+
+        $this->call(DemoInstitutionalSeeder::class);
     }
 
     // ---------------------------------------------------------------- customer
@@ -367,6 +377,9 @@ final class DemoScenarioSeeder extends Seeder
             'id' => DB::table('party_addresses')->where(['party_id' => $party->id, 'type' => 'HOME'])->value('id') ?? (string) Str::uuid(),
             'city' => $city, 'country_code' => 'CM', 'line1' => 'Demo address', 'is_primary' => true, 'created_at' => $this->now, 'updated_at' => $this->now,
         ], fn ($v) => $v !== null));
+        if ($this->hasProvenance('parties')) {
+            DB::table('parties')->where('id', $party->id)->update(['is_demo' => true, 'data_origin' => 'DEMO_SYNTHETIC']);
+        }
 
         return $party->id;
     }
@@ -398,6 +411,9 @@ final class DemoScenarioSeeder extends Seeder
         $existing = $q->first();
         $plainKey = array_filter($key, fn ($k) => ! str_contains($k, '->'), ARRAY_FILTER_USE_KEY);
         $stamps = $timestamps ? ['updated_at' => $this->now] : [];
+        if ($this->hasProvenance($table)) { // REQ-SEED-001: every demo row is flagged
+            $values += ['is_demo' => true, 'data_origin' => 'DEMO_SYNTHETIC'];
+        }
         if ($existing) {
             DB::table($table)->where('id', $existing->id)->update([...$plainKey, ...$values, ...$stamps]);
 
@@ -407,5 +423,13 @@ final class DemoScenarioSeeder extends Seeder
         DB::table($table)->insert(['id' => $id, ...$plainKey, ...$values, ...($timestamps ? ['created_at' => $this->now, 'updated_at' => $this->now] : [])]);
 
         return $id;
+    }
+
+    /** @var array<string, bool> */
+    private array $provenance = [];
+
+    private function hasProvenance(string $table): bool
+    {
+        return $this->provenance[$table] ??= Schema::hasColumn($table, 'is_demo') && Schema::hasColumn($table, 'data_origin');
     }
 }

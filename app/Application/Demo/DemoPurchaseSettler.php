@@ -79,7 +79,7 @@ final class DemoPurchaseSettler
         }
         $requestModel = \App\Models\PolicyIssuanceRequest::where('proposal_id', $proposal->id)->firstOrFail();
         if (in_array($requestModel->status, ['REQUESTED', 'CARRIER_REVIEW'], true)) {
-            $policy = $this->issuance->approve($requestModel, ['policy_number' => 'POL-'.now()->format('Y').'-'.str_pad((string) (Policy::count() + 1000), 6, '0', STR_PAD_LEFT), 'carrier_reference' => 'DEMO-'.strtoupper(Str::random(8))], $approver);
+            $policy = $this->issuance->approve($requestModel, ['carrier_reference' => 'DEMO-'.strtoupper(Str::random(8))], $approver);
             UserNotification::notify($customer, 'POLICY', 'Your policy is active', "Policy {$policy->policy_number} has been issued. Your certificate is ready in your wallet.", 'SUCCESS', "/policy/{$policy->id}", $tenant->id);
         }
     }

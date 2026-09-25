@@ -47,4 +47,14 @@
             <div class="py-1 text-sm">{{ $i['name'] }}@if ($i['is_demo']) (DEMO)@endif · {{ $i['products'] }} product(s)</div>
         @endforeach
     </x-filament::section>
+
+    <x-filament::section heading="CIMA-ready checklist" :description="$checklist['source_note'].' PASS '.$checklist['totals']['PASS'].' · FAIL '.$checklist['totals']['FAIL'].' · WARN '.$checklist['totals']['WARN'].' · MANUAL '.$checklist['totals']['MANUAL']" collapsible>
+        @foreach ($checklist['items'] as $i)
+            <div class="border-b border-gray-100 py-1 text-sm">
+                <span class="font-mono text-xs">{{ $i['id'] }}</span>
+                <span @class(['font-semibold', 'text-success-600' => $i['status'] === 'PASS', 'text-danger-600' => $i['status'] === 'FAIL', 'text-warning-600' => $i['status'] === 'WARN', 'text-gray-500' => $i['status'] === 'MANUAL'])>{{ $i['status'] }}</span>
+                · {{ $i['label'] }} <span class="text-xs text-gray-500">({{ $i['source'] }})</span>@if ($i['detail']) · <span class="text-xs">{{ $i['detail'] }}</span>@endif
+            </div>
+        @endforeach
+    </x-filament::section>
 </x-filament-panels::page>

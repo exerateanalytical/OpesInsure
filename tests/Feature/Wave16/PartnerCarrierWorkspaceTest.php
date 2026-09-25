@@ -234,3 +234,15 @@ it('refuses an unlinked insurer role outside a carrier tenant', function () {
 
     $this->getJson('/api/v1/mobile/partner/carrier/policies', w16CarrierHeaders($tenant))->assertStatus(403);
 });
+
+it('REQ-SET-006: accepts policy_number from carrier app 1.3.0, allocates the number server-side and keeps the sent one as carrier reference', function () {
+    $w = w16CarrierWorld();
+    $req = w16IssuanceRequest($w, 'mine');
+    Passport::actingAs($w['staff']);
+
+    $res = $this->postJson("/api/v1/mobile/partner/carrier/issuance/{$req->id}/approve", ['policy_number' => 'CARRIER-OWN-42'], w16CarrierHeaders($w['tenant']))->assertStatus(200);
+    $policy = Policy::where('issuance_request_id', $req->id)->firstOrFail();
+    expect($policy->policy_number)->not->toBe('CARRIER-OWN-42')->toStartWith('POL-')
+        ->and($res->json('data.policy_number'))->toBe($policy->policy_number)
+        ->and($policy->issuance_reference)->toBe('CARRIER-OWN-42');
+});

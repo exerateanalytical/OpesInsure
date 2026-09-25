@@ -245,6 +245,19 @@ return [
         'cases.str.view' => ['description' => 'View suspicious transaction report cases.', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
     ],
 
+    /** Capability profile (REQ-AOM-001), insurer setup (REQ-SET-002), broker setup (REQ-SET-003). Platform configuration, not business data. */
+    'capabilities_setup' => [
+        'capability_profiles.view' => ['description' => 'View insurer capability profiles, resolved modes, maturity and pins.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN']],
+        'capability_profiles.manage' => ['description' => 'Draft/edit/submit a capability profile; pin modes on transactions.', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'capability_profiles.approve' => ['description' => 'Approve/reject a capability profile (maker cannot approve).', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'carrier_setup.view' => ['description' => 'View insurer setup lifecycle and 23-item checklist.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'carrier_setup.manage' => ['description' => 'Open insurer setup, attest checklist items, move DRAFT→…→READY_FOR_APPROVAL.', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'carrier_setup.approve' => ['description' => 'Regulatory review decisions, activation (maker-checker), suspend/deactivate/terminate.', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'partner_setup.view' => ['description' => 'View broker setup lifecycle and 19-item checklist.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'BROKER_ADMIN']],
+        'partner_setup.manage' => ['description' => 'Open broker setup, attest checklist items, move DRAFT→…→TESTING.', 'suggested_roles' => ['PLATFORM_ADMIN', 'BROKER_ADMIN']],
+        'partner_setup.approve' => ['description' => 'Broker review decisions, activation (maker-checker), suspend/terminate.', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
     'provider' => [
         'provider.portal.read' => ['description' => 'Open the provider portal (FRP V).', 'suggested_roles' => \App\Application\Identity\RoleCatalogue::PROVIDER_ROLES],
         'provider.eligibility.check' => ['description' => 'Check member eligibility / cover at the point of care.', 'suggested_roles' => ['PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_PHARMACY', 'PROVIDER_LAB']],
@@ -252,6 +265,13 @@ return [
         'provider.claims.read' => ['description' => 'Read the provider organisation\'s claims.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
         'provider.finance.read' => ['description' => 'Read provider settlements/remittances.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
         'provider.staff.manage' => ['description' => 'Manage provider organisation users.', 'suggested_roles' => ['PROVIDER_ADMIN']],
+    ],
+
+    /** Batch 3 / 3E — carrier ↔ broker distribution agreements (REQ-SEED-004 / REQ-DUP-023). */
+    'distribution' => [
+        'distribution.agreements.view' => ['description' => 'View carrier-broker agreements, product permissions and permit checks.', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN', 'BROKER_ADMIN']],
+        'distribution.agreements.manage' => ['description' => 'Draft carrier-broker agreements and set product permissions/commission.', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'distribution.agreements.approve' => ['description' => 'Activate/suspend/terminate an agreement (maker cannot activate own).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
     ],
 
     'regulator' => [
@@ -267,12 +287,42 @@ return [
      * exception. PLATFORM_ONLY roles (RoleCatalogue::PLATFORM_ONLY) never get
      * business-data permissions from their roles — not even via '*'.
      */
+    // Batch 3B — master data ownership (REQ-MDM-006/007) and the generic import pipeline (REQ-IMP-001).
+    // Reference data, not business data; the import checker is additionally bound by the approval matrix
+    // (action master_data.import.approve: maker ≠ checker).
+    'master_data' => [
+        'master_data.overrides.manage' => [
+            'description' => 'Hide / alias / internal-code platform values and add private values for the own tenant.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN'],
+        ],
+        'master_data.mappings.manage' => [
+            'description' => 'Map canonical values to the own insurer / broker codes (carrier_ and broker_master_data_mappings).',
+            'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN'],
+        ],
+        'master_data.merge.request' => [
+            'description' => 'See duplicate groups and request a merge (entity.merge maker).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+        'master_data.merge.approve' => [
+            'description' => 'Approve or reject a requested merge (entity.merge checker).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+        'imports.create' => [
+            'description' => 'Upload, map, preview, submit and cancel import batches.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN'],
+        ],
+        'imports.approve' => [
+            'description' => 'Approve or reject a submitted import batch (checker).',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
-            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases',
+            'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution',
         ],
         'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],

@@ -38,6 +38,6 @@ final class CimaRegulatoryDashboard extends Page
 
     protected function getViewData(): array
     {
-        return ['summary' => app(CimaComplianceReport::class)->summary()];
+        return ['summary' => app(CimaComplianceReport::class)->summary(), 'checklist' => app(\App\Application\Regulatory\CimaReadinessChecklist::class)->evaluate()];
     }
 }

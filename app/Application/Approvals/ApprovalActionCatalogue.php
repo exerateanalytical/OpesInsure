@@ -25,6 +25,7 @@ final class ApprovalActionCatalogue
         'document_template.publish' => ['workflow' => 'DOCUMENT', 'category' => 'CONFIGURATION', 'description' => 'Document template approval / publication', 'sources' => 'WF-081; DCP'],
         'configuration.publish' => ['workflow' => 'CONFIGURATION', 'category' => 'CONFIGURATION', 'description' => 'Sensitive configuration change set', 'sources' => 'SCF §31-33; REQ-SET-005'],
         'reference_date_rule.approve' => ['workflow' => 'TEMPORAL', 'category' => 'CONFIGURATION', 'description' => 'Reference-date rule change', 'sources' => 'ICE E1'],
+        'cima.insurer_authorization.approve' => ['workflow' => 'COMPLIANCE', 'category' => 'CONFIGURATION', 'description' => 'Insurer CIMA agrement + authorized branches (from regulator evidence)', 'sources' => 'CIMA dictionary; REQ-CIMA-002; REQ-DUP-017'],
         'regulatory_change.approve' => ['workflow' => 'COMPLIANCE', 'category' => 'CONFIGURATION', 'description' => 'Regulatory change / waiver', 'sources' => 'ICE E4'],
         'approval_matrix.change' => ['workflow' => 'ADMIN', 'category' => 'CONFIGURATION', 'description' => 'Change to the approval matrix itself', 'sources' => 'SCF §58; ESR ADM-029'],
         // Access (AOM strict; WF-081)
@@ -56,6 +57,9 @@ final class ApprovalActionCatalogue
         'underwriting.override' => ['workflow' => 'UNDERWRITING', 'category' => 'UNDERWRITING', 'description' => 'Underwriting override review', 'sources' => 'ESR CMP-014; UND-019'],
         'quote.exceptional' => ['workflow' => 'QUOTE', 'category' => 'UNDERWRITING', 'description' => 'Exceptional quote review', 'sources' => 'ESR BRK-034'],
         'engine.override' => ['workflow' => 'OVERRIDE', 'category' => 'OVERRIDE', 'description' => 'Controlled engine override (engine_overrides)', 'sources' => 'ICE §0.4; AOM; REQ-OVR-001'],
+        // Organization setup activation (REQ-SET-002 / REQ-SET-003; SCF activation checklists + maker-checker)
+        'insurer_setup.activate' => ['workflow' => 'ORGANIZATION_SETUP', 'category' => 'CONFIGURATION', 'description' => 'Insurer activation after the 23-item setup checklist', 'sources' => 'SCF lifecycles; MPS §109-113; REQ-SET-002', 'checker_permission' => 'carrier_setup.approve'],
+        'broker_setup.activate' => ['workflow' => 'ORGANIZATION_SETUP', 'category' => 'CONFIGURATION', 'description' => 'Broker activation after the 19-item setup checklist', 'sources' => 'SCF lifecycles; MPS §109-113; REQ-SET-003', 'checker_permission' => 'partner_setup.approve'],
         // Documents / data
         'document.status_change' => ['workflow' => 'DOCUMENT', 'category' => 'DOCUMENT', 'description' => 'Document revoke / replace / cancel', 'sources' => 'WF-081 E7; DCP'],
         'master_data.import.approve' => ['workflow' => 'MASTER_DATA', 'category' => 'DATA', 'description' => 'Master-data import', 'sources' => 'MDC'],

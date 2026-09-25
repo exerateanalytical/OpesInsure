@@ -42,6 +42,21 @@ final class DocumentNumberAllocator
         });
     }
 
+    /**
+     * REQ-SET-006: policy numbers are allocated server-side only, from the
+     * tenant's POL numbering family (e.g. a tenant row prefix "AXA-MOT" gives
+     * AXA-MOT-2026-000001). A number already held by a legacy policy of the
+     * same carrier is skipped so the carrier-scoped unique key never trips.
+     */
+    public function allocatePolicyNumber(?string $tenantId, ?string $carrierId = null): string
+    {
+        do {
+            $number = $this->allocate($tenantId, 'INSURANCE_POLICY')['number'];
+        } while (DB::table('policies')->where('policy_number', $number)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->exists());
+
+        return $number;
+    }
+
     public function familyFor(?string $tenantId, string $documentTypeCode): string
     {
         $claimed = DB::table('document_numbering_families')->where('status', 'ACTIVE')

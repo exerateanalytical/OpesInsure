@@ -56,7 +56,7 @@ final class MobileClaimCompletionController
             'HEALTH' => [['MEDICAL_REPORT', 'Medical report', true, 'Diagnosis and treatment summary.'], ['INVOICES', 'Invoices and prescriptions', true, 'Itemised bills from the provider.']],
             default => [['DAMAGE_PHOTO', 'Photos of the damage', true, 'Front, rear, both sides and close-ups of the damage.'], ['POLICE_REPORT', 'Police report (procès-verbal)', true, 'Required for any collision involving a third party.'], ['DRIVER_LICENCE', 'Driver\'s licence', true, 'Licence of the person driving at the time.'], ['REPAIR_ESTIMATE', 'Repair estimate', false, 'A garage quote speeds up settlement.'], ['THIRD_PARTY_DETAILS', 'Third-party details', false, 'Insurer and registration of the other vehicle.']],
         };
-        $uploaded = DB::table('claim_documents')->where('claim_id', $c->id)->get()->keyBy('evidence_type');
+        $uploaded = app(\App\Application\Documents\SubjectDocuments::class)->forSubject('CLAIM', $c->id)->keyBy('role'); // REQ-DUP-021
 
         return response()->json(['data' => collect($requirements)->map(function ($r) use ($uploaded) {
             [$key, $label, $required, $guidance] = $r;

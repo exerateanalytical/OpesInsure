@@ -55,13 +55,12 @@ final class MobileClaimEvidenceService
     {
         $claim = $this->claims->owned($claimId, $user, $tenantId);
 
-        return DB::table('claim_documents')
-            ->join('documents', 'documents.id', '=', 'claim_documents.document_id')
-            ->where('claim_documents.claim_id', $claim->id)
-            ->orderByDesc('claim_documents.submitted_at')
+        // REQ-DUP-021: canonical documents + the claim link's role/status (SubjectDocuments).
+        return app(\App\Application\Documents\SubjectDocuments::class)->query('CLAIM', $claim->id)
+            ->orderByDesc('links.linked_at')
             ->select([
-                'claim_documents.id', 'claim_documents.document_id', 'claim_documents.evidence_type',
-                'claim_documents.status', 'claim_documents.submitted_at', 'claim_documents.verified_at',
+                'links.link_id as id', 'links.document_id', 'links.role as evidence_type',
+                'links.link_status as status', 'links.linked_at as submitted_at', 'links.verified_at',
                 'documents.category', 'documents.mime_type', 'documents.size_bytes', 'documents.scan_status',
             ])
             ->paginate($perPage);

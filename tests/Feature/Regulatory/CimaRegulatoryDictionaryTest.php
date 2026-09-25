@@ -66,7 +66,7 @@ function cimaProduct(Carrier $carrier, string $line = 'MOTOR', array $coverageCo
 function cimaAuthorize(Carrier $carrier, array $branchCodes): InsurerRegulatoryAuthorization
 {
     $svc = app(CimaAuthorizationService::class);
-    $auth = $svc->record($carrier, ['authorization_reference' => 'ARRETE-2026-001', 'source' => 'REGULATOR_DECREE', 'effective_from' => '2026-01-01'], $branchCodes, cimaUser('Recorder'));
+    $auth = $svc->record($carrier, ['authorization_reference' => 'ARRETE-2026-001', 'source' => 'REGULATOR_DECREE', 'source_document' => 'ARCHIVE-1', 'effective_from' => '2026-01-01'], $branchCodes, cimaUser('Recorder'));
 
     return $svc->approve($auth, cimaUser('Approver'));
 }
@@ -179,7 +179,7 @@ it('allows publication once the insurer authorization is approved (maker-checker
 
     $svc = app(CimaAuthorizationService::class);
     $maker = cimaUser('Maker');
-    $pending = $svc->record($carrier, ['authorization_reference' => 'ARRETE-1', 'source' => 'REGULATOR_DECREE', 'effective_from' => '2026-01-01'], ['CIMA_10_MOTOR_LIABILITY', 'CIMA_03_LAND_VEHICLE_DAMAGE'], $maker);
+    $pending = $svc->record($carrier, ['authorization_reference' => 'ARRETE-1', 'source' => 'REGULATOR_DECREE', 'source_document' => 'ARCHIVE-1', 'effective_from' => '2026-01-01'], ['CIMA_10_MOTOR_LIABILITY', 'CIMA_03_LAND_VEHICLE_DAMAGE'], $maker);
     expect(fn () => $svc->approve($pending, $maker))->toThrow(ValidationException::class);
     // Pending is not yet an authorization.
     expect(app(CimaPublicationGuard::class)->violations($product))->not->toBeEmpty();

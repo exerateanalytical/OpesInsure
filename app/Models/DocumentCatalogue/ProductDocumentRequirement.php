@@ -19,7 +19,7 @@ final class ProductDocumentRequirement extends Model
 {
     use HasUuids;
 
-    /** Pack-level ADD/REMOVE per trigger lives in the document engine's product_document_rules (no duplicate here). */
+    /** Pack contents live in document_packs / document_pack_items of the same catalogue (REQ-DUP-004); the engine reads them via CatalogueSource. */
     public const KINDS = ['PRODUCT_TYPE', 'MATRIX_OVERRIDE'];
 
     protected $guarded = ['id'];

@@ -120,8 +120,7 @@ final class CarrierWorkspaceActions
     public function approveIssuance(PolicyIssuanceRequest $request, array $data, User $actor): Policy
     {
         return $this->issuance->approve($request, [
-            'carrier_reference' => $data['carrier_reference'] ?? 'INS-'.strtoupper(Str::random(10)),
-            'policy_number' => $data['policy_number'] ?? 'POL-'.now()->format('Y').'-'.strtoupper(Str::random(8)),
+            'carrier_reference' => $data['carrier_reference'] ?? $data['policy_number'] ?? 'INS-'.strtoupper(Str::random(10)),
         ], $actor);
     }
 

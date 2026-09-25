@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\MasterDataValues;
 
-use App\Application\MasterData\MasterDataImportService;
-use App\Application\MasterData\MasterDataReviewService;
+use App\Application\MasterData\MasterDataExportService;
+use App\Application\MasterData\MasterDataMergeService;
 use App\Filament\Admin\Concerns\MasterDataAccess;
 use App\Filament\Admin\Concerns\ServiceValidation;
 use App\Models\MasterData\MasterDataAlias;
@@ -109,6 +109,9 @@ final class MasterDataValueResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->options(['ACTIVE' => 'Active', 'INACTIVE' => 'Inactive']),
                 Tables\Filters\SelectFilter::make('source_type')->options(array_combine(self::SOURCE_TYPES, self::SOURCE_TYPES)),
                 Tables\Filters\Filter::make('untranslated')->label('Untranslated (FR = EN)')->query(fn (Builder $query) => $query->whereColumn('label_fr', 'label_en')->whereRaw("label_en ~ '[a-z]{4,}'")),
+                // MDM-010 duplicate detection: active platform values whose normalized EN label repeats inside the list.
+                Tables\Filters\Filter::make('possible_duplicates')->label('Possible duplicates')->query(fn (Builder $query) => $query->where('status', 'ACTIVE')->whereNull('tenant_id')
+                    ->whereRaw("exists (select 1 from master_data_values d where d.list_id = master_data_values.list_id and d.id <> master_data_values.id and d.status = 'ACTIVE' and d.tenant_id is null and lower(trim(d.label_en)) = lower(trim(master_data_values.label_en)))")),
                 Tables\Filters\Filter::make('has_parent')->label('Has a parent')->query(fn (Builder $query) => $query->whereNotNull('parent_code')),
             ])
             ->recordActions([
@@ -123,18 +126,16 @@ final class MasterDataValueResource extends Resource
                         Forms\Components\Select::make('locale')->options(['en' => 'English', 'fr' => 'French']),
                     ])
                     ->action(fn (MasterDataValue $v, array $data) => MasterDataAlias::create(['value_id' => $v->id] + $data)),
-                Actions\Action::make('merge')->label('Merge into…')->icon(Heroicon::OutlinedArrowsRightLeft)->color('warning')
-                    ->visible(fn (MasterDataValue $v) => $v->status === 'ACTIVE')
-                    ->modalDescription('This value becomes INACTIVE and redirects to the target; its code and labels become aliases of the target.')
+                Actions\Action::make('merge')->label('Request merge into…')->icon(Heroicon::OutlinedArrowsRightLeft)->color('warning')
+                    ->visible(fn (MasterDataValue $v) => $v->status === 'ACTIVE' && $v->tenant_id === null)
+                    ->modalDescription('Maker-checker (REQ-MDM-007): another admin approves under Master data → Merge requests. On approval this value becomes INACTIVE and redirects to the target; its code and labels become aliases of the target.')
                     ->schema(fn (MasterDataValue $v) => [Forms\Components\Select::make('into')->label('Keep this value')->required()->searchable()
-                        ->options(MasterDataValue::where('list_id', $v->list_id)->where('id', '!=', $v->id)->where('status', 'ACTIVE')->orderBy('label_en')->pluck('label_en', 'id')->all())])
+                        ->options(MasterDataValue::where('list_id', $v->list_id)->where('id', '!=', $v->id)->where('status', 'ACTIVE')->whereNull('tenant_id')->orderBy('label_en')->pluck('label_en', 'id')->all()),
+                        Forms\Components\Textarea::make('reason')->maxLength(500)])
                     ->action(function (MasterDataValue $v, array $data) {
-                        if (ServiceValidation::run(function () use ($v, $data) {
-                            app(MasterDataReviewService::class)->mergeValues($v, MasterDataValue::findOrFail($data['into']), auth()->id());
-
-                            return true;
-                        })) {
-                            Notification::make()->title('Merged')->success()->send();
+                        $mr = ServiceValidation::run(fn () => app(MasterDataMergeService::class)->request($v, MasterDataValue::findOrFail($data['into']), auth()->user(), $data['reason'] ?? null));
+                        if ($mr) {
+                            Notification::make()->title($mr->status === 'MERGED' ? 'Merged' : 'Merge requested — waiting for a second admin')->success()->send();
                         }
                     }),
             ])
@@ -145,7 +146,7 @@ final class MasterDataValueResource extends Resource
                         Forms\Components\Select::make('list')->options(fn (Get $get) => MasterDataList::where('domain_code', $get('domain'))->pluck('code', 'code')->all())->placeholder('All lists'),
                         Forms\Components\Select::make('format')->options(['csv' => 'CSV', 'xlsx' => 'Excel (XLSX)', 'json' => 'JSON'])->default('csv')->required(),
                     ])
-                    ->action(fn (array $data) => response()->download(app(MasterDataImportService::class)->export($data['domain'], $data['list'] ?? null, $data['format']))->deleteFileAfterSend()),
+                    ->action(fn (array $data) => response()->download(app(MasterDataExportService::class)->export($data['domain'], $data['list'] ?? null, $data['format']))->deleteFileAfterSend()),
             ])
             ->emptyStateHeading('No values')
             ->emptyStateDescription('Run php artisan opesinsure:seed-master-data or pick another filter.');

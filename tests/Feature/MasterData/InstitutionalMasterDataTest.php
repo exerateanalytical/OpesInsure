@@ -327,13 +327,15 @@ it('renders the Master data admin screens for platform admins only and resolves 
 
 it('imports a CSV through validate → duplicates → approve and exports lists', function () {
     mdSeed();
-    $svc = app(App\Application\MasterData\MasterDataImportService::class);
+    // REQ-IMP-001: the master-data importer is the generic pipeline with target master_data_values.
+    $pipeline = app(App\Application\Import\ImportPipeline::class);
+    $svc = app(App\Application\MasterData\MasterDataExportService::class);
     $csv = tempnam(sys_get_temp_dir(), 'md').'.csv';
     file_put_contents($csv, "code,label_en,label_fr,parent_code,aliases\nDIGITAL_AGENCY,Digital agency,Agence digitale,TECHNOLOGY,Web agency|Agence web\nSOFTWARE_DEVELOPMENT,Software,Logiciel,TECHNOLOGY,\n");
-    $import = $svc->upload('industries', 'activity', $csv, 'activities.csv', null);
+    $import = $pipeline->upload('master_data_values', ['domain' => 'industries', 'list' => 'activity'], $csv, 'activities.csv', null);
     expect($import->status)->toBe('VALIDATED')->and($import->report['new'])->toBe(['DIGITAL_AGENCY'])->and($import->report['duplicates'][0]['code'])->toBe('SOFTWARE_DEVELOPMENT');
 
-    $svc->import($import, null);
+    $pipeline->approve($pipeline->submit($import, mdUser()), mdUser());
     $v = MasterDataValue::where(['list_code' => 'activity', 'code' => 'DIGITAL_AGENCY'])->first();
     expect($v->parent_value_id)->not->toBeNull()->and($v->source_type)->toBe('MANUAL_VERIFIED')
         ->and(app(MasterDataSearch::class)->search('industries', 'activity', 'agence web')[0]['code'])->toBe('DIGITAL_AGENCY');

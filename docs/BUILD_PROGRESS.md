@@ -1,15 +1,32 @@
 # OpesInsure build progress (resume point)
 
-Updated: 2026-09-25 (session 5b0d3161)
+Updated: 2026-09-25 03:40 (session 5b0d3161)
 
 ## Owner standing orders
-- Build everything the owner specified (docs/spec/*, docs/spec/TRACEABILITY_MATRIX_V1.md batches 1-17, SCREEN_TO_API_MATRIX_V1.md, mobile audit docs/audit/MOBILE_INDUSTRY_STANDARD_AUDIT_V1.md, FREE_TEXT_FIELDS_AUDIT.md).
-- Never duplicate; search existing first. Blockers: record in docs/spec/OWNER_OPEN_QUESTIONS.md and continue.
-- Deploy phase after phase: full pest suite green -> commit on master -> DB backup (/srv/opesinsure/backup.sh) -> rehearse migrations on a copy of prod -> deploy.sh tarball -> live checks (node docs/audit/verify-live.mjs; 75/76 expected, the old /claims check fails) -> mobile: OTA (npm run update:apk, JS-only) else APK to /download.
-- Server: opesinsure@187.77.110.114, key ~/.ssh/opesinsure_deploy. Before deploying Batch 2, add DEMO_ALLOW_IN_PRODUCTION=true to /srv/opesinsure/shared/.env.
+- Build everything the owner specified (docs/spec/*, docs/spec/TRACEABILITY_MATRIX_V1.md batches 1-17, SCREEN_TO_API_MATRIX_V1.md, docs/audit/MOBILE_INDUSTRY_STANDARD_AUDIT_V1.md, docs/audit/FREE_TEXT_FIELDS_AUDIT.md).
+- Never duplicate; search existing first. Blockers go in docs/spec/OWNER_OPEN_QUESTIONS.md, then continue.
+- Deploy phase after phase:
+  1. full pest suite green;
+  2. commit on master;
+  3. DB backup (/srv/opesinsure/backup.sh);
+  4. rehearse migrations on a copy of prod;
+  5. deploy.sh with the tarball built from the C:\laragon\www\opesinsure-deploy-snap worktree;
+  6. live checks: node docs/audit/verify-live.mjs (75/76 expected; the legacy /claims check fails).
+- Mobile: JS-only changes go over the air with `npm run update:apk` (channel production-apk, runtime 1.3.0); native changes need a new APK on /download.
+- Server: opesinsure@187.77.110.114, key ~/.ssh/opesinsure_deploy.
 
 ## Status
-- Phase 1 LIVE (backend 26c8b9a, release r20260924-235554).
-- APK 1.3.0 LIVE on /download (md5 ad07319a8731d1e6aa94029e149ec2de, channel production-apk, runtime appVersion 1.3.0).
-- In progress (uncommitted in tree): Batch 2 (2A cases/tasks/SLA, 2B RBAC, 2C approvals, 2D organisations + timezone, 2E route aliases), vehicle Africa config + generations/engine variants, no-free-text forms, mobile UI redesign (JS-only, OTA to 1.3.0), landing page + public pages (/privacy, /terms, /account/delete are required by app 1.3.0 and currently 404).
-- Next: Batch 3 onward per TRACEABILITY_MATRIX_V1.md §4.
+- Phase 1 LIVE (26c8b9a).
+- Phase 2 (676908c) LIVE (release r20260925-034108): public website + legal pages, cases/tasks/SLA, RBAC, approvals, organisations + timezones, route aliases, vehicle Africa config, selection-first forms.
+- APK 1.3.0 LIVE on /download.
+- OTA published to channel production-apk (runtime 1.3.0): update group 6175be73-cb09-42c9-bd8f-219c6cda734e.
+
+## Next
+1. (done) OTA published.
+2. Mobile follow-ups:
+   - render InputFieldContract `source` pickers in every form (docs/audit/FREE_TEXT_FIELDS_AUDIT.md "Mobile app changes");
+   - server-driven forms from GET /api/v1/forms/{form};
+   - timezone picker (GET settings/timezones, PATCH me/settings);
+   - vehicle suggestions via POST master-data/suggestions;
+   - switch POST /mobile/policy-service-requests to /policies/{id}/service-requests.
+3. Batch 3 DONE (uncommitted): combined full suite running, then commit + rehearse + deploy. Mobile OTA ea00d9ea published (server forms, timezone, i18n). Next: Batch 4 (4A golden record, 4B KYC, 4C CRM, 4D insured objects + search, 4E web experience shell).

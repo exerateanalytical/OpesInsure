@@ -38,19 +38,25 @@ final class CimaInsurerAuthorizationResource extends Resource
 
     protected static ?int $navigationSort = 209;
 
-    public static function createAction(): Actions\Action
+    public static function createAction(?string $carrierId = null): Actions\Action
     {
         return Actions\Action::make('record')->label('Record authorization')->icon(Heroicon::OutlinedPlus)
             ->visible(fn () => static::canAccessCima())
             ->schema([
-                Forms\Components\Select::make('carrier_id')->label('Insurer')->required()->searchable()
+                Forms\Components\Select::make('carrier_id')->label('Insurer')->required()->searchable()->live()->default($carrierId)
                     ->options(fn () => Carrier::orderBy('legal_name')->get()->mapWithKeys(fn ($c) => [$c->id => ($c->legal_name ?: $c->cima_code).($c->is_demo ? ' (DEMO)' : '')])->all()),
+                // REQ-DUP-017: the official register (IARD/LIFE per year) feeds the record; branches still come from evidence.
+                Forms\Components\Select::make('register_authorization_id')->label('Official register entry (licence year)')
+                    ->helperText('Auto-selected from the latest AUTHORIZED register year when left empty. The register never grants branches by itself.')
+                    ->options(fn ($get) => $get('carrier_id') ? app(CimaAuthorizationService::class)->registerSource($get('carrier_id'))
+                        ->mapWithKeys(fn ($r) => [$r->id => "{$r->reference_year} · {$r->branch} · {$r->status} ({$r->source_authority})"])->all() : []),
                 Forms\Components\TextInput::make('authorization_reference')->label('Authorization reference (arrêté / agrément no.)')->required()->maxLength(160),
                 Forms\Components\Select::make('source')->required()->options([
                     'REGULATOR_DECREE' => 'Ministerial decree (arrêté)', 'REGULATOR_LETTER' => 'Regulator letter', 'OFFICIAL_GAZETTE' => 'Official gazette',
                     'CIMA_CRCA_DECISION' => 'CRCA decision', 'DEMO' => 'DEMO (demo carriers only)',
                 ]),
-                Forms\Components\TextInput::make('source_document')->label('Source document (URL / archive ref)')->maxLength(500),
+                Forms\Components\TextInput::make('source_document')->label('Regulator evidence (document URL / archive ref)')->maxLength(500)
+                    ->requiredUnless('source', 'DEMO'),
                 Forms\Components\DatePicker::make('effective_from')->required(),
                 Forms\Components\DatePicker::make('effective_until'),
                 Forms\Components\Select::make('branches')->label('Authorized CIMA branches')->multiple()->required()->options(fn () => CimaProductMappingResource::branchOptions()),
@@ -66,9 +72,10 @@ final class CimaInsurerAuthorizationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->defaultSort('created_at', 'desc')->modifyQueryUsing(fn ($query) => $query->with(['carrier', 'branches']))->columns([
+        return $table->defaultSort('created_at', 'desc')->modifyQueryUsing(fn ($query) => $query->with(['carrier', 'branches', 'registerAuthorization']))->columns([
             Tables\Columns\TextColumn::make('carrier.legal_name')->label('Insurer')->searchable()->placeholder('-'),
             Tables\Columns\TextColumn::make('authorization_reference')->label('Reference')->searchable(),
+            Tables\Columns\TextColumn::make('registerAuthorization.reference_year')->label('Register year')->placeholder('Not on register'),
             Tables\Columns\TextColumn::make('source')->badge()->color(fn (string $state) => $state === 'DEMO' ? 'warning' : 'gray'),
             Tables\Columns\TextColumn::make('branches_list')->label('Branches')->state(fn (InsurerRegulatoryAuthorization $a) => $a->branches->where('status', 'ACTIVE')->map(fn ($b) => (int) substr($b->branch_code, 5, 2))->sort()->join(', '))->wrap(),
             Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'ACTIVE' => 'success', 'PENDING_APPROVAL' => 'warning', 'SUSPENDED' => 'danger', default => 'gray' }),

@@ -13,8 +13,9 @@ namespace App\Application\Documents\Engine;
  * level, numbering family and verifiability. This class only derives what the
  * engine needs on top: the app display group (tabs), and whether the engine
  * GENERATEs a type or only LINKs an input/evidence document (customer and
- * third-party documents are never insurer-issued). The owner's register JSON
- * (document_register_220_2026.json) is read only if no catalogue exists.
+ * third-party documents are never insurer-issued). The owner's 220-type
+ * register JSON is an import source of the catalogue only — never read here
+ * (REQ-DUP-004: one definition source).
  */
 final class DocumentRegister
 {
@@ -52,7 +53,8 @@ final class DocumentRegister
         if ($this->types !== null) {
             return $this->types;
         }
-        $types = $this->catalogue->types() ?: $this->ownerRegister();
+        // REQ-DUP-004: the catalogue (tables, or its own seed file) is the only definition source.
+        $types = $this->catalogue->types();
 
         return $this->types = array_map(fn (array $t) => $this->derive($t), $types);
     }
@@ -121,26 +123,5 @@ final class DocumentRegister
             $display === 'CERTIFICATES' => 'CRT',
             default => 'DOC',
         };
-    }
-
-    /** Owner's register JSON — only when no catalogue (tables or seed) exists. @return array<string, array<string, mixed>> */
-    private function ownerRegister(): array
-    {
-        $path = database_path('data/document_register_220_2026.json');
-        $raw = is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
-        $types = [];
-        foreach ($raw['document_types'] ?? [] as $t) {
-            $types[$t['canonical_code']] = ['code' => $t['canonical_code'], 'id' => $t['id'], 'name_en' => $t['name_en'], 'name_fr' => $t['name_fr'] ?? $t['name_en'], 'group_code' => $t['group_code']];
-        }
-        foreach ($raw['claim_subtypes'] ?? [] as $t) {
-            $types[$t['canonical_code']] ??= ['code' => $t['canonical_code'], 'id' => $t['id'], 'name_en' => $t['name_en'], 'name_fr' => $t['name_fr'] ?? $t['name_en'], 'group_code' => 'CLAIMS', 'family' => $t['family']];
-        }
-        foreach ($raw['subtype_families'] ?? [] as $family => $members) {
-            foreach ((array) $members as $t) {
-                $types[$t['canonical_code']] ??= ['code' => $t['canonical_code'], 'id' => $family.'.'.$t['canonical_code'], 'name_en' => $t['name_en'], 'name_fr' => $t['name_fr'] ?? $t['name_en'], 'group_code' => $family];
-            }
-        }
-
-        return $types;
     }
 }

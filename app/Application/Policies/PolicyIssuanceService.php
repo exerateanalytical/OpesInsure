@@ -182,7 +182,8 @@ final class PolicyIssuanceService
                 'payment_intent_id' => $request->payment_intent_id,
                 'carrier_id' => $request->carrier_id,
                 'party_id' => $proposal->party_id,
-                'policy_number' => $data['policy_number'],
+                // REQ-SET-006: server-side numbering only; any caller-supplied number is ignored.
+                'policy_number' => app(\App\Application\Documents\Engine\DocumentNumberAllocator::class)->allocatePolicyNumber($request->tenant_id, $request->carrier_id),
                 'status' => 'ACTIVE',
                 'coverage_starts_at' => $request->coverage_starts_at,
                 'coverage_ends_at' => $request->coverage_ends_at,

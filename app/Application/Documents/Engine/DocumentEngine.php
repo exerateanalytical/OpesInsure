@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Documents\Engine;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Notifications\CustomerNotifier;
 use App\Models\Claim;
 use App\Models\Document;
 use App\Models\DocumentIssuanceProfile;
@@ -54,6 +55,7 @@ final class DocumentEngine
         private DocumentTemplateService $templates,
         private DocumentNumberAllocator $numbers,
         private AuditWriter $audit,
+        private CustomerNotifier $notifier,
     ) {}
 
     /**
@@ -90,10 +92,26 @@ final class DocumentEngine
                 }
             }
             $manifest->update(['items' => $items]);
-            $this->audit->record('document.pack.generated', 'document_pack_manifest', $manifest->id, ['policy_id' => $policy->id, 'trigger' => $trigger, 'pack_code' => $pack['pack_code'], 'generated' => count(array_filter($items, fn ($i) => $i['state'] === 'GENERATED'))]);
+            $generated = count(array_filter($items, fn ($i) => $i['state'] === 'GENERATED'));
+            $this->audit->record('document.pack.generated', 'document_pack_manifest', $manifest->id, ['policy_id' => $policy->id, 'trigger' => $trigger, 'pack_code' => $pack['pack_code'], 'generated' => $generated]);
+            if ($generated > 0) {
+                $this->notifyCustomer($policy, $generated, $label);
+            }
 
             return $manifest->refresh();
         });
+    }
+
+    /**
+     * The customer learns about new documents through the one customer
+     * notifier (inbox + push, SMS fallback). Never throws (CustomerNotifier
+     * swallows and logs), so notification cannot fail the pack.
+     */
+    private function notifyCustomer(Policy $policy, int $count, string $label): void
+    {
+        $title = $count === 1 ? 'New document available' : 'New documents available';
+        $body = sprintf('%d new document%s for policy %s (%s). Open your policy to view and download.', $count, $count === 1 ? '' : 's', (string) $policy->policy_number, $label);
+        $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'DOCUMENT', $title, $body, 'INFO', "/policy/{$policy->id}");
     }
 
     /** Same as fire() but never throws into the caller's business transaction (savepoint + report). */

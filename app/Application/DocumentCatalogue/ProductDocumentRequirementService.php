@@ -21,8 +21,8 @@ use Illuminate\Validation\ValidationException;
  * retired, never deleted. Platform rows are never changed. Kinds:
  *  - PRODUCT_TYPE: selects the matrix product type (MOTOR_TPL, HEALTH_GROUP…)
  *  - MATRIX_OVERRIDE: insurer level for a (stage, document, variant)
- * Pack-level ADD/REMOVE per lifecycle trigger is the document engine's
- * product_document_rules (pack builder) — not duplicated here.
+ * Pack contents come from document_packs / document_pack_items (the same
+ * catalogue); the engine reads both through CatalogueSource (REQ-DUP-004).
  */
 final class ProductDocumentRequirementService
 {

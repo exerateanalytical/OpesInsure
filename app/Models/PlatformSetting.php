@@ -28,6 +28,8 @@ final class PlatformSetting extends Model
             'require_contact_verification' => 'boolean',
             'mail_enabled' => 'boolean',
             'mail_port' => 'integer',
+            'supported_locales' => 'array', // REQ-SET-001
+            'setup_completed_at' => 'datetime',
         ];
     }
 
