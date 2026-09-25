@@ -27,3 +27,10 @@ Artisan::command('ledger:open-periods', function (App\Application\Ledger\Periods
     $this->info('Periods opened: '.$periods->openUpcoming().'.');
 })->purpose('Automatically open the next accounting period per tenant.');
 Schedule::command('ledger:open-periods')->dailyAt('00:05')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+// Batch 10-1 — REQ-COM-001: settled premium earns commission; approved + vested commission becomes payable.
+Artisan::command('commissions:advance', function (App\Application\Commissions\Machine\CommissionLifecycleService $service) {
+    $s = $service->advance();
+    $this->info("Earned: {$s['earned']}. Payable: {$s['payable']}.");
+})->purpose('Advance the commission machine: ACCRUED → EARNED on settled premium, APPROVED → PAYABLE once vested.');
+Schedule::command('commissions:advance')->dailyAt('02:10')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
