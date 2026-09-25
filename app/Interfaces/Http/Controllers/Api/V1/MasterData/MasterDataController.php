@@ -119,7 +119,7 @@ final class MasterDataController
 
         return response()->json(['data' => [
             'domain' => $domain, 'list' => $list, 'label' => $meta['label'], 'parent_list' => $meta['parent_list'], 'selection' => $meta['selection'],
-            'allow_other' => $meta['allow_other'], 'catalog_version' => MasterDataCache::version($domain), 'values' => $this->localize($items ?? [], $locale),
+            'allow_other' => $meta['allow_other'], 'data_status' => $meta['data_status'] ?? null, 'values_status' => $meta['values_status'] ?? null, 'catalog_version' => MasterDataCache::version($domain), 'values' => $this->localize($items ?? [], $locale),
         ]])->header('Cache-Control', 'public, max-age=60');
     }
 

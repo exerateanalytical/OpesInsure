@@ -72,6 +72,8 @@ final class VehicleMasterController
         return response()->json([
             'model' => ['code' => $row->code, 'name' => $row->name, 'make' => $row->make?->code],
             'data' => $catalogue->generationsFor($row)->map(fn ($g) => $catalogue->presentGeneration($g))->all(),
+            // Owner workflow data master: generation/variant catalogue is PENDING_SOURCE (empty is expected; Other / Not listed works).
+            'meta' => app(\App\Application\MasterData\WorkflowDataStatuses::class)->pickerMeta('vehicles.detailed_generation_variant'),
         ])->header('Cache-Control', 'public, max-age=300');
     }
 
@@ -95,6 +97,7 @@ final class VehicleMasterController
             'generation' => ['code' => $gen->code, 'name' => $gen->name, 'year_from' => $gen->year_from, 'year_to' => $gen->year_to],
             'data' => $catalogue->variantsFor($gen, isset($q['year']) ? (int) $q['year'] : null)->each->setRelation('generation', $gen)
                 ->map(fn ($v) => $catalogue->presentVariant($v))->values()->all(),
+            'meta' => app(\App\Application\MasterData\WorkflowDataStatuses::class)->pickerMeta('vehicles.detailed_generation_variant'),
         ])->header('Cache-Control', 'public, max-age=300');
     }
 

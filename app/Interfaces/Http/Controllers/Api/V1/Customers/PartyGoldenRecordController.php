@@ -135,7 +135,7 @@ final class PartyGoldenRecordController
         $d = $r->validate(['threshold' => 'nullable|numeric|gt:0|lte:100', 'interest_type' => 'nullable|in:'.implode(',', PartyRelationshipService::INTEREST_TYPES)]);
         abort_unless($p->type === 'ORGANIZATION', 422, 'UBO applies to organizations.');
 
-        return response()->json(['data' => $this->links->ultimateBeneficialOwners($p, isset($d['threshold']) ? (float) $d['threshold'] : null, $d['interest_type'] ?? 'SHAREHOLDING')]);
+        return response()->json(['data' => $this->links->ultimateBeneficialOwners($p, isset($d['threshold']) ? (float) $d['threshold'] : null, $d['interest_type'] ?? null)]);
     }
 
     public function graph(Request $r, string $party): JsonResponse

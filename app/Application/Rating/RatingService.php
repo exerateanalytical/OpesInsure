@@ -193,6 +193,7 @@ final class RatingService
     private function tableRow(string $table, string $id, string $key): array
     {
         $row = DB::table($table)->where('id', $id)->first() ?? throw new DomainException("Missing {$table} row {$id}.");
+        ChargeTableService::assertUsable($table, $row);
 
         return ['key' => $key, 'source_table' => $table, 'source_id' => $row->id, 'version' => (int) $row->version,
             'data_status' => $row->data_status ?? null, 'rules' => json_decode($row->rules, true, 512, JSON_THROW_ON_ERROR)];

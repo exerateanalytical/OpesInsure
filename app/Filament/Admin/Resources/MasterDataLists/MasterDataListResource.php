@@ -54,6 +54,10 @@ final class MasterDataListResource extends Resource
             Tables\Columns\TextColumn::make('parent_list_code')->label('Parent list')->placeholder('—'),
             Tables\Columns\TextColumn::make('values_count')->counts('values')->label('Values'),
             Tables\Columns\IconColumn::make('allow_other')->label('Other')->boolean(), Tables\Columns\IconColumn::make('structure_only')->label('Structure only')->boolean()->toggleable(),
+            // Owner workflow data master status: PENDING_SOURCE lists show here with 0 values.
+            Tables\Columns\TextColumn::make('workflow_status')->label('Owner status')->badge()->placeholder('—')
+                ->state(fn ($record) => once(fn () => app(\App\Application\MasterData\WorkflowDataStatuses::class)->byList())[$record->domain_code.'.'.$record->code]['status'] ?? null)
+                ->color(fn (?string $state) => match ($state) { 'PENDING_SOURCE', 'CONFIG_REQUIRED' => 'warning', 'UNVERIFIED', 'DEMO_ONLY' => 'danger', 'VERIFIED' => 'success', default => 'gray' }),
             Tables\Columns\TextColumn::make('source_type')->badge()->toggleable(), Tables\Columns\TextColumn::make('version')->toggleable(), Tables\Columns\TextColumn::make('status')->badge(),
         ])->filters([Tables\Filters\SelectFilter::make('domain_code')->label('Domain')->options(fn () => \App\Models\MasterData\MasterDataDomain::orderBy('code')->pluck('code', 'code')->all())->searchable()])
             ->recordActions([Actions\EditAction::make(), Actions\Action::make('values')->label('Values')->url(fn ($record) => MasterDataValueResource::getUrl('index', ['filters' => ['list_id' => ['value' => $record->id]]]))]);

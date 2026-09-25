@@ -45,7 +45,7 @@ final class LegacyWorkItemBridge
                     throw CaseProblem::make('SOURCE_NOT_BRIDGEABLE', 422, 'Only complaint tickets are bridged to COMPLAINT cases.');
                 }
 
-                return ['title' => $r->ticket_number.' '.$r->subject, 'subject_type' => 'support_ticket', 'subject_id' => $r->id, 'owner_user_id' => $r->assigned_to, 'priority' => in_array($r->priority, ['LOW', 'NORMAL', 'HIGH', 'URGENT'], true) ? $r->priority : 'NORMAL'];
+                return ['title' => $r->ticket_number.' '.$r->subject, 'subject_type' => 'support_ticket', 'subject_id' => $r->id, 'owner_user_id' => $r->assigned_to, 'priority' => in_array($r->priority, \App\Application\Cases\CaseTypeCatalogue::PRIORITIES, true) ? $r->priority : 'NORMAL'];
             }),
             default => throw CaseProblem::make('SOURCE_NOT_BRIDGEABLE', 422, "No bridge for {$source}.", ['allowed' => self::SOURCES]),
         };
@@ -56,7 +56,7 @@ final class LegacyWorkItemBridge
     {
         return $this->simple('underwriting_cases', $id, $tenantId, $actor, 'UW_REFERRAL', fn ($r) => [
             'title' => 'Underwriting referral', 'subject_type' => 'proposal', 'subject_id' => $r->proposal_id, 'owner_user_id' => $r->assigned_to,
-            'carrier_id' => $r->carrier_id, 'priority' => in_array($r->priority, ['LOW', 'NORMAL', 'HIGH', 'URGENT'], true) ? $r->priority : 'NORMAL',
+            'carrier_id' => $r->carrier_id, 'priority' => in_array($r->priority, \App\Application\Cases\CaseTypeCatalogue::PRIORITIES, true) ? $r->priority : 'NORMAL',
         ]);
     }
 

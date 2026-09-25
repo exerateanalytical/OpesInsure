@@ -21,6 +21,7 @@ use Throwable;
  * (PRE §97–98; SCREEN_TO_API_MATRIX owner §35). Read-only: it never applies defaults or writes.
  *
  * Blocking checks (publication refused while any fails):
+ *   CAPABILITY_PROFILE       the insurer has an ACTIVE capability profile (owner decision 28: a missing profile blocks governance publication)
  *   REGULATORY_MAPPING       PRIMARY CIMA branch mapping (or a family default that submission applies) + regulatory reference
  *   CIMA_BRANCH_AUTHORIZED   insurer holds an ACTIVE authorization for every PRIMARY / COMPLEMENTARY branch (CimaPublicationGuard)
  *   PRICING_MODE             RATING capability configured + an APPROVED tariff effective on the version start (the publish gate)
@@ -33,7 +34,7 @@ use Throwable;
  */
 final class ProductCompletenessService
 {
-    public const BLOCKING = ['REGULATORY_MAPPING', 'CIMA_BRANCH_AUTHORIZED', 'PRICING_MODE', 'UNDERWRITING_MODE', 'DOCUMENT_MAPPING', 'ACCOUNTING_MAPPING', 'CLAIMS_CONFIGURATION', 'PRODUCT_TESTS'];
+    public const BLOCKING = ['CAPABILITY_PROFILE', 'REGULATORY_MAPPING', 'CIMA_BRANCH_AUTHORIZED', 'PRICING_MODE', 'UNDERWRITING_MODE', 'DOCUMENT_MAPPING', 'ACCOUNTING_MAPPING', 'CLAIMS_CONFIGURATION', 'PRODUCT_TESTS'];
 
     public function __construct(
         private readonly CimaPublicationGuard $cima,
@@ -50,6 +51,7 @@ final class ProductCompletenessService
     {
         $v->loadMissing('carrierProduct.family');
         $checks = [
+            $this->capabilityProfile($v),
             $this->regulatoryMapping($v),
             $this->cimaAuthorized($v),
             $this->pricing($v),
@@ -77,6 +79,14 @@ final class ProductCompletenessService
     public function blockers(InsuranceProduct $v): array
     {
         return array_map(fn ($c) => $c['code'].': '.$c['detail'], $this->evaluate($v)['blockers']);
+    }
+
+    private function capabilityProfile(InsuranceProduct $v): array
+    {
+        $profile = $this->capabilities->profileAt($v->carrier_id);
+
+        return $this->check('CAPABILITY_PROFILE', true, $profile !== null, $profile !== null
+            ? 'Insurer capability profile v'.$profile->version.' is active.' : 'Missing capability profile: the insurer has no ACTIVE capability profile; governance publication is blocked.');
     }
 
     private function regulatoryMapping(InsuranceProduct $v): array

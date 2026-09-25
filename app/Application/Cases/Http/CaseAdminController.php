@@ -31,6 +31,7 @@ final class CaseAdminController
         $d = $r->validate([
             'code' => 'required|string|max:48|regex:/^[A-Z][A-Z0-9_]*$/', 'name' => 'nullable|string|max:160', 'family_code' => 'nullable|string|max:48',
             'states' => 'required|array|min:1', 'transitions' => 'required|array|min:1', 'sla_policies' => 'nullable|array', 'auto_tasks' => 'nullable|array',
+            'subtypes' => 'nullable|array', 'subtypes.*' => 'string|max:48|regex:/^[A-Z][A-Z0-9_]*$/',
             'default_confidentiality' => ['nullable', Rule::in(CaseVisibility::LEVELS)], 'regulated' => 'nullable|boolean',
         ]);
 

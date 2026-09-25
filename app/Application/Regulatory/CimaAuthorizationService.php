@@ -27,6 +27,10 @@ use Illuminate\Validation\ValidationException;
  *
  * Maker-checker runs through the one approval engine (ApprovalService, action cima.insurer_authorization.approve):
  * recorded PENDING_APPROVAL, activated only when the approval request is APPROVED by another user.
+ *
+ * Record fields (owner decision item 8): insurer, branch (insurer_authorized_branches), source authority, decision
+ * reference (authorization_reference), source document, effective / expiry (effective_until) / revocation dates,
+ * status, evidence and verification status.
  */
 final class CimaAuthorizationService
 {
@@ -91,6 +95,9 @@ final class CimaAuthorizationService
                 'authorization_reference' => $data['authorization_reference'], 'source' => $source,
                 'source_document' => $data['source_document'] ?? null, 'is_demo' => $source === 'DEMO',
                 'notes' => $data['notes'] ?? null, 'created_by' => $actor->id,
+                // Owner decision item 8: source authority, evidence and verification status are recorded, never fabricated.
+                'source_authority' => filled($data['source_authority'] ?? null) ? strtoupper((string) $data['source_authority']) : null,
+                'evidence' => $data['evidence'] ?? null, 'verification_status' => $source === 'DEMO' ? 'DEMO' : 'UNVERIFIED',
                 'register_authorization_id' => $register?->id, 'licence_family' => $families[0],
             ]);
             foreach ($branchCodes as $code) {
@@ -168,7 +175,7 @@ final class CimaAuthorizationService
         if (! in_array($auth->status, $allowed[$status] ?? [], true)) {
             throw ValidationException::withMessages(['status' => ["Cannot move an authorization from {$auth->status} to {$status}."]]);
         }
-        $auth->update(['status' => $status] + ($status === 'REVOKED' ? ['effective_until' => now()->toDateString()] : []));
+        $auth->update(['status' => $status] + ($status === 'REVOKED' ? ['effective_until' => now()->toDateString(), 'revocation_date' => now()->toDateString()] : []));
         $this->audit->record('regulatory.authorization.'.strtolower($status), 'insurer_regulatory_authorization', $auth->id, [], $reason);
 
         return $auth->refresh();
@@ -182,13 +189,18 @@ final class CimaAuthorizationService
         return InsurerAuthorizedBranch::where('branch_code', $branchCode)->where('status', 'ACTIVE')
             ->where(fn ($w) => $w->whereNull('effective_until')->orWhereDate('effective_until', '>=', $on))
             ->whereHas('authorization', fn ($a) => $a->where('carrier_id', $carrierId)->where('status', 'ACTIVE')->where('regime', 'CIMA')
-                ->whereDate('effective_from', '<=', $on)->where(fn ($w) => $w->whereNull('effective_until')->orWhereDate('effective_until', '>=', $on)))
+                ->whereDate('effective_from', '<=', $on)->where(fn ($w) => $w->whereNull('effective_until')->orWhereDate('effective_until', '>=', $on))
+                ->where(fn ($w) => $w->whereNull('revocation_date')->orWhereDate('revocation_date', '>', $on))
+                // Workflow Data Master: an unverified / demo authorization is never a production authorization.
+                ->when(\App\Application\DataReadiness\ProductionUseGuard::enforced(), fn ($w) => $w->where('verification_status', 'VERIFIED')))
             ->exists();
     }
 
     private function activate(InsurerRegulatoryAuthorization $auth, ?User $actor): void
     {
-        $auth->update(['status' => 'ACTIVE', 'approved_by' => $actor?->id, 'approved_at' => now()]);
+        // The checker verified the regulator evidence (maker-checker); DEMO stays DEMO.
+        $auth->update(['status' => 'ACTIVE', 'approved_by' => $actor?->id, 'approved_at' => now(), 'verification_status' => $auth->is_demo ? 'DEMO' : 'VERIFIED']);
+        app(CimaLegacyAuthorizationService::class)->resolveFor($auth->carrier_id);
         $this->audit->record('regulatory.authorization.approved', 'insurer_regulatory_authorization', $auth->id, ['approval_id' => $auth->approval_request_id]);
     }
 

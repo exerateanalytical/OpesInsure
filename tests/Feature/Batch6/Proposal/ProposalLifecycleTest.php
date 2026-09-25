@@ -199,7 +199,10 @@ it('REQ-PRP-003 REQ-DUP-004 takes proposal document requirements from the docume
     expect($iss->json('data.issuable'))->toBeFalse()->and($iss->json('data.blockers'))->toContain('PAYMENT_NOT_RECEIVED', 'DOCUMENT_UPLOADED:VEHICLE_REGISTRATION_CARD');
     $this->postJson("/api/v1/proposals/{$id}/documents/{$doc->id}/review", ['decision' => 'VERIFIED', 'notes' => 'ok'], $h)->assertStatus(422); // not scanned clean
     $doc->update(['scan_status' => 'CLEAN']);
+    // Owner decision 31: a VERIFIED row without a named reviewer (or approved automated control) is not accepted.
     DB::table('proposal_documents')->where('proposal_id', $id)->update(['status' => 'VERIFIED']);
+    expect($this->getJson("/api/v1/proposals/{$id}/issuability", $h)->json('data.blockers'))->toContain('DOCUMENT_REVIEWING:VEHICLE_REGISTRATION_CARD');
+    DB::table('proposal_documents')->where('proposal_id', $id)->update(['verified_by' => $f['uw']->id, 'verification_method' => 'MANUAL']);
     makeMobileTestPayment(Proposal::find($id), $f['tenant'], ['reconciled_at' => now()]);
     expect($this->getJson("/api/v1/proposals/{$id}/issuability", $h)->json('data'))->toMatchArray(['issuable' => true, 'blockers' => []]);
     Passport::actingAs($f['user']);

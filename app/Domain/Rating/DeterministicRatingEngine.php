@@ -183,7 +183,7 @@ final class DeterministicRatingEngine
             }
         }
 
-        [$allocation, $allocationStatus] = $this->allocateBranches($premium, $rules['branch_allocation'] ?? []);
+        [$allocation, $allocationStatus] = $this->allocateBranches($premium, $rules['branch_allocation'] ?? [], $rules['branch_allocation_basis'] ?? null);
         if ($allocationStatus !== 'ALLOCATED') {
             $warnings[] = 'rating.branch_allocation_pending';
         }
@@ -332,10 +332,14 @@ final class DeterministicRatingEngine
     }
 
     /** @return array{0: list<array>, 1: string} */
-    private function allocateBranches(int $premium, array $spec): array
+    /**
+     * Owner decision item 9: branch allocations are never invented. No carrier split -> PENDING_CARRIER_ALLOCATION;
+     * an internal estimate (branch_allocation_basis = ESTIMATED_NON_REGULATORY) is kept but excluded from reporting.
+     */
+    private function allocateBranches(int $premium, array $spec, ?string $basis = null): array
     {
         if ($spec === []) {
-            return [[], 'PENDING_OQ_24'];
+            return [[], 'PENDING_CARRIER_ALLOCATION'];
         }
         $shares = [];
         foreach ($spec as $s) {
@@ -347,6 +351,6 @@ final class DeterministicRatingEngine
             $out[] = ['branch_code' => (string) $code, 'basis_points' => $bp, 'amount_minor' => $parts[$code]];
         }
 
-        return [$out, 'ALLOCATED'];
+        return [$out, $basis === 'ESTIMATED_NON_REGULATORY' ? 'ESTIMATED_NON_REGULATORY' : 'ALLOCATED'];
     }
 }

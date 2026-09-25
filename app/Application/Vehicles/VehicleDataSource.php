@@ -15,12 +15,15 @@ final class VehicleDataSource
 
     public const DISTRIBUTOR = 'CAMEROON_DISTRIBUTOR_VERIFIED';
 
+    /** Owner-curated reference list (owner decision 20); ranked below distributor-verified data. */
+    public const CURATED_REFERENCE = 'OPESINSURE_CURATED_REFERENCE';
+
     public const GLOBAL_DATASET = 'GLOBAL_VEHICLE_DATASET';
 
     public const MANUAL_PENDING = 'MANUAL_PENDING_REVIEW';
 
     /** Highest priority first. */
-    public const PRIORITY = [self::OVERRIDE, self::DISTRIBUTOR, self::GLOBAL_DATASET, self::MANUAL_PENDING];
+    public const PRIORITY = [self::OVERRIDE, self::DISTRIBUTOR, self::CURATED_REFERENCE, self::GLOBAL_DATASET, self::MANUAL_PENDING];
 
     public static function rank(?string $source): int
     {
@@ -41,6 +44,7 @@ final class VehicleDataSource
             'CUSTOMER_SUBMITTED' => self::MANUAL_PENDING,
             'CAMEROON_DISTRIBUTOR' => self::DISTRIBUTOR,
             'INDUSTRY_DATABASE' => self::GLOBAL_DATASET,
+            'CURATED_REFERENCE' => self::CURATED_REFERENCE,
             default => self::OVERRIDE,
         };
     }

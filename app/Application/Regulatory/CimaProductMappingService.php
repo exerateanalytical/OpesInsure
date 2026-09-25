@@ -19,6 +19,8 @@ use Illuminate\Validation\ValidationException;
  * default mapping (regulatory_class_defaults) automatically. Product admins
  * override with maker-checker: an ADMIN mapping is created PENDING_APPROVAL
  * and a different user approves it; approval supersedes the class defaults.
+ * Owner decisions 2026-09-25 items 1-6: mappings are coverage-level (coverage_code; null = whole product), and a
+ * COMPLEMENTARY life cover carries its own premium flag, dates and conditions.
  */
 final class CimaProductMappingService
 {
@@ -50,6 +52,9 @@ final class CimaProductMappingService
                 'branch_code' => $d->branch_code, 'relationship_type' => $d->relationship_type, 'is_primary' => $d->relationship_type === 'PRIMARY',
                 'effective_from' => $product->effective_from?->toDateString() ?? $on, 'legal_reference' => $branch?->legal_reference,
                 'status' => 'ACTIVE', 'source' => 'CLASS_DEFAULT', 'notes' => 'Automatic default for class '.$product->line_code,
+                // Owner decision item 1: coverage-level rules map PRODUCT -> COVERAGE -> CIMA BRANCH.
+                'coverage_code' => $d->mapping_level === 'COVERAGE' ? $d->requires_coverage_code : null,
+                'separate_premium' => (bool) $d->separate_premium,
             ]);
             $created++;
         }
@@ -58,6 +63,30 @@ final class CimaProductMappingService
         }
 
         return $created;
+    }
+
+    /**
+     * PRODUCT -> COVERAGE -> CIMA BRANCH tree of the active mappings (owner decision item 1, many-to-many).
+     *
+     * @return array{product: list<array<string, mixed>>, coverages: array<string, list<array<string, mixed>>>}
+     */
+    public function coverageTree(InsuranceProduct $product): array
+    {
+        $rows = $this->guard()->activeMappings($product)->map(fn (ProductRegulatoryMapping $m) => [
+            'branch_code' => $m->branch_code, 'relationship_type' => $m->relationship_type, 'separate_premium' => (bool) $m->separate_premium,
+            'effective_from' => $m->effective_from?->toDateString(), 'effective_until' => $m->effective_until?->toDateString(),
+            'conditions' => $m->conditions, 'branch_allocation_status' => $m->branch_allocation_status, 'coverage_code' => $m->coverage_code,
+        ]);
+
+        return [
+            'product' => $rows->whereNull('coverage_code')->values()->all(),
+            'coverages' => $rows->whereNotNull('coverage_code')->groupBy('coverage_code')->map->values()->map->all()->all(),
+        ];
+    }
+
+    private function guard(): CimaPublicationGuard
+    {
+        return app(CimaPublicationGuard::class);
     }
 
     /** Maker step: proposes an override mapping (PENDING_APPROVAL). */
@@ -77,6 +106,16 @@ final class CimaProductMappingService
         if ($type === 'ACCESSORY' && ! $branch->accessory_allowed) {
             throw ValidationException::withMessages(['relationship_type' => ["CIMA branch {$branch->number} — {$branch->label_fr} can never be covered as an accessory risk (Article 328-1)."]]);
         }
+        $coverage = filled($data['coverage_code'] ?? null) ? strtoupper((string) $data['coverage_code']) : null;
+        if ($coverage !== null && ! $product->coverageDefinitions()->where('code', $coverage)->exists()) {
+            throw ValidationException::withMessages(['coverage_code' => ["Coverage {$coverage} is not part of this product."]]);
+        }
+        // Owner decision item 8: a LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION product can never gain a new unauthorized branch.
+        $legacy = $this->guard()->legacyRecord($product);
+        if ($legacy && $type !== 'ACCESSORY' && ! in_array($branch->code, (array) $legacy->branch_codes, true)
+            && ! app(CimaAuthorizationService::class)->isAuthorized((string) $product->carrier_id, $branch->code)) {
+            throw ValidationException::withMessages(['branch_code' => ["CIMA branch {$branch->number} would be a new branch; LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION does not permit it until a verified authorization is recorded."]]);
+        }
         if (blank($data['effective_from'] ?? null)) {
             throw ValidationException::withMessages(['effective_from' => ['An effective date is required.']]);
         }
@@ -87,6 +126,8 @@ final class CimaProductMappingService
             'effective_from' => $data['effective_from'], 'effective_until' => $data['effective_until'] ?? null,
             'legal_reference' => $data['legal_reference'] ?? $branch->legal_reference, 'status' => 'PENDING_APPROVAL', 'source' => 'ADMIN',
             'notes' => $data['notes'] ?? null, 'created_by' => $actor?->id,
+            'coverage_code' => $coverage, 'separate_premium' => (bool) ($data['separate_premium'] ?? $type === 'COMPLEMENTARY'),
+            'conditions' => $data['conditions'] ?? null,
         ]);
         $this->audit->record('regulatory.mapping.proposed', 'product_regulatory_mapping', $mapping->id, ['product_id' => $product->id, 'branch' => $branch->code, 'type' => $type]);
 

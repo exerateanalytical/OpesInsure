@@ -23,6 +23,21 @@ final class DocumentRegister
 
     public const SECURITY_LEVELS = ['PUBLIC_VERIFIABLE', 'CUSTOMER_PRIVATE', 'INSURER_CONFIDENTIAL', 'MEDICAL_RESTRICTED', 'FINANCIAL_RESTRICTED', 'INTERNAL', 'REGULATORY'];
 
+    /**
+     * Workflow Data Master v1 documents.confidentiality_classes => stored security_level (mapping, values not renamed).
+     */
+    public const CONFIDENTIALITY_CLASS_MAP = [
+        'PUBLIC_VERIFY' => 'PUBLIC_VERIFIABLE', 'CUSTOMER_PRIVATE' => 'CUSTOMER_PRIVATE', 'INSURER_CONFIDENTIAL' => 'INSURER_CONFIDENTIAL',
+        'MEDICAL_RESTRICTED' => 'MEDICAL_RESTRICTED', 'FINANCIAL_RESTRICTED' => 'FINANCIAL_RESTRICTED',
+        'REGULATORY_RESTRICTED' => 'REGULATORY', 'INTERNAL_RESTRICTED' => 'INTERNAL',
+    ];
+
+    /** Workflow Data Master v1 documents.seal_types (vocabulary; no seal artwork or keys are shipped — CONFIG_REQUIRED). */
+    public const SEAL_TYPES = ['CORPORATE', 'AUTHENTICATION', 'FINANCE', 'CLAIMS', 'PROVIDER', 'BROKER_VERIFIED', 'DUPLICATE', 'REVOKED'];
+
+    /** Workflow Data Master v1 documents.signature_types => document_issuance_profiles.signature_mode that implements it (null = not yet supported). */
+    public const SIGNATURE_TYPE_MAP = ['SYSTEM' => 'NONE', 'AUTHORIZED_SIGNATORY' => 'IMAGE', 'CRYPTOGRAPHIC' => 'DIGITAL', 'HANDWRITTEN_SCAN' => null];
+
     public const ORIGINS = ['INSURER', 'BROKER', 'CUSTOMER', 'PROVIDER', 'GARAGE', 'ADJUSTER', 'SURVEYOR', 'AUTHORITY', 'BANK', 'REGULATOR', 'REINSURER', 'SYSTEM'];
 
     /** Origins that are an issuer's official document (everything else is evidence / third-party input). */

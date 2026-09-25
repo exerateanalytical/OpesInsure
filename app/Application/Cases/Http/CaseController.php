@@ -35,6 +35,7 @@ final class CaseController
             'status' => 'nullable|string|max:48', 'case_type' => 'nullable|string|max:48', 'queue_id' => 'nullable|uuid',
             'owner' => 'nullable|in:me,unassigned', 'open' => 'nullable|boolean', 'subject_type' => 'nullable|string|max:64', 'subject_id' => 'nullable|uuid',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'case_family' => 'nullable|string|max:48', 'case_subtype' => 'nullable|string|max:48', 'domain_reference' => 'nullable|string|max:191',
         ]);
         $q = WorkCase::query()->where('tenant_id', $this->tenant())
             ->when($d['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
@@ -45,6 +46,9 @@ final class CaseController
             ->when(isset($d['open']), fn ($q) => $r->boolean('open') ? $q->whereNull('closed_at') : $q->whereNotNull('closed_at'))
             ->when($d['subject_type'] ?? null, fn ($q, $v) => $q->where('subject_type', $v))
             ->when($d['subject_id'] ?? null, fn ($q, $v) => $q->where('subject_id', $v))
+            ->when($d['case_family'] ?? null, fn ($q, $v) => $q->where('case_family', $v))
+            ->when($d['case_subtype'] ?? null, fn ($q, $v) => $q->where('case_subtype', $v))
+            ->when($d['domain_reference'] ?? null, fn ($q, $v) => $q->where('domain_reference', $v))
             ->orderByRaw('due_at NULLS LAST')->orderByDesc('opened_at');
 
         return response()->json($q->paginate($d['per_page'] ?? 25));
@@ -54,10 +58,11 @@ final class CaseController
     {
         $d = $r->validate([
             'case_type' => 'required|string|max:48', 'title' => 'required|string|max:255',
-            'priority' => 'nullable|in:LOW,NORMAL,HIGH,URGENT', 'confidentiality' => ['nullable', Rule::in(CaseVisibility::LEVELS)],
+            'priority' => ['nullable', Rule::in(\App\Application\Cases\CaseTypeCatalogue::PRIORITIES)], 'confidentiality' => ['nullable', Rule::in(CaseVisibility::LEVELS)],
             'subject_type' => 'nullable|string|max:64', 'subject_id' => 'nullable|uuid|required_with:subject_type',
             'parent_case_id' => 'nullable|uuid', 'branch_id' => 'nullable|uuid', 'jurisdiction' => 'nullable|string|size:2',
             'owner_user_id' => 'nullable|uuid', 'queue_id' => 'nullable|uuid', 'idempotency_key' => 'nullable|string|max:100',
+            'case_subtype' => 'nullable|string|max:48', 'domain_reference' => 'nullable|string|max:191', 'product_id' => 'nullable|uuid',
         ]);
         $tenant = $this->tenant();
         if (! empty($d['parent_case_id']) && ! WorkCase::query()->where('tenant_id', $tenant)->whereKey($d['parent_case_id'])->exists()) {

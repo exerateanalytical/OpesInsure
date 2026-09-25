@@ -56,7 +56,7 @@ it('seeds all 151 makes and every model from the canonical file', function () {
     $data = vehicleData();
     $modelCount = array_sum(array_map(fn ($m) => count($m['models']), $data['makes']));
 
-    expect(VehicleMake::count())->toBe(151)
+    expect(VehicleMake::count())->toBe(153) // + Datsun, Mahindra curated reference (owner decision 20)
         ->and(count($data['makes']))->toBe(151)
         // Canonical file models plus the Cameroon & Africa config additions (data_source OPESINSURE_VERIFIED_OVERRIDE).
         ->and(VehicleModel::count() - App\Models\Vehicles\VehicleMasterChange::where('action', 'SEEDED')->where('entity_type', 'vehicle_model')->where('after->source', 'data/vehicle_master_config_africa_2026.json')->count())->toBe($modelCount)
@@ -81,7 +81,7 @@ it('is idempotent and preserves admin edits', function () {
     vehicleSeed();
     vehicleSeed();
 
-    expect(VehicleMake::count())->toBe(151)
+    expect(VehicleMake::count())->toBe(153)
         ->and(VehicleModel::count())->toBe(512) // 446 canonical + 66 from the Cameroon & Africa config
         ->and(VehicleMakeAlias::where('alias', 'VW')->count())->toBe(1)
         ->and($toyota->fresh()->market_priority)->toBe('NORMAL')
@@ -92,7 +92,7 @@ it('refuses to delete master data', function () {
     vehicleSeed();
     expect(fn () => VehicleMake::where('code', 'TOYOTA')->first()->delete())->toThrow(LogicException::class)
         ->and(fn () => VehicleModel::where('code', 'TOYOTA_COROLLA')->first()->delete())->toThrow(LogicException::class);
-    expect(VehicleMake::count())->toBe(151);
+    expect(VehicleMake::count())->toBe(153);
 });
 
 it('resolves make and model aliases', function () {
@@ -206,7 +206,7 @@ it('queues manual "not listed" entries and admin can approve as new or merge', f
     expect($second->fresh()->status)->toBe('MERGED')
         ->and(app(VehicleCatalogueService::class)->resolveMake('Toyta')?->code)->toBe('TOYOTA')
         ->and(app(VehicleCatalogueService::class)->resolveModel($toyota, 'Corola')?->code)->toBe('TOYOTA_COROLLA')
-        ->and(VehicleMake::count())->toBe(152)
+        ->and(VehicleMake::count())->toBe(154)
         ->and(VehicleMasterChange::where('entity_type', 'vehicle_master_review')->count())->toBe(2);
 });
 

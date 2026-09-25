@@ -27,8 +27,16 @@ final class VehicleMasterSource
 
     public const LEGACY_CODES = [
         'vehicle_class' => ['PRIVATE_CAR' => 'PRIVATE_PASSENGER', 'LIGHT_COMMERCIAL' => 'LIGHT_COMMERCIAL', 'HEAVY_GOODS' => 'GOODS_VEHICLE_HEAVY', 'BUS_COACH' => 'BUS', 'SPECIAL_PLANT' => 'SPECIAL_VEHICLE'],
-        'usage' => ['PRIVATE_USE' => 'PRIVATE_PERSONAL', 'BUSINESS_USE' => 'COMPANY', 'CARRIAGE_OF_OWN_GOODS' => 'GOODS_TRANSPORT', 'CARRIAGE_FOR_HIRE' => 'GOODS_TRANSPORT', 'PUBLIC_PASSENGER_TRANSPORT' => 'PUBLIC_TRANSPORT', 'RENTAL' => 'CAR_RENTAL'],
+        'usage' => ['PRIVATE_USE' => 'PRIVATE_PERSONAL', 'BUSINESS_USE' => 'COMPANY', 'CARRIAGE_OF_OWN_GOODS' => 'GOODS_TRANSPORT', 'CARRIAGE_FOR_HIRE' => 'GOODS_TRANSPORT', 'PUBLIC_PASSENGER_TRANSPORT' => 'PUBLIC_TRANSPORT', 'RENTAL' => 'CAR_RENTAL',
+            // Owner Workflow Data Master v1 usage_classes (PLATFORM_NORMALIZED). Identical codes (TAXI, RIDE_HAILING, GOODS_TRANSPORT,
+            // SCHOOL_TRANSPORT, AMBULANCE, GOVERNMENT, FLEET) need no alias. Motorcycle usages = usage + vehicle_class MOTORCYCLE.
+            // SPECIAL_PURPOSE has no single equivalent: it goes through "Other / Not listed" review (PENDING_MASTER_REVIEW).
+            'PRIVATE' => 'PRIVATE_PERSONAL', 'CORPORATE' => 'COMPANY', 'COMMERCIAL_PASSENGER' => 'PUBLIC_TRANSPORT',
+            'MOTORCYCLE_PRIVATE' => 'PRIVATE_PERSONAL', 'MOTORCYCLE_COMMERCIAL' => 'COMMERCIAL'],
     ];
+
+    /** Owner usage codes whose vehicle class is implied (resolved together with the usage). */
+    public const USAGE_IMPLIED_CLASS = ['MOTORCYCLE_PRIVATE' => 'MOTORCYCLE', 'MOTORCYCLE_COMMERCIAL' => 'MOTORCYCLE'];
 
     public static function listCode(string $list): ?string
     {
@@ -67,11 +75,14 @@ final class VehicleMasterSource
             return $make ? $svc->modelsFor($make, $q)->take($limit)->map(fn ($m) => ['code' => $m->code, 'parent' => $make->code, 'label' => ['en' => $m->name, 'fr' => $m->name]])->values()->all() : [];
         }
         $needle = MasterDataNormalizer::normalize($q);
-        $legacy = array_flip(self::LEGACY_CODES[$code] ?? []);
+        $legacy = [];
+        foreach (self::LEGACY_CODES[$code] ?? [] as $old => $canonical) {
+            $legacy[$canonical][] = $old;
+        }
 
         return VehicleReferenceValue::where(['group' => $code, 'active' => true])->orderBy('sort_order')->get()
-            ->map(fn ($v) => ['code' => $v->code, 'label' => ['en' => $v->label_en, 'fr' => $v->label_fr]] + (isset($legacy[$v->code]) ? ['aliases' => [$legacy[$v->code]]] : []))
-            ->filter(fn ($v) => $needle === '' || str_contains(MasterDataNormalizer::searchText([$v['code'], $v['label']['en'], $v['label']['fr']]), $needle))
+            ->map(fn ($v) => ['code' => $v->code, 'label' => ['en' => $v->label_en, 'fr' => $v->label_fr]] + (isset($legacy[$v->code]) ? ['aliases' => $legacy[$v->code]] : []))
+            ->filter(fn ($v) => $needle === '' || str_contains(MasterDataNormalizer::searchText([$v['code'], $v['label']['en'], $v['label']['fr'], ...($v['aliases'] ?? [])]), $needle))
             ->take($limit)->values()
             ->push(['code' => 'OTHER', 'label' => ['en' => 'Other / Not listed', 'fr' => 'Autre / Non répertorié'], 'is_other' => true])->all();
     }

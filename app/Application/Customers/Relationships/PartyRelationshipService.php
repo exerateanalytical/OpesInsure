@@ -30,13 +30,28 @@ final class PartyRelationshipService
         'GROUP_MEMBER_OF' => ['Member of group / association', false, null, 'ORGANIZATION'],
         'SUBSIDIARY_OF' => ['Subsidiary of', false, 'ORGANIZATION', 'ORGANIZATION'],
         'BRANCH_OF' => ['Branch of', false, 'ORGANIZATION', 'ORGANIZATION'],
+        // Owner decision 26 (2026-09-25): legal-arrangement / control roles that make a beneficial owner whatever
+        // the percentage held. The "to" party is the organization / legal arrangement (trust, fiducie).
+        'SETTLOR_OF' => ['Settlor of', false, null, 'ORGANIZATION'],
+        'TRUSTEE_OF' => ['Trustee of', false, null, 'ORGANIZATION'],
+        'PROTECTOR_OF' => ['Protector of', false, null, 'ORGANIZATION'],
+        'BENEFICIARY_OF' => ['Beneficiary of (legal arrangement)', false, null, 'ORGANIZATION'],
+        'CONTROLLING_PERSON_OF' => ['Other controlling person of', false, null, 'ORGANIZATION'],
     ];
+
+    /** Relationship types that make the "from" party a beneficial owner of the "to" organization (decision 26). */
+    public const CONTROLLING_ROLES = ['SETTLOR_OF' => 'SETTLOR', 'TRUSTEE_OF' => 'TRUSTEE', 'PROTECTOR_OF' => 'PROTECTOR',
+        'BENEFICIARY_OF' => 'BENEFICIARY', 'CONTROLLING_PERSON_OF' => 'OTHER_CONTROLLING_PERSON'];
 
     public const INTEREST_TYPES = ['SHAREHOLDING', 'VOTING', 'CONTROL'];
 
+    /** Percentage bases for beneficial ownership: capital (SHAREHOLDING) or voting rights (VOTING). CONTROL = other means. */
+    public const OWNERSHIP_BASES = ['SHAREHOLDING' => 'CAPITAL', 'VOTING' => 'VOTING_RIGHTS'];
+
     /**
-     * Default UBO threshold. No CEMAC/CIMA text in the repository fixes it: 25 is the common FATF-style reference,
-     * kept configurable (config parties.ubo_threshold_percent) and flagged UNVERIFIED.
+     * UBO threshold: owner decision 26 (2026-09-25) — an interest strictly greater than 25% (25% itself does not
+     * qualify). Configurable (config parties.ubo_threshold_percent). threshold_verified stays false: the value is
+     * the owner's decision; no CEMAC/CIMA legal text in the repository has been checked against it.
      */
     public const DEFAULT_UBO_THRESHOLD = 25.0;
 
@@ -124,45 +139,152 @@ final class PartyRelationshipService
     }
 
     /**
-     * Ultimate beneficial owners: natural persons whose effective interest (sum over every ownership path of the
-     * product of percentages) reaches the threshold. Cycles are cut; depth is bounded.
+     * Beneficial owners (owner decision 26, 2026-09-25): natural persons who
+     *   - hold strictly more than the threshold (default 25%) of capital OR of voting rights, directly or
+     *     indirectly (sum over every ownership path of the product of percentages; each basis evaluated alone), or
+     *   - control by other means (an active CONTROL interest, any percentage, direct or through a legal person), or
+     *   - are settlor, trustee, protector, beneficiary or other controlling person (party relationships).
+     * A legal person in a control position or role is resolved to its own beneficial owners. Cycles are cut and
+     * depth is bounded. Organizations reached with no recorded owner end up in "unresolved".
      *
-     * @return array{threshold: float, threshold_verified: false, owners: list<array{party_id: string, display_name: string, effective_percentage: float, paths: list<list<string>>}>, unresolved: list<string>}
+     * $interestType: null = capital and voting (the decision); SHAREHOLDING / VOTING restrict the percentage basis
+     * to one of them; CONTROL = control / roles only. Control and roles are always evaluated.
+     *
+     * @return array{threshold: float, threshold_rule: string, threshold_basis: string, threshold_verified: false, owners: list<array<string, mixed>>, unresolved: list<string>}
      */
-    public function ultimateBeneficialOwners(Party $company, ?float $threshold = null, string $interestType = 'SHAREHOLDING'): array
+    public function ultimateBeneficialOwners(Party $company, ?float $threshold = null, ?string $interestType = null): array
     {
         $threshold ??= (float) config('parties.ubo_threshold_percent', self::DEFAULT_UBO_THRESHOLD);
-        $totals = [];
-        $paths = [];
+        $interestType = $interestType ? strtoupper($interestType) : null;
+        $bases = $interestType === null ? array_keys(self::OWNERSHIP_BASES) : array_values(array_intersect([$interestType], array_keys(self::OWNERSHIP_BASES)));
+        $found = [];
         $unresolved = [];
-        $walk = function (string $ownedId, float $factor, array $path) use (&$walk, &$totals, &$paths, &$unresolved, $interestType): void {
-            $rows = OwnershipInterest::where(['owned_party_id' => $ownedId, 'status' => 'ACTIVE', 'interest_type' => $interestType])->get();
-            foreach ($rows as $r) {
-                if (in_array($r->owner_party_id, $path, true) || count($path) >= self::MAX_DEPTH) {
-                    continue;
-                }
-                $eff = $factor * ((float) $r->percentage / 100);
-                $owner = Party::find($r->owner_party_id);
-                if ($owner?->type === 'PERSON') {
-                    $totals[$owner->id] = ($totals[$owner->id] ?? 0) + $eff;
-                    $paths[$owner->id][] = [...$path, $owner->id];
-                } elseif ($owner) {
-                    $hasOwners = OwnershipInterest::where(['owned_party_id' => $owner->id, 'status' => 'ACTIVE', 'interest_type' => $interestType])->exists();
-                    $hasOwners ? $walk($owner->id, $eff, [...$path, $owner->id]) : $unresolved[] = $owner->id;
-                }
-            }
-        };
-        $walk($company->id, 1.0, [$company->id]);
+        $this->collectOwners($company->id, $threshold, $bases, [$company->id], $found, $unresolved, 0);
+
         $owners = [];
-        foreach ($totals as $id => $share) {
-            $pct = round($share * 100, 4);
-            if ($pct + 1e-9 >= $threshold) {
-                $owners[] = ['party_id' => $id, 'display_name' => (string) Party::whereKey($id)->value('display_name'), 'effective_percentage' => $pct, 'paths' => $paths[$id]];
+        foreach ($found as $id => $f) {
+            $owners[] = ['party_id' => $id, 'display_name' => (string) Party::whereKey($id)->value('display_name'),
+                'effective_percentage' => $f['effective'] ? round(max($f['effective']), 4) : 0.0, 'effective_by_basis' => $f['effective'],
+                'grounds' => array_values(array_unique($f['grounds'])), 'roles' => array_values(array_unique($f['roles'])), 'paths' => $f['paths']];
+        }
+        usort($owners, fn ($a, $b) => [$b['effective_percentage'], $a['display_name']] <=> [$a['effective_percentage'], $b['display_name']]);
+        $unresolved = array_values(array_unique(array_diff($unresolved, array_keys($found))));
+
+        return ['threshold' => $threshold, 'threshold_rule' => 'GREATER_THAN', 'threshold_basis' => 'OWNER_DECISION_2026-09-25#26',
+            'threshold_verified' => false, 'owners' => $owners, 'unresolved' => $unresolved];
+    }
+
+    /** Strictly greater than the threshold (decision 26); rounding noise at exactly the threshold does not qualify. */
+    public static function exceedsThreshold(float $pct, float $threshold): bool
+    {
+        return round($pct, 4) > $threshold + 1e-9;
+    }
+
+    /**
+     * @param  list<string>  $bases
+     * @param  list<string>  $path
+     * @param  array<string, array<string, mixed>>  $found
+     * @param  list<string>  $unresolved
+     */
+    private function collectOwners(string $orgId, float $threshold, array $bases, array $path, array &$found, array &$unresolved, int $depth): void
+    {
+        if ($depth >= self::MAX_DEPTH) {
+            return;
+        }
+        // 1. Capital / voting rights: each basis separately, direct + indirect.
+        foreach ($bases as $type) {
+            $totals = [];
+            $paths = [];
+            $this->walkOwnership($orgId, $type, 1.0, $path, $totals, $paths, $unresolved);
+            foreach ($totals as $pid => $share) {
+                if (self::exceedsThreshold($share * 100, $threshold)) {
+                    $this->addOwner($found, $pid, self::OWNERSHIP_BASES[$type], $paths[$pid], null, [self::OWNERSHIP_BASES[$type] => round($share * 100, 4)]);
+                }
             }
         }
-        usort($owners, fn ($a, $b) => $b['effective_percentage'] <=> $a['effective_percentage']);
+        // 2. Control by other means (CONTROL interests, any percentage).
+        foreach (OwnershipInterest::where(['owned_party_id' => $orgId, 'status' => 'ACTIVE', 'interest_type' => 'CONTROL'])->pluck('owner_party_id') as $cid) {
+            $this->resolveController((string) $cid, 'CONTROL_OTHER_MEANS', null, $threshold, $bases, $path, $found, $unresolved, $depth);
+        }
+        // 3. Settlor, trustee, protector, beneficiary, other controlling person.
+        $roles = PartyRelationship::where(['to_party_id' => $orgId, 'status' => 'ACTIVE'])->whereIn('type', array_keys(self::CONTROLLING_ROLES))->get(['from_party_id', 'type']);
+        foreach ($roles as $r) {
+            $this->resolveController($r->from_party_id, 'CONTROLLING_ROLE', self::CONTROLLING_ROLES[$r->type], $threshold, $bases, $path, $found, $unresolved, $depth);
+        }
+    }
 
-        return ['threshold' => $threshold, 'threshold_verified' => false, 'owners' => $owners, 'unresolved' => array_values(array_unique($unresolved))];
+    /**
+     * @param  array<string, array<string, mixed>>  $found
+     * @param  list<list<string>>  $paths
+     * @param  array<string, float>  $effective
+     */
+    private function addOwner(array &$found, string $pid, string $ground, array $paths, ?string $role, array $effective = []): void
+    {
+        $found[$pid] ??= ['effective' => [], 'grounds' => [], 'roles' => [], 'paths' => []];
+        $found[$pid]['grounds'][] = $ground;
+        if ($role) {
+            $found[$pid]['roles'][] = $role;
+        }
+        foreach ($effective as $basis => $pct) {
+            $found[$pid]['effective'][$basis] = max($pct, $found[$pid]['effective'][$basis] ?? 0);
+        }
+        array_push($found[$pid]['paths'], ...$paths);
+    }
+
+    /**
+     * @param  list<string>  $bases
+     * @param  list<string>  $path
+     * @param  array<string, array<string, mixed>>  $found
+     * @param  list<string>  $unresolved
+     */
+    private function resolveController(string $pid, string $ground, ?string $role, float $threshold, array $bases, array $path, array &$found, array &$unresolved, int $depth): void
+    {
+        $party = in_array($pid, $path, true) ? null : Party::find($pid);
+        if (! $party) {
+            return;
+        }
+        if ($party->type === 'PERSON') {
+            $this->addOwner($found, $pid, $ground, [[...$path, $pid]], $role);
+
+            return;
+        }
+        // A legal person in a control position: its own beneficial owners control through it.
+        $inner = [];
+        $this->collectOwners($pid, $threshold, $bases, [...$path, $pid], $inner, $unresolved, $depth + 1);
+        foreach ($inner as $n => $f) {
+            $this->addOwner($found, $n, $ground.'_INDIRECT', $f['paths'], $role);
+            foreach ($f['grounds'] as $g) {
+                $found[$n]['grounds'][] = $g.'_OF_CONTROLLER';
+            }
+            array_push($found[$n]['roles'], ...$f['roles']);
+        }
+        if ($inner === []) {
+            $unresolved[] = $pid;
+        }
+    }
+
+    /**
+     * @param  list<string>  $path
+     * @param  array<string, float>  $totals
+     * @param  array<string, list<list<string>>>  $paths
+     * @param  list<string>  $unresolved
+     */
+    private function walkOwnership(string $ownedId, string $type, float $factor, array $path, array &$totals, array &$paths, array &$unresolved): void
+    {
+        foreach (OwnershipInterest::where(['owned_party_id' => $ownedId, 'status' => 'ACTIVE', 'interest_type' => $type])->get() as $r) {
+            if (in_array($r->owner_party_id, $path, true) || count($path) >= self::MAX_DEPTH) {
+                continue;
+            }
+            $eff = $factor * ((float) $r->percentage / 100);
+            $owner = Party::find($r->owner_party_id);
+            if ($owner?->type === 'PERSON') {
+                $totals[$owner->id] = ($totals[$owner->id] ?? 0) + $eff;
+                $paths[$owner->id][] = [...$path, $owner->id];
+            } elseif ($owner) {
+                $hasOwners = OwnershipInterest::where(['owned_party_id' => $owner->id, 'status' => 'ACTIVE', 'interest_type' => $type])->exists();
+                $hasOwners ? $this->walkOwnership($owner->id, $type, $eff, [...$path, $owner->id], $totals, $paths, $unresolved) : $unresolved[] = $owner->id;
+            }
+        }
     }
 
     /**

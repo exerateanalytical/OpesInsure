@@ -24,6 +24,8 @@ Route::prefix('v1')->group(function (): void {
         Route::put('master-data/carrier-mappings', [MasterDataOwnershipController::class, 'putCarrierMapping'])->middleware('permission:master_data.mappings.manage');
         Route::get('master-data/broker-mappings', [MasterDataOwnershipController::class, 'brokerMappings'])->middleware('permission:master_data.mappings.manage');
         Route::put('master-data/broker-mappings', [MasterDataOwnershipController::class, 'putBrokerMapping'])->middleware('permission:master_data.mappings.manage');
+        // Owner Workflow Data Master v1: reference catalogue statuses (PENDING_SOURCE lists visible as empty and pending).
+        Route::get('master-data/workflow-statuses', [\App\Application\MasterData\Http\WorkflowDataStatusController::class, 'index'])->middleware('permission:master_data.workflow_status.view');
         Route::get('master-data/duplicates', [MasterDataOwnershipController::class, 'duplicates'])->middleware('permission:master_data.merge.request');
         Route::post('master-data/merges', [MasterDataOwnershipController::class, 'requestMerge'])->middleware('permission:master_data.merge.request');
         Route::post('master-data/merges/{merge}/decision', [MasterDataOwnershipController::class, 'decideMerge'])->middleware('permission:master_data.merge.approve')->whereUuid('merge');

@@ -1,0 +1,1013 @@
+{
+    "schema": "opesinsure.master_data.v1",
+    "file": "workflow_finance_claims_2026",
+    "version": "2026.1",
+    "effective_from": "2026-01-01",
+    "source": "OpesInsure Workflow Institutional Data Master v1.0.0 (database/data/workflow_institutional_data_master_2026.json): claims, repair_network, health, payments_finance, accounting, commission, reinsurance_coinsurance",
+    "provenance_default": "OWNER_WORKFLOW_DATA_MASTER_V1",
+    "protected": true,
+    "notes": [
+        "Merged by code into existing domains/lists: only codes that did not exist are added. Workflow codes that are synonyms of existing codes are NOT added again; they are resolved by the domain reference classes (App\\Application\\Claims\\ClaimReferenceCodes, Payments\\PaymentMethodReference, Ledger\\JournalTypeReference, FinancialDistribution\\CommissionReference, FinancialDistribution\\ReinsuranceReference).",
+        "PENDING_SOURCE / CONFIG_REQUIRED lists are structure_only and empty: nothing is invented.",
+        "PARTIALLY_KNOWN (mobile money provider master) is carried as UNVERIFIED, one of the 7 platform data statuses."
+    ],
+    "domains": [
+        {
+            "code": "claims",
+            "label_en": "Claims",
+            "label_fr": "Sinistres",
+            "lists": [
+                {
+                    "code": "claim_type",
+                    "label_en": "Claim type",
+                    "label_fr": "Type de sinistre",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "parent_list": "claim_category",
+                    "values": [
+                        {
+                            "code": "MOTOR_DAMAGE",
+                            "label_en": "Motor own damage",
+                            "label_fr": "Dommages au véhicule",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "MOTOR"
+                        },
+                        {
+                            "code": "MOTOR_TP_BODILY_INJURY",
+                            "label_en": "Motor third-party bodily injury",
+                            "label_fr": "RC automobile – dommages corporels",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "MOTOR"
+                        },
+                        {
+                            "code": "MOTOR_TP_PROPERTY_DAMAGE",
+                            "label_en": "Motor third-party property damage",
+                            "label_fr": "RC automobile – dommages matériels",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "MOTOR"
+                        },
+                        {
+                            "code": "PROPERTY_DAMAGE",
+                            "label_en": "Property damage",
+                            "label_fr": "Dommages aux biens",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "PROPERTY"
+                        },
+                        {
+                            "code": "FIRE",
+                            "label_en": "Fire",
+                            "label_fr": "Incendie",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "PROPERTY"
+                        },
+                        {
+                            "code": "THEFT",
+                            "label_en": "Theft",
+                            "label_fr": "Vol",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "PROPERTY"
+                        },
+                        {
+                            "code": "BUSINESS_INTERRUPTION",
+                            "label_en": "Business interruption",
+                            "label_fr": "Pertes d'exploitation",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "PROPERTY"
+                        },
+                        {
+                            "code": "HEALTH_REIMBURSEMENT",
+                            "label_en": "Health reimbursement",
+                            "label_fr": "Remboursement santé",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "HEALTH"
+                        },
+                        {
+                            "code": "HEALTH_PROVIDER",
+                            "label_en": "Health provider claim (third-party payment)",
+                            "label_fr": "Prise en charge prestataire santé (tiers payant)",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "HEALTH"
+                        },
+                        {
+                            "code": "LIFE_DEATH",
+                            "label_en": "Life – death",
+                            "label_fr": "Vie – décès",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "LIFE"
+                        },
+                        {
+                            "code": "LIFE_DISABILITY",
+                            "label_en": "Life – disability",
+                            "label_fr": "Vie – invalidité",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "LIFE"
+                        },
+                        {
+                            "code": "TRAVEL_MEDICAL",
+                            "label_en": "Travel medical",
+                            "label_fr": "Voyage – frais médicaux",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "TRAVEL"
+                        },
+                        {
+                            "code": "TRAVEL_CANCELLATION",
+                            "label_en": "Travel cancellation",
+                            "label_fr": "Voyage – annulation",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "TRAVEL"
+                        },
+                        {
+                            "code": "MARINE_CARGO",
+                            "label_en": "Marine cargo",
+                            "label_fr": "Facultés maritimes",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "MARINE"
+                        },
+                        {
+                            "code": "ENGINEERING",
+                            "label_en": "Engineering",
+                            "label_fr": "Risques techniques",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "ENGINEERING"
+                        },
+                        {
+                            "code": "LIABILITY",
+                            "label_en": "Liability",
+                            "label_fr": "Responsabilité civile",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "LIABILITY"
+                        },
+                        {
+                            "code": "AGRICULTURE",
+                            "label_en": "Agriculture",
+                            "label_fr": "Agriculture",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "AGRICULTURE"
+                        },
+                        {
+                            "code": "LIVESTOCK",
+                            "label_en": "Livestock",
+                            "label_fr": "Bétail",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "AGRICULTURE"
+                        },
+                        {
+                            "code": "OTHER",
+                            "label_en": "Other",
+                            "label_fr": "Autre",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            },
+                            "parent_code": "OTHER"
+                        }
+                    ]
+                },
+                {
+                    "code": "reserve_type",
+                    "label_en": "Reserve type",
+                    "label_fr": "Type de provision",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "INDEMNITY",
+                            "label_en": "Indemnity",
+                            "label_fr": "Indemnité",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "LEGAL",
+                            "label_en": "Legal costs",
+                            "label_fr": "Frais juridiques",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "ADJUSTER",
+                            "label_en": "Adjuster / expert fees",
+                            "label_fr": "Honoraires d'expert",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "MEDICAL",
+                            "label_en": "Medical",
+                            "label_fr": "Frais médicaux",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "REPAIR",
+                            "label_en": "Repair",
+                            "label_fr": "Réparation",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "SALVAGE",
+                            "label_en": "Salvage",
+                            "label_fr": "Sauvetage",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "RECOVERY",
+                            "label_en": "Recovery",
+                            "label_fr": "Recours",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "OTHER",
+                            "label_en": "Other",
+                            "label_fr": "Autre",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "recovery_type",
+                    "label_en": "Recovery type",
+                    "label_fr": "Type de recours",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "SUBROGATION",
+                            "label_en": "Subrogation",
+                            "label_fr": "Subrogation",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "SALVAGE",
+                            "label_en": "Salvage",
+                            "label_fr": "Sauvetage",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "REINSURANCE",
+                            "label_en": "Reinsurance recovery",
+                            "label_fr": "Recouvrement réassurance",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "COINSURANCE",
+                            "label_en": "Co-insurance recovery",
+                            "label_fr": "Recouvrement coassurance",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "THIRD_PARTY",
+                            "label_en": "Third-party recovery",
+                            "label_fr": "Recours contre tiers",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "OTHER",
+                            "label_en": "Other",
+                            "label_fr": "Autre",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "damage_type",
+                    "label_en": "Damage type",
+                    "label_fr": "Type de dommage",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "injury_type",
+                    "label_en": "Injury type",
+                    "label_fr": "Type de blessure",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "evidence_type",
+                    "label_en": "Claim evidence type",
+                    "label_fr": "Type de pièce justificative",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "fraud_indicator",
+                    "label_en": "Claim fraud indicator",
+                    "label_fr": "Indicateur de fraude",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "decision_reason",
+                    "label_en": "Claim decision reason",
+                    "label_fr": "Motif de décision",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "rejection_reason",
+                    "label_en": "Claim rejection reason",
+                    "label_fr": "Motif de rejet",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                }
+            ]
+        },
+        {
+            "code": "partners",
+            "label_en": "Partners",
+            "label_fr": "Partenaires",
+            "lists": [
+                {
+                    "code": "adjuster_type",
+                    "label_en": "Adjuster / expert type",
+                    "label_fr": "Type d'expert",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "VALUER",
+                            "label_en": "Valuer",
+                            "label_fr": "Évaluateur",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "INVESTIGATOR",
+                            "label_en": "Investigator",
+                            "label_fr": "Enquêteur",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "adjuster",
+                    "label_en": "Adjuster / expert",
+                    "label_fr": "Expert",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                }
+            ]
+        },
+        {
+            "code": "provider",
+            "label_en": "Health providers",
+            "label_fr": "Prestataires de santé",
+            "lists": [
+                {
+                    "code": "provider_type",
+                    "label_en": "Provider type",
+                    "label_fr": "Type de prestataire",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "SPECIALIST_PRACTICE",
+                            "label_en": "Specialist practice",
+                            "label_fr": "Cabinet de spécialiste",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "medical_specialty",
+                    "label_en": "Medical specialty",
+                    "label_fr": "Spécialité médicale",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "PATHOLOGY",
+                            "label_en": "Pathology",
+                            "label_fr": "Anatomopathologie",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "medical_service",
+                    "label_en": "Medical service catalogue",
+                    "label_fr": "Catalogue des actes médicaux",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "parent_list": "medical_service_category",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "provider_tariff",
+                    "label_en": "Provider tariff",
+                    "label_fr": "Tarif prestataire",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (CONFIG_REQUIRED)",
+                    "note": "Workflow data master status: CONFIG_REQUIRED. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                }
+            ]
+        },
+        {
+            "code": "health",
+            "label_en": "Health",
+            "label_fr": "Santé",
+            "lists": [
+                {
+                    "code": "benefit_category",
+                    "label_en": "Benefit category",
+                    "label_fr": "Catégorie de garantie",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "AMBULANCE",
+                            "label_en": "Ambulance",
+                            "label_fr": "Ambulance",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "code": "financial_institutions",
+            "label_en": "Financial institutions",
+            "label_fr": "Institutions financières",
+            "lists": [
+                {
+                    "code": "bank",
+                    "label_en": "Bank",
+                    "label_fr": "Banque",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "mobile_money_provider",
+                    "label_en": "Mobile money provider",
+                    "label_fr": "Opérateur de mobile money",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (UNVERIFIED)",
+                    "note": "Workflow data master status: UNVERIFIED.",
+                    "values": [
+                        {
+                            "code": "MTN_MOMO",
+                            "label_en": "MTN Mobile Money",
+                            "label_fr": "MTN Mobile Money",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "UNVERIFIED",
+                                "source_status": "PARTIALLY_KNOWN",
+                                "payment_method": "MTN_MOMO",
+                                "payment_provider": "mtn_momo",
+                                "country": "CM"
+                            }
+                        },
+                        {
+                            "code": "ORANGE_MONEY",
+                            "label_en": "Orange Money",
+                            "label_fr": "Orange Money",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "UNVERIFIED",
+                                "source_status": "PARTIALLY_KNOWN",
+                                "payment_method": "ORANGE_MONEY",
+                                "payment_provider": "orange_money",
+                                "country": "CM"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "code": "finance",
+            "label_en": "Finance",
+            "label_fr": "Finance",
+            "lists": [
+                {
+                    "code": "journal_type",
+                    "label_en": "Journal type",
+                    "label_fr": "Type de journal",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "PREMIUM",
+                            "label_en": "Premium",
+                            "label_fr": "Primes",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "SALES"
+                            }
+                        },
+                        {
+                            "code": "PAYMENT",
+                            "label_en": "Payment",
+                            "label_fr": "Encaissements",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CASH_RECEIPTS"
+                            }
+                        },
+                        {
+                            "code": "CLAIM_RESERVE",
+                            "label_en": "Claim reserve",
+                            "label_fr": "Provisions sinistres",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CLAIMS"
+                            }
+                        },
+                        {
+                            "code": "CLAIM_PAYMENT",
+                            "label_en": "Claim payment",
+                            "label_fr": "Règlements sinistres",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CLAIMS"
+                            }
+                        },
+                        {
+                            "code": "REFUND",
+                            "label_en": "Refund",
+                            "label_fr": "Remboursements",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CASH_PAYMENTS"
+                            }
+                        },
+                        {
+                            "code": "PROVIDER_PAYMENT",
+                            "label_en": "Provider payment",
+                            "label_fr": "Paiements prestataires",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CASH_PAYMENTS"
+                            }
+                        },
+                        {
+                            "code": "COINSURANCE",
+                            "label_en": "Co-insurance",
+                            "label_fr": "Coassurance",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "GENERAL"
+                            }
+                        },
+                        {
+                            "code": "RECOVERY",
+                            "label_en": "Recovery",
+                            "label_fr": "Recours",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "CLAIMS"
+                            }
+                        },
+                        {
+                            "code": "TAX",
+                            "label_en": "Tax",
+                            "label_fr": "Taxes",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED",
+                                "book": "GENERAL"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "chart_of_accounts",
+                    "label_en": "Chart of accounts",
+                    "label_fr": "Plan comptable",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (CONFIG_REQUIRED)",
+                    "note": "Workflow data master status: CONFIG_REQUIRED. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "gl_mapping",
+                    "label_en": "GL mapping",
+                    "label_fr": "Correspondance comptable",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (CONFIG_REQUIRED)",
+                    "note": "Workflow data master status: CONFIG_REQUIRED. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "settlement_frequency",
+                    "label_en": "Settlement frequency",
+                    "label_fr": "Fréquence de règlement",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "CUSTOM",
+                            "label_en": "Custom",
+                            "label_fr": "Personnalisée",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "commission_basis",
+                    "label_en": "Commission basis",
+                    "label_fr": "Assiette de commission",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "WRITTEN_PREMIUM",
+                            "label_en": "Written premium",
+                            "label_fr": "Primes émises",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "COLLECTED_PREMIUM",
+                            "label_en": "Collected premium",
+                            "label_fr": "Primes encaissées",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "NET_PREMIUM",
+                            "label_en": "Net premium",
+                            "label_fr": "Prime nette",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "GROSS_PREMIUM",
+                            "label_en": "Gross premium",
+                            "label_fr": "Prime brute",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "FIXED",
+                            "label_en": "Fixed amount",
+                            "label_fr": "Montant fixe",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "commission_earning_event",
+                    "label_en": "Commission earning event",
+                    "label_fr": "Fait générateur de commission",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "POLICY_ISSUED",
+                            "label_en": "Policy issued",
+                            "label_fr": "Police émise",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "PREMIUM_COLLECTED",
+                            "label_en": "Premium collected",
+                            "label_fr": "Prime encaissée",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "INSTALLMENT_PAID",
+                            "label_en": "Instalment paid",
+                            "label_fr": "Échéance payée",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "RENEWAL_PAID",
+                            "label_en": "Renewal paid",
+                            "label_fr": "Renouvellement payé",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "code": "commission_clawback_reason",
+                    "label_en": "Commission clawback reason",
+                    "label_fr": "Motif de reprise de commission",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PLATFORM_NORMALIZED)",
+                    "note": "Workflow data master status: PLATFORM_NORMALIZED.",
+                    "values": [
+                        {
+                            "code": "CANCELLATION",
+                            "label_en": "Cancellation",
+                            "label_fr": "Résiliation",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "REFUND",
+                            "label_en": "Refund",
+                            "label_fr": "Remboursement",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "PAYMENT_REVERSAL",
+                            "label_en": "Payment reversal",
+                            "label_fr": "Annulation de paiement",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "POLICY_VOID",
+                            "label_en": "Policy void",
+                            "label_fr": "Police annulée ab initio",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        },
+                        {
+                            "code": "CORRECTION",
+                            "label_en": "Correction",
+                            "label_fr": "Correction",
+                            "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                            "attributes": {
+                                "source": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                                "data_status": "PLATFORM_NORMALIZED"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "code": "reinsurance",
+            "label_en": "Reinsurance",
+            "label_fr": "Réassurance",
+            "lists": [
+                {
+                    "code": "reinsurer",
+                    "label_en": "Reinsurer",
+                    "label_fr": "Réassureur",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                },
+                {
+                    "code": "reinsurance_broker",
+                    "label_en": "Reinsurance broker",
+                    "label_fr": "Courtier de réassurance",
+                    "provenance": "OWNER_WORKFLOW_DATA_MASTER_V1",
+                    "source_reference": "database/data/workflow_institutional_data_master_2026.json (PENDING_SOURCE)",
+                    "note": "Workflow data master status: PENDING_SOURCE. No values are invented; the list stays empty until an authoritative source or tenant configuration supplies them.",
+                    "structure_only": true,
+                    "values": []
+                }
+            ]
+        }
+    ]
+}

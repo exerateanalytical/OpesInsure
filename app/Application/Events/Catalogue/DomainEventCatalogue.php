@@ -41,6 +41,8 @@ final class DomainEventCatalogue
             $d('kyc_submission.information_requested', 'kyc_submission', 'Reviewer asked the customer for more KYC information.', [], [$C], true),
             $d('kyc_submission.remediation_requested', 'kyc_submission', 'KYC refresh/remediation opened; original submission retained.', [], [$C], true),
             $d('kyc_submission.expired', 'kyc_submission', 'Approved KYC reached its expiry.', [], [$C], true),
+            $d('kyc_submission.rescreen_started', 'kyc_submission', 'Manual (audited) rescreening round opened on an approved KYC.', [], [$C], true),
+            $d('kyc_submission.rescreen_match', 'kyc_submission', 'Rescreening of an approved KYC recorded a possible / confirmed match.', [], [$C], true),
             $d('quote.rated', 'quote', 'Quote premium calculated by the rating engine.', ['QuoteCalculated', 'QuoteRated'], [$W, $P], true),
             $d('quote.offer.accepted', 'quote', 'Customer accepted the quote offer.', ['QuoteAccepted'], [$W], true),
             $d('proposal.submitted', 'proposal', 'Proposal submitted for underwriting.', ['ProposalSubmitted'], [$W], true),

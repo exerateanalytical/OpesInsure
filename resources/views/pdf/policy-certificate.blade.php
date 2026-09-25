@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Certificate {{ $certificate->serial_number }}</title>@include('pdf._style')</head>
-<body>
+<body>@include('pdf._demo_overlay')
 <table style="width:100%"><tr>
   <td><div class="brand">OpesInsure</div><div class="muted">Certificate of insurance / Attestation d'assurance</div></td>
   <td style="text-align:right"><span class="status">{{ $policy->status }}</span></td>

@@ -251,6 +251,7 @@ return [
         'totals' => ':insurers assureurs · :brokers courtiers',
         'empty' => 'Aucun prestataire ne correspond à ces filtres.',
         'unavailable' => 'Le registre des prestataires est momentanément indisponible. Réessayez dans quelques instants.',
+        'hq' => 'Siège : :city', 'branches' => '{0} Aucune agence directe publiée|{1} 1 bureau|[2,*] :count bureaux',
     ],
 
     'privacy' => [

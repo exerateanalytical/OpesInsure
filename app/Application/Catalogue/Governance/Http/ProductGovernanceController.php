@@ -23,7 +23,7 @@ final class ProductGovernanceController
 {
     /** Permission required to move a version OUT of each stage (route middleware only checks catalogue.view). */
     private const ADVANCE_PERMISSION = ['DRAFT' => 'catalogue.manage', 'CONFIGURATION' => 'catalogue.manage', 'TECHNICAL_REVIEW' => 'catalogue.review',
-        'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish', 'READY' => 'catalogue.publish'];
+        'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish', 'SANDBOX_TESTS' => 'catalogue.test', 'READY' => 'catalogue.publish'];
 
     public function __construct(
         private readonly ProductGovernanceService $governance,
@@ -66,7 +66,7 @@ final class ProductGovernanceController
         $v = $this->version($r, $version);
         $d = $r->validate(['reason' => 'required|string|min:10|max:2000']);
         $stage = $this->governance->state($v)->stage;
-        $this->require($r, in_array($stage, ['BUSINESS_APPROVAL', 'READY'], true) ? 'catalogue.publish' : 'catalogue.review');
+        $this->require($r, in_array($stage, ['BUSINESS_APPROVAL', 'SANDBOX_TESTS', 'READY'], true) ? 'catalogue.publish' : 'catalogue.review');
 
         return response()->json(['data' => $this->governance->reject($v, $r->user(), $d['reason'])]);
     }

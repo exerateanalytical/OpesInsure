@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Application\MasterData\MasterDataCache;
 use App\Application\MasterData\MasterDataNormalizer;
+use App\Application\MasterData\WorkflowDataStatuses;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -26,6 +27,9 @@ use RuntimeException;
  * disclaimer_en/fr,lists[]}; lists[].{code,label_en,label_fr,parent_list,structure_only,
  * selection,provenance,source_reference,version,note,values[]}; values[].{code,
  * label_en|en,label_fr|fr,parent_code|parent,description_en/fr,attributes,aliases[]}.
+ * A later file may add aliases/attribute keys to an existing code (never relabel it), declare
+ * allow_other on an empty placeholder list, stamp source_reference_default on the values it
+ * introduces, and carry workflow_statuses[] (see WorkflowDataStatuses).
  */
 final class MasterDataSeeder extends Seeder
 {
@@ -40,7 +44,8 @@ final class MasterDataSeeder extends Seeder
     public function run(?string $directory = null): void
     {
         $directory ??= database_path('data/master_data');
-        $domains = $this->merge($this->load($directory));
+        $docs = $this->load($directory);
+        $domains = $this->merge($docs);
 
         MasterDataCache::muted(function () use ($domains): void {
             $sort = 0;
@@ -57,6 +62,11 @@ final class MasterDataSeeder extends Seeder
                 DB::table('master_data_values')->where(['domain_code' => $d, 'list_code' => $l])->update(['status' => 'INACTIVE']);
                 MasterDataCache::bump($d);
                 $this->warnings[] = "List $old deactivated: superseded by $new.";
+            }
+        }
+        foreach ($docs as $doc) {
+            if (! empty($doc['workflow_statuses'])) {
+                $this->warnings = [...$this->warnings, ...app(WorkflowDataStatuses::class)->seed($doc)];
             }
         }
         MasterDataCache::flushAll();
@@ -104,6 +114,15 @@ final class MasterDataSeeder extends Seeder
                 $d['__version'] = $doc['version'] ?? '2026.1';
                 foreach ($d['lists'] ?? [] as $i => $l) {
                     $d['lists'][$i]['__provenance'] = $l['provenance'] ?? $d['__provenance'];
+                    // Values keep the provenance of the file that introduced them, even when merged into another file's list.
+                    if (isset($doc['source_reference_default'])) {
+                        $d['lists'][$i]['source_reference'] ??= $doc['source_reference_default'];
+                        foreach ($l['values'] ?? [] as $vi => $v) {
+                            $d['lists'][$i]['values'][$vi]['source_reference'] ??= $doc['source_reference_default'];
+                            $d['lists'][$i]['values'][$vi]['provenance'] ??= $d['lists'][$i]['__provenance'];
+                            $d['lists'][$i]['values'][$vi]['effective_from'] ??= $d['__effective_from'];
+                        }
+                    }
                 }
                 if (! isset($out[$code])) {
                     $out[$code] = $d;
@@ -114,12 +133,22 @@ final class MasterDataSeeder extends Seeder
                     if ($lists->has($l['code'])) {
                         $this->warnings[] = "List {$code}.{$l['code']} defined in several files; values merged by code.";
                         $existing = $lists[$l['code']];
-                        $known = array_column($existing['values'], 'code');
-                        foreach ($l['values'] as $v) {
-                            if (! in_array($v['code'], $known, true)) {
+                        $known = array_flip(array_column($existing['values'], 'code'));
+                        foreach ($l['values'] ?? [] as $v) {
+                            if (! isset($known[$v['code']])) {
                                 $existing['values'][] = $v;
+                                continue;
                             }
+                            // Existing code: the first definition wins; later files may only add aliases and new attribute keys.
+                            $at = $known[$v['code']];
+                            $cur = $existing['values'][$at];
+                            $cur['aliases'] = array_values(array_unique([...(array) ($cur['aliases'] ?? []), ...(array) ($v['aliases'] ?? [])]));
+                            if (! empty($v['attributes'])) {
+                                $cur['attributes'] = ($cur['attributes'] ?? []) + $v['attributes'];
+                            }
+                            $existing['values'][$at] = $cur;
                         }
+                        $existing['allow_other'] = ($existing['allow_other'] ?? false) || ($l['allow_other'] ?? false);
                         $lists[$l['code']] = $existing;
                     } else {
                         $lists[$l['code']] = $l;
@@ -187,7 +216,8 @@ final class MasterDataSeeder extends Seeder
     {
         $now = now();
         $values = $l['values'] ?? [];
-        $hasOther = collect($values)->contains(fn ($v) => ($v['code'] ?? '') === 'OTHER');
+        // Placeholder lists (no values yet, e.g. PENDING_SOURCE) declare allow_other so "Other / Not listed" still works.
+        $hasOther = collect($values)->contains(fn ($v) => ($v['code'] ?? '') === 'OTHER') || (bool) ($l['allow_other'] ?? false);
         $meta = [
             'label_en' => $l['label_en'] ?? $l['name_en'] ?? $l['code'], 'label_fr' => $l['label_fr'] ?? $l['name_fr'] ?? $l['code'],
             'description_en' => $l['description_en'] ?? null, 'description_fr' => $l['description_fr'] ?? null, 'note' => $l['note'] ?? null,

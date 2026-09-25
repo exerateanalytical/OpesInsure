@@ -30,6 +30,15 @@ final class ProductDocumentRequirementService
 
     public const REQUIREMENTS = ['REQUIRED', 'CONDITIONAL', 'PRODUCT_DEPENDENT', 'WHERE_APPLICABLE', 'OPTIONAL', 'INTERNAL', 'THIRD_PARTY'];
 
+    /**
+     * Workflow Data Master v1 document_requirement_rules.lifecycle_stages => catalogue lifecycle_stage codes (document_packs).
+     * [] = no catalogue stage yet (CONFIG_REQUIRED; nothing invented).
+     */
+    public const LIFECYCLE_STAGE_MAP = [
+        'NEW_BUSINESS' => ['NEW_BUSINESS'], 'RENEWAL' => ['RENEWAL'], 'ENDORSEMENT' => ['ENDORSEMENT'], 'CANCELLATION' => [],
+        'CLAIM' => ['CLAIM', 'TREATMENT'], 'FINANCE' => ['FINANCIAL'], 'REINSURANCE' => [],
+    ];
+
     public function __construct(private readonly AuditWriter $audit, private readonly DocumentRequirementResolver $resolver) {}
 
     /** @param array<string,mixed> $data */

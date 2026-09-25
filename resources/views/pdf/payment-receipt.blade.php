@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>Receipt {{ $r['receipt_number'] }}</title>@include('pdf._style')</head>
-<body>
+<body>@include('pdf._demo_overlay')
 <div class="brand">OpesInsure</div>
 <div class="muted">Payment receipt / Reçu de paiement</div>
 <div class="band" style="margin-top:10px"><strong>{{ $r['receipt_number'] }}</strong> &nbsp;·&nbsp; {{ $r['status'] }}</div>

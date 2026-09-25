@@ -37,7 +37,7 @@ final class ViewInsuranceProduct extends ViewRecord
         $stage = fn () => $gov->state($this->record)->stage;
         $can = fn (string $p) => (bool) auth()->user()?->hasPermission($p);
         $advancePermission = ['DRAFT' => 'catalogue.manage', 'CONFIGURATION' => 'catalogue.manage', 'TECHNICAL_REVIEW' => 'catalogue.review',
-            'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish'];
+            'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish', 'SANDBOX_TESTS' => 'catalogue.test'];
 
         return [
             Action::make('advance')->label(__('product_builder.actions.advance'))->icon('heroicon-o-arrow-right-circle')
@@ -49,7 +49,7 @@ final class ViewInsuranceProduct extends ViewRecord
                 ->schema([DateTimePicker::make('publish_at')->label(__('product_builder.actions.publish_at')), Textarea::make('reason')->label(__('product_builder.actions.reason'))->maxLength(2000)])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->publish($this->record->refresh(), auth()->user(), (string) ($d['reason'] ?? ''), $d['publish_at'] ?? null)), 'advanced')),
             Action::make('reject')->label(__('product_builder.actions.reject'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
-                ->visible(fn () => in_array($stage(), [...ProductGovernanceService::REVIEW_STAGES, 'READY'], true) && ($can('catalogue.review') || $can('catalogue.publish')))
+                ->visible(fn () => in_array($stage(), [...ProductGovernanceService::REVIEW_STAGES, 'SANDBOX_TESTS', 'READY'], true) && ($can('catalogue.review') || $can('catalogue.publish')))
                 ->schema([Textarea::make('reason')->label(__('product_builder.actions.reason'))->required()->minLength(10)->maxLength(2000)])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->reject($this->record->refresh(), auth()->user(), $d['reason'])), 'advanced')),
             Action::make('addCase')->label(__('product_builder.actions.add_case'))->icon('heroicon-o-beaker')

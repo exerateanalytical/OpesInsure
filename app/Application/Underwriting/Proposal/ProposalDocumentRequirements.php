@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Underwriting\Proposal;
 
 use App\Application\DocumentCatalogue\DocumentCatalogueService;
+use App\Application\Documents\IssuanceDocumentAcceptance;
 use App\Models\Proposal;
 use App\Models\ProposalDocument;
 
@@ -18,6 +19,8 @@ use App\Models\ProposalDocument;
  * declaration itself is satisfied by the attested digital questionnaire (config proposals.documents).
  *
  * Status per requirement: MISSING | UPLOADED | REVIEWING | ACCEPTED | REJECTED | EXPIRED (PRE §36).
+ * Owner decision 31: ACCEPTED only when manually accepted by a named reviewer or verified by an approved automated
+ * control (IssuanceDocumentAcceptance); mandatory rows are ISSUANCE_REQUIRED.
  */
 final class ProposalDocumentRequirements
 {
@@ -55,6 +58,8 @@ final class ProposalDocumentRequirements
                 'name' => array_filter(['en' => $r['label_en'] ?? null, 'fr' => $r['label_fr'] ?? null]),
                 'level' => $level,
                 'mandatory' => in_array($level, $cfg['mandatory_levels'], true),
+                'issuance_required' => in_array($level, $cfg['mandatory_levels'], true),
+                'accepted_by' => $form ? ($p->attested_at ? 'PROPOSAL_FORM' : null) : ($link ? IssuanceDocumentAcceptance::acceptedBy($link) : null),
                 'satisfied_by' => $form ? 'PROPOSAL_FORM' : 'UPLOAD',
                 'status' => $form ? ($p->attested_at ? 'ACCEPTED' : 'MISSING') : $this->status($link),
                 'document_id' => $link?->document_id,
@@ -87,7 +92,8 @@ final class ProposalDocumentRequirements
      */
     public function missing(Proposal $p, bool $accepted = false): array
     {
-        $ok = $accepted ? ['ACCEPTED'] : ['UPLOADED', 'REVIEWING', 'ACCEPTED'];
+        // Submission accepts UPLOADED_NOT_YET_REVIEWED documents only where the product permits it.
+        $ok = $accepted || ! IssuanceDocumentAcceptance::submissionAcceptsUnreviewed($p->offer?->product) ? ['ACCEPTED'] : ['UPLOADED', 'REVIEWING', 'ACCEPTED'];
 
         return array_values(array_map(fn ($r) => $r['code'], array_filter($this->for($p), fn ($r) => $r['mandatory'] && ! in_array($r['status'], $ok, true))));
     }
@@ -103,7 +109,7 @@ final class ProposalDocumentRequirements
         }
 
         return match ($link->status) {
-            'VERIFIED' => 'ACCEPTED',
+            'VERIFIED' => IssuanceDocumentAcceptance::accepted($link) ? 'ACCEPTED' : 'REVIEWING',
             'REJECTED' => 'REJECTED',
             default => $link->document?->scan_status === 'CLEAN' ? 'REVIEWING' : 'UPLOADED',
         };

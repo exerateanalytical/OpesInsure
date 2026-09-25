@@ -177,10 +177,13 @@ final class VehicleMasterDataSeeder extends Seeder
      * They are NOT added: each becomes a make-only review entry so an admin
      * checks Cameroon market presence before approving, merging or rejecting.
      */
-    public const CANDIDATE_MAKES = ['Datsun', 'McLaren', 'Mahindra', 'Lada', 'UAZ'];
+    public const CANDIDATE_MAKES = ['McLaren', 'Lada', 'UAZ']; // owner decision 20: stay PENDING_MASTER_REVIEW
 
     private function seedCandidateMakes(): void
     {
+        // Owner decision 20: Datsun and Mahindra are curated reference makes (no models), not review candidates.
+        app(\App\Application\Vehicles\CuratedVehicleReference::class)->apply();
+
         foreach (self::CANDIDATE_MAKES as $name) {
             $normalized = VehicleText::normalize($name);
             $known = VehicleMake::where('normalized_name', $normalized)->exists() || VehicleMakeAlias::where('normalized_alias', $normalized)->exists();

@@ -223,7 +223,8 @@ final class ProposalService
         if ($d->scan_status !== 'CLEAN' && $decision === 'VERIFIED') {
             throw ValidationException::withMessages(['status' => __('wave3.clean_document_required')]);
         }
-        ProposalDocument::where(['proposal_id' => $p->id, 'document_id' => $d->id])->update(['status' => $decision, 'verified_by' => $actor->id, 'verified_at' => now(), 'review_notes' => $notes]);
+        ProposalDocument::where(['proposal_id' => $p->id, 'document_id' => $d->id])->update(['status' => $decision, 'verified_by' => $actor->id, 'verified_at' => now(), 'review_notes' => $notes,
+            'verification_method' => $decision === 'VERIFIED' ? 'MANUAL' : null, 'automated_control_code' => null]);
         $this->audit->record('proposal.document.reviewed', 'document', $d->id, ['proposal_id' => $p->id, 'decision' => $decision]);
 
         return ProposalDocument::where(['proposal_id' => $p->id, 'document_id' => $d->id])->firstOrFail();
@@ -447,7 +448,7 @@ final class ProposalService
         }
         $catalogue = [];
         foreach ($this->declarations->catalogue() as $code => $def) {
-            $catalogue[] = ['code' => $code, 'version' => $def['version'], 'legal_status' => $def['legal_status'] ?? 'UNVERIFIED', 'statement' => $def['statement'],
+            $catalogue[] = ['code' => $code, 'version' => $def['version'], 'legal_status' => $def['legal_status'] ?? 'UNVERIFIED_LEGAL_WORDING', 'statement' => $def['statement'],
                 'required_for_submit' => (bool) ($def['required_for_submit'] ?? false), 'accepted' => $this->declarations->accepted($p, $code) !== null];
         }
 

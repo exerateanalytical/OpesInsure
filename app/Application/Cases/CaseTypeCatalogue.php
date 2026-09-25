@@ -23,6 +23,98 @@ final class CaseTypeCatalogue
 {
     public const DECISION_GUARD = 'case.decision_recorded';
 
+    /** SLA target labels (owner decisions: complaints / #32). REGULATORY_DEADLINE always needs a legal_basis. */
+    public const LABELS = ['PLATFORM_SLA', 'REGULATORY_DEADLINE'];
+
+    /**
+     * Owner decision #13: reporting/navigation families (case_families, source RECONSTRUCTED_PENDING_OWNER)
+     * and the case types filed under each. code => [name, [case type codes]].
+     */
+    public const FAMILIES = [
+        'UNDERWRITING' => ['Underwriting', ['UW_REFERRAL', 'AUTHORITY_REFERRAL']],
+        'QUOTATION' => ['Quotation', ['CARRIER_QUOTE_REQUEST']],
+        'CLAIMS' => ['Claims', ['CLAIM_COVERAGE_REVIEW', 'CLAIM_INVESTIGATION', 'PROVIDER_DISPUTE']],
+        'COMPLAINTS' => ['Complaints', ['COMPLAINT']],
+        'RECOVERY_LEGAL' => ['Recovery and litigation', ['RECOVERY', 'LITIGATION']],
+        'COMPLIANCE' => ['Compliance and KYC', ['AML_ALERT', 'STR', 'COMPLIANCE_INVESTIGATION', 'REG_IMPACT', 'KYC_REVIEW']],
+        'DATA_QUALITY' => ['Data quality', ['CONFIG_GAP', 'DATA_STEWARD']],
+        'OPERATIONS' => ['Operations', ['DOC_INTAKE_EXCEPTION']],
+    ];
+
+    /**
+     * Workflow Data Master v1 (case_management.case_families): the owner's list REPLACES the reconstructed families
+     * above (kept only because the 2026_10_08_700001 migration reads it). Existing case types are remapped, never
+     * deleted; the reconstructed rows stay in case_families as inactive history (migration 2026_10_11_800001).
+     */
+    public const OWNER_FAMILIES = [
+        'KYC' => ['KYC and AML', ['KYC_REVIEW', 'AML_ALERT', 'STR']],
+        'UNDERWRITING' => ['Underwriting', ['UW_REFERRAL', 'AUTHORITY_REFERRAL', 'CARRIER_QUOTE_REQUEST']],
+        'CLAIMS' => ['Claims', ['CLAIM_COVERAGE_REVIEW', 'RECOVERY', 'LITIGATION']],
+        'FRAUD_REVIEW' => ['Fraud review', ['CLAIM_INVESTIGATION']],
+        'COMPLAINT' => ['Complaint', ['COMPLAINT']],
+        'FINANCE_EXCEPTION' => ['Finance exception', []],
+        'PROVIDER' => ['Provider', ['PROVIDER_DISPUTE']],
+        'REINSURANCE' => ['Reinsurance', []],
+        'REGULATORY' => ['Regulatory and compliance', ['COMPLIANCE_INVESTIGATION', 'REG_IMPACT']],
+        'OPERATIONS' => ['Operations', ['DOC_INTAKE_EXCEPTION', 'CONFIG_GAP', 'DATA_STEWARD']],
+    ];
+
+    /** Workflow Data Master v1 case_management.priorities (CRITICAL added to the original four). Ordered most urgent first. */
+    public const PRIORITIES = ['CRITICAL', 'URGENT', 'HIGH', 'NORMAL', 'LOW'];
+
+    /**
+     * Workflow Data Master v1 complaints.severity_levels => case priority of the COMPLAINT case. Complaint categories
+     * and regulatory deadlines are PENDING_SOURCE; the platform SLA is CONFIG_REQUIRED (no target is invented).
+     */
+    public const COMPLAINT_SEVERITY_MAP = ['LOW' => 'LOW', 'MEDIUM' => 'NORMAL', 'HIGH' => 'HIGH', 'CRITICAL' => 'CRITICAL'];
+
+    /**
+     * Owner decision #32 — manual quote defaults (PLATFORM_SLA, not legal deadlines): acknowledgement
+     * 4 business hours, standard decision 2 business days, complex/referred 5 business days.
+     * Overridable per insurer / product / case type / branch / market through sla_policy_overrides.
+     */
+    public const MANUAL_QUOTE_SLA_DEFAULTS = [
+        ['metric' => 'FIRST_RESPONSE', 'target_business_minutes' => 240, 'label' => 'PLATFORM_SLA'],
+        ['metric' => 'RESOLUTION', 'target_business_days' => 2, 'label' => 'PLATFORM_SLA'],
+        ['metric' => 'RESOLUTION', 'target_business_days' => 5, 'label' => 'PLATFORM_SLA', 'case_subtypes' => ['COMPLEX', 'REFERRED']],
+    ];
+
+    public static function familyFor(string $typeCode): ?string
+    {
+        foreach (self::OWNER_FAMILIES as $family => [, $types]) {
+            if (in_array($typeCode, $types, true)) {
+                return $family;
+            }
+        }
+
+        return null;
+    }
+
+    /** Owner decision #32 lifecycle: the generic one with the owner's two pausing waits. */
+    public static function manualQuoteLifecycle(): array
+    {
+        $def = self::genericLifecycle(false);
+        $rename = ['WAITING_CUSTOMER' => 'WAITING_FOR_CUSTOMER', 'WAITING_THIRD_PARTY' => 'WAITING_FOR_EXTERNAL_EVIDENCE'];
+        foreach ($def['states'] as &$s) {
+            $s['code'] = $rename[$s['code']] ?? $s['code'];
+        }
+        unset($s);
+        foreach ($def['transitions'] as &$t) {
+            $t['to'] = $rename[$t['to']] ?? $t['to'];
+            $t['from'] = array_map(fn ($f) => $rename[$f] ?? $f, (array) $t['from']);
+        }
+        unset($t);
+        // Evidence can also be awaited after the customer answered.
+        foreach ($def['transitions'] as &$t) {
+            if ($t['event'] === 'await_third_party') {
+                $t['from'] = ['IN_PROGRESS', 'PENDING_DECISION'];
+            }
+        }
+        unset($t);
+
+        return $def;
+    }
+
     /** code => [name, default confidentiality, regulated, requires decision to resolve] */
     public const SEED = [
         'UW_REFERRAL' => ['Underwriting referral', 'NORMAL', false, true],
@@ -107,7 +199,7 @@ final class CaseTypeCatalogue
             }
             $def = $code === 'COMPLAINT' ? self::complaintLifecycle() : self::genericLifecycle($decision);
             DB::table('case_types')->insert([
-                'id' => (string) Str::uuid(), 'code' => $code, 'version' => 1, 'family_code' => null, 'name' => $name,
+                'id' => (string) Str::uuid(), 'code' => $code, 'version' => 1, 'family_code' => self::familyFor($code), 'name' => $name,
                 'status' => 'EFFECTIVE', 'valid_from' => '2026-01-01', 'valid_to' => null,
                 'states' => json_encode($def['states']), 'transitions' => json_encode($def['transitions']),
                 'sla_policies' => '[]', 'auto_tasks' => '[]', 'default_confidentiality' => $confidentiality, 'regulated' => $regulated,
@@ -135,8 +227,20 @@ final class CaseTypeCatalogue
             if (! in_array($metric, ['FIRST_RESPONSE', 'RESOLUTION'], true) && ! (str_starts_with($metric, 'STAGE:') && $machine->hasState(substr($metric, 6)))) {
                 throw new InvalidArgumentException("Unknown SLA metric {$metric}.");
             }
-            if ((int) ($p['target_business_minutes'] ?? 0) <= 0) {
-                throw new InvalidArgumentException("SLA {$metric} needs a positive target_business_minutes.");
+            $minutes = (int) ($p['target_business_minutes'] ?? 0);
+            $days = (int) ($p['target_business_days'] ?? 0);
+            if (($minutes > 0) === ($days > 0)) {
+                throw new InvalidArgumentException("SLA {$metric} needs exactly one positive target_business_minutes or target_business_days.");
+            }
+            $label = (string) ($p['label'] ?? 'PLATFORM_SLA');
+            if (! in_array($label, self::LABELS, true)) {
+                throw new InvalidArgumentException("SLA {$metric} label must be one of ".implode(', ', self::LABELS).'.');
+            }
+            if ($label === 'REGULATORY_DEADLINE' && trim((string) ($p['legal_basis'] ?? '')) === '') {
+                throw new InvalidArgumentException("SLA {$metric} is labelled REGULATORY_DEADLINE without a legal_basis; label it PLATFORM_SLA.");
+            }
+            if (isset($p['case_subtypes']) && (! is_array($p['case_subtypes']) || $p['case_subtypes'] === [])) {
+                throw new InvalidArgumentException("SLA {$metric} case_subtypes must be a non-empty list when present.");
             }
             $warn = (int) ($p['warn_at_pct'] ?? 80);
             if ($warn < 1 || $warn > 99) {

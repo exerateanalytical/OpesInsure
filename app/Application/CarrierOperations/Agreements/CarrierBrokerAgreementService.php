@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  */
 final class CarrierBrokerAgreementService
 {
-    public const ACTIONS = ['quote' => 'can_quote', 'bind' => 'can_bind', 'collect_premium' => 'can_collect_premium'];
+    public const ACTIONS = ['quote' => 'can_quote', 'bind' => 'can_bind', 'collect_premium' => 'can_collect_premium', 'issue_documents' => 'can_issue_documents', 'service_policy' => 'can_service_policies', 'assist_claims' => 'can_assist_claims'];
 
     private const TRANSITIONS = ['DRAFT' => ['ACTIVE', 'TERMINATED'], 'ACTIVE' => ['SUSPENDED', 'TERMINATED'], 'SUSPENDED' => ['ACTIVE', 'TERMINATED']];
 
@@ -33,6 +33,7 @@ final class CarrierBrokerAgreementService
             'effective_from' => $data['effective_from'], 'effective_until' => $data['effective_until'] ?? null, 'status' => 'DRAFT',
             'territories' => json_encode(array_values($data['territories'] ?? [])), 'channels' => json_encode(array_values($data['channels'] ?? [])),
             'data_origin' => $data['data_origin'] ?? 'PLATFORM_NORMALIZED', 'is_demo' => (bool) ($data['is_demo'] ?? false),
+            'settlement_terms' => isset($data['settlement_terms']) ? json_encode($data['settlement_terms']) : null, 'source_document' => $data['source_document'] ?? null,
             'created_by' => $maker->id, 'created_at' => now(), 'updated_at' => now(),
         ]);
         $this->audit->record('carrier_broker_agreement.created', 'carrier_broker_agreement', $id, ['agreement_number' => $data['agreement_number']]);
@@ -65,7 +66,7 @@ final class CarrierBrokerAgreementService
         $key = ['agreement_id' => $agreementId, 'line_code' => $line['line_code']];
         $q = DB::table('carrier_broker_agreement_products')->where($key)
             ->when($line['insurance_product_id'] ?? null, fn ($q, $p) => $q->where('insurance_product_id', $p), fn ($q) => $q->whereNull('insurance_product_id'));
-        $values = array_intersect_key($line, array_flip(['can_quote', 'can_bind', 'can_collect_premium', 'requires_carrier_approval', 'commission_rule_version_id', 'commission_basis_points', 'status']));
+        $values = array_intersect_key($line, array_flip(['can_quote', 'can_bind', 'can_collect_premium', 'can_issue_documents', 'can_service_policies', 'can_assist_claims', 'requires_carrier_approval', 'commission_rule_version_id', 'commission_basis_points', 'status']));
         $existing = $q->first();
         if ($existing) {
             DB::table('carrier_broker_agreement_products')->where('id', $existing->id)->update([...$values, 'updated_at' => now()]);

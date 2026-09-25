@@ -324,7 +324,8 @@ final class DocumentEngine
             'numbering_family' => $number['family'], 'document_number' => $number['number'], 'document_sequence' => $number['sequence'],
             'verification_code' => $verification, 'generation_trigger' => $trigger, 'issued_at' => $issuedAt,
             'valid_from' => $certificateLike ? $policy->coverage_starts_at : null, 'valid_until' => $certificateLike ? $policy->coverage_ends_at : null,
-            'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label],
+            'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label,
+                'demo_watermark' => \App\Application\Documents\DemoDocumentMark::active()],
             'uploaded_by' => $actor?->id,
         ]);
 

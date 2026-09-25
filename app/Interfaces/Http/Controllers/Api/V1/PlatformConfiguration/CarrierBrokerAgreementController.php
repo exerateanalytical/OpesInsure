@@ -43,7 +43,7 @@ final class CarrierBrokerAgreementController
         $d = $r->validate(['carrier_id' => 'required|uuid|exists:carriers,id', 'partner_id' => 'required|uuid|exists:partners,id',
             'agreement_number' => 'required|string|max:80|unique:carrier_broker_agreements,agreement_number', 'effective_from' => 'required|date',
             'effective_until' => 'nullable|date|after_or_equal:effective_from', 'territories' => 'sometimes|array', 'territories.*' => 'string|max:32',
-            'channels' => 'sometimes|array', 'channels.*' => 'string|max:32']);
+            'channels' => 'sometimes|array', 'channels.*' => 'string|max:32', 'settlement_terms' => 'sometimes|nullable|array', 'source_document' => 'nullable|string|max:255']);
         $this->authorizePartner($d['partner_id']);
 
         return response()->json(['data' => $this->agreements->create($r->user(), $d)], 201);
@@ -53,7 +53,7 @@ final class CarrierBrokerAgreementController
     {
         $this->authorizeAgreement($agreement);
         $d = $r->validate(['line_code' => 'required|string|max:32', 'insurance_product_id' => 'nullable|uuid', 'can_quote' => 'sometimes|boolean', 'can_bind' => 'sometimes|boolean',
-            'can_collect_premium' => 'sometimes|boolean', 'requires_carrier_approval' => 'sometimes|boolean', 'commission_rule_version_id' => 'nullable|uuid',
+            'can_collect_premium' => 'sometimes|boolean', 'can_issue_documents' => 'sometimes|boolean', 'can_service_policies' => 'sometimes|boolean', 'can_assist_claims' => 'sometimes|boolean', 'requires_carrier_approval' => 'sometimes|boolean', 'commission_rule_version_id' => 'nullable|uuid',
             'commission_basis_points' => 'nullable|integer|min:0|max:10000', 'status' => 'sometimes|in:ACTIVE,INACTIVE', 'reason' => 'nullable|string|max:2000']);
 
         return response()->json(['data' => $this->agreements->setProduct($r->user(), $agreement, $d)]);

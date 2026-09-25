@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>{{ $documentNumber }}</title>@include('pdf._style')</head>
-<body>
+<body>@include('pdf._demo_overlay')
 {{-- Document engine generic layout: every issued document carries issuer, number, verification code and (when configured) a QR. --}}
 <table style="width:100%"><tr>
   <td>

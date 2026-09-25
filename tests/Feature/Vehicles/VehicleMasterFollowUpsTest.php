@@ -75,13 +75,21 @@ it('adds two/three-wheeler vehicle classes and body types with EN/FR labels [REQ
         ->and(collect($fields['body_type']['options'])->pluck('value'))->toContain('MOTORCYCLE', 'SCOOTER');
 });
 
-it('lists Datsun, McLaren, Mahindra, Lada and UAZ as admin review items, not catalogue makes', function () {
+it('lists McLaren, Lada and UAZ as admin review items; Datsun and Mahindra are curated reference makes without models (owner decision 20)', function () {
     b2vSeed();
     b2vSeed();
 
-    foreach (['Datsun', 'McLaren', 'Mahindra', 'Lada', 'UAZ'] as $name) {
+    foreach (['McLaren', 'Lada', 'UAZ'] as $name) {
         expect(VehicleMake::where('name', $name)->exists())->toBeFalse()
             ->and(VehicleMasterReview::where('make_text', $name)->where('status', VehicleMasterReview::STATUS_PENDING)->count())->toBe(1);
+    }
+    foreach (['DATSUN' => 'Datsun', 'MAHINDRA' => 'Mahindra'] as $code => $name) {
+        $make = VehicleMake::where('code', $code)->firstOrFail();
+        expect(VehicleMake::where('name', $name)->count())->toBe(1)
+            ->and($make->data_source)->toBe('OPESINSURE_CURATED_REFERENCE')->and($make->data_source)->not->toBe('OPESINSURE_VERIFIED_OVERRIDE')
+            ->and($make->provenance)->toBe('CURATED_REFERENCE')->and($make->cameroon_status)->toBe('UNVERIFIED')
+            ->and(VehicleModel::where('make_id', $make->id)->count())->toBe(0)
+            ->and(VehicleMasterReview::where('make_text', $name)->where('status', VehicleMasterReview::STATUS_PENDING)->count())->toBe(0);
     }
     $lada = VehicleMasterReview::where('make_text', 'Lada')->first();
     expect($lada->model_text)->toBe('')->and($lada->payload['source'])->toBe('CATALOGUE_CANDIDATE');

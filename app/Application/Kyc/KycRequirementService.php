@@ -17,6 +17,16 @@ final class KycRequirementService
 {
     public const LEVELS = ['SIMPLIFIED', 'STANDARD', 'ENHANCED'];
 
+    /** Workflow Data Master v1 kyc_aml.kyc_levels alias (stored code stays SIMPLIFIED). */
+    public const LEVEL_ALIASES = ['BASIC' => 'SIMPLIFIED'];
+
+    public static function normalizeLevel(string $level): string
+    {
+        $level = strtoupper($level);
+
+        return self::LEVEL_ALIASES[$level] ?? $level;
+    }
+
     public const KINDS = ['INDIVIDUAL', 'CORPORATE'];
 
     public function __construct(private readonly DocumentCatalogueService $catalogue) {}

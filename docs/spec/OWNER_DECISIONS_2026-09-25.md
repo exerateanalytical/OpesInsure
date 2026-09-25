@@ -58,3 +58,14 @@ Source: the owner's "Owner Open Questions — Resolution & Recommendations", sup
 8. Execute the targeted correction.
 9. Persist a migration audit.
 10. Verify downstream chronology.
+
+## Owner answers to Q7 (2026-09-25)
+1. Existing live products keep their current product-level CIMA mappings. No automatic move to coverage-level mappings.
+2. Confirmed: broker and agent commission report under the same Article 557 measure, with the broker/agent distinction carried separately.
+3. Keep the badge "Verified (group network)" for VERIFIED_NETWORK_SHARED_WITH_GROUP. Admins must be able to change verification statuses and how their labels (EN/FR) appear, from the admin panel.
+
+## Workflow Institutional Data Master v1 (owner, 2026-09-25)
+Stored at database/data/workflow_institutional_data_master_2026.json.
+- Rule: PENDING_SOURCE, CONFIG_REQUIRED, UNVERIFIED and DEMO_ONLY are not production values. Support them; never invent missing legal, regulatory, financial, tariff, authorization, SLA or KYC data.
+- Case families are now the owner's 10: KYC, UNDERWRITING, CLAIMS, FRAUD_REVIEW, COMPLAINT, FINANCE_EXCEPTION, PROVIDER, REINSURANCE, REGULATORY, OPERATIONS. They replace the 8 reconstructed families.
+- Beneficial ownership rule: MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS (VERIFIED_RULE).

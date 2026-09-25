@@ -20,7 +20,7 @@ final class InsurerRegulatoryAuthorization extends Model
 
     protected function casts(): array
     {
-        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean', 'is_demo' => 'boolean', 'approved_at' => 'datetime'];
+        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean', 'is_demo' => 'boolean', 'approved_at' => 'datetime', 'revocation_date' => 'date', 'evidence' => 'array'];
     }
 
     public function carrier(): BelongsTo

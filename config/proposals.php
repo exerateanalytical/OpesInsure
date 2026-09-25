@@ -3,7 +3,7 @@
 /*
  | Batch 6D — proposal workflow configuration (REQ-PRP-002 / 003 / 005).
  |
- | Declaration statements are platform wording, NOT reviewed legal text: legal_status stays UNVERIFIED
+ | Declaration statements are platform wording, NOT reviewed legal text: legal_status stays UNVERIFIED_LEGAL_WORDING (owner decision 30)
  | until counsel approves a version (then bump `version` so earlier acceptances keep their own hash).
  */
 return [
@@ -11,7 +11,7 @@ return [
     'declarations' => [
         'DISCLOSURE_ACCURACY' => [
             'version' => '2026-10-v1',
-            'legal_status' => 'UNVERIFIED',
+            'legal_status' => 'UNVERIFIED_LEGAL_WORDING',
             'required_for_submit' => true,
             'statement' => [
                 'en' => 'I declare that the answers I have given are true and complete to the best of my knowledge.',
@@ -20,7 +20,7 @@ return [
         ],
         'TERMS_ACCEPTANCE' => [
             'version' => '2026-10-v1',
-            'legal_status' => 'UNVERIFIED',
+            'legal_status' => 'UNVERIFIED_LEGAL_WORDING',
             'required_for_submit' => false,
             'statement' => [
                 'en' => 'I accept the offered terms, premium and conditions shown to me.',
@@ -29,7 +29,7 @@ return [
         ],
         'DATA_PROCESSING_CONSENT' => [
             'version' => '2026-10-v1',
-            'legal_status' => 'UNVERIFIED',
+            'legal_status' => 'UNVERIFIED_LEGAL_WORDING',
             'required_for_submit' => false,
             'statement' => [
                 'en' => 'I consent to the processing of my data to assess this proposal.',
@@ -49,6 +49,11 @@ return [
         'mandatory_levels' => ['M', 'T'],
         'optional_levels' => ['C', 'O'],
         'form_satisfied_patterns' => ['/PROPOSAL/', '/RISK_DECLARATION/', '/QUESTIONNAIRE/'],
+        // Owner decision 31: submission may accept UPLOADED_NOT_YET_REVIEWED documents (per product override:
+        // insurance_products.submission_accepts_unreviewed_documents); issuance always needs ACCEPTED.
+        'submission_accepts_unreviewed' => true,
+        // Automated controls the owner has approved to accept ISSUANCE_REQUIRED documents. None yet.
+        'approved_automated_controls' => [],
     ],
 
     /* REQ-PRP-005 defaults when no cover_term_rules row applies (keeps today's behaviour: start now, 12 months, single payment). */

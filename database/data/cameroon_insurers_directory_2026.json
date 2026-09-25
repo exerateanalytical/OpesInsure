@@ -1,0 +1,1215 @@
+{
+  "dataset": {
+    "name": "OpesInsure Cameroon Insurance Company Institutional Directory",
+    "version": "1.0.0-research",
+    "verified_at": "2026-09-25",
+    "country": "CM",
+    "regulatory_population": {
+      "iard": 18,
+      "life": 11,
+      "total": 29
+    },
+    "source_policy": {
+      "authorization_source_of_truth": "DGTCFM/MINFI official 2026 list",
+      "contact_priority": [
+        "official company website",
+        "CIMA official member-state directory",
+        "ASAC directory",
+        "current public authority publication",
+        "business listing"
+      ],
+      "unknown_policy": "null / PARTIALLY_VERIFIED; never fabricate"
+    }
+  },
+  "insurers": [
+    {
+      "id": "CM-INS-IARD-001",
+      "name": "ACTIVA ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue Prince de Galles, Akwa, Douala",
+        "po_box": "12970 Douala"
+      },
+      "phones": [
+        "+237 233 50 13 00",
+        "8033",
+        "+237 692 88 00 00"
+      ],
+      "emails": [
+        "service.clients@group-activa.com"
+      ],
+      "website": "https://cameroun.group-activa.com/",
+      "branches": [
+        {
+          "name": "Siège Social Douala",
+          "type": "HEAD_OFFICE",
+          "city": "Douala",
+          "address": "Rue Prince de Galles, Akwa",
+          "phone": "+237 233 50 13 00"
+        },
+        {
+          "name": "Bureau Direct Grand Mall",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Douala Grand Mall, Aéroport international",
+          "phone": "+237 692 88 00 00"
+        },
+        {
+          "name": "Bureau Direct Yaoundé",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Derrière Chambre de Commerce",
+          "phone": "+237 222 22 83 72"
+        },
+        {
+          "name": "Bureau Direct Kribi",
+          "type": "DIRECT_BRANCH",
+          "city": "Kribi",
+          "address": "Rue Mokolo face Commissariat",
+          "phone": "+237 233 46 16 17"
+        },
+        {
+          "name": "Bureau Direct Bafoussam",
+          "type": "DIRECT_BRANCH",
+          "city": "Bafoussam",
+          "address": "Tamdja face Congelcam",
+          "phone": "+237 233 44 10 33"
+        },
+        {
+          "name": "Bureau Direct Bamenda",
+          "type": "DIRECT_BRANCH",
+          "city": "Bamenda",
+          "address": "Commercial Avenue",
+          "phone": "+237 233 36 10 00"
+        },
+        {
+          "name": "Bureau Direct Ngaoundéré",
+          "type": "DIRECT_BRANCH",
+          "city": "Ngaoundéré",
+          "address": "Avenue Commerciale face CNPS",
+          "phone": "+237 699 38 93 41"
+        },
+        {
+          "name": "Bureau Direct Garoua",
+          "type": "DIRECT_BRANCH",
+          "city": "Garoua",
+          "address": "Avenue de la Liberté",
+          "phone": "+237 222 27 13 81"
+        }
+      ],
+      "maps_business": {
+        "name": "Activa Assurances",
+        "address": "Immeuble Activa B.P : 12970 Douala, Douala",
+        "phone": "+237 653 929 937",
+        "status": "VERIFIED_BUSINESS_LISTING"
+      },
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cameroun.group-activa.com/nos-agences/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-002",
+      "name": "AFG ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Bonanjo, face ancien DHL",
+        "po_box": "3073 Douala"
+      },
+      "phones": [
+        "+237 651 80 49 28",
+        "+237 659 07 07 17",
+        "+237 689 79 10 28"
+      ],
+      "emails": [
+        "contact@afgassurances.cm"
+      ],
+      "website": "https://afgassurances.cm/",
+      "branches": [
+        {
+          "name": "Bureau Direct Douala Bonanjo",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Bonanjo, face ancien DHL",
+          "phone": "+237 651 80 49 28"
+        },
+        {
+          "name": "Bureau Direct Douala Bali",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Bali, rue des Manguiers",
+          "phone": "+237 659 07 07 17"
+        },
+        {
+          "name": "Bureau Direct Yaoundé",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": null,
+          "phone": "+237 689 79 10 28"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://afgassurances.cm/contact/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-003",
+      "name": "AFRI INSURANCE",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Akwa, Boulevard de la Liberté, à côté de l'hôtel La Falaise",
+        "po_box": null
+      },
+      "phones": [
+        "+237 681 07 14 14",
+        "+237 689 14 14 14"
+      ],
+      "emails": [
+        "infos@afri-insurance.com",
+        "reclamations@afri-insurance.com"
+      ],
+      "website": "https://afri-insurance.com/",
+      "branches": [],
+      "regulatory_reference": "Agrément 0000627/MINFI du 11/08/2025",
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://afri-insurance.com/about/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-004",
+      "name": "ASSURANCES & RÉASSURANCE AFRICAINES (AREA)",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue de la Motte-Piquet, Bonanjo",
+        "po_box": "15584 Douala"
+      },
+      "phones": [
+        "+237 655 36 49 11",
+        "+237 233 43 81 97"
+      ],
+      "emails": [
+        "area@areaassurances.com",
+        "standard-area@areaassurances.com"
+      ],
+      "website": "https://areaassurances.com/",
+      "branches": [
+        {
+          "name": "Bureau Direct Siège",
+          "type": "HEAD_OFFICE",
+          "city": "Douala",
+          "address": "Rue de la Motte-Piquet, Bonanjo",
+          "phone": "+237 233 43 81 97"
+        },
+        {
+          "name": "Bureau Direct Akwa",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Rond-point salle des fêtes Akwa",
+          "phone": "+237 243 03 49 85"
+        },
+        {
+          "name": "Bureau Direct Bonamoussadi",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Denver Plaza",
+          "phone": "+237 243 09 02 60"
+        },
+        {
+          "name": "Bureau Direct Yassa",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Carrefour ARIC face Pharmacie Ngodi Bakoko",
+          "phone": "+237 694 188 319"
+        },
+        {
+          "name": "Bureau Direct Bonabéri",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face NOSUCA",
+          "phone": "+237 699 99 88 92"
+        },
+        {
+          "name": "Bureau Direct Tsinga",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face ancienne Mairie Yaoundé 2e",
+          "phone": "+237 243 03 49 82"
+        },
+        {
+          "name": "Bureau Direct Nlongkak",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Vallée Nlongkak face Eglise Evangélique",
+          "phone": "+237 620 93 91 09"
+        },
+        {
+          "name": "Bureau Direct Biyem-Assi",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "À côté de Camtel et Hôpital de Biyem-Assi",
+          "phone": "+237 699 62 98 71"
+        },
+        {
+          "name": "Bureau Direct Bafoussam",
+          "type": "DIRECT_BRANCH",
+          "city": "Bafoussam",
+          "address": "Entrée Ecole Normale Baleng",
+          "phone": "+237 243 71 99 21"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://areaassurances.com/index.php/contacts/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-005",
+      "name": "ASSURANCES GENERALES DU CAMEROUN (AGC)",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Immeuble le Cauris, Rue Alfred Saker, près de l'église le Centenaire",
+        "po_box": "1290 Douala"
+      },
+      "phones": [
+        "+237 694 13 38 76",
+        "+237 659 92 39 82",
+        "+237 683 70 80 03"
+      ],
+      "emails": [
+        "agc@agc-assurances.com",
+        "reclamationsclients@agc-assurances.com"
+      ],
+      "website": "https://agc-assurances.com/",
+      "branches": [
+        {
+          "name": "Bonanjo",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face CRTV Bonanjo",
+          "phone": "+237 694 10 62 56"
+        },
+        {
+          "name": "Bonamoussadi",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Carrefour Maçons",
+          "phone": "+237 696 90 08 17"
+        },
+        {
+          "name": "Deido",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face boulangerie COAF",
+          "phone": "+237 697 39 43 73"
+        },
+        {
+          "name": "Bonabéri",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Bessèke entrée Centre Equestre",
+          "phone": "+237 696 10 72 50"
+        },
+        {
+          "name": "Nkongsamba",
+          "type": "DIRECT_BRANCH",
+          "city": "Nkongsamba",
+          "address": "Immeuble Fokou en face brasseries",
+          "phone": "+237 677 12 44 39"
+        },
+        {
+          "name": "Buea",
+          "type": "DIRECT_BRANCH",
+          "city": "Buea",
+          "address": "Mile 17",
+          "phone": "+237 677 82 36 03"
+        },
+        {
+          "name": "Tsinga",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face Supermarché MAX",
+          "phone": "+237 699 33 61 72"
+        },
+        {
+          "name": "Bafoussam",
+          "type": "DIRECT_BRANCH",
+          "city": "Bafoussam",
+          "address": "Ancien Cinema Tamdja",
+          "phone": "+237 233 03 39 37"
+        },
+        {
+          "name": "Garoua",
+          "type": "DIRECT_BRANCH",
+          "city": "Garoua",
+          "address": "Immeuble Crédit Foncier, face Ecobank",
+          "phone": "+237 656 07 41 09"
+        },
+        {
+          "name": "Ngaoundéré",
+          "type": "DIRECT_BRANCH",
+          "city": "Ngaoundéré",
+          "address": null,
+          "phone": "+237 699 24 09 20"
+        },
+        {
+          "name": "Maroua",
+          "type": "DIRECT_BRANCH",
+          "city": "Maroua",
+          "address": null,
+          "phone": "+237 695 90 95 41"
+        },
+        {
+          "name": "Bertoua",
+          "type": "DIRECT_BRANCH",
+          "city": "Bertoua",
+          "address": null,
+          "phone": "+237 699 60 96 48"
+        },
+        {
+          "name": "Kribi",
+          "type": "DIRECT_BRANCH",
+          "city": "Kribi",
+          "address": null,
+          "phone": "+237 670 12 69 54"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://agc-assurances.com/contact/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-006",
+      "name": "AXA CAMEROUN",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "309 Rue Bebey Eyidi, Akwa, Douala",
+        "po_box": "4068 Douala"
+      },
+      "phones": [
+        "+237 233 42 31 71",
+        "+237 233 42 31 59"
+      ],
+      "emails": [
+        "axa.cameroun@axa.cm"
+      ],
+      "website": null,
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.asac-cameroun.org/groupes/assureurs-non-vie/"
+      ],
+      "verification_status": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-007",
+      "name": "BELIFE GENERAL",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Immeuble Belife, 1944 Boulevard de la République/Liberté, Douala",
+        "po_box": "2328 Douala"
+      },
+      "phones": [
+        "+237 233 42 42 36",
+        "+237 233 422 307",
+        "+237 680 06 94 93"
+      ],
+      "emails": [
+        "client@belifegroupe.com"
+      ],
+      "website": "https://cm.belifegroupe.com/",
+      "branches": [
+        {
+          "name": "Bureau Direct Siège",
+          "type": "HEAD_OFFICE",
+          "city": "Douala",
+          "address": "Akwa, Immeuble Belife Insurance",
+          "phone": "+237 694 01 81 12"
+        },
+        {
+          "name": "Bonamoussadi",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Bonamoussadi",
+          "phone": "+237 233 41 31 2"
+        },
+        {
+          "name": "Bonanjo",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "En face SITABAC",
+          "phone": "+237 655 963 386"
+        },
+        {
+          "name": "Yaoundé I",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Nlongkak, face DGSN",
+          "phone": "+237 694 01 21 65"
+        },
+        {
+          "name": "Bafoussam",
+          "type": "DIRECT_BRANCH",
+          "city": "Bafoussam",
+          "address": "Face Dindango Voyage",
+          "phone": "+237 690 574 812"
+        },
+        {
+          "name": "Bamenda",
+          "type": "DIRECT_BRANCH",
+          "city": "Bamenda",
+          "address": "Small Mankon",
+          "phone": "+237 690 574 812"
+        },
+        {
+          "name": "Limbe",
+          "type": "DIRECT_BRANCH",
+          "city": "Limbe",
+          "address": "Limbe",
+          "phone": "+237 696 133 057"
+        },
+        {
+          "name": "Bertoua",
+          "type": "DIRECT_BRANCH",
+          "city": "Bertoua",
+          "address": "Face délégation du travail",
+          "phone": "+237 222 24 17 74"
+        },
+        {
+          "name": "Ebolowa",
+          "type": "DIRECT_BRANCH",
+          "city": "Ebolowa",
+          "address": "Carrefour l'An 2000 face FEICOM",
+          "phone": "+237 677 432 706"
+        },
+        {
+          "name": "Ngaoundéré",
+          "type": "DIRECT_BRANCH",
+          "city": "Ngaoundéré",
+          "address": "Immeuble Nassourou",
+          "phone": "+237 222 25 23 00"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cm.belifegroupe.com/agences/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-008",
+      "name": "CHANAS ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "1 Rue du Dwarf, Bonanjo",
+        "po_box": "109 Douala"
+      },
+      "phones": [
+        "+237 233 42 14 74",
+        "+237 699 302 713",
+        "+237 676 803 983"
+      ],
+      "emails": [
+        "contact@chanasassurances.com"
+      ],
+      "website": "https://www.chanasassurances.com/",
+      "branches": [
+        {
+          "name": "Bonanjo",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "1 Rue du Dwarf",
+          "phone": "+237 233 42 14 74"
+        },
+        {
+          "name": "Akwa",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Immeuble SOCAR",
+          "phone": "+237 233 42 74 43"
+        },
+        {
+          "name": "Makepe",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Tradex Parcours Vita",
+          "phone": "+237 233 47 11 60"
+        },
+        {
+          "name": "Mfoundi",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face Camair-Co",
+          "phone": "+237 222 22 45 00"
+        },
+        {
+          "name": "Nsam",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "En face station Gulfin",
+          "phone": "+237 222 22 45 00"
+        },
+        {
+          "name": "Garoua",
+          "type": "DIRECT_BRANCH",
+          "city": "Garoua",
+          "address": "À côté King Textile",
+          "phone": "+237 222 27 18 45"
+        }
+      ],
+      "regulatory_reference": "Arrêté 000142/MINEFI/DCE/A",
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.chanasassurances.com/presentation/nos-agences/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-009",
+      "name": "COMPAGNIE PROFESSIONNELLE D'ASSURANCES DU CAMEROUN (CPA)",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "15 Rue Castelnau, Akwa, Douala",
+        "po_box": "54 Douala"
+      },
+      "phones": [
+        "+237 233 43 43 81",
+        "+237 233 43 43 82"
+      ],
+      "emails": [
+        "cpasiege@yahoo.fr"
+      ],
+      "website": "https://www.cpa-cameroun.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cima-afrique.org/les-etats-membres/?country=CAM&item=SOC&lang=en",
+        "https://www.linkedin.com/company/cpa-assurance-cameroun"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-010",
+      "name": "GMC ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue Joss, Bonanjo, à côté de Camair-Co",
+        "po_box": "1965 Douala"
+      },
+      "phones": [
+        "+237 233 43 21 33",
+        "+237 233 43 21 34"
+      ],
+      "emails": [
+        "gmcdirection@gmcassurances.com"
+      ],
+      "website": "https://www.gmcassurances.com/",
+      "branches": [
+        {
+          "name": "Akwa Liberté",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Moulin de France",
+          "phone": "+237 233 43 21 33"
+        },
+        {
+          "name": "Douala Est",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Ndogpassi, entrée Billes",
+          "phone": "+237 233 43 21 33"
+        },
+        {
+          "name": "Bonabéri",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Nouvelle route, ancien Garage Weno",
+          "phone": "+237 233 43 21 33"
+        },
+        {
+          "name": "Bonamoussadi",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Supermarché Carrefour",
+          "phone": "+237 697 69 31 53"
+        },
+        {
+          "name": "Yaoundé Centrale",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face CRTV Radio",
+          "phone": "+237 222 21 47 41"
+        },
+        {
+          "name": "Mvog-Mbi",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face station Total",
+          "phone": "+237 243 59 55 85"
+        },
+        {
+          "name": "Essos",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Face Ben le Boucher",
+          "phone": "+237 242 11 80 12"
+        },
+        {
+          "name": "Bafoussam",
+          "type": "DIRECT_BRANCH",
+          "city": "Bafoussam",
+          "address": "Immeuble CCA Bank face Maison du parti",
+          "phone": "+237 690 30 94 62"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.gmcassurances.com/"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-IARD-011",
+      "name": "LD ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Carrefour Arno, Akwa-Douala",
+        "po_box": "2854 Douala"
+      },
+      "phones": [
+        "+237 640 65 67 93",
+        "+237 233 43 99 24",
+        "+237 233 42 51 82"
+      ],
+      "emails": [
+        "contact@ldassurances.cm"
+      ],
+      "website": "https://ldassurances.cm/",
+      "branches": [],
+      "regulatory_reference": "Arrêté 0000815/MINFI du 15/11/2024",
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://ldassurances.cm/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-012",
+      "name": "NSIA ASSURANCES AU CAMEROUN",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Grassfield Building, Bonanjo, Douala",
+        "po_box": "4546 Douala"
+      },
+      "phones": [
+        "+237 233 50 27 00"
+      ],
+      "emails": [
+        "serviceclient@nsiaassurances.com"
+      ],
+      "website": "https://nsiaassurances.cm/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://nsiaassurances.cm/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-013",
+      "name": "PROASSUR",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue Toyota, Immeuble Wafa Assurance, Douala",
+        "po_box": "5963 Douala"
+      },
+      "phones": [
+        "+237 233 43 70 05",
+        "+237 233 43 73 25"
+      ],
+      "emails": [
+        "proassur@proassur.cm"
+      ],
+      "website": "https://wafaassurance.cm/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://wafaassurance.cm/fr/mentions-legales"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-014",
+      "name": "ROYAL ONYX INSURANCE CIE",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Boulevard de la Liberté, Akwa, Douala",
+        "po_box": "12230 Douala"
+      },
+      "phones": [
+        "+237 243 66 38 83",
+        "+237 675 650 470"
+      ],
+      "emails": [
+        "contact@royalonyx.cm"
+      ],
+      "website": "https://royalonyx.cm/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.armp.cm/details?id_publication=25652&type_publication=COMM"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-015",
+      "name": "SANLAMALLIANZ CAMEROUN ASSURANCES",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "34 Rue Dinde, Bonanjo, Douala",
+        "po_box": "12125 Douala"
+      },
+      "phones": [
+        "+237 233 50 20 00",
+        "+237 233 50 20 01",
+        "+237 693 35 58 34",
+        "+237 678 25 55 65"
+      ],
+      "emails": [
+        "infoline.cm@cm.sanlamallianz.com"
+      ],
+      "website": "https://cm.sanlamallianz.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cm.sanlamallianz.com/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-016",
+      "name": "SAAR",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Yaoundé",
+        "address": "1077 Rue Frédéric Foe, Yaoundé / Hippodrome",
+        "po_box": "11834 Yaoundé"
+      },
+      "phones": [
+        "+237 222 22 31 39",
+        "+237 677 93 55 55"
+      ],
+      "emails": [
+        "contact@saar-assurances.com"
+      ],
+      "website": "https://saar-assurances.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://saar-assurances.com/en/a-propos"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-017",
+      "name": "SUNU ASSURANCES IARD CAMEROUN",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "291 Boulevard de la Liberté, Akwa, Immeuble La Rotonde, 5e étage",
+        "po_box": "3049 Douala"
+      },
+      "phones": [
+        "+237 233 42 84 80",
+        "+237 659 60 60 60",
+        "+237 674 80 74 80"
+      ],
+      "emails": [
+        "cameroun.iard@sunu-group.com"
+      ],
+      "website": "https://sunu-group.com/fr/notrereseau/filiales/cm",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://sunu-group.com/fr/notrereseau/filiales/cm"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-IARD-018",
+      "name": "ZENITHE INSURANCE",
+      "type": "IARD",
+      "official_2026": true,
+      "hq": {
+        "city": "Yaoundé",
+        "address": "1388 Rue Bebey Eyidi, face Palais Dika, Akwa-Douala (operational DG listing)",
+        "po_box": "1540 Douala"
+      },
+      "phones": [
+        "+237 694 30 82 32",
+        "+237 694 30 61 60"
+      ],
+      "emails": [
+        "info@zenitheinsurance.com"
+      ],
+      "website": "https://zenitheinsurance.com/",
+      "branches": [
+        {
+          "name": "BD Siège",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Palais Dika",
+          "phone": "+237 694 30 61 60"
+        },
+        {
+          "name": "BD Akwa",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Près Boulangerie Zepol",
+          "phone": "+237 690 41 24 93"
+        },
+        {
+          "name": "BD Bonaberi",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Lycée Bilingue de Bonaberi",
+          "phone": "+237 692 17 92 59"
+        },
+        {
+          "name": "BD Makepe",
+          "type": "DIRECT_BRANCH",
+          "city": "Douala",
+          "address": "Face Parcours Vita Makepe",
+          "phone": "+237 640 15 33 13"
+        },
+        {
+          "name": "BD Bastos",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Nouvelle route Bastos, face PNUD",
+          "phone": "+237 698 00 38 23"
+        },
+        {
+          "name": "BD Yaoundé Centre",
+          "type": "DIRECT_BRANCH",
+          "city": "Yaoundé",
+          "address": "Warda, face Palais des Sports",
+          "phone": "+237 694 30 49 32"
+        }
+      ],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://zenitheinsurance.com/fr/agencies"
+      ],
+      "verification_status": "VERIFIED"
+    },
+    {
+      "id": "CM-INS-LIFE-001",
+      "name": "ACAM VIE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Avenue de l'Indépendance, Bonapriso",
+        "po_box": "2000 Douala"
+      },
+      "phones": [
+        "+237 679 453 227"
+      ],
+      "emails": [
+        "service.clients@acamvie.com"
+      ],
+      "website": "https://acamvie.com/",
+      "branches": [],
+      "regulatory_reference": "Arrêté 00607 MINFI du 09/11/2016",
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://acamvie.com/en/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-002",
+      "name": "ACTIVA VIE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue Prince de Galles, Akwa, Douala",
+        "po_box": "12970 Douala"
+      },
+      "phones": [
+        "+237 233 50 13 00",
+        "+237 233 50 13 04"
+      ],
+      "emails": [
+        "service.clients@group-activa.com"
+      ],
+      "website": "https://cameroun.group-activa.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.asac-cameroun.org/groupes/assureurs-vie/"
+      ],
+      "verification_status": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "CM-INS-LIFE-003",
+      "name": "AFRILIFE INSURANCE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Akwa, Boulevard de la Liberté, à côté de l'hôtel La Falaise",
+        "po_box": null
+      },
+      "phones": [
+        "+237 689 14 14 14"
+      ],
+      "emails": [
+        "infos.life@afrilife-insurance.com"
+      ],
+      "website": "https://afri-insurance.com/",
+      "branches": [],
+      "regulatory_reference": "Agrément 0000620/MINFI du 11/08/2025",
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://afri-insurance.com/about/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-004",
+      "name": "BELIFE INSURANCE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Immeuble Belife, 1944 Boulevard de la République",
+        "po_box": "2328 Douala"
+      },
+      "phones": [
+        "+237 233 42 42 36"
+      ],
+      "emails": [
+        "client@belifegroupe.com"
+      ],
+      "website": "https://cm.belifegroupe.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cm.belifegroupe.com/agences/"
+      ],
+      "verification_status": "VERIFIED_NETWORK_SHARED_WITH_GROUP"
+    },
+    {
+      "id": "CM-INS-LIFE-005",
+      "name": "CHANAS VIE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Douala",
+        "po_box": "109 Douala"
+      },
+      "phones": [
+        "+237 233 42 14 74"
+      ],
+      "emails": [],
+      "website": "https://www.chanasassurances.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.asac-cameroun.org/groupes/assureurs-vie/"
+      ],
+      "verification_status": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "CM-INS-LIFE-006",
+      "name": "NSIA VIE ASSURANCES",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Grassfield Building, Bonanjo, Douala",
+        "po_box": "4546 Douala"
+      },
+      "phones": [
+        "+237 233 50 27 01"
+      ],
+      "emails": [
+        "nsiacameroun@nsiaassurances.com"
+      ],
+      "website": "https://nsiaassurances.cm/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://cima-afrique.org/les-etats-membres/?country=CAM&item=SOC&lang=en"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-007",
+      "name": "SAAR VIE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Yaoundé",
+        "address": "1077 Rue Frédéric Foe, Yaoundé",
+        "po_box": "4079 Yaoundé"
+      },
+      "phones": [
+        "+237 692 200 212",
+        "+237 233 431 760"
+      ],
+      "emails": [
+        "contact@saar-assurances.com"
+      ],
+      "website": "https://saarvie-assur.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://legal.saarvie-assur.com/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-008",
+      "name": "SANLAMALLIANZ CAMEROUN ASSURANCES VIE",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Douala",
+        "po_box": "105 Douala"
+      },
+      "phones": [
+        "+237 233 430 940",
+        "+237 233 431 144",
+        "+237 678 255 565",
+        "+237 693 355 834"
+      ],
+      "emails": [
+        "infoline.cm@cm.sanlamallianz.com"
+      ],
+      "website": "https://cm.sanlamallianz.com/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.asac-cameroun.org/groupes/assureurs-vie/"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-009",
+      "name": "SONAM ASSURANCES VIE CAMEROUN",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Douala",
+        "po_box": "4493 Douala"
+      },
+      "phones": [
+        "+237 233 42 13 11"
+      ],
+      "emails": [],
+      "website": null,
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://www.asac-cameroun.org/groupes/assureurs-vie/"
+      ],
+      "verification_status": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "CM-INS-LIFE-010",
+      "name": "SUNU ASSURANCES VIE CAMEROUN",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "291 Boulevard de la Liberté, Akwa, Immeuble La Rotonde, 5e étage",
+        "po_box": "2153 Douala"
+      },
+      "phones": [
+        "+237 233 42 12 46",
+        "+237 659 60 60 60",
+        "+237 674 80 74 80"
+      ],
+      "emails": [
+        "cameroun.vie@sunu-group.com"
+      ],
+      "website": "https://sunu-group.com/fr/notrereseau/filiales/cm",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://sunu-group.com/fr/notrereseau/filiales/cm"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    },
+    {
+      "id": "CM-INS-LIFE-011",
+      "name": "WAFA ASSURANCE VIE CAMEROUN",
+      "type": "LIFE",
+      "official_2026": true,
+      "hq": {
+        "city": "Douala",
+        "address": "Rue Toyota, Immeuble Wafa Assurance, Douala",
+        "po_box": "13072 Douala"
+      },
+      "phones": [
+        "+237 233 43 17 95"
+      ],
+      "emails": [
+        "contact@wafaassurance.cm"
+      ],
+      "website": "https://wafaassurance.cm/",
+      "branches": [],
+      "sources": [
+        "https://dgtcfm.cm/liste-des-compagnies/",
+        "https://wafaassurance.cm/fr/mentions-legales"
+      ],
+      "verification_status": "VERIFIED_HQ_BRANCHES_PENDING"
+    }
+  ]
+}

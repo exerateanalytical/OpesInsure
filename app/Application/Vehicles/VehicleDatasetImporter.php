@@ -35,6 +35,15 @@ final class VehicleDatasetImporter
 
     public const REF_PREFIX = 'gor3a:';
 
+    public const DISABLED_MESSAGE = 'The global ODbL vehicle dataset importer is disabled by owner decision 20 (2026-09-25): the curated vehicle master is used instead. '
+        .'Only the owner can enable it (VEHICLE_GLOBAL_DATASET_IMPORT_ENABLED=true). --dry-run remains available.';
+
+    /** Owner decision 20: real imports are refused unless the owner-set flag exists (even with --accept-license). */
+    public static function enabled(): bool
+    {
+        return (bool) config('vehicles.global_dataset_import_enabled', false);
+    }
+
     /** @var array<string, int> */
     public array $counts = ['rows' => 0, 'skipped_make' => 0, 'skipped_model' => 0, 'generations_created' => 0, 'generations_updated' => 0, 'variants_created' => 0, 'variants_updated' => 0, 'protected' => 0];
 
@@ -51,6 +60,9 @@ final class VehicleDatasetImporter
 
     public function import(string $path, bool $dryRun = false): array
     {
+        if (! $dryRun && ! self::enabled()) {
+            throw new \RuntimeException(self::DISABLED_MESSAGE);
+        }
         if (! is_file($path) || ! is_readable($path)) {
             throw new InvalidArgumentException("File not found: $path");
         }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Application\Regulatory\CimaCoverageRules;
+use App\Application\Regulatory\CimaLegacyAuthorizationService;
 use App\Application\Regulatory\CimaProductMappingService;
 use App\Application\Regulatory\RegulatoryTerminologyService;
 use App\Models\Carrier;
@@ -144,6 +146,8 @@ final class CimaRegulatoryDictionarySeeder extends Seeder
                     ] + $base);
                 }
             }
+            // Owner decisions 2026-09-25 items 1-6: coverage-level rules (Q1).
+            $this->counts['coverage_rules_created'] = CimaCoverageRules::seed();
         });
 
         $mapper = app(CimaProductMappingService::class);
@@ -152,6 +156,7 @@ final class CimaRegulatoryDictionarySeeder extends Seeder
         });
 
         $this->demoAuthorizations($v);
+        $this->counts['legacy_authorizations_recorded'] = app(CimaLegacyAuthorizationService::class)->register();
         app(RegulatoryTerminologyService::class)->flush();
     }
 

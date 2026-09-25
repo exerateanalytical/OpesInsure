@@ -373,3 +373,9 @@ details.faq p{padding:0 0 18px;color:var(--muted)}
   .head-actions .icon-btn.search-toggle{display:none}
   .phone{width:256px}
 }
+/* Provider directory details (institutional contacts) */
+.dir .pd{display:flex;flex-wrap:wrap;gap:4px 10px;padding:6px 12px 10px;font-size:12px;color:var(--muted);min-width:0}
+.dir .pd a{color:var(--navy);font-weight:600;overflow-wrap:anywhere}
+.dir .pd-badge{font-weight:700;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.dir .pd-ok{color:#11643a;background:#e8f6ee;border-color:#bfe3cd}
+.dir .pd-part{color:#7a5600;background:#fdf4df;border-color:#f0dca8}

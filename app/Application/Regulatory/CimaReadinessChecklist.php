@@ -41,7 +41,7 @@ final class CimaReadinessChecklist
 
     public function __construct(private readonly CimaPublicationGuard $guard) {}
 
-    /** @return array{reconstructed: bool, source_note: string, totals: array<string, int>, items: list<array{id: string, label: string, source: string, status: string, detail: string}>} */
+    /** @return array{checklist_code: string, reconstructed: bool, source_note: string, totals: array<string, int>, items: list<array{id: string, label: string, source: string, status: string, detail: string}>} */
     public function evaluate(): array
     {
         $items = [];
@@ -123,6 +123,7 @@ final class CimaReadinessChecklist
 
         $totals = array_count_values(array_column($items, 'status')) + ['PASS' => 0, 'FAIL' => 0, 'WARN' => 0, 'MANUAL' => 0];
 
-        return ['reconstructed' => true, 'source_note' => "Reconstructed from the CIMA dictionary; the owner's 28-item wording (spec section 60) is UNVERIFIED.", 'totals' => $totals, 'items' => $items];
+        return ['checklist_code' => ReconstructedChecklists::CIMA_READINESS, 'reconstructed' => true,
+            'source_note' => ReconstructedChecklists::CIMA_READINESS.": reconstructed from the CIMA dictionary; the owner's 28-item wording (spec section 60) is UNVERIFIED.", 'totals' => $totals, 'items' => $items];
     }
 }

@@ -103,7 +103,7 @@ it('REQ-PRD-010 REQ-PRD-007 completeness lists every publication blocker until t
     $svc = app(ProductCompletenessService::class);
     $r = $svc->evaluate($this->v);
     expect($r['status'])->toBe('INCOMPLETE')->and($r['publishable'])->toBeFalse()
-        ->and(b6aFailing($r))->toBe(['ACCOUNTING_MAPPING', 'CIMA_BRANCH_AUTHORIZED', 'CLAIMS_CONFIGURATION', 'PRICING_MODE', 'PRODUCT_TESTS', 'UNDERWRITING_MODE'])
+        ->and(b6aFailing($r))->toBe(['ACCOUNTING_MAPPING', 'CAPABILITY_PROFILE', 'CIMA_BRANCH_AUTHORIZED', 'CLAIMS_CONFIGURATION', 'PRICING_MODE', 'PRODUCT_TESTS', 'UNDERWRITING_MODE'])
         ->and(collect($r['checks'])->firstWhere('code', 'REGULATORY_MAPPING')['passed'])->toBeTrue();
 
     // A version whose family has no default branch and no mapping: missing regulatory mapping.
@@ -181,7 +181,10 @@ it('REQ-PRD-007 runs DRAFT → CONFIGURATION → TECHNICAL_REVIEW → COMPLIANCE
     expect(DB::table('approval_requests')->where('id', $approvalId)->value('action_code'))->toBe('product.publish');
 
     b6aAs($this->compliance, 'POST', "versions/{$id}/governance/advance")->assertForbidden(); // business approval needs catalogue.publish
-    b6aAs($this->business, 'POST', "versions/{$id}/governance/advance")->assertOk()->assertJsonPath('data.stage', 'READY');
+    b6aAs($this->business, 'POST', "versions/{$id}/governance/advance")->assertOk()->assertJsonPath('data.stage', 'SANDBOX_TESTS');
+    // Owner decision 28: SANDBOX_TESTS re-runs the test pack on the approved configuration before READY.
+    b6aAs($this->tech, 'POST', "versions/{$id}/governance/advance")->assertForbidden(); // needs catalogue.test
+    b6aAs($this->maker, 'POST', "versions/{$id}/governance/advance")->assertOk()->assertJsonPath('data.stage', 'READY');
     expect($this->v->refresh()->status)->toBe('APPROVED')->and($this->v->snapshot_hash)->not->toBeNull()
         ->and(DB::table('approval_requests')->where('id', $approvalId)->value('status'))->toBe('APPROVED');
 
@@ -195,7 +198,7 @@ it('REQ-PRD-007 runs DRAFT → CONFIGURATION → TECHNICAL_REVIEW → COMPLIANCE
 
     $h = b6aAs($this->maker, 'GET', "versions/{$id}/governance")->assertOk()->json('data');
     expect($h['status'])->toBe('PUBLISHED')->and(collect($h['history'])->pluck('to_stage')->all())
-        ->toBe(['CONFIGURATION', 'TECHNICAL_REVIEW', 'COMPLIANCE_REVIEW', 'BUSINESS_APPROVAL', 'READY', 'READY', 'PUBLISHED']);
+        ->toBe(['CONFIGURATION', 'TECHNICAL_REVIEW', 'COMPLIANCE_REVIEW', 'BUSINESS_APPROVAL', 'SANDBOX_TESTS', 'READY', 'READY', 'PUBLISHED']);
 
     // A new version shows its configuration diff against the published base.
     $v2 = app(ProductModelService::class)->newVersion($this->cp, ['effective_from' => '2027-01-01'], $this->maker);

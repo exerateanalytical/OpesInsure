@@ -16,7 +16,7 @@ use App\Models\KycSubmission;
  */
 final class KycLevelResolver
 {
-    public const RAISING = ['PEP', 'HIGH_RISK', 'SANCTIONS_POSSIBLE_MATCH', 'SANCTIONS_CONFIRMED_MATCH', 'PEP_POSSIBLE_MATCH', 'PEP_CONFIRMED_MATCH'];
+    public const RAISING = ['PEP', 'HIGH_RISK', 'EDD_REQUIRED', 'SANCTIONS_POSSIBLE_MATCH', 'SANCTIONS_CONFIRMED_MATCH', 'PEP_POSSIBLE_MATCH', 'PEP_CONFIRMED_MATCH'];
 
     public static function rank(string $level): int
     {

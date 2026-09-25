@@ -61,7 +61,7 @@ final class ProposalDeclarations
         $response = $p->disclosureResponse()->first();
         $row = ProposalDeclaration::create([
             'proposal_id' => $p->id, 'code' => $code, 'text_version' => $def['version'], 'text_hash' => $this->json->hash($def['statement']),
-            'statement' => $def['statement'], 'legal_status' => $def['legal_status'] ?? 'UNVERIFIED', 'channel' => strtoupper($channel),
+            'statement' => $def['statement'], 'legal_status' => $def['legal_status'] ?? 'UNVERIFIED_LEGAL_WORDING', 'channel' => strtoupper($channel),
             'evidence' => array_filter([
                 'answers_hash' => $response?->answers_hash,
                 'question_snapshot_hash' => $p->question_snapshot_hash,

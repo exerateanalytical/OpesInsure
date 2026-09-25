@@ -10,6 +10,8 @@ use App\Application\Cases\Models\WorkCase;
 use App\Application\Customers\Relationships\PartyRelationshipService;
 use App\Application\Events\OutboxWriter;
 use App\Application\Kyc\Models\ScreeningCheck;
+use App\Application\Kyc\Risk\CustomerRiskRatingService;
+use App\Application\Kyc\Screening\ScreeningMode;
 use App\Application\Kyc\Screening\ScreeningAdapter;
 use App\Interfaces\Http\Errors\ApiProblemException;
 use App\Models\Document;
@@ -41,6 +43,7 @@ final class KycService
         private readonly ScreeningAdapter $screening,
         private readonly AuditWriter $audit,
         private readonly OutboxWriter $outbox,
+        private readonly CustomerRiskRatingService $risk,
     ) {}
 
     public static function kindFor(Party $party): string
@@ -126,6 +129,7 @@ final class KycService
             $s->update(['status' => 'SUBMITTED', 'submitted_at' => now(), 'notes' => $notes, 'case_id' => $case->id,
                 'kyc_level' => $level, 'level_source' => 'COMPUTED', 'risk_factors' => $factors, 'version' => $s->version + 1]);
             $this->screen($s, $party);
+            $this->reassess($s->fresh(), [], [], $actor?->id, 'Submitted for review.');
             $this->audit->record('kyc_submission.submitted', 'kyc_submission', $s->id, ['party_id' => $s->party_id, 'case_id' => $case->id, 'kyc_level' => $level]);
             $this->outbox->record('kyc_submission.submitted', 'kyc_submission', $s->id, ['kyc_submission_id' => $s->id, 'tenant_id' => $s->tenant_id, 'case_id' => $case->id, 'kyc_level' => $level]);
 
@@ -174,13 +178,28 @@ final class KycService
         if ($check->subject_type !== 'kyc_submission' || $check->subject_id !== $s->id) {
             throw $this->problem('SCREENING_NOT_FOUND', 404, 'Screening check not found on this submission.');
         }
-        if (! in_array($s->status, ['SUBMITTED', 'REVIEWING'], true)) {
-            throw $this->problem('KYC_SCREENING_LOCKED', 409, 'Screening results are recorded while the submission is under review.');
+        $rescreen = (int) ($check->screening_round ?? 1) > 1;
+        if (! in_array($s->status, ['SUBMITTED', 'REVIEWING'], true) && ! ($rescreen && $s->status === 'APPROVED')) {
+            throw $this->problem('KYC_SCREENING_LOCKED', 409, 'Screening results are recorded while the submission is under review (or, for a rescreening, while it is approved).');
+        }
+        if ($check->status !== 'PENDING' && $rescreen) {
+            throw $this->problem('KYC_SCREENING_RECORDED', 409, 'This rescreening result is already recorded.');
         }
 
-        return DB::transaction(function () use ($s, $check, $d, $actor) {
+        return DB::transaction(function () use ($s, $check, $d, $actor, $rescreen) {
             $check->update(['status' => $d['status'], 'list_reference' => $d['list_reference'] ?? null, 'notes' => $d['notes'] ?? null, 'checked_by' => $actor->id, 'checked_at' => now()]);
-            $this->audit->record('kyc_submission.screening_recorded', 'kyc_submission', $s->id, ['check_id' => $check->id, 'check_type' => $check->check_type, 'status' => $d['status']]);
+            $this->audit->record('kyc_submission.screening_recorded', 'kyc_submission', $s->id, ['check_id' => $check->id, 'check_type' => $check->check_type, 'status' => $d['status'],
+                'screening_round' => (int) ($check->screening_round ?? 1), 'screening_mode' => ScreeningMode::normalize($check->provider), 'automated' => false, 'list_reference' => $d['list_reference'] ?? null]);
+            if ($rescreen) {
+                // An approved KYC is never silently changed: a match is re-rated and raised for review / remediation.
+                $this->reassess($s, [], [], $actor->id, 'Rescreening result recorded.', false);
+                if ($d['status'] !== 'CLEAR') {
+                    $this->outbox->record('kyc_submission.rescreen_match', 'kyc_submission', $s->id, ['kyc_submission_id' => $s->id, 'tenant_id' => $s->tenant_id,
+                        'party_id' => $s->party_id, 'check_id' => $check->id, 'check_type' => $check->check_type, 'status' => $d['status']]);
+                }
+
+                return $s->fresh();
+            }
             $s->update(['screening_status' => $this->screeningStatus($s)]);
             $factors = $s->risk_factors ?? [];
             if ($d['status'] !== 'CLEAR') {
@@ -191,9 +210,128 @@ final class KycService
                 $s->update(['kyc_level' => $level, 'level_source' => 'COMPUTED']);
             }
             $s->update(['risk_factors' => $factors, 'version' => $s->version + 1]);
+            if ($d['status'] !== 'CLEAR') {
+                $this->reassess($s->fresh(), [], [], $actor->id, 'Screening match recorded.');
+            }
 
             return $s->fresh();
         });
+    }
+
+    /**
+     * Owner decision 27: reviewer (re)assesses customer risk with the facts the platform does not hold itself
+     * (country, products, channel, reviewer-declared factors such as PEP). Raises the level when warranted.
+     *
+     * @param  array<string, mixed>  $inputs
+     */
+    public function assessRisk(KycSubmission $s, array $inputs, string $reason, User $actor): KycSubmission
+    {
+        if (! in_array($s->status, ['SUBMITTED', 'REVIEWING'], true)) {
+            throw $this->problem('KYC_RISK_LOCKED', 409, 'Customer risk is assessed while the submission is under review.');
+        }
+
+        return DB::transaction(function () use ($s, $inputs, $reason, $actor) {
+            $this->reassess($s, $inputs, [], $actor->id, $reason);
+
+            return $s->fresh();
+        });
+    }
+
+    /**
+     * Records the customer's declared source of funds / source of wealth (with evidence document ids) on a new
+     * assessment version. Required before approval when the risk configuration says so (EDD by default).
+     *
+     * @param  array<string, mixed>|null  $funds
+     * @param  array<string, mixed>|null  $wealth
+     */
+    public function declareSources(KycSubmission $s, ?array $funds, ?array $wealth, string $reason, User $actor): KycSubmission
+    {
+        if (! in_array($s->status, [...self::EDITABLE, 'SUBMITTED', 'REVIEWING'], true)) {
+            throw $this->problem('KYC_NOT_EDITABLE', 409, 'Source of funds / wealth is recorded before the KYC is decided.');
+        }
+        foreach ([$funds, $wealth] as $decl) {
+            foreach ((array) ($decl['evidence_document_ids'] ?? []) as $docId) {
+                if (! Document::whereKey($docId)->where('tenant_id', $s->tenant_id)->where('party_id', $s->party_id)->exists()) {
+                    throw $this->problem('KYC_DOCUMENT_NOT_OWNED', 422, 'An evidence document does not belong to the KYC subject.', 'evidence_document_ids');
+                }
+            }
+        }
+        $decl = array_filter(['source_of_funds' => $funds, 'source_of_wealth' => $wealth], fn ($v) => $v !== null);
+
+        return DB::transaction(function () use ($s, $decl, $reason, $actor) {
+            $this->reassess($s, [], array_map(fn ($d) => $d + ['declared_at' => now()->toIso8601String(), 'recorded_by' => $actor->id], $decl), $actor->id, $reason, $s->status !== 'DRAFT');
+            $this->audit->record('kyc_submission.sources_declared', 'kyc_submission', $s->id, ['fields' => array_keys($decl), 'reason' => $reason]);
+
+            return $s->fresh();
+        });
+    }
+
+    /**
+     * Periodic / ad-hoc rescreening of an APPROVED KYC (owner decision 27). Opens a new screening round through the
+     * configured adapter (MANUAL_AUDITED: every check PENDING for a reviewer). Nothing is claimed as automated.
+     */
+    public function rescreen(KycSubmission $s, string $trigger, string $reason, ?User $actor): KycSubmission
+    {
+        if ($s->status !== 'APPROVED') {
+            throw $this->problem('KYC_NOT_APPROVED', 409, 'Only an approved KYC is rescreened.');
+        }
+        $checks = ScreeningCheck::where('subject_type', 'kyc_submission')->where('subject_id', $s->id);
+        if ((clone $checks)->where('status', 'PENDING')->exists()) {
+            throw $this->problem('KYC_RESCREEN_IN_PROGRESS', 409, 'A screening round of this KYC is still pending.');
+        }
+        $round = (int) (clone $checks)->max('screening_round') + 1;
+        $party = Party::findOrFail($s->party_id);
+
+        return DB::transaction(function () use ($s, $party, $round, $trigger, $reason, $actor) {
+            $this->screen($s, $party, $round, $trigger, false);
+            $this->audit->record('kyc_submission.rescreen_started', 'kyc_submission', $s->id, ['screening_round' => $round, 'trigger' => $trigger,
+                'screening_mode' => ScreeningMode::normalize($this->screening->code()), 'automated' => false, 'actor_id' => $actor?->id, 'reason' => $reason]);
+            $this->outbox->record('kyc_submission.rescreen_started', 'kyc_submission', $s->id, ['kyc_submission_id' => $s->id, 'tenant_id' => $s->tenant_id,
+                'party_id' => $s->party_id, 'screening_round' => $round, 'trigger' => $trigger]);
+
+            return $s->fresh();
+        });
+    }
+
+    /** APPROVED KYC whose current assessment's next_rescreen_at is due (scheduled daily: kyc:rescreen-due). */
+    public function rescreenDue(?Carbon $now = null): int
+    {
+        $now ??= now();
+        $n = 0;
+        foreach (KycSubmission::where('status', 'APPROVED')->whereNull('superseded_by_submission_id')->pluck('id') as $id) {
+            $s = KycSubmission::find($id);
+            $a = $this->risk->latest($s);
+            if (! $a?->next_rescreen_at || $a->next_rescreen_at->gt($now)
+                || ScreeningCheck::where('subject_type', 'kyc_submission')->where('subject_id', $id)->where('status', 'PENDING')->exists()) {
+                continue;
+            }
+            $this->rescreen($s, 'PERIODIC_RESCREEN', 'Periodic rescreening due ('.$a->rating.').', null);
+            $this->reassess($s->fresh(), [], [], null, 'Periodic rescreening opened.', false);
+            $n++;
+        }
+
+        return $n;
+    }
+
+    /**
+     * New risk assessment version; feeds HIGH_RISK / EDD_REQUIRED into the level resolver (never lowers the level).
+     *
+     * @param  array<string, mixed>  $inputs
+     * @param  array<string, mixed>  $declarations
+     */
+    private function reassess(KycSubmission $s, array $inputs, array $declarations, ?string $actorId, ?string $reason, bool $touchLevel = true): void
+    {
+        $a = $this->risk->assess($s, $inputs, $declarations, $actorId, $reason);
+        if (! $touchLevel || ! in_array($s->status, ['SUBMITTED', 'REVIEWING'], true)) {
+            return;
+        }
+        $factors = array_values(array_unique([...($s->risk_factors ?? []), ...CustomerRiskRatingService::levelFactors($a), ...($a->triggers['facts'] ?? [])]));
+        [$level, $factors] = $this->levels->compute($s, $factors);
+        $upd = ['risk_factors' => $factors];
+        if (KycLevelResolver::rank($level) > KycLevelResolver::rank((string) $s->kyc_level)) {
+            $upd += ['kyc_level' => $level, 'level_source' => 'COMPUTED'];
+        }
+        $s->update($upd);
     }
 
     /** Maker step: REVIEWING → PENDING_APPROVAL with a recommended outcome. */
@@ -322,8 +460,11 @@ final class KycService
                 'expiry_basis' => $s->expiry_basis, 'version' => $s->version,
                 'requirements_detail' => $eval['requirements'],
                 'screenings' => ScreeningCheck::where('subject_type', 'kyc_submission')->where('subject_id', $s->id)->orderBy('created_at')->get()
-                    ->map(fn ($c) => $c->only(['id', 'check_type', 'provider', 'status', 'list_reference', 'notes', 'checked_by', 'checked_at']))->all(),
+                    ->map(fn ($c) => $c->only(['id', 'check_type', 'provider', 'status', 'list_reference', 'notes', 'checked_by', 'checked_at', 'screening_round', 'trigger'])
+                        + ['screening_mode' => ScreeningMode::normalize($c->provider), 'automated' => false])->all(),
                 'corporate' => $s->subject_kind === 'CORPORATE' ? $this->corporateStatus($s) : null,
+                'risk_assessment' => $this->risk->present($this->risk->latest($s)),
+                'screening' => ScreeningMode::describe(),
             ];
         }
 
@@ -341,7 +482,7 @@ final class KycService
         $ubos = [];
         foreach ($graph['owners'] as $o) {
             $kyc = KycSubmission::where('tenant_id', $s->tenant_id)->where('party_id', $o['party_id'])->where('status', 'APPROVED')->latest('approved_at')->first();
-            $ubos[] = ['party_id' => $o['party_id'], 'display_name' => $o['display_name'], 'effective_percentage' => $o['effective_percentage'], 'kyc_status' => $kyc ? 'APPROVED' : 'MISSING'];
+            $ubos[] = ['party_id' => $o['party_id'], 'display_name' => $o['display_name'], 'effective_percentage' => $o['effective_percentage'], 'grounds' => $o['grounds'] ?? [], 'roles' => $o['roles'] ?? [], 'kyc_status' => $kyc ? 'APPROVED' : 'MISSING'];
             if (! $kyc && config('kyc.corporate.require_ubo_kyc', true)) {
                 $blocking[] = 'UBO_KYC_MISSING:'.$o['party_id'];
             }
@@ -353,7 +494,7 @@ final class KycService
             $blocking[] = 'UBO_UNRESOLVED_OWNER:'.$u;
         }
 
-        return ['ubos' => $ubos, 'unresolved' => $graph['unresolved'], 'threshold' => $graph['threshold'], 'blocking' => $blocking, 'available' => true];
+        return ['ubos' => $ubos, 'unresolved' => $graph['unresolved'], 'threshold' => $graph['threshold'], 'threshold_rule' => $graph['threshold_rule'] ?? 'GREATER_THAN', 'blocking' => $blocking, 'available' => true];
     }
 
     public function caseOf(KycSubmission $s): WorkCase
@@ -375,20 +516,24 @@ final class KycService
         if ($s->subject_kind === 'CORPORATE') {
             $blocking = array_merge($blocking, $this->corporateStatus($s)['blocking']);
         }
+        $blocking = array_merge($blocking, $this->risk->blocking($s));
         if ($blocking !== []) {
             throw new ApiProblemException('KYC_NOT_APPROVABLE', 422, 'The KYC cannot be approved yet.', [], ['blocking' => $blocking]);
         }
     }
 
-    private function screen(KycSubmission $s, Party $party): void
+    private function screen(KycSubmission $s, Party $party, int $round = 1, string $trigger = 'ONBOARDING', bool $updateStatus = true): void
     {
         foreach (config('kyc.screening.checks', ['SANCTIONS', 'PEP']) as $type) {
             $r = $this->screening->screen($party, $type);
             ScreeningCheck::create(['tenant_id' => $s->tenant_id, 'party_id' => $party->id, 'subject_type' => 'kyc_submission', 'subject_id' => $s->id,
-                'check_type' => $type, 'provider' => $this->screening->code(), 'status' => $r['status'] ?? 'PENDING',
-                'list_reference' => $r['list_reference'] ?? null, 'result' => $r['result'] ?? [], 'checked_at' => $r ? now() : null]);
+                'check_type' => $type, 'provider' => ScreeningMode::normalize($this->screening->code()), 'status' => $r['status'] ?? 'PENDING',
+                'list_reference' => $r['list_reference'] ?? null, 'result' => $r['result'] ?? [], 'checked_at' => $r ? now() : null,
+                'screening_round' => $round, 'trigger' => $trigger]);
         }
-        $s->update(['screening_status' => $this->screeningStatus($s)]);
+        if ($updateStatus) {
+            $s->update(['screening_status' => $this->screeningStatus($s)]);
+        }
     }
 
     private function screeningStatus(KycSubmission $s): string
@@ -416,6 +561,10 @@ final class KycService
         $months = $this->requirements->refreshMonths($s);
         if ($months) {
             $candidates['REFRESH_POLICY'] = now()->addMonthsNoOverflow($months);
+        }
+        $riskMonths = $this->risk->latest($s)?->refresh_months;   // decision 27: periodic refresh by risk rating
+        if ($riskMonths) {
+            $candidates['RISK_REFRESH_POLICY'] = now()->addMonthsNoOverflow($riskMonths);
         }
         if (! $candidates) {
             return [null, 'NONE'];

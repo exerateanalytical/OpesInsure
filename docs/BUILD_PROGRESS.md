@@ -21,7 +21,21 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
 - APK 1.3.0 LIVE on /download.
 - OTA published to channel production-apk (runtime 1.3.0): update group 6175be73-cb09-42c9-bd8f-219c6cda734e.
 
+## Mobile ownership (2026-09-25)
+The owner is opening a separate session for the app. Once it has started, it OWNS "mobile app/", including OTA publishing (npm run update:apk) and APK builds. This backend session does not edit the app or publish updates; it only deploys the backend and adds needed app changes to the list below.
+
+### Mobile backlog (for the app session)
+- Insurer directory: prefer verification_label {en,fr} from the API in src/lib/institutions.ts. The screens are built but uncommitted in the app tree and not yet published; publish after the backend deploy that adds the directory.
+- Manual quotes: waiting states WAITING_FOR_CUSTOMER and WAITING_FOR_EXTERNAL_EVIDENCE, the PLATFORM_SLA label on SLA clocks, and case_family/case_subtype.
+- Next native APK: expo-file-system + expo-sharing so authenticated PDFs open reliably on Android; 1.3.0 audit native items (expo-screen-capture, device integrity, Sentry, certificate pinning, FCM google-services).
+- KYC: collect source of funds/wealth once a customer endpoint exists (POST /v1/kyc/submissions/{id}/sources is staff-only today).
+
 ## Next
+- Duplicate lists to consolidate (found by wm2): aviation.manufacturer vs aviation_insurance.manufacturer; aviation.aircraft_type vs aviation_insurance.aircraft_category; persons.relationship vs life_insurance.relationship (persons canonical); master-data person_role repeats 4 party roles. Two bordereau endpoints accept different type sets (finance batches).
+- Behaviour change in the next deploy: VehicleUsageMapper now rates owner code PRIVATE as PRIVATE (it was COMMERCIAL). Motor quotes sent with usage=PRIVATE will change price.
+- Hook the authority-type check and the premium-to-cover evaluator into issuance, policies and the authority engine (Batch 7). Mobile: manual-quote waiting states WAITING_FOR_CUSTOMER/WAITING_FOR_EXTERNAL_EVIDENCE and the PLATFORM_SLA label.
+- Mobile (before the directory OTA): prefer verification_label{en,fr} from the API over the built-in badge text in src/lib/institutions.ts.
+- Next APK (native): add expo-file-system + expo-sharing so authenticated PDFs (quote PDF, documents) open reliably on Android; plus the 1.3.0 audit native items (expo-screen-capture, integrity, Sentry, pinning, FCM).
 - Implement docs/spec/OWNER_DECISIONS_2026-09-25.md as a "decisions batch" right after the Batch 6 deploy (before Batch 7).
 - Owner decision: NO staging; production keeps demo mode ON. Do not build staging or disable demo.
 - Known follow-ups: ClaimController::store raw insert bypasses CapabilityPinner (fix in Batch 11 claims); PaymentExecution adapter not wrapped (Batch 9); mobile agent/broker "what I can sell" list from GET distribution/catalogue.
@@ -32,7 +46,7 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
    - timezone picker (GET settings/timezones, PATCH me/settings);
    - vehicle suggestions via POST master-data/suggestions;
    - switch POST /mobile/policy-service-requests to /policies/{id}/service-requests.
-3. Phases 1-4 LIVE. Phase 5 (4d785dd) LIVE (r20260925-080232; live purchase journey passes end to end). Batch 6 IN PROGRESS (6A product governance + sandbox, 6B quote consolidation, 6C manual quotation mode 1, 6D proposal consolidation). Then Batch 7.
+3. Phases 1-5 LIVE. Phase 6 (3176a7c) LIVE (r20260925-093812; live purchase journey passes, 6 insurer offers, policy POL-2026-000002). Decisions batch IN PROGRESS (D1 CIMA/branches, D2 KYC/UBO/timestamp report, D3 authority/cases/SLA, D4 governance/docs/tax guard/vehicles) plus the mobile Batch 6 screens. Then Batch 7.
 - Deploy note: run composer dump-autoload in the deploy snapshot before building the tarball (classes were deleted in Batch 6).
 - Batch 6 follow-ups: 7B UnderwritingService::decide → ProposalService::applyUnderwritingDecision; 7C/7D issuance → PolicyIssuabilityService::assertIssuable + CoverTermsService::resolveStart; mobile: carrier "Quote requests" screens + "sent to insurer" state; INFORMATION_REQUIRED/RESUBMITTED labels, resubmit + withdraw screens, 422 after submission, DECLINED/EXPIRED quote statuses. Wave10Controller::saveComparison should delegate to QuoteComparisonService or become an alias.
 - More follow-ups from Batch 5: hook RuleEngine::assertComplete into bind/issue/claim (Batches 6-7, 11); DocumentRequirementService::applicable should use the rules engine (DOCUMENTS domain); ProposalService should read PROPOSAL question sets instead of disclosure_schema_versions directly; RiskFactsProcessor and RiskAssetTypes should read via QuestionSetCatalogue; Filament UI for rules and question sets.

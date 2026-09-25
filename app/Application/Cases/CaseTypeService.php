@@ -24,6 +24,9 @@ final class CaseTypeService
     public function draft(array $d, User $maker): CaseType
     {
         $this->validated($d);
+        if (! empty($d['family_code']) && ! DB::table('case_families')->where('code', $d['family_code'])->where('active', true)->exists()) {
+            throw CaseProblem::make('CASE_FAMILY_UNKNOWN', 422, "Unknown case family {$d['family_code']}.", ['family_code' => $d['family_code']]);
+        }
 
         return DB::transaction(function () use ($d, $maker) {
             DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['case-type:'.$d['code']]);
@@ -33,6 +36,7 @@ final class CaseTypeService
                 'family_code' => $d['family_code'] ?? $previous?->family_code, 'status' => 'DRAFT',
                 'valid_from' => $d['valid_from'] ?? $this->clock->today()->toDateString(), 'valid_to' => null,
                 'states' => $d['states'], 'transitions' => $d['transitions'], 'sla_policies' => $d['sla_policies'] ?? [], 'auto_tasks' => $d['auto_tasks'] ?? [],
+                'subtypes' => array_values($d['subtypes'] ?? $previous?->subtypes ?? []),
                 'default_confidentiality' => $d['default_confidentiality'] ?? $previous?->default_confidentiality ?? 'NORMAL',
                 'regulated' => (bool) ($d['regulated'] ?? $previous?->regulated ?? false), 'created_by' => $maker->id,
             ]);

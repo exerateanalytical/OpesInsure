@@ -60,6 +60,23 @@ final class CapabilityCatalogue
     /** Capabilities that must all be REMOTE_API for LEVEL_5_INTEGRATED. */
     public const INTEGRATED_CORE = ['QUOTATION', 'POLICY_ISSUANCE', 'CLAIMS_INTAKE', 'PAYMENT'];
 
+    /**
+     * Workflow Data Master v1 (organization_capabilities.capabilities) codes that are not catalogue keys => the
+     * catalogue capabilities that implement them. Aliases, not new capabilities: the finer catalogue keys stay canonical.
+     * ENDORSEMENT and RENEWAL were already catalogue keys.
+     */
+    public const ALIASES = [
+        'CLAIMS' => ['CLAIMS_INTAKE', 'CLAIMS_DECISION', 'CLAIMS_SETTLEMENT'],
+        'DOCUMENT_ISSUANCE' => ['DOCUMENT_GENERATION'],
+        'API' => ['API_INTEGRATION'],
+    ];
+
+    /** @return list<string> catalogue capabilities for a catalogue key or a data-master alias ([] when unknown). */
+    public static function resolve(string $code): array
+    {
+        return self::has($code) ? [$code] : (self::ALIASES[$code] ?? []);
+    }
+
     public static function has(string $capability): bool
     {
         return array_key_exists($capability, self::CAPABILITIES);

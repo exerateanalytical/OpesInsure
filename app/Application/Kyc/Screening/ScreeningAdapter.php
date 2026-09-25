@@ -8,7 +8,7 @@ use App\Models\Party;
 
 /**
  * REQ-KYC-001 screening hook (sanctions / PEP). An adapter either screens automatically and returns a
- * result, or (MANUAL) returns null so a reviewer records the outcome through ScreeningService::record().
+ * result, or (MANUAL_AUDITED) returns null so a reviewer records the outcome through ScreeningService::record().
  * No sanctions or PEP list ships with the platform; a real provider adapter is bound by configuration
  * (config kyc.screening.adapter) once the owner has contracted one. REQ-AML-001 (15A) extends this.
  */

@@ -24,7 +24,7 @@ final class QuoteDocumentRenderer
                 .$e($money($o->premium_minor, $o->currency)).'</td><td class="n">'.$e($money($o->tax_minor + $o->fee_minor, $o->currency)).'</td><td class="n"><b>'
                 .$e($money($o->total_minor, $o->currency)).'</b></td><td>'.$e($o->valid_until?->format('Y-m-d')).'</td></tr>';
         }
-        $html = '<html><head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:4px}.n{text-align:right}</style></head><body>'
+        $html = '<html><head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:4px}.n{text-align:right}</style></head><body>'.\App\Application\Documents\DemoDocumentMark::html()
             .'<h2>Devis / Quotation '.$e($quote->quote_number ?? $quote->id).'</h2>'
             .'<p>Client / Customer: '.$e($quote->party?->display_name).'<br>Branche / Line: '.$e($quote->line_code)
             .'<br>Valide jusqu&#39;au / Valid until: '.$e($quote->expires_at?->format('Y-m-d H:i T')).'</p>'

@@ -64,7 +64,7 @@ it('keeps policyholder, insured and beneficiary as separate explicit roles', fun
         ->and($svc->asOf($holder->id)->pluck('role_code')->all())->toBe(['POLICYHOLDER'])
         ->and(fn () => $svc->assign($insured, ['role_code' => 'POLICYHOLDER'] + $ctx, $this->tenant->id, null))->toThrow(ValidationException::class)
         ->and(fn () => $svc->assign($holder, ['role_code' => 'NOT_A_ROLE'], $this->tenant->id, null))->toThrow(ValidationException::class)
-        ->and(PartyRoleService::ROLES)->toHaveCount(16);
+        ->and(PartyRoleService::ROLES)->toHaveCount(24); // 16 platform roles + 8 owner workflow data master roles (wm2)
 
     // the same person may hold two roles, but only when both are recorded
     $svc->assign($holder, ['role_code' => 'INSURED'] + $ctx, $this->tenant->id, null);
@@ -92,7 +92,7 @@ it('serves roles over the API with permission checks', function () {
     $p = b4aParty('Api Person');
     $h = tenantHeader($this->tenant);
     Passport::actingAs(makeAuthTestUser($this->tenant, ['parties.manage']));
-    $this->getJson('/api/v1/party-roles/catalogue', $h)->assertOk()->assertJsonCount(16, 'data');
+    $this->getJson('/api/v1/party-roles/catalogue', $h)->assertOk()->assertJsonCount(24, 'data');
     $this->postJson("/api/v1/parties/{$p->id}/roles", ['role_code' => 'INSURED'], $h)->assertForbidden();
     Passport::actingAs(makeAuthTestUser($this->tenant, B4A_ALL));
     $id = $this->postJson("/api/v1/parties/{$p->id}/roles", ['role_code' => 'INSURED'], $h)->assertCreated()->json('data.id');

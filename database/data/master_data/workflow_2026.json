@@ -1,0 +1,825 @@
+{
+ "schema": "opesinsure.master_data.v1",
+ "file": "workflow_2026",
+ "version": "2026.1",
+ "effective_from": "2026-09-25",
+ "source": "OWNER_WORKFLOW_DATA_MASTER_V1 — OpesInsure Workflow Institutional Data Master v1.0.0 (database/data/workflow_institutional_data_master_2026.json)",
+ "source_reference_default": "OWNER_WORKFLOW_DATA_MASTER_V1",
+ "provenance_default": "PLATFORM_NORMALIZED",
+ "protected": true,
+ "notes": [
+  "Reference-list part (geography, party roles, beneficiary relationships, legal entity types, occupations/industries, vehicles, property/engineering, marine cargo, agriculture/livestock, aviation).",
+  "Merged by code into existing lists: owner codes that match an existing value become aliases; only codes with no equivalent are added.",
+  "PENDING_SOURCE catalogues carry no values: placeholders are empty, flagged, and keep Other / Not listed.",
+  "workflow_statuses records each owner catalogue status (7 dataset status codes; raw owner wording kept)."
+ ],
+ "domains": [
+  {
+   "code": "geography",
+   "lists": [
+    {
+     "code": "cameroon_region",
+     "values": [
+      {
+       "code": "ADAMAOUA",
+       "aliases": [
+        "ADAMAWA"
+       ]
+      },
+      {
+       "code": "EST",
+       "aliases": [
+        "EAST"
+       ]
+      },
+      {
+       "code": "EXTREME_NORD",
+       "aliases": [
+        "FAR_NORTH",
+        "Far North"
+       ]
+      },
+      {
+       "code": "NORD",
+       "aliases": [
+        "NORTH"
+       ]
+      },
+      {
+       "code": "NORD_OUEST",
+       "aliases": [
+        "NORTH_WEST",
+        "North-West"
+       ]
+      },
+      {
+       "code": "OUEST",
+       "aliases": [
+        "WEST"
+       ]
+      },
+      {
+       "code": "SUD",
+       "aliases": [
+        "SOUTH"
+       ]
+      },
+      {
+       "code": "SUD_OUEST",
+       "aliases": [
+        "SOUTH_WEST",
+        "South-West"
+       ]
+      }
+     ]
+    },
+    {
+     "code": "admin_level",
+     "label_en": "Administrative level",
+     "label_fr": "Niveau administratif",
+     "hierarchical": false,
+     "note": "Owner hierarchy REGION > DIVISION > SUBDIVISION > COUNCIL > CITY > LOCALITY; attributes.maps_to_list names the geography list holding that level.",
+     "values": [
+      {
+       "code": "REGION",
+       "label_en": "Region",
+       "label_fr": "Région",
+       "attributes": {
+        "rank": 1,
+        "maps_to_list": "cameroon_region"
+       }
+      },
+      {
+       "code": "DIVISION",
+       "label_en": "Division",
+       "label_fr": "Département",
+       "aliases": [
+        "DEPARTMENT",
+        "DEPARTEMENT"
+       ],
+       "attributes": {
+        "rank": 2,
+        "maps_to_list": "cameroon_department"
+       }
+      },
+      {
+       "code": "SUBDIVISION",
+       "label_en": "Subdivision",
+       "label_fr": "Arrondissement",
+       "aliases": [
+        "ARRONDISSEMENT"
+       ],
+       "attributes": {
+        "rank": 3,
+        "maps_to_list": "cameroon_arrondissement"
+       }
+      },
+      {
+       "code": "COUNCIL",
+       "label_en": "Council",
+       "label_fr": "Commune",
+       "aliases": [
+        "COMMUNE"
+       ],
+       "attributes": {
+        "rank": 4,
+        "maps_to_list": "cameroon_commune"
+       }
+      },
+      {
+       "code": "CITY",
+       "label_en": "City",
+       "label_fr": "Ville",
+       "aliases": [
+        "TOWN"
+       ],
+       "attributes": {
+        "rank": 5,
+        "maps_to_list": "city"
+       }
+      },
+      {
+       "code": "LOCALITY",
+       "label_en": "Locality",
+       "label_fr": "Localité",
+       "aliases": [
+        "QUARTER",
+        "QUARTIER"
+       ],
+       "attributes": {
+        "rank": 6,
+        "maps_to_list": "quarter"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "persons",
+   "lists": [
+    {
+     "code": "relationship",
+     "values": [
+      {
+       "code": "OTHER_RELATIVE",
+       "label_en": "Other relative",
+       "label_fr": "Autre parent"
+      },
+      {
+       "code": "TRUST",
+       "label_en": "Trust",
+       "label_fr": "Trust / fiducie"
+      },
+      {
+       "code": "ORGANIZATION",
+       "label_en": "Organisation",
+       "label_fr": "Organisation",
+       "aliases": [
+        "ORGANISATION"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "organizations",
+   "lists": [
+    {
+     "code": "legal_entity_type",
+     "values": [
+      {
+       "code": "SNC",
+       "aliases": [
+        "PARTNERSHIP"
+       ]
+      },
+      {
+       "code": "PUBLIC_ESTABLISHMENT",
+       "aliases": [
+        "PUBLIC_ENTITY"
+       ]
+      },
+      {
+       "code": "RELIGIOUS_ORGANIZATION",
+       "label_en": "Religious organisation",
+       "label_fr": "Organisation religieuse",
+       "aliases": [
+        "RELIGIOUS_ORGANISATION"
+       ]
+      },
+      {
+       "code": "TRUST_OR_SIMILAR",
+       "label_en": "Trust or similar arrangement",
+       "label_fr": "Trust ou construction juridique similaire",
+       "aliases": [
+        "TRUST"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "property",
+   "lists": [
+    {
+     "code": "property_type",
+     "values": [
+      {
+       "code": "APARTMENT_BUILDING",
+       "aliases": [
+        "APARTMENT"
+       ]
+      },
+      {
+       "code": "OFFICE_BUILDING",
+       "aliases": [
+        "OFFICE"
+       ]
+      },
+      {
+       "code": "SHOP_RETAIL_PREMISES",
+       "aliases": [
+        "SHOP"
+       ]
+      },
+      {
+       "code": "FACTORY_INDUSTRIAL_PLANT",
+       "aliases": [
+        "FACTORY"
+       ]
+      },
+      {
+       "code": "HOSPITAL_CLINIC",
+       "aliases": [
+        "HOSPITAL"
+       ]
+      },
+      {
+       "code": "PLACE_OF_WORSHIP",
+       "aliases": [
+        "RELIGIOUS_BUILDING"
+       ]
+      },
+      {
+       "code": "MIXED_USE_BUILDING",
+       "aliases": [
+        "MIXED_USE"
+       ]
+      }
+     ]
+    },
+    {
+     "code": "occupancy",
+     "values": [
+      {
+       "code": "TENANTED",
+       "aliases": [
+        "TENANT_OCCUPIED"
+       ]
+      },
+      {
+       "code": "COMMERCIAL",
+       "label_en": "Commercial occupancy",
+       "label_fr": "Occupation commerciale"
+      },
+      {
+       "code": "INDUSTRIAL",
+       "label_en": "Industrial occupancy",
+       "label_fr": "Occupation industrielle"
+      },
+      {
+       "code": "MIXED",
+       "label_en": "Mixed occupancy",
+       "label_fr": "Occupation mixte"
+      }
+     ]
+    },
+    {
+     "code": "construction_material",
+     "values": [
+      {
+       "code": "CONCRETE",
+       "aliases": [
+        "REINFORCED_CONCRETE"
+       ]
+      },
+      {
+       "code": "CONCRETE_BLOCK",
+       "aliases": [
+        "BLOCK"
+       ]
+      },
+      {
+       "code": "TIMBER",
+       "aliases": [
+        "WOOD"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "cargo",
+   "lists": [
+    {
+     "code": "transport_mode",
+     "values": [
+      {
+       "code": "INLAND_WATER",
+       "aliases": [
+        "INLAND_WATERWAY"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "construction",
+   "lists": [
+    {
+     "code": "engineering_hazard_class",
+     "label_en": "Engineering hazard class",
+     "label_fr": "Classe de risque technique (ingénierie)",
+     "structure_only": true,
+     "allow_other": true,
+     "note": "PENDING_SOURCE (owner workflow data master): no values until an owner-approved source is loaded.",
+     "values": []
+    }
+   ]
+  },
+  {
+   "code": "agriculture",
+   "lists": [
+    {
+     "code": "crop_variety",
+     "label_en": "Crop variety",
+     "label_fr": "Variété culturale",
+     "parent_list": "crop",
+     "structure_only": true,
+     "allow_other": true,
+     "note": "PENDING_SOURCE (owner workflow data master): no values until an owner-approved source is loaded.",
+     "values": []
+    }
+   ]
+  }
+ ],
+ "workflow_statuses": [
+  {
+   "owner_domain": "geography",
+   "owner_item": "regions",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "cameroon_region",
+   "note": "10 regions = existing Décret 2008/376 list; owner English names added as aliases.",
+   "mapping": {
+    "Adamawa": "ADAMAOUA",
+    "Centre": "CENTRE",
+    "East": "EST",
+    "Far North": "EXTREME_NORD",
+    "Littoral": "LITTORAL",
+    "North": "NORD",
+    "North-West": "NORD_OUEST",
+    "West": "OUEST",
+    "South": "SUD",
+    "South-West": "SUD_OUEST"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "hierarchy",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "admin_level",
+   "note": "DIVISION = cameroon_department, SUBDIVISION = cameroon_arrondissement, COUNCIL = cameroon_commune, CITY = city, LOCALITY = quarter.",
+   "mapping": {
+    "REGION": "cameroon_region",
+    "DIVISION": "cameroon_department",
+    "SUBDIVISION": "cameroon_arrondissement",
+    "COUNCIL": "cameroon_commune",
+    "CITY": "city",
+    "LOCALITY": "quarter"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "cemac_countries",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "country",
+   "note": "Existing ISO country values already carry attributes.cemac = true for CM, CF, TD, CG, GQ, GA.",
+   "mapping": {
+    "codes": [
+     "CM",
+     "CF",
+     "TD",
+     "CG",
+     "GQ",
+     "GA"
+    ],
+    "attribute": "cemac"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "full_administrative_dataset",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "cameroon_arrondissement",
+   "note": "Subdivisions, councils and localities are not loaded (lists cameroon_arrondissement, cameroon_commune, quarter stay structure-only). Regions and 58 divisions are loaded."
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "hazard_zones",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "location_risk_zone",
+   "note": "No place-to-hazard-zone dataset. location_risk_zone is a scale only; carrier mappings decide zones."
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "public_holidays",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "EXTERNAL",
+   "note": "Public holidays belong to SLA calendars (case engine business-hours calendar), not to a master-data list; no dates are invented here."
+  },
+  {
+   "owner_domain": "party_roles",
+   "owner_item": "values",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "PARTY_ROLES",
+   "note": "Merged into PartyRoleService::ROLES; CIMA codes stay NULL (UNVERIFIED).",
+   "mapping": {
+    "OWNER": "OWNER (VEHICLE_OWNER is the motor specialisation)",
+    "PAYEE": "PAYEE (LOSS_PAYEE is the claims specialisation)",
+    "LIFE_ASSURED": "platform role kept (INSURED on life contracts)"
+   }
+  },
+  {
+   "owner_domain": "beneficiary_relationships",
+   "owner_item": "values",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "persons",
+   "list": "relationship",
+   "note": "Canonical list persons.relationship (specialty life_insurance.relationship is the life-product subset). Added OTHER_RELATIVE, TRUST, ORGANIZATION."
+  },
+  {
+   "owner_domain": "legal_entity_types",
+   "owner_item": "values",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "organizations",
+   "list": "legal_entity_type",
+   "note": "OHADA legal forms kept; PARTNERSHIP -> SNC (general partnership; SCS stays separate), PUBLIC_ENTITY -> PUBLIC_ESTABLISHMENT. Added RELIGIOUS_ORGANIZATION, TRUST_OR_SIMILAR.",
+   "mapping": {
+    "PARTNERSHIP": "SNC",
+    "PUBLIC_ENTITY": "PUBLIC_ESTABLISHMENT"
+   }
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "occupation_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "occupations",
+   "list": "occupation",
+   "values_status": "UNVERIFIED",
+   "note": "Existing platform occupations kept for pickers but flagged UNVERIFIED until the owner supplies a source. ISCO-08 sector/family groups keep their INDUSTRY provenance."
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "industry_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "industries",
+   "list": "activity",
+   "values_status": "UNVERIFIED",
+   "note": "Existing industry sectors/activities kept, flagged UNVERIFIED. ISIC Rev.4 sections keep their INDUSTRY provenance."
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "business_activity_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "public_liability",
+   "list": "business_activity",
+   "values_status": "UNVERIFIED",
+   "note": "Existing business activity list kept, flagged UNVERIFIED."
+  },
+  {
+   "owner_domain": "vehicles",
+   "owner_item": "curated_make_model_master",
+   "owner_status": "PARTIALLY_COMPLETE",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "VEHICLE_MASTER",
+   "note": "Curated make/model master (vehicle_makes / vehicle_models) is partially complete; gaps go through the vehicle review queue."
+  },
+  {
+   "owner_domain": "vehicles",
+   "owner_item": "detailed_generation_variant",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "VEHICLE_MASTER",
+   "note": "vehicle_generations / vehicle_variants: no owner-approved dataset; pickers return an empty list and Other / Not listed."
+  },
+  {
+   "owner_domain": "vehicles",
+   "owner_item": "usage_classes",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "VEHICLE_MASTER",
+   "domain": "vehicle",
+   "list": "usage",
+   "note": "Owner usage classes resolve onto the 28 canonical vehicle usages (VehicleMasterSource::LEGACY_CODES). Motorcycle usages combine vehicle_class MOTORCYCLE with the usage.",
+   "mapping": {
+    "PRIVATE": "PRIVATE_PERSONAL",
+    "TAXI": "TAXI",
+    "RIDE_HAILING": "RIDE_HAILING",
+    "COMMERCIAL_PASSENGER": "PUBLIC_TRANSPORT",
+    "GOODS_TRANSPORT": "GOODS_TRANSPORT",
+    "SCHOOL_TRANSPORT": "SCHOOL_TRANSPORT",
+    "AMBULANCE": "AMBULANCE",
+    "GOVERNMENT": "GOVERNMENT",
+    "CORPORATE": "COMPANY",
+    "FLEET": "FLEET",
+    "MOTORCYCLE_PRIVATE": "PRIVATE_PERSONAL",
+    "MOTORCYCLE_COMMERCIAL": "COMMERCIAL",
+    "OTHER": "OTHER (review queue)",
+    "unmapped": [
+     "SPECIAL_PURPOSE"
+    ]
+   }
+  },
+  {
+   "owner_domain": "vehicles",
+   "owner_item": "manual_fallback",
+   "owner_status": "PENDING_MASTER_REVIEW",
+   "status": "UNVERIFIED",
+   "target": "VEHICLE_MASTER",
+   "note": "Manually typed makes/models stay UNVERIFIED in vehicle_master_review_queue until a master-data reviewer approves them."
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "property_types",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "property",
+   "list": "property_type",
+   "mapping": {
+    "APARTMENT": "APARTMENT_BUILDING",
+    "OFFICE": "OFFICE_BUILDING",
+    "SHOP": "SHOP_RETAIL_PREMISES",
+    "FACTORY": "FACTORY_INDUSTRIAL_PLANT",
+    "HOSPITAL": "HOSPITAL_CLINIC",
+    "RELIGIOUS_BUILDING": "PLACE_OF_WORSHIP",
+    "MIXED_USE": "MIXED_USE_BUILDING"
+   }
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "occupancy_types",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "property",
+   "list": "occupancy",
+   "note": "COMMERCIAL, INDUSTRIAL and MIXED added.",
+   "mapping": {
+    "TENANT_OCCUPIED": "TENANTED"
+   }
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "construction_materials",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "property",
+   "list": "construction_material",
+   "mapping": {
+    "REINFORCED_CONCRETE": "CONCRETE",
+    "BLOCK": "CONCRETE_BLOCK",
+    "WOOD": "TIMBER"
+   }
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "machinery_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "construction",
+   "list": "site_machinery",
+   "values_status": "UNVERIFIED",
+   "note": "Existing site machinery kept, flagged UNVERIFIED."
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "construction_project_types",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "construction",
+   "list": "project_type",
+   "values_status": "UNVERIFIED",
+   "note": "Existing project types kept, flagged UNVERIFIED."
+  },
+  {
+   "owner_domain": "property_engineering",
+   "owner_item": "engineering_hazard_classes",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "construction",
+   "list": "engineering_hazard_class",
+   "note": "Empty placeholder list."
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "incoterms",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "incoterm",
+   "note": "All 11 Incoterms 2020 already present."
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "transport_modes",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "transport_mode",
+   "mapping": {
+    "INLAND_WATERWAY": "INLAND_WATER"
+   }
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "cargo_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "cargo_category",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "packaging_catalogue",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "packaging",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "port_location_master",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "port",
+   "values_status": "UNVERIFIED",
+   "note": "cargo.port / cargo.airport carry a few well-known identifiers only."
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "crop_master",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "crop",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "crop_variety",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "crop_variety",
+   "note": "Empty placeholder list (child of agriculture.crop)."
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "livestock_species",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "animal_type",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "breed_master",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "breed",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "farm_types",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "farm_type",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "agri_hazard",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "weather_exposure",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "fisheries_aquaculture",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "fisheries",
+   "list": "species",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "aircraft_make_model",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "model",
+   "values_status": "UNVERIFIED",
+   "note": "Also aviation_insurance.manufacturer and reference aviation.manufacturer (overlapping lists)."
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "aircraft_categories",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "aircraft_category",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "usage_types",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "aircraft_use",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "airport_master",
+   "owner_status": "PENDING_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "airport",
+   "values_status": "UNVERIFIED"
+  }
+ ]
+}

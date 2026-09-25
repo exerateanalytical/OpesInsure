@@ -8,11 +8,12 @@ use App\Models\Regulatory\Concerns\ProtectsSeededRegulatoryData;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
+/** Canonical CIMA branch (`insurance_branches`, ADR-003 amendment 2026-09-25); `regulatory_branches` is a compatibility view. */
 final class RegulatoryBranch extends Model
 {
     use HasUuids, ProtectsSeededRegulatoryData;
 
-    protected $table = 'regulatory_branches';
+    protected $table = 'insurance_branches';
 
     protected $guarded = ['id'];
 

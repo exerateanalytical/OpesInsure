@@ -16,7 +16,12 @@ Route::prefix('v1/kyc')->middleware(['auth:api', 'tenant', 'json.api'])->group(f
         Route::get('expiring', [KycController::class, 'expiring']);
         Route::get('requirements', [KycController::class, 'requirements']);
         Route::get('parties/{party}/status', [KycController::class, 'partyStatus'])->whereUuid('party');
+        Route::get('risk-configuration', [KycController::class, 'riskConfiguration']);
     });
+    // Owner decision 27 — risk-based KYC, source of funds / wealth, rescreening (MANUAL_AUDITED).
+    Route::post('submissions/{submission}/risk-assessment', [KycController::class, 'riskAssessment'])->whereUuid('submission')->middleware('permission:kyc.review');
+    Route::post('submissions/{submission}/sources', [KycController::class, 'sources'])->whereUuid('submission')->middleware('permission:kyc.manage');
+    Route::post('submissions/{submission}/rescreen', [KycController::class, 'rescreen'])->whereUuid('submission')->middleware('permission:kyc.screen');
     Route::middleware('permission:kyc.manage')->group(function (): void {
         Route::post('parties/{party}/submissions', [KycController::class, 'open'])->whereUuid('party');
         Route::post('submissions/{submission}/documents', [KycController::class, 'attach'])->whereUuid('submission');

@@ -8,6 +8,8 @@ use App\Application\Kyc\KycGate;
 use App\Application\Kyc\KycRequirementService;
 use App\Application\Kyc\KycService;
 use App\Application\Kyc\Models\ScreeningCheck;
+use App\Application\Kyc\Risk\CustomerRiskRatingService;
+use App\Application\Kyc\Screening\ScreeningMode;
 use App\Domain\Tenancy\TenantContext;
 use App\Interfaces\Http\Errors\ApiProblemException;
 use App\Models\Document;
@@ -29,12 +31,12 @@ final class KycController
     public function index(Request $r): JsonResponse
     {
         $d = $r->validate(['status' => 'nullable|string|max:24', 'party_id' => 'nullable|uuid', 'subject_kind' => 'nullable|in:INDIVIDUAL,CORPORATE',
-            'kyc_level' => 'nullable|in:SIMPLIFIED,STANDARD,ENHANCED', 'per_page' => 'nullable|integer|min:1|max:100']);
+            'kyc_level' => 'nullable|in:SIMPLIFIED,BASIC,STANDARD,ENHANCED', 'per_page' => 'nullable|integer|min:1|max:100']);
         $page = KycSubmission::where('tenant_id', $this->tenant())
             ->when($d['status'] ?? null, fn ($q, $v) => $q->where('status', strtoupper($v)))
             ->when($d['party_id'] ?? null, fn ($q, $v) => $q->where('party_id', $v))
             ->when($d['subject_kind'] ?? null, fn ($q, $v) => $q->where('subject_kind', $v))
-            ->when($d['kyc_level'] ?? null, fn ($q, $v) => $q->where('kyc_level', $v))
+            ->when($d['kyc_level'] ?? null, fn ($q, $v) => $q->where('kyc_level', \App\Application\Kyc\KycRequirementService::normalizeLevel($v)))
             ->orderByRaw('submitted_at NULLS LAST')->orderBy('created_at')
             ->paginate($d['per_page'] ?? 25, ['id', 'party_id', 'status', 'subject_kind', 'kyc_level', 'screening_status', 'case_id', 'submitted_at', 'approved_at', 'expires_at', 'created_at']);
 
@@ -120,6 +122,49 @@ final class KycController
         $c = ScreeningCheck::where('tenant_id', $s->tenant_id)->whereKey($check)->first() ?? throw new ApiProblemException('SCREENING_NOT_FOUND', 404, 'Screening check not found.');
 
         return $this->ok($this->kyc->recordScreening($s, $c, $d, $r->user()));
+    }
+
+    /** Owner decision 27: reviewer inputs for the customer risk rating (country, products, channel, declared factors). */
+    public function riskAssessment(Request $r, string $submission): JsonResponse
+    {
+        $d = $r->validate(['country_code' => 'nullable|string|size:2', 'product_codes' => 'nullable|array|max:50', 'product_codes.*' => 'string|max:64',
+            'channel' => 'nullable|string|max:40', 'customer_type' => 'nullable|in:INDIVIDUAL,CORPORATE', 'declared_factors' => 'nullable|array|max:20',
+            'declared_factors.*' => 'string|max:64', 'reason' => 'required|string|max:500']);
+        $inputs = array_filter(['country_code' => isset($d['country_code']) ? strtoupper($d['country_code']) : null, 'product_codes' => $d['product_codes'] ?? null,
+            'channel' => isset($d['channel']) ? strtoupper($d['channel']) : null, 'customer_type' => $d['customer_type'] ?? null, 'declared_factors' => $d['declared_factors'] ?? null],
+            fn ($v) => $v !== null);
+
+        return $this->ok($this->kyc->assessRisk($this->find($submission), $inputs, $d['reason'], $r->user()));
+    }
+
+    /** Source of funds / source of wealth declarations (with evidence documents of the KYC subject). */
+    public function sources(Request $r, string $submission): JsonResponse
+    {
+        $rules = [];
+        foreach (['source_of_funds', 'source_of_wealth'] as $k) {
+            $rules += ["{$k}" => 'nullable|array', "{$k}.description" => "required_with:{$k}|string|max:2000", "{$k}.origin" => 'nullable|string|max:120',
+                "{$k}.evidence_document_ids" => 'nullable|array|max:20', "{$k}.evidence_document_ids.*" => 'uuid'];
+        }
+        $d = $r->validate($rules + ['reason' => 'required|string|max:500']);
+        if (empty($d['source_of_funds']) && empty($d['source_of_wealth'])) {
+            throw new ApiProblemException('VALIDATION_FAILED', 422, 'Provide source_of_funds and/or source_of_wealth.');
+        }
+
+        return $this->ok($this->kyc->declareSources($this->find($submission), $d['source_of_funds'] ?? null, $d['source_of_wealth'] ?? null, $d['reason'], $r->user()));
+    }
+
+    public function rescreen(Request $r, string $submission): JsonResponse
+    {
+        $d = $r->validate(['reason' => 'required|string|max:500']);
+
+        return $this->ok($this->kyc->rescreen($this->find($submission), 'MANUAL_RESCREEN', $d['reason'], $r->user()), 201);
+    }
+
+    /** Effective risk-based KYC configuration for the tenant; NULL values are UNVERIFIED (not configured). */
+    public function riskConfiguration(CustomerRiskRatingService $risk): JsonResponse
+    {
+        return response()->json(['data' => ['risk' => $risk->configuration($this->tenant()), 'screening' => ScreeningMode::describe(),
+            'basis' => 'OWNER_DECISION_2026-09-25#27', 'null_means' => 'UNVERIFIED — not configured by the owner / compliance']]);
     }
 
     public function recommend(Request $r, string $submission): JsonResponse

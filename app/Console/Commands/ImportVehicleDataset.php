@@ -17,6 +17,7 @@ use Throwable;
  * adapted databases; upstream autoevolution.com). A real import needs
  * --accept-license, i.e. someone accountable has approved those terms.
  * --dry-run needs no acceptance and rolls everything back.
+ * Owner decision 20: a real import is hard-disabled unless config('vehicles.global_dataset_import_enabled').
  */
 final class ImportVehicleDataset extends Command
 {
@@ -36,6 +37,11 @@ final class ImportVehicleDataset extends Command
             return self::INVALID;
         }
         $dry = (bool) $this->option('dry-run');
+        if (! $dry && ! VehicleDatasetImporter::enabled()) {
+            $this->error(VehicleDatasetImporter::DISABLED_MESSAGE);
+
+            return self::FAILURE;
+        }
         if (! $dry && ! $this->option('accept-license')) {
             $this->error('The dataset is licensed ODbL v1.0 (attribution + share-alike). Re-run with --accept-license once that is approved, or use --dry-run.');
 

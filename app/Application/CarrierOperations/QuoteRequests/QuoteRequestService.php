@@ -76,6 +76,8 @@ final class QuoteRequestService
                 'title' => "Manual quotation {$request->request_number} ({$quote->line_code})",
                 'subject_type' => 'carrier_quote_request', 'subject_id' => $request->id, 'carrier_id' => $carrier->id,
                 'source_type' => 'carrier_quote_request', 'source_id' => $request->id, 'idempotency_key' => 'cqr:'.$request->id,
+                // Owner decision #32: SLA overrides may be scoped by product (and insurer via carrier_id).
+                'product_id' => $productId, 'domain_reference' => 'quote:'.$quote->id,
             ], $actor);
             $request->update(['case_id' => $case->id, 'response_due_at' => $case->due_at]);
 

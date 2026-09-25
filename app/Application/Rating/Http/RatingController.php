@@ -83,7 +83,7 @@ final class RatingController
             'code' => [Rule::requiredIf($kind === 'fee'), 'nullable', 'string', 'max:64'], 'tenant_id' => 'nullable|uuid|exists:tenants,id',
             'effective_from' => 'required|date', 'effective_until' => 'nullable|date|after_or_equal:effective_from',
             'rules' => 'required|array', 'rules.charges' => 'required|array|min:1',
-            'data_status' => 'nullable|in:DEMO_UNVERIFIED,OWNER_CONFIRMED', 'source_reference' => 'nullable|string|max:255',
+            'data_status' => 'nullable|in:DEMO_UNVERIFIED,OWNER_CONFIRMED', 'source_reference' => 'nullable|string|max:255', 'legal_basis' => 'nullable|string|max:2000',
         ]);
 
         return response()->json(['data' => $s->create($kind, $d, $r->user())], 201);
@@ -92,6 +92,21 @@ final class RatingController
     public function approveChargeTable(Request $r, string $kind, string $id, ChargeTableService $s): JsonResponse
     {
         return response()->json(['data' => $s->approve($kind, $id, $r->user())]);
+    }
+
+    public function requestChargeVerification(Request $r, string $kind, string $id, ChargeTableService $s): JsonResponse
+    {
+        $d = $r->validate(['legal_basis' => 'required|string|min:5|max:2000', 'source_reference' => 'required|string|max:255',
+            'source_document' => 'nullable|string|max:500', 'notes' => 'nullable|string|max:2000']);
+
+        return response()->json(['data' => $s->requestVerification($kind, $id, $d, $r->user())]);
+    }
+
+    public function decideChargeVerification(Request $r, string $kind, string $id, ChargeTableService $s): JsonResponse
+    {
+        $d = $r->validate(['decision' => 'required|in:CONFIRM,REJECT', 'notes' => 'required|string|min:10|max:2000']);
+
+        return response()->json(['data' => $s->decideVerification($kind, $id, $d['decision'] === 'CONFIRM', $d['notes'], $r->user())]);
     }
 
     public function run(string $run): JsonResponse

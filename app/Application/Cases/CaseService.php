@@ -69,6 +69,7 @@ final class CaseService
             }
         }
         $type = $this->effectiveType($typeCode);
+        $this->assertSubtype($type, $attrs['case_subtype'] ?? null);
         $confidentiality = $this->confidentiality($type->default_confidentiality, $attrs['confidentiality'] ?? null);
 
         return DB::transaction(function () use ($tenantId, $type, $attrs, $actor, $confidentiality) {
@@ -93,6 +94,9 @@ final class CaseService
                 'parent_case_id' => $attrs['parent_case_id'] ?? null, 'owner_user_id' => $routing['owner_user_id'], 'queue_id' => $routing['queue_id'],
                 'branch_id' => $attrs['branch_id'] ?? null, 'jurisdiction' => $attrs['jurisdiction'] ?? 'CM',
                 'source_type' => $attrs['source_type'] ?? null, 'source_id' => $attrs['source_id'] ?? null,
+                // Owner decision #13: case_family + case_type + case_subtype + domain_reference.
+                'case_family' => $type->family_code, 'case_subtype' => $attrs['case_subtype'] ?? null, 'product_id' => $attrs['product_id'] ?? null,
+                'domain_reference' => $attrs['domain_reference'] ?? $this->domainReference($attrs),
                 'opened_at' => $now, 'opened_by' => $actor?->id, 'idempotency_key' => $attrs['idempotency_key'] ?? null,
             ]);
             $this->journal->event($case, 'OPENED', ['case_type_version' => $type->version, 'confidentiality' => $confidentiality], null, $case->status, $actor?->id);
@@ -106,6 +110,38 @@ final class CaseService
             }
 
             return $case->refresh();
+        });
+    }
+
+    /**
+     * Owner decisions #13 / #32: change a case's sub-type (e.g. a manual quote becomes COMPLEX or REFERRED);
+     * running SLA clocks are re-targeted from the resolved policies. Audited, reason required.
+     *
+     * @return array{case: WorkCase, retargeted: list<array{metric: string, from: int, to: int}>}
+     */
+    public function reclassify(WorkCase $case, ?string $subtype, ?User $actor, string $reason): array
+    {
+        if (trim($reason) === '') {
+            throw CaseProblem::make('REASON_REQUIRED', 422, 'A reason is required to change the case sub-type.');
+        }
+
+        return DB::transaction(function () use ($case, $subtype, $actor, $reason) {
+            $case = $this->lock($case->id);
+            if ($case->closed_at !== null) {
+                throw CaseProblem::make('CASE_CLOSED', 409, 'A closed case cannot be reclassified.');
+            }
+            $type = CaseType::findOrFail($case->case_type_id);
+            $this->assertSubtype($type, $subtype);
+            $from = $case->case_subtype;
+            if ($from === $subtype) {
+                return ['case' => $case, 'retargeted' => []];
+            }
+            $case->update(['case_subtype' => $subtype, 'version' => $case->version + 1]);
+            $this->journal->event($case, 'RECLASSIFIED', ['from' => $from, 'to' => $subtype, 'reason' => $reason], null, null, $actor?->id);
+            $changed = $this->sla->retarget($case, $type);
+            $this->journal->audit('case.reclassified', $case, ['from' => $from, 'to' => $subtype, 'retargeted' => $changed]);
+
+            return ['case' => $case->refresh(), 'retargeted' => $changed];
         });
     }
 
@@ -197,7 +233,7 @@ final class CaseService
 
         return DB::transaction(function () use ($queue, $actor) {
             $id = WorkCase::query()->where('queue_id', $queue->id)->whereNull('owner_user_id')->whereNull('closed_at')
-                ->orderByRaw("CASE priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 ELSE 3 END")
+                ->orderByRaw("CASE priority WHEN 'CRITICAL' THEN -1 WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 ELSE 3 END")
                 ->orderByRaw('due_at NULLS LAST')->orderBy('opened_at')->lock('FOR UPDATE SKIP LOCKED')->value('id');
             if (! $id) {
                 return null;
@@ -347,5 +383,25 @@ final class CaseService
         if (! WorkQueue::whereKey($queueId)->where('tenant_id', $tenantId)->where('active', true)->exists()) {
             throw CaseProblem::make('QUEUE_NOT_FOUND', 422, 'The queue is not an active queue of the case tenant.');
         }
+    }
+
+    private function assertSubtype(CaseType $type, ?string $subtype): void
+    {
+        $allowed = $type->subtypes ?? [];
+        if ($subtype !== null && $allowed !== [] && ! in_array($subtype, $allowed, true)) {
+            throw CaseProblem::make('CASE_SUBTYPE_INVALID', 422, "Sub-type {$subtype} is not defined for {$type->code}.", ['allowed' => $allowed]);
+        }
+    }
+
+    /** @param array<string, mixed> $attrs */
+    private function domainReference(array $attrs): ?string
+    {
+        foreach ([['source_type', 'source_id'], ['subject_type', 'subject_id']] as [$t, $id]) {
+            if (! empty($attrs[$t]) && ! empty($attrs[$id])) {
+                return $attrs[$t].':'.$attrs[$id];
+            }
+        }
+
+        return null;
     }
 }

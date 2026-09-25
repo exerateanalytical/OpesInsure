@@ -18,7 +18,10 @@ final class VehicleUsageMapper
 
     public static function toUsageType(string $usage): string
     {
-        return in_array(strtoupper($usage), self::PRIVATE_USAGES, true) ? 'PRIVATE' : 'COMMERCIAL';
+        // Legacy / owner workflow codes (PRIVATE, MOTORCYCLE_PRIVATE, CORPORATE, …) resolve to the canonical usage first.
+        $canonical = \App\Application\MasterData\VehicleMasterSource::canonical('usage', strtoupper($usage));
+
+        return in_array($canonical, self::PRIVATE_USAGES, true) ? 'PRIVATE' : 'COMMERCIAL';
     }
 
     /**

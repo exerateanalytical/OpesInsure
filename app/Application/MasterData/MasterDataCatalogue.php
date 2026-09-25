@@ -36,6 +36,7 @@ final class MasterDataCatalogue
                 ->orderBy('sort_order')->orderBy('label_en')->get()->groupBy('list_id');
             $aliases = DB::table('master_data_aliases as a')->join('master_data_values as v', 'v.id', '=', 'a.value_id')->where('v.domain_code', $code)->whereNull('a.tenant_id')
                 ->get(['a.value_id', 'a.alias'])->groupBy('value_id');
+            $statuses = app(WorkflowDataStatuses::class)->byList();
 
             return [
                 'code' => $d->code, 'label' => ['en' => $d->label_en, 'fr' => $d->label_fr], 'number' => $d->number,
@@ -45,6 +46,9 @@ final class MasterDataCatalogue
                     'code' => $l->code, 'label' => ['en' => $l->label_en, 'fr' => $l->label_fr], 'parent_list' => $l->parent_list_code,
                     'selection' => $l->selection, 'allow_other' => (bool) $l->allow_other, 'structure_only' => (bool) $l->structure_only,
                     'source_type' => $l->source_type, 'source_reference' => $l->source_reference, 'version' => $l->version, 'note' => $l->note,
+                    // Owner workflow data master status (PENDING_SOURCE lists may be empty; pickers still offer Other / Not listed).
+                    'data_status' => $statuses[$code.'.'.$l->code]['status'] ?? null,
+                    'values_status' => $statuses[$code.'.'.$l->code]['values_status'] ?? null,
                     'values' => ($values[$l->id] ?? collect())->map(fn ($v) => $this->present($v, $aliases[$v->id] ?? null))->values()->all(),
                 ])->all(),
             ];

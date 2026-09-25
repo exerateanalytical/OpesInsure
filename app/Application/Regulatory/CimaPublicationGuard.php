@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Regulatory;
 
 use App\Models\InsuranceProduct;
+use App\Models\Regulatory\LegacyProductAuthorization;
 use App\Models\Regulatory\ProductRegulatoryMapping;
 use App\Models\Regulatory\RegulatoryBranch;
 use App\Models\Regulatory\RegulatoryRegime;
@@ -19,6 +20,11 @@ use Illuminate\Validation\ValidationException;
  * authorization, except that branches 14/15 (accessory_allowed = false) can
  * never be accessory (Article 328-1). Class default mappings are applied
  * automatically first, so onboarding only needs the insurer authorization.
+ *
+ * Owner decisions 2026-09-25: item 7 — unknown authorization is BLOCK_NEW_PRODUCT_PUBLICATION, never a warning.
+ * Item 8 — a product already live is LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION: its versions may keep the
+ * branches (and family) it was already selling, but never a new branch, an expansion into another branch, a new
+ * product family, or a regulatory claim.
  */
 final class CimaPublicationGuard
 {
@@ -91,11 +97,59 @@ final class CimaPublicationGuard
                 $out[] = "Publication blocked: {$title} is mapped as COMPLEMENTARY but the product has no PRIMARY life branch that allows complementary covers (branches 20/21).";
             }
             if (! $this->authorizations->isAuthorized($product->carrier_id, $b->code)) {
-                $out[] = "Publication blocked: insurer not authorized for {$title}. Record the insurer's CIMA authorization for branch {$b->number} in Insurer setup.";
+                $out[] = $this->unauthorizedReason($product, $b->code, $title, (int) $b->number);
             }
         }
 
-        return array_values(array_unique($out));
+        return array_values(array_unique(array_filter($out)));
+    }
+
+    public const AUTHORIZED = 'AUTHORIZED';
+
+    public const BLOCKED = 'BLOCK_NEW_PRODUCT_PUBLICATION';
+
+    /** Item 7/8 status of the product's insurer authorization: AUTHORIZED | LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION | BLOCK_NEW_PRODUCT_PUBLICATION. */
+    public function authorizationStatus(InsuranceProduct $product): string
+    {
+        $unauthorized = $this->activeMappings($product)->whereIn('relationship_type', ['PRIMARY', 'COMPLEMENTARY'])->pluck('branch_code')->unique()
+            ->reject(fn ($code) => $this->authorizations->isAuthorized($product->carrier_id, $code));
+        if ($unauthorized->isEmpty()) {
+            return self::AUTHORIZED;
+        }
+        $legacy = $this->legacyRecord($product);
+
+        return $legacy && $unauthorized->diff($legacy->branch_codes)->isEmpty() ? LegacyProductAuthorization::STATUS : self::BLOCKED;
+    }
+
+    /** Item 8: legacy products can never back a regulatory claim (compliance attestations, regulatory exports). */
+    public function regulatoryClaimsAllowed(InsuranceProduct $product): bool
+    {
+        return $this->authorizationStatus($product) === self::AUTHORIZED;
+    }
+
+    /** The open legacy record covering this product (itself, or an earlier live version with the same carrier and code). */
+    public function legacyRecord(InsuranceProduct $product): ?LegacyProductAuthorization
+    {
+        return LegacyProductAuthorization::where('status', LegacyProductAuthorization::STATUS)
+            ->where(fn ($q) => $q->where('insurance_product_id', $product->id)->orWhere(fn ($w) => $w->where('carrier_id', $product->carrier_id)->where('product_code', $product->code)))
+            ->orderBy('recorded_at')->first();
+    }
+
+    private function unauthorizedReason(InsuranceProduct $product, string $branchCode, string $title, int $number): ?string
+    {
+        $legacy = $this->legacyRecord($product);
+        if ($legacy === null) {
+            return "Publication blocked (BLOCK_NEW_PRODUCT_PUBLICATION): insurer not authorized for {$title}. Record the insurer's CIMA authorization for branch {$number} in Insurer setup.";
+        }
+        if (! in_array($branchCode, (array) $legacy->branch_codes, true)) {
+            return "Publication blocked: {$title} is a new branch for a product whose authorization is LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION; record a verified CIMA authorization for branch {$number} first.";
+        }
+        $family = $product->carrierProduct?->product_family_id;
+        if ($legacy->product_family_id !== null && $family !== null && $family !== $legacy->product_family_id) {
+            return "Publication blocked: a new product family is not permitted while the authorization is LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION.";
+        }
+
+        return null;
     }
 
     /** @return Collection<int, ProductRegulatoryMapping> */

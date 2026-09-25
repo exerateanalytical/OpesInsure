@@ -29,12 +29,13 @@ final class SlaService
         private readonly BusinessHoursCalendar $calendar,
         private readonly CaseJournal $journal,
         private readonly Clock $clock,
+        private readonly SlaPolicyResolver $policies,
     ) {}
 
     public function start(WorkCase $case, CaseType $type): void
     {
         $now = $this->clock->now();
-        foreach ($type->sla_policies ?? [] as $p) {
+        foreach ($this->policies->resolve($case, $type) as $p) {
             $metric = (string) $p['metric'];
             if (str_starts_with($metric, 'STAGE:') && substr($metric, 6) !== $case->status) {
                 continue;
@@ -89,7 +90,7 @@ final class SlaService
         }
 
         // 3) stage clocks entering $to
-        foreach ($type->sla_policies ?? [] as $p) {
+        foreach ($this->policies->resolve($case, $type) as $p) {
             if (($p['metric'] ?? null) !== 'STAGE:'.$to || $from === $to) {
                 continue;
             }
@@ -100,6 +101,43 @@ final class SlaService
             $this->createClock($case, $p, $now);
         }
         $this->syncCaseDue($case);
+    }
+
+    /**
+     * Re-applies the resolved targets to the case's running clocks (case_subtype changed, e.g. a manual quote
+     * became COMPLEX/REFERRED). Started-at and paused time are kept; only the target moves.
+     *
+     * @return list<array{metric: string, from: int, to: int}>
+     */
+    public function retarget(WorkCase $case, CaseType $type): array
+    {
+        $changed = [];
+        $resolved = $this->policies->resolve($case, $type);
+        foreach (SlaClock::where('case_id', $case->id)->whereNull('stopped_at')->lockForUpdate()->get() as $c) {
+            $p = $resolved[$c->metric] ?? null;
+            if ($p === null) {
+                continue;
+            }
+            $target = $this->targetMinutes($case, $p, $c->started_at);
+            if ($target === $c->target_business_minutes && ($p['source'] ?? null) === $c->policy_source) {
+                continue;
+            }
+            $paused = $c->paused_total_business_minutes;
+            $changed[] = ['metric' => $c->metric, 'from' => $c->target_business_minutes, 'to' => $target];
+            $c->update([
+                'target_business_minutes' => $target, 'warn_at_pct' => (int) ($p['warn_at_pct'] ?? $c->warn_at_pct),
+                'deadline_label' => $p['label'] ?? 'PLATFORM_SLA', 'legal_basis' => $p['legal_basis'] ?? null, 'policy_source' => $p['source'] ?? null,
+                'due_at' => $this->due($case, $c->started_at, $target + $paused),
+                'warn_at' => $this->due($case, $c->started_at, (int) ceil($target * (int) ($p['warn_at_pct'] ?? $c->warn_at_pct) / 100) + $paused),
+            ]);
+            if ($c->due_at > $this->clock->now()) { // a later target re-arms the warning/breach markers
+                $c->update(['warned_at' => null, 'breached_at' => null]);
+            }
+            $this->journal->event($case, 'SLA_RETARGETED', ['metric' => $c->metric, 'target_business_minutes' => $target, 'due_at' => $c->due_at->toIso8601String(), 'source' => $p['source'] ?? null]);
+        }
+        $this->syncCaseDue($case);
+
+        return $changed;
     }
 
     /** Stops every running clock (case cancelled/closed). */
@@ -188,16 +226,27 @@ final class SlaService
     /** @param array<string, mixed> $p */
     private function createClock(WorkCase $case, array $p, CarbonImmutable $now): SlaClock
     {
-        $target = (int) $p['target_business_minutes'];
+        $target = $this->targetMinutes($case, $p, $now);
         $warnPct = (int) ($p['warn_at_pct'] ?? 80);
         $clock = SlaClock::create([
             'case_id' => $case->id, 'metric' => (string) $p['metric'], 'target_business_minutes' => $target, 'warn_at_pct' => $warnPct,
             'escalate_to' => $p['escalate_to'] ?? null, 'started_at' => $now, 'paused_total_business_minutes' => 0,
+            'deadline_label' => $p['label'] ?? 'PLATFORM_SLA', 'legal_basis' => $p['legal_basis'] ?? null, 'policy_source' => $p['source'] ?? null,
             'due_at' => $this->due($case, $now, $target), 'warn_at' => $this->due($case, $now, (int) ceil($target * $warnPct / 100)),
         ]);
-        $this->journal->event($case, 'SLA_STARTED', ['metric' => $clock->metric, 'due_at' => $clock->due_at->toIso8601String()]);
+        $this->journal->event($case, 'SLA_STARTED', ['metric' => $clock->metric, 'due_at' => $clock->due_at->toIso8601String(), 'label' => $clock->deadline_label, 'source' => $clock->policy_source]);
 
         return $clock;
+    }
+
+    /** Business minutes for a policy; business-day targets are converted from $start on the case's calendar. */
+    private function targetMinutes(WorkCase $case, array $p, \DateTimeInterface $start): int
+    {
+        if (! empty($p['target_business_days'])) {
+            return $this->calendar->businessDaysAsMinutes($start, (int) $p['target_business_days'], $case->jurisdiction, $case->branch_id, $this->tz($case));
+        }
+
+        return (int) $p['target_business_minutes'];
     }
 
     private function resume(WorkCase $case, SlaClock $c, \DateTimeInterface $since, CarbonImmutable $now): void

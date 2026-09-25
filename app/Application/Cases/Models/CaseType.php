@@ -16,7 +16,7 @@ final class CaseType extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['states' => 'array', 'transitions' => 'array', 'sla_policies' => 'array', 'auto_tasks' => 'array', 'regulated' => 'boolean', 'valid_from' => 'date', 'valid_to' => 'date', 'approved_at' => 'datetime'];
+    protected $casts = ['states' => 'array', 'transitions' => 'array', 'sla_policies' => 'array', 'auto_tasks' => 'array', 'subtypes' => 'array', 'regulated' => 'boolean', 'valid_from' => 'date', 'valid_to' => 'date', 'approved_at' => 'datetime'];
 
     /** @return array<string, array{terminal?: bool, pauses_sla?: bool, initial?: bool}> */
     public function stateMap(): array

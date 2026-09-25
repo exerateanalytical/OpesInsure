@@ -22,6 +22,9 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
         Route::get('charge-tables/{kind}', [RatingController::class, 'chargeTables'])->whereIn('kind', ['tax', 'fee'])->middleware('permission:rating.charges.view');
         Route::post('charge-tables/{kind}', [RatingController::class, 'storeChargeTable'])->whereIn('kind', ['tax', 'fee'])->middleware('permission:rating.charges.manage');
         Route::post('charge-tables/{kind}/{id}/approve', [RatingController::class, 'approveChargeTable'])->whereIn('kind', ['tax', 'fee'])->whereUuid('id')->middleware('permission:rating.charges.approve');
+        // Owner decision 10 — explicit maker-checker rate verification (DEMO/UNVERIFIED → OWNER_CONFIRMED).
+        Route::post('charge-tables/{kind}/{id}/verification', [RatingController::class, 'requestChargeVerification'])->whereIn('kind', ['tax', 'fee'])->whereUuid('id')->middleware('permission:rating.charges.manage');
+        Route::post('charge-tables/{kind}/{id}/verification/decide', [RatingController::class, 'decideChargeVerification'])->whereIn('kind', ['tax', 'fee'])->whereUuid('id')->middleware('permission:rating.charges.verify');
         Route::get('runs/{run}', [RatingController::class, 'run'])->whereUuid('run')->middleware('permission:rating.runs.view');
         Route::post('runs/{run}/reproduce', [RatingController::class, 'reproduce'])->whereUuid('run')->middleware('permission:rating.runs.view');
     });

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Application\Cases\Http\CaseAdminController;
+use App\Application\Cases\Http\CaseConfigurationController;
 use App\Application\Cases\Http\CaseController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,8 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
         Route::get('cases/{case}/diary', [CaseController::class, 'diary'])->whereUuid('case');
         Route::get('queues', [CaseController::class, 'queues']);
         Route::get('case-types', [CaseController::class, 'caseTypes']);
+        Route::get('case-families', [CaseConfigurationController::class, 'families']);
+        Route::get('cases/{case}/sla-policies', [CaseConfigurationController::class, 'slaPolicies'])->whereUuid('case');
     });
 
     Route::middleware('permission:cases.manage')->group(function (): void {
@@ -33,6 +36,7 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
         Route::post('cases/{case}/tasks/{task}/transitions', [CaseController::class, 'transitionTask'])->whereUuid('case')->whereUuid('task');
         Route::post('cases/{case}/diary', [CaseController::class, 'addDiary'])->whereUuid('case');
         Route::post('queues/{queue}/next', [CaseController::class, 'next'])->whereUuid('queue');
+        Route::post('cases/{case}/subtype', [CaseConfigurationController::class, 'reclassify'])->whereUuid('case');
     });
     Route::post('cases/{case}/assign', [CaseController::class, 'assign'])->whereUuid('case')->middleware('permission:cases.assign');
     Route::post('cases/{case}/decisions', [CaseController::class, 'decide'])->whereUuid('case')->middleware('permission:cases.decide');
@@ -44,6 +48,9 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
             Route::post('queues', [CaseAdminController::class, 'addQueue']);
             Route::post('queues/{queue}/members', [CaseAdminController::class, 'addMember'])->whereUuid('queue');
             Route::post('cases/links', [CaseController::class, 'link']);
+            Route::get('sla-overrides', [CaseConfigurationController::class, 'overrides']);
+            Route::post('sla-overrides', [CaseConfigurationController::class, 'addOverride']);
+            Route::post('sla-overrides/{id}/retire', [CaseConfigurationController::class, 'retireOverride'])->whereUuid('id');
         });
         Route::middleware('permission:cases.calendar.manage')->group(function (): void {
             Route::get('calendars/hours', [CaseAdminController::class, 'hours']);
@@ -52,6 +59,9 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
             Route::get('calendars/exceptions', [CaseAdminController::class, 'exceptions']);
             Route::post('calendars/exceptions', [CaseAdminController::class, 'addException']);
             Route::get('calendars/business-time', [CaseAdminController::class, 'businessTime']);
+            Route::get('calendars/breaks', [CaseConfigurationController::class, 'breaks']);
+            Route::post('calendars/breaks', [CaseConfigurationController::class, 'addBreak']);
+            Route::post('calendars/breaks/{id}/end', [CaseConfigurationController::class, 'endBreak'])->whereUuid('id');
         });
     });
 });

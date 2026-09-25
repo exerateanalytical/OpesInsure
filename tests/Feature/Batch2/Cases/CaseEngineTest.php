@@ -176,11 +176,13 @@ it('REQ-CAS-001: overdue tasks, due follow-ups and orphaned cases are flagged on
 
 // ---------------------------------------------------------------- types, versions, engine
 
-it('REQ-CAS-001: seeds the ICE 6.2 codes as sub-types with an UNVERIFIED blueprint family (OQ-6.4) and no invented SLA targets', function () {
+it('REQ-CAS-001: seeds the ICE 6.2 codes filed under reporting families (owner decision #13) and no invented SLA targets', function () {
     // Other domains add their own types (e.g. KYC_REVIEW, REQ-KYC-001); the ICE 6.2 seed itself stays 15.
+    // Owner decision #13 (2026-09-25) superseded OQ-6.4: every type sits in a case_families reporting family.
+    // Owner decision #32 gave CARRIER_QUOTE_REQUEST platform SLA defaults; no other type has invented targets.
     expect(CaseType::where('status', 'EFFECTIVE')->whereIn('code', array_keys(\App\Application\Cases\CaseTypeCatalogue::SEED))->count())->toBe(15)
-        ->and(CaseType::whereNotNull('family_code')->count())->toBe(0)
-        ->and(CaseType::where('sla_policies', '!=', '[]')->count())->toBe(0)
+        ->and(CaseType::whereNull('family_code')->count())->toBe(0)
+        ->and(CaseType::where('sla_policies', '!=', '[]')->pluck('code')->unique()->values()->all())->toBe(['CARRIER_QUOTE_REQUEST'])
         ->and(CaseType::where('code', 'STR')->value('default_confidentiality'))->toBe('STR_RESTRICTED')
         ->and(collect(CaseType::where('code', 'COMPLAINT')->first()->states)->pluck('code')->all())
         ->toContain('ESCALATED_NATIONAL', 'ESCALATED_CIMA');

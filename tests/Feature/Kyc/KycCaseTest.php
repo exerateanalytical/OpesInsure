@@ -89,7 +89,7 @@ it('REQ-KYC-001 REQ-DUP-007: mobile submit opens a KYC_REVIEW case with a risk-b
     $case = WorkCase::withoutGlobalScopes()->find($s->case_id);
     expect($case->case_type_code)->toBe('KYC_REVIEW')->and($case->status)->toBe('SUBMITTED')->and($case->subject_id)->toBe($id);
     expect(ScreeningCheck::where('subject_id', $id)->pluck('status', 'check_type')->all())->toBe(['SANCTIONS' => 'PENDING', 'PEP' => 'PENDING'])
-        ->and(ScreeningCheck::where('subject_id', $id)->value('provider'))->toBe('MANUAL');
+        ->and(ScreeningCheck::where('subject_id', $id)->value('provider'))->toBe('MANUAL_AUDITED');
 
     $show = kycAs($this->maker, 'GET', "kyc/submissions/{$id}")->assertOk();
     expect($show->json('data.missing_requirements'))->toBe([])

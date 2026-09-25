@@ -1,7 +1,8 @@
 {{-- Shared body for /privacy and /terms. Terms text reuses the mobile app's draft (mobile app/app/terms.tsx). --}}
 @include('public.partials.page-hero', ['title' => __($key.'.title'), 'lede' => __($key.'.lede')])
 <section><div class="wrap prose">
-  <div class="note" role="note"><span aria-hidden="true">&#9888;</span><span><strong>{{ __('site.common.draft') }}</strong><br>{{ __('site.common.draft_body') }}</span></div>
+  {{-- Owner decision 30: stays DRAFT_LEGAL_REVIEW_REQUIRED until counsel reviews the text. --}}
+  <div class="note" role="note" data-legal-status="DRAFT_LEGAL_REVIEW_REQUIRED"><span aria-hidden="true">&#9888;</span><span><strong>{{ __('site.common.draft') }}</strong> <code>DRAFT_LEGAL_REVIEW_REQUIRED</code><br>{{ __('site.common.draft_body') }}</span></div>
   <p style="margin-top:16px;color:var(--muted);font-size:14px">{{ __('site.common.updated', ['date' => '2026-09-25']) }}</p>
   @foreach(__($key.'.sections') as [$t, $d])
     <h2>{{ $t }}</h2><p>{{ $d }}</p>

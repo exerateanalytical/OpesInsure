@@ -47,6 +47,7 @@
       @foreach($entries as $p)
         <li data-kind="{{ $p['kind'] }}" data-branch="{{ $p['branch'] }}" data-city="{{ mb_strtolower((string) $p['city']) }}" data-search="{{ mb_strtolower($p['name'].' '.$p['short']) }}" @unless(isset($visible[$p['kind'].'|'.$p['name']])) hidden @endunless>
           @include('public.partials.wordmark', ['p' => $p, 'full' => true])
+          @include('public.partials.provider-details', ['p' => $p])
         </li>
       @endforeach
     </ul>

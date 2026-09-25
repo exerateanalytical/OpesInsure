@@ -55,6 +55,11 @@ function cimaProduct(Carrier $carrier, string $line = 'MOTOR', array $coverageCo
         'effective_from' => '2026-01-01', 'status' => $status, 'coverages' => [], 'eligibility_rules' => ['conditions' => []],
         'created_by' => ($creator ?? cimaUser())->id, 'regulatory_reference' => 'REF',
     ]);
+    if ($status === 'DRAFT') {
+        // These tests exercise the CIMA guard on the direct submit path, which owner decision 28 keeps open only to
+        // pre-cutover (LEGACY_GRANDFATHERED) versions.
+        DB::table('insurance_products')->where('id', $product->id)->update(['governance_mode' => 'LEGACY_GRANDFATHERED']);
+    }
     foreach ($coverageCodes as $i => $code) {
         $c = CoverageDefinition::firstOrCreate(['insurance_line_id' => $l->id, 'code' => $code], ['name' => ['en' => $code], 'description' => ['en' => $code], 'limit_type' => 'AMOUNT', 'mandatory' => false, 'status' => 'ACTIVE']);
         $product->coverageDefinitions()->attach($c->id, ['display_order' => $i, 'configuration' => '{}']);
@@ -161,7 +166,7 @@ it('blocks publication when the insurer is not authorized for a CIMA branch, wit
         app(CatalogueService::class)->submit($product, cimaUser(), 'ready');
         $this->fail('expected block');
     } catch (ValidationException $e) {
-        expect($e->errors()['cima'][0])->toBe("Publication blocked: insurer not authorized for CIMA branch 10 — Responsabilité civile véhicules terrestres automoteurs. Record the insurer's CIMA authorization for branch 10 in Insurer setup.");
+        expect($e->errors()['cima'][0])->toBe("Publication blocked (BLOCK_NEW_PRODUCT_PUBLICATION): insurer not authorized for CIMA branch 10 — Responsabilité civile véhicules terrestres automoteurs. Record the insurer's CIMA authorization for branch 10 in Insurer setup.");
     }
     expect($product->refresh()->status)->toBe('DRAFT');
 });

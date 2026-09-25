@@ -10,6 +10,7 @@ use App\Application\Catalogue\CatalogueService;
 use App\Application\Catalogue\Governance\Models\ProductGovernance;
 use App\Application\Catalogue\ProductModelService;
 use App\Application\Catalogue\ProductVersionSnapshot;
+use App\Application\Catalogue\Sandbox\ProductSandbox;
 use App\Application\Events\OutboxWriter;
 use App\Models\ApprovalRequest;
 use App\Models\InsuranceProduct;
@@ -29,16 +30,21 @@ use Illuminate\Validation\ValidationException;
  *   TECHNICAL_REVIEW    REVIEW           CatalogueService::submit (requires zero completeness blockers)
  *   COMPLIANCE_REVIEW   REVIEW           checker (≠ maker)
  *   BUSINESS_APPROVAL   REVIEW           checker (≠ maker, ≠ technical reviewer); opens the product.publish approval request
- *   READY               APPROVED         ApprovalService decision → ProductModelService::approve (snapshot frozen)
+ *   SANDBOX_TESTS       APPROVED         ApprovalService decision → ProductModelService::approve (snapshot frozen)
+ *   READY               APPROVED         the sandbox test pack re-run on the approved configuration PASSED (owner decision 28)
  *   PUBLISHED           PUBLISHED        CatalogueService::publish (now, or scheduled: future-dated publication)
  *   REJECTED            REJECTED         any review stage → ProductModelService::reject
+ *
+ * Owner decision 28: this workflow is mandatory for every GOVERNED version (GovernanceCutover); the direct
+ * CatalogueService submit / publish path is only open to LEGACY_GRANDFATHERED versions. A carrier without an
+ * ACTIVE capability profile is blocked by the CAPABILITY_PROFILE completeness check.
  */
 final class ProductGovernanceService
 {
-    public const STAGES = ['DRAFT', 'CONFIGURATION', 'TECHNICAL_REVIEW', 'COMPLIANCE_REVIEW', 'BUSINESS_APPROVAL', 'READY', 'PUBLISHED', 'REJECTED'];
+    public const STAGES = ['DRAFT', 'CONFIGURATION', 'TECHNICAL_REVIEW', 'COMPLIANCE_REVIEW', 'BUSINESS_APPROVAL', 'SANDBOX_TESTS', 'READY', 'PUBLISHED', 'REJECTED'];
 
     public const NEXT = ['DRAFT' => 'CONFIGURATION', 'CONFIGURATION' => 'TECHNICAL_REVIEW', 'TECHNICAL_REVIEW' => 'COMPLIANCE_REVIEW',
-        'COMPLIANCE_REVIEW' => 'BUSINESS_APPROVAL', 'BUSINESS_APPROVAL' => 'READY', 'READY' => 'PUBLISHED'];
+        'COMPLIANCE_REVIEW' => 'BUSINESS_APPROVAL', 'BUSINESS_APPROVAL' => 'SANDBOX_TESTS', 'SANDBOX_TESTS' => 'READY', 'READY' => 'PUBLISHED'];
 
     public const REVIEW_STAGES = ['TECHNICAL_REVIEW', 'COMPLIANCE_REVIEW', 'BUSINESS_APPROVAL'];
 
@@ -53,6 +59,7 @@ final class ProductGovernanceService
         private readonly ApprovalService $approvals,
         private readonly AuditWriter $audit,
         private readonly OutboxWriter $outbox,
+        private readonly ProductSandbox $sandbox,
     ) {}
 
     /** Current governance row (unsaved and derived from the version status when none exists yet). */
@@ -77,7 +84,18 @@ final class ProductGovernanceService
     /** Moves the version one governance stage forward (see class doc). */
     public function advance(InsuranceProduct $v, User $actor, string $notes = ''): ProductGovernance
     {
-        return DB::transaction(fn () => $this->advanceNow($v, $actor, $notes));
+        $g = $this->state($v);
+        if ($g->stage === 'SANDBOX_TESTS') {
+            // Run the test pack on the approved configuration first, outside the stage transaction, so a FAILED run
+            // stays on record as evidence even though the stage does not move.
+            $this->assertStageMatchesStatus($v, $g);
+            $run = $this->sandbox->runPack($v->refresh(), $actor);
+            if ($run->status !== 'PASSED') {
+                throw ValidationException::withMessages(['sandbox_tests' => "Sandbox test pack {$run->status}: {$run->cases_failed} of {$run->cases_total} cases failed."]);
+            }
+        }
+
+        return GovernanceCutover::withinWorkflow(fn () => DB::transaction(fn () => $this->advanceNow($v, $actor, $notes)));
     }
 
     private function advanceNow(InsuranceProduct $v, User $actor, string $notes = ''): ProductGovernance
@@ -108,7 +126,7 @@ final class ProductGovernanceService
                     $approvalId = $this->approvalFor($v)->id;
                 }
                 break;
-            case 'READY':
+            case 'SANDBOX_TESTS':
                 $req = $this->approvalFor($v);
                 if (! $this->approvals->isApproved($req)) {
                     $req = $this->approvals->recordDecision($req, $actor, 'APPROVED', $notes ?: null);
@@ -120,6 +138,12 @@ final class ProductGovernanceService
                     return $g->refresh(); // multi-level matrix: waits for the next checker
                 }
                 $this->versions->approve($v->refresh(), $actor, $notes ?: 'Business approval');
+                break;
+            case 'READY':
+                $latest = $this->sandbox->latestRun($v->refresh());
+                if ($latest === null || ! $latest['current'] || $latest['run']->status !== 'PASSED') {
+                    throw ValidationException::withMessages(['sandbox_tests' => 'The sandbox test pack has not passed on the approved configuration.']);
+                }
                 break;
         }
 
@@ -135,7 +159,7 @@ final class ProductGovernanceService
     private function rejectNow(InsuranceProduct $v, User $actor, string $reason): ProductGovernance
     {
         $g = $this->row($v);
-        if (! in_array($g->stage, [...self::REVIEW_STAGES, 'READY'], true)) {
+        if (! in_array($g->stage, [...self::REVIEW_STAGES, 'SANDBOX_TESTS', 'READY'], true)) {
             throw ValidationException::withMessages(['stage' => "A version in {$g->stage} cannot be rejected."]);
         }
         $req = ApprovalRequest::where('source_table', 'insurance_products')->where('source_id', $v->id)->where('action_code', 'product.publish')->first();
@@ -154,7 +178,7 @@ final class ProductGovernanceService
      */
     public function publish(InsuranceProduct $v, User $actor, string $reason = '', ?string $at = null): ProductGovernance
     {
-        return DB::transaction(fn () => $this->publishNow($v, $actor, $reason, $at));
+        return GovernanceCutover::withinWorkflow(fn () => DB::transaction(fn () => $this->publishNow($v, $actor, $reason, $at)));
     }
 
     private function publishNow(InsuranceProduct $v, User $actor, string $reason = '', ?string $at = null): ProductGovernance
@@ -285,7 +309,7 @@ final class ProductGovernanceService
     private function assertStageMatchesStatus(InsuranceProduct $v, ProductGovernance $g): void
     {
         $expected = ['DRAFT' => ['DRAFT'], 'CONFIGURATION' => ['DRAFT'], 'TECHNICAL_REVIEW' => ['IN_REVIEW'], 'COMPLIANCE_REVIEW' => ['IN_REVIEW'],
-            'BUSINESS_APPROVAL' => ['IN_REVIEW'], 'READY' => ['APPROVED']][$g->stage] ?? [];
+            'BUSINESS_APPROVAL' => ['IN_REVIEW'], 'SANDBOX_TESTS' => ['APPROVED'], 'READY' => ['APPROVED']][$g->stage] ?? [];
         if (! in_array($v->status, $expected, true)) {
             throw ValidationException::withMessages(['stage' => "Governance stage {$g->stage} does not match version status {$v->status}; the version was moved outside the governance workflow."]);
         }

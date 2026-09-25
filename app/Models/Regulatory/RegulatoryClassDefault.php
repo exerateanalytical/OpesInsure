@@ -18,6 +18,6 @@ final class RegulatoryClassDefault extends Model
 
     protected function casts(): array
     {
-        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean'];
+        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean', 'separate_premium' => 'boolean'];
     }
 }

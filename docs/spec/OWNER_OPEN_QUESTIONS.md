@@ -54,3 +54,11 @@ None of the 29 official insurers has recorded authorized CIMA branches, so new p
 - Proposal declarations wording and missed-instalment consequences are placeholders (config/proposals.php, UNVERIFIED) — need counsel's review.
 - Mandatory pre-contract uploads (e.g. carte grise for motor) now apply to products with a document product type: submission accepts uploaded-not-yet-reviewed documents; issuance requires them accepted. Confirm this is the rule you want for straight-through motor sales.
 - Manual quotation SLA: how long should an insurer have to acknowledge and to answer a manual quote request? (No SLA targets are seeded until you confirm.)
+
+## Q7 — After the decisions batch (2026-09-25)
+- Existing live products keep their old product-level CIMA mappings; move them to coverage-level mappings via the maker-checker mapping flow? (Not done automatically, because it would change the branches of products already on sale.)
+- Broker and agent commission both map to the same Article 557 measure, with the broker/agent distinction carried separately. Confirm this is the CIMA reporting treatment.
+- Belife Insurance status "VERIFIED_NETWORK_SHARED_WITH_GROUP" shows the badge "Verified (group network)". Keep it, or show plain "Verified"?
+- KYC defaults (UNVERIFIED, please confirm): EDD is triggered by a HIGH risk rating or any PEP/sanctions match; source of funds/wealth are required whenever EDD applies. All risk weights, bands and refresh/rescreen periods are empty until you set them.
+- Timestamp correction: after the next deploy I'll run the read-only affected-rows report on production and send it to you before any correction (the local run found 1,196 affected values in 55 tables).
+- Case families (8, RECONSTRUCTED_PENDING_OWNER, because the blueprint never lists its "8 case types"): Underwriting, Quotation, Claims, Complaints, Recovery & litigation, Compliance & KYC, Data quality, Operations. Confirm or replace.

@@ -250,7 +250,7 @@ return [
         'kyc.view' => ['description' => 'View KYC submissions, requirements, expiring KYC and party KYC status.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN']],
         'kyc.manage' => ['description' => 'Open staff-assisted KYC, attach documents, submit, start remediation.', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'BROKER_ADMIN']],
         'kyc.review' => ['description' => 'Review KYC: start review, request information, set level, recommend (maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_ADMIN']],
-        'kyc.screen' => ['description' => 'Record sanctions / PEP screening results (MANUAL mode).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
+        'kyc.screen' => ['description' => 'Record sanctions / PEP screening results and open rescreening rounds (MANUAL_AUDITED mode; never automated).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
         'kyc.decide' => ['description' => 'Confirm or return a KYC recommendation (checker).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
     ],
 
@@ -309,6 +309,11 @@ return [
         'master_data.mappings.manage' => [
             'description' => 'Map canonical values to the own insurer / broker codes (carrier_ and broker_master_data_mappings).',
             'suggested_roles' => ['CARRIER_ADMIN', 'BROKER_ADMIN'],
+        ],
+        // Owner Workflow Data Master v1 (reference lists): catalogue statuses, read-only.
+        'master_data.workflow_status.view' => [
+            'description' => 'See owner workflow data master catalogue statuses (PENDING_SOURCE, UNVERIFIED, …) and their value counts.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN'],
         ],
         'master_data.merge.request' => [
             'description' => 'See duplicate groups and request a merge (entity.merge maker).',
@@ -416,6 +421,7 @@ return [
         'rating.charges.view' => ['description' => 'View the charge-code catalogue and tax/levy/fee tables (rates DEMO/UNVERIFIED until OQ-9).', 'suggested_roles' => ['CARRIER_ADMIN', 'FINANCE_ADMIN', 'COMPLIANCE_ADMIN']],
         'rating.charges.manage' => ['description' => 'Draft tax/levy/fee table versions.', 'suggested_roles' => ['FINANCE_ADMIN']],
         'rating.charges.approve' => ['description' => 'Approve a tax/levy/fee table version (checker; never the maker).', 'suggested_roles' => ['FINANCE_ADMIN', 'COMPLIANCE_ADMIN']],
+        'rating.charges.verify' => ['description' => 'Confirm or reject the legal basis / source verification of tax/levy/fee rates (owner decision 10; checker, never the requester).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
         'rating.runs.view' => ['description' => 'View a quote rating snapshot (versions, EngineResult, branch allocation) and reproduce it.', 'suggested_roles' => ['UNDERWRITER', 'CARRIER_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
@@ -449,6 +455,30 @@ return [
         'quotes.carrier_requests.record_on_behalf' => ['description' => 'Record an insurer offer/decline on its behalf, with the insurer\'s written answer as evidence.', 'suggested_roles' => ['BROKER_ADMIN']],
         'carrier.quote_requests.view' => ['description' => 'Insurer work queue of manual quotation requests (own carrier only).', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER']],
         'carrier.quote_requests.respond' => ['description' => 'Insurer staff: take a request, enter the offer (premium breakdown, conditions, validity, documents) or decline.', 'suggested_roles' => ['CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER']],
+    ],
+
+    // Owner decisions 2026-09-25 (#12 authority types, #17 premium-to-cover, institutional datasets): routes/owner_decisions.php.
+    // Case-engine additions (families, sub-types, SLA overrides, calendar breaks) reuse cases.view/manage/admin/calendar.manage.
+    'owner_decisions' => [
+        'authority.types.view' => ['description' => 'View the authority type catalogue.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'authority.types.manage' => ['description' => 'Add or retire authority types (extensible catalogue).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN']],
+        'premium_cover.rules.view' => ['description' => 'View premium-to-cover rules and evaluate cover status.', 'suggested_roles' => ['PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN', 'FINANCE_MANAGER']],
+        'premium_cover.rules.manage' => ['description' => 'Draft or retire premium-to-cover rules (maker).', 'suggested_roles' => ['PLATFORM_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'premium_cover.rules.approve' => ['description' => 'Approve premium-to-cover rules (checker; never the maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'reference_datasets.view' => ['description' => 'View public holiday and hazard zone datasets.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'UNDERWRITER', 'CARRIER_ADMIN']],
+        'reference_datasets.manage' => ['description' => 'Draft a new dataset version (source, jurisdiction, dates, entries).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN']],
+        'reference_datasets.approve' => ['description' => 'Activate or retire a dataset version (checker; never the maker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    /** Official insurer institutional directory (platform master data, not business data). */
+    'institution_directory' => [
+        'directory.institutions.manage' => ['description' => 'Edit insurer directory contacts, HQ, branches and verification status (audited).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'directory.verification_labels.manage' => ['description' => 'Edit the EN/FR display labels of verification statuses.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    // Workflow Institutional Data Master v1 — Data Readiness registry (routes/data_readiness.php). Platform configuration status, not business data.
+    'data_readiness' => [
+        'data_readiness.view' => ['description' => 'View the Data Readiness registry: every data-master domain with its status, owner, source and what is missing.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
     ],
 
     'business_data' => [

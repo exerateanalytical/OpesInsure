@@ -44,7 +44,38 @@ final class PartyRoleService
         'MEMBER' => ['en' => 'Group member', 'fr' => 'Adhérent', 'single_per_context' => false, 'cima_code' => null],
         'WITNESS' => ['en' => 'Witness', 'fr' => 'Témoin', 'single_per_context' => false, 'cima_code' => null],
         'CUSTOMER' => ['en' => 'Customer (prospect / account)', 'fr' => 'Client (prospect / compte)', 'single_per_context' => false, 'cima_code' => null],
+        // Owner Workflow Data Master v1 (party_roles, PLATFORM_NORMALIZED): owner codes with no equivalent above.
+        // OWNER is the generic owner of an insured object (VEHICLE_OWNER stays its motor specialisation); PAYEE receives a
+        // payment (LOSS_PAYEE stays the claims specialisation); EMPLOYEE is distinct from MEMBER (members need not be employees).
+        'PAYEE' => ['en' => 'Payee', 'fr' => 'Bénéficiaire du paiement', 'single_per_context' => false, 'cima_code' => null],
+        'OWNER' => ['en' => 'Owner (insured object)', 'fr' => 'Propriétaire (objet assuré)', 'single_per_context' => false, 'cima_code' => null],
+        'EMPLOYEE' => ['en' => 'Employee', 'fr' => 'Salarié', 'single_per_context' => false, 'cima_code' => null],
+        'DEPENDANT' => ['en' => 'Dependant', 'fr' => 'Ayant droit', 'single_per_context' => false, 'cima_code' => null],
+        'BENEFICIAL_OWNER' => ['en' => 'Beneficial owner', 'fr' => 'Bénéficiaire effectif', 'single_per_context' => false, 'cima_code' => null],
+        'DIRECTOR' => ['en' => 'Director', 'fr' => 'Dirigeant', 'single_per_context' => false, 'cima_code' => null],
+        'TRUSTEE' => ['en' => 'Trustee', 'fr' => 'Fiduciaire (trustee)', 'single_per_context' => false, 'cima_code' => null],
+        'SETTLOR' => ['en' => 'Settlor', 'fr' => 'Constituant', 'single_per_context' => false, 'cima_code' => null],
     ];
+
+    /** Owner Workflow Data Master v1: the 16 owner role codes (all present in ROLES). */
+    public const OWNER_WORKFLOW_ROLES = ['POLICYHOLDER', 'INSURED', 'BENEFICIARY', 'CLAIMANT', 'PAYER', 'PAYEE', 'OWNER', 'DRIVER', 'EMPLOYER',
+        'EMPLOYEE', 'DEPENDANT', 'BENEFICIAL_OWNER', 'DIRECTOR', 'TRUSTEE', 'SETTLOR', 'WITNESS'];
+
+    /** Accepted spellings resolved to the canonical code (never stored). */
+    public const ALIASES = [
+        'POLICY_HOLDER' => 'POLICYHOLDER', 'SUBSCRIBER' => 'POLICYHOLDER', 'SOUSCRIPTEUR' => 'POLICYHOLDER',
+        'PREMIUM_PAYER' => 'PAYER', 'DEPENDENT' => 'DEPENDANT', 'UBO' => 'BENEFICIAL_OWNER', 'ULTIMATE_BENEFICIAL_OWNER' => 'BENEFICIAL_OWNER',
+        'ASSURE' => 'INSURED', 'CONDUCTEUR' => 'DRIVER', 'TEMOIN' => 'WITNESS', 'AYANT_DROIT' => 'DEPENDANT',
+    ];
+
+    public const SOURCE = 'OWNER_WORKFLOW_DATA_MASTER_V1';
+
+    public static function canonical(string $code): string
+    {
+        $c = strtoupper(trim($code));
+
+        return self::ALIASES[$c] ?? $c;
+    }
 
     public const CONTEXT_TYPES = ['policy', 'proposal', 'quote', 'claim'];
 
@@ -53,7 +84,7 @@ final class PartyRoleService
     /** @param array{role_code: string, context_type?: ?string, context_id?: ?string, valid_from?: ?string, valid_to?: ?string, details?: array, source?: string} $d */
     public function assign(Party $party, array $d, ?string $tenantId, ?string $actorId): PartyRole
     {
-        $code = strtoupper((string) $d['role_code']);
+        $code = self::canonical((string) $d['role_code']);
         if (! isset(self::ROLES[$code])) {
             throw ValidationException::withMessages(['role_code' => 'Unknown party role.']);
         }
@@ -139,10 +170,16 @@ final class PartyRoleService
             ->orderBy('role_code')->get();
     }
 
-    /** @return list<array{code: string, label_en: string, label_fr: string, single_per_context: bool, cima_code: null}> */
+    /**
+     * cima_code stays null (UNVERIFIED) until the official CIMA role list is supplied; status is PLATFORM_NORMALIZED.
+     *
+     * @return list<array{code: string, label_en: string, label_fr: string, single_per_context: bool, cima_code: null, status: string, in_owner_workflow_master: bool, aliases: list<string>}>
+     */
     public function catalogue(): array
     {
-        return array_map(fn ($c, $r) => ['code' => $c, 'label_en' => $r['en'], 'label_fr' => $r['fr'], 'single_per_context' => $r['single_per_context'], 'cima_code' => $r['cima_code']],
+        return array_map(fn ($c, $r) => ['code' => $c, 'label_en' => $r['en'], 'label_fr' => $r['fr'], 'single_per_context' => $r['single_per_context'], 'cima_code' => $r['cima_code'],
+            'status' => 'PLATFORM_NORMALIZED', 'in_owner_workflow_master' => in_array($c, self::OWNER_WORKFLOW_ROLES, true),
+            'aliases' => array_keys(array_filter(self::ALIASES, fn ($to) => $to === $c))],
             array_keys(self::ROLES), self::ROLES);
     }
 

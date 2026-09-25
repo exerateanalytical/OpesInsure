@@ -7,6 +7,7 @@ namespace App\Application\Regulatory;
 use App\Models\Carrier;
 use App\Models\InsuranceProduct;
 use App\Models\Regulatory\InsurerRegulatoryAuthorization;
+use App\Models\Regulatory\LegacyProductAuthorization;
 use App\Models\Regulatory\LegalReference;
 use App\Models\Regulatory\MicroinsuranceBranch;
 use App\Models\Regulatory\ProductRegulatoryMapping;
@@ -26,6 +27,7 @@ final class CimaComplianceReport
         $mapped = ProductRegulatoryMapping::where('status', 'ACTIVE')->where('relationship_type', 'PRIMARY')->distinct()->pluck('insurance_product_id')->flip();
         $unmapped = [];
         $blocked = [];
+        $legacy = [];
         foreach ($products as $p) {
             $row = ['id' => $p->id, 'code' => $p->code, 'name' => $p->name, 'line_code' => $p->line_code, 'status' => $p->status, 'carrier' => $this->carrierName($p->carrier)];
             if (! isset($mapped[$p->id])) {
@@ -34,6 +36,11 @@ final class CimaComplianceReport
                 continue;
             }
             $violations = $this->guard->violations($p, false);
+            $authStatus = $this->guard->authorizationStatus($p);
+            if ($authStatus === LegacyProductAuthorization::STATUS) {
+                // Owner decision item 8: legacy products may keep selling but never support a regulatory claim.
+                $legacy[] = $row + ['authorization_status' => $authStatus, 'regulatory_claims_allowed' => false];
+            }
             if ($violations !== []) {
                 $blocked[] = $row + ['reasons' => $violations, 'grandfathered' => in_array($p->status, ['ACTIVE', 'RETIRED'], true) && $this->guard->isGrandfathered($p)];
             }
@@ -55,12 +62,14 @@ final class CimaComplianceReport
                 'products' => $products->count(),
                 'products_unmapped' => count($unmapped),
                 'products_blocked' => count($blocked),
+                'products_legacy_authorization_pending' => count($legacy),
                 'insurers_without_authorization' => count($withoutAuth),
                 'pending_mappings' => ProductRegulatoryMapping::where('status', 'PENDING_APPROVAL')->count(),
                 'pending_authorizations' => InsurerRegulatoryAuthorization::where('status', 'PENDING_APPROVAL')->count(),
             ],
             'unmapped_products' => $unmapped,
             'blocked_products' => $blocked,
+            'legacy_authorization_products' => $legacy,
             'insurers_without_authorization' => $withoutAuth,
         ];
     }

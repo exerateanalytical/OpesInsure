@@ -78,7 +78,7 @@ it('REQ-RAT-005 allocates the net premium per CIMA branch so the parts add back 
     expect($p->allocationStatus)->toBe('ALLOCATED')->and(array_sum(array_column($p->branchAllocation, 'amount_minor')))->toBe(100001)
         ->and(array_column($p->branchAllocation, 'branch_code'))->toBe(['07', '09', '15']);
     $none = (new DeterministicRatingEngine)->price([], ['base_premium_minor' => 5000]);
-    expect($none->allocationStatus)->toBe('PENDING_OQ_24')->and($none->branchAllocation)->toBe([])->and($none->warnings)->toContain('rating.branch_allocation_pending');
+    expect($none->allocationStatus)->toBe('PENDING_CARRIER_ALLOCATION')->and($none->branchAllocation)->toBe([])->and($none->warnings)->toContain('rating.branch_allocation_pending');
     expect(IntegerMoney::allocate(7, ['A' => 5000, 'B' => 5000]))->toBe(['A' => 4, 'B' => 3]);
 });
 

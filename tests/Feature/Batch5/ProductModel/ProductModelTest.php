@@ -59,6 +59,11 @@ function b5aLine(): array
 }
 
 /** A carrier product with a DRAFT v1 carrying RC (mandatory) + DOMMAGES + VOL. */
+function b5aLegacy(InsuranceProduct $v): void
+{
+    DB::table('insurance_products')->where('id', $v->id)->update(['governance_mode' => 'LEGACY_GRANDFATHERED']);
+}
+
 function b5aDraft(User $maker): array
 {
     $l = b5aLine();
@@ -68,6 +73,7 @@ function b5aDraft(User $maker): array
         'line_code' => 'B5A_MOTOR', 'name' => ['en' => 'Auto Plus', 'fr' => 'Auto Plus'], 'description' => ['en' => 'Private car cover', 'fr' => 'Assurance voiture particulière'],
         'customer_type' => 'INDIVIDUAL', 'currency' => 'XAF', 'market' => 'CM'], $maker);
     $v = app(ProductModelService::class)->newVersion($cp, ['effective_from' => '2026-01-01', 'regulatory_reference' => 'B5A-REF'], $maker);
+    b5aLegacy($v); // these lifecycle tests use the direct path, open only to pre-cutover versions (owner decision 28)
     $cfg = app(ProductConfigurationService::class);
     $cfg->configureCoverage($v, $l['rc'], ['inclusion' => 'MANDATORY', 'territory' => 'CEMAC'], $maker);
     $cfg->configureCoverage($v, $l['dommages'], ['inclusion' => 'DEFAULT', 'waiting_period_days' => 0], $maker);
@@ -189,6 +195,10 @@ it('REQ-PRD-001 new versions clone the configuration, are effective-dated via th
     expect($svc->resolveAt($d['cp']->carrier_id, $d['cp']->code, '2026-03-01')->id)->toBe($v1->id);
     b5aTariff($v2);
     DB::table('tariff_versions')->where('insurance_product_id', $v2->id)->update(['effective_from' => '2026-07-01']);
+    // Owner decision 28: a new version (even of a grandfathered product) is GOVERNED — the direct path is refused.
+    expect(DB::table('insurance_products')->where('id', $v2->id)->value('governance_mode'))->toBe('GOVERNED')
+        ->and(fn () => app(CatalogueService::class)->submit($v2, $maker, 'Direct submit of a new version'))->toThrow(ValidationException::class, 'governance workflow');
+    b5aLegacy($v2); // simulate a pre-cutover version to keep exercising supersession on the direct path
     app(CatalogueService::class)->publish(app(CatalogueService::class)->submit($v2, $maker, 'Submit version two'), $checker, 'Publishing version two after review');
     expect($v1->refresh()->status)->toBe('RETIRED')
         ->and($svc->resolveAt($d['cp']->carrier_id, $d['cp']->code, '2026-08-01')->id)->toBe($v2->id);

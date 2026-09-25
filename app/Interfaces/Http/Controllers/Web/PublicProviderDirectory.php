@@ -37,7 +37,7 @@ final class PublicProviderDirectory
         }, ['insurers' => null, 'brokers' => null, 'countries' => null, 'country_codes' => []]);
     }
 
-    /** @return list<array{name: string, short: string, kind: string, branch: ?string, city: ?string}> */
+    /** @return list<array{name: string, short: string, kind: string, branch: ?string, city: ?string, phone: ?string, email: ?string, website: ?string, website_host: ?string, branch_count: int, verification_status: ?string}> */
     public function all(): array
     {
         return $this->remember('all', function (): array {
@@ -48,6 +48,12 @@ final class PublicProviderDirectory
                 ->pluck('party_addresses.city', $table.'.id');
 
             $insurerCities = $cities('carriers');
+            // Institutional directory: head-office city, contacts, branch count and verification.
+            $hq = DB::table('carriers')->join('party_addresses', 'party_addresses.party_id', '=', 'carriers.party_id')
+                ->where('carriers.is_official_register', true)->where('party_addresses.type', 'HEAD_OFFICE')->pluck('party_addresses.city', 'carriers.id');
+            $profiles = DB::table('institution_profiles')->get(['carrier_id', 'website', 'phones', 'emails', 'verification_status'])->keyBy('carrier_id');
+            $labels = \App\Models\Directory\InstitutionVerificationLabel::map();
+            $branchCounts = DB::table('institution_offices')->selectRaw('carrier_id, count(*) as n')->groupBy('carrier_id')->pluck('n', 'carrier_id');
             $brokerCities = $cities('partners');
 
             $insurers = DB::table('carriers')->where('is_official_register', true)
@@ -57,8 +63,8 @@ final class PublicProviderDirectory
                     'short' => (string) ($r->short_name ?: ($r->trade_name ?: $r->legal_name)),
                     'kind' => 'insurer',
                     'branch' => $r->licence_branch === 'LIFE' ? 'LIFE' : ($r->licence_branch ? 'IARD' : null),
-                    'city' => $insurerCities[$r->id] ?? null,
-                ]);
+                    'city' => $hq[$r->id] ?? $insurerCities[$r->id] ?? null,
+                ] + self::contactOf($profiles->get($r->id), (int) ($branchCounts[$r->id] ?? 0), $labels));
 
             $brokers = DB::table('partners')->where('is_official_register', true)->where('type', 'BROKER')
                 ->orderBy('regulator_sequence')->orderBy('legal_name')->get(['id', 'trade_name', 'legal_name'])
@@ -68,7 +74,7 @@ final class PublicProviderDirectory
                     'kind' => 'broker',
                     'branch' => null,
                     'city' => $brokerCities[$r->id] ?? null,
-                ]);
+                ] + self::contactOf(null, 0));
 
             return $insurers->concat($brokers)->values()->all();
         }, []);
@@ -118,6 +124,23 @@ final class PublicProviderDirectory
     public function cities(): array
     {
         return collect($this->all())->pluck('city')->filter()->unique()->sort()->values()->all();
+    }
+
+    /** @return array{phone: ?string, email: ?string, website: ?string, website_host: ?string, branch_count: int, verification_status: ?string, verification_label: ?array{en: string, fr: string}} */
+    private static function contactOf(?object $profile, int $branches, array $labels = []): array
+    {
+        $first = fn (?string $json) => $json ? (json_decode($json, true)[0] ?? null) : null;
+        $website = $profile?->website;
+
+        return [
+            'phone' => $first($profile?->phones),
+            'email' => $first($profile?->emails),
+            'website' => $website,
+            'website_host' => $website ? preg_replace('/^www\./', '', (string) parse_url($website, PHP_URL_HOST)) : null,
+            'branch_count' => $branches,
+            'verification_status' => $profile?->verification_status,
+            'verification_label' => $profile?->verification_status ? ($labels[$profile->verification_status] ?? null) : null,
+        ];
     }
 
     /** Short initials for the typographic badge (no third-party logos). */

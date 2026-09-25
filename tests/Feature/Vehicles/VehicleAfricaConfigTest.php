@@ -57,7 +57,7 @@ it('merges the 42 core + 19 commercial config makes without duplicating makes or
     afSeed();
     $config = json_decode(file_get_contents(database_path(VehicleMasterDataSeeder::AFRICA_CONFIG_FILE)), true);
     expect($config['makes'])->toHaveCount(42)->and($config['commercial_vehicle_makes'])->toHaveCount(19)
-        ->and(VehicleMake::count())->toBe(151); // every config make already existed: none duplicated
+        ->and(VehicleMake::count())->toBe(153); // 151 canonical + Datsun, Mahindra curated reference (owner decision 20); none duplicated
 
     $catalogue = app(VehicleCatalogueService::class);
     foreach ($config['makes'] as $row) {
@@ -76,7 +76,7 @@ it('merges the 42 core + 19 commercial config makes without duplicating makes or
 
     $models = VehicleModel::count();
     afSeed();
-    expect(VehicleModel::count())->toBe($models)->and(VehicleMake::count())->toBe(151);
+    expect(VehicleModel::count())->toBe($models)->and(VehicleMake::count())->toBe(153);
 });
 
 it('ranks sources and exposes the picker config', function () {
@@ -100,6 +100,10 @@ it('imports generations and engine variants for core makes/models from a local d
     $this->artisan('opesinsure:import-vehicle-dataset', ['--path' => $csv, '--dry-run' => true])->assertExitCode(0);
     expect(VehicleGeneration::count())->toBe(0)->and(VehicleVariant::count())->toBe(0);
 
+    // Owner decision 20: hard-disabled even with --accept-license until the owner sets the flag.
+    $this->artisan('opesinsure:import-vehicle-dataset', ['--path' => $csv, '--accept-license' => true])->assertExitCode(1);
+    expect(VehicleGeneration::count())->toBe(0);
+    config(['vehicles.global_dataset_import_enabled' => true]);
     $this->artisan('opesinsure:import-vehicle-dataset', ['--path' => $csv, '--accept-license' => true])->assertExitCode(0);
     $corolla = VehicleModel::where('code', 'TOYOTA_COROLLA')->firstOrFail();
     expect(VehicleGeneration::count())->toBe(2)

@@ -251,6 +251,7 @@ return [
         'totals' => ':insurers insurers · :brokers brokers',
         'empty' => 'No provider matches these filters.',
         'unavailable' => 'The provider register is temporarily unavailable. Please try again shortly.',
+        'hq' => 'Head office: :city', 'branches' => '{0} No direct branch listed|{1} 1 office|[2,*] :count offices',
     ],
 
     'privacy' => [

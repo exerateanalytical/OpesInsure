@@ -19,7 +19,7 @@ final class ProductRegulatoryMapping extends Model
 
     protected function casts(): array
     {
-        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean', 'is_primary' => 'boolean', 'product_version' => 'integer', 'approved_at' => 'datetime'];
+        return ['effective_from' => 'date', 'effective_until' => 'date', 'is_seeded' => 'boolean', 'is_primary' => 'boolean', 'product_version' => 'integer', 'approved_at' => 'datetime', 'separate_premium' => 'boolean', 'conditions' => 'array'];
     }
 
     public function product(): BelongsTo

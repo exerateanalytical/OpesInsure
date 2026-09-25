@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\Directory;
 
 use App\Models\Carrier;
+use App\Models\Directory\InstitutionOffice;
+use App\Models\Directory\InstitutionProfile;
+use App\Models\Directory\InstitutionVerificationLabel;
 use App\Models\InsuranceClass;
 use App\Models\Partner;
 use Database\Seeders\CameroonInsuranceRegisterSeeder as Register;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -23,6 +27,12 @@ use Illuminate\Support\Str;
  */
 final class PublicInstitutionController
 {
+    /** @var array<string, array<string, mixed>> Directory data keyed by carrier id (institution_profiles/offices, HEAD_OFFICE address). */
+    private array $directory = [];
+
+    /** @var array<string, array{en: string, fr: string}> Admin-controlled verification labels. */
+    private array $labels = [];
+
     public function index(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -32,7 +42,9 @@ final class PublicInstitutionController
         ]);
         $type = $data['type'] ?? null;
 
-        $insurers = $this->carriers()->get()->map(fn (Carrier $c) => $this->insurerOf($c));
+        $carriers = $this->carriers()->get();
+        $this->loadDirectory($carriers);
+        $insurers = $carriers->map(fn (Carrier $c) => $this->insurerOf($c));
         $brokers = $this->brokers()->get()->map(fn (Partner $p) => $this->brokerOf($p));
         $counts = [
             'insurer' => $insurers->count(),
@@ -63,6 +75,8 @@ final class PublicInstitutionController
         abort_unless(Str::isUuid($institution), 404);
 
         if ($carrier = $this->carriers()->find($institution)) {
+            $this->loadDirectory(collect([$carrier]));
+
             return response()->json(['data' => $this->insurerOf($carrier), 'meta' => ['source' => $this->source()]]);
         }
         if ($broker = $this->brokers()->find($institution)) {
@@ -146,6 +160,7 @@ final class PublicInstitutionController
     {
         $name = $c->trade_name ?? $c->party?->display_name ?? $c->cima_code;
         $caps = $c->capabilities ?? [];
+        $d = $this->directory[$c->id] ?? null;
 
         return [
             'id' => $c->id,
@@ -153,9 +168,10 @@ final class PublicInstitutionController
             'name' => $name,
             'initials' => $this->initials($name),
             'code' => $c->cima_code,
-            'city' => $c->party?->legal_identity['city'] ?? null,
-            'phone' => $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value,
-            'website' => $caps['website'] ?? null,
+            'city' => $d['head_office']['city'] ?? $c->party?->legal_identity['city'] ?? null,
+            'phone' => $d['phones'][0] ?? $c->party?->contacts?->firstWhere('type', 'PHONE')?->normalized_value,
+            'email' => $d['emails'][0] ?? null,
+            'website' => $d['website'] ?? $caps['website'] ?? null,
             'products' => $c->products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'line_code' => $p->line_code])->unique('name')->values(),
             'insurer_code' => $c->insurer_code,
             'short_name' => $c->short_name,
@@ -163,6 +179,15 @@ final class PublicInstitutionController
             'product_families' => $c->product_families ?? [],
             'product_families_origin' => $c->product_families_origin,
             'product_families_status' => $c->product_families_status,
+            'contacts' => ['phones' => $d['phones'] ?? [], 'emails' => $d['emails'] ?? [], 'website' => $d['website'] ?? $caps['website'] ?? null, 'po_box' => $d['po_box'] ?? null],
+            'head_office' => $d['head_office'] ?? null,
+            'branches' => $d['branches'] ?? [],
+            'branch_count' => count($d['branches'] ?? []),
+            'verification_status' => $d['verification_status'] ?? null,
+            'verification_label' => isset($d['verification_status']) ? ($this->labels[$d['verification_status']] ?? null) : null,
+            'verified_at' => $d['verified_at'] ?? null,
+            'sources' => $d['sources'] ?? [],
+            'directory_id' => $d['directory_id'] ?? null,
         ] + $this->provenance($c);
     }
 
@@ -182,6 +207,42 @@ final class PublicInstitutionController
             'licence_expires_on' => $p->licence_expires_on?->toDateString(),
             'regulator_number' => $p->regulator_sequence,
         ] + $this->provenance($p);
+    }
+
+    /** Batch-loads directory profiles, offices and HEAD_OFFICE addresses for the given carriers. */
+    private function loadDirectory(Collection $carriers): void
+    {
+        $ids = $carriers->pluck('id')->all();
+        if ($ids === []) {
+            return;
+        }
+        $this->labels = InstitutionVerificationLabel::map();
+        $profiles = InstitutionProfile::whereIn('carrier_id', $ids)->get()->keyBy('carrier_id');
+        $offices = InstitutionOffice::whereIn('carrier_id', $ids)->orderBy('sort_order')->orderBy('name')->get()->groupBy('carrier_id');
+        $addresses = DB::table('party_addresses')->where('type', 'HEAD_OFFICE')->whereIn('party_id', $carriers->pluck('party_id')->filter()->all())
+            ->get(['party_id', 'city', 'line1'])->keyBy('party_id');
+
+        foreach ($carriers as $c) {
+            $p = $profiles->get($c->id);
+            $a = $c->party_id ? $addresses->get($c->party_id) : null;
+            if (! $p && ! $a && ! $offices->has($c->id)) {
+                continue;
+            }
+            $this->directory[$c->id] = [
+                'directory_id' => $p?->directory_id,
+                'website' => $p?->website,
+                'po_box' => $p?->po_box,
+                'phones' => $p?->phones ?? [],
+                'emails' => $p?->emails ?? [],
+                'sources' => $p?->sources ?? [],
+                'verification_status' => $p?->verification_status,
+                'verified_at' => $p?->verified_at?->toDateString(),
+                'head_office' => $a || $p ? ['city' => $a?->city, 'address' => $a?->line1, 'po_box' => $p?->po_box] : null,
+                'branches' => ($offices->get($c->id) ?? collect())->map(fn (InstitutionOffice $o) => [
+                    'id' => $o->id, 'name' => $o->name, 'type' => $o->office_type, 'city' => $o->city, 'address' => $o->address, 'phone' => $o->phone,
+                ])->values()->all(),
+            ];
+        }
     }
 
     private function initials(string $name): string
