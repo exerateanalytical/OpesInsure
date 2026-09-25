@@ -39,7 +39,7 @@ const run = (cmd, args, extraEnv = {}) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 run("npm", ["run", "verify"]);
-run("node", ["scripts/release-doctor.mjs", ...(env.EXPO_PUBLIC_APP_ENV === "production" ? ["--production"] : [])], env);
+run("node", ["scripts/release-doctor.mjs", ...(env.EXPO_PUBLIC_APP_ENV === "production" ? ["--production"] : []), ...(profileName === "production" ? ["--store"] : [])], env);
 const args = ["eas", "update", "--channel", channel, "--non-interactive", ...passThrough];
 process.stdout.write(`Publishing to channel "${channel}" with ${JSON.stringify(env)}\n`);
 if (dryRun) {

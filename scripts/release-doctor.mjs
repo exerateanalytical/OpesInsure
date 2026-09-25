@@ -28,7 +28,9 @@ const app = readJson("app.json");
 if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${app.expo.version},package.json=${pkg.version}`);
 if (app.expo.runtimeVersion?.policy !== "appVersion") errors.push("RUNTIME_POLICY_NOT_APPVERSION");
 const associations = readFileSync("store/associations/assetlinks.json", "utf8");
-if (profile === "production" && associations.includes("REPLACE_WITH_"))
+// The Play App Signing fingerprint only exists once the app is on Play: it
+// blocks store releases (--store), not the direct-download APK channel.
+if (profile === "production" && process.argv.includes("--store") && associations.includes("REPLACE_WITH_"))
   errors.push("ANDROID_ASSOCIATION_PLACEHOLDER");
 if (profile === "production" && !process.env.EXPO_PUBLIC_API_BASE_URL?.startsWith("https://"))
   errors.push("PRODUCTION_HTTPS_API_REQUIRED");
