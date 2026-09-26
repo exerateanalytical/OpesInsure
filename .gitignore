@@ -21,3 +21,4 @@ coverage/
 # Committing them leaks dev-only providers (e.g. Laravel\Pail) into --no-dev
 # production builds, which then fatal on boot.
 /bootstrap/cache/*.php
+.env.preview

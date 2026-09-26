@@ -29,6 +29,9 @@ Route::middleware(SetPublicLocale::class)->group(function (): void {
     // Website sign-in / sign-up: same customer accounts as the app (api/v1 auth/mobile/*, public/accounts).
     Route::get('/login', [Site::class, 'login'])->name('public.login');
     Route::get('/signup', [Site::class, 'signup'])->name('public.signup');
+    // Signed-in account area (customer, agent/broker and claims-officer screens). Pages are
+    // static shells; their data comes from api/v1 with the bearer token from /login.
+    Route::get('/account/{path?}', [Site::class, 'account'])->where('path', '(?!delete$)[A-Za-z0-9/_-]*')->name('public.account');
 
     Route::get('/providers', [Site::class, 'providers'])->name('public.providers');
     Route::get('/contact', [Site::class, 'contact'])->name('public.contact');

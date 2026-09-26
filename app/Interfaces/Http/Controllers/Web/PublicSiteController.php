@@ -128,6 +128,29 @@ final class PublicSiteController
 
     public function signup(): View { return view('public.auth.signup'); }
 
+    /**
+     * /account/{path}: "policies/<id>/documents" -> view public.account.pages.policies.show.documents
+     * with ids = [<id>]. Id-like segments (uuids, numbers, reference codes) become "show".
+     */
+    public function account(?string $path = null): View
+    {
+        $segments = array_values(array_filter(explode('/', (string) $path), 'strlen'));
+        $ids = [];
+        $names = array_map(function (string $seg) use (&$ids): string {
+            if (preg_match('/^[0-9a-f-]{36}$|^\d+$|^[A-Z0-9][A-Z0-9_-]*\d[A-Z0-9_-]*$/', $seg)) {
+                $ids[] = $seg;
+
+                return 'show';
+            }
+
+            return strtolower($seg);
+        }, $segments);
+        $view = 'public.account.pages.'.($names ? implode('.', $names) : 'dashboard');
+        abort_unless(view()->exists($view), 404);
+
+        return view($view, ['ids' => $ids, 'path' => '/account'.($segments ? '/'.implode('/', $segments) : '')]);
+    }
+
     public function providers(Request $request): View
     {
         $filters = [

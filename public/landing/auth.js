@@ -1,13 +1,13 @@
 // OpesInsure website sign-in / sign-up. Talks to the same customer-account API
 // as the mobile app (api/v1 auth/mobile/*, public/accounts). The session is kept
-// in sessionStorage only, so closing the tab signs the browser out.
+// in localStorage (shared with the /account pages, see public/landing/portal/portal.js).
 (function () {
   var C = window.OPES_AUTH || {};
   var API = C.api || '/api/v1';
   var KEY = 'opes.web.session';
 
-  function store(k, v) { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} }
-  function read(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function device() {
     var id = null;
     try { id = localStorage.getItem('opes.web.device'); } catch (e) {}
@@ -58,9 +58,9 @@
   function signedIn(data) {
     var user = (data && data.user) || {};
     store(KEY, JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, name: user.full_name || user.phone_e164 || '' }));
-    var t = root.querySelector('[data-done-title]');
-    if (t) t.textContent = t.dataset.tpl.replace(':name', user.full_name || user.phone_e164 || '');
-    show('done');
+    // Continue into the account area (or the page that sent the visitor to sign in).
+    var next = new URLSearchParams(location.search).get('next') || '';
+    location.href = /^\/account(\/|$|\?)/.test(next) ? next : '/account';
   }
 
   // Password visibility
