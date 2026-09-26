@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
-import { ArrowUpCircle, Paperclip, Send } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { ArrowUpCircle, CalendarDays, ChevronRight, Clock3, FileText, Flag, Headset, MessageSquare, MessagesSquare, Paperclip, Send, Tag, Ticket, User } from "lucide-react-native";
+import { Button, Card, Screen, ripple } from "@/components/ui";
+import { BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { SupportApi } from "@/api/client";
@@ -77,32 +78,185 @@ export default function SupportDetail() {
       router.replace({ pathname: "/support/[id]", params: { id: created.id } });
     });
 
+  const open = q.data ? !CLOSED.includes(q.data.status) : false;
+
   return (
-    <Screen>
-      <AppHeader title={q.data?.reference ?? t("supportCase")} back />
+    <Screen
+      footer={
+        q.data && open ? (
+          <CtaBar>
+            <View style={styles.replyBar}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("supportAttach")}
+                accessibilityState={{ busy: busy === "attach", disabled: !!busy }}
+                disabled={!!busy}
+                onPress={() => void attach()}
+                android_ripple={ripple()}
+                style={({ pressed }) => [styles.attachBtn, pressed && styles.pressed, !!busy && styles.disabled]}
+              >
+                <Paperclip size={20} color={colors.navy900} />
+              </Pressable>
+              <TextInput
+                accessibilityLabel={t("supportReply")}
+                value={message}
+                onChangeText={setMessage}
+                placeholder={t("supportReplyPlaceholder")}
+                placeholderTextColor={colors.neutral500}
+                multiline
+                style={styles.replyInput}
+              />
+              <View style={styles.sendWrap}>
+                <Button label={t("supportAddReply")} icon={Send} loading={busy === "reply"} disabled={!message.trim() || !!busy} onPress={() => void reply()} />
+              </View>
+            </View>
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("supportTicketDetail")} back right="help" />
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(c) => {
           const closed = CLOSED.includes(c.status);
+          const messages = c.messages ?? [];
+          const attachments = c.attachments ?? [];
+          const statusTone = closed ? styles.statusNeutral : styles.statusOpen;
           return (
             <>
-              <Card>
-                <View style={styles.chips}>
-                  <StatusChip label={td(`supportStatus_${c.status}`, c.status)} tone={closed ? "neutral" : "info"} />
-                  <StatusChip label={td(`priority_${c.priority}`, c.priority)} tone={c.priority === "HIGH" ? "warning" : "neutral"} />
+              <View style={styles.card}>
+                <View style={styles.headRow}>
+                  <TintedIcon icon={Ticket} tint="blue" size={56} />
+                  <View style={styles.flex}>
+                    <Text style={styles.reference}>{c.reference}</Text>
+                    <Text style={styles.subject}>{c.subject}</Text>
+                  </View>
+                  <View style={[styles.statusChip, statusTone]}>
+                    <View style={[styles.dot, { backgroundColor: closed ? colors.neutral500 : colors.success }]} />
+                    <Text style={[styles.statusText, { color: closed ? colors.neutral700 : colors.successText }]} numberOfLines={1}>{td(`supportStatus_${c.status}`, c.status)}</Text>
+                  </View>
                 </View>
-                <Text style={styles.title}>{c.subject}</Text>
                 <Text style={styles.body}>{c.description}</Text>
-                <Text style={styles.meta}>
-                  {td(`supportCategory_${c.category}`, c.category)} · {date(c.created_at)}
-                </Text>
-              </Card>
-              {(c.messages ?? []).map((v) => (
-                <View key={v.id} style={[styles.bubble, v.sender === "CUSTOMER" ? styles.mine : styles.theirs]}>
-                  <Text style={styles.sender}>{v.sender === "CUSTOMER" ? t("you") : t("supportTeam")}</Text>
-                  <Text style={styles.body}>{v.body}</Text>
-                  <Text style={styles.meta}>{date(v.created_at)}</Text>
+                <View style={styles.metaGrid}>
+                  <View style={styles.metaCell}>
+                    <TintedIcon icon={Flag} tint="gold" size={36} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
+                      <Text style={[styles.metaValue, c.priority === "HIGH" && styles.gold]} numberOfLines={1}>{td(`priority_${c.priority}`, c.priority)}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.metaCell, styles.metaBorder]}>
+                    <TintedIcon icon={CalendarDays} tint="blue" size={36} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportCreated")}</Text>
+                      <Text style={styles.metaValue} numberOfLines={1}>{date(c.created_at)}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.metaCell, styles.metaBorder]}>
+                    <TintedIcon icon={FileText} tint="blue" size={36} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportCategoryLabel")}</Text>
+                      <Text style={styles.metaValue} numberOfLines={2}>{td(`supportCategory_${c.category}`, c.category)}</Text>
+                    </View>
+                  </View>
                 </View>
-              ))}
+              </View>
+
+              <View style={styles.card}>
+                <SectionHeading title={t("supportConversation")} icon={MessagesSquare} right={<View style={styles.countPill}><Text style={styles.countText}>{t("supportUpdates", { count: messages.length })}</Text></View>} />
+                {messages.length ? (
+                  <View style={styles.timeline}>
+                    {messages.map((v, i) => {
+                      const mine = v.sender === "CUSTOMER";
+                      return (
+                        <View key={v.id} style={styles.msgRow}>
+                          <View style={styles.avatarCol}>
+                            <TintedIcon icon={mine ? User : Headset} tint={mine ? "gold" : "blue"} size={48} />
+                            {i < messages.length - 1 ? <View style={styles.rail} /> : null}
+                          </View>
+                          <View style={styles.flex}>
+                            <View style={styles.msgHead}>
+                              <Text style={styles.sender}>{mine ? t("you") : t("supportTeam")}</Text>
+                              <Text style={styles.meta}>{date(v.created_at, true)}</Text>
+                            </View>
+                            <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
+                              <Text style={styles.body}>{v.body}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={styles.meta}>{c.description}</Text>
+                )}
+              </View>
+
+              <View style={styles.card}>
+                <SectionHeading title={t("supportSummary")} icon={FileText} />
+                <View style={styles.summaryGrid}>
+                  <View style={styles.summaryCell}>
+                    <TintedIcon icon={Tag} tint="blue" size={40} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportCategoryLabel")}</Text>
+                      <Text style={styles.summaryValue} numberOfLines={2}>{td(`supportCategory_${c.category}`, c.category)}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.summaryCell, styles.summaryBorder]}>
+                    <TintedIcon icon={Flag} tint="blue" size={40} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
+                      <Text style={styles.summaryValue} numberOfLines={2}>{td(`priority_${c.priority}`, c.priority)}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.summaryCell, styles.summaryTop]}>
+                    <TintedIcon icon={MessageSquare} tint="blue" size={40} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportChannel")}</Text>
+                      <Text style={styles.summaryValue} numberOfLines={2}>{t("supportChannelApp")}</Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t("supportAttachments")}. ${t("supportFilesCount", { count: attachments.length })}`}
+                    disabled={closed || !!busy}
+                    onPress={() => void attach()}
+                    style={({ pressed }) => [styles.summaryCell, styles.summaryBorder, styles.summaryTop, pressed && styles.pressed]}
+                  >
+                    <TintedIcon icon={Paperclip} tint="blue" size={40} />
+                    <View style={styles.flex}>
+                      <Text style={styles.metaLabel}>{t("supportAttachments")}</Text>
+                      <Text style={styles.summaryValue} numberOfLines={1}>{t("supportFilesCount", { count: attachments.length })}</Text>
+                    </View>
+                    {!closed ? <ChevronRight size={18} color={colors.navy800} /> : null}
+                  </Pressable>
+                </View>
+                {attachments.length ? (
+                  <View style={styles.files}>
+                    {attachments.map((a) => (
+                      <View key={a.id} style={styles.fileRow}>
+                        <Paperclip size={16} color={colors.neutral600} />
+                        <Text style={[styles.meta, styles.flex]} numberOfLines={1}>{a.file_name}</Text>
+                        <Text style={styles.meta}>{td(`attachmentStatus_${a.status}`, a.status)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {!closed ? (
+                  <View style={styles.nextUpdate}>
+                    <TintedIcon icon={Clock3} tint="gold" size={44} />
+                    <View style={styles.flex}>
+                      <View style={styles.nextHead}>
+                        <Text style={[styles.summaryValue, styles.flex]}>{t("supportNextUpdate")}</Text>
+                        <View style={styles.awaiting}>
+                          <Text style={styles.awaitingText}>{c.status === "WAITING_CUSTOMER" ? td(`supportStatus_${c.status}`, c.status) : t("supportAwaitingResponse")}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.meta}>{t("supportNextUpdateBody")}</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+
               {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
               {notice ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text> : null}
               {closed ? (
@@ -110,19 +264,12 @@ export default function SupportDetail() {
                   <Text style={styles.body}>{t("supportClosed")}</Text>
                   <Button label={t("supportNewTicket")} variant="secondary" onPress={() => router.push("/support/new")} />
                 </Card>
-              ) : (
+              ) : c.priority !== "HIGH" ? (
                 <Card>
-                  <TextField label={t("supportReply")} multiline value={message} onChangeText={setMessage} style={styles.area} />
-                  <Button label={t("supportSend")} icon={Send} loading={busy === "reply"} disabled={!message.trim() || !!busy} onPress={() => void reply()} />
-                  <Button label={t("supportAttach")} icon={Paperclip} variant="secondary" loading={busy === "attach"} disabled={!!busy} onPress={() => void attach()} />
-                  {c.priority !== "HIGH" ? (
-                    <>
-                      <Text style={styles.meta}>{t("supportEscalateHint")}</Text>
-                      <Button label={t("supportEscalate")} icon={ArrowUpCircle} variant="tertiary" loading={busy === "escalate"} disabled={!!busy} onPress={() => void escalate()} />
-                    </>
-                  ) : null}
+                  <Text style={styles.meta}>{t("supportEscalateHint")}</Text>
+                  <Button label={t("supportEscalate")} icon={ArrowUpCircle} variant="tertiary" loading={busy === "escalate"} disabled={!!busy} onPress={() => void escalate()} />
                 </Card>
-              )}
+              ) : null}
             </>
           );
         }}
@@ -131,15 +278,52 @@ export default function SupportDetail() {
   );
 }
 const styles = StyleSheet.create({
-  chips: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
-  title: { ...type.cardTitle, color: colors.navy950 },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.85 },
+  disabled: { opacity: 0.5 },
+  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
+  headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
+  reference: { fontFamily: "Inter_700Bold", fontSize: 22, lineHeight: 28, color: colors.navy950 },
+  subject: { ...type.body, color: colors.neutral700, marginTop: 2 },
+  statusChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 140 },
+  statusOpen: { backgroundColor: colors.successSoft },
+  statusNeutral: { backgroundColor: colors.neutral100 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { ...type.caption },
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
-  sender: { ...type.caption, color: colors.neutral600 },
-  bubble: { borderRadius: radius.card, padding: space.x3, gap: space.x1, maxWidth: "92%" },
-  mine: { alignSelf: "flex-end", backgroundColor: colors.blue50 },
-  theirs: { alignSelf: "flex-start", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
-  area: { minHeight: 96, textAlignVertical: "top", paddingTop: 12 },
+  metaGrid: { flexDirection: "row", borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
+  metaCell: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x1 },
+  metaBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x2 },
+  metaLabel: { ...type.meta, color: colors.neutral500 },
+  metaValue: { ...type.label, color: colors.navy950 },
+  gold: { color: colors.gold600 },
+  countPill: { backgroundColor: colors.blue50, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
+  countText: { ...type.caption, color: colors.blue700 },
+  timeline: { gap: space.x4 },
+  msgRow: { flexDirection: "row", gap: space.x3 },
+  avatarCol: { alignItems: "center" },
+  rail: { flex: 1, width: 2, backgroundColor: colors.blue100, marginTop: space.x2, minHeight: space.x4 },
+  msgHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x2, marginBottom: space.x1 },
+  sender: { ...type.label, color: colors.navy950 },
+  bubble: { borderRadius: radius.card, padding: space.x3 },
+  mine: { backgroundColor: colors.blue50 },
+  theirs: { backgroundColor: colors.neutral100 },
+  summaryGrid: { flexDirection: "row", flexWrap: "wrap", borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card },
+  summaryCell: { width: "50%", flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3 },
+  summaryBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
+  summaryTop: { borderTopWidth: 1, borderTopColor: colors.neutral200 },
+  summaryValue: { ...type.label, color: colors.navy950 },
+  files: { gap: space.x1 },
+  fileRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  nextUpdate: { flexDirection: "row", alignItems: "flex-start", gap: space.x3, backgroundColor: colors.gold50, borderRadius: radius.card, padding: space.x3 },
+  nextHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  awaiting: { backgroundColor: colors.gold100, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  awaitingText: { ...type.caption, color: colors.gold600 },
+  replyBar: { flexDirection: "row", alignItems: "flex-end", gap: space.x2 },
+  attachBtn: { width: 50, height: 50, borderRadius: radius.control, borderWidth: 1, borderColor: colors.neutral300, backgroundColor: colors.white, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  replyInput: { ...type.body, flex: 1, minHeight: 50, maxHeight: 120, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, backgroundColor: colors.white, paddingHorizontal: space.x3, paddingVertical: space.x3, color: colors.navy950 },
+  sendWrap: { minWidth: 130 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },
 });

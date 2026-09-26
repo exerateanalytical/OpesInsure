@@ -101,10 +101,17 @@ test("claim evidence uses the real upload contracts, including video", () => {
   const evidence = read("app/claim/[id]/evidence.tsx");
   assert.match(evidence, /"videos"/);
   assert.match(evidence, /uploadClaimEvidence/);
-  const fresh = read("app/claim/new.tsx");
-  assert.match(fresh, /DateTimeField/);
+  // Step 2 of the wizard renders the server form claim_fnol (date/time via the shared DateTimeField).
+  const fresh = read("app/claim/new/incident.tsx");
+  assert.match(fresh, /SchemaForm/);
+  assert.match(fresh, /form="claim_fnol"/);
+  assert.match(fresh, /ClaimsApi\.create/);
   assert.match(fresh, /toCameroonIso/);
+  assert.match(read("src/components/forms/ContractField.tsx"), /DateTimeField/);
   assert.doesNotMatch(fresh, /placeholder="2026-/);
+  // Step 1 only picks the policy; step 3/4 are the evidence and review screens.
+  assert.match(read("app/claim/new.tsx"), /claim\/new\/incident/);
+  assert.match(read("app/claim/new/review.tsx"), /submitDeclaration/);
 });
 
 // --- Deep links, timers, renewals ---------------------------------------------

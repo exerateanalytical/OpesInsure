@@ -1,50 +1,81 @@
-import React, { useMemo } from "react";
-import { StyleSheet, Text } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Siren } from "lucide-react-native";
-import { AppHeader, Button, Screen } from "@/components/ui";
-import { SchemaForm } from "@/components/forms/SchemaForm";
-import { toCameroonIso } from "@/components/DateTimeField";
-import { ClaimsApi } from "@/api/client";
+import { ArrowRight, Info, Siren } from "lucide-react-native";
+import { Button, Screen } from "@/components/ui";
+import { Banner, BrandHeader, CtaBar } from "@/components/design";
+import { SearchBar } from "@/components/SearchBar";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
+import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
+import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
+import { insuredLabel, policyTitle, providerName } from "@/components/claims/claimProduct";
+import { usePolicies } from "@/hooks/usePolicies";
+import { useLoad } from "@/hooks/useLoad";
+import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
-import type { MasterValue } from "@/lib/masterFields";
+import { matchesQuery } from "@/lib/customerLogic";
 import { colors, type } from "@/theme/tokens";
 
-const activeOnly = { policy_id: (v: MasterValue) => !v.attributes?.status || v.attributes.status === "ACTIVE" };
-
 /**
- * First notice of loss from the server form claim_fnol (GET /forms/claim_fnol):
- * policy picker (GET /policies), claim category -> cause, date/time up to now,
- * region -> department -> city helpers composed into incident_location with
- * the landmark, then details. Submitted to POST /mobile/claims.
+ * New claim, step 1 of 4 (design 33): choose the ACTIVE policy the loss
+ * relates to. The policy id is handed to step 2, which renders the rest of
+ * the server form claim_fnol (GET /forms/claim_fnol → POST /mobile/claims).
  */
 export default function NewClaim() {
   const { t } = useTranslation();
   const { policyId } = useLocalSearchParams<{ policyId?: string }>();
-  const seed = useMemo(
-    () => ({ ...(typeof policyId === "string" && policyId ? { policy_id: policyId } : {}), incident_at: toCameroonIso(Date.now() - 3_600_000) }),
-    [policyId],
-  );
+  const { policies, loading, error, reload } = usePolicies();
+  const insurers = useLoad(() => CustomerApi.institutions("insurer"));
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string | null>(typeof policyId === "string" && policyId ? policyId : null);
+
+  const active = useMemo(() => policies.filter((p) => !p.status || p.status.toUpperCase() === "ACTIVE"), [policies]);
+  const shown = active.filter((p) => matchesQuery(query, policyTitle(p, ""), p.policy_number, providerName(p), insuredLabel(p)));
+  useEffect(() => {
+    if (!selected && active.length === 1) setSelected(active[0]!.id);
+  }, [active, selected]);
+  const logoFor = (name: string | null) => {
+    if (!name) return null;
+    const needle = name.toLowerCase();
+    return insurers.data?.find((i) => i.name.toLowerCase() === needle)?.logo_url ?? null;
+  };
 
   return (
-    <Screen>
-      <AppHeader title={t("reportIncident")} subtitle={t("claimNewSubtitle")} back />
-      <Button label={t("emergencyAssistance")} icon={Siren} variant="danger" onPress={() => router.push("/claim/emergency")} />
-      <SchemaForm
-        form="claim_fnol"
-        initialValues={seed}
-        endpointFilter={activeOnly}
-        submitLabel={t("claimSubmit")}
-        footer={<Text style={styles.note}>{t("claimNewNote")}</Text>}
-        onSubmit={async (payload) => {
-          // Form data is kept on failure so the customer can retry.
-          const claim = await ClaimsApi.create(payload as Parameters<typeof ClaimsApi.create>[0]);
-          router.replace({ pathname: "/claim/[id]", params: { id: claim.id } });
-        }}
-      />
+    <Screen
+      footer={
+        <CtaBar>
+          <Button
+            label={t("continue")}
+            icon={ArrowRight}
+            disabled={!selected || !active.some((p) => p.id === selected)}
+            onPress={() => router.push({ pathname: "/claim/new/incident" as never, params: { policyId: selected ?? "" } })}
+          />
+        </CtaBar>
+      }
+    >
+      <BrandHeader title={t("claimSelectPolicyTitle")} subtitle={t("claimSelectPolicySubtitle")} right="help" />
+      <ClaimWizardSteps current={0} />
+      <Banner icon={Siren} tint="red" title={t("emergencyTitle")} body={t("emergencyAssistance")} onPress={() => router.push("/claim/emergency")} />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t("claimSearchPolicies")} label={t("claimPolicySearchLabel")} clearLabel={t("clearSearch")} />
+      {loading && !policies.length ? (
+        <LoadingState label={t("claimLoadingPolicies")} />
+      ) : error && !policies.length ? (
+        <ErrorState error={error} onRetry={() => void reload()} />
+      ) : !active.length ? (
+        <EmptyState title={t("claimNoActivePolicy")} message={t("claimNoActivePolicyBody")} />
+      ) : (
+        <View style={s.list} accessibilityRole="radiogroup">
+          {shown.map((p) => (
+            <PolicyChoiceCard key={p.id} policy={p} logoUrl={logoFor(providerName(p))} selected={selected === p.id} onPress={() => setSelected(p.id)} />
+          ))}
+          {!shown.length ? <Text style={s.note}>{t("claimNoPolicyMatch")}</Text> : null}
+        </View>
+      )}
+      <Banner icon={Info} tint="blue" title={t("claimOnlyActiveTitle")} body={t("claimOnlyActiveBody")} />
     </Screen>
   );
 }
-const styles = StyleSheet.create({
-  note: { ...type.meta, color: colors.neutral600 },
+const s = StyleSheet.create({
+  list: { gap: 12 },
+  note: { ...type.body, color: colors.neutral600, textAlign: "center" },
 });

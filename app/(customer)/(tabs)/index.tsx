@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import {
+  ArrowRight,
   Bell,
   ChevronRight,
   CircleHelp,
@@ -23,13 +24,15 @@ import {
   MessageCircle,
   Phone,
   RefreshCw,
-  Scale,
   ShieldAlert,
+  ShieldCheck,
   WifiOff,
 } from "lucide-react-native";
-import { BrandMark } from "@/components/BrandMark";
 import { SearchBar } from "@/components/SearchBar";
-import { CONTENT_MAX_WIDTH, HeritageAccent, ripple, StatusChip } from "@/components/ui";
+import { CONTENT_MAX_WIDTH, ripple, StatusChip } from "@/components/ui";
+import { Banner, BrandHeader, IconTile, SectionHeading } from "@/components/design";
+import { CategoryStrip } from "@/components/customer/CategoryTiles";
+import { PolicyListCard } from "@/components/policies/PolicyListCard";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useColumns } from "@/components/responsive";
 import { usePolicies } from "@/hooks/usePolicies";
@@ -41,10 +44,12 @@ import { Preferences } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
 import { claimStatusKey, claimTone, isActiveClaim } from "@/lib/claimStatus";
 import { daysUntil, isRenewalDue } from "@/lib/customerLogic";
-import { HeritagePattern, KenteBand } from "@/components/HeritagePattern";
+import { HeritagePattern } from "@/components/HeritagePattern";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const OPEN_QUOTE = /^(DRAFT|QUOTING|RATED|OFFERED|REFERRED|PENDING)/;
+/** i18n key for the time-of-day greeting. */
+const greetingKey = (h = new Date().getHours()): "greetingMorning" | "greetingAfternoon" | "greetingEvening" => (h < 12 ? "greetingMorning" : h < 18 ? "greetingAfternoon" : "greetingEvening");
 
 export default function CustomerHome() {
   const { t, td, date } = useTranslation();
@@ -104,23 +109,11 @@ export default function CustomerHome() {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
       >
-        <View style={styles.top}>
-          <BrandMark size={34} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={unread ? t("notificationsUnread", { count: unread }) : t("notifications")}
-            hitSlop={6}
-            onPress={() => router.push("/notifications")}
-            style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
-          >
-            <Bell size={21} color={colors.navy950} />
-            {unread ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unread > 99 ? "99+" : unread}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-        </View>
+        <BrandHeader
+          back={false}
+          badge={unread || undefined}
+          onRight={() => router.push("/notifications")}
+        />
 
         {offline ? (
           <View style={styles.offline} accessibilityRole="alert">
@@ -129,41 +122,71 @@ export default function CustomerHome() {
           </View>
         ) : null}
 
-        <View>
-          <Text style={styles.greeting}>
-            {firstName ? t("homeGreetingName", { name: firstName }) : t("homeGreeting")}
-          </Text>
-          <Text style={styles.title}>{t("homeTitle")}</Text>
-          <HeritageAccent />
+        <View style={styles.heroBlock}>
+          <Text style={styles.greeting}>{t("homeGreetingTime", { part: t(greetingKey()) })}</Text>
+          <Text style={styles.greetingName}>{firstName ? `${firstName} \u{1F44B}` : t("homeGreeting")}</Text>
+          <Text style={styles.heroTagline}>{t("homeTagline")}</Text>
         </View>
-
-        {/* Primary action: the largest control on the screen. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${t("compareInsurance")}. ${t("compareInsuranceBody")}`}
-          onPress={() => router.push("/quote/product")}
-          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-        >
-          <HeritagePattern variant="ndop" opacity={0.1} />
-          <KenteBand height={5} style={styles.ctaBand} />
-          <View style={styles.ctaIcon}>
-            <Scale size={28} color={colors.navy950} />
-          </View>
-          <View style={styles.flex}>
-            <Text style={styles.ctaTitle}>{t("compareInsurance")}</Text>
-            <Text style={styles.ctaBody}>{t("compareInsuranceBody")}</Text>
-          </View>
-          <ChevronRight size={24} color={colors.white} />
-        </Pressable>
 
         <SearchBar
           value={query}
           onChangeText={setQuery}
           onSubmit={search}
           label={t("searchLabel")}
-          placeholder={t("searchPlaceholder")}
+          placeholder={t("homeSearchPlaceholder")}
           clearLabel={t("clearSearch")}
         />
+
+        <CategoryStrip
+          ids={["motor", "health", "travel", "home", "more"]}
+          onPress={(c) =>
+            c.id === "more"
+              ? router.push("/(customer)/(tabs)/explore")
+              : router.push({ pathname: "/quote/product", params: { product: c.id } })
+          }
+        />
+
+        {/* Primary action: the largest control on the screen. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("compareInsurance")}. ${t("compareInsuranceBody")}`}
+          onPress={() => router.push("/quote/product")}
+          android_ripple={ripple(true)}
+          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
+        >
+          <HeritagePattern variant="ndop" opacity={0.08} />
+          <View style={styles.ctaCopy}>
+            <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
+            <Text style={styles.ctaBody}>{t("homeCtaBody")}</Text>
+            <View style={styles.ctaButton}>
+              <Text style={styles.ctaButtonText}>{t("propGetQuote")}</Text>
+              <ArrowRight size={18} color={colors.navy950} />
+            </View>
+          </View>
+          <View style={styles.ctaShield}>
+            <ShieldCheck size={72} color={colors.gold500} strokeWidth={1.6} />
+          </View>
+        </Pressable>
+
+        <SectionHeading title={t("policies")} action={t("seeAll")} onAction={() => router.push("/(customer)/(tabs)/policies")} />
+        {policies.loading && !policies.policies.length ? (
+          <View style={styles.inline} accessibilityRole="progressbar" accessibilityLabel={t("loading")}>
+            <ActivityIndicator color={colors.blue600} />
+          </View>
+        ) : active.length ? (
+          active.slice(0, 2).map((p) => (
+            <PolicyListCard key={p.id} policy={p} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: p.id } })} />
+          ))
+        ) : (
+          <Banner icon={FileText} tint="blue" title={t("homeNoPolicies")} body={t("compareInsuranceBody")} onPress={() => router.push("/quote/product")} />
+        )}
+
+        <SectionHeading title={t("homeQuickActions")} />
+        <View style={styles.quickRow}>
+          <IconTile icon={FileText} label={t("pdFileClaim")} onPress={() => router.push("/claim/new")} />
+          <IconTile icon={RefreshCw} label={t("pdRenew")} onPress={() => (renewals[0] ? router.push({ pathname: "/policy/[id]/renew", params: { id: renewals[0].id } }) : router.push("/(customer)/(tabs)/policies"))} />
+          <IconTile icon={LifeBuoy} label={t("homeGetSupport")} onPress={() => router.push("/support")} />
+        </View>
 
         <Text accessibilityRole="header" style={styles.section}>{t("protect")}</Text>
         <View style={grid.row}>
@@ -457,66 +480,26 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.neutral50 },
-  content: { paddingHorizontal: space.x5, paddingBottom: space.x16, gap: space.x5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
-  flex: { flex: 1 },
-  pressed: { opacity: 0.82 },
-  top: { height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  bell: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.control,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.neutral200,
-  },
-  badge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 10,
-    backgroundColor: colors.danger,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { ...type.caption, fontSize: 11, lineHeight: 14, color: colors.white },
-  offline: {
-    flexDirection: "row",
-    gap: space.x2,
-    alignItems: "center",
-    backgroundColor: colors.warningSoft,
-    borderRadius: radius.control,
-    padding: space.x3,
-  },
-  offlineText: { ...type.meta, color: colors.warningText, flex: 1 },
-  greeting: { ...type.label, color: colors.neutral600 },
-  title: { ...type.pageTitle, color: colors.navy950, marginTop: 4 },
+  heroBlock: { gap: 2, marginTop: -space.x2 },
+  greeting: { fontFamily: "Inter_400Regular", fontSize: 26, lineHeight: 32, color: colors.navy950 },
+  greetingName: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, color: colors.navy950, letterSpacing: -0.5 },
+  heroTagline: { ...type.bodyLarge, color: colors.navy800, marginTop: 4 },
   cta: {
-    minHeight: 96,
     flexDirection: "row",
     alignItems: "center",
-    gap: space.x4,
-    padding: space.x5,
     borderRadius: radius.feature,
-    backgroundColor: colors.navy950,
+    backgroundColor: colors.navy900,
     overflow: "hidden",
+    padding: space.x5,
+    minHeight: 168,
   },
-  ctaBand: { position: "absolute", left: 0, right: 0, bottom: 0 },
-  ctaIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.card,
-    backgroundColor: colors.gold500,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaTitle: { ...type.sectionTitle, color: colors.white },
-  ctaBody: { ...type.meta, color: colors.gold100, marginTop: 2 },
+  ctaCopy: { flex: 1, gap: space.x2 },
+  ctaTitle: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 29, color: colors.white },
+  ctaBody: { ...type.body, color: colors.blue100 },
+  ctaButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.gold500, borderRadius: radius.control, paddingHorizontal: space.x4, minHeight: 46, marginTop: space.x2 },
+  ctaButtonText: { ...type.label, fontSize: 16, color: colors.navy950 },
+  ctaShield: { width: 96, alignItems: "center", justifyContent: "center" },
+  quickRow: { flexDirection: "row", gap: space.x3 },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {
     minHeight: 92,
@@ -532,6 +515,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
   },
   categoryLabel: { ...type.caption, color: colors.navy950, textAlign: "center" },
+  safe: { flex: 1, backgroundColor: colors.neutral50 },
+  content: { paddingHorizontal: space.x5, paddingBottom: space.x16, gap: space.x5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.82 },
+  offline: {
+    flexDirection: "row",
+    gap: space.x2,
+    alignItems: "center",
+    backgroundColor: colors.warningSoft,
+    borderRadius: radius.control,
+    padding: space.x3,
+  },
+  offlineText: { ...type.meta, color: colors.warningText, flex: 1 },
   card: {
     backgroundColor: colors.white,
     borderWidth: 1,

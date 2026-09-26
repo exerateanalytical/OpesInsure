@@ -147,6 +147,35 @@ test("Batch 4 screens are wired to their endpoints", () => {
   assert.ok(existsSync(new URL("../app/search.tsx", import.meta.url)));
 });
 
+test("redesigned list helpers: line families, expiry, draft buckets, checklist progress", async () => {
+  const { lineFamily, daysUntil, isExpiringSoon, draftBucket, checklistProgress } = await import("../src/lib/crm.ts");
+  assert.equal(lineFamily("MOTOR"), "motor");
+  assert.equal(lineFamily("motor_tpl"), "motor");
+  assert.equal(lineFamily("MRH"), "home");
+  assert.equal(lineFamily("PA"), "accident");
+  assert.equal(lineFamily(null), null);
+  assert.equal(lineFamily("CARGO"), null);
+  const now = Date.parse("2026-01-10T00:00:00Z");
+  assert.equal(daysUntil("2026-01-15T00:00:00Z", now), 5);
+  assert.equal(daysUntil("bad", now), null);
+  assert.equal(isExpiringSoon("2026-01-15T00:00:00Z", now), true);
+  assert.equal(isExpiringSoon("2026-02-15T00:00:00Z", now), false);
+  assert.equal(isExpiringSoon("2026-01-01T00:00:00Z", now), false);
+  assert.equal(draftBucket("INFORMATION_REQUIRED"), "awaiting");
+  assert.equal(draftBucket("draft"), "progress");
+  assert.equal(draftBucket("APPROVED"), "ready");
+  assert.equal(draftBucket("ISSUED"), "other");
+  assert.equal(checklistProgress([]), null);
+  assert.equal(checklistProgress([{ status: "ACCEPTED" }, { status: "MISSING" }, { status: "UPLOADED" }, { status: null }]), 0.5);
+  for (const f of ["app/search.tsx", "app/quotes/index.tsx", "app/proposals/index.tsx", "app/support/[id].tsx", "app/quote/product/[id].tsx"])
+    assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), f);
+  assert.match(read("app/search.tsx"), /SearchApi\.search/);
+  assert.match(read("app/search.tsx"), /searchHitRoute/);
+  assert.match(read("app/quotes/index.tsx"), /QuotesApi\.history/);
+  assert.match(read("app/quotes/index.tsx"), /usePagedList/);
+  assert.match(read("app/_layout.tsx"), /name="quote\/product\/\[id\]"/);
+});
+
 test("Batch 4 keys exist in EN and FR", () => {
   const en = read("src/i18n/en.ts");
   const fr = read("src/i18n/fr.ts");

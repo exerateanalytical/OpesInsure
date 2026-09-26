@@ -375,8 +375,8 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.5 },
   // header
   header: { paddingTop: space.x2, gap: space.x4, overflow: "visible" },
-  art: { position: "absolute", right: -40, top: -30, width: 210, height: 210, opacity: 0.9 },
-  wave: { position: "absolute", right: -60, top: 40, width: 260, height: 84, opacity: 0.95 },
+  art: { position: "absolute", right: -26, top: -8, width: 108, height: 108, opacity: 0.45 },
+  wave: { position: "absolute", right: -96, top: 26, width: 200, height: 64, opacity: 0.7 },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48 },
   lockup: { flexDirection: "row", alignItems: "center", gap: 6 },
   wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 28, color: colors.navy900, letterSpacing: -0.4 },

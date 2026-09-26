@@ -1,30 +1,80 @@
-import React from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Clock3 } from "lucide-react-native";
-import { AppHeader, Screen } from "@/components/ui";
-import { FlowRow } from "@/components/FlowPrimitives";
+import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LayoutGrid, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
+import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
+import { Banner, BrandHeader, TintedIcon } from "@/components/design";
+import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
 import { CustomerQuoteSummary, QuotesApi } from "@/api/client";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize } from "@/lib/purchase";
+import { daysUntil, isExpiringSoon, lineFamily, LineFamily } from "@/lib/crm";
+import { matchesQuery } from "@/lib/customerLogic";
 import { useTranslation } from "@/i18n";
-import { quoteOutcome } from "@/lib/quoteWorkflow";
-import { colors, radius, space } from "@/theme/tokens";
+import { quoteOutcome, quoteTone } from "@/lib/quoteWorkflow";
+import { colors, radius, space, type } from "@/theme/tokens";
+
+const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: Car, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
+/** Filter chips from the design; the rest of the families stay reachable through "All". */
+const FILTERS: { value: "all" | LineFamily; icon: LucideIcon; label: "filterAll" | "catMotor" | "catHealth" | "catLife" | "catTravel" }[] = [
+  { value: "all", icon: LayoutGrid, label: "filterAll" },
+  { value: "motor", icon: Car, label: "catMotor" },
+  { value: "health", icon: HeartPulse, label: "catHealth" },
+  { value: "life", icon: ShieldPlus, label: "catLife" },
+  { value: "travel", icon: Plane, label: "catTravel" },
+];
+
+type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null };
 
 export default function QuoteHistory() {
   const { t, td } = useTranslation();
   const f = useFormatters();
   const list = usePagedList<CustomerQuoteSummary>((page) => QuotesApi.history(page));
+  const [query, setQuery] = useState("");
+  const [family, setFamily] = useState<"all" | LineFamily>("all");
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
+
+  const shown = useMemo(
+    () =>
+      (list.items as Row[]).filter(
+        (q) => (family === "all" || lineFamily(q.line_code) === family) && matchesQuery(query, q.product_name, q.quote_number, q.vehicle_label, q.line_code, q.carrier_name, q.provider_name),
+      ),
+    [list.items, family, query],
+  );
+
+  const remove = (q: Row) =>
+    Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("quotesDelete"),
+        style: "destructive",
+        onPress: async () => {
+          setDeleting(q.id);
+          setActionError(null);
+          try {
+            await QuotesApi.discard(q.id);
+            await list.reload();
+          } catch (e) {
+            setActionError(e);
+          } finally {
+            setDeleting(null);
+          }
+        },
+      },
+    ]);
+
   return (
     <Screen scroll={false}>
       <FlatList
-        data={list.items}
+        data={shown}
         keyExtractor={(q) => q.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={list.loading && list.items.length > 0} onRefresh={() => void list.reload()} />}
         onEndReachedThreshold={0.4}
         onEndReached={() => {
@@ -32,37 +82,145 @@ export default function QuoteHistory() {
         }}
         ListHeaderComponent={
           <View style={s.header}>
-            <AppHeader title={t("quotesTitle")} subtitle={t("quotesSubtitle")} back />
+            <BrandHeader title={t("quotesTitle")} subtitle={t("quotesSubtitle")} back right="bell" />
+            <SearchBar value={query} onChangeText={setQuery} placeholder={t("quotesSearchPlaceholder")} label={t("quotesTitle")} clearLabel={t("clearSearch")} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
+              {FILTERS.map((o) => (
+                <Chip key={o.value} role="tab" label={t(o.label)} selected={family === o.value} onPress={() => setFamily(o.value)} />
+              ))}
+            </ScrollView>
             {list.loading && !list.items.length ? <LoadingState label={t("quotesLoading")} /> : null}
             {list.error && !list.items.length ? <ErrorCard error={list.error} fallback={t("quotesLoadFailed")} onRetry={() => void list.reload()} /> : null}
+            {actionError ? <ErrorCard error={actionError} fallback={t("actionFailed")} /> : null}
           </View>
         }
-        renderItem={({ item: q, index }) => (
-          <View style={[s.row, index === 0 && s.first, index === list.items.length - 1 && s.last]}>
-            <FlowRow
-              icon={Clock3}
-              title={q.product_name ?? humanize(q.line_code)}
-              subtitle={[
-                q.quote_number,
-                q.vehicle_label,
-                q.offer_count != null ? t("quotesOfferCount", { count: q.offer_count }) : null,
-                q.expires_at ? t("quotesValidUntil", { date: f.date(q.expires_at) }) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              status={td(`quoteStatus_${quoteOutcome(q) ?? q.status}`, q.status)}
-              onPress={() => router.push({ pathname: "/quotes/[id]", params: { id: q.id } })}
-            />
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const q = item as Row;
+          const fam = lineFamily(q.line_code);
+          const Icon = fam ? LINE_ICONS[fam] : Clock3;
+          const outcome = quoteOutcome(q);
+          const days = daysUntil(q.expires_at);
+          const soon = !outcome && isExpiringSoon(q.expires_at);
+          const provider = q.carrier_name ?? q.provider_name ?? null;
+          const open = () => router.push({ pathname: "/quotes/[id]", params: { id: q.id } });
+          return (
+            <View style={s.card}>
+              <View style={s.top}>
+                <View style={s.imageTile}>
+                  <Icon size={44} color={colors.navy800} strokeWidth={1.5} />
+                </View>
+                <View style={s.flex}>
+                  <View style={s.titleRow}>
+                    <TintedIcon icon={Icon} tint="blue" size={40} />
+                    <View style={s.flex}>
+                      <Text style={s.line} numberOfLines={1}>{fam ? td(`lineFamily_${fam}`, humanize(q.line_code)) : humanize(q.line_code)}</Text>
+                      {provider ? <Text style={s.meta} numberOfLines={1}>{provider}</Text> : q.quote_number ? <Text style={s.meta} numberOfLines={1}>{q.quote_number}</Text> : null}
+                    </View>
+                  </View>
+                  <View style={s.chipRow}>
+                    {soon ? (
+                      <View style={s.soon}>
+                        <Clock3 size={14} color={colors.gold600} />
+                        <Text style={s.soonText}>{t("quotesExpiringSoon")}</Text>
+                      </View>
+                    ) : (
+                      <StatusChip label={td(`quoteStatus_${outcome ?? q.status}`, q.status)} tone={quoteTone(q)} />
+                    )}
+                  </View>
+                </View>
+              </View>
+              <View style={s.nameRow}>
+                <Text style={[s.title, s.flex]} numberOfLines={2}>{q.product_name ?? q.vehicle_label ?? humanize(q.line_code)}</Text>
+                {typeof q.lowest_total_minor === "number" ? (
+                  <View style={s.priceBox}>
+                    <Text style={s.price}>{f.xaf(q.lowest_total_minor)}</Text>
+                    <Text style={s.meta}>{t("quotesPerYear")}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {q.vehicle_label && q.product_name ? <Text style={s.meta}>{q.vehicle_label}</Text> : null}
+              {q.offer_count != null ? <Text style={s.meta}>{t("quotesOfferCount", { count: q.offer_count })}</Text> : null}
+              <View style={s.metaGrid}>
+                <View style={[s.metaCell, s.flex]}>
+                  <CalendarDays size={20} color={colors.navy800} />
+                  <View style={s.flex}>
+                    {outcome ? (
+                      <Text style={s.metaStrong}>{td(`quoteStatus_${outcome}`, outcome)}</Text>
+                    ) : days === null ? (
+                      <Text style={s.metaStrong}>{t("quotesValidUntil", { date: f.date(q.expires_at) })}</Text>
+                    ) : days <= 0 ? (
+                      <Text style={[s.metaStrong, s.gold]}>{t("quotesExpiresToday")}</Text>
+                    ) : (
+                      <Text style={[s.metaStrong, soon && s.gold]}>{t("quotesExpiresIn", { days })}</Text>
+                    )}
+                  </View>
+                </View>
+                {q.created_at ? (
+                  <View style={[s.metaCell, s.flex, s.metaDivider]}>
+                    <CalendarDays size={20} color={colors.navy800} />
+                    <Text style={s.metaStrong}>{t("quotesSavedOn", { date: f.date(q.created_at) })}</Text>
+                  </View>
+                ) : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={t("quotesResume")} hitSlop={8} onPress={open}>
+                  <ChevronRight size={20} color={colors.navy800} />
+                </Pressable>
+              </View>
+              <View style={s.actions}>
+                <Pressable accessibilityRole="button" onPress={open} android_ripple={ripple()} style={({ pressed }) => [s.btn, s.gold_btn, pressed && s.pressed]}>
+                  <ArrowRight size={18} color={colors.navy950} />
+                  <Text style={s.btnText}>{t("quotesResume")}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: q.id } })}
+                  android_ripple={ripple()}
+                  style={({ pressed }) => [s.btn, s.soft_btn, pressed && s.pressed]}
+                >
+                  <ArrowLeftRight size={18} color={colors.navy950} />
+                  <Text style={s.btnText}>{t("quotesCompare")}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: deleting === q.id }}
+                  disabled={!!deleting}
+                  onPress={() => remove(q)}
+                  android_ripple={ripple()}
+                  style={({ pressed }) => [s.btn, s.soft_btn, s.deleteBtn, pressed && s.pressed, deleting === q.id && s.disabled]}
+                >
+                  <Trash2 size={18} color={colors.navy950} />
+                  <Text style={s.btnText}>{t("quotesDelete")}</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        }}
         ListEmptyComponent={
           !list.loading && !list.error ? (
-            <EmptyState title={t("quotesEmpty")} message={t("quotesEmptyBody")} action={t("quotesGetQuote")} onPress={() => router.push("/quote/product")} />
+            list.items.length ? (
+              <EmptyState title={t("quotesNoMatch")} message={t("quotesEmptyBody")} action={t("clearSearch")} onPress={() => { setQuery(""); setFamily("all"); }} />
+            ) : (
+              <EmptyState title={t("quotesEmpty")} message={t("quotesEmptyBody")} action={t("quotesGetQuote")} onPress={() => router.push("/quote/product")} />
+            )
           ) : null
         }
         ListFooterComponent={
           <View style={s.footer}>
             <LoadMore hasMore={list.hasMore} loading={list.loadingMore} error={list.moreError} onPress={() => void list.loadMore()} />
+            {list.items.length ? (
+              <Banner
+                icon={HeartPulse}
+                tint="blue"
+                title={t("searchHelpTitle")}
+                body={t("quotesHelpBody")}
+                onPress={() => router.push("/(customer)/(tabs)/explore" as never)}
+                right={
+                  <View style={s.bannerCta}>
+                    <Text style={s.bannerCtaText}>{t("quotesExplore")}</Text>
+                    <ArrowRight size={16} color={colors.navy950} />
+                  </View>
+                }
+              />
+            ) : null}
           </View>
         }
       />
@@ -70,10 +228,37 @@ export default function QuoteHistory() {
   );
 }
 const s = StyleSheet.create({
-  content: { paddingBottom: space.x16 },
-  header: { gap: space.x4, marginBottom: space.x4 },
-  row: { backgroundColor: colors.white, paddingHorizontal: space.x4 },
-  first: { borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card },
-  last: { borderBottomLeftRadius: radius.card, borderBottomRightRadius: radius.card },
-  footer: { marginTop: space.x4 },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.85 },
+  disabled: { opacity: 0.5 },
+  content: { paddingBottom: space.x16, gap: space.x4 },
+  header: { gap: space.x4 },
+  chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
+  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
+  top: { flexDirection: "row", gap: space.x3 },
+  imageTile: { width: 104, height: 104, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  line: { ...type.label, color: colors.navy950 },
+  meta: { ...type.meta, color: colors.neutral600 },
+  chipRow: { flexDirection: "row", marginTop: space.x2 },
+  soon: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.gold50, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
+  soonText: { ...type.caption, color: colors.gold600 },
+  nameRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
+  title: { ...type.cardTitle, color: colors.navy950 },
+  priceBox: { alignItems: "flex-end" },
+  price: { fontFamily: "Inter_700Bold", fontSize: 20, lineHeight: 26, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  metaGrid: { flexDirection: "row", alignItems: "center", gap: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
+  metaCell: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  metaDivider: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x3 },
+  metaStrong: { ...type.meta, color: colors.navy950 },
+  gold: { color: colors.gold600, fontFamily: "Inter_700Bold" },
+  actions: { flexDirection: "row", gap: space.x2 },
+  btn: { flex: 1, minHeight: 46, borderRadius: radius.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, overflow: "hidden", paddingHorizontal: space.x2 },
+  gold_btn: { flex: 1.3, backgroundColor: colors.gold500 },
+  soft_btn: { backgroundColor: colors.blue50 },
+  deleteBtn: { flex: 0.9 },
+  btnText: { ...type.label, color: colors.navy950, fontSize: 13 },
+  footer: { gap: space.x4 },
+  bannerCta: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.gold500, borderRadius: radius.control, paddingHorizontal: space.x3, paddingVertical: space.x2 },
+  bannerCtaText: { ...type.label, color: colors.navy950, fontSize: 13 },
 });

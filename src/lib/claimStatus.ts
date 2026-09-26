@@ -159,3 +159,80 @@ export function isActiveClaim(value: string | null | undefined) {
   const status = normalizeClaimStatus(value);
   return !!status && status !== "PAID" && status !== "CLOSED";
 }
+
+// ---------------------------------------------------------------------------
+// Compact rails for the redesigned claims list / detail (design 29 & 39)
+// ---------------------------------------------------------------------------
+
+/** Four-node horizontal rail on each claim card: Submitted → Assessment → Decision → Settlement. */
+export const RAIL_STEPS = ["submitted", "assessment", "decision", "settlement"] as const;
+export type RailStep = (typeof RAIL_STEPS)[number];
+export type RailState = "done" | "current" | "rejected" | "upcoming";
+
+/** Which of the seven tracker steps feed each rail node. */
+const RAIL_SOURCES: Record<RailStep, number[]> = {
+  submitted: [0],
+  assessment: [1, 2, 3, 4],
+  decision: [5],
+  settlement: [6],
+};
+
+/**
+ * Collapses claimTracker() onto the four rail nodes. A node is "current" when
+ * any of its tracker steps is current or needs attention, "done" when all of
+ * them are done. A declined claim shows a red "rejected" decision node; an
+ * approved claim has its decision done and settlement in progress.
+ */
+export function claimRail(value: string | null | undefined): RailState[] {
+  const status = normalizeClaimStatus(value);
+  const steps = claimTracker(status);
+  return RAIL_STEPS.map((node) => {
+    if (node === "decision" && status === "DECLINED") return "rejected";
+    if ((status === "APPROVED" || status === "PARTIALLY_APPROVED") && node === "decision") return "done";
+    if ((status === "APPROVED" || status === "PARTIALLY_APPROVED") && node === "settlement") return "current";
+    const own = RAIL_SOURCES[node].map((i) => steps[i] ?? "upcoming");
+    if (own.some((s) => s === "current" || s === "attention")) return "current";
+    if (own.every((s) => s === "done")) return "done";
+    return "upcoming";
+  });
+}
+
+/** Five-node detail header: Submitted → Under Review → Assessment → Decision → Settlement. */
+export const DETAIL_STAGES = ["submitted", "review", "assessment", "decision", "settlement"] as const;
+
+/**
+ * Index of the active detail stage (0-4); DETAIL_STAGES.length once the claim
+ * is paid or closed so every node reads as done. Unknown statuses return 0.
+ */
+export function claimStage(value: string | null | undefined): number {
+  switch (normalizeClaimStatus(value)) {
+    case "DRAFT":
+    case "SUBMITTED":
+      return 0;
+    case "ACKNOWLEDGED":
+    case "EVIDENCE_PENDING":
+      return 1;
+    case "ASSESSMENT":
+    case "CARRIER_REVIEW":
+      return 2;
+    case "APPROVED":
+    case "PARTIALLY_APPROVED":
+    case "DECLINED":
+    case "DISPUTED":
+      return 3;
+    case "PAYMENT_PENDING":
+      return 4;
+    case "PAID":
+    case "CLOSED":
+      return DETAIL_STAGES.length;
+    default:
+      return 0;
+  }
+}
+
+/** List filter segments: everything, still moving, or finished (paid / closed / declined). */
+export type ClaimSegment = "all" | "progress" | "completed";
+export function claimSegment(value: string | null | undefined): Exclude<ClaimSegment, "all"> {
+  const status = normalizeClaimStatus(value);
+  return status === "PAID" || status === "CLOSED" || status === "DECLINED" ? "completed" : "progress";
+}

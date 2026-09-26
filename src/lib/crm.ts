@@ -169,3 +169,57 @@ export function duplicateAssetId(e: unknown): string | null {
   }
   return null;
 }
+
+// ------------------------------------------------------------ redesigned lists (search / saved quotes / drafts)
+/** Product families the redesigned lists filter by; codes mirror src/components/customer/categories.ts. */
+export const LINE_FAMILIES = {
+  motor: ["MOTOR", "AUTO"],
+  health: ["HEALTH", "MEDICAL"],
+  travel: ["TRAVEL"],
+  home: ["HOME", "PROPERTY", "MRH"],
+  business: ["BUSINESS", "SME", "COMMERCIAL", "LIABILITY"],
+  life: ["LIFE"],
+  accident: ["ACCIDENT", "PA"],
+} as const;
+export type LineFamily = keyof typeof LINE_FAMILIES;
+
+/** Family of a backend line code (MOTOR_TPL -> motor); null when unknown. */
+export function lineFamily(lineCode: string | null | undefined): LineFamily | null {
+  const code = (lineCode ?? "").toString().toUpperCase();
+  if (!code) return null;
+  for (const [family, codes] of Object.entries(LINE_FAMILIES) as [LineFamily, readonly string[]][]) {
+    if (codes.some((c) => code === c || code.startsWith(`${c}_`) || code.startsWith(c))) return family;
+  }
+  return null;
+}
+
+/** Whole days until an ISO date (negative when past); null when missing/invalid. */
+export function daysUntil(iso: string | null | undefined, now = Date.now()): number | null {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (!Number.isFinite(at)) return null;
+  return Math.ceil((at - now) / 86_400_000);
+}
+
+/** "Expiring soon": still valid but within `withinDays` (7 by default). */
+export function isExpiringSoon(iso: string | null | undefined, now = Date.now(), withinDays = 7): boolean {
+  const d = daysUntil(iso, now);
+  return d !== null && d >= 0 && d < withinDays;
+}
+
+/** Draft-application buckets shown as filter chips (design 51). Closed proposals fall in "other" (All only). */
+export type DraftBucket = "progress" | "awaiting" | "ready" | "other";
+export function draftBucket(status: string | null | undefined): DraftBucket {
+  const s = (status ?? "").toString().toUpperCase();
+  if (["INFORMATION_REQUIRED", "MORE_INFORMATION", "DOCUMENTS_PENDING"].includes(s)) return "awaiting";
+  if (["APPROVED", "PAYMENT_PENDING", "COUNTEROFFERED"].includes(s)) return "ready";
+  if (["DRAFT", "QUOTING", "DISCLOSURES_PENDING", "SUBMITTED", "UNDER_REVIEW", "RESUBMITTED"].includes(s)) return "progress";
+  return "other";
+}
+
+/** Checklist completion 0..1 from required_documents[].status; null when the list is empty/absent. */
+export function checklistProgress(docs: { status?: string | null }[] | null | undefined): number | null {
+  if (!docs || !docs.length) return null;
+  const done = docs.filter((d) => ["UPLOADED", "REVIEWING", "ACCEPTED", "VERIFIED"].includes((d.status ?? "").toString().toUpperCase())).length;
+  return Math.round((done / docs.length) * 100) / 100;
+}

@@ -8,6 +8,7 @@ import {
   HardHat,
   HeartPulse,
   Home,
+  Info,
   Plane,
   ShieldPlus,
 } from "lucide-react-native";
@@ -83,6 +84,15 @@ export default function Product() {
                   <Text style={styles.title}>{title}</Text>
                   <Text style={styles.subtitle}>{subtitle}</Text>
                 </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t("searchViewDetails")}: ${title}`}
+                  hitSlop={8}
+                  onPress={() => router.push({ pathname: "/quote/product/[id]", params: { id } })}
+                  style={styles.details}
+                >
+                  <Info size={20} color={colors.blue600} />
+                </Pressable>
                 <ChevronRight size={20} color={colors.neutral500} />
               </View>
             </Card>
@@ -103,6 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   copy: { flex: 1 },
+  details: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
   title: { ...type.label, color: colors.navy950 },
   subtitle: { ...type.meta, color: colors.neutral600 },
   selected: {

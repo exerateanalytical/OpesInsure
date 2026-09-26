@@ -89,6 +89,7 @@ export default function RootLayout() {
         <Stack.Protected guard={customer}>
           <Stack.Screen name="(customer)" />
           <Stack.Screen name="quote/product" />
+          <Stack.Screen name="quote/product/[id]" />
           <Stack.Screen name="quote/risk" />
           <Stack.Screen name="quote/offers" />
           <Stack.Screen name="quote/disclosure" />
@@ -102,7 +103,12 @@ export default function RootLayout() {
           <Stack.Screen name="policy/[id]" />
           <Stack.Screen name="policy/[id]/service" />
           <Stack.Screen name="policy/[id]/renew" />
+          <Stack.Screen name="policy/[id]/renewal-quote" />
+          <Stack.Screen name="policy/[id]/renewal-offers" />
+          <Stack.Screen name="policy/[id]/renewal-review" />
           <Stack.Screen name="claim/new" />
+          <Stack.Screen name="claim/new/incident" />
+          <Stack.Screen name="claim/new/review" />
           <Stack.Screen name="claim/[id]" />
           <Stack.Screen name="claim/[id]/evidence" />
           <Stack.Screen name="claim/[id]/appeal" />

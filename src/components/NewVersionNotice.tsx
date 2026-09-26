@@ -20,20 +20,22 @@ export function NewVersionNotice() {
   const url = release.store_url;
   return (
     <View style={styles.row} pointerEvents="box-none">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("newVersionAvailable", { version: release.latest_version ?? "" })}
-        onPress={() => (url ? void Linking.openURL(url).catch(() => undefined) : undefined)}
-        style={styles.pill}
-      >
-        <Download size={14} color={colors.white} />
-        <Text style={styles.text} numberOfLines={1}>
-          {t("newVersionAvailable", { version: release.latest_version ?? "" })}
-        </Text>
+      <View style={styles.pill}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("newVersionAvailable", { version: release.latest_version ?? "" })}
+          onPress={() => (url ? void Linking.openURL(url).catch(() => undefined) : undefined)}
+          style={styles.pillMain}
+        >
+          <Download size={14} color={colors.white} />
+          <Text style={styles.text} numberOfLines={1}>
+            {t("newVersionAvailable", { version: release.latest_version ?? "" })}
+          </Text>
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t("close")} hitSlop={8} onPress={() => setDismissed(true)}>
           <X size={14} color={colors.white} />
         </Pressable>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -50,5 +52,6 @@ const styles = StyleSheet.create({
     minHeight: 32,
     maxWidth: "94%",
   },
+  pillMain: { flexDirection: "row", alignItems: "center", gap: space.x2, flexShrink: 1 },
   text: { ...type.caption, color: colors.white, flexShrink: 1 },
 });

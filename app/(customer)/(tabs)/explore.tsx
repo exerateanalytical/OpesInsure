@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Building2, ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react-native";
-import { AppHeader, Chip, ChipRow, Screen, StatusChip } from "@/components/ui";
+import { Chip, ChipRow, ripple, Screen, StatusChip } from "@/components/ui";
+import { BrandHeader, SectionHeading } from "@/components/design";
+import { CategoryStrip, CATEGORY_TINT } from "@/components/customer/CategoryTiles";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { CATEGORIES } from "@/components/customer/categories";
-import { useColumns } from "@/components/responsive";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
 import type { Institution } from "@/api/extra";
@@ -24,7 +25,6 @@ export default function Explore() {
   const params = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState(typeof params.q === "string" ? params.q : "");
   const [filter, setFilter] = useState<Filter>("all");
-  const grid = useColumns({ max: 2, minItem: 140 });
   const providers = useLoad(() => CustomerApi.institutions());
 
   useEffect(() => {
@@ -42,6 +42,15 @@ export default function Explore() {
       brokers: official.filter((p) => p.type === "broker").length,
     };
   }, [providers.data]);
+  // Insurers with products on the marketplace first, then the rest (max 8).
+  const featured = useMemo(
+    () =>
+      (providers.data ?? [])
+        .filter((p: Institution) => p.type === "insurer")
+        .sort((x, y) => (y.products?.length ?? 0) - (x.products?.length ?? 0))
+        .slice(0, 8),
+    [providers.data],
+  );
   const shown = useMemo(
     () =>
       (providers.data ?? []).filter(
@@ -54,11 +63,70 @@ export default function Explore() {
 
   return (
     <Screen>
-      <AppHeader title={t("explore")} subtitle={t("exploreSubtitle")} />
+      <BrandHeader back={false} title={t("exploreTitle")} subtitle={t("exploreTagline")} />
+      <SearchBar
+        value={query}
+        onChangeText={setQuery}
+        label={t("searchLabel")}
+        placeholder={t("exploreSearchPlaceholder")}
+        clearLabel={t("clearSearch")}
+      />
+      <CategoryStrip
+        ids={["motor", "health", "travel", "home", "business"]}
+        onPress={(c) => router.push({ pathname: "/quote/product", params: { product: c.id } })}
+      />
+
+      <SectionHeading title={t("exploreFeaturedProviders")} action={t("seeAll")} onAction={() => router.push("/institutions/insurers")} />
+      {featured.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
+          {featured.map((p) => (
+            <Pressable
+              key={p.id}
+              accessibilityRole="button"
+              accessibilityLabel={p.name}
+              onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.id } })}
+              android_ripple={ripple()}
+              style={({ pressed }) => [styles.featured, pressed && styles.pressed]}
+            >
+              <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={48} />
+              <Text style={styles.featuredName} numberOfLines={2}>{p.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      <SectionHeading title={t("explorePopularProducts")} />
+      {categories.filter((c) => ["motor", "health", "travel", "home"].includes(c.id)).map((c) => {
+        const Icon = c.icon;
+        const tint = CATEGORY_TINT[c.id];
+        return (
+          <Pressable
+            key={c.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${t(c.label)}. ${t(c.caption)}`}
+            onPress={() => router.push({ pathname: "/quote/product", params: { product: c.id } })}
+            android_ripple={ripple()}
+            style={({ pressed }) => [styles.popular, pressed && styles.pressed]}
+          >
+            <View style={[styles.popularIcon, { backgroundColor: tint.bg }]}>
+              <Icon size={34} color={tint.fg} />
+            </View>
+            <View style={styles.flex}>
+              <Text style={styles.popularTitle}>{t(c.label)}</Text>
+              <Text style={styles.meta}>{t(c.caption)}</Text>
+            </View>
+            <View style={styles.chevron}>
+              <ChevronRight size={18} color={colors.navy900} />
+            </View>
+          </Pressable>
+        );
+      })}
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${t("compareInsurance")}. ${t("compareInsuranceBody")}`}
         onPress={() => router.push("/quote/product")}
+        android_ripple={ripple(true)}
         style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
       >
         <Scale size={26} color={colors.white} />
@@ -85,40 +153,6 @@ export default function Explore() {
           <ChevronRight size={20} color={colors.neutral500} />
         </Pressable>
       ) : null}
-      <SearchBar
-        value={query}
-        onChangeText={setQuery}
-        label={t("searchLabel")}
-        placeholder={t("searchPlaceholder")}
-        clearLabel={t("clearSearch")}
-      />
-
-      <Text accessibilityRole="header" style={styles.section}>{t("exploreCategories")}</Text>
-      {categories.length ? (
-        <View style={grid.row}>
-          {categories.map((c) => {
-            const Icon = c.icon;
-            return (
-              <Pressable
-                key={c.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${t(c.label)}. ${t(c.caption)}`}
-                onPress={() => router.push({ pathname: "/quote/product", params: { product: c.id } })}
-                style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
-              >
-                <View style={styles.icon}>
-                  <Icon size={30} color={colors.navy800} />
-                </View>
-                <Text style={styles.label}>{t(c.label)}</Text>
-                <Text style={styles.meta}>{t(c.caption)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : (
-        <Text style={styles.meta}>{t("exploreNoCategory")}</Text>
-      )}
-
       <Text accessibilityRole="header" style={styles.section}>{t("exploreProviders")}</Text>
       <ChipRow exclusive>
         {(["all", "insurer", "broker"] as Filter[]).map((f) => (
@@ -188,6 +222,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.82 },
   cta: {
     minHeight: 84,
+    overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
     gap: space.x4,
@@ -208,6 +243,13 @@ const styles = StyleSheet.create({
   },
   ctaTitle: { ...type.cardTitle, color: colors.white },
   ctaBody: { ...type.meta, color: colors.blue50 },
+  featuredRow: { gap: space.x3, paddingVertical: 2 },
+  featured: { width: 116, minHeight: 112, alignItems: "center", justifyContent: "center", gap: space.x2, padding: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, overflow: "hidden" },
+  featuredName: { ...type.label, fontSize: 13, lineHeight: 17, color: colors.navy950, textAlign: "center" },
+  popular: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, overflow: "hidden" },
+  popularIcon: { width: 72, height: 72, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  popularTitle: { ...type.cardTitle, color: colors.navy950 },
+  chevron: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {
     minHeight: 120,
