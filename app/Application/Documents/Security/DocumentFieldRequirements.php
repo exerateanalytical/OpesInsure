@@ -96,7 +96,7 @@ final class DocumentFieldRequirements
             $risk = $policy->party?->display_name; // person lines: the insured person is the risk
         }
 
-        return $base + [
+        $out = $base + [
             'issuer.legal_name' => $base['issuer.legal_name'] ?? null,
             'party.name' => $policy->party?->display_name,
             'policy.number' => $policy->policy_number,
@@ -131,7 +131,15 @@ final class DocumentFieldRequirements
             'endorsement.changes' => $tx ? ((array) $tx->requested_changes ?: null) : null,
             'member.reference' => $subject && ($subject['type'] ?? null) === 'MEMBER' ? $subject['key'] : null,
             'provider.name' => null, 'treaty.reference' => null, 'reinsurer.name' => null, // no engine trigger issues provider / reinsurance documents yet
-        ] + MappedFieldValues::resolve($policy, $ctx); // D2 mapped rules: render-only, never enforced
+        ];
+        // D2 mapped rules (render-only, never enforced) fill keys the fixed readers left empty.
+        foreach (MappedFieldValues::resolve($policy, $ctx) as $k => $val) {
+            if (($out[$k] ?? null) === null || $out[$k] === '' || $out[$k] === []) {
+                $out[$k] = $val;
+            }
+        }
+
+        return $out;
     }
 
     /**
