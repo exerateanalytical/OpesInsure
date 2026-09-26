@@ -127,3 +127,11 @@ Open owner questions collected in the cloud session's chat; the ones still open 
   The Gap Closure Pack (a202714) is on master but NOT deployed; it still goes out in its own release (backup → rehearse → deploy).
 - Live-verified: all pages 200, 23 published products listed, website OTP sign-in as Demo Customer works, sign-out works.
 - Not built yet: compare/buy flow stages 03-24 (signed-in customer/agent/claims-officer web screens).
+
+### 2026-09-26 local: website account area deployed (r20260926-112948, master e689de2)
+- Built on master after the Gap Closure release (acf39d9); no new migrations.
+- New: signed-in account area /account/* (buy flow, policies, payments, documents, vehicles, profile, notifications, support, customer claims,
+  claims desk for insurer staff, agent/broker customers/leads/reports/commissions); info + error pages in the new desktop layout.
+- Live-verified: 53 pages 200, demo customer OTP sign-in → My Policies (11 policies) → Policy Details renders real data.
+- Not exercised live (they write data): claim evidence upload (failed locally only because the malware scanner doesn't run locally) and the delete-account form.
+- Backend bug found: PATCH /quotes/{id} then re-rate → 500 (unique quote_offers_one_per_tariff); web Customize creates a new quote instead.
