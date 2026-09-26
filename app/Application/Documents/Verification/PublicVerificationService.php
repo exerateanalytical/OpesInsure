@@ -209,7 +209,7 @@ class PublicVerificationService
                 'document_type_code' => $d->document_type_code, 'document_type_id' => $d->document_type_id,
                 'title_en' => $type['name_en'], 'title_fr' => $type['name_fr'], 'status' => $status,
                 'issuer_type' => $d->issuer_type, 'issuer_name' => $d->issuer_type === 'PLATFORM' ? 'OpesInsure' : $policy?->carrier?->party?->display_name,
-                'issued_at' => ($d->issued_at ?? $d->created_at)?->toIso8601String(), 'policy_reference' => $policy?->policy_number,
+                'issued_at' => ($d->issued_at ?? $d->created_at)?->toIso8601String(), 'policy_reference' => $policy?->policy_number ? \App\Application\Documents\Security\DocumentVerificationPresenter::mask((string) $policy->policy_number, 4) : null, // canonical crypto spec §27: masked publicly
                 'language' => $d->language, 'sha256' => $d->sha256, 'carrier_original' => (bool) $d->is_carrier_original,
                 'vehicle' => $d->subject_type === 'VEHICLE' ? $d->subject_key : null,
                 'replaced_by' => $successor ? ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? $successor->verification_code) : null,

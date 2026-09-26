@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Shared\StateMachine\Adapters;
+namespace Tests\Support;
+
+use App\Domain\Shared\StateMachine\Adapters\LegacyTransitionTableAdapter;
 
 use App\Domain\Claims\ClaimLifecycle;
 use App\Domain\Claims\ClaimStateMachine;
 use App\Domain\Shared\StateMachine\StateMachineDefinition;
 
 /**
+ * Test-only since Batch 11 retired the legacy claim machines (canonical ClaimMachine is the runtime path).
  * REQ-DUP-006 bridge: proves both existing claim definitions run on the generic engine.
  * Neither legacy class is modified or deleted; wave 11A (REQ-CLM-001) chooses the single canonical
  * blueprint-state definition and retires the other.

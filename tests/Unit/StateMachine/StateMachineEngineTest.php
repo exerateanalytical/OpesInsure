@@ -4,7 +4,7 @@
 
 use App\Domain\Claims\ClaimLifecycle;
 use App\Domain\Claims\ClaimStateMachine;
-use App\Domain\Shared\StateMachine\Adapters\ClaimMachineAdapter;
+use Tests\Support\ClaimMachineAdapter;
 use App\Domain\Shared\StateMachine\Contracts\AuthorityHook;
 use App\Domain\Shared\StateMachine\Contracts\PermissionChecker;
 use App\Domain\Shared\StateMachine\Contracts\TransitionEventPublisher;

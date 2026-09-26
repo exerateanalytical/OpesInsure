@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Domain\Shared\StateMachine\Adapters\ClaimMachineAdapter;
 use App\Domain\Shared\StateMachine\Contracts\PermissionChecker;
 use App\Domain\Shared\StateMachine\Contracts\TransitionEventPublisher;
 use App\Domain\Shared\StateMachine\Contracts\TransitionHistoryRecorder;
@@ -31,8 +30,6 @@ final class StateMachineServiceProvider extends ServiceProvider
         $this->app->singleton(StateMachineRegistry::class, function () {
             $r = new StateMachineRegistry();
             // Bridges only (REQ-DUP-006); canonical claim machine arrives in wave 11A.
-            $r->register(ClaimMachineAdapter::STATE_MACHINE, fn () => ClaimMachineAdapter::fromClaimStateMachine());
-            $r->register(ClaimMachineAdapter::LIFECYCLE, fn () => ClaimMachineAdapter::fromClaimLifecycle());
             $r->register(\App\Domain\Claims\ClaimMachine::NAME, fn () => \App\Domain\Claims\ClaimMachine::definition()); // REQ-CLM-001 canonical
             $r->register(\App\Domain\Payments\PaymentMachine::NAME, fn () => \App\Domain\Payments\PaymentMachine::definition()); // REQ-PAY-001
             $r->register(\App\Application\Commissions\Machine\CommissionMachine::NAME, fn () => \App\Application\Commissions\Machine\CommissionMachine::definition()); // REQ-COM-001

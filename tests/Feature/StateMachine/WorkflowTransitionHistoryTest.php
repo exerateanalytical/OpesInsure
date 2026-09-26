@@ -2,7 +2,7 @@
 
 // REQ-WFL-001, REQ-ARC-004
 
-use App\Domain\Shared\StateMachine\Adapters\ClaimMachineAdapter;
+use Tests\Support\ClaimMachineAdapter;
 use App\Domain\Shared\StateMachine\StateMachineEngine;
 use App\Domain\Shared\StateMachine\StateMachineRegistry;
 use App\Domain\Shared\StateMachine\TransitionContext;
@@ -13,7 +13,13 @@ use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-beforeEach(fn () => $this->app->register(StateMachineServiceProvider::class));
+beforeEach(function () {
+    $this->app->register(StateMachineServiceProvider::class);
+    // The legacy claim bridges are test-only now; register them for these engine tests.
+    $r = app(StateMachineRegistry::class);
+    $r->register(ClaimMachineAdapter::STATE_MACHINE, fn () => ClaimMachineAdapter::fromClaimStateMachine());
+    $r->register(ClaimMachineAdapter::LIFECYCLE, fn () => ClaimMachineAdapter::fromClaimLifecycle());
+});
 
 test('REQ-WFL-001 applied transitions persist history and write the outbox event', function () {
     $id = (string) Str::uuid();
