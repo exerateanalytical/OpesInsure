@@ -159,3 +159,58 @@ it('REQ-DOC-SECMX-006: physical security asset admin guard (maker-checker, custo
     $rows = collect(app(DataReadinessRegistry::class)->domain('documents'))->keyBy('item');
     expect($rows['physical_security_print_supplier']['status'])->toBe('VERIFIED');
 });
+
+it('REQ-DOC-SECMX-007: records the §9 15-step issuance gate on every issued document', function () {
+    $f = docPolicy('AUTO', ['registration_number' => 'LT-914-ZZ']);
+    docAuthorize($f);
+    docTemplates(['MOTOR_INSURANCE_ATTESTATION']);
+    $m = app(DocumentEngine::class)->fire('POLICY_ISSUED', $f['policy']);
+    $id = docItems($m, 'MOTOR_INSURANCE_ATTESTATION')[0]['document_id'];
+    $gate = json_decode(DB::table('documents')->where('id', $id)->value('security_controls'), true)['issuance_gate'];
+    expect($gate['steps'])->toHaveCount(15)->and($gate['failed'])->toBe([])->and($gate['deferred'])->toBe([]);
+    foreach (['GATE-01', 'GATE-02', 'GATE-03', 'GATE-04', 'GATE-05', 'GATE-07', 'GATE-08', 'GATE-09', 'GATE-12', 'GATE-13', 'GATE-14', 'GATE-15'] as $step) {
+        expect($gate['steps'][$step]['status'])->toBe('PASS');
+    }
+    // No signing key / no verified corporate seal artwork in tests: step 10 is CONFIG_REQUIRED, never faked.
+    expect($gate['steps']['GATE-10']['status'])->toBe('CONFIG_REQUIRED')->and($gate['steps']['GATE-10']['reason'])->toContain('CORPORATE_SEAL_ARTWORK_NOT_VERIFIED')
+        ->and($gate['steps']['GATE-11']['status'])->toBe('NOT_APPLICABLE');
+});
+
+it('REQ-DOC-SECMX-008: CONFIG_REQUIRED gate steps block only under DOCUMENT_ENFORCE_CONTROLS; a FAIL always blocks with a coded reason', function () {
+    $f = docPolicy('AUTO', ['registration_number' => 'LT-915-ZZ']);
+    docAuthorize($f);
+    docTemplates(['MOTOR_INSURANCE_ATTESTATION']);
+    config(['document_security.enforce_controls' => true]);
+    $m = app(DocumentEngine::class)->fire('POLICY_ISSUED', $f['policy']);
+    $item = docItems($m, 'MOTOR_INSURANCE_ATTESTATION')[0];
+    expect($item['state'])->toBe('BLOCKED_ISSUANCE_GATE')->and(implode(' ', $item['missing_fields']))->toContain('GATE-10:SEAL_SIGNATURE_AUTHORITY_VALID')
+        ->and($item['document_id'])->toBeNull();
+
+    // Pure evaluator: a voided source and an inactive template FAIL regardless of enforcement.
+    $policy = $f['policy']->replicate()->forceFill(['status' => 'VOID']);
+    $policy->exists = true;
+    $template = \App\Models\DocumentTemplate::where('document_type_code', 'MOTOR_INSURANCE_ATTESTATION')->first()->replicate()->forceFill(['status' => 'RETIRED']);
+    $security = ['tier' => 'S2', 'controls' => ['maker_checker' => ['status' => 'NOT_APPLICABLE'], 'signature' => ['status' => 'NOT_APPLICABLE'], 'seal' => ['status' => 'NOT_APPLICABLE']]];
+    $gate = \App\Application\Documents\Security\IssuanceGate::evaluate($policy, $template, $security, ['issuer' => 'PLATFORM', 'issuer_authorized' => true, 'missing_fields' => [], 'field_enforcement' => 'block']);
+    $refused = \App\Application\Documents\Security\IssuanceGate::refusals($gate, false);
+    expect($refused)->toContain('GATE-02:SOURCE_STATUS_PERMITS_ISSUANCE:SOURCE_STATUS_VOID')
+        ->and(implode(' ', $refused))->toContain('GATE-04:TEMPLATE_VERSION_ACTIVE:TEMPLATE_NOT_ACTIVE');
+    // Missing fields in "record" mode are PENDING_VERIFICATION: they block only under enforcement.
+    $rec = \App\Application\Documents\Security\IssuanceGate::evaluate($f['policy'], $template->forceFill(['status' => 'PUBLISHED']), $security, ['issuer' => 'PLATFORM', 'issuer_authorized' => true, 'missing_fields' => ['risk.vin'], 'field_enforcement' => 'record']);
+    expect($rec['steps']['GATE-05']['status'])->toBe('PENDING_VERIFICATION')
+        ->and(\App\Application\Documents\Security\IssuanceGate::refusals($rec, false))->toBe([])
+        ->and(\App\Application\Documents\Security\IssuanceGate::refusals($rec, true))->toBe(['GATE-05:REQUIRED_FIELDS_COMPLETE:MISSING_FIELDS:risk.vin']);
+});
+
+it('REQ-DOC-SECMX-009: provider contract, tariff and settlement documents (no policy) pass gate step 1 through their provider source', function () {
+    $template = new \App\Models\DocumentTemplate(['code' => 'TPL-PROVIDER-CONTRACT-TEST', 'version' => 1, 'status' => 'PUBLISHED', 'effective_from' => now()->subDay()->toDateString()]);
+    $security = ['tier' => 'S4', 'controls' => ['maker_checker' => ['status' => 'NOT_APPLICABLE'], 'signature' => ['status' => 'NOT_APPLICABLE'], 'seal' => ['status' => 'NOT_APPLICABLE']]];
+    $in = ['issuer' => 'INSURER', 'issuer_authorized' => true, 'missing_fields' => [], 'field_enforcement' => 'block'];
+    foreach (['provider-contract:'.Str::uuid(), 'provider-tariff:'.Str::uuid(), 'provider-settlement:'.Str::uuid()] as $source) {
+        $gate = \App\Application\Documents\Security\IssuanceGate::evaluate(new Policy(), $template, $security, $in + ['provider_source' => $source]);
+        expect($gate['steps']['GATE-01']['status'])->toBe('PASS')->and(\App\Application\Documents\Security\IssuanceGate::refusals($gate, false))->toBe([]);
+    }
+    // Without a policy or a provider source, step 1 fails with a coded reason.
+    $none = \App\Application\Documents\Security\IssuanceGate::evaluate(new Policy(), $template, $security, $in);
+    expect(\App\Application\Documents\Security\IssuanceGate::refusals($none, false))->toBe(['GATE-01:SOURCE_TRANSACTION_EXISTS:SOURCE_POLICY_MISSING']);
+});

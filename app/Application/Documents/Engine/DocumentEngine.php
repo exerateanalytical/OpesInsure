@@ -378,6 +378,18 @@ final class DocumentEngine
         if ($missing !== [] && config('document_security.field_enforcement', 'block') === 'block') {
             throw new DocumentIssuanceBlocked('BLOCKED_MISSING_FIELDS', $missing, 'Required document fields missing: '.DocumentFieldRequirements::describeMissing($missing));
         }
+        // Security Matrix §9 issuance gate (steps 1-6, 10, 11 before numbering): FAIL always refuses; CONFIG_REQUIRED /
+        // PENDING_VERIFICATION refuse only under DOCUMENT_ENFORCE_CONTROLS. Recorded on the document (security_controls.issuance_gate).
+        $gate = \App\Application\Documents\Security\IssuanceGate::evaluate($policy, $template, $security, [
+            'issuer' => $issuer, 'issuer_authorized' => $issuer !== 'INSURER' || self::mayRenderForInsurer($profile), 'claim' => $claim, 'transaction' => $transaction,
+            'missing_fields' => $missing, 'field_enforcement' => (string) config('document_security.field_enforcement', 'block'),
+            // D4: a provider document's source is its provider event (contract, tariff, settlement ...), not a policy.
+            'provider_source' => isset($ctx['provider_id']) && ! empty($ctx['subject']['key']) ? $ctx['subject']['key'] : null,
+        ]);
+        $refused = \App\Application\Documents\Security\IssuanceGate::refusals($gate, (bool) config('document_security.enforce_controls'));
+        if ($refused !== []) {
+            throw new DocumentIssuanceBlocked('BLOCKED_ISSUANCE_GATE', $refused, 'Security issuance gate refused: '.implode('; ', $refused));
+        }
         if (config('document_security.enforce_controls') && $security['unmet_required_controls'] !== []) {
             throw new DocumentIssuanceBlocked('BLOCKED_SECURITY_CONTROLS', $security['unmet_required_controls'], 'Required security controls not provisioned (CONFIG_REQUIRED): '.implode(', ', $security['unmet_required_controls']));
         }
@@ -453,6 +465,16 @@ final class DocumentEngine
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
         $status = $profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED');
+
+        $gate = \App\Application\Documents\Security\IssuanceGate::finalize($gate, [
+            'number' => $number['number'], 'content_hash' => $contentHash, 'token_hash' => VerificationCredentials::tokenHash($token), 'pdf_bytes' => $bytes, 'sha256' => $sha,
+            'stored_bytes' => Storage::disk((string) config('lifecycle.documents_disk', 'local'))->get($key), 'in_transaction' => DB::transactionLevel() > 0, 'status' => $status,
+        ]);
+        if ($gate['failed'] !== []) {
+            Storage::disk((string) config('lifecycle.documents_disk', 'local'))->delete($key);
+            throw new \RuntimeException('Security issuance gate failed after rendering: '.implode('; ', \App\Application\Documents\Security\IssuanceGate::refusals($gate, false)));
+        }
+        $security['controls']['issuance_gate'] = $gate;
 
         $doc = new Document([
             'tenant_id' => $policy->tenant_id, 'party_id' => $policy->party_id, 'policy_id' => $policy->id,
