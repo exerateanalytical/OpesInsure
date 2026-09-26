@@ -1,5 +1,4 @@
 /* OpesInsure signed-in account shell. Design source: screens/compare_buy_flow/03..24.
-.acct-body [hidden]{display:none!important}
    Page areas add their own files next to this one (buy.css, policies.css, claims.css, desk.css). */
 .acct-body{background:#F5F8FD;min-height:100vh}
 .acct-top{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:26px;height:72px;padding:0 28px 0 64px;background:#fff;border-bottom:1px solid #E6EDF7}
@@ -93,3 +92,4 @@
   .agrid.c2,.agrid.c3{grid-template-columns:1fr}.acct-content{padding:0 16px 32px}.acct-hero-in{padding:14px 16px}
 }
 @media (max-width:560px){.acct-brand small,.acct-actions .lang{display:none}.acct-brand span{font-size:21px}.kv dd{text-align:left}.kv{grid-template-columns:1fr}}
+.acct-body [hidden]{display:none!important}
