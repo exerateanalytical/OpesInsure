@@ -23,6 +23,9 @@ final class DocumentCatalogueSeeder extends Seeder
 {
     public const CATALOGUE_FILE = 'data/document_catalogue_2026.json';
 
+    /** D2: catalogue types for the canonical spec records with no register type (namespace CANONICAL_SPEC). */
+    public const SPEC_ADDITIONS_FILE = 'data/document_catalogue_spec_additions_2026.json';
+
     public const MATRIX_FILE = 'data/document_requirement_matrix_2026.json';
 
     /** @var array<string,int> table => rows created in this run */
@@ -30,7 +33,7 @@ final class DocumentCatalogueSeeder extends Seeder
 
     public function run(): void
     {
-        $cat = self::load(self::CATALOGUE_FILE);
+        $cat = self::withSpecAdditions(self::load(self::CATALOGUE_FILE));
         $mx = self::load(self::MATRIX_FILE);
         $now = now();
         $prov = fn (array $d) => ['catalogue_version' => $d['version'], 'effective_from' => $d['effective_from'], 'source_reference' => $d['source_reference'], 'is_seeded' => true, 'updated_at' => $now];
@@ -103,6 +106,45 @@ final class DocumentCatalogueSeeder extends Seeder
                     WHERE v.catalogue_type_id IS NULL AND (t.canonical_code = upper(v.code) OR jsonb_exists(t.aliases, upper(v.code)))");
             }
         });
+    }
+
+    /**
+     * Merges the D2 spec-addition types into the catalogue payload: their types, their CONDITIONAL pack items
+     * and the class applicability derived from the packs they join. One sync, so nothing is deactivated.
+     *
+     * @param  array<string,mixed>  $cat
+     * @return array<string,mixed>
+     */
+    public static function withSpecAdditions(array $cat): array
+    {
+        if (! is_file(database_path(self::SPEC_ADDITIONS_FILE))) {
+            return $cat;
+        }
+        $add = self::load(self::SPEC_ADDITIONS_FILE);
+        $known = array_column($cat['document_types'], 'type_id');
+        foreach ($add['document_types'] as $t) {
+            if (! in_array($t['type_id'], $known, true)) {
+                $cat['document_types'][] = $t;
+            }
+        }
+        $classes = [];
+        foreach ($cat['document_packs'] as &$pack) {
+            foreach ($add['pack_items'][$pack['code']] ?? [] as $item) {
+                if (! in_array($item['document_type_id'], array_column($pack['items'], 'document_type_id'), true)) {
+                    $pack['items'][] = $item;
+                }
+                foreach ($pack['class_codes'] as $class) {
+                    $classes[$class][$item['document_type_id']] = true;
+                }
+            }
+        }
+        unset($pack);
+        foreach ($cat['class_applicability'] as &$a) {
+            $a['document_type_ids'] = array_values(array_unique(array_merge($a['document_type_ids'], array_keys($classes[$a['class_code']] ?? []))));
+        }
+        unset($a);
+
+        return $cat;
     }
 
     /** @return array<string,mixed> */

@@ -167,6 +167,13 @@ final class CanonicalDocumentSpec
             foreach ((array) ($s['items'] ?? []) as $bullet) {
                 $c = CanonicalFieldDictionary::classify((string) $bullet);
                 $target = $c['target'];
+                // D2: bullets outside the enforced dictionary resolve to the platform source that holds them.
+                $platform = $target === null ? DetailedFieldSourceMap::lookup((string) $bullet) : null;
+                if ($platform !== null) {
+                    $out[] = ['bullet' => trim((string) $bullet, " ;."), 'section' => (string) $section, 'target' => $platform['key'], 'conditional' => $c['conditional'], 'status' => $platform['status'], 'source' => $platform['source']];
+
+                    continue;
+                }
                 $status = match (true) {
                     $target === null => 'UNMAPPED_PENDING_VERIFICATION',
                     $target === '@no_source' => 'NO_CANONICAL_SOURCE',

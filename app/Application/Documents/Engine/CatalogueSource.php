@@ -155,8 +155,13 @@ final class CatalogueSource
     private function seed(): array
     {
         static $seed = null;
+        if ($seed !== null) {
+            return $seed;
+        }
         $path = database_path('data/document_catalogue_2026.json');
+        $data = is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
 
-        return $seed ??= (is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : []);
+        // Same payload as the seeder, including the D2 canonical-spec types.
+        return $seed = ($data !== [] ? \Database\Seeders\DocumentCatalogueSeeder::withSpecAdditions($data) : []);
     }
 }

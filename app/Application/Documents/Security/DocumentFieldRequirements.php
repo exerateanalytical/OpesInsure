@@ -31,7 +31,7 @@ final class DocumentFieldRequirements
 
     /**
      * @param  array<string, mixed>  $type  DocumentRegister::describe()
-     * @return array{required: array<int, string>, groups: array<string, string>, no_source: array<int, string>, unmapped: array<int, string>, spec_id: string|null}
+     * @return array{required: array<int, string>, groups: array<string, string>, no_source: array<int, string>, unmapped: array<int, string>, mapped: array<string, array{key: string|null, source: string|null}>, spec_id: string|null}
      */
     public function requiredKeys(array $type, ?string $subjectType = null): array
     {
@@ -46,11 +46,14 @@ final class DocumentFieldRequirements
         }
         $noSource = [];
         $unmapped = [];
+        $mapped = [];
         foreach ($spec ? (array) json_decode((string) $spec->detailed_field_map, true) : [] as $f) {
             match ($f['status']) {
                 'ENFORCED' => array_push($required, ...(array) $f['target']),
                 'NO_CANONICAL_SOURCE' => $noSource[] = $f['bullet'],
                 'UNMAPPED_PENDING_VERIFICATION' => $unmapped[] = $f['bullet'],
+                // D2: the platform holds it (source recorded); rendered when present, not enforced.
+                'MAPPED_PLATFORM_SOURCE' => $mapped[$f['bullet']] = ['key' => $f['target'], 'source' => $f['source'] ?? null],
                 default => null,
             };
         }
@@ -61,7 +64,7 @@ final class DocumentFieldRequirements
         $required = array_values(array_unique($required));
         sort($required);
 
-        return ['required' => $required, 'groups' => $groups, 'no_source' => array_values(array_unique($noSource)), 'unmapped' => array_values(array_unique($unmapped)), 'spec_id' => $spec?->spec_id];
+        return ['required' => $required, 'groups' => $groups, 'no_source' => array_values(array_unique($noSource)), 'unmapped' => array_values(array_unique($unmapped)), 'mapped' => $mapped, 'spec_id' => $spec?->spec_id];
     }
 
     /**

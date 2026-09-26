@@ -1,0 +1,1460 @@
+{
+    "version": "2026.1-d2",
+    "effective_from": "2026-09-26",
+    "source_reference": "OWNER_CANONICAL_IMPLEMENTATION_SPEC_V1 document_system.documents (17 records with no catalogue type, DOCUMENT_SPEC_GAP_AUDIT.md); OpesInsure_220_Documents_and_First_5_Master_Shells_v1.md",
+    "note": "Catalogue types for the 17 canonical spec records that had no exact-name catalogue type. Namespace CANONICAL_SPEC keeps the catalogue DOC-### numbering unchanged. same_as names the nearest existing catalogue type (near-synonym). Pack items are CONDITIONAL so no flow generates them before an engine trigger exists. DOC-219 and DOC-220 are entity-level returns and audits, not policy lifecycle documents, so they join no pack.",
+    "document_types": [
+        {
+            "type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+            "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+            "name_en": "Offer Acceptance Confirmation",
+            "name_fr": "Confirmation d’acceptation de l’offre",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "PRE_CONTRACT",
+            "category": "PRE_CONTRACT",
+            "same_as": "DOC-015",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "PRE_CONTRACT"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "CUSTOMER_PRIVATE",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "OFFER_ACCEPTED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-014"
+        },
+        {
+            "type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+            "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+            "name_en": "Electronic Consent Record",
+            "name_fr": "Preuve de consentement électronique",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "PRE_CONTRACT",
+            "category": "PRE_CONTRACT",
+            "same_as": "DOC-020",
+            "document_origin": "SYSTEM",
+            "issuer_authority": [
+                "SYSTEM"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "PRE_CONTRACT"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "CUSTOMER_PRIVATE",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "CONSENT_CAPTURED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-015"
+        },
+        {
+            "type_id": "SPEC.TRAVEL_INSURANCE_CERTIFICATE",
+            "canonical_code": "TRAVEL_INSURANCE_CERTIFICATE",
+            "name_en": "Travel Insurance Certificate",
+            "name_fr": "Certificat d’assurance voyage",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CERTIFICATE",
+            "category": "CERTIFICATE",
+            "same_as": null,
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "POLICY"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": true,
+            "security_level": "PUBLIC_VERIFIABLE",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "POLICY_ISSUED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-138"
+        },
+        {
+            "type_id": "SPEC.VISA_TRAVEL_COVERAGE_CERTIFICATE",
+            "canonical_code": "VISA_TRAVEL_COVERAGE_CERTIFICATE",
+            "name_en": "Visa/Travel Coverage Certificate",
+            "name_fr": "Certificat de couverture voyage/visa",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CERTIFICATE",
+            "category": "CERTIFICATE",
+            "same_as": null,
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "POLICY"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": true,
+            "security_level": "PUBLIC_VERIFIABLE",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "POLICY_ISSUED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-139"
+        },
+        {
+            "type_id": "SPEC.TRAVEL_ASSISTANCE_INFORMATION",
+            "canonical_code": "TRAVEL_ASSISTANCE_INFORMATION",
+            "name_en": "Travel Assistance Information",
+            "name_fr": "Informations d’assistance voyage",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CONTRACT",
+            "category": "CONTRACT",
+            "same_as": null,
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "POLICY"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "PUBLIC_VERIFIABLE",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "POLICY_ISSUED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-140"
+        },
+        {
+            "type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+            "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+            "name_en": "Claim Assessment Report",
+            "name_fr": "Rapport d’expertise sinistre",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CLAIM",
+            "category": "CLAIM",
+            "same_as": "CLM-09",
+            "document_origin": "ADJUSTER",
+            "issuer_authority": [
+                "ADJUSTER"
+            ],
+            "recipient": "INSURER",
+            "stages": [
+                "CLAIM"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "INSURER_CONFIDENTIAL",
+            "scope": "PER_CLAIM",
+            "is_evidence": false,
+            "generation_triggers": [
+                "CLAIM_ASSESSED"
+            ],
+            "numbering_family": "CLM",
+            "aliases": [],
+            "canonical_spec_id": "DOC-169"
+        },
+        {
+            "type_id": "SPEC.CLAIM_DISCHARGE",
+            "canonical_code": "CLAIM_DISCHARGE",
+            "name_en": "Claim Discharge",
+            "name_fr": "Quittance / Décharge de règlement",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CLAIM",
+            "category": "CLAIM",
+            "same_as": "CLM-19",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "SETTLEMENT"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "PER_CLAIM",
+            "is_evidence": false,
+            "generation_triggers": [
+                "SETTLEMENT_ACCEPTED"
+            ],
+            "numbering_family": "SET",
+            "aliases": [],
+            "canonical_spec_id": "DOC-179"
+        },
+        {
+            "type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+            "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+            "name_en": "Subrogation / Recovery Notice",
+            "name_fr": "Avis de subrogation / recours",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "CLAIM",
+            "category": "CLAIM",
+            "same_as": "CLM-26",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "THIRD_PARTY",
+            "stages": [
+                "SETTLEMENT"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "PER_CLAIM",
+            "is_evidence": false,
+            "generation_triggers": [
+                "RECOVERY_OPENED"
+            ],
+            "numbering_family": "CLM",
+            "aliases": [],
+            "canonical_spec_id": "DOC-185"
+        },
+        {
+            "type_id": "SPEC.BROKER_COMMISSION_STATEMENT",
+            "canonical_code": "BROKER_COMMISSION_STATEMENT",
+            "name_en": "Broker Commission Statement",
+            "name_fr": "Relevé de commission courtier",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "FINANCIAL",
+            "category": "FINANCIAL",
+            "same_as": null,
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "BROKER",
+            "stages": [
+                "FINANCE"
+            ],
+            "audience": "BROKER",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "FINANCE_PERIOD_CLOSED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-196"
+        },
+        {
+            "type_id": "SPEC.TAX_LEVY_BREAKDOWN",
+            "canonical_code": "TAX_LEVY_BREAKDOWN",
+            "name_en": "Tax & Levy Breakdown",
+            "name_fr": "Décompte taxes et prélèvements",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "FINANCIAL",
+            "category": "FINANCIAL",
+            "same_as": "FINANCE.TAX_FEE_STATEMENT",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "FINANCE"
+            ],
+            "audience": "CUSTOMER_FACING",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "FINANCE_PERIOD_CLOSED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-199"
+        },
+        {
+            "type_id": "SPEC.RECONCILIATION_STATEMENT",
+            "canonical_code": "RECONCILIATION_STATEMENT",
+            "name_en": "Reconciliation Statement",
+            "name_fr": "État de rapprochement",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "FINANCIAL",
+            "category": "FINANCIAL",
+            "same_as": null,
+            "document_origin": "SYSTEM",
+            "issuer_authority": [
+                "SYSTEM"
+            ],
+            "recipient": "INSURER",
+            "stages": [
+                "FINANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "RECONCILIATION_COMPLETED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-200"
+        },
+        {
+            "type_id": "SPEC.REINSURANCE_RECOVERY_REQUEST",
+            "canonical_code": "REINSURANCE_RECOVERY_REQUEST",
+            "name_en": "Reinsurance Recovery Request",
+            "name_fr": "Demande de recours en réassurance",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "REINSURANCE",
+            "category": "REINSURANCE",
+            "same_as": "REINSURANCE.RECOVERY_REQUEST",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "REINSURER",
+            "stages": [
+                "CLAIM",
+                "FINANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "PER_CLAIM",
+            "is_evidence": false,
+            "generation_triggers": [
+                "REINSURANCE_RECOVERY_BILLED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-209"
+        },
+        {
+            "type_id": "SPEC.COINSURANCE_PREMIUM_ALLOCATION",
+            "canonical_code": "COINSURANCE_PREMIUM_ALLOCATION",
+            "name_en": "Co-insurance Premium Allocation",
+            "name_fr": "Répartition de prime en coassurance",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "REINSURANCE",
+            "category": "REINSURANCE",
+            "same_as": "COINSURANCE.PREMIUM_ALLOCATION_STATEMENT",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "INSURER",
+            "stages": [
+                "FINANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "COINSURANCE_APPORTIONED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-213"
+        },
+        {
+            "type_id": "SPEC.COINSURANCE_CLAIM_ALLOCATION",
+            "canonical_code": "COINSURANCE_CLAIM_ALLOCATION",
+            "name_en": "Co-insurance Claim Allocation",
+            "name_fr": "Répartition de sinistre en coassurance",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "REINSURANCE",
+            "category": "REINSURANCE",
+            "same_as": "COINSURANCE.CLAIM_ALLOCATION_STATEMENT",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "INSURER",
+            "stages": [
+                "CLAIM",
+                "FINANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "FINANCIAL_RESTRICTED",
+            "scope": "PER_CLAIM",
+            "is_evidence": false,
+            "generation_triggers": [
+                "COINSURANCE_APPORTIONED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-214"
+        },
+        {
+            "type_id": "SPEC.KYC_APPROVAL_REMEDIATION_NOTICE",
+            "canonical_code": "KYC_APPROVAL_REMEDIATION_NOTICE",
+            "name_en": "KYC Approval / Remediation Notice",
+            "name_fr": "Avis d’approbation / régularisation KYC",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "COMPLIANCE",
+            "category": "COMPLIANCE",
+            "same_as": "REGULATORY_COMPLIANCE.KYC_APPROVAL",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "POLICYHOLDER",
+            "stages": [
+                "COMPLIANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "REGULATORY",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "KYC_APPROVED",
+                "KYC_REJECTED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-218"
+        },
+        {
+            "type_id": "SPEC.REGULATORY_DECLARATION_RETURN",
+            "canonical_code": "REGULATORY_DECLARATION_RETURN",
+            "name_en": "Regulatory Declaration / Return",
+            "name_fr": "Déclaration / état réglementaire",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "COMPLIANCE",
+            "category": "COMPLIANCE",
+            "same_as": "REGULATORY_COMPLIANCE.REGULATORY_REPORT",
+            "document_origin": "INSURER",
+            "issuer_authority": [
+                "INSURER"
+            ],
+            "recipient": "REGULATOR",
+            "stages": [
+                "COMPLIANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "REGULATORY",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "REPORTING_PERIOD_CLOSED"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-219"
+        },
+        {
+            "type_id": "SPEC.REGULATORY_AUDIT_VERIFICATION_REPORT",
+            "canonical_code": "REGULATORY_AUDIT_VERIFICATION_REPORT",
+            "name_en": "Regulatory Audit / Verification Report",
+            "name_fr": "Rapport d’audit / vérification réglementaire",
+            "namespace": "CANONICAL_SPEC",
+            "kind": "TYPE",
+            "parent_type_id": null,
+            "register_group": null,
+            "register_group_code": "COMPLIANCE",
+            "category": "COMPLIANCE",
+            "same_as": null,
+            "document_origin": "REGULATOR",
+            "issuer_authority": [
+                "REGULATOR"
+            ],
+            "recipient": "INSURER",
+            "stages": [
+                "COMPLIANCE"
+            ],
+            "audience": "INTERNAL",
+            "legal_reference": null,
+            "verifiable": false,
+            "security_level": "REGULATORY",
+            "scope": "POLICY",
+            "is_evidence": false,
+            "generation_triggers": [
+                "MANUAL"
+            ],
+            "numbering_family": "DOC",
+            "aliases": [],
+            "canonical_spec_id": "DOC-220"
+        }
+    ],
+    "pack_items": {
+        "MOTOR_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "HEALTH_INDIVIDUAL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIFE_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CREDIT_LIFE_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "FUNERAL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SAVINGS_RETIREMENT_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PROPERTY_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "BUSINESS_MULTIRISK_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "TRAVEL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.TRAVEL_INSURANCE_CERTIFICATE",
+                "canonical_code": "TRAVEL_INSURANCE_CERTIFICATE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-138 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.VISA_TRAVEL_COVERAGE_CERTIFICATE",
+                "canonical_code": "VISA_TRAVEL_COVERAGE_CERTIFICATE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-139 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.TRAVEL_ASSISTANCE_INFORMATION",
+                "canonical_code": "TRAVEL_ASSISTANCE_INFORMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-140 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PA_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MARINE_CARGO_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MARINE_HULL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CAR_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MACHINERY_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PROFESSIONAL_LIABILITY_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PUBLIC_LIABILITY_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SURETY_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CREDIT_INSURANCE_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "AGRICULTURE_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIVESTOCK_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "AVIATION_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CYBER_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SCHOOL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "HOTEL_NEW_BUSINESS_PACK": [
+            {
+                "document_type_id": "SPEC.OFFER_ACCEPTANCE_CONFIRMATION",
+                "canonical_code": "OFFER_ACCEPTANCE_CONFIRMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-014 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.ELECTRONIC_CONSENT_RECORD",
+                "canonical_code": "ELECTRONIC_CONSENT_RECORD",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-015 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "TRAVEL_RENEWAL_PACK": [
+            {
+                "document_type_id": "SPEC.TRAVEL_INSURANCE_CERTIFICATE",
+                "canonical_code": "TRAVEL_INSURANCE_CERTIFICATE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-138 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.VISA_TRAVEL_COVERAGE_CERTIFICATE",
+                "canonical_code": "VISA_TRAVEL_COVERAGE_CERTIFICATE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-139 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.TRAVEL_ASSISTANCE_INFORMATION",
+                "canonical_code": "TRAVEL_ASSISTANCE_INFORMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-140 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "TRAVEL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.TRAVEL_ASSISTANCE_INFORMATION",
+                "canonical_code": "TRAVEL_ASSISTANCE_INFORMATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-140 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MOTOR_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "FLEET_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PROPERTY_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "BUSINESS_MULTIRISK_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CAR_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MACHINERY_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "AVIATION_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "HOTEL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "UNIVERSAL_CLAIM": [
+            {
+                "document_type_id": "SPEC.CLAIM_ASSESSMENT_REPORT",
+                "canonical_code": "CLAIM_ASSESSMENT_REPORT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-169 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.REINSURANCE_RECOVERY_REQUEST",
+                "canonical_code": "REINSURANCE_RECOVERY_REQUEST",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-209 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.COINSURANCE_CLAIM_ALLOCATION",
+                "canonical_code": "COINSURANCE_CLAIM_ALLOCATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-214 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "HEALTH_INDIVIDUAL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "HEALTH_GROUP_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIFE_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIFE_MATURITY": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIFE_DEATH_CLAIM": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "GROUP_LIFE_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CREDIT_LIFE_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "FUNERAL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SAVINGS_RETIREMENT_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PA_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "GROUP_PA_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MARINE_CARGO_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "MARINE_HULL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PROFESSIONAL_LIABILITY_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "PUBLIC_LIABILITY_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SURETY_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CREDIT_INSURANCE_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.SUBROGATION_RECOVERY_NOTICE",
+                "canonical_code": "SUBROGATION_RECOVERY_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-185 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "AGRICULTURE_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "LIVESTOCK_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "CYBER_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "SCHOOL_CLAIM_PACK": [
+            {
+                "document_type_id": "SPEC.CLAIM_DISCHARGE",
+                "canonical_code": "CLAIM_DISCHARGE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-179 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "UNIVERSAL_FINANCIAL": [
+            {
+                "document_type_id": "SPEC.BROKER_COMMISSION_STATEMENT",
+                "canonical_code": "BROKER_COMMISSION_STATEMENT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-196 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.TAX_LEVY_BREAKDOWN",
+                "canonical_code": "TAX_LEVY_BREAKDOWN",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-199 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.RECONCILIATION_STATEMENT",
+                "canonical_code": "RECONCILIATION_STATEMENT",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-200 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            },
+            {
+                "document_type_id": "SPEC.COINSURANCE_PREMIUM_ALLOCATION",
+                "canonical_code": "COINSURANCE_PREMIUM_ALLOCATION",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-213 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ],
+        "UNIVERSAL_SERVICING": [
+            {
+                "document_type_id": "SPEC.KYC_APPROVAL_REMEDIATION_NOTICE",
+                "canonical_code": "KYC_APPROVAL_REMEDIATION_NOTICE",
+                "requirement": "CONDITIONAL",
+                "condition_note": "Canonical spec DOC-218 (D2): issued when its trigger occurs; not generated automatically until its engine trigger is built",
+                "sort_order": 900
+            }
+        ]
+    }
+}
