@@ -42,6 +42,15 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 
 ## Log (newest first)
 
+### 2026-09-26 local: DEPLOYED cloud Batches 10-17 + local canonical documents/web UI/letterheads (master c0d005a) as release r20260926-042840
+- Merged origin/claude/charming-bohr-2fd2hk (0de6f6a) into master on top of local work. Post-merge fixes: legacy ClaimMachineAdapter moved to tests/Support (Batch 11 retired the legacy machines), policy reference and successor number masked in the single public verification service, OpenAPI regenerated.
+- Full pest suite: 1661 passed + the 2 affected areas re-run green (108/108). The session_replication_role / scratch-DB tests need a Postgres superuser locally (they pass as postgres).
+- Backup opesinsure-20260926-0412.sql.gz. 45 migrations rehearsed on a prod copy, then applied.
+- Post-deploy: backfill-chronology 0 pending, backfill-obligations 0 pending, rbac:sync-role-permissions 8 roles +53. Scheduler cron present; schedule:list shows the new jobs. Stamp-duty schedules: 2 DRAFT (left as DRAFT).
+- Live: verify-live 75/76 (legacy /claims). Purchase OK: POL-2026-000005 issued. FNOL on a demo policy: 201.
+- Not done (manual, owner): remove cashier.sessions.operate from BRANCH_MANAGER; configure CLAIM_SETTLE/RESERVE_APPROVE authority_limits (until then claim decisions are referred).
+- Next: the local Gap Closure Pack (8 agents, uncommitted in the local tree) goes into the next release after a combined test run.
+
 ### 2026-09-25 cloud: Batches 13B–17 + V1 + F1 merged. ALL BATCHES BUILT. Full suite 1636 passed / 0 failed. Deploy guide: docs/RELEASE_HANDOVER_BATCH13_17.md
 - Route permissions all catalogued (config/permissions.php); OpenAPI regenerated. Cloud build is complete; the rest is local deploy.
 
