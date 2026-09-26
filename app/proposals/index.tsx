@@ -7,7 +7,7 @@ import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
-import { ApiError, InsuranceApi, ProposalSummary, ProposalsApi } from "@/api/client";
+import { ApiError, InsuranceApi, ProposalSummary, ProposalsApi, WalletApi } from "@/api/client";
 import { ProposalLifecycleApi } from "@/api/workflow";
 import { RecentProposals } from "@/store/insurance";
 import { localized, mergePages, proposalStatusInfo } from "@/lib/purchase";
@@ -44,10 +44,19 @@ export default function Applications() {
   const [filter, setFilter] = useState<Filter>("all");
   /** Checklist completion per proposal (GET /proposals/{id}/checklist); missing when the API has none. */
   const [progress, setProgress] = useState<Record<string, number>>({});
+  /** proposal_id -> policy id for proposals already issued as policies (they are not drafts any more). */
+  const [issued, setIssued] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    WalletApi.all()
+      .then((policies) => {
+        const map: Record<string, string> = {};
+        for (const pol of policies) if (pol.proposal_id) map[pol.proposal_id] = pol.id;
+        setIssued(map);
+      })
+      .catch(() => undefined);
     try {
       const result = await ProposalsApi.list(1);
       setItems(result.items);
@@ -101,15 +110,18 @@ export default function Applications() {
     }
   };
 
+  // A proposal whose policy is issued is no longer a draft: it lives under My policies.
+  const drafts = useMemo(() => items.filter((p) => !issued[p.id]), [items, issued]);
+  const issuedCount = items.length - drafts.length;
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: items.length, progress: 0, awaiting: 0, ready: 0 };
-    for (const p of items) {
+    const c: Record<Filter, number> = { all: drafts.length, progress: 0, awaiting: 0, ready: 0 };
+    for (const p of drafts) {
       const b = draftBucket(p.status);
       if (b !== "other") c[b] += 1;
     }
     return c;
-  }, [items]);
-  const shown = filter === "all" ? items : items.filter((p) => draftBucket(p.status) === filter);
+  }, [drafts]);
+  const shown = filter === "all" ? drafts : drafts.filter((p) => draftBucket(p.status) === filter);
 
   const openProposal = (p: Row) => {
     const status = (p.status ?? "").toUpperCase();
@@ -128,10 +140,17 @@ export default function Applications() {
       <Banner icon={Info} tint="blue" title={t("draftsAutoSaveTitle")} body={t("draftsAutoSaveBody")} right={<FileText size={40} color={colors.blue100} />} />
       {loading && !items.length ? <LoadingState label={t("propLoading")} /> : null}
       {error ? <ErrorCard error={error} fallback={t("propLoadFailed")} onRetry={() => void load()} /> : null}
-      {!loading && !error && !items.length ? (
+      {issuedCount ? (
+        <Pressable accessibilityRole="link" onPress={() => router.push("/(customer)/(tabs)/policies")} android_ripple={ripple()} style={({ pressed }) => [s.issued, pressed && s.pressed]}>
+          <CheckCircle2 size={18} color={colors.successText} />
+          <Text style={[s.body, s.flex]}>{t("draftsIssuedNote", { count: issuedCount })}</Text>
+          <ChevronRight size={18} color={colors.navy800} />
+        </Pressable>
+      ) : null}
+      {!loading && !error && !drafts.length ? (
         <EmptyState title={t("propEmpty")} message={t("propEmptyBody")} action={t("propGetQuote")} onPress={() => router.push("/quote/product")} />
       ) : null}
-      {!loading && items.length && !shown.length ? <EmptyState title={t("draftsNoneInFilter")} message={t("propEmptyBody")} action={t("filterAll")} onPress={() => setFilter("all")} /> : null}
+      {!loading && drafts.length && !shown.length ? <EmptyState title={t("draftsNoneInFilter")} message={t("propEmptyBody")} action={t("filterAll")} onPress={() => setFilter("all")} /> : null}
       {shown.map((row) => {
         const p = row as Row;
         const info = proposalStatusInfo(p.status, f.language);
@@ -148,7 +167,7 @@ export default function Applications() {
         const StatusIcon = bucket === "ready" ? CheckCircle2 : bucket === "awaiting" ? Clock3 : LoaderCircle;
         const statusStyle = bucket === "ready" ? s.statusGreen : bucket === "awaiting" ? s.statusGold : info.tone === "danger" ? s.statusRed : s.statusBlue;
         const statusText = bucket === "ready" ? s.statusGreenText : bucket === "awaiting" ? s.statusGoldText : info.tone === "danger" ? s.statusRedText : s.statusBlueText;
-        const action = bucket === "awaiting" ? t("draftsUpload") : bucket === "ready" ? t("draftsReview") : bucket === "progress" ? t("draftsResume") : t("draftsOpen");
+        const action = bucket === "awaiting" ? t("draftsUpload") : bucket === "ready" ? ((p.status ?? "").toUpperCase() === "COUNTEROFFERED" ? t("draftsReview") : t("prReviewPay")) : bucket === "progress" ? t("draftsResume") : t("draftsOpen");
         return (
           <View key={p.id} style={s.card}>
             <View style={s.top}>
@@ -211,6 +230,7 @@ const TINT_FG = { blue: colors.blue600, gold: colors.gold600, red: colors.danger
 const s = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
+  issued: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 48, paddingHorizontal: space.x4, borderRadius: radius.card, backgroundColor: colors.successSoft, overflow: "hidden" },
   chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x4 },
   top: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },

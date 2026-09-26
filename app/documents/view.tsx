@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
@@ -41,12 +41,15 @@ export default function DocumentView() {
   const [busy, setBusy] = useState<"save" | "share" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // `t` is a new function every render; keep it out of load's deps or the PDF is refetched forever.
+  const tRef = useRef(t);
+  tRef.current = t;
   const load = useCallback(async () => {
     setError(null);
     setRenderError(null);
     setBase64(null);
     if (!source) {
-      setError(new Error(t("docViewerBadLink")));
+      setError(new Error(tRef.current("docViewerBadLink")));
       return;
     }
     try {
@@ -69,7 +72,7 @@ export default function DocumentView() {
     } catch (e) {
       setError(e);
     }
-  }, [source, t]);
+  }, [source]);
 
   useEffect(() => {
     void load();
@@ -82,11 +85,35 @@ export default function DocumentView() {
     return uri;
   };
 
+  /** Web: the PDF as a File (same bytes the native viewer shares). */
+  const webFile = () => {
+    const bin = atob(base64 ?? "");
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return new File([buf], fileName, { type: "application/pdf" });
+  };
+  const webDownload = () => {
+    const url = URL.createObjectURL(webFile());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setNotice(t("docViewerSaved", { name: fileName }));
+  };
+
   const share = async () => {
     if (!base64) return;
     setBusy("share");
     setNotice(null);
     try {
+      if (Platform.OS === "web") {
+        const file = webFile();
+        const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+        if (nav.share && nav.canShare?.({ files: [file] })) await nav.share({ files: [file], title: heading });
+        else webDownload();
+        return;
+      }
       const uri = await writeToCache();
       if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: heading, UTI: "com.adobe.pdf" });
       else setNotice(t("docViewerShareUnavailable"));
@@ -103,6 +130,7 @@ export default function DocumentView() {
     setBusy("save");
     setNotice(null);
     try {
+      if (Platform.OS === "web") return webDownload();
       if (Platform.OS === "android") {
         const perm = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
         if (!perm.granted) return;

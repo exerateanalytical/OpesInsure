@@ -34,7 +34,7 @@ export function InstitutionMark({
   }
   return (
     <View style={[styles.box, box]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Text style={[size >= 56 ? type.label : type.caption, styles.initials]} numberOfLines={1}>
+      <Text style={[size >= 56 ? type.label : type.caption, styles.initials, size < 36 && { fontSize: 9, lineHeight: 12 }]} numberOfLines={1}>
         {(initials ?? "").slice(0, 3)}
       </Text>
     </View>

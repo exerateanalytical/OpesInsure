@@ -156,6 +156,7 @@ export function PolicyDetailView({ id }: { id: string }) {
     void contactProvider();
   };
 
+  const openDocumentsPage = () => router.push({ pathname: "/policy/[id]/documents", params: { id } });
   const scrollTo = (y: number) => scrollRef.current?.scrollTo({ y: Math.max(0, y - space.x3), animated: true });
 
   if (loading && !p) return <Screen><BrandHeader title={t("pdTitle")} subtitle={t("pdSubtitle")} right={null} /><LoadingState label={t("pdLoading")} /></Screen>;
@@ -260,7 +261,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         </Card>
 
         <View style={st.tiles}>
-          <IconTile icon={FileText} label={t("pdViewDocuments")} tint="blue" onPress={() => scrollTo(docsY.current)} />
+          <IconTile icon={FileText} label={t("pdViewDocuments")} tint="blue" onPress={openDocumentsPage} />
           <IconTile icon={RefreshCcw} label={t("pdRenewPolicy")} tint="gold" disabled={!canRenew} onPress={() => router.push({ pathname: "/policy/[id]/renew", params: { id: p.id } })} />
           <IconTile icon={ShieldAlert} label={t("pdFileClaim")} tint="red" disabled={!info.claimable} onPress={() => router.push({ pathname: "/claim/new", params: { policyId: p.id } })} />
           <IconTile icon={Headset} label={t("pdContact")} tint="blue" disabled={contactBusy} onPress={() => void contactProvider()} />
@@ -269,7 +270,7 @@ export function PolicyDetailView({ id }: { id: string }) {
 
         <View onLayout={(e) => (docsY.current = e.nativeEvent.layout.y)}>
           <Card>
-            <SectionHeading icon={FileText} title={t("pdDocuments")} action={t("pdViewAll")} onAction={() => scrollTo(allDocsY.current)} />
+            <SectionHeading icon={FileText} title={t("pdDocuments")} action={t("pdViewAll")} onAction={openDocumentsPage} />
             <View style={st.docGrid}>
               {docCard("certificate", t("pdOpenCertificate"), p.certificate_number ?? undefined, () => void certificate(), certBusy)}
               {walletDocs.slice(0, 3).map((d) => {

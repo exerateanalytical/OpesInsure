@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, Car, Info, Plus, UserRound, Users } from "lucide-react-native";
-import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading } from "@/components/design";
+import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, TintedIcon } from "@/components/design";
+import { CATEGORIES } from "@/components/customer/categories";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
 import { DateField, ErrorCard, QuoteSteps, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -18,7 +19,7 @@ import { ContractField } from "@/components/forms/ContractField";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
 import { useTranslation } from "@/i18n";
-import { space } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 
 function prefillFromAsset(asset: RiskAsset): Record<string, string> {
@@ -157,6 +158,15 @@ export default function Risk() {
     >
       <BrandHeader title={t("qtTitle")} subtitle={productName ?? t("qtDetailsSub")} />
       <QuoteSteps current={1} />
+      {productName ? (
+        <View style={st.productCard}>
+          <TintedIcon icon={CATEGORIES.find((c) => c.id === product)?.icon ?? Car} tint="gold" size={56} />
+          <View style={st.flex}>
+            <Text style={st.productTitle}>{productName}</Text>
+            <Text style={st.productSub}>{td(`qtProdSub_${product}`, "")}</Text>
+          </View>
+        </View>
+      ) : null}
       {schemaLoading ? (
         <LoadingState label={t("qtLoadingQuestions")} />
       ) : (
@@ -280,4 +290,7 @@ const st = StyleSheet.create({
   otherFields: { gap: space.x3, marginTop: space.x3 },
   flex: { flex: 1 },
   nav: { flexDirection: "row", gap: space.x3 },
+  productCard: { flexDirection: "row", alignItems: "center", gap: space.x3, backgroundColor: colors.blue50, borderRadius: radius.feature, padding: space.x4 },
+  productTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
+  productSub: { ...type.body, color: colors.neutral700 },
 });

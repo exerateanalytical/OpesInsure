@@ -5,6 +5,7 @@ import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight,
 import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
+import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
 import { CustomerQuoteSummary, QuotesApi } from "@/api/client";
@@ -27,7 +28,7 @@ const FILTERS: { value: "all" | LineFamily; icon: LucideIcon; label: "filterAll"
   { value: "travel", icon: Plane, label: "catTravel" },
 ];
 
-type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null };
+type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null; carrier_logo_url?: string | null };
 
 export default function QuoteHistory() {
   const { t, td } = useTranslation();
@@ -114,7 +115,12 @@ export default function QuoteHistory() {
                     <TintedIcon icon={Icon} tint="blue" size={40} />
                     <View style={s.flex}>
                       <Text style={s.line} numberOfLines={1}>{fam ? td(`lineFamily_${fam}`, humanize(q.line_code)) : humanize(q.line_code)}</Text>
-                      {provider ? <Text style={s.meta} numberOfLines={1}>{provider}</Text> : q.quote_number ? <Text style={s.meta} numberOfLines={1}>{q.quote_number}</Text> : null}
+                      {provider ? (
+                        <View style={s.providerRow}>
+                          <InstitutionMark logoUrl={q.carrier_logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={20} />
+                          <Text style={[s.meta, s.flex]} numberOfLines={1}>{provider}</Text>
+                        </View>
+                      ) : q.quote_number ? <Text style={s.meta} numberOfLines={1}>{q.quote_number}</Text> : null}
                     </View>
                   </View>
                   <View style={s.chipRow}>
@@ -228,6 +234,7 @@ export default function QuoteHistory() {
   );
 }
 const s = StyleSheet.create({
+  providerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },

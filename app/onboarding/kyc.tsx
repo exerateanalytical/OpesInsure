@@ -14,7 +14,7 @@ import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
 import { isKycReviewInProgress } from "@/lib/apiErrors";
-import { canSubmitKyc, daysUntil, KYC_DOCUMENT_PURPOSES, KycPurpose, kycPhase, suggestedPurposes } from "@/lib/kyc";
+import { canSubmitKyc, daysUntil, KYC_DOCUMENT_PURPOSES, KycPurpose, kycPhase, REQUIREMENT_PURPOSES, suggestedPurposes } from "@/lib/kyc";
 
 /**
  * Identity verification on the KYC case engine (KycService):
@@ -111,6 +111,17 @@ export default function Kyc() {
           return (
             <>
               <Card style={styles.card}>
+                {requirements.length ? (
+                  <View style={styles.progressBlock}>
+                    <Text style={styles.metaLabel}>{t("kycStatusLabel")}</Text>
+                    <Text style={styles.progressTitle}>
+                      {t("kycReqProgress", { done: requirements.filter((r) => r.satisfied).length, total: requirements.length })}
+                    </Text>
+                    <View style={styles.track} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: requirements.length, now: requirements.filter((r) => r.satisfied).length }}>
+                      <View style={[styles.fill, { width: `${Math.round((100 * requirements.filter((r) => r.satisfied).length) / requirements.length)}%` }]} />
+                    </View>
+                  </View>
+                ) : null}
                 <View style={styles.headRow}>
                   <TintedIcon icon={phase === "approved" ? BadgeCheck : restart ? ShieldAlert : ShieldCheck} tint={toneTint(tone)} size={56} />
                   <View style={styles.flex}>
@@ -136,16 +147,27 @@ export default function Kyc() {
               {requirements.length ? (
                 <Card style={styles.card}>
                   <SectionHeading title={t("kycRequirementsTitle")} icon={ClipboardList} />
-                  {requirements.map((r) => (
-                    <View key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={styles.row}>
-                      {r.satisfied ? <CheckCircle2 size={18} color={colors.success} /> : <CircleAlert size={18} color={r.mandatory ? colors.dangerText : colors.neutral500} />}
-                      <Text style={styles.body}>
-                        {td(`kycReq_${r.requirement_code}`, r.requirement_code)} · {t(r.satisfied ? "kycReqSatisfied" : r.mandatory ? "kycReqMissing" : "kycReqOptional")}
-                      </Text>
-                    </View>
-                  ))}
+                  {requirements.map((r) => {
+                    const target = REQUIREMENT_PURPOSES[r.requirement_code]?.[0];
+                    return (
+                      <View key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={styles.reqRow}>
+                        <TintedIcon icon={r.satisfied ? CheckCircle2 : IdCard} tint={r.satisfied ? "green" : r.mandatory ? "gold" : "neutral"} size={44} />
+                        <View style={styles.flexTight}>
+                          <Text style={styles.reqTitle}>{td(`kycReq_${r.requirement_code}`, r.requirement_code)}</Text>
+                          <Text style={r.satisfied ? styles.ok : r.mandatory ? styles.warn : styles.meta}>
+                            {t(r.satisfied ? "kycReqSatisfied" : r.mandatory ? "kycReqMissing" : "kycReqOptional")}
+                          </Text>
+                        </View>
+                        {!r.satisfied && editable && target ? (
+                          <Button label={t("kycComplete")} variant="secondary" onPress={() => setPurpose(target)} />
+                        ) : null}
+                      </View>
+                    );
+                  })}
                 </Card>
               ) : null}
+
+              <Banner icon={ShieldCheck} tint="blue" title={t("kycWhyTitle")} body={t("kycWhyBody")} />
 
               <Card style={styles.card}>
                 <SectionHeading title={t("kycStep1")} icon={Fingerprint} />
@@ -234,6 +256,15 @@ export default function Kyc() {
 }
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: space.x2 },
+  flexTight: { flex: 1, gap: 2 },
+  progressBlock: { gap: space.x2, paddingBottom: space.x3, borderBottomWidth: 1, borderBottomColor: colors.neutral200 },
+  metaLabel: { ...type.meta, color: colors.neutral600, fontWeight: "600" },
+  progressTitle: { ...type.label, fontSize: 17, lineHeight: 22, color: colors.navy950 },
+  track: { height: 8, borderRadius: 4, backgroundColor: colors.neutral200, overflow: "hidden" },
+  fill: { height: 8, borderRadius: 4, backgroundColor: colors.blue600 },
+  reqRow: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  reqTitle: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  ok: { ...type.meta, color: colors.successText, fontWeight: "600" },
   card: { borderRadius: radius.feature },
   headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
   metaBlock: { gap: space.x1, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },

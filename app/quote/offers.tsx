@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Building2, ChevronRight, Columns3, Info, RefreshCcw, SlidersHorizontal } from "lucide-react-native";
-import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { Building2, Car, ChevronRight, Columns3, Info, Pencil, RefreshCcw, ShieldCheck, SlidersHorizontal } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
 import { Button, Card, Chip, ChipRow, ripple, Screen, TextField } from "@/components/ui";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState } from "@/components/StatePanel";
 import { ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { OfferCard, useNow } from "@/components/offers/OfferCard";
+import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 import { useInsurance } from "@/store/insurance";
 import {
   CoverLevel,
@@ -18,7 +19,7 @@ import {
   sortOffers,
   validityLeft,
 } from "@/lib/purchase";
-import { bestValueOfferId, carrierLogo } from "@/lib/renewal";
+import { bestValueOfferId, carrierLogo, riskVehicleLabel } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -43,8 +44,10 @@ const LEVELS: { key: CoverLevel; label: "ofLevelEssential" | "ofLevelStandard" |
  * "Best Value" is cover-per-franc from stated limits (same rule as renewals).
  */
 export default function Offers() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const f = useFormatters();
+  const logoFor = useInsurerLogos();
+  const product = useInsurance((s) => s.product);
   const offers = useInsurance((s) => s.offers);
   const quote = useInsurance((s) => s.quote);
   const busy = useInsurance((s) => s.busy);
@@ -141,6 +144,25 @@ export default function Offers() {
     >
       <BrandHeader title={t("ofTitle")} subtitle={t("ofSubtitle", { count: offers.length })} />
       <QuoteSteps current={2} />
+      <Card>
+        <View style={st.quoteRow}>
+          <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? Car : ShieldCheck} tint="gold" size={56} />
+          <View style={st.flex}>
+            <Text style={st.quoteTitle}>{riskVehicleLabel(quote.risk_facts) ?? (product ? td(`qtProd_${product}`, product) : t("insuranceOffer"))}</Text>
+            <Text style={ps.meta}>{[riskVehicleLabel(quote.risk_facts) && product ? td(`qtProd_${product}`, product) : null, quote.quote_number].filter(Boolean).join(" · ")}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("ofEditQuote")}
+            onPress={() => router.push("/quote/risk")}
+            android_ripple={ripple()}
+            style={({ pressed }) => [st.editBtn, pressed && st.pressed]}
+          >
+            <Text style={st.editText}>{t("ofEditQuote")}</Text>
+            <Pencil size={16} color={colors.blue600} />
+          </Pressable>
+        </View>
+      </Card>
       <Banner icon={Info} tint="blue" body={t("ofNotice")} />
       {quoteExpired ? (
         <Card>
@@ -168,7 +190,7 @@ export default function Offers() {
                 android_ripple={ripple()}
                 style={({ pressed }) => [st.insurerRow, on && st.insurerRowOn, pressed && st.pressed]}
               >
-                <InstitutionMark logoUrl={carrierLogo(i.cheapest)} initials={i.name.slice(0, 2).toUpperCase()} size={40} />
+                <InstitutionMark logoUrl={logoFor(i.carrierId, i.name, carrierLogo(i.cheapest))} initials={i.name.slice(0, 2).toUpperCase()} size={40} />
                 <View style={st.flex}>
                   <Text style={st.insurerName} numberOfLines={2}>{i.name}</Text>
                   <Text style={ps.meta}>
@@ -277,6 +299,10 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.9 },
   range: { flexDirection: "row", gap: space.x3 },
+  quoteRow: { flexDirection: "row", alignItems: "center", gap: space.x3, flexWrap: "wrap" },
+  quoteTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
+  editBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue50, overflow: "hidden" },
+  editText: { ...type.label, color: colors.blue600 },
   sortBlock: { gap: space.x2 },
   sortLabel: { ...type.label, color: colors.navy950 },
   filterLabel: { ...type.label, color: colors.neutral800 },

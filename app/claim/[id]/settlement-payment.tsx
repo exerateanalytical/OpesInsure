@@ -1,36 +1,51 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { AppHeader, Card, Money, Screen, StatusChip } from "@/components/ui";
+import { Hash, ShieldAlert } from "lucide-react-native";
+import { Card, Screen, StatusChip } from "@/components/ui";
+import { Banner, BrandHeader } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
+import { SettlementHero } from "@/components/claims/SettlementHero";
 import { ClaimsCompletionApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
-import { colors, type } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 
+/** Settlement payment tracking (settlement dashboard family): payment status, net amount and reference. */
 export default function SettlementPayment() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td } = useTranslation();
   const { data, loading, error, reload } = useLoad(() => ClaimsCompletionApi.settlement(id), [id]);
   return (
     <Screen>
-      <AppHeader title={t("settlePayTitle")} subtitle={t("settlePaySubtitle")} back />
+      <BrandHeader title={t("settlePayTitle")} subtitle={t("settlePaySubtitle")} />
       <StatePanel loading={loading} error={error} data={data} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("settleLoading")}>
         {(x) => (
-          <Card feature>
-            <StatusChip
-              label={x.payment_status ? td(`status_${x.payment_status}`, x.payment_status) : t("settlePayNotAvailable")}
-              tone={x.payment_status === "PAID" ? "success" : "warning"}
-            />
-            <Money amount={x.net_minor / 100} size="large" />
-            <Text style={s.body}>{t("settlePayRef", { ref: x.payment_reference ?? t("settlePayRefPending") })}</Text>
-          </Card>
+          <>
+            <SettlementHero settlement={x} />
+            <Card>
+              <View style={s.row}>
+                <Text style={[s.title, s.flex]}>{t("settleTracking")}</Text>
+                <StatusChip
+                  label={x.payment_status ? td(`status_${x.payment_status}`, x.payment_status) : t("settlePayNotAvailable")}
+                  tone={x.payment_status === "PAID" ? "success" : "warning"}
+                />
+              </View>
+              <View style={s.row}>
+                <Hash size={18} color={colors.navy800} />
+                <Text style={[s.body, s.flex]}>{t("settlePayRef", { ref: x.payment_reference ?? t("settlePayRefPending") })}</Text>
+              </View>
+            </Card>
+          </>
         )}
       </StatePanel>
-      <Card>
-        <Text style={s.body}>{t("settlePayWarning")}</Text>
-      </Card>
+      <Banner icon={ShieldAlert} tint="gold" body={t("settlePayWarning")} />
     </Screen>
   );
 }
-const s = StyleSheet.create({ body: { ...type.body, color: colors.neutral700 } });
+const s = StyleSheet.create({
+  flex: { flex: 1 },
+  row: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  title: { ...type.cardTitle, color: colors.navy900 },
+  body: { ...type.body, color: colors.neutral700 },
+});

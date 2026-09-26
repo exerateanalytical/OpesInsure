@@ -33,6 +33,9 @@ import { CONTENT_MAX_WIDTH, ripple, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, IconTile, SectionHeading } from "@/components/design";
 import { CategoryStrip } from "@/components/customer/CategoryTiles";
 import { PolicyListCard } from "@/components/policies/PolicyListCard";
+import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
+import { applyExploreFilters, exploreSections } from "@/components/customer/exploreFilters";
+import { useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useColumns } from "@/components/responsive";
 import { usePolicies } from "@/hooks/usePolicies";
@@ -47,6 +50,7 @@ import { daysUntil, isRenewalDue } from "@/lib/customerLogic";
 import { HeritagePattern } from "@/components/HeritagePattern";
 import { colors, radius, space, type } from "@/theme/tokens";
 
+const NO_FILTERS: FilterValues = { cat: [], prov: [], sort: ["best"] };
 const OPEN_QUOTE = /^(DRAFT|QUOTING|RATED|OFFERED|REFERRED|PENDING)/;
 /** i18n key for the time-of-day greeting. */
 const greetingKey = (h = new Date().getHours()): "greetingMorning" | "greetingAfternoon" | "greetingEvening" => (h < 12 ? "greetingMorning" : h < 18 ? "greetingAfternoon" : "greetingEvening");
@@ -99,8 +103,20 @@ export default function CustomerHome() {
   const openClaims = (claims.data ?? []).filter((c) => isActiveClaim(c.status));
   const unread = (notifications.data ?? []).filter((n) => !n.read).length;
   const firstName = user?.full_name?.split(" ")[0];
+  // A typed query runs the live global search (GET /search + marketplace);
+  // an empty submit opens the marketplace.
   const search = () =>
-    router.push({ pathname: "/(customer)/(tabs)/explore", params: query.trim() ? { q: query.trim() } : {} });
+    query.trim().length >= 2
+      ? router.push({ pathname: "/search", params: { q: query.trim() } })
+      : router.push("/(customer)/(tabs)/explore");
+  const [sheet, setSheet] = useState(false);
+  const insurers = useCarriers();
+  const filterSections = exploreSections(insurers, t);
+  const applyFilters = (f: FilterValues) =>
+    router.push({
+      pathname: "/(customer)/(tabs)/explore",
+      params: { cat: (f.cat ?? []).join(","), prov: (f.prov ?? []).join(","), sort: f.sort?.[0] ?? "best", ...(query.trim() ? { q: query.trim() } : {}) },
+    });
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
@@ -135,6 +151,16 @@ export default function CustomerHome() {
           label={t("searchLabel")}
           placeholder={t("homeSearchPlaceholder")}
           clearLabel={t("clearSearch")}
+          onFilter={() => setSheet(true)}
+          filterLabel={t("filtersTitle")}
+        />
+        <FiltersSheet
+          visible={sheet}
+          onClose={() => setSheet(false)}
+          sections={filterSections}
+          value={NO_FILTERS}
+          onApply={applyFilters}
+          count={(f) => applyExploreFilters(insurers, f).length}
         />
 
         <CategoryStrip
@@ -168,7 +194,7 @@ export default function CustomerHome() {
           </View>
         </Pressable>
 
-        <SectionHeading title={t("policies")} action={t("seeAll")} onAction={() => router.push("/(customer)/(tabs)/policies")} />
+        <SectionHeading title={t("myPoliciesTitle")} action={t("seeAll")} onAction={() => router.push("/(customer)/(tabs)/policies")} />
         {policies.loading && !policies.policies.length ? (
           <View style={styles.inline} accessibilityRole="progressbar" accessibilityLabel={t("loading")}>
             <ActivityIndicator color={colors.blue600} />

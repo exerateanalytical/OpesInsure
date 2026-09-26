@@ -35,20 +35,20 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
       <TintedIcon icon={Icon} tint={tint} size={onPress ? 64 : 56} />
       <View style={s.flex}>
         <View style={s.titleRow}>
-          <Text style={[s.title, s.flex]} numberOfLines={1}>{title}</Text>
+          <Text style={[s.title, s.flex]}>{title}</Text>
           <StatusChip label={td(`policyStatus_${status}`, status)} tone={status === "ACTIVE" ? "success" : "neutral"} />
         </View>
         {provider ? (
           <View style={s.line}>
             <InstitutionMark logoUrl={logoUrl} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-            <Text style={s.body} numberOfLines={1}>{provider}</Text>
+            <Text style={s.body}>{provider}</Text>
           </View>
         ) : null}
-        {policy.policy_number ? <Text style={s.body} numberOfLines={1}>{t("claimPolicyNo", { number: policy.policy_number })}</Text> : null}
+        {policy.policy_number ? <Text style={s.body}>{t("claimPolicyNo", { number: policy.policy_number })}</Text> : null}
         {asset ? (
           <View style={s.line}>
             <Icon size={16} color={colors.navy800} />
-            <Text style={s.body} numberOfLines={1}>{asset}</Text>
+            <Text style={s.body}>{asset}</Text>
           </View>
         ) : null}
       </View>
@@ -77,7 +77,7 @@ const s = StyleSheet.create({
   cardOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   pressed: { opacity: 0.85 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   line: { flexDirection: "row", alignItems: "center", gap: 6 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },

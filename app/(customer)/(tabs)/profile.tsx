@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   Bell,
@@ -28,11 +28,16 @@ import {
   MailCheck,
   Mail,
   Phone,
+  ArrowRight,
+  Users,
+  Headset,
+  MessageCircle,
 } from "lucide-react-native";
 import { Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
 import { useSession } from "@/store/session";
-import { AuthApi } from "@/api/client";
+import { AuthApi, KycApi, SupportContactsApi } from "@/api/client";
+import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { BuildStamp } from "@/components/BuildStamp";
@@ -45,6 +50,8 @@ const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string]
       ["personalInformation", UserRound, "/account/profile"],
       ["identityVerification", ShieldCheck, "/onboarding/kyc"],
       ["myAssets", CarFront, "/assets"],
+      ["beneficiaries", Users, "/account/beneficiaries"],
+      ["profilePaymentMethods", CreditCard, "/account/payment-methods"],
       ["searchTitle", Search, "/search"],
     ],
   },
@@ -109,6 +116,22 @@ export default function Profile() {
       setVerifyState("error");
     }
   };
+  // KYC status and profile completeness come from GET /mobile/kyc/profile + the session user.
+  const kyc = useLoad(() => KycApi.profile());
+  const contacts = useLoad(() => SupportContactsApi.get());
+  const kycStatus = kyc.data?.status?.toUpperCase() ?? null;
+  const kycTone = kycStatus === "VERIFIED" || kycStatus === "APPROVED" ? "success" : kycStatus === "REJECTED" ? "danger" : kycStatus === "SUBMITTED" || kycStatus === "UNDER_REVIEW" || kycStatus === "REVIEWING" ? "info" : "warning";
+  const checks = [
+    !!user?.full_name,
+    !!user?.phone_e164,
+    !!user?.email && !emailUnverified,
+    !!kyc.data?.legal_name,
+    !!kyc.data?.date_of_birth,
+    !!kyc.data?.national_id_number,
+    !!kyc.data?.city,
+    kycTone === "success",
+  ];
+  const completion = kyc.data ? Math.round((checks.filter(Boolean).length / checks.length) * 100) : null;
   const role = workspace?.role_code ? td(`role_${workspace.role_code}`, workspace.role_code) : null;
   return (
     <Screen>
@@ -120,8 +143,22 @@ export default function Profile() {
           </View>
           <View style={styles.flex}>
             <Text style={styles.name} numberOfLines={2}>{user?.full_name ?? t("profile")}</Text>
-            {role ? <StatusChip label={role} tone="info" /> : null}
+            {role ? <Text style={styles.role}>{role}</Text> : null}
+            {kycStatus ? (
+              <View style={styles.chipRow}>
+                <StatusChip label={`${t("profileKyc")}: ${td(`kycStatus_${kycStatus}`, kycStatus)}`} tone={kycTone} />
+              </View>
+            ) : null}
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("personalInformation")}
+            onPress={() => router.push("/account/profile")}
+            hitSlop={6}
+            style={({ pressed }) => [styles.circleBtn, pressed && styles.pressed]}
+          >
+            <ChevronRight size={20} color={colors.navy900} />
+          </Pressable>
         </View>
         <View style={styles.contactRows}>
           <View style={styles.contactRow}>
@@ -153,6 +190,27 @@ export default function Profile() {
           </Pressable>
         ) : null}
       </Card>
+      {completion !== null && completion < 100 ? (
+        <View style={styles.completion}>
+          <View style={styles.completionRow}>
+          <View style={styles.ring} accessibilityLabel={t("profileCompletionA11y", { percent: completion })}>
+            <Text style={styles.ringText}>{completion}%</Text>
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.completionTitle}>{t("profileCompletion")}</Text>
+            <Text style={styles.completionBody}>{t("profileCompletionBody")}</Text>
+          </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/onboarding/kyc")}
+            style={({ pressed }) => [styles.completeBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.completeText}>{t("profileCompleteCta")}</Text>
+            <ArrowRight size={16} color={colors.blue600} />
+          </Pressable>
+        </View>
+      ) : null}
       {groups.map((group) => (
         <Card key={group.title} style={styles.groupCard}>
           <Text accessibilityRole="header" style={styles.group}>{t(group.title)}</Text>
@@ -164,9 +222,11 @@ export default function Profile() {
               style={({ pressed }) => [styles.item, i === group.links.length - 1 && styles.itemLast, pressed && styles.pressed]}
               onPress={() => router.push(path as never)}
             >
-              <TintedIcon icon={Icon} tint={group.tint} size={40} />
+              <TintedIcon icon={Icon} tint={group.tint} size={44} />
               <Text style={styles.label}>{t(label)}</Text>
-              <ChevronRight size={20} color={colors.neutral500} />
+              <View style={styles.circleSm}>
+                <ChevronRight size={16} color={colors.navy900} />
+              </View>
             </Pressable>
           ))}
         </Card>
@@ -180,9 +240,29 @@ export default function Profile() {
           router.replace("/(auth)/sign-in");
         }}
       >
-        <LogOut size={20} color={colors.danger} />
+        <TintedIcon icon={LogOut} tint="red" size={44} />
         <Text style={styles.logoutText}>{t("signOutSecurely")}</Text>
+        <View style={styles.circleSm}>
+          <ChevronRight size={16} color={colors.navy900} />
+        </View>
       </Pressable>
+      <View style={styles.help}>
+        <Headset size={26} color={colors.blue600} />
+        <View style={styles.flex}>
+          <Text style={styles.completionTitle}>{t("profileMoreHelp")}</Text>
+          <Text style={styles.completionBody}>{t("profileMoreHelpBody")}</Text>
+        </View>
+        <View style={styles.helpActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("profileChat")} onPress={() => router.push("/support/new")} style={({ pressed }) => [styles.helpBtn, pressed && styles.pressed]}>
+            <MessageCircle size={20} color={colors.white} />
+          </Pressable>
+          {contacts.data?.phone ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={t("profileCall")} onPress={() => void Linking.openURL(`tel:${contacts.data?.phone}`)} style={({ pressed }) => [styles.helpBtn, styles.helpBtnBlue, pressed && styles.pressed]}>
+              <Phone size={20} color={colors.white} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
       <BuildStamp />
     </Screen>
   );
@@ -221,16 +301,32 @@ const styles = StyleSheet.create({
   itemLast: { borderBottomWidth: 0 },
   label: { ...type.body, flex: 1, color: colors.navy950 },
   logout: {
-    minHeight: 52,
+    minHeight: 68,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: space.x2,
-    borderWidth: 1.5,
-    borderColor: colors.danger,
-    borderRadius: radius.control,
+    gap: space.x3,
+    paddingHorizontal: space.x4,
+    borderWidth: 1,
+    borderColor: colors.neutral200,
+    borderRadius: radius.feature,
     backgroundColor: colors.white,
     overflow: "hidden",
   },
-  logoutText: { ...type.label, color: colors.dangerText },
+  logoutText: { ...type.label, fontSize: 16, color: colors.dangerText, flex: 1 },
+  role: { ...type.body, color: colors.neutral600, marginBottom: 6 },
+  chipRow: { flexDirection: "row" },
+  circleBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
+  circleSm: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
+  completion: { gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue50, borderWidth: 1, borderColor: colors.blue100 },
+  completionRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  ring: { width: 64, height: 64, borderRadius: 32, borderWidth: 6, borderColor: colors.blue600, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },
+  ringText: { ...type.label, color: colors.navy950 },
+  completionTitle: { ...type.label, fontSize: 16, color: colors.navy950 },
+  completionBody: { ...type.meta, color: colors.neutral600 },
+  completeBtn: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue100 },
+  completeText: { ...type.label, color: colors.blue600 },
+  help: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue50 },
+  helpActions: { flexDirection: "row", gap: space.x2 },
+  helpBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.navy900, alignItems: "center", justifyContent: "center" },
+  helpBtnBlue: { backgroundColor: colors.blue600 },
 });

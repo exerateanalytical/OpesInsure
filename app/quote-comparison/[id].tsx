@@ -11,6 +11,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
 import { comparisonRows, QuoteComparison } from "@/lib/quoteWorkflow";
+import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 
 /** Latest saved comparison for the quote that is still fresh, else a new one (POST quote-comparisons). */
 async function currentComparison(quoteId: string): Promise<QuoteComparison> {
@@ -29,6 +30,12 @@ export default function QuoteComparisonScreen() {
   const [error, setError] = useState<unknown>(null);
   const c = q.data;
   const offers = c?.offers ?? [];
+  const logoFor = useInsurerLogos();
+  // carrier_id / carrier_logo_url are sent by QuoteComparisonService alongside the carrier name.
+  const marks = offers.map((o) => {
+    const x = o as typeof o & { carrier_id?: string | null; carrier_logo_url?: string | null };
+    return { logoUrl: logoFor(x.carrier_id, o.carrier, x.carrier_logo_url), initials: (o.carrier ?? "").slice(0, 2).toUpperCase() };
+  });
 
   const rows = useMemo<CompareTableRow[]>(() => {
     if (!c) return [];
@@ -74,7 +81,7 @@ export default function QuoteComparisonScreen() {
       {c && offers.length >= 2 ? (
         <Card>
           <SectionHeading icon={Columns3} title={t("qwCompareTitle")} />
-          <CompareTable rows={rows} columns={offers.length} money={f.xaf} />
+          <CompareTable rows={rows} columns={offers.length} money={f.xaf} marks={marks} />
         </Card>
       ) : null}
       {error ? <ErrorCard error={error} fallback={t("qwCompareFailed")} /> : null}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
-import { ShieldCheck, UserRound } from "lucide-react-native";
+import { CreditCard, IdCard, ShieldCheck, UserRound, UsersRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading } from "@/components/design";
@@ -71,7 +71,7 @@ export default function Profile() {
 
   return (
     <Screen>
-      <BrandHeader title={t("personalInformation")} back right={null} />
+      <BrandHeader title={t("personalDetailsTitle")} subtitle={t("personalDetailsSubtitle")} back right={null} />
       <Card style={styles.card}>
         <SectionHeading title={t("contactDetails")} icon={UserRound} />
         <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
@@ -84,6 +84,7 @@ export default function Profile() {
           autoComplete="email"
           error={emailOk ? undefined : t("emailInvalid")}
         />
+        <TextField label={t("personalMobile")} value={user?.phone_e164 ?? ""} editable={false} />
         <Text style={styles.body}>{t("phoneChangeNote")}</Text>
         {identityChanged ? (
           <Button label={t("saveChanges")} loading={busy} disabled={name.trim().length < 3 || !emailOk} onPress={() => void saveIdentity()} />
@@ -104,9 +105,12 @@ export default function Profile() {
         }}
       />
 
+      <Banner icon={IdCard} tint="blue" body={t("personalReverifyNote")} />
       <TimezonePicker />
 
       <Banner icon={ShieldCheck} tint="blue" title={t("identityVerification")} onPress={() => router.push("/onboarding/kyc")} />
+      <Banner icon={UsersRound} tint="blue" title={t("benPageTitle")} body={t("benPageLinkBody")} onPress={() => router.push("/account/beneficiaries" as never)} />
+      <Banner icon={CreditCard} tint="blue" title={t("payMethodsTitle")} body={t("payMethodsLinkBody")} onPress={() => router.push("/account/payment-methods" as never)} />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {notice ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text> : null}
     </Screen>

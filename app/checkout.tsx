@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Lock, ShieldAlert, Smartphone } from "lucide-react-native";
-import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
-import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { ArrowRight, BadgeCheck, ChevronRight, Lock, Pencil, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
+import { Button, Card, ripple, Screen, StatusChip, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
 import { ConsentRow, ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
@@ -33,6 +33,7 @@ export default function Checkout() {
   const request = useInsurance((s) => s.requestPayment);
   const busy = useInsurance((s) => s.busy);
   const defaultPhone = useSession((s) => s.bootstrap?.user.phone_e164 ?? "");
+  const applicant = useSession((s) => s.bootstrap?.user ?? null);
   const legal = useRuntime((s) => s.bootstrap?.legal);
   const links = legalLinks(legal);
   const f = useFormatters();
@@ -132,6 +133,28 @@ export default function Checkout() {
         </Card>
       ) : (
         <>
+          {applicant ? (
+            <Card>
+              <SectionHeading
+                title={t("coApplicant")}
+                right={
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("coApplicantEdit")} hitSlop={8} onPress={() => router.push("/account/profile")} android_ripple={ripple()} style={st.edit}>
+                    <Text style={st.editText}>{t("coEdit")}</Text>
+                    <Pencil size={16} color={colors.blue600} />
+                  </Pressable>
+                }
+              />
+              <Pressable accessibilityRole="button" accessibilityLabel={`${t("coApplicantEdit")}: ${applicant.full_name}`} onPress={() => router.push("/account/profile")} android_ripple={ripple()} style={st.applicant}>
+                <TintedIcon icon={UserRound} tint="blue" size={56} />
+                <View style={st.flex}>
+                  <Text style={st.applicantName}>{applicant.full_name}</Text>
+                  {applicant.email ? <Text style={ps.meta}>{applicant.email}</Text> : null}
+                  {applicant.phone_e164 ? <Text style={ps.meta}>{applicant.phone_e164}</Text> : null}
+                </View>
+                <ChevronRight size={20} color={colors.navy800} />
+              </Pressable>
+            </Card>
+          ) : null}
           <Card>
             <SectionHeading
               title={t("rrPaymentMethod")}
@@ -170,6 +193,14 @@ export default function Checkout() {
 
           {payError ? isProviderNotConfigured(payError) ? <ProviderNotConfigured error={payError} /> : <ErrorCard error={payError} fallback={t("coPayFailed")} onRetry={() => void pay()} /> : null}
           <Banner icon={ShieldAlert} tint="gold" body={t("coActivationNote")} />
+          <View style={st.trust} accessibilityRole="summary">
+            {([[ShieldCheck, "welcomeLicensed"], [Lock, "welcomeSecurePayments"], [BadgeCheck, "welcomeVerifiedProducts"]] as const).map(([Icon, key]) => (
+              <View key={key} style={st.trustItem}>
+                <Icon size={20} color={colors.gold600} />
+                <Text style={st.trustText}>{t(key)}</Text>
+              </View>
+            ))}
+          </View>
         </>
       )}
     </Screen>
@@ -183,4 +214,11 @@ const st = StyleSheet.create({
   secure: { flexDirection: "row", alignItems: "center", gap: 4 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   consentText: { ...type.body, color: colors.neutral700 },
+  edit: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x2, overflow: "hidden" },
+  editText: { ...type.label, color: colors.blue600 },
+  applicant: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 56, overflow: "hidden" },
+  applicantName: { ...type.label, fontSize: 16, color: colors.navy950 },
+  trust: { flexDirection: "row", justifyContent: "space-between", gap: space.x2 },
+  trustItem: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  trustText: { ...type.meta, color: colors.neutral700, flexShrink: 1 },
 });

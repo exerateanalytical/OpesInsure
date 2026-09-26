@@ -8,6 +8,7 @@ import { toCameroonIso } from "@/components/DateTimeField";
 import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
 import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { usePolicies } from "@/hooks/usePolicies";
+import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import type { MasterValue } from "@/lib/masterFields";
@@ -28,13 +29,14 @@ export default function NewClaimIncident() {
   const id = typeof policyId === "string" ? policyId : "";
   const { policies } = usePolicies();
   const policy = policies.find((p) => p.id === id) ?? null;
+  const logoFor = useInsurerLogo();
   const seed = useMemo(() => ({ ...(id ? { policy_id: id } : {}), incident_at: toCameroonIso(Date.now() - 3_600_000) }), [id]);
 
   return (
     <Screen>
       <BrandHeader title={t("claimIncidentTitle")} subtitle={t("claimIncidentSubtitle")} right="help" />
       <ClaimWizardSteps current={1} />
-      {policy ? <PolicyChoiceCard policy={policy} /> : null}
+      {policy ? <PolicyChoiceCard policy={policy} logoUrl={logoFor(policy)} /> : null}
       <SchemaForm
         form="claim_fnol"
         initialValues={seed}

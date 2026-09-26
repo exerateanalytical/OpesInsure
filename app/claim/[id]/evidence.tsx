@@ -12,6 +12,7 @@ import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { claimExtra, claimPolicy, evidenceIcon, evidenceIsPdf, formatBytes, requirementMet } from "@/components/claims/claimProduct";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
+import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
 import { ClaimRecordsApi } from "@/api/extra";
 import { CustomerApi, uploadClaimEvidence } from "@/api/customer";
@@ -36,6 +37,7 @@ export default function Evidence() {
   const items = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
   const requirements = useLoad(() => CustomerApi.evidenceRequirements(id), [id]);
   const { policies } = usePolicies();
+  const logoFor = useInsurerLogo();
   const [requirement, setRequirement] = useState<string | null>(typeof requirementParam === "string" && requirementParam ? requirementParam : null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -133,7 +135,7 @@ export default function Evidence() {
 
   const summary = claim.data ? (
     <View style={styles.summary}>
-      {policy ? <PolicyChoiceCard policy={policy} plain /> : null}
+      {policy ? <PolicyChoiceCard policy={policy} logoUrl={logoFor(claim.data, policy)} plain /> : null}
       <View style={styles.facts}>
         <Fact icon={Calendar} value={date(claim.data.incident_at, true)} label={t("claimIncidentDate")} />
         {claimExtra(claim.data, "incident_type") ? (

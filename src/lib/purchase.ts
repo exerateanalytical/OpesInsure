@@ -672,3 +672,20 @@ export function parseAmountMinor(input: string): number | null {
   if (!Number.isFinite(value) || value < 0) return null;
   return Math.round(value * 100);
 }
+
+/** Receipt fields beyond receiptView (MobilePaymentService::receiptData): who paid, for what, with which insurer. */
+export function receiptDetails(r: Record<string, unknown> | null | undefined, language: string = "en") {
+  const x = r ?? {};
+  const str = (v: unknown) => (typeof v === "string" && v ? v : null);
+  return {
+    payerName: str(x.payer_name),
+    productName: localized(x.product_name, language) || null,
+    carrierName: str(x.carrier_name),
+    carrierId: str(x.carrier_id),
+    carrierLogo: openableUrl(x.carrier_logo_url),
+    policyId: str(x.policy_id),
+    policyNumber: str(x.policy_number),
+    reference: str(x.reference),
+    proposalId: str(x.proposal_id),
+  };
+}

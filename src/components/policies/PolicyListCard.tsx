@@ -4,6 +4,7 @@ import { ChevronRight, LucideIcon } from "lucide-react-native";
 import { CATEGORIES } from "@/components/customer/categories";
 import { CATEGORY_TINT } from "@/components/customer/CategoryTiles";
 import { InstitutionMark } from "@/components/InstitutionMark";
+import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { ripple, StatusChip } from "@/components/ui";
 import type { Policy, WalletPolicy } from "@/api/client";
 import { useFormatters } from "@/hooks/useFormatters";
@@ -30,7 +31,12 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
   const { t } = useTranslation();
   const w = policy as WalletPolicy;
   const info = policyStatusInfo(policy.status, f.language);
-  const provider = w.carrier_name ?? w.carrier?.party?.display_name ?? t("licensedCarrier");
+  const carriers = useCarriers();
+  const mark = carrierMark(carriers, policy.carrier_id ?? w.carrier?.id, {
+    name: w.carrier_name ?? w.carrier?.party?.display_name,
+    logoUrl: (w as { carrier_logo_url?: string | null }).carrier_logo_url,
+  });
+  const provider = mark.name ?? t("licensedCarrier");
   const cat = policyCategory(policy);
   const Icon: LucideIcon | null = cat?.icon ?? null;
   const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
@@ -52,14 +58,14 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
       android_ripple={ripple()}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={[styles.thumb, { backgroundColor: tint.bg }]}>{Icon ? <Icon size={34} color={tint.fg} /> : null}</View>
+      <View style={[styles.thumb, { backgroundColor: tint.bg }]}>{Icon ? <Icon size={28} color={tint.fg} /> : null}</View>
       <View style={styles.flex}>
-        <Text style={styles.title} numberOfLines={1}>{w.product_name ?? t("insurancePolicy")}</Text>
+        <Text style={styles.title} numberOfLines={2}>{w.product_name ?? t("insurancePolicy")}</Text>
         <View style={styles.providerRow}>
-          <InstitutionMark initials={provider.slice(0, 2).toUpperCase()} size={20} />
-          <Text style={styles.provider} numberOfLines={1}>{provider}</Text>
+          <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={28} />
+          <Text style={styles.provider} numberOfLines={2}>{provider}</Text>
         </View>
-        <Text style={styles.number} numberOfLines={1}>{policy.policy_number}</Text>
+        <Text style={styles.number}>{policy.policy_number}</Text>
       </View>
       <View style={styles.right}>
         <StatusChip label={info.label} tone={info.tone} />
@@ -90,12 +96,12 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9 },
   flex: { flex: 1, gap: 3, minWidth: 96 },
-  thumb: { width: 68, height: 68, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  thumb: { width: 56, height: 56, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
   title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   provider: { ...type.meta, color: colors.neutral600, flexShrink: 1 },
-  number: { ...type.meta, color: colors.neutral600, fontVariant: ["tabular-nums"] },
-  right: { alignItems: "flex-end", gap: space.x2, maxWidth: 108, flexShrink: 0 },
+  number: { ...type.meta, fontSize: 12, color: colors.neutral600, fontVariant: ["tabular-nums"] },
+  right: { alignItems: "flex-end", gap: space.x2, maxWidth: 100, flexShrink: 0 },
   dateBlock: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x2 },
   date: { ...type.meta, fontSize: 12, lineHeight: 16, color: colors.neutral600, textAlign: "left" },
   dateWarn: { color: colors.gold600 },

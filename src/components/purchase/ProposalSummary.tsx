@@ -22,8 +22,11 @@ export function ProposalSummary({ proposal, offer, chip, title }: { proposal: Pr
   const { t: tr } = useTranslation();
   const t = proposal.terms_snapshot;
   // The proposal's own offer wins for terms; the store's selected offer fills in the insurer when the API row lacks the carrier relation.
-  const source = proposal.offer ?? offer ?? null;
-  const named = [proposal.offer, offer].find((o) => o?.carrier?.party?.display_name) ?? null;
+  // The store's offer only counts when it is this proposal's offer (a stale selection must never rename the insurer).
+  const ownOfferId = proposal.offer?.id ?? (proposal as Proposal & { offer_id?: string | null }).offer_id ?? proposal.terms_snapshot?.offer_id ?? null;
+  const storeOffer = offer && (!ownOfferId || offer.id === ownOfferId) ? offer : null;
+  const source = proposal.offer ?? storeOffer ?? null;
+  const named = [proposal.offer, storeOffer].find((o) => o?.carrier?.party?.display_name) ?? null;
   const cover = normalizeCoverage(t?.coverage_snapshot ?? source?.coverage_snapshot, f.language);
   const included = cover.coverages.filter((c) => !c.optional);
   const productName = localized(source?.product?.name, f.language) || tr("insurancePolicy");

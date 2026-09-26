@@ -11,6 +11,7 @@ import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
 import { claimExtra, claimPolicy, evidenceIcon, evidenceIsPdf, insuredLabel, policyLine, policyTitle, productIcon, productTint, providerName } from "@/components/claims/claimProduct";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
+import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
 import { ClaimRecordsApi } from "@/api/extra";
 import { useSession } from "@/store/session";
@@ -31,6 +32,7 @@ export default function NewClaimReview() {
   const claim = useLoad(() => ClaimsApi.show(id), [id]);
   const evidence = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
   const { policies } = usePolicies();
+  const logoFor = useInsurerLogo();
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -88,7 +90,7 @@ export default function NewClaimReview() {
                 <Text style={s.value}>{title}</Text>
                 {provider ? (
                   <View style={s.line}>
-                    <InstitutionMark initials={provider.slice(0, 2).toUpperCase()} size={22} />
+                    <InstitutionMark logoUrl={logoFor(c, policy)} initials={provider.slice(0, 2).toUpperCase()} size={22} />
                     <Text style={s.value}>{provider}</Text>
                   </View>
                 ) : null}

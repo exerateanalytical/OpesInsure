@@ -119,7 +119,7 @@ export default function ProductDetail() {
           <SectionHeading title={t("pdKeyBenefits")} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.benefits}>
             {coverages.slice(0, 5).map((name, i) => (
-              <IconTile key={`${name}-${i}`} icon={BENEFIT_ICONS[i % BENEFIT_ICONS.length] ?? ShieldCheck} tint={BENEFIT_TINTS[i % BENEFIT_TINTS.length] ?? "blue"} label={name} style={s.benefit} />
+              <IconTile key={`${name}-${i}`} icon={BENEFIT_ICONS[i % BENEFIT_ICONS.length] ?? ShieldCheck} tint={BENEFIT_TINTS[i % BENEFIT_TINTS.length] ?? "blue"} label={name} style={s.benefit} onPress={quote} />
             ))}
           </ScrollView>
         </View>
@@ -202,7 +202,7 @@ const s = StyleSheet.create({
   trustText: { ...type.label, color: colors.navy950 },
   block: { gap: space.x3 },
   benefits: { gap: space.x2, paddingRight: space.x2 },
-  benefit: { width: 118, flex: 0 },
+  benefit: { width: 118, minWidth: 118, flexGrow: 0, flexShrink: 0, flexBasis: 118 },
   twoUp: { flexDirection: "row", gap: space.x3 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   cardHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },

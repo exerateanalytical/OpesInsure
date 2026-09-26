@@ -1,18 +1,21 @@
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   AlertTriangle,
   ArrowRight,
   Calendar,
   Camera,
-  ChevronRight,
   ClipboardList,
+  ClipboardPen,
   Clock3,
   FileCheck2,
   FileText,
   Gavel,
+  Landmark,
+  ListOrdered,
   MapPin,
+  Scale,
   MessageSquare,
   Paperclip,
   Search,
@@ -20,11 +23,12 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react-native";
-import { Button, Card, Screen, SectionTitle, StatusChip } from "@/components/ui";
-import { BrandHeader, DetailRow, IconTile, SectionHeading, StepIndicator, TintedIcon } from "@/components/design";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { InstitutionMark } from "@/components/InstitutionMark";
+import { Banner, BrandHeader, CtaBar, DetailRow, IconTile, SectionHeading, StepIndicator, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
-import { ClaimTracker } from "@/components/claims/ClaimTracker";
-import { claimExtra, claimPolicy, insuredLabel, policyLine, policyTitle, productIcon } from "@/components/claims/claimProduct";
+import { claimExtra, claimPolicy, insuredLabel, policyLine, policyTitle, productIcon, providerName } from "@/components/claims/claimProduct";
+import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { claimNextStepKeys, claimStatusMessageKey } from "@/components/claims/nextSteps";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
@@ -37,6 +41,7 @@ import { ClaimAction, claimActionAllowed, claimStage, claimStatusKey, claimTone,
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const ACTIONS: { action: ClaimAction; label: CopyKey; icon: typeof Camera; path: string }[] = [
+  { action: "decision", label: "claimDecisionTitle", icon: Scale, path: "/claim/[id]/decision" },
   { action: "evidence", label: "claimAddEvidence", icon: Camera, path: "/claim/[id]/evidence" },
   { action: "incident", label: "claimCompleteIncident", icon: ClipboardList, path: "/claim/[id]/incident" },
   { action: "checklist", label: "claimRequirements", icon: FileCheck2, path: "/claim/[id]/checklist" },
@@ -54,7 +59,14 @@ const STAGE_LABELS: Record<(typeof DETAIL_STAGES)[number], CopyKey> = {
   settlement: "claimStageSettlement",
 };
 
-/** Claim detail (design 39): status header, five-stage indicator, claim information, current status, next steps, actions, evidence and the full timeline. */
+/**
+ * Claim detail (opesinsure_claim_detail_dashboard / design 39): title with
+ * claim number and submission date, five-stage indicator, claim information
+ * (policy, insurer with logo, incident), current status, next steps, the
+ * insurer's outstanding requests (-> information request screen), status-gated
+ * actions (decision, settlement, appeal...), evidence, "View Full Timeline"
+ * (-> /claim/[id]/timeline) and a pinned "Contact Support" CTA.
+ */
 export default function ClaimDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td, date } = useTranslation();
@@ -63,7 +75,7 @@ export default function ClaimDetail() {
   const evidence = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
   const requirements = useLoad(() => CustomerApi.evidenceRequirements(id), [id]);
   const { policies } = usePolicies();
-  const [showTimeline, setShowTimeline] = useState(false);
+  const logoFor = useInsurerLogo();
   const reloadAll = [q.reload, evidence.reload, requirements.reload, timeline.reload];
   useFocusEffect(
     React.useCallback(() => {
@@ -82,7 +94,24 @@ export default function ClaimDetail() {
   const submittedEvent = (timeline.data ?? []).find((e) => /submit/i.test(`${e.type ?? ""} ${e.to_status ?? ""}`));
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        q.data && claimActionAllowed("message", q.data.status) ? (
+          <CtaBar>
+            <Button
+              label={t("contactSupport")}
+              icon={ArrowRight}
+              onPress={() =>
+                router.push({
+                  pathname: "/support/new",
+                  params: { claimId: q.data!.id, reference: q.data!.claim_number, category: "CLAIM" },
+                })
+              }
+            />
+          </CtaBar>
+        ) : undefined
+      }
+    >
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(claim) => {
           const canUpload = claimActionAllowed("evidence", claim.status);
@@ -97,42 +126,16 @@ export default function ClaimDetail() {
             <>
               <BrandHeader
                 title={t("claimDetails")}
-                subtitle={claim.claim_number}
-                titleRow={<View style={styles.chipTop}><StatusChip label={status} tone={claimTone(claim.status)} /></View>}
+                subtitle={`${t("claimNoLabel", { number: claim.claim_number })}  |  ${t("claimSubmittedOn", { date: date(submittedEvent?.occurred_at ?? claim.created_at ?? claim.incident_at) })}`}
+                right="help"
               />
-              <Text style={styles.submitted}>{t("claimSubmittedOn", { date: date(submittedEvent?.occurred_at ?? claim.created_at ?? claim.incident_at) })}</Text>
               <StepIndicator steps={stages} current={claimStage(claim.status)} />
 
-              {outstanding.length && canUpload ? (
-                <Card style={styles.attention}>
-                  <View style={styles.row}>
-                    <AlertTriangle size={22} color={colors.warningText} />
-                    <Text accessibilityRole="header" style={[styles.title, styles.flex]}>
-                      {t("claimInsurerRequests", { count: outstanding.length })}
-                    </Text>
-                  </View>
-                  {outstanding.map((r) => (
-                    <Pressable
-                      key={r.key}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${r.label}. ${t("claimUploadNow")}`}
-                      onPress={() => router.push({ pathname: "/claim/[id]/evidence", params: { id, requirement: r.key } })}
-                      style={({ pressed }) => [styles.request, pressed && styles.pressed]}
-                    >
-                      <View style={styles.flex}>
-                        <Text style={styles.event}>{r.label}</Text>
-                        {r.guidance ? <Text style={styles.meta}>{r.guidance}</Text> : null}
-                        {r.status === "REJECTED" ? <Text style={styles.danger}>{t("claimRequirementRejected")}</Text> : null}
-                      </View>
-                      <Text style={styles.link}>{t("claimUploadNow")}</Text>
-                      <ChevronRight size={18} color={colors.blue600} />
-                    </Pressable>
-                  ))}
-                </Card>
-              ) : null}
-
               <Card style={styles.infoCard}>
-                <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimInformation")}</Text>
+                <View style={styles.statusRow}>
+                  <TintedIcon icon={FileText} tint="blue" size={56} />
+                  <Text accessibilityRole="header" style={[styles.cardTitle, styles.flex, styles.headPad]}>{t("claimInformation")}</Text>
+                </View>
                 <DetailRow
                   icon={ProductIcon}
                   label={t("claimPolicyLabel")}
@@ -144,24 +147,49 @@ export default function ClaimDetail() {
                     </View>
                   }
                 />
+                {providerName(policy) ? (
+                  <DetailRow
+                    icon={Landmark}
+                    label={t("insurer")}
+                    valueNode={
+                      <View style={styles.insurerRow}>
+                        <InstitutionMark logoUrl={logoFor(claim, policy)} initials={providerName(policy)!.slice(0, 2).toUpperCase()} size={22} />
+                        <Text style={styles.value}>{providerName(policy)}</Text>
+                      </View>
+                    }
+                  />
+                ) : null}
                 <DetailRow icon={Calendar} label={t("claimIncidentDate")} value={date(claim.incident_at, true)} />
                 {claim.incident_location ? <DetailRow icon={MapPin} label={t("claimIncidentLocation")} value={claim.incident_location} /> : null}
                 {incidentType ? <DetailRow icon={ShieldCheck} label={t("claimIncidentType")} value={td(`incidentKind_${incidentType}`, incidentType)} /> : null}
               </Card>
 
               <Card>
-                <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimCurrentStatus")}</Text>
                 <View style={styles.statusRow}>
-                  <TintedIcon icon={Clock3} tint={claimTone(claim.status) === "danger" ? "red" : claimTone(claim.status) === "success" ? "green" : "gold"} size={48} />
-                  <View style={styles.flex}>
-                    <Text style={[styles.statusTitle, claimTone(claim.status) === "danger" && styles.dangerTitle]}>{status}</Text>
+                  <TintedIcon icon={Clock3} tint={claimTone(claim.status) === "danger" ? "red" : claimTone(claim.status) === "success" ? "green" : "gold"} size={56} />
+                  <View style={[styles.flex, styles.gap]}>
+                    <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimCurrentStatus")}</Text>
+                    <View style={styles.chipStart}><StatusChip label={status} tone={claimTone(claim.status)} /></View>
                     {statusDate ? <Text style={styles.meta}>{date(statusDate)}</Text> : null}
                     <Text style={styles.body}>{td(claimStatusMessageKey(claim.status), t("claimStatusMsg_UNKNOWN"))}</Text>
                   </View>
                 </View>
               </Card>
 
+              {outstanding.length && canUpload ? (
+                <Banner
+                  icon={AlertTriangle}
+                  tint="gold"
+                  title={t("claimInsurerRequests", { count: outstanding.length })}
+                  body={outstanding.map((r) => r.label).join(" · ")}
+                  onPress={() => go("/claim/[id]/information")}
+                />
+              ) : null}
+
               <Card>
+                <View style={styles.statusRow}>
+                <TintedIcon icon={ClipboardPen} tint="neutral" size={56} />
+                <View style={[styles.flex, styles.gap]}>
                 <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimNextSteps")}</Text>
                 <View accessibilityRole="list">
                   {claimNextStepKeys(claim.status).map((key, i, all) => (
@@ -174,6 +202,8 @@ export default function ClaimDetail() {
                     </View>
                   ))}
                 </View>
+                </View>
+                </View>
               </Card>
 
               {claim.description ? (
@@ -183,46 +213,7 @@ export default function ClaimDetail() {
                 </Card>
               ) : null}
 
-              <Button
-                label={showTimeline ? t("claimHideTimeline") : t("claimViewTimeline")}
-                icon={ArrowRight}
-                variant="secondary"
-                onPress={() => setShowTimeline((x) => !x)}
-              />
-              {showTimeline ? (
-                <>
-                  <Card>
-                    <Text accessibilityRole="header" style={styles.cardTitle}>{t("trackTitle")}</Text>
-                    <ClaimTracker status={claim.status} />
-                  </Card>
-                  <SectionTitle title={t("claimTimeline")} />
-                  <StatePanel
-                    {...timeline}
-                    onRetry={timeline.reload}
-                    emptyTitle={t("claimNoUpdates")}
-                    emptyMessage={t("claimNoUpdatesBody")}
-                    loadingLabel={t("loading")}
-                  >
-                    {(events) => (
-                      <Card>
-                        {events.map((event) => (
-                          <View key={event.id} style={styles.row}>
-                            <FileCheck2 size={19} color={colors.blue600} />
-                            <View style={styles.flex}>
-                              <Text style={styles.event}>
-                                {event.to_status
-                                  ? td(claimStatusKey(event.to_status), event.to_status)
-                                  : td(`claimEvent_${event.type}`, event.type)}
-                              </Text>
-                              <Text style={styles.meta}>{date(event.occurred_at)}</Text>
-                            </View>
-                          </View>
-                        ))}
-                      </Card>
-                    )}
-                  </StatePanel>
-                </>
-              ) : null}
+              <Button label={t("claimViewFullTimeline")} icon={ListOrdered} variant="secondary" onPress={() => go("/claim/[id]/timeline")} />
 
               <SectionHeading title={t("claimActions")} />
               {actions.length ? (
@@ -285,8 +276,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: space.x3, alignItems: "center", paddingVertical: space.x2 },
   flex: { flex: 1 },
   pressed: { opacity: 0.82 },
-  chipTop: { paddingTop: 8 },
-  submitted: { ...type.body, color: colors.neutral600, marginTop: -space.x4 },
+  chipStart: { alignSelf: "flex-start" },
+  gap: { gap: space.x2 },
+  headPad: { paddingTop: space.x3 },
+  insurerRow: { flexDirection: "row", alignItems: "center", gap: space.x2, justifyContent: "flex-end", flexShrink: 1 },
   attention: { borderColor: colors.gold500, backgroundColor: colors.warningSoft },
   request: {
     minHeight: 56,

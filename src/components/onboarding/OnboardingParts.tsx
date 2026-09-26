@@ -4,8 +4,8 @@ import { LucideIcon } from "lucide-react-native";
 import { authColors, authIcon, authSpace, authType, colors, type } from "@/theme/tokens";
 import { useColumns } from "@/components/responsive";
 import { KenteBand } from "@/components/HeritagePattern";
+import { EntryLockup } from "@/components/BrandMark";
 
-const icon = require("../../../assets/icon.png");
 const mapNetwork = require("../../../assets/brand/map_network.png");
 const scriptTagline = require("../../../assets/brand/script_tagline.png");
 const edgeLeft = require("../../../assets/brand/edge_left.png");
@@ -45,11 +45,12 @@ export function OnboardingCanvas({ waveHeight = 150 }: { waveHeight?: number }) 
  * square box and shrinks on 360dp phones or with large system fonts so the
  * slide copy and the actions stay on screen.
  */
-export function OnboardingHero({ compact }: { compact?: boolean }) {
+export function OnboardingHero({ compact, tagline }: { compact?: boolean; tagline?: string }) {
   const { width, fontScale } = useWindowDimensions();
   const small = compact || width < 360 || fontScale > 1.2;
   const iconSize = small ? 88 : 116;
-  const artSize = Math.min(small ? 200 : 250, width * 0.62);
+  // Top-right art box ends 8dp short of the centred icon so it never covers it.
+  const artSize = Math.min(small ? 180 : 230, iconSize + (small ? authSpace[4] : authSpace[6]), width / 2 - iconSize / 2 - 8);
   return (
     <View style={[styles.heroWrap, small && styles.heroWrapSmall]}>
       <View
@@ -62,18 +63,7 @@ export function OnboardingHero({ compact }: { compact?: boolean }) {
         <Image source={scriptTagline} style={styles.heroScript} resizeMode="contain" />
       </View>
       <View style={styles.brandBlock}>
-        <Image
-          source={icon}
-          style={[styles.icon, { width: iconSize, height: iconSize, borderRadius: iconSize * 0.24 }]}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <Text style={[styles.wordmark, small && styles.wordmarkSmall]} numberOfLines={1} adjustsFontSizeToFit>
-          Opes<Text style={styles.wordmarkAccent}>Insure</Text>
-        </Text>
-        <Text style={styles.tagline} numberOfLines={1} adjustsFontSizeToFit>
-          INSURANCE FOR A BRIGHTER TOMORROW
-        </Text>
+        <EntryLockup iconSize={iconSize} tagline={tagline} />
       </View>
     </View>
   );
@@ -81,8 +71,9 @@ export function OnboardingHero({ compact }: { compact?: boolean }) {
 
 export type FeatureItem = { icon: LucideIcon; label: string; caption?: string };
 
-/** The 3-column row of round light-blue badges used on slides 1 and 2. */
-export function OnboardingFeatureRow({ items }: { items: FeatureItem[] }) {
+/** The 3-column feature row: round light-blue badges (slide 2) or plain gold
+ * line icons (`tone="gold"`, slide 1). */
+export function OnboardingFeatureRow({ items, tone = "badge" }: { items: FeatureItem[]; tone?: "badge" | "gold" }) {
   return (
     <View style={styles.row}>
       {items.map((item, index) => {
@@ -91,9 +82,15 @@ export function OnboardingFeatureRow({ items }: { items: FeatureItem[] }) {
           <React.Fragment key={item.label}>
             {index > 0 ? <View style={styles.rowDivider} /> : null}
             <View style={styles.rowItem}>
-              <View style={styles.rowBadge}>
-                <Icon size={authIcon.feature + 8} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
-              </View>
+              {tone === "gold" ? (
+                <View style={styles.rowGold}>
+                  <Icon size={44} strokeWidth={1.6} color={authColors.gold500} />
+                </View>
+              ) : (
+                <View style={styles.rowBadge}>
+                  <Icon size={authIcon.feature + 8} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
+                </View>
+              )}
               <Text style={styles.rowLabel}>{item.label}</Text>
               {item.caption ? <Text style={styles.rowCaption}>{item.caption}</Text> : null}
             </View>
@@ -189,6 +186,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center", paddingHorizontal: authSpace[1] },
   rowDivider: { width: 1, backgroundColor: authColors.ice100, marginTop: 24, height: 44 },
   rowItem: { flex: 1, alignItems: "center", gap: authSpace[1], paddingHorizontal: authSpace[1] },
+  rowGold: { width: 64, height: 64, alignItems: "center", justifyContent: "center", marginBottom: authSpace[1] },
   rowBadge: {
     width: 84,
     height: 84,

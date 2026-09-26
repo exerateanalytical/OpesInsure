@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Plus, Trash2, UsersRound } from "lucide-react-native";
+import { Plus, Trash2, UserRound, UsersRound } from "lucide-react-native";
+import { TintedIcon } from "@/components/design";
 import { Button, Card, TextField } from "@/components/ui";
 import { ChoiceChips, errorMessage, Notice } from "@/components/portal/Workspace";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
@@ -22,7 +23,7 @@ const toDraft = (b: Beneficiary): BeneficiaryDraft => ({
 const blank = (designation: BeneficiaryDraft["designation"] = "PRIMARY"): BeneficiaryDraft => ({ designation, full_name: "", allocation_pct: "" });
 
 /** REQ-CRM-004 — current designations, edit (PRIMARY shares total 100 %), versioned history. Hidden when not permitted. */
-export function BeneficiariesSection({ policyId }: { policyId: string }) {
+export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId: string; hideTitle?: boolean }) {
   const { t, td, date } = useTranslation();
   const q = useLoad(() => BeneficiaryApi.list(policyId), [policyId]);
   const [editing, setEditing] = useState<BeneficiaryDraft[] | null>(null);
@@ -43,10 +44,12 @@ export function BeneficiariesSection({ policyId }: { policyId: string }) {
 
   return (
     <Card>
-      <View style={s.row}>
-        <UsersRound size={18} color={colors.blue600} />
-        <Text style={s.title}>{t("benTitle")}</Text>
-      </View>
+      {hideTitle ? null : (
+        <View style={s.row}>
+          <UsersRound size={18} color={colors.blue600} />
+          <Text style={s.title}>{t("benTitle")}</Text>
+        </View>
+      )}
       {q.loading && !q.data ? <LoadingState /> : null}
       {q.error && !q.data ? <ErrorState error={q.error} onRetry={q.reload} /> : null}
 
@@ -54,14 +57,17 @@ export function BeneficiariesSection({ policyId }: { policyId: string }) {
         <>
           {q.data.length ? (
             q.data.map((b) => (
-              <View key={b.id} style={s.item}>
-                <Text style={s.body}>
-                  {b.full_name ?? "—"}
-                  {b.relationship ? ` · ${td(`relationship_${b.relationship}`, b.relationship)}` : ""}
-                </Text>
-                <Text style={s.meta}>
-                  {t(b.designation === "PRIMARY" ? "benPrimary" : "benContingent")} · {b.allocation_pct}%{!b.revocable ? ` · ${t("benIrrevocable")}` : ""}
-                </Text>
+              <View key={b.id} style={s.person}>
+                <TintedIcon icon={UserRound} tint="blue" size={44} />
+                <View style={s.flex}>
+                  <Text style={s.name}>{b.full_name ?? "—"}</Text>
+                  <Text style={s.meta}>
+                    {b.relationship ? `${td(`relationship_${b.relationship}`, b.relationship)} · ` : ""}
+                    {t(b.designation === "PRIMARY" ? "benPrimary" : "benContingent")}
+                    {!b.revocable ? ` · ${t("benIrrevocable")}` : ""}
+                  </Text>
+                </View>
+                <Text style={s.share}>{b.allocation_pct}%</Text>
               </View>
             ))
           ) : (
@@ -157,6 +163,10 @@ const s = StyleSheet.create({
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
   item: { gap: 2, paddingVertical: space.x1 },
+  person: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
+  flex: { flex: 1 },
+  name: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  share: { ...type.label, fontSize: 16, color: colors.gold600 },
   editor: { gap: space.x2, paddingVertical: space.x2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
   error: { ...type.meta, color: colors.dangerText },
 });

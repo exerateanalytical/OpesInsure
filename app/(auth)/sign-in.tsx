@@ -158,9 +158,11 @@ export default function SignIn() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          style={styles.scroll}
           contentContainerStyle={{ paddingBottom: insets.bottom + authSpace[3] }}
         >
           <AuthHero
+            dark
             heading={t("welcomeBack")}
             subheading={t("signInSubheading")}
           />
@@ -248,24 +250,27 @@ export default function SignIn() {
               <Text style={styles.trustText}>{t("authTrust")}</Text>
             </View>
 
-            <View style={styles.divider} />
-            <Text style={styles.publicCaption}>{t("browseInsurers")}</Text>
+            <View style={styles.captionRow}>
+              <View style={styles.captionLine} />
+              <Text style={styles.publicCaption}>{t("browseInsurers")}</Text>
+              <View style={styles.captionLine} />
+            </View>
             <View style={styles.publicGrid}>
-              {publicLinks.map((link) => {
+              {publicLinks.map((link, index) => {
                 const Icon = link.icon;
                 return (
+                  <React.Fragment key={link.label}>
+                  {index > 0 ? <View style={styles.publicDivider} /> : null}
                   <Pressable
-                    key={link.label}
                     accessibilityRole="button"
                     accessibilityLabel={t(link.label)}
                     onPress={link.onPress}
                     style={({ pressed }) => [styles.publicTile, pressed && styles.pressed]}
                   >
-                    <View style={styles.publicIcon}>
-                      <Icon size={authIcon.normal} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
-                    </View>
-                    <Text style={styles.publicLabel} numberOfLines={2}>{t(link.label)}</Text>
+                    <Icon size={authIcon.feature} strokeWidth={authIcon.strokeWidth} color={authColors.navy800} />
+                    <Text style={styles.publicLabel}>{t(link.label)}</Text>
                   </Pressable>
+                  </React.Fragment>
                 );
               })}
             </View>
@@ -277,7 +282,8 @@ export default function SignIn() {
   );
 }
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: authColors.canvas },
+  safe: { flex: 1, backgroundColor: "#0A2A8C" },
+  scroll: { backgroundColor: authColors.white },
   flex: { flex: 1 },
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
   trustRow: { flexDirection: "row", gap: authSpace[2], alignItems: "flex-start", paddingTop: authSpace[1] },
@@ -286,30 +292,20 @@ const styles = StyleSheet.create({
   forgotRow: { alignSelf: "flex-end", paddingVertical: authSpace[1], marginTop: -authSpace[2] },
   link: { ...authType.label, color: authColors.blue500 },
   pressed: { opacity: 0.85 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: authSpace[2] },
-  publicCaption: { ...authType.label, fontSize: 12, color: authColors.slate500, textAlign: "center" },
-  publicGrid: { flexDirection: "row", flexWrap: "wrap", gap: authSpace[2] },
+  captionRow: { flexDirection: "row", alignItems: "center", gap: authSpace[2], marginTop: authSpace[2] },
+  captionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200 },
+  publicCaption: { ...authType.label, fontSize: 12, color: authColors.slate500, textAlign: "center", flexShrink: 1 },
+  publicGrid: { flexDirection: "row", alignItems: "stretch" },
+  publicDivider: { width: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginVertical: authSpace[2] },
   publicTile: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minHeight: 56,
-    flexDirection: "row",
+    flex: 1,
+    minHeight: 72,
     alignItems: "center",
-    gap: authSpace[2],
-    paddingHorizontal: authSpace[3],
+    justifyContent: "flex-start",
+    gap: authSpace[1],
+    paddingHorizontal: 2,
     paddingVertical: authSpace[2],
     borderRadius: authRadius.md,
-    borderWidth: 1,
-    borderColor: authColors.ice200,
-    backgroundColor: authColors.white,
   },
-  publicIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: authColors.ice50,
-  },
-  publicLabel: { ...authType.label, fontSize: 13, lineHeight: 17, color: authColors.navy950, flex: 1 },
+  publicLabel: { ...authType.label, fontSize: 12, lineHeight: 16, color: authColors.navy950, textAlign: "center" },
 });

@@ -8,7 +8,7 @@ import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard, InfoRow, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
-import { Proposal, ProposalsApi, SupportContactsApi } from "@/api/client";
+import { Proposal, ProposalsApi, SupportContactsApi, WalletApi } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { humanize, localized, proposalStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
@@ -63,6 +63,14 @@ export default function ProposalDetail() {
   const [checklist, setChecklist] = useState<ProposalChecklist | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<unknown>(null);
+  /** The owned policy issued from this proposal, when there is one: the application is then done. */
+  const [policyId, setPolicyId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    WalletApi.all()
+      .then((list) => setPolicyId(list.find((x) => x.proposal_id === id)?.id ?? null))
+      .catch(() => undefined);
+  }, [id]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -141,7 +149,9 @@ export default function ProposalDetail() {
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
 
   const primary = p ? (
-    info.stage === "disclosures" ? (
+    policyId ? (
+      <Button label={t("draftsViewPolicy")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policyId } })} />
+    ) : info.stage === "disclosures" ? (
       <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
     ) : info.stage === "payable" ? (
       <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/quote/terms", params: { proposalId: p.id } })} />

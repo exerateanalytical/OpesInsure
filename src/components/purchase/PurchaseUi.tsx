@@ -76,6 +76,21 @@ export function LoadMore({ hasMore, loading, error, onPress }: { hasMore: boolea
 /** Horizontal progress stepper (Initiated → Awaiting → Confirmed, wizard steps…). */
 export function Stepper({ steps, current, failed, done }: { steps: string[]; current: number; failed?: boolean; done?: boolean }) {
   const { t } = useTranslation();
+  // Long questionnaires (5+ steps) would squeeze labels mid-word at 360dp: show a labelled progress bar instead (design 12).
+  if (steps.length > 4)
+    return (
+      <View style={s.barWrap} accessibilityRole="progressbar" accessibilityLabel={t("stepOf", { current: current + 1, total: steps.length, label: steps[current] ?? "" })}>
+        <View style={s.barHead}>
+          <Text style={s.barLabel}>{steps[current] ?? ""}</Text>
+          <Text style={s.barCount}>{t("ppStepOf", { current: current + 1, total: steps.length })}</Text>
+        </View>
+        <View style={s.barTrack}>
+          {steps.map((label, i) => (
+            <View key={label} style={[s.barSeg, i <= current && s.barSegOn, failed && i === current && s.dotFailed]} />
+          ))}
+        </View>
+      </View>
+    );
   return (
     <View style={s.stepper} accessibilityRole="progressbar" accessibilityLabel={t("stepOf", { current: current + 1, total: steps.length, label: steps[current] ?? "" })}>
       {steps.map((label, i) => {
@@ -218,6 +233,13 @@ const s = StyleSheet.create({
   hint: { ...type.meta, color: colors.neutral600 },
   gap: { gap: space.x2 },
   stepper: { flexDirection: "row", gap: space.x2 },
+  barWrap: { gap: space.x2 },
+  barHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.x2, flexWrap: "wrap" },
+  barLabel: { ...type.label, fontSize: 16, color: colors.navy950, flexShrink: 1 },
+  barCount: { ...type.meta, color: colors.neutral600 },
+  barTrack: { flexDirection: "row", gap: 4 },
+  barSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.neutral200 },
+  barSegOn: { backgroundColor: colors.blue600 },
   step: { flex: 1, alignItems: "center", gap: space.x1 },
   dot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.neutral300, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },
   dotDone: { backgroundColor: colors.success, borderColor: colors.success },

@@ -1,13 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CheckCircle2, Clock3, FileText, LucideIcon, Plus, Siren } from "lucide-react-native";
+import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Siren } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { ClaimCard } from "@/components/claims/ClaimCard";
-import { claimPolicy, insuredLabel, policyTitle } from "@/components/claims/claimProduct";
+import { claimPolicy, insuredLabel, policyLine, policyTitle, productCategory, providerName } from "@/components/claims/claimProduct";
+import { activeFilterCount, FiltersSheet, type FilterSection, type FilterValues } from "@/components/customer/FiltersSheet";
+import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
+import { CATEGORIES } from "@/components/customer/categories";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
 import { CustomerApi } from "@/api/customer";
@@ -38,8 +41,34 @@ export default function Claims() {
     progress: claims.filter((c) => claimSegment(c.status) === "progress").length,
     completed: claims.filter((c) => claimSegment(c.status) === "completed").length,
   };
+  const [sheet, setSheet] = useState(false);
+  const [extra, setExtra] = useState<FilterValues>({});
+  const carriers = useCarriers();
+  const meta = (c: Claim) => {
+    const p = byPolicy.get(c.policy_id) ?? claimPolicy(c);
+    const m = carrierMark(carriers, p?.carrier_id ?? p?.carrier?.id, { name: providerName(p) });
+    return { p, provider: { id: p?.carrier_id ?? m.name ?? "", ...m }, line: productCategory(policyTitle(p, ""), policyLine(p))?.id ?? "" };
+  };
+  // Filter sheet: product line and insurer, both derived from the claim's policy.
+  const filterSections = useMemo<FilterSection[]>(() => {
+    const rows = claims.map(meta);
+    const provs = new Map<string, (typeof rows)[number]["provider"]>();
+    rows.forEach((r) => r.provider.id && !provs.has(r.provider.id) && provs.set(r.provider.id, r.provider));
+    return [
+      { key: "line", title: t("filterCategory"), subtitle: t("filterCategoryBody"), options: CATEGORIES.filter((c) => rows.some((r) => r.line === c.id)).map((c) => ({ value: c.id, label: t(c.label), icon: c.icon })) },
+      { key: "provider", title: t("filterProvider"), subtitle: t("filterProviderBody"), options: [...provs.values()].map((m) => ({ value: m.id, label: m.name ?? t("licensedCarrier"), logoUrl: m.logoUrl, initials: m.initials })) },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claims, byPolicy, carriers, t]);
+  const matches = (c: Claim, f: FilterValues) => {
+    const m = meta(c);
+    if (f.line?.length && !f.line.includes(m.line)) return false;
+    if (f.provider?.length && !f.provider.includes(m.provider.id)) return false;
+    return true;
+  };
   const visible = claims.filter((c) => {
     if (segment !== "all" && claimSegment(c.status) !== segment) return false;
+    if (!matches(c, extra)) return false;
     const p = byPolicy.get(c.policy_id) ?? claimPolicy(c);
     return matchesQuery(
       query,
@@ -49,6 +78,7 @@ export default function Claims() {
       p?.policy_number,
       policyTitle(p, ""),
       insuredLabel(p),
+      providerName(p),
       td(claimStatusKey(c.status), c.status),
     );
   });
@@ -73,21 +103,31 @@ export default function Claims() {
       <Button label={t("emergencyAssistance")} variant="danger" onPress={() => router.push("/claim/emergency")} />
     </Card>
   );
+  // Primary action (design: "File a New Claim" banner under the title).
   const newClaim = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t("newClaim")}
+      accessibilityLabel={`${t("newClaim")}. ${t("claimsFileNewBody")}`}
       onPress={() => router.push("/claim/new")}
-      android_ripple={ripple()}
+      android_ripple={ripple(true)}
       style={({ pressed }) => [styles.newClaim, pressed && styles.pressed]}
     >
-      <Plus size={20} color={colors.navy950} strokeWidth={2.5} />
-      <Text style={styles.newClaimText}>{t("newClaim")}</Text>
+      <View style={styles.newClaimIcon}>
+        <FilePlus2 size={30} color={colors.white} />
+      </View>
+      <View style={styles.flex}>
+        <Text style={styles.newClaimText}>{t("claimsFileNew")}</Text>
+        <Text style={styles.newClaimBody}>{t("claimsFileNewBody")}</Text>
+      </View>
+      <View style={styles.newClaimArrow}>
+        <ArrowRight size={22} color={colors.white} />
+      </View>
     </Pressable>
   );
   const header = (
     <View style={styles.header}>
-      <BrandHeader title={t("myClaims")} subtitle={t("myClaimsSubtitle")} back={false} titleRow={newClaim} />
+      <BrandHeader title={t("myClaims")} subtitle={t("myClaimsSubtitle")} back={false} />
+      {newClaim}
       <View style={styles.segments} accessibilityRole="tablist">
         {SEGMENTS.map(({ key, label, icon: Icon }) => {
           const on = segment === key;
@@ -101,17 +141,37 @@ export default function Claims() {
               style={({ pressed }) => [styles.segment, on && styles.segmentOn, pressed && styles.pressed]}
             >
               <Icon size={16} color={on ? colors.white : colors.navy900} />
-              <Text style={[styles.segmentText, on && styles.segmentTextOn]} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]} numberOfLines={2} maxFontSizeMultiplier={1.4}>
                 {t(label, { count: counts[key] })}
               </Text>
             </Pressable>
           );
         })}
       </View>
-      <SearchBar value={query} onChangeText={setQuery} placeholder={t("claimsSearchPlaceholder")} label={t("claimsSearchLabel")} clearLabel={t("clearSearch")} />
+      <SearchBar
+        value={query}
+        onChangeText={setQuery}
+        placeholder={t("claimsSearchPlaceholder")}
+        label={t("claimsSearchLabel")}
+        clearLabel={t("clearSearch")}
+        onFilter={() => setSheet(true)}
+        filterLabel={t("filtersTitle")}
+        filterCount={activeFilterCount(extra, filterSections)}
+      />
     </View>
   );
 
+  const filterSheet = (
+    <FiltersSheet
+      visible={sheet}
+      onClose={() => setSheet(false)}
+      sections={filterSections}
+      value={extra}
+      onApply={setExtra}
+      count={(f) => claims.filter((c) => (segment === "all" || claimSegment(c.status) === segment) && matches(c, f)).length}
+      subtitle={t("filtersClaimsSubtitle")}
+    />
+  );
   if (!visible.length)
     return (
       <Screen>
@@ -126,6 +186,7 @@ export default function Claims() {
           <EmptyState title={t("claimsEmpty")} message={t("claimsEmptyBody")} />
         )}
         {emergency}
+        {filterSheet}
       </Screen>
     );
   const sections =
@@ -153,6 +214,7 @@ export default function Claims() {
         SectionSeparatorComponent={Separator}
         ListFooterComponent={<View style={styles.footer}>{emergency}</View>}
       />
+      {filterSheet}
     </Screen>
   );
 }
@@ -167,11 +229,14 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
-  newClaim: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48, paddingHorizontal: space.x4, borderRadius: radius.card, backgroundColor: colors.gold500, overflow: "hidden", marginTop: 4 },
-  newClaimText: { ...type.label, color: colors.navy950 },
+  newClaim: { flexDirection: "row", alignItems: "center", gap: space.x4, minHeight: 96, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue700, overflow: "hidden" },
+  newClaimIcon: { width: 60, height: 60, borderRadius: radius.card, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
+  newClaimText: { ...type.cardTitle, fontSize: 20, lineHeight: 26, color: colors.white },
+  newClaimBody: { ...type.meta, color: colors.blue50 },
+  newClaimArrow: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.6)", alignItems: "center", justifyContent: "center" },
   segments: { flexDirection: "row", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, padding: 4, gap: 4 },
   segment: { flex: 1, minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.control, paddingHorizontal: 6, overflow: "hidden" },
   segmentOn: { backgroundColor: colors.navy900 },
-  segmentText: { ...type.label, fontSize: 13, lineHeight: 17, color: colors.navy900, flexShrink: 1 },
+  segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy900, flexShrink: 1, textAlign: "center" },
   segmentTextOn: { color: colors.white },
 });

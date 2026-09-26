@@ -16,10 +16,20 @@ const LABELS: Record<(typeof TRACKER_STEPS)[number], CopyKey> = {
   settlement: "trackSettlement",
 };
 
+const DESCRIPTIONS: Record<(typeof TRACKER_STEPS)[number], CopyKey> = {
+  submitted: "trackDesc_submitted",
+  documents: "trackDesc_documents",
+  review: "trackDesc_review",
+  assessment: "trackDesc_assessment",
+  info: "trackDesc_info",
+  decision: "trackDesc_decision",
+  settlement: "trackDesc_settlement",
+};
+
 /** Fixed seven-step progress tracker, derived from the backend status. The
  * state is conveyed by icon and text, never by colour alone. */
-export function ClaimTracker({ status }: { status: string }) {
-  const { t } = useTranslation();
+export function ClaimTracker({ status, dates, describe = false }: { status: string; dates?: (string | null)[]; describe?: boolean }) {
+  const { t, date } = useTranslation();
   const states = claimTracker(status);
   return (
     <View accessibilityRole="list" accessibilityLabel={t("trackTitle")}>
@@ -29,8 +39,9 @@ export function ClaimTracker({ status }: { status: string }) {
         const stateLabel = t(
           state === "done" ? "stepDone" : state === "current" ? "stepCurrent" : state === "attention" ? "stepAttention" : "stepUpcoming",
         );
+        const when = dates?.[i] ? date(dates[i]!, true) : null;
         return (
-          <View key={step} style={styles.step} accessible accessibilityLabel={`${t(LABELS[step])}: ${stateLabel}`}>
+          <View key={step} style={[styles.step, describe && state === "current" && styles.stepCurrent]} accessible accessibilityLabel={`${t(LABELS[step])}: ${stateLabel}`}>
             <View style={styles.rail}>
               <View
                 style={[
@@ -53,6 +64,8 @@ export function ClaimTracker({ status }: { status: string }) {
             <View style={styles.copy}>
               <Text style={[styles.label, state === "upcoming" && styles.muted]}>{t(LABELS[step])}</Text>
               {state !== "upcoming" && state !== "done" ? <Text style={[styles.state, state === "attention" && styles.attention]}>{stateLabel}</Text> : null}
+              {describe ? <Text style={styles.meta}>{when ?? (state === "upcoming" ? t("trackPending") : "")}</Text> : null}
+              {describe ? <Text style={styles.desc}>{t(DESCRIPTIONS[step])}</Text> : null}
             </View>
           </View>
         );
@@ -84,4 +97,7 @@ const styles = StyleSheet.create({
   muted: { color: colors.neutral600, fontFamily: "Inter_500Medium" },
   state: { ...type.meta, color: colors.blue700 },
   attention: { color: colors.warningText },
+  stepCurrent: { backgroundColor: colors.blue50, borderRadius: 12, marginHorizontal: -space.x2, paddingHorizontal: space.x2, paddingTop: space.x2 },
+  meta: { ...type.meta, color: colors.neutral600 },
+  desc: { ...type.meta, color: colors.neutral700 },
 });

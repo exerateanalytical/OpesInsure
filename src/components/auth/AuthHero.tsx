@@ -2,22 +2,29 @@ import React, { ReactNode, useCallback } from "react";
 import { setStatusBarStyle } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft } from "lucide-react-native";
-import { authColors, authSpace, authType, colors, type } from "@/theme/tokens";
+import { authColors, authSpace, authType, colors } from "@/theme/tokens";
+import { EntryLockup } from "@/components/BrandMark";
 import { KenteBand } from "@/components/HeritagePattern";
 import { useTranslation } from "@/i18n";
 
-const icon = require("../../../assets/icon.png");
 const mapNetwork = require("../../../assets/brand/map_network.png");
+const scriptTagline = require("../../../assets/brand/script_tagline.png");
 const edgeLeft = require("../../../assets/brand/edge_left.png");
 const edgeRight = require("../../../assets/brand/edge_right.png");
 
+/** Royal-blue gradient of the blue/gold login and account-creation designs. */
+const DARK_GRADIENT = ["#0A2A8C", "#0B3AB4", "#0D47C9"] as const;
+
 /**
- * The light design-system hero shared by sign-in, sign-up, verify and forgot
- * password: faint geometric borders on both edges, the dotted-Africa network
- * art in the top-right corner, the app icon + two-tone wordmark lockup and the
- * per-screen heading. The icon keeps a 1:1 box with resizeMode contain and
- * shrinks on 360dp phones; text wraps (large fonts) instead of clipping.
+ * The hero shared by sign-in, sign-up, verify and forgot password: faint
+ * geometric borders on both edges, the dotted-Africa network art + "A Safer
+ * Brighter Africa" script in the top-right corner (kept clear of the centred
+ * lockup), the shared EntryLockup, the heading and the subheading. `dark`
+ * is the royal-blue variant of the login / account-creation designs; the
+ * form card then overlaps the hero's lower edge. `children` render under the
+ * copy (e.g. the account-type selector on sign-up).
  */
 export function AuthHero({
   heading,
@@ -25,6 +32,7 @@ export function AuthHero({
   compact,
   back = false,
   dark = false,
+  children,
 }: {
   heading: string;
   subheading: string;
@@ -32,11 +40,11 @@ export function AuthHero({
   compact?: boolean;
   /** Show a back arrow above the lockup (secondary screens). */
   back?: boolean;
-  /** Dark (indigo) variant: light status-bar icons while focused. The default
-   * light canvas keeps the app's dark icons. */
+  /** Dark (royal blue) variant: light status-bar icons while focused. */
   dark?: boolean;
+  children?: ReactNode;
 }) {
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
   const { t } = useTranslation();
   useFocusEffect(
     useCallback(() => {
@@ -48,19 +56,24 @@ export function AuthHero({
       return undefined;
     }, [dark]),
   );
-  const iconSize = compact ? 52 : width < 360 ? 60 : 72;
-  const artSize = Math.min(compact ? 120 : 150, width * 0.4);
+  const small = width < 380 || fontScale > 1.2;
+  const iconSize = compact ? 64 : small ? 84 : 104;
+  // The art sits in the top-right corner; its box stops short of the centred
+  // icon (icon half-width + 8dp) so it never covers the lockup.
+  // ...and ends at the icon's bottom edge so it never reaches the wordmark.
+  const artSize = Math.max(0, Math.min(compact ? 120 : 170, iconSize + 16, width / 2 - iconSize / 2 - 8));
   return (
-    <View style={[styles.hero, dark && styles.heroDark]}>
-      <View
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        <Image source={edgeLeft} style={[styles.edge, styles.edgeLeft]} resizeMode="cover" />
-        <Image source={edgeRight} style={[styles.edge, styles.edgeRight]} resizeMode="cover" />
-        <Image source={mapNetwork} style={[styles.art, { width: artSize, height: artSize }]} resizeMode="contain" />
+    <View style={[styles.hero, dark && styles.heroDark, children ? styles.heroWithChildren : null]}>
+      {dark ? <LinearGradient colors={DARK_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Image source={edgeLeft} style={[styles.edge, styles.edgeLeft, dark && styles.edgeDark]} resizeMode="cover" />
+        <Image source={edgeRight} style={[styles.edge, styles.edgeRight, dark && styles.edgeDark]} resizeMode="cover" />
+        {artSize >= 80 ? (
+          <View style={[styles.art, { width: artSize, height: artSize }]}>
+            <Image source={mapNetwork} style={{ width: artSize * 0.78, height: artSize * 0.78, opacity: dark ? 0.8 : 0.9 }} resizeMode="contain" />
+            <Image source={scriptTagline} style={[styles.script, { width: artSize * 0.36, height: artSize * 0.36 }, dark && styles.scriptDark]} resizeMode="contain" />
+          </View>
+        ) : null}
       </View>
       <KenteBand height={3} style={styles.band} />
       {back ? (
@@ -74,29 +87,20 @@ export function AuthHero({
           <ArrowLeft size={22} color={dark ? colors.white : authColors.navy900} strokeWidth={2} />
         </Pressable>
       ) : null}
-      <View style={[styles.brandRow, compact && styles.brandRowCompact]}>
-        <Image
-          source={icon}
-          style={{ width: iconSize, height: iconSize, borderRadius: iconSize * 0.24 }}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <View style={styles.brandText}>
-          <Text style={[styles.wordmark, dark && styles.onDark]} numberOfLines={1} adjustsFontSizeToFit>
-            Opes<Text style={[styles.wordmarkAccent, dark && styles.onDarkAccent]}>Insure</Text>
-          </Text>
-          <Text style={[styles.tagline, dark && styles.taglineDark]}>INSURANCE FOR A BRIGHTER TOMORROW</Text>
-        </View>
+      <View style={[styles.brand, back && styles.brandAfterBack]}>
+        <EntryLockup iconSize={iconSize} inverse={dark} tagline={t("splashTagline")} />
       </View>
       <View style={styles.copyBlock}>
-        <Text accessibilityRole="header" style={[styles.heading, dark && styles.onDark]}>{heading}</Text>
+        <Text accessibilityRole="header" style={[styles.heading, compact && styles.headingCompact, dark && styles.onDark]}>{heading}</Text>
         <Text style={[styles.subheading, dark && styles.subheadingDark]}>{subheading}</Text>
       </View>
+      {children ? <View style={styles.children}>{children}</View> : null}
     </View>
   );
 }
 
-/** The white card that carries the form, over the light canvas. */
+/** The white form card. Over the dark hero it rises into the hero's lower
+ * edge with the large rounded top of the designs. */
 export function AuthCard({ children }: { children: ReactNode }) {
   return <View style={styles.card}>{children}</View>;
 }
@@ -104,47 +108,45 @@ export function AuthCard({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   hero: {
     paddingTop: authSpace[4],
-    paddingBottom: authSpace[5],
-    paddingHorizontal: authSpace[5],
+    paddingBottom: 56,
+    paddingHorizontal: 20,
     backgroundColor: authColors.canvas,
     overflow: "hidden",
   },
-  heroDark: { backgroundColor: authColors.navy950 },
+  heroDark: { backgroundColor: "#0B3AB4" },
+  heroWithChildren: { paddingBottom: 48 },
   band: { position: "absolute", top: 0, left: 0, right: 0, opacity: 0.6 },
   edge: { position: "absolute", top: 0, height: "100%", width: 28, opacity: 0.3 },
+  edgeDark: { opacity: 0.12 },
   edgeLeft: { left: 0 },
   edgeRight: { right: 0 },
-  art: { position: "absolute", top: -authSpace[3], right: -authSpace[5], opacity: 0.55 },
-  back: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginLeft: -authSpace[3], marginBottom: authSpace[1] },
+  art: { position: "absolute", top: authSpace[2], right: 0 },
+  script: { position: "absolute", right: 4, top: "6%" },
+  scriptDark: { tintColor: colors.white, opacity: 0.9 },
+  back: { width: 48, height: 48, alignItems: "center", justifyContent: "center", marginLeft: -authSpace[3] },
   pressed: { opacity: 0.7 },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: authSpace[3], marginTop: authSpace[2] },
-  brandRowCompact: { gap: authSpace[2] },
-  brandText: { flex: 1, gap: 2, paddingRight: authSpace[6] },
-  wordmark: { ...authType.h2, color: authColors.navy950 },
-  wordmarkAccent: { color: authColors.azure500 },
+  brand: { marginTop: authSpace[2] },
+  brandAfterBack: { marginTop: -authSpace[3] },
+  copyBlock: { marginTop: authSpace[3], gap: authSpace[1], alignItems: "center" },
+  heading: { ...authType.h1, fontSize: 32, lineHeight: 38, color: authColors.navy950, textAlign: "center" },
+  headingCompact: { fontSize: 26, lineHeight: 32 },
+  subheading: { ...authType.body, fontSize: 16, lineHeight: 23, color: authColors.textSecondary, textAlign: "center" },
   onDark: { color: colors.white },
-  onDarkAccent: { color: colors.gold500 },
-  tagline: { ...type.eyebrow, fontSize: 9.5, lineHeight: 13, color: authColors.navy900, letterSpacing: 1.4 },
-  taglineDark: { color: colors.gold100 },
-  copyBlock: { marginTop: authSpace[5], gap: authSpace[1] },
-  heading: { ...authType.h1, color: authColors.navy950 },
-  subheading: { ...authType.body, color: authColors.textSecondary },
-  subheadingDark: { color: authColors.ice100 },
+  subheadingDark: { color: "#DCE7FA" },
+  children: { marginTop: authSpace[4] },
   card: {
-    marginHorizontal: authSpace[4],
-    marginTop: -authSpace[2],
+    marginTop: -32,
     backgroundColor: authColors.white,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: authColors.ice200,
-    paddingHorizontal: authSpace[4],
-    paddingTop: authSpace[5],
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    paddingHorizontal: 20,
+    paddingTop: authSpace[4],
     paddingBottom: authSpace[5],
     gap: authSpace[3],
     shadowColor: colors.navy900,
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.12,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: -4 },
     elevation: 3,
   },
 });

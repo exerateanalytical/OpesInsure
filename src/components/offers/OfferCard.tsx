@@ -10,6 +10,7 @@ import { InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/Purch
 import { QuoteOffer } from "@/api/client";
 import { carrierClaimsDays, carrierRating, coverLevel, localized, normalizeCoverage, providerName, validityLeft } from "@/lib/purchase";
 import { carrierLogo } from "@/lib/renewal";
+import { useInsurerLogo } from "@/components/offers/useInsurerLogo";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -77,6 +78,7 @@ export function OfferCard({
   const optional = cover.coverages.filter((c) => c.optional);
   const carrierId = offer.carrier?.id ?? offer.carrier_id;
   const name = providerName(offer, f.language);
+  const logo = useInsurerLogo(carrierId, name, carrierLogo(offer));
   const rating = carrierRating(offer);
   const claimsDays = carrierClaimsDays(offer);
   const level = t(LEVEL_KEY[coverLevel(offer, all?.length ? all : [offer])]);
@@ -100,7 +102,7 @@ export function OfferCard({
       ) : null}
 
       <View style={st.head}>
-        <InstitutionMark logoUrl={carrierLogo(offer)} initials={name.slice(0, 2).toUpperCase()} size={56} />
+        <InstitutionMark logoUrl={logo} initials={name.slice(0, 2).toUpperCase()} size={56} />
         <View style={st.flex}>
           <Pressable accessibilityRole="link" accessibilityLabel={name} hitSlop={4} onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })} style={st.nameRow}>
             <Text style={st.name} numberOfLines={2}>{name}</Text>

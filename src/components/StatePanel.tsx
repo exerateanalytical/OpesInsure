@@ -74,6 +74,8 @@ export function StatePanel<T>({
   emptyTitle,
   emptyMessage,
   loadingLabel,
+  emptyAction,
+  onEmptyAction,
   children,
 }: {
   loading: boolean;
@@ -84,6 +86,9 @@ export function StatePanel<T>({
   emptyTitle?: string;
   emptyMessage?: string;
   loadingLabel?: string;
+  /** Replaces the default "Refresh" action on the empty state. */
+  emptyAction?: string;
+  onEmptyAction?: () => void;
   children: (data: T) => ReactNode;
 }) {
   const { t } = useTranslation();
@@ -98,8 +103,8 @@ export function StatePanel<T>({
       <EmptyState
         title={emptyTitle ?? t("emptyDefaultTitle")}
         message={emptyMessage ?? t("emptyDefaultBody")}
-        action={t("refresh")}
-        onPress={onRetry}
+        action={emptyAction ?? t("refresh")}
+        onPress={onEmptyAction ?? onRetry}
       />
     );
   return <>{children(data)}</>;

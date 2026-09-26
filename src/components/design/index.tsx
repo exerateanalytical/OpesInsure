@@ -5,8 +5,9 @@
  * outlined action tiles, detail rows, info banners and a bottom CTA bar.
  * All pure RN + lucide + existing tokens (OTA-safe).
  */
-import React, { ReactNode } from "react";
-import { Image, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import React, { ReactNode, useState } from "react";
+import { WORDMARK } from "@/components/BrandMark";
+import { Image, LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ArrowLeft, Bell, Check, ChevronRight, CircleHelp, LucideIcon } from "lucide-react-native";
@@ -25,14 +26,15 @@ const wave = require("../../../assets/brand/header_wave.png");
 
 /** Centered logo lockup: dotted-Africa mark, "OpesInsure" wordmark, gold tagline. */
 export function BrandLockup({ size = 40 }: { size?: number }) {
+  const { t } = useTranslation();
   return (
     <View style={s.lockup} accessible accessibilityRole="image" accessibilityLabel="OpesInsure">
       <Image source={mark} style={{ width: size, height: size }} resizeMode="contain" accessibilityIgnoresInvertColors />
-      <View>
-        <Text style={s.wordmark}>
+      <View style={s.lockupText}>
+        <Text style={s.wordmark} numberOfLines={1} adjustsFontSizeToFit>
           Opes<Text style={s.wordmarkGold}>Insure</Text>
         </Text>
-        <Text style={s.tagline}>A SAFER TOMORROW AFRICA</Text>
+        <Text style={s.tagline} numberOfLines={1} adjustsFontSizeToFit>{t("splashTagline")}</Text>
       </View>
     </View>
   );
@@ -69,16 +71,31 @@ export function BrandHeader({
     ) : right === "help" ? (
       <HeaderIconButton icon={CircleHelp} label={t("helpComplaints")} onPress={onRight ?? (() => router.push("/support/faq" as never))} />
     ) : right ?? <View style={s.iconBtnSpacer} />;
+  const [rowW, setRowW] = useState(0);
+  const [lockEnd, setLockEnd] = useState(0);
+  // Gap between the lockup and the 44dp right control (8dp clearance each side).
+  const artW = rowW && lockEnd ? Math.min(140, rowW - lockEnd - 44 - 16) : 0;
   return (
     <View style={s.header}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Image source={network} style={s.art} resizeMode="contain" />
-        <Image source={wave} style={s.wave} resizeMode="contain" />
-      </View>
-      <View style={s.topRow}>
-        {back ? <HeaderIconButton icon={ArrowLeft} label={t("back")} onPress={() => (router.canGoBack() ? router.back() : router.replace("/" as never))} /> : <View style={s.iconBtnSpacer} />}
-        <BrandLockup />
-        {rightNode}
+      <View style={s.topRow} onLayout={(e: LayoutChangeEvent) => setRowW(e.nativeEvent.layout.width)}>
+        {/* Decorative art lives only in the free gap between the lockup and
+            the right control, so it never sits behind text or buttons. */}
+        {artW >= 36 ? (
+          <View
+            style={[s.artBox, { left: lockEnd + 8, width: artW }]}
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Image source={network} style={[s.art, { width: Math.min(artW, 56), height: Math.min(artW, 56) }]} resizeMode="contain" />
+            <Image source={wave} style={[s.wave, { width: artW, height: Math.round(artW * 0.32) }]} resizeMode="contain" />
+          </View>
+        ) : null}
+        {back ? <HeaderIconButton icon={ArrowLeft} label={t("back")} onPress={() => (router.canGoBack() ? router.back() : router.replace("/" as never))} /> : null}
+        <View style={s.lockupSlot} onLayout={(e: LayoutChangeEvent) => setLockEnd(e.nativeEvent.layout.x + e.nativeEvent.layout.width)}>
+          <BrandLockup />
+        </View>
+        <View style={s.rightSlot}>{rightNode}</View>
       </View>
       {title ? (
         <View style={s.titleBlock}>
@@ -375,13 +392,17 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.5 },
   // header
   header: { paddingTop: space.x2, gap: space.x4, overflow: "visible" },
-  art: { position: "absolute", right: -26, top: -8, width: 108, height: 108, opacity: 0.45 },
-  wave: { position: "absolute", right: -96, top: 26, width: 200, height: 64, opacity: 0.7 },
-  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48 },
+  artBox: { position: "absolute", top: 0, bottom: 0, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  art: { opacity: 0.5 },
+  wave: { position: "absolute", bottom: 0, opacity: 0.6 },
+  topRow: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 52 },
+  lockupSlot: { flexShrink: 1 },
+  rightSlot: { marginLeft: "auto" },
   lockup: { flexDirection: "row", alignItems: "center", gap: 6 },
-  wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 28, color: colors.navy900, letterSpacing: -0.4 },
-  wordmarkGold: { color: colors.gold500 },
-  tagline: { fontFamily: "Inter_700Bold", fontSize: 8.5, lineHeight: 11, letterSpacing: 1.6, color: colors.gold600 },
+  lockupText: { flexShrink: 1 },
+  wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 28, color: WORDMARK.ink, letterSpacing: -0.4 },
+  wordmarkGold: { color: WORDMARK.accent },
+  tagline: { fontFamily: "Inter_700Bold", fontSize: 7.5, lineHeight: 10, letterSpacing: 0.6, color: colors.navy900 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   iconBtnSpacer: { width: 44, height: 44 },
   badge: { position: "absolute", top: 6, right: 6, minWidth: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center", paddingHorizontal: 2 },

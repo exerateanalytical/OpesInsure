@@ -1,6 +1,7 @@
 import React, { ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { InstitutionMark } from "@/components/InstitutionMark";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export type CompareTableRow = { key: string; label: string; heading?: boolean; cells: { minor?: number | null; text?: string; best?: boolean }[] };
@@ -9,7 +10,7 @@ export type CompareTableRow = { key: string; label: string; heading?: boolean; c
  * Side-by-side offer table (first row is the header). Columns never shrink below a readable
  * 140dp; with many insurers it scrolls horizontally instead of squeezing text.
  */
-export function CompareTable({ rows, columns, money, footer }: { rows: CompareTableRow[]; columns: number; money: (minor: number) => string; footer?: (width: number, labelWidth: number) => ReactNode }) {
+export function CompareTable({ rows, columns, money, footer, marks }: { rows: CompareTableRow[]; columns: number; money: (minor: number) => string; footer?: (width: number, labelWidth: number) => ReactNode; /** Insurer logo per column, shown in the header row. */ marks?: { logoUrl: string | null; initials: string }[] }) {
   const { width } = useWindowDimensions();
   const labelWidth = 120;
   const colWidth = Math.max(140, Math.min(200, (width - 40 - labelWidth) / Math.max(columns, 1)));
@@ -28,6 +29,7 @@ export function CompareTable({ rows, columns, money, footer }: { rows: CompareTa
                 const hasMoney = cell.minor !== undefined && cell.minor !== null;
                 return (
                   <View key={`${row.key}-${i}`} style={[st.cell, { width: colWidth }, cell.best && st.best]}>
+                    {r === 0 && marks?.[i] ? <InstitutionMark logoUrl={marks[i].logoUrl} initials={marks[i].initials} size={40} /> : null}
                     {hasMoney ? <Text style={[st.value, cell.best && st.bestText]}>{money(cell.minor as number)}</Text> : null}
                     {cell.text ? <Text style={hasMoney ? ps.meta : st.value}>{cell.text}</Text> : null}
                   </View>

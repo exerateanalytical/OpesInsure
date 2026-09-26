@@ -85,7 +85,9 @@ test("claim screens no longer test the wrong status names", () => {
   }
   const detail = read("app/claim/[id].tsx");
   assert.match(detail, /claimActionAllowed\(a\.action, claim\.status\)/);
-  assert.match(detail, /ClaimTracker/);
+  // The seven-step tracker lives on the full timeline page the detail links to (claim timeline design).
+  assert.match(detail, /\/claim\/\[id\]\/timeline/);
+  assert.match(read("app/claim/[id]/timeline.tsx"), /ClaimTracker/);
   assert.match(detail, /evidenceRequirements/);
   assert.match(detail, /pathname: "\/support\/new"/);
 });
@@ -276,8 +278,9 @@ test("splash is white with the heritage art and a native white splash", () => {
   const splash = read("app/index.tsx");
   assert.doesNotMatch(splash, /LinearGradient|navy950, colors\.navy900/);
   assert.match(splash, /backgroundColor: colors\.white/);
-  assert.match(splash, /splash_map\.png/);
-  assert.match(splash, /splash_network_arcs\.png/);
+  // Shared brand art (dotted-Africa network + script) and the shared lockup.
+  assert.match(splash, /map_network\.png/);
+  assert.match(splash, /EntryLockup/);
   const app = JSON.parse(read("app.json"));
   assert.equal(app.expo.splash.backgroundColor, "#FFFFFF");
   const plugin = app.expo.plugins.find((p) => Array.isArray(p) && p[0] === "expo-splash-screen");

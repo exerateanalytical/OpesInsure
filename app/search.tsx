@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -26,6 +26,7 @@ import type { Institution } from "@/api/extra";
 import { useLoad } from "@/hooks/useLoad";
 import { groupSearch, SEARCH_TYPES, SearchResponse, searchHitRoute, SearchRole, SearchType } from "@/lib/crm";
 import { matchesQuery } from "@/lib/customerLogic";
+import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -70,6 +71,13 @@ export default function GlobalSearch() {
       setState({ loading: false, error: e, data: null });
     }
   };
+  // A query handed over from Home / Explore runs straight away.
+  useEffect(() => {
+    if (typeof params.q === "string" && params.q.trim().length >= 2) void run("all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.q]);
+  const [sheet, setSheet] = useState(false);
+  const sheetValue = useMemo<FilterValues>(() => ({ type: [only] }), [only]);
   const groups = groupSearch(state.data);
   const shownGroups = only === "all" ? groups : groups.filter((g) => g.type === only);
 
@@ -104,13 +112,40 @@ export default function GlobalSearch() {
     ...SEARCH_TYPES.filter((x) => !customer || x !== "customers").map((x) => ({ value: x as Scope, label: `${td(`searchType_${x}`, x)}${count(x)}` })),
   ];
 
+  // Result counts per scope, for the filter sheet's live total.
+  const scopeCount = (v: Scope) =>
+    v === "all" ? total : v === "products" ? products.length : v === "providers" ? matchedProviders.length : state.data?.counts?.[v] ?? groups.find((g) => g.type === v)?.hits.length ?? 0;
   const openProduct = (c: Category) => router.push({ pathname: "/quote/product/[id]", params: { id: c.id } });
   const quoteProduct = (c: Category) => router.push({ pathname: "/quote/product", params: { product: c.id } });
 
   return (
     <Screen>
       <BrandHeader title={t("searchResultsTitle")} subtitle={searched && total ? t("searchFoundCount", { count: total, q: state.data?.query ?? asked }) : t("searchResultsSubtitle")} back right="bell" />
-      <SearchBar value={text} onChangeText={setText} onSubmit={() => void run()} placeholder={t("globalSearchPlaceholder")} label={t("searchTitle")} clearLabel={t("clearSearch")} autoFocus={!text} />
+      <SearchBar
+        value={text}
+        onChangeText={setText}
+        onSubmit={() => void run()}
+        placeholder={t("globalSearchPlaceholder")}
+        label={t("searchTitle")}
+        clearLabel={t("clearSearch")}
+        autoFocus={!text}
+        onFilter={() => setSheet(true)}
+        filterLabel={t("filtersTitle")}
+        filterCount={only === "all" ? 0 : 1}
+      />
+      <FiltersSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        sections={[{ key: "type", single: true, title: t("filterSearchType"), subtitle: t("filterSearchTypeBody"), options: scopes.map((o) => ({ value: o.value, label: o.label })) }]}
+        value={sheetValue}
+        onApply={(f: FilterValues) => {
+          const next = (f.type?.[0] ?? "all") as Scope;
+          setOnly(next);
+          if (text.trim().length >= 2) void run(next);
+        }}
+        count={(f) => scopeCount((f.type?.[0] ?? "all") as Scope)}
+        subtitle={t("filtersSearchSubtitle")}
+      />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
         {scopes.map((o) => (
           <Chip

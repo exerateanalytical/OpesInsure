@@ -60,6 +60,7 @@ const buildSlides = (t: ReturnType<typeof useTranslation>["t"]) => [
           { icon: LockKeyhole, label: t("welcomeSecurePayments") },
           { icon: FileCheck2, label: t("welcomeVerifiedProducts") },
         ]}
+        tone="gold"
       />
     ),
   },
@@ -197,7 +198,7 @@ export default function Onboarding() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.slideContent}
           >
-            <OnboardingHero compact={compact} />
+            <OnboardingHero compact={compact} tagline={t("splashTagline")} />
             <View style={styles.copyBlock}>
               <Text accessibilityRole="header" style={styles.headingTop}>{slide.headingTop}</Text>
               <Text style={styles.headingBottom}>{slide.headingBottom}</Text>

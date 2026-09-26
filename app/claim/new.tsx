@@ -10,8 +10,7 @@ import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
 import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { insuredLabel, policyTitle, providerName } from "@/components/claims/claimProduct";
 import { usePolicies } from "@/hooks/usePolicies";
-import { useLoad } from "@/hooks/useLoad";
-import { CustomerApi } from "@/api/customer";
+import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { useTranslation } from "@/i18n";
 import { matchesQuery } from "@/lib/customerLogic";
 import { colors, type } from "@/theme/tokens";
@@ -25,7 +24,7 @@ export default function NewClaim() {
   const { t } = useTranslation();
   const { policyId } = useLocalSearchParams<{ policyId?: string }>();
   const { policies, loading, error, reload } = usePolicies();
-  const insurers = useLoad(() => CustomerApi.institutions("insurer"));
+  const logoFor = useInsurerLogo();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(typeof policyId === "string" && policyId ? policyId : null);
 
@@ -34,11 +33,6 @@ export default function NewClaim() {
   useEffect(() => {
     if (!selected && active.length === 1) setSelected(active[0]!.id);
   }, [active, selected]);
-  const logoFor = (name: string | null) => {
-    if (!name) return null;
-    const needle = name.toLowerCase();
-    return insurers.data?.find((i) => i.name.toLowerCase() === needle)?.logo_url ?? null;
-  };
 
   return (
     <Screen
@@ -66,7 +60,7 @@ export default function NewClaim() {
       ) : (
         <View style={s.list} accessibilityRole="radiogroup">
           {shown.map((p) => (
-            <PolicyChoiceCard key={p.id} policy={p} logoUrl={logoFor(providerName(p))} selected={selected === p.id} onPress={() => setSelected(p.id)} />
+            <PolicyChoiceCard key={p.id} policy={p} logoUrl={logoFor(p)} selected={selected === p.id} onPress={() => setSelected(p.id)} />
           ))}
           {!shown.length ? <Text style={s.note}>{t("claimNoPolicyMatch")}</Text> : null}
         </View>

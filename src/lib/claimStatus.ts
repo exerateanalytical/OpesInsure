@@ -136,6 +136,8 @@ export type ClaimAction =
   | "repair"
   | "settlement"
   | "appeal"
+  | "information"
+  | "decision"
   | "message";
 
 const ACTIONS: Record<ClaimAction, ClaimStatus[]> = {
@@ -146,6 +148,10 @@ const ACTIONS: Record<ClaimAction, ClaimStatus[]> = {
   repair: ["APPROVED", "PARTIALLY_APPROVED", "PAYMENT_PENDING", "PAID"],
   settlement: ["APPROVED", "PARTIALLY_APPROVED", "PAYMENT_PENDING", "PAID"],
   appeal: ["DECLINED", "PARTIALLY_APPROVED"],
+  // Insurer asked for documents: the customer can still upload while evidence is open.
+  information: ["SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT"],
+  // A decision exists once the insurer approved, partly approved or declined.
+  decision: ["APPROVED", "PARTIALLY_APPROVED", "DECLINED", "PAYMENT_PENDING", "PAID", "DISPUTED"],
   message: CLAIM_STATUSES.filter((s) => s !== "CLOSED"),
 };
 
@@ -235,4 +241,43 @@ export type ClaimSegment = "all" | "progress" | "completed";
 export function claimSegment(value: string | null | undefined): Exclude<ClaimSegment, "all"> {
   const status = normalizeClaimStatus(value);
   return status === "PAID" || status === "CLOSED" || status === "DECLINED" ? "completed" : "progress";
+}
+
+/** Tracker step (index into TRACKER_STEPS) a status change lands on. */
+const STEP_OF_STATUS: Partial<Record<ClaimStatus, number>> = {
+  SUBMITTED: 0,
+  ACKNOWLEDGED: 2,
+  EVIDENCE_PENDING: 4,
+  ASSESSMENT: 3,
+  CARRIER_REVIEW: 3,
+  APPROVED: 5,
+  PARTIALLY_APPROVED: 5,
+  DECLINED: 5,
+  PAYMENT_PENDING: 6,
+  PAID: 6,
+};
+
+/**
+ * First date each tracker step was reached, from the claim's status-change
+ * events (GET /mobile/claims/{id}/timeline). "Documents received" takes the
+ * first evidence submission date when given. Null when never reached.
+ */
+export function trackerStepDates(
+  events: { to_status?: string | null; occurred_at: string }[],
+  firstEvidenceAt?: string | null,
+): (string | null)[] {
+  const out: (string | null)[] = TRACKER_STEPS.map(() => null);
+  const sorted = [...events].sort((a, b) => a.occurred_at.localeCompare(b.occurred_at));
+  for (const e of sorted) {
+    const status = normalizeClaimStatus(e.to_status);
+    const step = status ? STEP_OF_STATUS[status] : undefined;
+    if (step !== undefined && !out[step]) out[step] = e.occurred_at;
+  }
+  if (firstEvidenceAt) out[1] = firstEvidenceAt;
+  return out;
+}
+
+/** Date of the decision (approved / partly approved / declined) event, if any. */
+export function claimDecisionDate(events: { to_status?: string | null; occurred_at: string }[]): string | null {
+  return trackerStepDates(events)[5] ?? null;
 }

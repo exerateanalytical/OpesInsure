@@ -46,19 +46,28 @@ export default function PaymentDetail() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!p?.policy_id) return;
+    if (!p) return;
     let live = true;
-    WalletApi.policy(p.policy_id)
+    // Payment rows carry policy_id only on newer builds; the receipt resolves it from the proposal.
+    const policyId = p.policy_id
+      ? Promise.resolve(p.policy_id)
+      : p.status === "SUCCEEDED"
+        ? PaymentsApi.receipt(p.id).then((r) => (r as unknown as { policy_id?: string | null }).policy_id ?? null).catch(() => null)
+        : Promise.resolve(null);
+    void policyId.then((pid) => {
+      if (!pid || !live) return;
+      return WalletApi.policy(pid)
       .then((x) => {
         if (!live) return;
         setPolicy(x);
         if (x.carrier_id) InstitutionsApi.show(x.carrier_id).then((i) => live && setInsurer(i)).catch(() => undefined);
       })
       .catch(() => undefined);
+    });
     return () => {
       live = false;
     };
-  }, [p?.policy_id]);
+  }, [p]);
 
   const retry = async () => {
     if (retrying) return;

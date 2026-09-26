@@ -8,7 +8,9 @@ import { Button, Card, Screen } from "@/components/ui";
 import { EmptyState } from "@/components/StatePanel";
 import { ErrorCard, QuoteSteps } from "@/components/purchase/PurchaseUi";
 import { useInsurance } from "@/store/insurance";
-import { compareRows } from "@/lib/purchase";
+import { compareRows, providerName } from "@/lib/purchase";
+import { carrierLogo } from "@/lib/renewal";
+import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
 
@@ -24,6 +26,11 @@ export default function CompareOffers() {
     return all.filter((o) => wanted.includes(o.id));
   }, [all, ids]);
   const rows = useMemo(() => compareRows(offers, f.language), [offers, f.language]);
+  const logoFor = useInsurerLogos();
+  const marks = offers.map((o) => {
+    const name = providerName(o, f.language);
+    return { logoUrl: logoFor(o.carrier?.id ?? o.carrier_id, name, carrierLogo(o)), initials: name.slice(0, 2).toUpperCase() };
+  });
   const selectOffer = useInsurance((s) => s.selectOffer);
   const [choosing, setChoosing] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -62,6 +69,7 @@ export default function CompareOffers() {
           rows={rows}
           columns={offers.length}
           money={f.xaf}
+          marks={marks}
           footer={(colWidth, labelWidth) => (
             <View style={compareTableStyles.row}>
               <View style={{ width: labelWidth }} />

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import {
   ArrowRight,
@@ -57,6 +57,7 @@ export default function SignUp() {
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [locked, setLocked] = useState<number | null>(null);
   const unlock = useCallback(() => setLocked(null), []);
 
@@ -153,19 +154,21 @@ export default function SignUp() {
   };
 
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={styles.safe}>
+    <SafeAreaView edges={["top"]} style={styles.safe}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: insets.bottom + authSpace[3] }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <AuthHero
+            dark
             heading={t("signUpHeading")}
             subheading={t("signUpSubheading")}
-          />
+          >
+            <AccountTypeSelector options={accountTypes.map((a) => ({ ...a, label: t(a.label) }))} value={accountType} onChange={setAccountType} />
+          </AuthHero>
           <AuthCard>
             {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
-            <AccountTypeSelector options={accountTypes.map((a) => ({ ...a, label: t(a.label) }))} value={accountType} onChange={setAccountType} />
 
             {accountType !== "CUSTOMER" ? (
               <View style={styles.comingSoon}>
@@ -293,7 +296,8 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: authColors.canvas },
+  safe: { flex: 1, backgroundColor: "#0A2A8C" },
+  scroll: { backgroundColor: authColors.white },
   flex: { flex: 1 },
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
   recommended: { color: authColors.blue500, fontFamily: "Inter_700Bold" },
@@ -317,7 +321,7 @@ const styles = StyleSheet.create({
   termsText: { ...authType.body, fontSize: 14, color: authColors.textSecondary, flex: 1 },
   termsLink: { color: authColors.blue500, fontFamily: "Inter_600SemiBold" },
   error: { ...authType.label, fontSize: 12, color: authColors.dangerText },
-  signInRow: { alignItems: "center", paddingVertical: authSpace[2] },
+  signInRow: { alignItems: "center", paddingVertical: authSpace[2], minHeight: 48, justifyContent: "center" },
   signInText: { ...authType.body, fontSize: 14, color: authColors.textSecondary },
   signInLink: { color: authColors.blue500, fontFamily: "Inter_700Bold" },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: authColors.ice200, marginTop: authSpace[2] },

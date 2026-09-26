@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Building2, ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react-native";
+import { ChevronRight, Scale, ShieldCheck } from "lucide-react-native";
 import { Chip, ChipRow, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading } from "@/components/design";
 import { CategoryStrip, CATEGORY_TINT } from "@/components/customer/CategoryTiles";
@@ -14,6 +14,8 @@ import { CustomerApi } from "@/api/customer";
 import type { Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 import { matchesQuery } from "@/lib/customerLogic";
+import { activeFilterCount, FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
+import { applyExploreFilters, exploreSections, listParam } from "@/components/customer/exploreFilters";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 type Filter = "all" | "insurer" | "broker";
@@ -22,17 +24,26 @@ type Filter = "all" | "insurer" | "broker";
  * (GET /public/institutions), with the comparison entry point on top. */
 export default function Explore() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ q?: string }>();
+  const params = useLocalSearchParams<{ q?: string; cat?: string; prov?: string; sort?: string }>();
   const [query, setQuery] = useState(typeof params.q === "string" ? params.q : "");
   const [filter, setFilter] = useState<Filter>("all");
+  const [sheet, setSheet] = useState(false);
+  const [extra, setExtra] = useState<FilterValues>({ cat: listParam(params.cat), prov: listParam(params.prov), sort: [params.sort === "name" ? "name" : "best"] });
   const providers = useLoad(() => CustomerApi.institutions());
 
   useEffect(() => {
     if (typeof params.q === "string") setQuery(params.q);
   }, [params.q]);
+  // Filters handed over from the Home filter sheet.
+  useEffect(() => {
+    if (params.cat !== undefined || params.prov !== undefined || params.sort !== undefined)
+      setExtra({ cat: listParam(params.cat), prov: listParam(params.prov), sort: [params.sort === "name" ? "name" : "best"] });
+  }, [params.cat, params.prov, params.sort]);
+  const sections = useMemo(() => exploreSections(providers.data ?? [], t), [providers.data, t]);
+  const filtered = useMemo(() => applyExploreFilters(providers.data ?? [], extra), [providers.data, extra]);
 
   const categories = CATEGORIES.filter(
-    (c) => c.id !== "more" && matchesQuery(query, t(c.label), t(c.caption), c.id),
+    (c) => c.id !== "more" && (!extra.cat?.length || extra.cat.includes(c.id)) && matchesQuery(query, t(c.label), t(c.caption), c.id),
   );
   // Official DGTCFM/MINFI register counts (29 insurers / 123 brokers when seeded).
   const registerTotals = useMemo(() => {
@@ -53,12 +64,12 @@ export default function Explore() {
   );
   const shown = useMemo(
     () =>
-      (providers.data ?? []).filter(
+      filtered.filter(
         (p: Institution) =>
           (filter === "all" || p.type === filter) &&
           matchesQuery(query, p.name, p.short_name, p.city, p.code, ...(p.products ?? []).map((x) => `${x.name} ${x.line_code}`)),
       ),
-    [providers.data, filter, query],
+    [filtered, filter, query],
   );
 
   return (
@@ -70,6 +81,10 @@ export default function Explore() {
         label={t("searchLabel")}
         placeholder={t("exploreSearchPlaceholder")}
         clearLabel={t("clearSearch")}
+        onSubmit={() => (query.trim().length >= 2 ? router.push({ pathname: "/search", params: { q: query.trim() } }) : undefined)}
+        onFilter={() => setSheet(true)}
+        filterLabel={t("filtersTitle")}
+        filterCount={activeFilterCount(extra, sections)}
       />
       <CategoryStrip
         ids={["motor", "health", "travel", "home", "business"]}
@@ -171,10 +186,15 @@ export default function Explore() {
         <ErrorState onRetry={() => void providers.reload()} />
       ) : shown.length === 0 ? (
         <EmptyState
-          title={query ? t("exploreNoResults") : t("exploreNoProviders")}
-          message={query ? t("exploreNoResultsBody") : t("exploreNoProvidersBody")}
-          action={query ? t("clearSearch") : t("retry")}
-          onPress={() => (query ? setQuery("") : void providers.reload())}
+          title={query || activeFilterCount(extra, sections) ? t("exploreNoResults") : t("exploreNoProviders")}
+          message={query || activeFilterCount(extra, sections) ? t("exploreNoResultsBody") : t("exploreNoProvidersBody")}
+          action={query || activeFilterCount(extra, sections) ? t("clearSearch") : t("retry")}
+          onPress={() => {
+            if (query || activeFilterCount(extra, sections)) {
+              setQuery("");
+              setExtra({ cat: [], prov: [], sort: ["best"] });
+            } else void providers.reload();
+          }}
         />
       ) : (
         shown.map((p) => (
@@ -190,17 +210,7 @@ export default function Explore() {
             }
             style={({ pressed }) => [styles.provider, pressed && styles.pressed]}
           >
-            {institutionLogo(p) ? (
-              <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={44} />
-            ) : (
-              <View style={styles.initials}>
-                {p.type === "insurer" ? (
-                  <Building2 size={20} color={colors.navy800} />
-                ) : (
-                  <Handshake size={20} color={colors.navy800} />
-                )}
-              </View>
-            )}
+            <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={44} />
             <View style={styles.flex}>
               <Text style={styles.label}>{p.name}</Text>
               <Text style={styles.meta}>
@@ -213,6 +223,14 @@ export default function Explore() {
           </Pressable>
         ))
       )}
+      <FiltersSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        sections={sections}
+        value={extra}
+        onApply={setExtra}
+        count={(f) => applyExploreFilters(providers.data ?? [], f).filter((p) => filter === "all" || p.type === filter).length}
+      />
     </Screen>
   );
 }
@@ -280,12 +298,5 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral200,
     borderRadius: radius.card,
     padding: space.x3,
-  },
-  initials: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

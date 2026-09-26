@@ -102,6 +102,7 @@ export default function RootLayout() {
           <Stack.Screen name="confirmation" />
           <Stack.Screen name="policy/[id]" />
           <Stack.Screen name="policy/[id]/service" />
+          <Stack.Screen name="policy/[id]/documents" />
           <Stack.Screen name="policy/[id]/renew" />
           <Stack.Screen name="policy/[id]/renewal-quote" />
           <Stack.Screen name="policy/[id]/renewal-offers" />
@@ -120,10 +121,15 @@ export default function RootLayout() {
           <Stack.Screen name="claim/[id]/repair" />
           <Stack.Screen name="claim/[id]/settlement" />
           <Stack.Screen name="claim/[id]/settlement-payment" />
+          <Stack.Screen name="claim/[id]/timeline" />
+          <Stack.Screen name="claim/[id]/information" />
+          <Stack.Screen name="claim/[id]/decision" />
           <Stack.Screen name="account/profile" />
           <Stack.Screen name="account/language" />
           <Stack.Screen name="account/notifications" />
           <Stack.Screen name="account/privacy" />
+          <Stack.Screen name="account/beneficiaries" />
+          <Stack.Screen name="account/payment-methods" />
           <Stack.Screen name="onboarding/kyc" />
           <Stack.Screen name="assets/index" />
           <Stack.Screen name="assets/new" />

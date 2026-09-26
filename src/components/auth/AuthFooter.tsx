@@ -12,12 +12,14 @@ export function AuthFooterBranding({ tone = "dark" }: { tone?: "dark" | "light" 
       <Text style={[styles.tagline, { color: tone === "dark" ? colors.gold100 : authColors.slate500 }]}>
         PEOPLE · PROTECTION · A BRIGHTER TOMORROW
       </Text>
-      <KenteBand height={8} />
+      <View style={styles.rule} />
+      <KenteBand height={4} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { marginTop: authSpace[4], gap: authSpace[2] },
+  rule: { width: 88, height: 3, borderRadius: 2, backgroundColor: colors.gold500, alignSelf: "center" },
   tagline: { ...type.eyebrow, textAlign: "center", paddingHorizontal: authSpace[4] },
 });
