@@ -42,6 +42,12 @@ The mobile app session is separate and owns `mobile app/` (see BUILD_PROGRESS.md
 
 ## Log (newest first)
 
+### 2026-09-26 local: DEPLOYED the Gap Closure Pack v1 (8 local agents) as release r20260926-090531
+- Built on master 82cbc9c (includes the public desktop pages) + fixes d37fabf (compliance assessment ordering, migration 2026_10_27_080801) and 152fddb (test CSV newline).
+- Tests: full suite 1736/1741, then the failing areas were fixed and re-run green (GapClosure + Cases 61/61). Backup opesinsure-20260926-0849.sql.gz; 8 migrations rehearsed on a prod copy.
+- Live: verify-live 75/76; purchase POL-2026-000006; FNOL 201; public pages /insurance (+7 lines), /compare, /about, /contact, /login, /signup, /providers and /provider/login all return 200.
+- GitHub push is blocked (403 for account nshomejude). Local master is ahead of origin/master until the owner fixes credentials.
+
 ### 2026-09-26 local: DEPLOYED cloud Batches 10-17 + local canonical documents/web UI/letterheads (master c0d005a) as release r20260926-042840
 - Merged origin/claude/charming-bohr-2fd2hk (0de6f6a) into master on top of local work. Post-merge fixes: legacy ClaimMachineAdapter moved to tests/Support (Batch 11 retired the legacy machines), policy reference and successor number masked in the single public verification service, OpenAPI regenerated.
 - Full pest suite: 1661 passed + the 2 affected areas re-run green (108/108). The session_replication_role / scratch-DB tests need a Postgres superuser locally (they pass as postgres).
