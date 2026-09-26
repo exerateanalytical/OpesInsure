@@ -8,23 +8,22 @@
  * AA (4.5:1) on white and on neutral50.
  */
 export const colors = {
-  // Indigo "ndop" family (primary surfaces, headings).
-  navy950: '#0F1535', navy900: '#18204A', navy800: '#232E63',
-  // Action indigo (buttons, links, focus). White on blue600 = 8.7:1.
-  blue700: '#2B3787', blue600: '#35419F', blue500: '#4F5CB8', blue100: '#E2E5F6', blue50: '#F0F1FA',
-  // Ochre / kente gold. gold600 on white = 5.4:1 (AA text).
-  gold600: '#9A5B0B', gold500: '#D08A2A', gold100: '#F5E1BF', gold50: '#FBF3E4',
-  // Terracotta (heritage accent: pattern, badges, highlights).
+  // Design system v3 ("A Safer Tomorrow Africa"): deep navy headings, royal
+  // blue actions, gold accents, cool white canvas. Token NAMES unchanged.
+  navy950: '#0B1F4E', navy900: '#12306F', navy800: '#1B3F8B',
+  // Action blue (buttons, links, focus). White on blue600 = 5.9:1.
+  blue700: '#1747B8', blue600: '#1D5BD6', blue500: '#2B6BE0', blue100: '#DCE7FA', blue50: '#EEF4FD',
+  // Gold accent. gold600 on white = 4.6:1 (AA text).
+  gold600: '#9E6208', gold500: '#E8A33D', gold100: '#F7E4BF', gold50: '#FDF6E7',
+  // Terracotta kept for heritage bands and legacy accents.
   terracotta700: '#8E3A20', terracotta500: '#B9522B', terracotta100: '#F5DCD0',
-  // Warm neutrals (sand canvas instead of cold grey).
-  neutral950: '#1C1A26', neutral800: '#2E2B3A', neutral700: '#423E4E', neutral600: '#57526A',
-  // Contrast (WCAG): neutral500 on white / on neutral50 is AA text;
-  // neutral400 >= 3:1 on white (placeholders, icons, borders).
-  neutral500: '#635D72', neutral400: '#7A7488', neutral300: '#CBC3BA', neutral200: '#E6DFD5',
-  neutral100: '#F2EDE6', neutral50: '#FAF7F2', white: '#FFFFFF',
-  success: '#0B7A55', successText: '#07633F', successSoft: '#E5F4EC',
-  warning: '#A8620C', warningText: '#784300', warningSoft: '#FCF1DC',
-  danger: '#B83A32', dangerText: '#942B24', dangerSoft: '#FBEAE7',
+  // Cool neutrals (white canvas with a faint blue cast).
+  neutral950: '#111A2E', neutral800: '#232D45', neutral700: '#36415C', neutral600: '#4E5A75',
+  neutral500: '#5F6B86', neutral400: '#7A8499', neutral300: '#CBD3E0', neutral200: '#E3E8F0',
+  neutral100: '#EEF2F7', neutral50: '#F7F9FC', white: '#FFFFFF',
+  success: '#12A150', successText: '#0B7A3C', successSoft: '#E6F7EC',
+  warning: '#D98A0B', warningText: '#7A4A00', warningSoft: '#FFF4E0',
+  danger: '#E02424', dangerText: '#B71C1C', dangerSoft: '#FDECEC',
 } as const;
 
 /** Heritage pattern palettes (src/components/HeritagePattern.tsx). */

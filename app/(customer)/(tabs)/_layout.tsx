@@ -1,5 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
+import { View } from "react-native";
 import {
   CircleUserRound,
   Compass,
@@ -12,8 +13,13 @@ import { useTranslation } from "@/i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const icon = (Icon: any) => {
-  function TabIcon({ color, size }: { color: string; size: number }) {
-    return <Icon color={color} size={size} strokeWidth={2} />;
+  function TabIcon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
+    return (
+      <View style={{ alignItems: "center" }}>
+        <View style={{ position: "absolute", top: -9, width: 36, height: 3, borderRadius: 2, backgroundColor: focused ? colors.gold500 : "transparent" }} />
+        <Icon color={color} size={size + 2} strokeWidth={focused ? 2.2 : 1.9} />
+      </View>
+    );
   }
   return TabIcon;
 };
@@ -28,17 +34,17 @@ export default function CustomerTabs() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.navy900,
-        tabBarInactiveTintColor: colors.neutral500,
+        tabBarActiveTintColor: colors.gold600,
+        tabBarInactiveTintColor: colors.navy800,
         tabBarStyle: {
-          height: 60 + insets.bottom,
-          paddingTop: 7,
+          height: 64 + insets.bottom,
+          paddingTop: 9,
           paddingBottom: 8 + insets.bottom,
-          borderTopColor: colors.gold100,
-          borderTopWidth: 2,
+          borderTopColor: colors.neutral200,
+          borderTopWidth: 1,
           backgroundColor: colors.white,
         },
-        tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2 },
         tabBarAllowFontScaling: false,
       }}
     >

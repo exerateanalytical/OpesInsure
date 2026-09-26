@@ -107,7 +107,7 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
     >
       {tabs.map((t) => {
         const selected = active?.href === t.href;
-        const tint = selected ? colors.navy900 : colors.neutral500;
+        const tint = selected ? colors.gold600 : colors.navy800;
         const label = td(`portalTab_${t.label}`, t.label);
         return (
           <Pressable
@@ -120,7 +120,8 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
             }}
             style={s.tab}
           >
-            <t.icon size={22} color={tint} strokeWidth={2} />
+            <View style={[s.tabIndicator, selected && s.tabIndicatorOn]} />
+            <t.icon size={24} color={tint} strokeWidth={selected ? 2.2 : 1.9} />
             <Text numberOfLines={1} style={[s.tabLabel, { color: tint }]}>
               {label}
             </Text>
@@ -390,10 +391,12 @@ const s = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     backgroundColor: colors.white,
-    borderTopWidth: 2,
-    borderTopColor: colors.gold100,
-    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral200,
+    paddingTop: 9,
   },
+  tabIndicator: { position: "absolute", top: 0, width: 36, height: 3, borderRadius: 2, backgroundColor: "transparent" },
+  tabIndicatorOn: { backgroundColor: colors.gold500 },
   tab: {
     flex: 1,
     minHeight: 48,
@@ -401,7 +404,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
-  tabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 11 },
+  tabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2 },
   profileRow: { flexDirection: "row", gap: space.x3, alignItems: "center" },
   avatar: {
     width: 52,
