@@ -147,7 +147,10 @@
     </table>
   </td>
   <td style="width:14%;text-align:center;vertical-align:middle">
-    @if($seal)<img class="seal" src="{{ $seal }}" alt="SEAL-02"><div class="small muted">SEAL-02 {{ $L('Authentification', 'Authentication') }}</div>@endif
+    @if($seal)<img class="seal" src="{{ $seal }}" alt="{{ $seals[0]['code'] ?? 'SEAL-02' }}">@endif
+    @foreach($seals as $s)<div class="small muted">{{ $s['code'] }} {{ $s['label'] }}</div>@endforeach
+    @if(!empty($sealPending))<div class="small pending">{{ implode(', ', $sealPending) }}: CONFIG_REQUIRED</div>@endif
+    @if(!empty($physicalProfiles))<div class="small pending">{{ $L('Impression sécurisée', 'Secure print') }}: {{ implode(' · ', $physicalProfiles) }} — {{ $L('original numérique', 'digital original') }}</div>@endif
   </td>
   {{-- Zone F — verification block. --}}
   <td style="width:28%;vertical-align:top">

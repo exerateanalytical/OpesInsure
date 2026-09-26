@@ -8,7 +8,6 @@ use App\Application\Identity\PartyResolver;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\Refund;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
@@ -108,7 +107,22 @@ final class MobilePaymentService
         $receipt = $this->receiptData($intent, false);
         $carrier = $intent->proposal?->offer?->carrier;
         $letterhead = $carrier ? \App\Application\Documents\Letterhead\LetterheadResolver::forDocument('INSURER', (string) ($carrier->party?->display_name ?? 'Insurer'), $carrier->id, $carrier->party?->display_name, null, null) : null;
-        $bytes = Pdf::loadView('pdf.payment-receipt', ['r' => $receipt, 'letterhead' => $letterhead])->setPaper('a5')->output();
+        // D3: canonical secure shell (RECEIPT master shell); same receipt number and data.
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => 'PAYMENT_RECEIPT', 'shell' => 'TPL-SHELL-PREMIUM-RECEIPT-001', 'number' => (string) $receipt['receipt_number'],
+            'issuer_name' => (string) ($receipt['carrier_name'] ?? 'OpesInsure'), 'letterhead' => $letterhead, 'currency' => $receipt['currency'],
+            'title_en' => 'Payment receipt', 'title_fr' => 'Reçu de paiement', 'label' => 'PAYMENT '.$receipt['status'], 'issued_at' => $receipt['issued_at'] ?? now(),
+            'values' => array_filter([
+                'party.name' => $receipt['payer_name'], 'policy.insurer' => $receipt['carrier_name'], 'policy.product' => $receipt['product_name'],
+                'payment.reference' => $receipt['reference'], 'payment.amount' => $receipt['amount_minor'], 'payment.paid_at' => $receipt['issued_at'],
+                'payment.method' => strtoupper(str_replace('_', ' ', (string) $receipt['provider'])), 'payment.status' => $receipt['status'],
+            ], fn ($v) => $v !== null),
+            'sections' => [['heading' => 'Reçu / Receipt', 'paragraphs' => array_values(array_filter([
+                'Payeur / Payer: '.trim(($receipt['payer_name'] ?? '—').' '.$receipt['payer_phone_e164']),
+                $receipt['policy_number'] ? 'Police / Policy: '.$receipt['policy_number'] : null,
+            ]))]],
+            'status' => $receipt['status'] === 'SUCCEEDED' ? 'ISSUED' : (string) $receipt['status'], 'template_ref' => 'SYSTEM payment receipt',
+        ]);
 
         return response($bytes, 200, [
             'Content-Type' => 'application/pdf',

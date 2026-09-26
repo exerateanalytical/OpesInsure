@@ -11,7 +11,6 @@ use App\Application\Documents\Engine\DocumentEngine;
 use App\Application\Documents\Engine\DocumentNumberAllocator;
 use App\Application\Documents\Engine\DocumentRegister;
 use App\Models\Document;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Agent F1 — spec document_links DOC-193..200, generated through the document engine's numbering (DocumentNumberAllocator), type
  * register (DocumentRegister; the spec code is mapped to the catalogue's FINANCE.* canonical code, SubledgerCatalogue::STATEMENT_DOCUMENTS)
- * and PDF layout (pdf.engine-document), stored as an engine Document (FINANCIAL group, VALID) whose provenance carries the spec
+ * and PDF layout (canonical secure shell, SecureShellRenderer), stored as an engine Document (FINANCIAL group, VALID) whose provenance carries the spec
  * DOC number, the applied filters and a content hash of the figures. Figures come only from the sub-ledger read models — the
  * document is a rendering, never a source of truth.
  */
@@ -38,13 +37,14 @@ final class StatementDocumentService
         $number = $this->numbers->allocate($tenantId, $map['type']);
         $verification = DocumentEngine::newVerificationCode();
         $hash = hash('sha256', json_encode([$doc, $subjectId, $filters, $figures], JSON_THROW_ON_ERROR));
-        $bytes = Pdf::loadView('pdf.engine-document', [
-            'lang' => 'EN', 'titleEn' => $title, 'titleFr' => $title, 'documentNumber' => $number['number'], 'issuerName' => (string) DB::table('tenants')->where('id', $tenantId)->value('legal_name'),
-            'intermediary' => null, 'carrierName' => null, 'policyNumber' => null, 'policyVersion' => null, 'insuredName' => '', 'productName' => null, 'subjectLabel' => $subjectId,
-            'validFrom' => $filters['date_from'] ?? null, 'validUntil' => $filters['date_to'] ?? null, 'eventLabel' => $doc.' '.$map['spec'], 'issuedAt' => now()->format('d/m/Y H:i'),
-            'verificationCode' => $verification, 'qr' => null, 'verifyUrl' => rtrim((string) config('lifecycle.verify_url'), '/').'?code='.$verification, 'sections' => $sections,
-            'coverages' => [], 'signatory' => null, 'templateRef' => 'SYSTEM finance sub-ledger '.$doc,
-        ])->setPaper('a4')->output();
+        // D3: canonical secure shell.
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => $map['type'], 'number' => $number['number'], 'verification' => $verification, 'lang' => 'EN',
+            'issuer_name' => (string) DB::table('tenants')->where('id', $tenantId)->value('legal_name'), 'title_en' => $title, 'title_fr' => $title,
+            'label' => $doc.' '.$map['spec'], 'subject' => ['type' => 'PARTY', 'key' => $subjectId, 'label' => $subjectId],
+            'values' => array_filter(['policy.effective_from' => $filters['date_from'] ?? null, 'policy.effective_until' => $filters['date_to'] ?? null]),
+            'sections' => $sections, 'status' => 'VALID', 'template_ref' => 'SYSTEM finance sub-ledger '.$doc, 'hash_basis' => $hash,
+        ]);
         $key = 'documents/'.$tenantId.'/finance/'.$number['number'].'.pdf';
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 

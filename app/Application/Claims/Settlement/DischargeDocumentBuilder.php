@@ -11,7 +11,6 @@ use App\Application\Documents\Engine\DocumentRegister;
 use App\Models\Claim;
 use App\Models\Document;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -44,14 +43,15 @@ final class DischargeDocumentBuilder
             ['heading' => 'Détail du règlement / Settlement breakdown', 'paragraphs' => $lines],
         ];
         $verifyUrl = rtrim((string) config('lifecycle.verify_url'), '/').'?code='.$verification;
-        $bytes = Pdf::loadView('pdf.engine-document', [
-            'lang' => 'BILINGUAL', 'titleEn' => 'Discharge receipt', 'titleFr' => 'Quittance', 'documentNumber' => $number['number'],
-            'issuerName' => $carrierName, 'intermediary' => null, 'carrierName' => $carrierName, 'policyNumber' => $policy->policy_number, 'policyVersion' => (int) $policy->version,
-            'insuredName' => $policy->party?->display_name ?? '', 'productName' => null, 'subjectLabel' => $claim->claim_number,
-            'validFrom' => null, 'validUntil' => null, 'eventLabel' => 'Settlement '.$settlement->reference, 'issuedAt' => now()->format('d/m/Y H:i'),
-            'verificationCode' => $verification, 'qr' => null, 'verifyUrl' => $verifyUrl, 'sections' => $sections, 'coverages' => [], 'signatory' => null,
-            'templateRef' => 'SYSTEM claim discharge',
-        ])->setPaper('a4')->output();
+        // D3: canonical secure shell.
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => self::TYPE, 'number' => $number['number'], 'verification' => $verification, 'qr_url' => $verifyUrl,
+            'verify_url' => (string) config('lifecycle.verify_url'), 'issuer_name' => $carrierName, 'policy' => $policy, 'claim' => $claim,
+            'title_en' => 'Discharge receipt', 'title_fr' => 'Quittance', 'label' => 'Settlement '.$settlement->reference,
+            'values' => ['party.name' => $policy->party?->display_name ?? '', 'policy.insurer' => $carrierName],
+            'subject' => ['type' => 'CLAIM', 'key' => $claim->claim_number, 'label' => $claim->claim_number],
+            'sections' => $sections, 'status' => 'PENDING_SIGNATURE', 'template_ref' => 'SYSTEM claim discharge',
+        ]);
 
         $key = 'documents/'.$claim->tenant_id.'/claims/'.$claim->id.'/'.$number['number'].'.pdf';
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);

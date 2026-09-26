@@ -178,17 +178,17 @@ final class CertificateService
     {
         $p->loadMissing(['carrier.party', 'party', 'proposal.offer.product']);
         $verifyUrl = rtrim((string) config('lifecycle.verify_url'), '/').'?code='.$verification;
-        $qr = (new \chillerlan\QRCode\QRCode(new \chillerlan\QRCode\QROptions(['outputType' => \chillerlan\QRCode\Output\QROutputInterface::MARKUP_SVG, 'outputBase64' => true, 'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true])))->render($verifyUrl);
         $carrier = $p->carrier?->party?->display_name ?? 'Insurer';
-        $bytes = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.engine-document', [
-            'lang' => 'BILINGUAL', 'titleEn' => $type['name_en'], 'titleFr' => $type['name_fr'] ?? $type['name_en'], 'documentNumber' => $number,
-            'issuerName' => $carrier, 'intermediary' => null, 'carrierName' => $carrier, 'policyNumber' => $p->policy_number, 'policyVersion' => (int) $p->version,
-            'insuredName' => $p->party?->display_name ?? '', 'productName' => $p->proposal?->offer?->product?->name, 'subjectLabel' => null,
-            'validFrom' => $p->coverage_starts_at?->format('d/m/Y'), 'validUntil' => $p->coverage_ends_at?->format('d/m/Y'),
-            'eventLabel' => 'CERTIFICATE '.$serial, 'issuedAt' => now()->format('d/m/Y H:i'), 'verificationCode' => $verification, 'qr' => $qr, 'verifyUrl' => $verifyUrl,
-            'sections' => [], 'coverages' => [], 'signatory' => null, 'templateRef' => 'Certificate serial '.$serial,
-            'letterhead' => $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($p),
-        ])->setPaper('a4')->output();
+        $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($p);
+        // D3: canonical secure shell (same number, verification code and policy data as before).
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => $type['code'], 'shell' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'number' => $number, 'verification' => $verification,
+            'qr_url' => $verifyUrl, 'verify_url' => (string) config('lifecycle.verify_url'), 'issuer_name' => $carrier, 'letterhead' => $letterhead, 'policy' => $p,
+            'title_en' => $type['name_en'], 'title_fr' => $type['name_fr'] ?? $type['name_en'],
+            'values' => array_filter(['party.name' => $p->party?->display_name ?? '', 'policy.insurer' => $carrier, 'policy.product' => $p->proposal?->offer?->product?->name,
+                'policy.effective_from' => $p->coverage_starts_at?->toIso8601String(), 'policy.effective_until' => $p->coverage_ends_at?->toIso8601String()], fn ($v) => $v !== null),
+            'label' => 'CERTIFICATE '.$serial, 'status' => 'VALID', 'template_ref' => 'Certificate serial '.$serial,
+        ]);
         $key = 'documents/'.$p->tenant_id.'/'.$p->id.'/'.$number.'.pdf';
         \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 

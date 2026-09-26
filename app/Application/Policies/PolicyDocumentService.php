@@ -11,10 +11,6 @@ use App\Models\Document;
 use App\Models\Policy;
 use App\Models\PolicyCertificate;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
-use chillerlan\QRCode\Output\QROutputInterface;
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -171,36 +167,62 @@ final class PolicyDocumentService
         ]);
     }
 
+    /** Secure-shell spec of the certificate / schedule (values from the policy and its frozen terms; nothing recomputed). */
+    public static function shellSpec(Policy $policy, PolicyCertificate $certificate, string $category, ?string $token, string $verifyUrl, ?array $letterhead): array
+    {
+        $policy->loadMissing(['carrier.party', 'party', 'proposal.offer.product', 'proposal.offer.quote']);
+        $product = $policy->proposal?->offer?->product;
+        $carrierName = $policy->carrier?->party?->display_name ?? 'Insurer';
+        $terms = $policy->terms_snapshot ?? [];
+        $riskFacts = (array) ($policy->proposal?->offer?->quote?->risk_facts ?? []);
+        $isCert = $category === self::CERTIFICATE;
+        $cur = $terms['currency'] ?? $policy->currency;
+        $m = fn ($v) => number_format(((int) $v) / 100, 0, '.', ' ').' '.$cur;
+        $risk = [];
+        foreach ($riskFacts as $k => $v) {
+            if (is_scalar($v)) {
+                $risk[] = ucwords(str_replace('_', ' ', (string) $k)).': '.(is_bool($v) ? ($v ? 'Yes' : 'No') : $v);
+            }
+        }
+        $sections = [['heading' => 'Certificat / Certificate', 'paragraphs' => array_values(array_filter([
+            'N° de série / Certificate serial: '.$certificate->serial_number,
+            'Branche / Class of insurance: '.($product?->line_code ?? $policy->proposal?->offer?->quote?->line_code ?? '—'),
+            'Émis le / Issued: '.(optional($isCert ? $certificate->issued_at : $policy->issued_at)->format('d/m/Y H:i') ?? '—'),
+        ]))]];
+        if (! $isCert) {
+            $sections[] = ['heading' => 'Prime / Premium', 'paragraphs' => [
+                'Prime / Premium: '.$m($terms['premium_minor'] ?? 0), 'Taxes: '.$m($terms['tax_minor'] ?? 0), 'Frais / Fees: '.$m($terms['fee_minor'] ?? 0),
+                'Total payé / Total paid: '.$m($terms['total_minor'] ?? $policy->premium_minor),
+            ]];
+        }
+        if ($risk !== []) {
+            $sections[] = ['heading' => 'Risque assuré / Insured risk', 'paragraphs' => $risk];
+        }
+        $coverages = array_map(fn ($c) => is_array($c) ? ['name' => is_array($c['name'] ?? null) ? ($c['name']['en'] ?? reset($c['name'])) : ($c['name'] ?? $c['code'] ?? '')] + $c : $c,
+            (array) ($terms['coverage_snapshot']['coverages'] ?? []));
+
+        return [
+            'type_code' => $isCert ? 'PROOF_OF_COVER' : 'POLICY_SCHEDULE', 'shell' => $isCert ? 'TPL-SHELL-POLICY-CERTIFICATE-001' : 'TPL-SHELL-POLICY-SCHEDULE-001',
+            'number' => (string) $certificate->serial_number, 'verification' => $token, 'qr_url' => $verifyUrl,
+            'verify_url' => (string) config('lifecycle.verify_url'), 'issuer_name' => $carrierName, 'letterhead' => $letterhead, 'policy' => $policy,
+            'values' => array_filter([
+                'party.name' => $policy->party?->display_name ?? 'Policyholder', 'policy.insurer' => $carrierName, 'policy.product' => $product?->name ?? 'Insurance cover',
+                'policy.effective_from' => $policy->coverage_starts_at?->toIso8601String(), 'policy.effective_until' => $policy->coverage_ends_at?->toIso8601String(),
+                'risk.registration_number' => $riskFacts['registration_number'] ?? null,
+            ], fn ($v) => $v !== null),
+            'sections' => $sections, 'coverages' => $isCert ? [] : $coverages, 'label' => $isCert ? 'CERTIFICATE '.$certificate->serial_number : 'POLICY SCHEDULE',
+            'status' => $isCert ? 'VALID' : 'ISSUED', 'issued_at' => $certificate->issued_at ?? now(),
+            'template_ref' => $isCert ? 'SYSTEM policy certificate' : 'SYSTEM policy schedule',
+        ];
+    }
+
     private function render(Policy $policy, PolicyCertificate $certificate, string $category, ?string $token, ?Document $existing): Document
     {
         $token ??= self::tokenOf($certificate);
         $verifyUrl = self::verifyUrl($certificate);
-        $qr = (new QRCode(new QROptions([
-            'outputType' => QROutputInterface::MARKUP_SVG,
-            'outputBase64' => true,
-            'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M,
-            'addQuietzone' => true,
-        ])))->render($verifyUrl);
-
-        $product = $policy->proposal?->offer?->product;
-        $data = [
-            'policy' => $policy,
-            'certificate' => $certificate,
-            'carrierName' => $policy->carrier?->party?->display_name ?? 'Insurer',
-            'insuredName' => $policy->party?->display_name ?? 'Policyholder',
-            'productName' => $product?->name ?? 'Insurance cover',
-            'lineCode' => $product?->line_code ?? $policy->proposal?->offer?->quote?->line_code,
-            'riskFacts' => $policy->proposal?->offer?->quote?->risk_facts ?? [],
-            'coverages' => $policy->terms_snapshot['coverage_snapshot']['coverages'] ?? [],
-            'terms' => $policy->terms_snapshot ?? [],
-            'verifyUrl' => $verifyUrl,
-            'verificationToken' => $token,
-            'qr' => $qr,
-            'letterhead' => $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($policy),
-        ];
-
-        $view = $category === self::CERTIFICATE ? 'pdf.policy-certificate' : 'pdf.policy-schedule';
-        $bytes = Pdf::loadView($view, $data)->setPaper('a4')->output();
+        // D3: rendered in the canonical secure shell; serial, verification token and policy data unchanged.
+        $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forPolicy($policy);
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render(self::shellSpec($policy, $certificate, $category, $token, $verifyUrl, $letterhead));
         $key = 'policies/'.$policy->id.'/'.($category === self::CERTIFICATE ? 'certificate' : 'schedule').'-'.$certificate->serial_number.'.pdf';
         Storage::disk($this->disk())->put($key, $bytes);
 

@@ -154,10 +154,9 @@ it('REQ-SEED-005 documents generated while demo mode is on carry the DEMONSTRATI
     expect(DemoDocumentMark::html())->toBe('')->and(trim(view('pdf._demo_overlay')->render()))->toBe('');
     config(['demo.enabled' => true]);
     expect(view('pdf._demo_overlay')->render())->toContain('DEMONSTRATION / DÉMONSTRATION — NOT VALID INSURANCE');
-    foreach (['engine-document', 'payment-receipt', 'policy-certificate', 'policy-schedule'] as $view) {
-        expect(file_get_contents(resource_path("views/pdf/{$view}.blade.php")))->toContain("@include('pdf._demo_overlay')");
-    }
-    expect(file_get_contents(app_path('Application/Quotes/QuoteDocumentRenderer.php')))->toContain('DemoDocumentMark::html()');
+    // D3: every PDF renders in the one canonical shell, which carries the overlay.
+    expect(file_get_contents(resource_path('views/pdf/engine-shell.blade.php')))->toContain("@include('pdf._demo_overlay')");
+    expect(file_get_contents(app_path('Application/Quotes/QuoteDocumentRenderer.php')))->toContain('SecureShellRenderer');
 });
 
 it('owner decision 30: Terms / Privacy show DRAFT_LEGAL_REVIEW_REQUIRED and declarations are UNVERIFIED_LEGAL_WORDING', function () {

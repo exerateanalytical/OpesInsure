@@ -9,7 +9,6 @@ use App\Application\Events\OutboxWriter;
 use App\Application\Shared\CanonicalJson;
 use App\Models\Policy;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -46,7 +45,7 @@ final class PolicyPortabilityExportService
         $pack = $this->build($policy);
         $packHash = $this->json->hash($pack);
         $id = (string) Str::uuid();
-        $pdf = Pdf::loadHTML($this->html($pack, $packHash, $id))->output();
+        $pdf = $this->pdf($policy, $pack, $packHash, $id);
         $path = "portability/{$policy->tenant_id}/{$policy->id}/{$id}.pdf";
         Storage::disk('local')->put($path, $pdf);
 
@@ -113,25 +112,24 @@ final class PolicyPortabilityExportService
         ];
     }
 
-    private function html(array $pack, string $hash, string $exportId): string
+    /** D3: the summary PDF renders in the canonical secure shell; the JSON pack stays authoritative. */
+    private function pdf(Policy $policy, array $pack, string $hash, string $exportId): string
     {
         $p = $pack['policy'];
-        $rows = '';
-        foreach ($pack['chronology'] as $v) {
-            $covs = implode(', ', array_map(fn ($c) => e($c['coverage_code']), $v['coverages']));
-            $rows .= '<tr><td>'.$v['version_no'].'</td><td>'.e($v['kind']).'</td><td>'.e((string) $v['valid_from']).'</td><td>'.e((string) $v['valid_to']).'</td><td>'.$covs.'</td></tr>';
-        }
-        $docs = '';
-        foreach ($pack['documents'] as $d) {
-            $docs .= '<tr><td>'.e((string) $d['document_number']).'</td><td>'.e((string) $d['type']).'</td><td style="font-size:8px">'.e($d['sha256']).'</td></tr>';
-        }
+        $chronology = array_map(fn ($v) => '#'.$v['version_no'].' '.$v['kind'].' · '.$v['valid_from'].' → '.$v['valid_to'].' · '.implode(', ', array_map(fn ($c) => $c['coverage_code'], $v['coverages'])), $pack['chronology']);
+        $docs = array_map(fn ($d) => $d['document_number'].' · '.$d['type'].' · SHA-256 '.$d['sha256'], $pack['documents']);
 
-        return '<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:DejaVu Sans,sans-serif;font-size:10px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:3px;text-align:left}</style></head><body>'
-            .'<h2>Dossier de portabilité / Policy portability pack</h2>'
-            .'<p>Police / Policy: <strong>'.e((string) $p['policy_number']).'</strong> — '.e($p['status']).'<br>Export: '.e($exportId).'<br>SHA-256 (JSON pack): '.e($hash).'</p>'
-            .'<h3>Chronologie / Chronology</h3><table><tr><th>#</th><th>Kind</th><th>From</th><th>To</th><th>Coverages</th></tr>'.$rows.'</table>'
-            .'<h3>Documents</h3><table><tr><th>Number</th><th>Type</th><th>SHA-256</th></tr>'.$docs.'</table>'
-            .'<p>Transactions: '.count($pack['transactions']).' · Servicing changes: '.count($pack['servicing_history']).'</p>'
-            .'<p style="font-size:8px">The JSON pack is authoritative; this PDF is a summary. Verify it against the SHA-256 above.</p></body></html>';
+        return app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => 'POLICY_PORTABILITY_PACK', 'number' => $exportId, 'issuer_name' => 'OpesInsure', 'policy' => $policy,
+            'title_en' => 'Policy portability pack', 'title_fr' => 'Dossier de portabilité', 'label' => 'PORTABILITY '.$p['status'],
+            'sections' => [
+                ['heading' => 'Export', 'paragraphs' => ['Police / Policy: '.$p['policy_number'].' — '.$p['status'], 'Export: '.$exportId, 'SHA-256 (JSON pack): '.$hash]],
+                ['heading' => 'Chronologie / Chronology', 'paragraphs' => $chronology !== [] ? $chronology : ['—']],
+                ['heading' => 'Documents', 'paragraphs' => $docs !== [] ? $docs : ['—']],
+                ['heading' => null, 'paragraphs' => ['Transactions: '.count($pack['transactions']).' · Servicing changes: '.count($pack['servicing_history']),
+                    'The JSON pack is authoritative; this PDF is a summary. Verify it against the SHA-256 above.']],
+            ],
+            'template_ref' => 'SYSTEM policy portability', 'hash_basis' => $hash,
+        ]);
     }
 }

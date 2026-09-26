@@ -8,7 +8,6 @@ use App\Application\Finance\Statements\AccountStatementService;
 use App\Application\Identity\PartyResolver;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\PartnerStatement;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -60,7 +59,20 @@ final class AccountStatementController
         if ($r->query('format') !== 'pdf') {
             return response()->json(['data' => $statement]);
         }
-        $bytes = Pdf::loadView('pdf.account-statement', ['s' => $statement])->setPaper('a4')->output();
+        $m = fn ($v) => number_format(((int) $v) / 100, 0, '.', ' ');
+        $lines = array_map(fn ($l) => \Carbon\Carbon::parse($l['occurred_at'])->format('d/m/Y').' · '.$l['line_type'].' · '.$l['description'].' · '.$m($l['amount_minor']).' · '.$m($l['balance_minor']), $statement['lines']);
+        // D3: canonical secure shell (on-demand statement: no registry verification code).
+        $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
+            'type_code' => 'CUSTOMER_STATEMENT', 'number' => (string) $statement['statement_number'], 'issuer_name' => 'OpesInsure', 'currency' => $statement['currency'],
+            'title_en' => 'Account statement', 'title_fr' => 'Relevé de compte', 'label' => $statement['subject']['type'].' · '.($statement['subject']['name'] ?? '—'),
+            'values' => ['party.name' => $statement['subject']['name'] ?? '—'],
+            'sections' => [
+                ['heading' => 'Période / Period', 'paragraphs' => [$statement['period_start'].' → '.$statement['period_end'].' · '.$statement['currency'], 'Solde d\'ouverture / Opening balance: '.$m($statement['opening_balance_minor'])]],
+                ['heading' => 'Mouvements / Transactions', 'paragraphs' => $lines !== [] ? $lines : ['Aucun mouvement / No transactions in this period.']],
+                ['heading' => 'Solde de clôture / Closing balance', 'paragraphs' => [$m($statement['closing_balance_minor']).' '.$statement['currency'].' ('.($statement['balance_meaning'] === 'OWED_BY_SUBJECT' ? 'amount due by you' : 'amount due to you').')']],
+            ],
+            'template_ref' => 'SYSTEM account statement', 'hash_basis' => $statement['content_hash'] ?? null,
+        ]);
 
         return response($bytes, 200, [
             'Content-Type' => 'application/pdf',

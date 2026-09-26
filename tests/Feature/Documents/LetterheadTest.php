@@ -117,10 +117,13 @@ it('REQ-DOC-LH-005: legacy certificate / schedule views and the quote PDF render
     $f = docPolicy();
     app(LetterheadService::class)->publish('CARRIER', $f['carrier']->id, lhAuth(['rccm' => 'RC/TEST/1']), lhPng(), null, null);
     $lh = LetterheadResolver::forPolicy($f['policy']);
-    foreach (['pdf.policy-certificate', 'pdf.policy-schedule'] as $view) {
-        $html = view($view, ['policy' => $f['policy'], 'certificate' => (object) ['serial_number' => 'S-1', 'issued_at' => now()], 'carrierName' => 'Assureur', 'insuredName' => 'X',
-            'productName' => 'P', 'lineCode' => 'AUTO', 'riskFacts' => [], 'coverages' => [], 'terms' => [], 'verifyUrl' => 'https://v', 'verificationToken' => null, 'qr' => 'data:,', 'letterhead' => $lh])->render();
-        expect($html)->toContain('data:image/png;base64,')->toContain('RCCM RC/TEST/1');
+    foreach ([\App\Application\Policies\PolicyDocumentService::CERTIFICATE, \App\Application\Policies\PolicyDocumentService::SCHEDULE] as $category) {
+        $spec = \App\Application\Policies\PolicyDocumentService::shellSpec($f['policy'], new \App\Models\PolicyCertificate(['serial_number' => 'S-1', 'issued_at' => now()]), $category, null, 'https://v', $lh);
+        $type = app(\App\Application\Documents\Engine\DocumentRegister::class)->describe($spec['type_code']);
+        $security = app(\App\Application\Documents\Security\DocumentSecurityProfile::class)->resolve($type);
+        $html = view('pdf._letterhead', ['letterhead' => $lh])->render().view('pdf._letterhead_footer', ['letterhead' => $lh])->render();
+        expect($spec['letterhead'])->toBe($lh)->and($html)->toContain('data:image/png;base64,')->toContain('RCCM RC/TEST/1');
+        expect(strlen(app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render($spec)))->toBeGreaterThan(500)->and($security)->toHaveKey('controls');
     }
     expect(strlen(app(\App\Application\Quotes\QuoteDocumentRenderer::class)->pdf($f['quote'])))->toBeGreaterThan(500);
 });
