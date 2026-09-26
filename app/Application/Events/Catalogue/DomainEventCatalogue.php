@@ -148,6 +148,7 @@ final class DomainEventCatalogue
             $d('claim.reserve.referred', 'claim', 'Claim reserve approval referred: approver RESERVE_APPROVE limit exceeded.', [], [], true),
             $d('claim.reserve.changed', 'claim', 'Claim reserve movement approved and posted.', [], [], true),
             $d('claim.transitioned', 'claim', 'Generic claim status transition.', [], [], true),
+            $d('claim.withdrawn', 'claim', 'Claimant withdrew a draft or submitted claim.', [], [], true),
             // REQ-CLM-006 (App\Application\Claims\Parties\ClaimPartyService)
             $d('claim.party.added', 'claim', 'Party (claimant, third party, payee, expert…) added to a claim.', [], [], true),
             $d('claim.party.updated', 'claim', 'Claim party details changed.', [], [], true),
