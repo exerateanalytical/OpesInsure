@@ -115,3 +115,9 @@ Open owner questions collected in the cloud session's chat; the ones still open 
     and becomes the single path.
   - Issuance: `PolicyIssuanceService` doesn't call `PolicyIssuabilityService`, `CoverTermsService::resolveStart` or `PremiumCoverEvaluator`;
     `PaymentIssuanceTrigger` swallows failures (no failed-issuance queue) and hard-codes territory CM.
+
+### 2026-09-26 local: public desktop pages deployed (r20260926-072400)
+- Deployed = bfba9df + ONLY the public-site files (marketplace /insurance, 7 directories /insurance/{line}, /compare, /about, /contact, /login, /signup).
+  The Gap Closure Pack (a202714) is on master but NOT deployed; it still goes out in its own release (backup → rehearse → deploy).
+- Live-verified: all pages 200, 23 published products listed, website OTP sign-in as Demo Customer works, sign-out works.
+- Not built yet: compare/buy flow stages 03-24 (signed-in customer/agent/claims-officer web screens).
