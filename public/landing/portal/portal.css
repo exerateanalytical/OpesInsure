@@ -93,3 +93,4 @@
 }
 @media (max-width:560px){.acct-brand small,.acct-actions .lang{display:none}.acct-brand span{font-size:21px}.kv dd{text-align:left}.kv{grid-template-columns:1fr}}
 .acct-body [hidden]{display:none!important}
+.acct-content{grid-template-columns:minmax(0,1fr)}.acct-content>*{min-width:0}@media (max-width:1200px){.agrid.main-side{grid-template-columns:minmax(0,1fr)}}

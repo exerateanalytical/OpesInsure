@@ -90,7 +90,7 @@
                 @if($p['deductible'])<span>@include('public.partials.i', ['n' => 'check']){{ __('desk.list.deductible') }} {{ $M::money($p['deductible']) }}</span>@endif
               </div>
               <div class="q-act">
-                <a class="dbtn dbtn-navy" href="{{ url('/app/compare?product='.urlencode($p['code'])) }}">{{ __('desk.compare.select') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+                <a class="dbtn dbtn-navy" href="{{ url('/account/buy?product='.urlencode($p['code'])) }}">{{ __('desk.compare.select') }} @include('public.partials.i', ['n' => 'arrow'])</a>
                 <a class="linkx" href="{{ $url(array_diff($codes, [$p['code']])) }}">@include('public.partials.i', ['n' => 'x']){{ __('desk.compare.remove') }}</a>
               </div>
             </li>
@@ -106,7 +106,7 @@
                   @include('public.partials.pmark', ['p' => $p])
                   <span class="ct-name">{{ $p['name'] }}</span>
                   @if($p['premium'])<b>{{ $M::money($p['premium']) }}</b><small>{{ __('desk.list.per_year') }}</small>@else<b class="blue">{{ __('desk.list.on_request') }}</b>@endif
-                  <a class="dbtn dbtn-navy" href="{{ url('/app/compare?product='.urlencode($p['code'])) }}">{{ __('desk.compare.select') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+                  <a class="dbtn dbtn-navy" href="{{ url('/account/buy?product='.urlencode($p['code'])) }}">{{ __('desk.compare.select') }} @include('public.partials.i', ['n' => 'arrow'])</a>
                   <a class="linkx" href="{{ $url(array_diff($codes, [$p['code']])) }}">{{ __('desk.compare.remove') }}</a>
                 </th>
               @endforeach

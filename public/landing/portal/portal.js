@@ -44,6 +44,7 @@
     var method = (o.method || (o.body ? 'POST' : 'GET')).toUpperCase();
     var headers = { Accept: 'application/json', 'Accept-Language': C.locale || 'en', 'X-Request-ID': uuid() };
     var body = o.body;
+    if (body === undefined && method !== 'GET') body = {}; // the API requires a JSON body on every write
     if (body && !(body instanceof FormData)) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
     if (s && s.access_token) headers.Authorization = 'Bearer ' + s.access_token;
     if (s && s.tenant_id) headers['X-Tenant-Id'] = s.tenant_id;

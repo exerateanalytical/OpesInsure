@@ -124,7 +124,7 @@
           @endif
           <div class="pr-act">
             <a class="dbtn {{ $variant === 'market' ? 'dbtn-outline' : 'dbtn-primary' }}" href="/compare?p[]={{ urlencode($p['code']) }}">{{ __('desk.list.view') }}@if($variant !== 'market') @include('public.partials.i', ['n' => 'arrow'])@endif</a>
-            @if($variant === 'market')<a class="dbtn dbtn-primary" href="{{ url('/app/compare?product='.urlencode($p['code'])) }}">{{ __('desk.list.quote') }}</a>@endif
+            @if($variant === 'market')<a class="dbtn dbtn-primary" href="{{ url('/account/buy?product='.urlencode($p['code'])) }}">{{ __('desk.list.quote') }}</a>@endif
             <label class="cmp"><input type="checkbox" name="p[]" value="{{ $p['code'] }}" form="cmp-form" data-cmp @checked(in_array($p['code'], $compare, true))> {{ __('desk.list.compare') }}</label>
           </div>
         </li>

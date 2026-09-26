@@ -76,7 +76,7 @@ it('compares selected products side by side and marks the cheapest', function ()
 
     $html = $this->get('/compare?view=table&p[]=AXA-AUTO&p[]=NSIA-AUTO')->assertOk()
         ->assertSee('2 Insurance Quotes')->assertSee('AXA Auto Essentiel')->assertSee('NSIA Auto Liberté')
-        ->assertSee('Best Value')->assertSee('/app/compare?product=NSIA-AUTO', false)->getContent();
+        ->assertSee('Best Value')->assertSee('/account/buy?product=NSIA-AUTO', false)->getContent();
 
     expect(substr_count($html, 'class="ctable"'))->toBe(1);
     // Unknown codes are ignored, and at most four products are compared.

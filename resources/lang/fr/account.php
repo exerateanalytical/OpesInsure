@@ -8,7 +8,7 @@ return [
     'nav' => ['products' => 'Produits', 'compare' => 'Comparer', 'support' => 'Assistance'],
     'side' => [
         'dashboard' => 'Tableau de bord', 'policies' => 'Mes polices', 'quotes' => 'Devis', 'claims' => 'Sinistres', 'payments' => 'Paiements',
-        'documents' => 'Documents', 'vehicles' => 'Mes véhicules', 'customers' => 'Clients', 'desk' => 'Gestion des sinistres',
+        'documents' => 'Documents', 'vehicles' => 'Mes véhicules', 'leads' => 'Prospects', 'reports' => 'Rapports', 'commissions' => 'Commissions', 'customers' => 'Clients', 'desk' => 'Gestion des sinistres',
         'profile' => 'Mon profil', 'notifications' => 'Notifications', 'support' => 'Assistance',
     ],
     'help_t' => 'Besoin d’aide ?', 'help_d' => 'Parlez à nos experts en assurance.', 'help_btn' => 'Nous appeler',
