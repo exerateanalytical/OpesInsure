@@ -63,15 +63,18 @@ export const authColors = {
   navy900: colors.navy900,
   navy800: colors.navy800,
   blue500: colors.blue600,
-  // Accent on dark indigo surfaces (wordmark "Insure"): ochre, 7:1 on navy950.
-  azure500: colors.gold500,
+  // Wordmark accent ("Insure") on the light onboarding/auth canvas.
+  azure500: colors.blue600,
   gold500: colors.gold500,
+  gold600: colors.gold600,
   gold300: colors.gold100,
   terracotta500: colors.terracotta500,
   white: colors.white,
+  canvas: colors.neutral50,
   ice50: colors.blue50,
   ice100: colors.blue100,
-  ice200: colors.neutral300,
+  // Field / card borders on white.
+  ice200: colors.neutral200,
   // neutral600 on white is 5.9:1 (old #5E7A9D was ~4.3:1, below AA)
   slate500: colors.neutral600,
   textSecondary: colors.neutral700,
@@ -80,8 +83,10 @@ export const authColors = {
   dangerText: colors.dangerText,
 } as const;
 
+/** Kept for callers that still paint gradients; the auth/onboarding
+ * buttons themselves are now solid blue600 (design system v3). */
 export const authGradients = {
-  primaryButton: [colors.navy900, colors.blue600, colors.blue600] as const,
+  primaryButton: [colors.blue600, colors.blue600, colors.blue600] as const,
   goldAccent: [colors.gold600, colors.gold500, colors.gold600] as const,
   navySurface: [colors.navy950, colors.navy900, colors.navy800] as const,
 };

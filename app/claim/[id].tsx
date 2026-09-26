@@ -78,6 +78,8 @@ export default function ClaimDetail() {
   );
   const stages = DETAIL_STAGES.map((k) => t(STAGE_LABELS[k]));
   const lastEvent = (timeline.data ?? [])[0];
+  // The header date is the first-notice date: the SUBMITTED event when the insurer recorded one, else the record's creation.
+  const submittedEvent = (timeline.data ?? []).find((e) => /submit/i.test(`${e.type ?? ""} ${e.to_status ?? ""}`));
 
   return (
     <Screen>
@@ -98,7 +100,7 @@ export default function ClaimDetail() {
                 subtitle={claim.claim_number}
                 titleRow={<View style={styles.chipTop}><StatusChip label={status} tone={claimTone(claim.status)} /></View>}
               />
-              <Text style={styles.submitted}>{t("claimSubmittedOn", { date: date(claim.created_at ?? claim.incident_at) })}</Text>
+              <Text style={styles.submitted}>{t("claimSubmittedOn", { date: date(submittedEvent?.occurred_at ?? claim.created_at ?? claim.incident_at) })}</Text>
               <StepIndicator steps={stages} current={claimStage(claim.status)} />
 
               {outstanding.length && canUpload ? (

@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { ArrowRight, ShieldCheck } from "lucide-react-native";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
-import { AppHeader, Button, Card, Screen } from "@/components/ui";
+import { BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { Button, Card, Screen } from "@/components/ui";
 import { ContractField } from "@/components/forms/ContractField";
+import { QuoteSteps } from "@/components/purchase/PurchaseUi";
 import { DisclosureApi, DisclosureSession } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { fieldFacts, isFieldVisible, parseContractField, validateStep, type RiskField } from "@/lib/riskSchema";
@@ -80,8 +83,18 @@ export default function Questions() {
   };
 
   return (
-    <Screen>
-      <AppHeader title={t("disclosureTitle")} subtitle={t("disclosureSubtitle")} back />
+    <Screen
+      footer={
+        s ? (
+          <CtaBar>
+            {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
+            <Button label={t("disclosureReview")} icon={ArrowRight} loading={busy} onPress={() => void submit()} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("disclosureTitle")} subtitle={t("disclosureSubtitle")} />
+      <QuoteSteps current={1} />
       {!proposalId ? (
         <EmptyState title={t("disclosureNoProposal")} message={t("disclosureNoProposalBody")} action={t("startQuote")} onPress={() => router.replace("/quote/product")} />
       ) : loading ? (
@@ -91,6 +104,7 @@ export default function Questions() {
       ) : null}
       {fields.length ? (
         <Card>
+          <SectionHeading title={t("disclosureTitle")} icon={ShieldCheck} />
           {fields.map((f) =>
             isFieldVisible(f, values) ? (
               <ContractField
@@ -107,8 +121,6 @@ export default function Questions() {
           )}
         </Card>
       ) : null}
-      {s ? <Button label={t("disclosureReview")} loading={busy} onPress={() => void submit()} /> : null}
-      {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
     </Screen>
   );
 }

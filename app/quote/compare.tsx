@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Columns3, Info } from "lucide-react-native";
 import { CompareTable, compareTableStyles } from "@/components/offers/CompareTable";
 import { router, useLocalSearchParams } from "expo-router";
-import { AppHeader, Button, Screen } from "@/components/ui";
+import { Banner, BrandHeader, SectionHeading } from "@/components/design";
+import { Button, Card, Screen } from "@/components/ui";
 import { EmptyState } from "@/components/StatePanel";
-import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, QuoteSteps } from "@/components/purchase/PurchaseUi";
 import { useInsurance } from "@/store/insurance";
 import { compareRows } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
@@ -44,32 +46,36 @@ export default function CompareOffers() {
   if (offers.length < 2)
     return (
       <Screen>
-        <AppHeader title={t("compare")} back />
+        <BrandHeader title={t("compare")} />
+        <QuoteSteps current={2} />
         <EmptyState title={t("qtSelectTwoThree")} message={t("qtTickCompare")} action={t("qtBackToOffers")} onPress={() => router.back()} />
       </Screen>
     );
 
   return (
     <Screen>
-      <AppHeader title={t("compare")} subtitle={t("qtCompareSubtitle", { count: offers.length })} back />
-      <CompareTable
-        rows={rows}
-        columns={offers.length}
-        money={f.xaf}
-        footer={(colWidth, labelWidth) => (
-          <View style={compareTableStyles.row}>
-            <View style={{ width: labelWidth }} />
-            {offers.map((o) => (
-              <View key={o.id} style={[compareTableStyles.cell, { width: colWidth }]}>
-                <Button label={t("qtChoose")} variant="secondary" loading={choosing === o.id} disabled={!!choosing} onPress={() => void choose(o.id)} />
-              </View>
-            ))}
-          </View>
-        )}
-      />
+      <BrandHeader title={t("compare")} subtitle={t("qtCompareSubtitle", { count: offers.length })} />
+      <QuoteSteps current={2} />
+      <Card>
+        <SectionHeading icon={Columns3} title={t("compare")} />
+        <CompareTable
+          rows={rows}
+          columns={offers.length}
+          money={f.xaf}
+          footer={(colWidth, labelWidth) => (
+            <View style={compareTableStyles.row}>
+              <View style={{ width: labelWidth }} />
+              {offers.map((o) => (
+                <View key={o.id} style={[compareTableStyles.cell, { width: colWidth }]}>
+                  <Button label={t("qtChoose")} variant="secondary" loading={choosing === o.id} disabled={!!choosing} onPress={() => void choose(o.id)} />
+                </View>
+              ))}
+            </View>
+          )}
+        />
+      </Card>
       {error ? <ErrorCard error={error} fallback={t("ofSelectFailed")} /> : null}
-      <Text style={ps.meta}>{t("qtCompareNote")}</Text>
+      <Banner icon={Info} tint="blue" body={t("qtCompareNote")} />
     </Screen>
   );
 }
-

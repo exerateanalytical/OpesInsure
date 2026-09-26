@@ -27,5 +27,5 @@ export function BuildStamp() {
 }
 
 const styles = StyleSheet.create({
-  stamp: { ...type.meta, color: colors.neutral500, textAlign: "center", paddingTop: space.x2 },
+  stamp: { ...type.meta, color: colors.neutral500, textAlign: "center", paddingTop: space.x2, paddingBottom: space.x2 },
 });

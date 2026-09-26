@@ -1,14 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { ShieldCheck } from "lucide-react-native";
+import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
+import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
+import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthApi, type OtpChannel } from "@/api/client";
 import { finishSignIn } from "@/components/auth/finishSignIn";
 import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { formatCountdown, isLockout, lockoutSeconds } from "@/lib/customerLogic";
-import { colors, type } from "@/theme/tokens";
+import { authColors, authSpace, colors, type } from "@/theme/tokens";
 
 const channelKey: Record<string, CopyKey> = {
   whatsapp: "viaWhatsapp",
@@ -20,6 +24,7 @@ const RESEND_COOLDOWN = 60;
 
 export default function Verify() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     challengeId: string;
     phone: string;
@@ -97,20 +102,28 @@ export default function Verify() {
 
   const via = params.channel && channelKey[params.channel] ? t(channelKey[params.channel]!) : "";
   return (
-    <Screen>
-      <AppHeader
-        title={isEmail ? t("verifyEmailTitle") : t("verifyNumberTitle")}
-        subtitle={
+    <SafeAreaView edges={["top"]} style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: insets.bottom + authSpace[3] }}
+        >
+      <AuthHero
+        compact
+        back
+        heading={isEmail ? t("verifyEmailTitle") : t("verifyNumberTitle")}
+        subheading={
           isEmail
             ? t("otpSentEmail", { via })
             : t("otpSentPhone", { via, phone: params.phone ?? t("yourPhone") })
         }
-        back
       />
-      {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
-      <Card feature>
-        <TextField
-          label={t("securityCode")}
+      <AuthCard>
+        {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
+        <Text style={styles.label}>{t("securityCode")}</Text>
+        <AuthTextField
+          icon={ShieldCheck}
           value={code}
           onChangeText={(v) => setCode(v.replace(/\D/g, ""))}
           keyboardType="number-pad"
@@ -127,28 +140,32 @@ export default function Verify() {
         >
           {expired ? t("otpExpired") : t("otpExpiresIn", { time: formatCountdown(expiresIn) })}
         </Text>
-        <Button
+        <AuthPrimaryButton
           label={t("verifyContinue")}
           loading={busy}
           disabled={code.length !== 6 || expired || !!locked}
           onPress={() => void submit()}
         />
         {isEmail ? null : (
-          <Button
-            label={resendIn > 0 ? t("otpResendIn", { time: formatCountdown(resendIn) }) : t("otpResend")}
-            loading={resending}
-            disabled={resendIn > 0 || !!locked}
-            variant={expired ? "secondary" : "tertiary"}
+          <AuthSecondaryButton
+            label={resending ? t("sending") : resendIn > 0 ? t("otpResendIn", { time: formatCountdown(resendIn) }) : t("otpResend")}
+            disabled={resendIn > 0 || resending || !!locked}
             onPress={() => void resend()}
           />
         )}
         {notice ? <Text accessibilityLiveRegion="polite" style={styles.help}>{notice}</Text> : null}
         <Text style={styles.help}>{t("otpWarning")}</Text>
-      </Card>
-    </Screen>
+      </AuthCard>
+      <AuthFooterBranding tone="light" />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: authColors.canvas },
+  flex: { flex: 1 },
+  label: { ...type.label, color: colors.navy950, marginBottom: -authSpace[1] },
   help: { ...type.meta, color: colors.neutral600 },
   timer: { ...type.label, color: colors.neutral700, fontVariant: ["tabular-nums"] },
   expired: { color: colors.dangerText },

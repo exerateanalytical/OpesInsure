@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { RefreshCcw } from "lucide-react-native";
-import { AppHeader, Button, Screen } from "@/components/ui";
+import { CircleAlert, Columns3, RefreshCcw } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { Button, Card, Screen } from "@/components/ui";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
-import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { CompareTable, CompareTableRow } from "@/components/offers/CompareTable";
 import { QuoteWorkflowApi } from "@/api/workflow";
 import { useLoad } from "@/hooks/useLoad";
@@ -57,15 +57,27 @@ export default function QuoteComparisonScreen() {
   };
 
   return (
-    <Screen>
-      <AppHeader title={t("qwCompareTitle")} subtitle={offers.length ? t("qwCompareSubtitle", { count: offers.length }) : undefined} back />
+    <Screen
+      footer={
+        c ? (
+          <CtaBar>
+            <Button label={t("qwCompareRefresh")} icon={RefreshCcw} variant="secondary" loading={refreshing} disabled={refreshing} onPress={() => void refresh()} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("qwCompareTitle")} subtitle={offers.length ? t("qwCompareSubtitle", { count: offers.length }) : undefined} />
       {q.loading && !c ? <LoadingState label={t("qwCompareLoading")} /> : null}
       {q.error && !c ? <ErrorCard error={q.error} fallback={t("qwCompareFailed")} onRetry={() => void q.reload()} /> : null}
       {c && offers.length < 2 ? <EmptyState title={t("qwCompareNeedTwo")} message={t("qwCompareFailed")} /> : null}
-      {c && offers.length >= 2 ? <CompareTable rows={rows} columns={offers.length} money={f.xaf} /> : null}
-      {c?.is_expired ? <Text style={ps.error}>{t("qwCompareExpired")}</Text> : null}
+      {c?.is_expired ? <Banner icon={CircleAlert} tint="red" body={t("qwCompareExpired")} /> : null}
+      {c && offers.length >= 2 ? (
+        <Card>
+          <SectionHeading icon={Columns3} title={t("qwCompareTitle")} />
+          <CompareTable rows={rows} columns={offers.length} money={f.xaf} />
+        </Card>
+      ) : null}
       {error ? <ErrorCard error={error} fallback={t("qwCompareFailed")} /> : null}
-      {c ? <Button label={t("qwCompareRefresh")} icon={RefreshCcw} variant="secondary" loading={refreshing} disabled={refreshing} onPress={() => void refresh()} /> : null}
     </Screen>
   );
 }

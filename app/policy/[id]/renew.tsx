@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlarmClock, ArrowRight, CalendarDays, Car, ChevronRight, CircleCheck, Coins, FilePenLine, Gift, RefreshCcw, Scale, ShieldAlert, ShieldCheck } from "lucide-react-native";
+import { AlarmClock, ArrowRight, CalendarDays, ChevronRight, CircleCheck, Coins, FilePenLine, Gift, RefreshCcw, Scale, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import { Banner, BrandHeader, CheckList, CtaBar, DetailRow, RadioCard, SectionHeading } from "@/components/design";
 import { Button, Card, Screen } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
@@ -95,7 +95,7 @@ export default function Renew() {
           <Card>
             <SectionHeading title={t("rnOverview")} />
             <DetailRow icon={ShieldCheck} label={t("rnCoverType")} value={identity.productName ?? identity.title} />
-            <DetailRow icon={Car} label={identity.isMotor ? t("rnVehicle") : t("rnInsuredObject")} value={identity.vehicle ?? "—"} />
+            <DetailRow icon={identity.icon} label={identity.isMotor ? t("rnVehicle") : t("rnInsuredObject")} value={identity.vehicle ?? "—"} />
             <DetailRow
               icon={CalendarDays}
               label={t("rnNewPeriod")}
@@ -149,7 +149,7 @@ export default function Renew() {
             <RadioCard selected={option === "update"} onPress={() => setOption("update")} icon={FilePenLine} tint="blue" title={t("rnOptUpdate")} subtitle={t("rnOptUpdateSub")} right={<ChevronRight size={20} color={colors.navy900} />} />
           </Card>
 
-          <Banner icon={ShieldAlert} tint="gold" body={t("rnLapseWarning")} />
+          <Banner icon={ShieldAlert} tint="gold" body={t(identity.isMotor ? "rnLapseWarning" : "rnLapseWarningGeneric")} />
         </>
       )}
     </Screen>

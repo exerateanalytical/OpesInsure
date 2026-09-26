@@ -1,13 +1,15 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { KeyRound, Phone, ShieldCheck } from "lucide-react-native";
-import { AppHeader, Card, Screen } from "@/components/ui";
+import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
+import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { AuthApi, type OtpChannel } from "@/api/client";
-import { colors, type } from "@/theme/tokens";
+import { authColors, authSpace, colors, type } from "@/theme/tokens";
 import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { useTranslation } from "@/i18n";
 import { isLockout, lockoutSeconds } from "@/lib/customerLogic";
@@ -32,6 +34,7 @@ export default function ForgotPassword() {
   const [error, setError] = useState<string>();
   const normalized = normalizeCameroonPhone(phone);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [locked, setLocked] = useState<number | null>(null);
   const unlock = useCallback(() => setLocked(null), []);
   const fail = (e: unknown, fallback: string) => {
@@ -76,10 +79,16 @@ export default function ForgotPassword() {
   };
 
   return (
-    <Screen>
-      <AppHeader title={t("resetTitle")} subtitle={t("resetSubtitle")} back />
-      {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
-      <Card feature>
+    <SafeAreaView edges={["top"]} style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: insets.bottom + authSpace[3] }}
+        >
+      <AuthHero compact back heading={t("resetTitle")} subheading={t("resetSubtitle")} />
+      <AuthCard>
+        {locked ? <LockoutNotice seconds={locked} onDone={unlock} /> : null}
         {step === "request" ? (
           <>
             <AuthTextField
@@ -129,8 +138,15 @@ export default function ForgotPassword() {
             <AuthSecondaryButton label={t("sendNewCode")} disabled={busy || !!locked} onPress={() => void request()} />
           </>
         )}
-      </Card>
-    </Screen>
+      </AuthCard>
+      <AuthFooterBranding tone="light" />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
-const styles = StyleSheet.create({ body: { ...type.body, color: colors.neutral600 } });
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: authColors.canvas },
+  flex: { flex: 1 },
+  body: { ...type.body, color: colors.neutral600 },
+});

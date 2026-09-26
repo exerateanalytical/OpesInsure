@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Smartphone } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { BrandHeader, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
-import { colors, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function Devices() {
   const { t } = useTranslation();
@@ -29,7 +31,7 @@ export default function Devices() {
   };
   return (
     <Screen>
-      <AppHeader title={t("devTitle")} back />
+      <BrandHeader title={t("devTitle")} back right={null} />
       {actionError ? <ErrorCard error={actionError} fallback={t("errGeneric")} /> : null}
       <StatePanel
         loading={loading}
@@ -43,10 +45,15 @@ export default function Devices() {
         {(devices) => (
           <>
             {devices.map((device) => (
-              <Card key={device.id}>
-                {device.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
-                <Text style={styles.title}>{device.name}</Text>
-                <Text style={styles.body}>{t("devLastSeen", { platform: device.platform, date: f.dateTime(device.last_seen_at) })}</Text>
+              <Card key={device.id} style={styles.card}>
+                <View style={styles.row}>
+                  <TintedIcon icon={Smartphone} tint={device.current ? "green" : "neutral"} size={48} />
+                  <View style={styles.flex}>
+                    <Text style={styles.title}>{device.name}</Text>
+                    <Text style={styles.body}>{t("devLastSeen", { platform: device.platform, date: f.dateTime(device.last_seen_at) })}</Text>
+                  </View>
+                  {device.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
+                </View>
                 {!device.current ? (
                   <Button label={t("devRevoke")} variant="danger" loading={busy === device.id} onPress={() => void revoke(device.id)} />
                 ) : null}
@@ -59,6 +66,9 @@ export default function Devices() {
   );
 }
 const styles = StyleSheet.create({
-  title: { ...type.cardTitle, color: colors.navy950 },
-  body: { ...type.body, color: colors.neutral600 },
+  flex: { flex: 1 },
+  card: { borderRadius: radius.feature },
+  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  body: { ...type.meta, color: colors.neutral600, marginTop: 2 },
 });

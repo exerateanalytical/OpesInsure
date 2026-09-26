@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
 import { StepUpApi } from "@/api/client";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
-import { colors, type } from "@/theme/tokens";
+import { Button, Card, Screen, TextField } from "@/components/ui";
+import { BrandHeader, TintedIcon } from "@/components/design";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
 export default function StepUp() {
@@ -20,11 +21,15 @@ export default function StepUp() {
   }, [purpose]);
   return (
     <Screen>
-      <AppHeader title={t("suTitle")} subtitle={t("suSubtitle")} back />
-      <Card feature>
-        <ShieldCheck size={34} color={colors.navy800} />
-        <Text style={styles.title}>{t("suHeading")}</Text>
-        <Text style={styles.body}>{challenge?.delivery_hint ?? t("suPreparing")}</Text>
+      <BrandHeader title={t("suTitle")} subtitle={t("suSubtitle")} back right="help" />
+      <Card style={styles.card}>
+        <View style={styles.headRow}>
+          <TintedIcon icon={ShieldCheck} tint="blue" size={56} />
+          <View style={styles.flex}>
+            <Text style={styles.title}>{t("suHeading")}</Text>
+            <Text style={styles.body}>{challenge?.delivery_hint ?? t("suPreparing")}</Text>
+          </View>
+        </View>
         <TextField label={t("suCode")} value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="sms-otp" maxLength={6} />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <Button
@@ -50,7 +55,10 @@ export default function StepUp() {
   );
 }
 const styles = StyleSheet.create({
-  title: { ...type.sectionTitle, color: colors.navy950 },
+  flex: { flex: 1, gap: space.x1 },
+  card: { borderRadius: radius.feature },
+  headRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
 });

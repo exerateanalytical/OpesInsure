@@ -28,7 +28,7 @@ export function FlowRow({
           <Text style={s.status}>{status.replaceAll("_", " ")}</Text>
         ) : null}
       </View>
-      <ChevronRight accessibilityElementsHidden importantForAccessibility="no-hide-descendants" size={20} color={colors.neutral400} />
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><ChevronRight size={20} color={colors.neutral400} /></View>
     </Pressable>
   );
 }

@@ -26,6 +26,7 @@ import {
   UsersRound,
 } from "lucide-react-native";
 import {
+  OnboardingCanvas,
   OnboardingFeatureRow,
   OnboardingFooter,
   OnboardingHero,
@@ -164,6 +165,8 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
+      {/* Light design-system canvas: edge borders + bottom wave, behind everything. */}
+      <OnboardingCanvas waveHeight={Math.min(170, window.height * 0.2)} />
       <View style={styles.topBar}>
       <Pressable
         accessibilityRole="button"
@@ -194,7 +197,7 @@ export default function Onboarding() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.slideContent}
           >
-            <OnboardingHero />
+            <OnboardingHero compact={compact} />
             <View style={styles.copyBlock}>
               <Text accessibilityRole="header" style={styles.headingTop}>{slide.headingTop}</Text>
               <Text style={styles.headingBottom}>{slide.headingBottom}</Text>
@@ -264,30 +267,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: authSpace[4],
     borderRadius: 999,
-    backgroundColor: colors.navy950,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.neutral200,
   },
-  skipText: { ...authType.label, color: colors.white },
+  skipText: { ...authType.label, color: authColors.navy900 },
   slideContent: { paddingHorizontal: authSpace[5], paddingBottom: authSpace[4] },
-  copyBlock: { alignItems: "center", gap: authSpace[2], marginTop: authSpace[6], marginBottom: authSpace[5] },
-  headingTop: { ...authType.h1, fontSize: 28, lineHeight: 34, color: authColors.navy950, textAlign: "center" },
-  headingBottom: { ...authType.h1, fontSize: 28, lineHeight: 34, color: colors.terracotta700, textAlign: "center" },
+  copyBlock: { alignItems: "center", gap: 0, marginTop: authSpace[5], marginBottom: authSpace[5] },
+  headingTop: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.navy950, textAlign: "center" },
+  headingBottom: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.blue500, textAlign: "center" },
   subheading: {
     ...authType.body,
+    fontSize: 17,
+    lineHeight: 25,
     color: authColors.textSecondary,
     textAlign: "center",
-    marginTop: authSpace[2],
+    marginTop: authSpace[3],
+    paddingHorizontal: authSpace[1],
   },
   links: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: authSpace[3] },
   linksCompact: { flexDirection: "column", alignItems: "stretch", gap: 0 },
   linkHit: { minHeight: 44, justifyContent: "center", flexShrink: 1 },
   link: { ...authType.label, fontSize: 13, color: authColors.blue500 },
+  // Transparent so the blue/gold wave of the canvas shows behind the controls.
   actions: {
     paddingHorizontal: authSpace[5],
     paddingTop: authSpace[3],
     paddingBottom: authSpace[2],
-    backgroundColor: colors.neutral50,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.neutral200,
+    backgroundColor: "transparent",
   },
   // Tablets: keep the controls a thumb-friendly width instead of edge to edge.
   actionsInner: { width: "100%", maxWidth: 480, alignSelf: "center", gap: authSpace[2] },
@@ -302,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: authSpace[5],
     paddingVertical: authSpace[2],
     borderRadius: 999,
-    backgroundColor: colors.navy900,
+    backgroundColor: colors.blue600,
   },
   nextCompact: { minWidth: 104, paddingHorizontal: authSpace[4], flexShrink: 1 },
   nextPressed: { opacity: 0.85 },

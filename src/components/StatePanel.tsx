@@ -2,7 +2,8 @@ import React, { ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { CloudOff, Inbox, RefreshCw } from "lucide-react-native";
 import { Button, Card } from "./ui";
-import { colors, space, type } from "@/theme/tokens";
+import { TintedIcon } from "@/components/design";
+import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { apiErrorCopyKey } from "@/lib/apiErrors";
 
@@ -19,7 +20,7 @@ export function EmptyState({
 }) {
   return (
     <Card style={styles.panel}>
-      <Inbox size={28} color={colors.neutral600} />
+      <TintedIcon icon={Inbox} tint="neutral" size={56} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {action && <Button label={action} variant="secondary" onPress={onPress} />}
@@ -35,7 +36,7 @@ export function ErrorState({ onRetry, error }: { onRetry?: () => void; error?: u
   const specific = e && (apiErrorCopyKey(e.code) || e.status === 404) ? e.message : null;
   return (
     <Card style={styles.panel}>
-      <CloudOff size={28} color={colors.dangerText} />
+      <TintedIcon icon={CloudOff} tint="red" size={56} />
       <Text accessibilityRole="alert" style={styles.title}>
         {t("loadErrorTitle")}
       </Text>
@@ -105,7 +106,7 @@ export function StatePanel<T>({
 }
 
 const styles = StyleSheet.create({
-  panel: { alignItems: "center", paddingVertical: space.x8 },
+  panel: { alignItems: "center", paddingVertical: space.x8, borderRadius: radius.feature },
   title: { ...type.cardTitle, color: colors.navy950, textAlign: "center" },
   message: { ...type.body, color: colors.neutral600, textAlign: "center" },
   loading: {

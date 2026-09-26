@@ -1,6 +1,7 @@
 import React, { ReactNode, useMemo, useState } from "react";
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { Check, ChevronDown, CircleAlert, X } from "lucide-react-native";
+import { Check, CheckSquare, ChevronDown, CircleAlert, Square, X } from "lucide-react-native";
+import { StepIndicator } from "@/components/design";
 import { Button, Card, StatusChip } from "@/components/ui";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { isValidIsoDate, RiskOption } from "@/lib/riskSchema";
@@ -22,6 +23,28 @@ export function InfoRow({ label, value, strong }: { label: string; value: ReactN
 
 export function Rule() {
   return <View style={s.rule} />;
+}
+
+/** Purchase journey progress: 1 Cover — 2 Details — 3 Offers — 4 Review (design 12). */
+export type QuoteStep = 0 | 1 | 2 | 3;
+export function QuoteSteps({ current }: { current: QuoteStep }) {
+  const { t } = useTranslation();
+  return <StepIndicator steps={[t("qtStepCover"), t("qtStepDetails"), t("qtStepOffers"), t("qtStepReview")]} current={current} />;
+}
+
+/** Checkbox row for declarations and consent (design 53). `trailing` holds inline links. */
+export function ConsentRow({ checked, onPress, label, trailing, disabled }: { checked: boolean; onPress: () => void; label: string; trailing?: ReactNode; disabled?: boolean }) {
+  return (
+    <View style={s.consentRow}>
+      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked, disabled: !!disabled }} accessibilityLabel={label} hitSlop={8} disabled={disabled} onPress={onPress} style={s.checkbox}>
+        {checked ? <CheckSquare size={24} color={colors.blue600} /> : <Square size={24} color={colors.neutral400} />}
+      </Pressable>
+      <Text style={[s.consentText, s.flex]}>
+        {label}
+        {trailing}
+      </Text>
+    </View>
+  );
 }
 
 export function ErrorCard({ error, fallback, onRetry, retryLabel }: { error: unknown; fallback: string; onRetry?: () => void; retryLabel?: string }) {
@@ -219,4 +242,7 @@ const s = StyleSheet.create({
   dateRow: { flexDirection: "row", gap: space.x2 },
   flex: { flex: 1 },
   choice: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
+  consentRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
+  checkbox: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+  consentText: { ...type.body, color: colors.neutral700 },
 });

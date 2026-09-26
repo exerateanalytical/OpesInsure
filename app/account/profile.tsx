@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
+import { ShieldCheck, UserRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { Button, Card, Screen, TextField } from "@/components/ui";
+import { Banner, BrandHeader, SectionHeading } from "@/components/design";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { TimezonePicker } from "@/components/TimezonePicker";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { profileToValues } from "@/lib/inputForms";
 import { useTranslation } from "@/i18n";
-import { colors, type } from "@/theme/tokens";
+import { colors, radius, type } from "@/theme/tokens";
 
 /**
  * Personal information. Name and email: PATCH /mobile/account/profile.
@@ -69,8 +71,9 @@ export default function Profile() {
 
   return (
     <Screen>
-      <AppHeader title={t("personalInformation")} back />
-      <Card>
+      <BrandHeader title={t("personalInformation")} back right={null} />
+      <Card style={styles.card}>
+        <SectionHeading title={t("contactDetails")} icon={UserRound} />
         <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
         <TextField
           label={t("email")}
@@ -103,15 +106,14 @@ export default function Profile() {
 
       <TimezonePicker />
 
-      <Card>
-        <Button label={t("identityVerification")} variant="tertiary" onPress={() => router.push("/onboarding/kyc")} />
-      </Card>
+      <Banner icon={ShieldCheck} tint="blue" title={t("identityVerification")} onPress={() => router.push("/onboarding/kyc")} />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {notice ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text> : null}
     </Screen>
   );
 }
 const styles = StyleSheet.create({
+  card: { borderRadius: radius.feature },
   body: { ...type.body, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },

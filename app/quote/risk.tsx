@@ -1,23 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Car, Check, UserRound } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { ArrowRight, Car, Info, Plus, UserRound, Users } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading } from "@/components/design";
+import { Button, Card, Screen, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
-import { DateField, ErrorCard, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { DateField, ErrorCard, QuoteSteps, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { AssetsApi, CatalogueApi, RiskAsset } from "@/api/client";
 import { RiskAssetTypesApi } from "@/api/crm";
 import { assetTypesForLine } from "@/lib/crm";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
-import { unwrapPage } from "@/lib/purchase";
+import { humanize, unwrapPage } from "@/lib/purchase";
 import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
 import { useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { ContractField } from "@/components/forms/ContractField";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 
 
 function prefillFromAsset(asset: RiskAsset): Record<string, string> {
@@ -82,7 +83,7 @@ export default function Risk() {
   }, [line, loadSchema]);
 
   // Step 0 is "who / what is insured"; schema steps follow.
-  const { t, language } = useTranslation();
+  const { t, td, language } = useTranslation();
   const stepTitle = (s?: { title: string; titleFr?: string }) => (s ? (language === "fr" && s.titleFr ? s.titleFr : s.title) : undefined);
   const steps = useMemo(() => [t("qtInsured"), ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language, t]);
   const current = step > 0 ? schema?.steps[step - 1] : undefined;
@@ -125,10 +126,13 @@ export default function Risk() {
     if (errors[key]) setErrors((x) => ({ ...x, [key]: "" }));
   };
 
+  const productName = product ? td(`qtProd_${product}`, humanize(product)) : undefined;
+
   if (!line || (!schemaLoading && !schema))
     return (
       <Screen>
-        <AppHeader title={t("qtCoverDetails")} back />
+        <BrandHeader title={t("qtTitle")} subtitle={t("qtCoverDetails")} />
+        <QuoteSteps current={1} />
         <Card>
           <Text style={ps.title}>{t("qtChooseSupported")}</Text>
         </Card>
@@ -137,72 +141,88 @@ export default function Risk() {
     );
 
   return (
-    <Screen>
-      <AppHeader title={stepTitle(current) ?? t("qtWhoInsured")} subtitle={t(schema?.source === "server" ? "qtStep2Server" : "qtStep2Local")} back />
+    <Screen
+      footer={
+        schemaLoading ? null : (
+          <CtaBar>
+            <View style={st.nav}>
+              {step > 0 ? <View style={st.flex}><Button label={t("qtBack")} variant="secondary" disabled={busy} onPress={() => setStep(step - 1)} /></View> : null}
+              <View style={st.flex}>
+                <Button label={isLast ? t("qtGetLiveOffers") : t("next")} icon={ArrowRight} loading={busy} disabled={isLast && !customerId} onPress={() => void next()} />
+              </View>
+            </View>
+          </CtaBar>
+        )
+      }
+    >
+      <BrandHeader title={t("qtTitle")} subtitle={productName ?? t("qtDetailsSub")} />
+      <QuoteSteps current={1} />
       {schemaLoading ? (
         <LoadingState label={t("qtLoadingQuestions")} />
       ) : (
         <>
-          <Stepper steps={steps} current={step} />
+          <Card>
+            <Stepper steps={steps} current={step} />
+            <Text style={ps.meta}>{t(schema?.source === "server" ? "qtStep2Server" : "qtStep2Local")}</Text>
+          </Card>
           {step === 0 ? (
             <>
-              <Card>
-                <Text style={ps.title}>{t("qtWhoCover")}</Text>
-                <View style={st.choiceRow}>
-                  {(["self", "other"] as const).map((mode) => (
-                    <Pressable
-                      key={mode}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: insured.mode === mode }}
-                      style={[st.choice, insured.mode === mode && st.choiceOn]}
-                      onPress={() => setInsured(mode === "self" ? { mode: "self" } : { mode: "other", full_name: "", date_of_birth: "", relationship: "" })}
-                    >
-                      <UserRound size={18} color={colors.blue600} />
-                      <Text style={st.choiceText}>{mode === "self" ? t("qtMe") : t("qtSomeoneElse")}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                {insured.mode === "other" ? (
-                  <>
-                    <TextField label={t("fullName")} value={insured.full_name} onChangeText={(full_name) => setInsured({ ...insured, full_name })} />
-                    <MasterSelectField label={t("qtRelationshipToYou")} required domain="persons" list="relationship" otherAllowed={false} value={insured.relationship || undefined} onChange={(relationship) => setInsured({ ...insured, relationship })} />
-                    <DateField label={t("dateOfBirth")} value={insured.date_of_birth} onChange={(date_of_birth) => setInsured({ ...insured, date_of_birth })} maxYear={new Date().getFullYear()} />
-                  </>
-                ) : null}
-                {errors.insured ? <Text style={ps.error}>{errors.insured}</Text> : null}
-              </Card>
+              <SectionHeading title={t("qtWhoCover")} />
+              <View style={st.choices}>
+                <RadioCard
+                  selected={insured.mode === "self"}
+                  icon={UserRound}
+                  tint="blue"
+                  title={t("qtMe")}
+                  onPress={() => setInsured({ mode: "self" })}
+                />
+                <RadioCard
+                  selected={insured.mode === "other"}
+                  icon={Users}
+                  tint="gold"
+                  title={t("qtSomeoneElse")}
+                  onPress={() => setInsured({ mode: "other", full_name: "", date_of_birth: "", relationship: "" })}
+                >
+                  {insured.mode === "other" ? (
+                    <View style={st.otherFields}>
+                      <TextField label={t("fullName")} value={insured.full_name} onChangeText={(full_name) => setInsured({ ...insured, full_name })} />
+                      <MasterSelectField label={t("qtRelationshipToYou")} required domain="persons" list="relationship" otherAllowed={false} value={insured.relationship || undefined} onChange={(relationship) => setInsured({ ...insured, relationship })} />
+                      <DateField label={t("dateOfBirth")} value={insured.date_of_birth} onChange={(date_of_birth) => setInsured({ ...insured, date_of_birth })} maxYear={new Date().getFullYear()} />
+                    </View>
+                  ) : null}
+                </RadioCard>
+              </View>
+              {errors.insured ? <Text accessibilityRole="alert" style={ps.error}>{errors.insured}</Text> : null}
               {assets.length ? (
-                <Card>
-                  <Text style={ps.title}>{t(line === "MOTOR" ? "qtUseSavedVehicle" : line === "HOME" ? "qtUseSavedProperty" : "qtUseSavedObject")}</Text>
+                <>
+                  <SectionHeading title={t(line === "MOTOR" ? "qtUseSavedVehicle" : line === "HOME" ? "qtUseSavedProperty" : "qtUseSavedObject")} />
                   <Text style={ps.meta}>{t("qtAssetPrefilled")}</Text>
-                  {assets.map((a) => {
-                    const on = riskAssetId === a.id;
-                    return (
-                      <Pressable
-                        key={a.id}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: on }}
-                        style={[st.asset, on && st.choiceOn]}
-                        onPress={() => {
-                          setRiskAsset(on ? null : a.id);
-                          if (!on) setValues((v) => ({ ...v, ...prefillFromAsset(a) }));
-                        }}
-                      >
-                        <Car size={18} color={colors.blue600} />
-                        <View style={st.flex}>
-                          <Text style={st.choiceText}>{a.label || a.registration_number || t("qtSavedAsset")}</Text>
-                          {a.registration_number ? <Text style={ps.meta}>{a.registration_number}</Text> : null}
-                        </View>
-                        {on ? <Check size={18} color={colors.blue600} /> : null}
-                      </Pressable>
-                    );
-                  })}
-                  <Button label={t("qtAddNew")} variant="tertiary" onPress={() => router.push(assetType ? { pathname: "/assets/new", params: { type: assetType } } : "/assets/new")} />
-                </Card>
+                  <View style={st.choices}>
+                    {assets.map((a) => {
+                      const on = riskAssetId === a.id;
+                      return (
+                        <RadioCard
+                          key={a.id}
+                          selected={on}
+                          icon={Car}
+                          tint="gold"
+                          title={a.label || a.registration_number || t("qtSavedAsset")}
+                          subtitle={a.registration_number && a.registration_number !== a.label ? a.registration_number : t("qtSavedAssetSub")}
+                          onPress={() => {
+                            setRiskAsset(on ? null : a.id);
+                            if (!on) setValues((v) => ({ ...v, ...prefillFromAsset(a) }));
+                          }}
+                        />
+                      );
+                    })}
+                  </View>
+                  <Button label={t("qtAddNew")} icon={Plus} variant="secondary" onPress={() => router.push(assetType ? { pathname: "/assets/new", params: { type: assetType } } : "/assets/new")} />
+                </>
               ) : null}
             </>
           ) : current ? (
             <Card>
+              {stepTitle(current) ? <SectionHeading title={stepTitle(current) ?? ""} /> : null}
               {current.fields.map((f) => (
                 isFieldVisible(f, values) ? (
                   <ContractField
@@ -227,15 +247,9 @@ export default function Risk() {
               ))}
             </Card>
           ) : null}
-          {!customerId ? <Text style={ps.error}>{t("qtNoCustomerIdentity")}</Text> : null}
+          {!customerId ? <Text accessibilityRole="alert" style={ps.error}>{t("qtNoCustomerIdentity")}</Text> : null}
           {submitError || (storeError && isLast) ? <ErrorCard error={submitError ?? { message: storeError }} fallback={t("qtOffersNotCalculated")} onRetry={() => void next()} /> : null}
-          <Text style={ps.meta}>{t("qtServerValidates")}</Text>
-          <View style={st.nav}>
-            {step > 0 ? <View style={st.flex}><Button label={t("qtBack")} variant="secondary" disabled={busy} onPress={() => setStep(step - 1)} /></View> : null}
-            <View style={st.flex}>
-              <Button label={isLast ? t("qtGetLiveOffers") : t("next")} loading={busy} disabled={isLast && !customerId} onPress={() => void next()} />
-            </View>
-          </View>
+          <Banner icon={Info} tint="blue" body={t("qtServerValidates")} />
         </>
       )}
     </Screen>
@@ -262,11 +276,8 @@ function selectionFromValues(values: Record<string, string>): VehicleSelection |
 }
 
 const st = StyleSheet.create({
-  choiceRow: { flexDirection: "row", gap: space.x2 },
-  choice: { flex: 1, minHeight: 52, flexDirection: "row", gap: space.x2, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control },
-  choiceOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
-  choiceText: { ...type.label, color: colors.navy950 },
-  asset: { minHeight: 52, flexDirection: "row", gap: space.x3, alignItems: "center", paddingHorizontal: space.x3, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control },
+  choices: { gap: space.x3 },
+  otherFields: { gap: space.x3, marginTop: space.x3 },
   flex: { flex: 1 },
   nav: { flexDirection: "row", gap: space.x3 },
 });

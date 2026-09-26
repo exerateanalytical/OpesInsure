@@ -43,8 +43,8 @@ export function CompareTable({ rows, columns, money, footer }: { rows: CompareTa
 }
 
 export const compareTableStyles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "stretch", borderBottomWidth: 1, borderBottomColor: colors.neutral100 },
-  cell: { padding: space.x2, gap: 2, borderLeftWidth: 1, borderLeftColor: colors.neutral100 },
+  row: { flexDirection: "row", alignItems: "stretch", borderBottomWidth: 1, borderBottomColor: colors.neutral200 },
+  cell: { padding: space.x3, paddingHorizontal: space.x2, gap: 2, borderLeftWidth: 1, borderLeftColor: colors.neutral200, justifyContent: "center" },
 });
 
 const st = StyleSheet.create({
@@ -53,9 +53,9 @@ const st = StyleSheet.create({
   zebra: { backgroundColor: colors.neutral50 },
   head: { backgroundColor: colors.blue50 },
   section: { backgroundColor: colors.neutral100 },
-  label: { ...type.label, color: colors.navy950, padding: space.x2 },
+  label: { ...type.label, color: colors.navy950, padding: space.x3, paddingHorizontal: space.x2 },
   cell: compareTableStyles.cell,
-  value: { ...type.meta, color: colors.navy950 },
+  value: { ...type.body, fontSize: 15, lineHeight: 20, color: colors.navy950, fontVariant: ["tabular-nums"] },
   best: { backgroundColor: colors.successSoft },
   bestText: { color: colors.successText, fontFamily: "Inter_700Bold" },
 });

@@ -100,7 +100,8 @@ export default function GlobalSearch() {
           { value: "providers" as Scope, label: `${t("searchType_providers")}${asked ? ` (${matchedProviders.length})` : ""}` },
         ]
       : []),
-    ...SEARCH_TYPES.map((x) => ({ value: x as Scope, label: `${td(`searchType_${x}`, x)}${count(x)}` })),
+    // A customer searches only their own records: the CRM "customers" entity type is a staff scope.
+    ...SEARCH_TYPES.filter((x) => !customer || x !== "customers").map((x) => ({ value: x as Scope, label: `${td(`searchType_${x}`, x)}${count(x)}` })),
   ];
 
   const openProduct = (c: Category) => router.push({ pathname: "/quote/product/[id]", params: { id: c.id } });
@@ -193,7 +194,7 @@ export default function GlobalSearch() {
                   <ChevronRight size={18} color={colors.blue600} />
                 </View>
                 <Text style={s.providerName} numberOfLines={2}>{p.name}</Text>
-                <Text style={s.meta}>{p.products?.length ? t("productsCount", { count: p.products.length }) : p.city ?? ""}</Text>
+                <Text style={s.meta}>{p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : p.city ?? ""}</Text>
               </Pressable>
             ))}
           </ScrollView>

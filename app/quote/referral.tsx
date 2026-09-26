@@ -1,12 +1,13 @@
 import React, { useCallback, useState } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Clock3, RefreshCcw } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
-import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { Clock3, Hourglass, RefreshCcw } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, TintedIcon } from "@/components/design";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { useInsurance } from "@/store/insurance";
 import { proposalStatusInfo } from "@/lib/purchase";
-import { colors } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -44,21 +45,35 @@ export default function Referral() {
   }, [loadProposal, loadQuote, proposalId, quoteId]);
 
   return (
-    <Screen>
-      <AppHeader title={t("qtUnderwritingReview")} subtitle={t("qtPersonChecking")} back />
-      <Card feature>
-        <Clock3 size={32} color={colors.blue600} />
-        <StatusChip label={status.replaceAll("_", " ")} tone="warning" />
-        <Text style={ps.title}>{t("qtManualUnderwriting")}</Text>
-        <Text style={ps.body}>
-          {t("qtReferralBody")}
-        </Text>
-        <Text style={ps.meta}>{t("qtExpectedResponse")}</Text>
+    <Screen
+      footer={
+        <CtaBar>
+          {quoteId || proposalId ? <Button label={t("qtCheckStatus")} icon={RefreshCcw} loading={checking} onPress={() => void refresh()} /> : null}
+          <Button label={t("myApplications")} variant="secondary" onPress={() => router.replace("/proposals")} />
+          <Button label={t("qtReturnHome")} variant="tertiary" onPress={() => router.replace("/(customer)/(tabs)")} />
+        </CtaBar>
+      }
+    >
+      <BrandHeader title={t("qtUnderwritingReview")} subtitle={t("qtPersonChecking")} />
+      <QuoteSteps current={proposalId ? 3 : 2} />
+      <Card>
+        <View style={st.head}>
+          <TintedIcon icon={Clock3} tint="gold" size={56} />
+          <View style={st.flex}>
+            <StatusChip label={status.replaceAll("_", " ")} tone="warning" />
+            <Text style={[ps.title, st.title]}>{t("qtManualUnderwriting")}</Text>
+          </View>
+        </View>
+        <Text style={ps.body}>{t("qtReferralBody")}</Text>
       </Card>
+      <Banner icon={Hourglass} tint="blue" body={t("qtExpectedResponse")} />
       {error ? <ErrorCard error={error} fallback={t("qtStatusNotRefreshed")} /> : null}
-      {quoteId || proposalId ? <Button label={t("qtCheckStatus")} icon={RefreshCcw} loading={checking} onPress={() => void refresh()} /> : null}
-      <Button label={t("myApplications")} variant="secondary" onPress={() => router.replace("/proposals")} />
-      <Button label={t("qtReturnHome")} variant="tertiary" onPress={() => router.replace("/(customer)/(tabs)")} />
     </Screen>
   );
 }
+
+const st = StyleSheet.create({
+  flex: { flex: 1, gap: space.x2, alignItems: "flex-start" },
+  head: { flexDirection: "row", gap: space.x3, alignItems: "center" },
+  title: { marginTop: 0 },
+});

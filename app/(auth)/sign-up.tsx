@@ -285,7 +285,7 @@ export default function SignUp() {
             <View style={styles.divider} />
             <TrustStrip items={trustItems.map((i) => ({ ...i, label: t(i.label) }))} />
           </AuthCard>
-          <AuthFooterBranding />
+          <AuthFooterBranding tone="light" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -293,7 +293,7 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: authColors.navy950 },
+  safe: { flex: 1, backgroundColor: authColors.canvas },
   flex: { flex: 1 },
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
   recommended: { color: authColors.blue500, fontFamily: "Inter_700Bold" },

@@ -122,7 +122,24 @@ export function insuredObjectLabel(policy: RenewalPolicy | null | undefined, ris
     const s = [p.risk_asset.label, p.risk_asset.registration_number].filter((x): x is string => typeof x === "string" && !!x);
     if (s.length) return s.join(" · ");
   }
-  return riskVehicleLabel(riskFacts);
+  return riskFactsLabel(riskFacts ?? p.terms_snapshot?.risk_facts);
+}
+
+/** Insured-object line from any product line's risk facts: vehicle first, then property / trip / person facts. */
+export function riskFactsLabel(riskFacts: Record<string, unknown> | null | undefined): string | null {
+  const vehicle = riskVehicleLabel(riskFacts);
+  if (vehicle) return vehicle;
+  const r = riskFacts ?? {};
+  const str = (k: string) => (typeof r[k] === "string" && (r[k] as string).trim() ? (r[k] as string).trim() : null);
+  const words = (v: string | null) => (v ? v.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : null);
+  const place = (v: string | null) => (v ? v.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()) : null);
+  const out = [
+    words(str("property_type") ?? str("occupancy")),
+    place(str("city") ?? str("address_line") ?? str("location")),
+    place(str("destination_country") ?? str("destination")),
+    str("insured_name") ?? str("business_name") ?? str("company_name"),
+  ].filter(Boolean);
+  return out.length ? out.join(" · ") : null;
 }
 
 /** Vehicle line from quote risk facts (make/model/registration), null when they are not vehicle facts. */

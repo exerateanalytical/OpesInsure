@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Download, FileText, Trash2 } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen } from "@/components/ui";
+import { Download, FileText, Megaphone, ShieldCheck, Trash2 } from "lucide-react-native";
+import { Button, Card, Screen } from "@/components/ui";
+import { BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { Preferences } from "@/store/preferences";
 import { LegalLinks } from "@/components/LegalLinks";
 import { useTranslation } from "@/i18n";
-import { colors, space, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
  * Consent and privacy. Marketing consent is kept on the device (the
@@ -37,9 +38,10 @@ export default function Privacy() {
     });
   return (
     <Screen>
-      <AppHeader title={t("privacyConsent")} subtitle={t("privacySubtitle")} back />
-      <Card>
+      <BrandHeader title={t("privacyConsent")} subtitle={t("privacySubtitle")} back right={null} />
+      <Card style={styles.card}>
         <View style={styles.row}>
+          <TintedIcon icon={Megaphone} tint={marketing ? "blue" : "neutral"} size={44} />
           <View style={styles.flex}>
             <Text style={styles.title}>{t("marketingConsent")}</Text>
             <Text style={styles.body}>{t("marketingConsentBody")}</Text>
@@ -53,8 +55,8 @@ export default function Privacy() {
         </View>
         {saved ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{t("settingsSaved")}</Text> : null}
       </Card>
-      <Card>
-        <Text style={styles.title}>{t("privacyYourData")}</Text>
+      <Card style={styles.card}>
+        <SectionHeading title={t("privacyYourData")} icon={ShieldCheck} />
         <Text style={styles.body}>{t("privacyYourDataBody")}</Text>
         <Button label={t("privacyExport")} icon={Download} variant="secondary" onPress={() => request("export")} />
         <Button label={t("privacyDelete")} icon={Trash2} variant="danger" onPress={() => request("delete")} />
@@ -66,10 +68,11 @@ export default function Privacy() {
   );
 }
 const styles = StyleSheet.create({
+  card: { borderRadius: radius.feature },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   flex: { flex: 1 },
-  title: { ...type.cardTitle, color: colors.navy950 },
-  body: { ...type.body, color: colors.neutral600 },
+  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  body: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral600, marginTop: 2 },
   meta: { ...type.meta, color: colors.neutral600 },
   notice: { ...type.meta, color: colors.successText },
 });

@@ -270,14 +270,14 @@ export default function SignIn() {
               })}
             </View>
           </AuthCard>
-          <AuthFooterBranding />
+          <AuthFooterBranding tone="light" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: authColors.navy950 },
+  safe: { flex: 1, backgroundColor: authColors.canvas },
   flex: { flex: 1 },
   hint: { ...authType.label, fontSize: 12, color: authColors.slate500, marginTop: -authSpace[2] },
   trustRow: { flexDirection: "row", gap: authSpace[2], alignItems: "flex-start", paddingTop: authSpace[1] },
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     borderRadius: authRadius.md,
     borderWidth: 1,
     borderColor: authColors.ice200,
-    backgroundColor: authColors.ice50,
+    backgroundColor: authColors.white,
   },
   publicIcon: {
     width: 36,
@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: authColors.ice50,
   },
   publicLabel: { ...authType.label, fontSize: 13, lineHeight: 17, color: authColors.navy950, flex: 1 },
 });

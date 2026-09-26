@@ -8,7 +8,7 @@ import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseU
 import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
 import { NetworkTiles } from "@/components/policies/RenewalUi";
 import { useInsurance } from "@/store/insurance";
-import { humanize, isNotFound, isProviderNotConfigured, localized, paymentStatusInfo, providerName, purchaseStep } from "@/lib/purchase";
+import { isNotFound, isProviderNotConfigured, localized, paymentStatusInfo, providerName, purchaseStep, networkName } from "@/lib/purchase";
 import { carrierLogo, riskVehicleLabel } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -83,7 +83,7 @@ export default function Payment() {
 
   const waitingLong = now - startedAt > PATIENCE_MS && !step.done && !step.failed;
   const pInfo = paymentStatusInfo(payment?.status, f.language);
-  const provider = payment ? humanize(payment.provider) : null;
+  const provider = payment ? networkName(payment.provider) : null;
   const checkoutHref = { pathname: "/checkout", params: { proposalId: payment?.proposal_id ?? proposalId ?? "" } } as const;
 
   // Product hero: what is being paid for, from the proposal / offer already in the store (never recomputed).

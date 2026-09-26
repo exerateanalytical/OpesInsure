@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 import { openDocument } from "@/components/documents/openDocument";
 import { router } from "expo-router";
-import { Columns3, FileDown, Send, XCircle } from "lucide-react-native";
+import { Columns3, FileDown, FileText, Send, XCircle } from "lucide-react-native";
+import { Banner, DetailRow, SectionHeading } from "@/components/design";
 import { Button, Card, StatusChip, TextField } from "@/components/ui";
-import { ErrorCard, InfoRow, PickerField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, PickerField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { QuoteWorkflowApi, WorkflowQuote } from "@/api/workflow";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
-import { colors } from "@/theme/tokens";
 import { canDeclineQuote, hasQuoteDocument, QUOTE_DECLINE_REASONS, quoteOutcome, quoteStateKey, quoteTone, sentToInsurer } from "@/lib/quoteWorkflow";
 
 
@@ -22,10 +22,7 @@ export function SentToInsurerCard({ quoteId }: { quoteId: string }) {
   if (!sent) return null;
   return (
     <Card>
-      <View style={ps.row}>
-        <Send size={18} color={colors.blue600} />
-        <Text style={ps.title}>{t("qwSentTitle")}</Text>
-      </View>
+      <SectionHeading icon={Send} title={t("qwSentTitle")} />
       {sent.waiting ? <Text style={ps.body}>{t("qwSentWaiting", { count: sent.waiting })}</Text> : <Text style={ps.body}>{t("qwSentAllAnswered")}</Text>}
       {sent.nextDueAt ? <Text style={ps.meta}>{t("qwSentDue", { date: f.dateTime(sent.nextDueAt) })}</Text> : null}
       {sent.offered ? <Text style={ps.meta}>{t("qwSentOffered", { count: sent.offered })}</Text> : null}
@@ -83,21 +80,16 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
   return (
     <>
       <Card>
-        <View style={ps.between}>
-          <Text style={ps.title}>{quote.quote_number ?? t("pqTitle")}</Text>
-          <StatusChip label={td(quoteStateKey(quote), quote.lifecycle_state ?? quote.status)} tone={quoteTone(quote)} />
-        </View>
-        {quote.quote_number ? <InfoRow label={t("qwNumber")} value={quote.quote_number} /> : null}
-        {quote.lifecycle_state ? <InfoRow label={t("qwStage")} value={td(`quoteLifecycle_${String(quote.lifecycle_state).toUpperCase()}`, quote.lifecycle_state)} /> : null}
+        <SectionHeading icon={FileText} title={t("qwQuoteSummary")} right={<StatusChip label={td(quoteStateKey(quote), quote.lifecycle_state ?? quote.status)} tone={quoteTone(quote)} />} />
+        {quote.quote_number ? <DetailRow label={t("qwNumber")} value={quote.quote_number} strong /> : null}
+        {quote.lifecycle_state ? <DetailRow label={t("qwStage")} value={td(`quoteLifecycle_${String(quote.lifecycle_state).toUpperCase()}`, quote.lifecycle_state)} /> : null}
         {outcome === "DECLINED" ? (
-          <View style={{ gap: 8 }}>
-            <View style={ps.row}>
-              <XCircle size={18} color={colors.dangerText} />
-              <Text style={ps.title}>{t("qwDeclinedTitle")}</Text>
-            </View>
-            {quote.decline_reason_code ? <Text style={ps.meta}>{td(`qwDeclineReason_${quote.decline_reason_code}`, quote.decline_reason_code)}</Text> : null}
-            <Text style={ps.body}>{t("qwDeclinedBody")}</Text>
-          </View>
+          <Banner
+            icon={XCircle}
+            tint="red"
+            title={t("qwDeclinedTitle")}
+            body={[quote.decline_reason_code ? td(`qwDeclineReason_${quote.decline_reason_code}`, quote.decline_reason_code) : null, t("qwDeclinedBody")].filter(Boolean).join(" — ")}
+          />
         ) : null}
         {hasQuoteDocument(quote) ? (
           <Button label={t("qwDocumentOpen")} icon={FileDown} variant="secondary" loading={busy === "pdf"} disabled={!!busy} onPress={() => void pdf()} />
@@ -112,7 +104,7 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
       {canDeclineQuote(quote) ? (
         declining ? (
           <Card>
-            <Text style={ps.title}>{t("qwDeclineTitle")}</Text>
+            <SectionHeading icon={XCircle} title={t("qwDeclineTitle")} />
             <PickerField
               label={t("qwDeclineTitle")}
               value={reason}

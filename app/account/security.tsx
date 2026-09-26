@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Fingerprint, LogOut, Smartphone } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
-import { colors, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 import { BiometricLock } from "@/security/biometric";
 import { useRuntime } from "@/store/runtime";
 import { environmentConfig } from "@/config/environment";
@@ -72,11 +73,15 @@ export default function Security() {
     ]);
   return (
     <Screen>
-      <AppHeader title={t("securityDevices")} back />
-      <Card>
-        <Fingerprint size={30} color={colors.navy800} />
-        <StatusChip label={enabled ? t("biometricOn") : t("biometricOff")} tone={enabled ? "success" : "warning"} />
-        <Text style={styles.body}>{t("biometricBody")}</Text>
+      <BrandHeader title={t("securityDevices")} back right={null} />
+      <Card style={styles.card}>
+        <View style={styles.headRow}>
+          <TintedIcon icon={Fingerprint} tint={enabled ? "green" : "gold"} size={56} />
+          <View style={styles.flex}>
+            <StatusChip label={enabled ? t("biometricOn") : t("biometricOff")} tone={enabled ? "success" : "warning"} />
+            <Text style={styles.body}>{t("biometricBody")}</Text>
+          </View>
+        </View>
         <Text style={styles.meta}>
           {t("lockPolicyBody", {
             seconds: Math.round(policy.relockGraceMs / 1000),
@@ -85,9 +90,9 @@ export default function Security() {
         </Text>
         <Button label={enabled ? t("biometricDisable") : t("biometricEnable")} loading={busy === "bio"} onPress={() => void change()} />
       </Card>
-      <Button label={t("reviewDevices")} icon={Smartphone} variant="secondary" onPress={() => router.push("/account/devices")} />
-      <Card>
-        <Text style={styles.title}>{t("signOutAllTitle")}</Text>
+      <Banner icon={Smartphone} tint="blue" title={t("reviewDevices")} onPress={() => router.push("/account/devices")} />
+      <Card style={styles.card}>
+        <SectionHeading title={t("signOutAllTitle")} icon={LogOut} />
         <Text style={styles.body}>{t("signOutAllBody")}</Text>
         <Button label={t("signOutAll")} icon={LogOut} variant="danger" loading={busy === "all"} onPress={everywhere} />
       </Card>
@@ -96,7 +101,9 @@ export default function Security() {
   );
 }
 const styles = StyleSheet.create({
-  title: { ...type.cardTitle, color: colors.navy950 },
+  flex: { flex: 1, gap: space.x2 },
+  card: { borderRadius: radius.feature },
+  headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
   body: { ...type.body, color: colors.neutral600 },
   meta: { ...type.meta, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },

@@ -204,7 +204,7 @@ export default function Explore() {
             <View style={styles.flex}>
               <Text style={styles.label}>{p.name}</Text>
               <Text style={styles.meta}>
-                {[p.city, p.products?.length ? t("productsCount", { count: p.products.length }) : null]
+                {[p.city, p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : null]
                   .filter(Boolean)
                   .join(" · ")}
               </Text>

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Send } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { FileText, MessageSquareWarning, Send } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, DetailRow, SectionHeading } from "@/components/design";
+import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalLifecycleApi } from "@/api/workflow";
@@ -23,6 +24,7 @@ export default function ProposalInformationRequest() {
   const request = c?.information_request;
   const allowed = c ? canResubmitProposal(c.status, c.available_transitions, c.blocking) : false;
   const docsBlocking = (c?.blocking ?? []).some((b) => b.startsWith("DOCUMENT_"));
+  const open = !!c && String(c.status).toUpperCase() === "INFORMATION_REQUIRED";
 
   const resubmit = async () => {
     setBusy(true);
@@ -38,17 +40,25 @@ export default function ProposalInformationRequest() {
   };
 
   return (
-    <Screen>
-      <AppHeader title={t("prInfoTitle")} back />
+    <Screen
+      footer={
+        open ? (
+          <CtaBar>
+            <Button label={t("prInfoResubmit")} icon={Send} loading={busy} disabled={!allowed || busy} onPress={() => void resubmit()} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("prInfoTitle")} />
       {q.loading && !c ? <LoadingState label={t("prInfoLoading")} /> : null}
       {q.error && !c ? <ErrorCard error={q.error} fallback={t("prLoadFailed")} onRetry={() => void q.reload()} /> : null}
-      {c && String(c.status).toUpperCase() !== "INFORMATION_REQUIRED" ? (
+      {c && !open ? (
         <EmptyState title={t("prInfoNone")} message={td(`proposalMsg_${String(c.status).toUpperCase()}`, c.status)} action={t("prAll")} onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id } })} />
       ) : null}
-      {c && String(c.status).toUpperCase() === "INFORMATION_REQUIRED" ? (
+      {c && open ? (
         <>
-          <Card feature>
-            <Text style={ps.title}>{t("prInfoItems")}</Text>
+          <Card>
+            <SectionHeading icon={MessageSquareWarning} title={t("prInfoItems")} />
             {request?.message ? <Text style={ps.body}>{request.message}</Text> : null}
             {(request?.items ?? []).map((it, i) => (
               <Text key={it.code ?? i} style={ps.body}>• {it.description}</Text>
@@ -56,27 +66,25 @@ export default function ProposalInformationRequest() {
           </Card>
           {c.required_documents.length ? (
             <Card>
-              <Text style={ps.title}>{t("prInfoDocs")}</Text>
+              <SectionHeading icon={FileText} title={t("prInfoDocs")} />
               {c.required_documents.map((d) => {
                 const info = requiredDocumentInfo(d.status);
                 return (
-                  <View key={d.code} style={ps.between}>
-                    <Text style={[ps.body, { flex: 1 }]}>{d.label ?? (localized(d.name, language) || humanize(d.code))}</Text>
-                    <StatusChip label={td(info.key, d.status ?? "")} tone={info.tone} />
-                  </View>
+                  <DetailRow key={d.code} label={d.label ?? (localized(d.name, language) || humanize(d.code))} valueNode={<StatusChip label={td(info.key, d.status ?? "")} tone={info.tone} />} />
                 );
               })}
               {docsBlocking ? (
-                <>
-                  <Text style={ps.error}>{t("prInfoBlocked")}</Text>
+                <View style={{ gap: 8 }}>
+                  <Banner icon={FileText} tint="red" body={t("prInfoBlocked")} />
                   <Button label={t("prUpload")} variant="secondary" onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id } })} />
-                </>
+                </View>
               ) : null}
             </Card>
           ) : null}
-          <TextField label={t("prInfoResponse")} multiline maxLength={4000} value={response} onChangeText={setResponse} />
+          <Card>
+            <TextField label={t("prInfoResponse")} multiline maxLength={4000} value={response} onChangeText={setResponse} />
+          </Card>
           {error ? <ErrorCard error={error} fallback={t("prInfoFailed")} /> : null}
-          <Button label={t("prInfoResubmit")} icon={Send} loading={busy} disabled={!allowed || busy} onPress={() => void resubmit()} />
         </>
       ) : null}
     </Screen>

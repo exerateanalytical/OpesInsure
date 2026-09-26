@@ -14,10 +14,10 @@ import {
   ViewStyle,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, LucideIcon } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { LucideIcon } from "lucide-react-native";
 import { CONTENT_MAX_WIDTH, colors, radius, space, type } from "@/theme/tokens";
 import { formatXaf, useTranslation } from "@/i18n";
+import { BrandHeader } from "@/components/design";
 
 export function Screen({
   children,
@@ -73,6 +73,12 @@ export { CONTENT_MAX_WIDTH } from "@/theme/tokens";
 /** Android ripple for pressable surfaces; iOS/web fall back to the opacity press style. */
 export const ripple = (dark = false) => ({ color: dark ? "rgba(255,255,255,0.18)" : "rgba(15,21,53,0.10)", borderless: false });
 
+/**
+ * Page header. Since design v3 this renders the brand header (logo lockup,
+ * Africa network art, page title/subtitle) so every screen still using
+ * AppHeader picks the new look up without edits. `action` renders where the
+ * design puts the bell (top-right); pass nothing for a plain header.
+ */
 export function AppHeader({
   title,
   subtitle,
@@ -84,31 +90,7 @@ export function AppHeader({
   back?: boolean;
   action?: ReactNode;
 }) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  return (
-    <View style={styles.header}>
-      {back && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("back")}
-          hitSlop={8}
-          onPress={() => router.back()}
-          style={styles.iconButton}
-        >
-          <ChevronLeft size={22} color={colors.navy950} />
-        </Pressable>
-      )}
-      <View style={styles.headerCopy}>
-        <Text accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.8} style={styles.headerTitle}>{title}</Text>
-        {subtitle ? (
-          <Text style={styles.headerSubtitle}>{subtitle}</Text>
-        ) : null}
-        <HeritageAccent />
-      </View>
-      {action}
-    </View>
-  );
+  return <BrandHeader title={title} subtitle={subtitle} back={back} right={action ?? null} />;
 }
 
 /** Three woven segments (ochre, terracotta, indigo): the kente signature

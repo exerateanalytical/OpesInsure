@@ -8,9 +8,8 @@ import {
   TextInputProps,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Eye, EyeOff, LucideIcon } from "lucide-react-native";
-import { authColors, authGradients, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
+import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
 
 export function AuthTextField({
   icon: Icon,
@@ -65,12 +64,15 @@ export function AuthPrimaryButton({
   onPress,
   loading = false,
   disabled = false,
+  tone = "blue",
 }: {
   label: string;
   icon?: LucideIcon;
   onPress?: () => void;
   loading?: boolean;
   disabled?: boolean;
+  /** Solid blue600 by default; "gold" for the gold CTAs of the designs. */
+  tone?: "blue" | "gold";
 }) {
   return (
     <Pressable
@@ -79,23 +81,20 @@ export function AuthPrimaryButton({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
-      style={({ pressed }) => [styles.primaryWrap, (pressed || disabled) && styles.pressed]}
+      style={({ pressed }) => [
+        styles.primaryButton,
+        tone === "gold" && styles.primaryGold,
+        (pressed || disabled) && styles.pressed,
+      ]}
     >
-      <LinearGradient
-        colors={authGradients.primaryButton}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.primaryButton}
-      >
-        {loading ? (
-          <ActivityIndicator color={authColors.white} />
-        ) : (
-          <>
-            <Text style={styles.primaryLabel}>{label}</Text>
-            {Icon ? <Icon size={20} strokeWidth={authIcon.strokeWidth} color={authColors.white} /> : null}
-          </>
-        )}
-      </LinearGradient>
+      {loading ? (
+        <ActivityIndicator color={authColors.white} />
+      ) : (
+        <>
+          <Text style={styles.primaryLabel}>{label}</Text>
+          {Icon ? <Icon size={20} strokeWidth={authIcon.strokeWidth} color={authColors.white} /> : null}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -129,9 +128,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: authSpace[2],
     minHeight: 56,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: authColors.ice200,
-    backgroundColor: authColors.ice50,
+    backgroundColor: authColors.white,
     borderRadius: authRadius.lg,
     paddingHorizontal: authSpace[4],
   },
@@ -144,23 +143,26 @@ const styles = StyleSheet.create({
     paddingVertical: authSpace[3],
   },
   error: { ...authType.label, fontSize: 12, color: authColors.dangerText },
-  primaryWrap: { borderRadius: authRadius.button, overflow: "hidden" },
   primaryButton: {
     minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: authSpace[2],
+    borderRadius: authRadius.button,
+    backgroundColor: authColors.blue500,
   },
+  primaryGold: { backgroundColor: authColors.gold500 },
   primaryLabel: { ...authType.button, color: authColors.white },
   secondaryButton: {
     minHeight: 56,
     borderRadius: authRadius.button,
     borderWidth: 1.5,
-    borderColor: authColors.navy800,
+    borderColor: authColors.blue500,
+    backgroundColor: authColors.white,
     alignItems: "center",
     justifyContent: "center",
   },
-  secondaryLabel: { ...authType.button, color: authColors.navy800 },
+  secondaryLabel: { ...authType.button, color: authColors.blue500 },
   pressed: { opacity: 0.85 },
 });

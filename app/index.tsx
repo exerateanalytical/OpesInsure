@@ -12,9 +12,9 @@ import { colors, space, type } from "@/theme/tokens";
 const logo = require("../assets/icon.png");
 const map = require("../assets/auth/splash_map.png");
 const arcs = require("../assets/auth/splash_network_arcs.png");
-const wave = require("../assets/auth/splash_bottom_wave.png");
-const tribalLeft = require("../assets/auth/splash_tribal_left.png");
-const tribalRight = require("../assets/auth/splash_tribal_right.png");
+const wave = require("../assets/brand/footer_wave.png");
+const edgeLeft = require("../assets/brand/edge_left.png");
+const edgeRight = require("../assets/brand/edge_right.png");
 
 /** White heritage splash: logo over the dotted-Africa network and gold arcs.
  * Matches the native splash (white background, same logo) so the hand-off
@@ -50,8 +50,8 @@ export default function Splash() {
 
   return (
     <SafeAreaView style={styles.page} edges={["top", "bottom"]}>
-      <Image source={tribalLeft} style={styles.tribalLeft} resizeMode="contain" />
-      <Image source={tribalRight} style={styles.tribalRight} resizeMode="contain" />
+      <Image source={edgeLeft} style={[styles.edge, styles.edgeLeft]} resizeMode="cover" />
+      <Image source={edgeRight} style={[styles.edge, styles.edgeRight]} resizeMode="cover" />
       <View style={styles.center}>
         <View style={[styles.art, { width: art, height: art }]}>
           <Image source={map} style={styles.fill} resizeMode="contain" />
@@ -102,13 +102,14 @@ const styles = StyleSheet.create({
   logo: { width: 112, height: 112, borderRadius: 26 },
   wordmark: { ...type.pageTitle, color: colors.navy950 },
   accent: { color: colors.blue600 },
-  tagline: { ...type.caption, color: colors.navy800, letterSpacing: 2, textAlign: "center" },
+  tagline: { ...type.eyebrow, color: colors.navy900, letterSpacing: 2.4, textAlign: "center" },
   offline: { alignSelf: "stretch", gap: space.x2, marginTop: space.x4, alignItems: "stretch" },
   offlineTitle: { ...type.cardTitle, color: colors.navy950, textAlign: "center" },
   offlineBody: { ...type.body, color: colors.neutral600, textAlign: "center" },
-  tribalLeft: { position: "absolute", left: -30, top: 40, width: 90, height: 340, opacity: 0.35 },
-  tribalRight: { position: "absolute", right: -30, bottom: 120, width: 90, height: 340, opacity: 0.35 },
+  edge: { position: "absolute", top: 0, height: "100%", width: 32, opacity: 0.32 },
+  edgeLeft: { left: 0 },
+  edgeRight: { right: 0 },
   bottom: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  goldRule: { height: 3, backgroundColor: colors.gold500, marginHorizontal: space.x16, borderRadius: 2, marginBottom: space.x2 },
-  wave: { width: "100%", height: 56 },
+  goldRule: { height: 3, width: 96, alignSelf: "center", backgroundColor: colors.gold500, borderRadius: 2, marginBottom: space.x4 },
+  wave: { width: "100%", height: 140 },
 });

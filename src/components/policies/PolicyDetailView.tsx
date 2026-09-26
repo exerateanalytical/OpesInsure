@@ -13,7 +13,8 @@ import { Claim, ClaimsApi, Payment, PaymentsApi, PolicyApi, SupportContacts, Sup
 import { Institution, InstitutionsApi } from "@/api/extra";
 import { RegulatoryApi } from "@/api/regulatory";
 import { policyHeaderLabels, RegulatoryTerm } from "@/lib/regulatoryTerms";
-import { humanize, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo, unwrapPage } from "@/lib/purchase";
+import { humanize, networkName, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo, unwrapPage } from "@/lib/purchase";
+import { insuredObjectLabel } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
 import { PolicyDocumentsSection } from "@/components/policies/PolicyDocumentsSection";
 import { BeneficiariesSection } from "@/components/policies/BeneficiariesSection";
@@ -21,20 +22,15 @@ import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
 function insuredLabel(p: WalletPolicy): string | null {
-  if (typeof p.insured_object === "string") return p.insured_object;
-  if (p.insured_object && typeof p.insured_object === "object") {
-    const o = p.insured_object as Record<string, unknown>;
-    return [o.label, o.registration_number, o.make, o.model].filter((x) => typeof x === "string" && x).join(" · ") || null;
-  }
-  if (p.risk_asset) return [p.risk_asset.label, p.risk_asset.registration_number].filter(Boolean).join(" · ") || null;
-  return null;
+  return insuredObjectLabel(p, p.terms_snapshot?.risk_facts ?? p.proposal?.offer?.quote?.risk_facts);
 }
 
 /** Product class / plan name from the terms snapshot when the offer carries one. */
 function coverageTypeLabel(p: WalletPolicy): string | null {
   const s = (p.terms_snapshot ?? {}) as Record<string, unknown>;
   const snap = (s.coverage_snapshot ?? {}) as Record<string, unknown>;
-  for (const v of [snap.cover_type, snap.plan_name, snap.product_class, s.product_class, s.plan_name]) {
+  const line = p.proposal?.offer?.product?.line_code;
+  for (const v of [snap.cover_type, snap.plan_name, snap.product_class, s.product_class, s.plan_name, s.line_code, line]) {
     if (typeof v === "string" && v) return humanize(v);
   }
   return null;
@@ -168,7 +164,7 @@ export function PolicyDetailView({ id }: { id: string }) {
   const info = policyStatusInfo(p.status, f.language);
   const provider = p.carrier_name ?? p.carrier?.party?.display_name ?? t("licensedCarrier");
   const premium = p.premium_minor ?? p.terms_snapshot?.total_minor ?? null;
-  const cover = normalizeCoverage(p.terms_snapshot?.coverage_snapshot, f.language);
+  const cover = normalizeCoverage(p.terms_snapshot?.coverage_snapshot ?? p.proposal?.offer?.coverage_snapshot, f.language);
   const insured = insuredLabel(p);
   const canRenew = ["active", "expired"].includes(info.bucket) && p.status !== "CANCELLATION_PENDING";
   const delivery = p.delivery ?? null;
@@ -360,7 +356,7 @@ export function PolicyDetailView({ id }: { id: string }) {
             {payments === null ? <Text style={ps.meta}>{t("paymentsLoading")}</Text> : null}
             {payments?.length === 0 ? <Text style={ps.meta}>{t("pdNoPayments")}</Text> : null}
             {payments?.map((pay) => (
-              <FlowRow key={pay.id} icon={CreditCard} title={f.xaf(pay.amount_minor)} subtitle={pay.created_at ? f.date(pay.created_at) : humanize(pay.provider)} status={paymentStatusInfo(pay.status, f.language).label} onPress={() => router.push({ pathname: "/payments/[id]", params: { id: pay.id } })} />
+              <FlowRow key={pay.id} icon={CreditCard} title={f.xaf(pay.amount_minor)} subtitle={pay.created_at ? f.date(pay.created_at) : networkName(pay.provider)} status={paymentStatusInfo(pay.status, f.language).label} onPress={() => router.push({ pathname: "/payments/[id]", params: { id: pay.id } })} />
             ))}
           </Card>
         </View>

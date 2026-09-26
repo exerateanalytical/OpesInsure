@@ -44,7 +44,9 @@ export function AccountTypeSelector({
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    backgroundColor: authColors.ice50,
+    backgroundColor: authColors.white,
+    borderWidth: 1,
+    borderColor: authColors.ice200,
     borderRadius: authRadius.pill,
     padding: 4,
     gap: 4,
@@ -58,6 +60,6 @@ const styles = StyleSheet.create({
     borderRadius: authRadius.pill,
   },
   pillSelected: { backgroundColor: authColors.blue500 },
-  label: { ...authType.label, fontSize: 12, color: authColors.navy800 },
+  label: { ...authType.label, fontSize: 12, color: authColors.navy900 },
   labelSelected: { color: authColors.white },
 });

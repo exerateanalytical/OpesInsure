@@ -1,34 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  Briefcase,
-  Car,
-  ChevronRight,
-  HardHat,
-  HeartPulse,
-  Home,
-  Info,
-  Plane,
-  ShieldPlus,
-} from "lucide-react-native";
-import { AppHeader, Button, Card, Screen } from "@/components/ui";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { ArrowRight, Info } from "lucide-react-native";
+import { BrandHeader, CtaBar, RadioCard, Tint } from "@/components/design";
+import { CATEGORIES } from "@/components/customer/categories";
+import { CATEGORY_TINT } from "@/components/customer/CategoryTiles";
+import { QuoteSteps } from "@/components/purchase/PurchaseUi";
+import { Button, ripple, Screen } from "@/components/ui";
+import { colors, radius } from "@/theme/tokens";
 import { useInsurance } from "@/store/insurance";
 import { useTranslation } from "@/i18n";
 
-const products = [
-  ["motor", Car],
-  ["health", HeartPulse],
-  ["travel", Plane],
-  ["home", Home],
-  ["life", ShieldPlus],
-  ["business", Briefcase],
-  ["accident", HardHat],
-] as const;
-type ProductId = (typeof products)[number][0];
+/** Purchasable lines, in display order; icons come from the shared category list. */
+const PRODUCT_IDS = ["motor", "health", "travel", "home", "life", "business", "accident"] as const;
+type ProductId = (typeof PRODUCT_IDS)[number];
+const products = PRODUCT_IDS.map((id) => [id, CATEGORIES.find((c) => c.id === id)!.icon] as const);
 const isProduct = (v: unknown): v is ProductId =>
-  typeof v === "string" && products.some(([id]) => id === v);
+  typeof v === "string" && PRODUCT_IDS.some((id) => id === v);
+
+/** RadioCard tint per line, derived from the shared category tints (motor gold, health red, travel blue, home green). */
+const tintOf = (id: ProductId): Tint => {
+  const c = CATEGORY_TINT[id];
+  if (c.fg === colors.danger) return "red";
+  if (c.bg === colors.gold50) return "gold";
+  if (c.bg === colors.successSoft) return "green";
+  return "blue";
+};
 
 export default function Product() {
   const { t } = useTranslation();
@@ -51,74 +48,56 @@ export default function Product() {
   };
   const current = products.find(([id]) => id === selected);
   return (
-    <Screen>
-      <AppHeader
-        title={t("qtChooseCover")}
-        subtitle={t("qtStep1")}
-        back
-      />
-      {current ? (
-        <Button
-          label={t("qtContinueWith", { product: t(`qtProd_${current[0]}`).toLowerCase() })}
-          onPress={() => proceed(current[0])}
-        />
-      ) : null}
-      {products.map(([id, Icon]) => {
-        const on = id === selected;
-        const title = t(`qtProd_${id}`);
-        const subtitle = t(`qtProdSub_${id}`);
-        return (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={`${title}. ${subtitle}`}
-            key={id}
-            onPress={() => proceed(id)}
-          >
-            <Card style={on && styles.selected}>
-              <View style={styles.row}>
-                <View style={styles.icon}>
-                  <Icon size={30} color={colors.navy800} />
-                </View>
-                <View style={styles.copy}>
-                  <Text style={styles.title}>{title}</Text>
-                  <Text style={styles.subtitle}>{subtitle}</Text>
-                </View>
+    <Screen
+      footer={
+        current ? (
+          <CtaBar>
+            <Button
+              label={t("qtContinueWith", { product: t(`qtProd_${current[0]}`).toLowerCase() })}
+              icon={ArrowRight}
+              onPress={() => proceed(current[0])}
+            />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("qtTitle")} subtitle={t("qtChooseCoverSub")} />
+      <QuoteSteps current={0} />
+      <View style={styles.list}>
+        {products.map(([id, Icon]) => {
+          const on = id === selected;
+          const title = t(`qtProd_${id}`);
+          const subtitle = t(`qtProdSub_${id}`);
+          return (
+            <RadioCard
+              key={id}
+              selected={on}
+              onPress={() => proceed(id)}
+              title={title}
+              subtitle={subtitle}
+              icon={Icon}
+              tint={tintOf(id)}
+              right={
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${t("searchViewDetails")}: ${title}`}
                   hitSlop={8}
+                  android_ripple={ripple()}
                   onPress={() => router.push({ pathname: "/quote/product/[id]", params: { id } })}
                   style={styles.details}
                 >
                   <Info size={20} color={colors.blue600} />
                 </Pressable>
-                <ChevronRight size={20} color={colors.neutral500} />
-              </View>
-            </Card>
-          </Pressable>
-        );
-      })}
+              }
+            />
+          );
+        })}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.control,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  copy: { flex: 1 },
-  details: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
-  title: { ...type.label, color: colors.navy950 },
-  subtitle: { ...type.meta, color: colors.neutral600 },
-  selected: {
-    borderColor: colors.blue600,
-    borderWidth: 2,
-    backgroundColor: colors.blue50,
-  },
+  list: { gap: 12 },
+  details: { width: 36, height: 36, borderRadius: radius.control, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center", overflow: "hidden" },
 });

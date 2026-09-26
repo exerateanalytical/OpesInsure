@@ -695,6 +695,10 @@ export type Proposal = {
     coverage_snapshot?: Record<string, unknown>;
     coverage_starts_at?: string;
     coverage_ends_at?: string;
+    /** Issued-policy snapshots also carry the product line and the rated risk facts. */
+    product?: string;
+    line_code?: string;
+    risk_facts?: Record<string, unknown> | null;
   };
   disclosure_schema?: { questions?: unknown[] };
   quote_offer_id?: string;
@@ -765,6 +769,8 @@ export type Policy = {
   previous_policy_id?: string | null;
   terms_snapshot?: Proposal["terms_snapshot"] | null;
   carrier?: { id?: string; party?: { display_name?: string } } | null;
+  /** Wallet detail embeds the accepted proposal with its offer (coverage_snapshot, product line). */
+  proposal?: { offer?: (QuoteOffer & { quote?: Quote }) | null } | null;
 };
 /** download_url is absent until a signed PDF exists - never open blindly. */
 export type PolicyCertificate = {

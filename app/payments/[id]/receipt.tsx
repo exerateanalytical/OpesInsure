@@ -9,7 +9,7 @@ import { ErrorCard, InfoRow, Rule, purchaseStyles as ps } from "@/components/pur
 import { PaymentsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
-import { humanize, receiptView } from "@/lib/purchase";
+import { humanize, networkName, receiptView } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 
 export default function Receipt() {
@@ -43,7 +43,7 @@ export default function Receipt() {
             <Rule />
             <InfoRow label={t("rcNumber")} value={r.number} />
             <InfoRow label={t("rcIssued")} value={f.dateTime(r.issuedAt)} />
-            {r.provider ? <InfoRow label={t("pmNetwork")} value={humanize(r.provider)} /> : null}
+            {r.provider ? <InfoRow label={t("pmNetwork")} value={networkName(r.provider)} /> : null}
             {r.payer ? <InfoRow label={t("rcPaidFrom")} value={r.payer} /> : null}
             <Text style={ps.meta}>{t("rcNotCover")}</Text>
           </Card>

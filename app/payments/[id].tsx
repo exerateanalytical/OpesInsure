@@ -14,7 +14,7 @@ import { Institution, InstitutionsApi } from "@/api/extra";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useSession } from "@/store/session";
-import { humanize, isProviderNotConfigured, paymentStatusInfo } from "@/lib/purchase";
+import { networkName, isProviderNotConfigured, paymentStatusInfo } from "@/lib/purchase";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -140,7 +140,7 @@ export default function PaymentDetail() {
               {fee !== null ? (
                 <DetailRow icon={Coins} tint="blue" label={t("pmFee")} valueNode={fee ? <Text style={st.value}>{f.xaf(fee)}</Text> : <StatusChip label={t("pmNoFee")} tone="success" />} />
               ) : null}
-              <DetailRow icon={CreditCard} tint="blue" label={t("pmMethod")} value={`${humanize(p.provider)}${p.payer_phone_e164 ? ` · ${p.payer_phone_e164}` : ""}`} />
+              <DetailRow icon={CreditCard} tint="blue" label={t("pmMethod")} value={`${networkName(p.provider)}${p.payer_phone_e164 ? ` · ${p.payer_phone_e164}` : ""}`} />
               {p.provider_reference && p.provider_reference !== reference ? <DetailRow icon={FileText} tint="blue" label={t("pmOperatorRef")} value={p.provider_reference} /> : null}
               {succeeded && p.updated_at ? <DetailRow icon={CircleCheck} tint="blue" label={t("pmConfirmed")} value={f.dateTime(p.updated_at)} /> : null}
               <DetailRow icon={CircleCheck} tint="blue" label={t("pmStatus")} valueNode={<StatusChip label={info.label} tone={info.tone} />} />

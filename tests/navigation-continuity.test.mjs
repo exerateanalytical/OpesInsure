@@ -199,8 +199,15 @@ test("vector heritage pattern replaces stretched raster art on auth screens", ()
     assert.doesNotMatch(src, /tribal|bottom_wave|splash_bottom_wave|africa_network/, `${f} no raster decoration`);
     assert.match(src, /HeritagePattern|KenteBand|NdopSurface/);
   }
-  assert.match(read("src/components/ui.tsx"), /<HeritageAccent \/>/);
-  assert.match(read("src/components/auth/AuthHero.tsx"), /setStatusBarStyle\("light"\)/);
+  // Design v3: AppHeader delegates to the brand header; HeritageAccent stays exported for screens that use it.
+  assert.match(read("src/components/ui.tsx"), /<BrandHeader title=\{title\}/);
+  assert.match(read("src/components/ui.tsx"), /export function HeritageAccent/);
+  // Design system v3: the auth hero sits on the light canvas, so dark status
+  // bar icons are the default; light icons remain for the `dark` variant.
+  const hero = read("src/components/auth/AuthHero.tsx");
+  assert.match(hero, /setStatusBarStyle\("light"\)/);
+  assert.match(hero, /if \(dark\) \{\s*setStatusBarStyle\("light"\)/);
+  assert.match(hero, /setStatusBarStyle\("dark"\)/);
 });
 
 test("OTA-safe: no new dependencies, no native config changes in this fix", () => {

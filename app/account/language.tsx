@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
+import { Languages } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
-import { AppHeader, Button, Card, Screen } from "@/components/ui";
+import { Button, Screen } from "@/components/ui";
+import { BrandHeader, RadioCard } from "@/components/design";
 import { useSession } from "@/store/session";
-import { colors, type } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 export default function Language() {
   const { t } = useTranslation();
@@ -24,24 +26,17 @@ export default function Language() {
   };
   return (
     <Screen>
-      <AppHeader title={t("language")} back />
-      {(
-        [
-          ["en", "English"],
-          ["fr", "Français"],
-        ] as const
-      ).map(([code, label]) => (
-        <Pressable
-          accessibilityRole="radio"
-          accessibilityState={{ selected: value === code }}
-          key={code}
-          onPress={() => setValue(code)}
-        >
-          <Card style={value === code && styles.selected}>
-            <Text style={styles.label}>{label}</Text>
-          </Card>
-        </Pressable>
-      ))}
+      <BrandHeader title={t("language")} back right={null} />
+      <View style={styles.options} accessibilityRole="radiogroup">
+        {(
+          [
+            ["en", "English"],
+            ["fr", "Français"],
+          ] as const
+        ).map(([code, label]) => (
+          <RadioCard key={code} selected={value === code} onPress={() => setValue(code)} icon={Languages} tint={value === code ? "blue" : "neutral"} title={label} />
+        ))}
+      </View>
       <Button
         label={t("saveLanguage")}
         loading={busy}
@@ -51,6 +46,5 @@ export default function Language() {
   );
 }
 const styles = StyleSheet.create({
-  selected: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
-  label: { ...type.label, color: colors.navy950 },
+  options: { gap: space.x3 },
 });

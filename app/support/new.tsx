@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Link2 } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { StyleSheet, Text, View } from "react-native";
+import { AlertTriangle, CreditCard, Eye, FileText, Flag, LifeBuoy, Link2, LucideIcon, Paperclip, ShieldAlert, Truck } from "lucide-react-native";
+import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, type Tint } from "@/components/design";
 import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -17,6 +18,16 @@ const CATEGORIES = [
   "REPORT_FRAUD",
   "PRIVACY_REQUEST",
 ] as const;
+const CATEGORY_ICON: Record<(typeof CATEGORIES)[number], [LucideIcon, Tint]> = {
+  GENERAL_SUPPORT: [LifeBuoy, "blue"],
+  PAYMENT: [CreditCard, "gold"],
+  POLICY_DOCUMENT: [FileText, "blue"],
+  CLAIM: [ShieldAlert, "gold"],
+  DELIVERY: [Truck, "blue"],
+  FORMAL_COMPLAINT: [Flag, "red"],
+  REPORT_FRAUD: [AlertTriangle, "red"],
+  PRIVACY_REQUEST: [Eye, "neutral"],
+};
 
 /**
  * New support case. Context params link the case to a claim / payment /
@@ -74,32 +85,34 @@ export default function NewSupport() {
   };
 
   return (
-    <Screen>
-      <AppHeader title={t("supportNewTitle")} subtitle={t("supportNeverShare")} back />
-      {linked ? (
-        <Card>
-          <View style={s.row}>
-            <Link2 size={18} color={colors.blue600} />
-            <Text style={s.body}>{linked}</Text>
-          </View>
-        </Card>
-      ) : null}
-      <Card>
-        <Text style={s.label}>{t("supportCategory")}</Text>
+    <Screen
+      footer={
+        <CtaBar>
+          {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
+          <Button
+            label={category === "FORMAL_COMPLAINT" ? t("supportSubmitComplaint") : t("supportCreate")}
+            loading={busy}
+            disabled={subject.trim().length < 4 || description.trim().length < 15}
+            onPress={() => void submit()}
+          />
+        </CtaBar>
+      }
+    >
+      <BrandHeader title={t("supportNewTitle")} subtitle={t("supportNeverShare")} back right="help" />
+      {linked ? <Banner icon={Link2} tint="blue" body={linked} /> : null}
+      <Card style={s.card}>
+        <SectionHeading title={t("supportCategory")} />
         <View style={s.wrap} accessibilityRole="radiogroup">
-          {CATEGORIES.map((x) => (
-            <Pressable
-              key={x}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: category === x }}
-              style={[s.option, category === x && s.selected]}
-              onPress={() => setCategory(x)}
-            >
-              <Text style={s.optionText}>{td(`supportCategory_${x}`, x)}</Text>
-            </Pressable>
-          ))}
+          {CATEGORIES.map((x) => {
+            const [Icon, tint] = CATEGORY_ICON[x];
+            return (
+              <RadioCard key={x} selected={category === x} onPress={() => setCategory(x)} icon={Icon} tint={tint} title={td(`supportCategory_${x}`, x)} style={s.option} />
+            );
+          })}
         </View>
         {category === "PRIVACY_REQUEST" ? <StatusChip label={t("privacyRequestNote")} tone="info" /> : null}
+      </Card>
+      <Card style={s.card}>
         <TextField label={t("supportSubject")} value={subject} onChangeText={setSubject} hint={t("minChars", { count: 4 })} />
         <TextField
           label={t("supportDescribe")}
@@ -109,32 +122,15 @@ export default function NewSupport() {
           style={s.area}
           hint={t("minChars", { count: 15 })}
         />
-        {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-        <Button
-          label={category === "FORMAL_COMPLAINT" ? t("supportSubmitComplaint") : t("supportCreate")}
-          loading={busy}
-          disabled={subject.trim().length < 4 || description.trim().length < 15}
-          onPress={() => void submit()}
-        />
+        <Banner icon={Paperclip} tint="neutral" title={t("supportAttach")} body={t("supportAttachAfterBody")} />
       </Card>
     </Screen>
   );
 }
 const s = StyleSheet.create({
-  label: { ...type.label, color: colors.navy950 },
-  body: { ...type.body, color: colors.neutral700, flex: 1 },
-  row: { flexDirection: "row", gap: space.x2, alignItems: "center" },
+  card: { borderRadius: radius.feature },
   wrap: { gap: space.x2 },
-  option: {
-    minHeight: 44,
-    padding: space.x3,
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    borderRadius: radius.control,
-    justifyContent: "center",
-  },
-  selected: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
-  optionText: { ...type.body, color: colors.navy950 },
+  option: { padding: space.x3 },
   area: { minHeight: 120, textAlignVertical: "top", paddingTop: 12 },
   error: { ...type.meta, color: colors.dangerText },
 });

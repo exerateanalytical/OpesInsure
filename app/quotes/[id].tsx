@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Alert, Text } from "react-native";
 import { Href, router, useLocalSearchParams } from "expo-router";
-import { RefreshCcw } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { ArrowRight, CalendarDays, Layers, RefreshCcw, ShieldCheck, Trash2, UserRoundSearch } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, HeroCard } from "@/components/design";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
-import { ErrorCard, InfoRow, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { QuoteResult, QuotesApi } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { useLoad } from "@/hooks/useLoad";
@@ -72,65 +73,72 @@ export default function QuoteDetail() {
       await rerate(id);
       router.push("/quote/offers");
     });
+  const remove = () =>
+    Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("qtRemove"),
+        style: "destructive",
+        onPress: async () => {
+          setBusy("discard");
+          try {
+            await QuotesApi.discard(id);
+            router.back();
+          } catch (e) {
+            setActionError(e);
+          } finally {
+            setBusy(null);
+          }
+        },
+      },
+    ]);
+
+  const primary = data
+    ? declined
+      ? <Button label={t("qwNewQuote")} icon={RefreshCcw} onPress={() => router.push("/quote/product")} />
+      : expired
+        ? <Button label={t("qwRerate")} icon={RefreshCcw} loading={busy === "rerate"} disabled={!!busy} onPress={() => void reRate()} />
+        : canResume && !referred
+          ? <Button label={t("qwResume")} icon={ArrowRight} loading={busy === "resume"} disabled={!!busy} onPress={() => void resume()} />
+          : null
+    : null;
 
   return (
-    <Screen>
-      <AppHeader title={name || t("pqTitle")} back />
+    <Screen
+      footer={
+        data ? (
+          <CtaBar>
+            {primary}
+            <Button label={t("qwRemove")} icon={Trash2} variant="danger" disabled={!!busy} onPress={remove} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={name || t("pqTitle")} subtitle={quote?.quote_number ?? summary?.vehicle_label ?? undefined} />
       {loading && !data ? <LoadingState label={t("qwLoading")} /> : null}
       {error && !data ? <ErrorCard error={error} fallback={t("qwLoadFailed")} onRetry={() => void reload()} /> : null}
       {data ? (
         <>
-          <Card feature>
-            <StatusChip label={td(`quoteStatus_${outcome ?? status}`, outcome ?? status)} tone={declined || expired ? "danger" : referred ? "warning" : canResume ? "success" : "neutral"} />
-            {summary?.vehicle_label ? <Text style={ps.body}>{summary.vehicle_label}</Text> : null}
-            {lowest !== null ? <Text style={ps.title}>{t("qwFrom", { amount: f.xaf(lowest) })}</Text> : null}
-            <InfoRow label={t("qwOffers")} value={String(summary?.offer_count ?? offers.length)} />
-            <InfoRow label={expired ? t("qwExpiredOn") : t("qwValidUntil")} value={f.dateTime(quote?.expires_at ?? summary?.expires_at)} />
-          </Card>
+          <HeroCard
+            icon={ShieldCheck}
+            title={name || t("pqTitle")}
+            lines={[summary?.vehicle_label ?? null, lowest !== null ? t("qwFrom", { amount: f.xaf(lowest) }) : null]}
+            chip={<StatusChip label={td(`quoteStatus_${outcome ?? status}`, outcome ?? status)} tone={declined || expired ? "danger" : referred ? "warning" : canResume ? "success" : "neutral"} />}
+            meta={[
+              { icon: Layers, label: t("qwOffers"), value: String(summary?.offer_count ?? offers.length) },
+              { icon: CalendarDays, label: expired ? t("qwExpiredOn") : t("qwValidUntil"), value: f.dateTime(quote?.expires_at ?? summary?.expires_at), tone: expired ? "danger" : undefined },
+            ]}
+          />
           <QuoteWorkflowPanel quoteId={id} offerCount={summary?.offer_count ?? offers.length} onDeclined={() => setDeclinedNow(true)} />
           {referred && !declined ? (
-            <Card>
-              <Text style={ps.title}>{t("qwManualTitle")}</Text>
-              <Text style={ps.body}>{t("qwManualBody")}</Text>
-              <Button label={t("qwManualStatus")} variant="secondary" onPress={() => router.push({ pathname: "/quote/referral", params: { quoteId: id } })} />
-            </Card>
+            <Banner icon={UserRoundSearch} tint="gold" title={t("qwManualTitle")} body={t("qwManualBody")} onPress={() => router.push({ pathname: "/quote/referral", params: { quoteId: id } })} />
           ) : null}
           {actionError ? <ErrorCard error={actionError} fallback={t("qwActionFailed")} /> : null}
-          {declined ? (
-            <Button label={t("qwNewQuote")} icon={RefreshCcw} variant="secondary" onPress={() => router.push("/quote/product")} />
-          ) : expired ? (
+          {expired ? (
             <Card>
               <Text style={ps.body}>{t("qwExpiredBody")}</Text>
-              <Button label={t("qwRerate")} icon={RefreshCcw} loading={busy === "rerate"} disabled={!!busy} onPress={() => void reRate()} />
             </Card>
-          ) : canResume && !referred ? (
-            <Button label={t("qwResume")} loading={busy === "resume"} disabled={!!busy} onPress={() => void resume()} />
           ) : null}
-          <Button
-            label={t("qwRemove")}
-            variant="danger"
-            disabled={!!busy}
-            onPress={() =>
-              Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [
-                { text: t("cancel"), style: "cancel" },
-                {
-                  text: t("qtRemove"),
-                  style: "destructive",
-                  onPress: async () => {
-                    setBusy("discard");
-                    try {
-                      await QuotesApi.discard(id);
-                      router.back();
-                    } catch (e) {
-                      setActionError(e);
-                    } finally {
-                      setBusy(null);
-                    }
-                  },
-                },
-              ])
-            }
-          />
         </>
       ) : null}
     </Screen>

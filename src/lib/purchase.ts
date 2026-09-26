@@ -108,6 +108,15 @@ export function localized(value: unknown, language: string = "en"): string {
   return "";
 }
 
+/** Display name for a mobile-money network code (MTN_MOMO -> "MTN MoMo"). */
+export function networkName(code: string | null | undefined): string {
+  const c = String(code ?? "").toUpperCase();
+  if (!c) return "";
+  if (c.includes("MTN")) return "MTN MoMo";
+  if (c.includes("ORANGE")) return "Orange Money";
+  return humanize(c);
+}
+
 export const humanize = (code: string | null | undefined) =>
   (code ?? "")
     .toString()

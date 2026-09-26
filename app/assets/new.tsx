@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { Button, Card, Screen, TextField } from "@/components/ui";
+import { BrandHeader } from "@/components/design";
 import { ErrorCard, PickerField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { VehiclePicker, useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { AssetsApi } from "@/api/client";
@@ -88,7 +89,7 @@ export default function NewAsset() {
   if (!isVehicle)
     return (
       <Screen>
-        <AppHeader title={t("assetAddTitle")} subtitle={t("assetAddSubtitle")} back />
+        <BrandHeader title={t("assetAddTitle")} subtitle={t("assetAddSubtitle")} back right={null} />
         <Card>
           <PickerField label={t("assetTypeLabel")} value={assetType} options={typeOptions} onChange={setAssetType} />
         </Card>
@@ -104,7 +105,7 @@ export default function NewAsset() {
 
   return (
     <Screen>
-      <AppHeader title={t("vehicleAddTitle")} subtitle={t("vehicleAddSubtitle")} back />
+      <BrandHeader title={t("vehicleAddTitle")} subtitle={t("vehicleAddSubtitle")} back right={null} />
       {typeOptions.length > 1 ? (
         <Card>
           <PickerField label={t("assetTypeLabel")} value={assetType} options={typeOptions} onChange={setAssetType} />

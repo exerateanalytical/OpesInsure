@@ -1,10 +1,63 @@
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
-import { Check, ShieldAlert } from 'lucide-react-native';
-import { AppHeader, Button, Card, Screen, StatusChip } from '@/components/ui';
-import { useInsurance } from '@/store/insurance';
-import { colors, space, type } from '@/theme/tokens';
+import React, { useState } from "react";
+import { StyleSheet, Text } from "react-native";
+import { router } from "expo-router";
+import { ArrowRight, FileCheck2, ShieldAlert } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { ConsentRow, QuoteSteps } from "@/components/purchase/PurchaseUi";
+import { useInsurance } from "@/store/insurance";
+import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
-export default function Disclosure(){const{t}=useTranslation();const proposal=useInsurance(s=>s.proposal);const[accepted,setAccepted]=useState(false);if(!proposal)return <Screen><AppHeader title={t("qtProposal")} back/><Card><Text style={styles.title}>{t("qtProposalMissing")}</Text><Text style={styles.body}>{t("qtProposalMissingBody")}</Text></Card></Screen>;const payable=proposal.status==='PAYMENT_PENDING';return <Screen><AppHeader title={t("qtDocsDeclaration")} subtitle={t("qtStep4")} back/><Card><StatusChip label={proposal.status.replaceAll('_',' ')} tone={payable?'success':'warning'}/><Text style={styles.title}>Proposal {proposal.proposal_number}</Text><Text style={styles.body}>{payable?t("qtUnderwritingComplete"):t("qtNotReleased")}</Text></Card>{payable?<><Card><Text style={styles.title}>{t("qtYourDeclaration")}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:accepted}} style={styles.consent} onPress={()=>setAccepted(!accepted)}><View style={[styles.box,accepted&&styles.checked]}>{accepted?<Check size={16} color={colors.white}/>:null}</View><Text style={styles.body}>{t("qtDeclarationConsent")}</Text></Pressable></Card><Button label={t("qtReviewPay")} disabled={!accepted} onPress={()=>router.push('/checkout')}/></>:<Card><ShieldAlert size={24} color={colors.warningText}/><Text style={styles.body}>{t("qtAnswerDisclosureBody")}</Text><Button label={t("qtAnswerDisclosure")} onPress={()=>router.push({pathname:'/quote/questions',params:{proposalId:proposal.id}})}/></Card>}</Screen>}
-const styles=StyleSheet.create({title:{...type.cardTitle,color:colors.navy950},body:{...type.body,color:colors.neutral700,flex:1},consent:{flexDirection:'row',alignItems:'flex-start',gap:space.x3},box:{width:24,height:24,borderRadius:6,borderWidth:1,borderColor:colors.neutral300,alignItems:'center',justifyContent:'center'},checked:{backgroundColor:colors.blue600,borderColor:colors.blue600}});
+
+/** Documents & declaration gate before checkout; the server decides when a proposal is payable. */
+export default function Disclosure() {
+  const { t } = useTranslation();
+  const proposal = useInsurance((s) => s.proposal);
+  const [accepted, setAccepted] = useState(false);
+  if (!proposal)
+    return (
+      <Screen>
+        <BrandHeader title={t("qtProposal")} />
+        <QuoteSteps current={3} />
+        <Card>
+          <Text style={styles.title}>{t("qtProposalMissing")}</Text>
+          <Text style={styles.body}>{t("qtProposalMissingBody")}</Text>
+        </Card>
+      </Screen>
+    );
+  const payable = proposal.status === "PAYMENT_PENDING";
+  return (
+    <Screen
+      footer={
+        payable ? (
+          <CtaBar>
+            <Button label={t("qtReviewPay")} icon={ArrowRight} disabled={!accepted} onPress={() => router.push("/checkout")} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("qtDocsDeclaration")} subtitle={t("qtStep4")} />
+      <QuoteSteps current={3} />
+      <Card>
+        <SectionHeading icon={FileCheck2} title={`${t("qtProposal")} ${proposal.proposal_number}`} right={<StatusChip label={proposal.status.replaceAll("_", " ")} tone={payable ? "success" : "warning"} />} />
+        <Text style={styles.body}>{payable ? t("qtUnderwritingComplete") : t("qtNotReleased")}</Text>
+      </Card>
+      {payable ? (
+        <Card>
+          <Text style={styles.title}>{t("qtYourDeclaration")}</Text>
+          <ConsentRow checked={accepted} onPress={() => setAccepted(!accepted)} label={t("qtDeclarationConsent")} />
+        </Card>
+      ) : (
+        <>
+          <Banner icon={ShieldAlert} tint="gold" body={t("qtAnswerDisclosureBody")} />
+          <Button label={t("qtAnswerDisclosure")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: proposal.id } })} />
+        </>
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: { ...type.cardTitle, color: colors.navy950 },
+  body: { ...type.body, color: colors.neutral700 },
+});

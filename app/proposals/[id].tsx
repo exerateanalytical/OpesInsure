@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Linking, Text, View } from "react-native";
+import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
-import { CheckCircle2, FileUp, Hourglass, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { CheckCircle2, FileText, FileUp, Hourglass, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, DetailRow, SectionHeading } from "@/components/design";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
-import { ErrorCard, InfoRow, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, InfoRow, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
 import { Proposal, ProposalsApi, SupportContactsApi } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { humanize, localized, proposalStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
-import { colors } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 import { translateNow, useTranslation } from "@/i18n";
 import { withoutRelock } from "@/lib/appLock";
 import { ProposalChecklist, ProposalLifecycleApi } from "@/api/workflow";
@@ -139,30 +140,44 @@ export default function ProposalDetail() {
   const decision = p?.underwriting_case?.decisions?.[p.underwriting_case.decisions.length - 1];
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
 
+  const primary = p ? (
+    info.stage === "disclosures" ? (
+      <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
+    ) : info.stage === "payable" ? (
+      <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/quote/terms", params: { proposalId: p.id } })} />
+    ) : info.stage === "paid" ? (
+      <Button label={t("prTrackIssuance")} onPress={() => router.push({ pathname: "/confirmation", params: { proposalId: p.id } })} />
+    ) : info.stage === "review" || info.stage === "documents" ? (
+      <Button label={t("pmRefresh")} icon={RefreshCcw} variant="secondary" loading={loading} onPress={() => void load()} />
+    ) : null
+  ) : null;
+
   return (
-    <Screen>
-      <AppHeader title={t("prTitle")} subtitle={p?.proposal_number} back />
+    <Screen
+      footer={
+        p ? (
+          <CtaBar>
+            {primary}
+            <Button label={t("prAll")} variant="tertiary" onPress={() => router.push("/proposals")} />
+          </CtaBar>
+        ) : null
+      }
+    >
+      <BrandHeader title={t("prTitle")} subtitle={p?.proposal_number} />
+      <QuoteSteps current={3} />
       {loading && !p ? <LoadingState label={t("prLoading")} /> : null}
       {error && !p ? <ErrorCard error={error} fallback={t("prLoadFailed")} onRetry={() => void load()} /> : null}
       {p ? (
         <>
-          <Card feature>
-            <StatusChip label={info.label} tone={info.tone} />
+          <Card>
+            <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />
             <Text style={ps.body}>{info.message}</Text>
-            {info.stage === "review" ? (
-              <View style={ps.row}>
-                <Hourglass size={16} color={colors.blue600} />
-                <Text style={ps.meta}>{t("prAutoCheck")}</Text>
-              </View>
-            ) : null}
+            {info.stage === "review" ? <Banner icon={Hourglass} tint="blue" body={t("prAutoCheck")} /> : null}
           </Card>
 
           {info.stage === "information" ? (
             <Card>
-              <View style={ps.row}>
-                <MessageSquareWarning size={20} color={colors.warningText} />
-                <Text style={ps.title}>{t("prInfoTitle")}</Text>
-              </View>
+              <SectionHeading icon={MessageSquareWarning} title={t("prInfoTitle")} />
               {checklist?.information_request?.message ? <Text style={ps.body}>{checklist.information_request.message}</Text> : null}
               {(checklist?.information_request?.items ?? []).map((it, i) => (
                 <Text key={it.code ?? i} style={ps.meta}>• {it.description}</Text>
@@ -173,7 +188,7 @@ export default function ProposalDetail() {
 
           {info.stage === "counteroffer" ? (
             <Card>
-              <Text style={ps.title}>{t("prRevised")}</Text>
+              <SectionHeading title={t("prRevised")} />
               {p.counteroffer?.total_minor ? <InfoRow label={t("prRevisedTotal")} value={f.xaf(p.counteroffer.total_minor)} strong /> : null}
               <InfoRow label={t("prOriginalTotal")} value={f.xaf(p.terms_snapshot?.total_minor)} />
               {decision?.notes || p.counteroffer?.notes ? <Text style={ps.body}>{p.counteroffer?.notes ?? decision?.notes}</Text> : null}
@@ -185,9 +200,7 @@ export default function ProposalDetail() {
 
           {info.stage === "declined" ? (
             <Card>
-              <XCircle size={28} color={colors.dangerText} />
-              <Text style={ps.title}>{t("prDeclined")}</Text>
-              {decision?.notes ? <Text style={ps.body}>{decision.notes}</Text> : null}
+              <Banner icon={XCircle} tint="red" title={t("prDeclined")} body={decision?.notes ?? undefined} />
               {quote ? <Button label={t("prCompareOthers")} onPress={() => router.replace("/quote/offers")} /> : null}
               <Button label={t("prNewQuote")} variant="secondary" onPress={() => router.replace("/quote/product")} />
             </Card>
@@ -197,21 +210,15 @@ export default function ProposalDetail() {
 
           {canUpload || reqs.length ? (
             <Card>
-              <Text style={ps.title}>{t("prRequiredDocs")}</Text>
+              <SectionHeading icon={FileText} title={t("prRequiredDocs")} />
               {!reqs.length ? <Text style={ps.meta}>{t("prNoDocs")}</Text> : null}
               {reqs.map((r) => {
                 const doc = requiredDocumentInfo(r.status);
                 const ok = ["VERIFIED", "ACCEPTED"].includes(String(r.status).toUpperCase());
                 const rejected = doc.tone === "danger";
                 return (
-                  <View key={r.code} style={{ gap: 4 }}>
-                    <View style={ps.between}>
-                      <Text style={[ps.body, { flex: 1 }]}>
-                        {r.label}
-                        {r.mandatory ? "" : " (optional)"}
-                      </Text>
-                      <StatusChip label={td(doc.key, r.status ?? "")} tone={doc.tone} />
-                    </View>
+                  <View key={r.code} style={st.req}>
+                    <DetailRow label={r.mandatory ? r.label : `${r.label} ${t("prDocOptional")}`} valueNode={<StatusChip label={td(doc.key, r.status ?? "")} tone={doc.tone} />} />
                     {r.notes ? <Text style={ps.meta}>{r.notes}</Text> : null}
                     {!ok && canUpload ? (
                       <Button label={r.status && !rejected ? t("prReplace") : t("prUpload")} icon={FileUp} variant="secondary" loading={uploading === r.code} disabled={!!uploading} onPress={() => void upload(r.code)} />
@@ -219,29 +226,21 @@ export default function ProposalDetail() {
                   </View>
                 );
               })}
-              {uploadError ? <Text style={ps.error}>{uploadError instanceof Error ? uploadError.message : t("prUploadFailed")}</Text> : null}
+              {uploadError ? <Text accessibilityRole="alert" style={st.error}>{uploadError instanceof Error ? uploadError.message : t("prUploadFailed")}</Text> : null}
             </Card>
           ) : null}
 
-          {info.stage === "disclosures" ? (
-            <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
-          ) : null}
-          {info.stage === "payable" ? (
-            <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/quote/terms", params: { proposalId: p.id } })} />
-          ) : null}
-          {info.stage === "paid" ? (
-            <Button label={t("prTrackIssuance")} onPress={() => router.push({ pathname: "/confirmation", params: { proposalId: p.id } })} />
-          ) : null}
-          {info.stage === "review" || info.stage === "documents" ? (
-            <Button label={t("pmRefresh")} icon={RefreshCcw} variant="secondary" loading={loading} onPress={() => void load()} />
-          ) : null}
           {canWithdrawProposal(p.status, checklist?.available_transitions) ? (
             <Button label={t("prWithdraw")} icon={Undo2} variant="danger" loading={withdrawing} disabled={withdrawing} onPress={withdraw} />
           ) : null}
           {withdrawError ? <ErrorCard error={withdrawError} fallback={t("prWithdrawFailed")} /> : null}
-          <Button label={t("prAll")} variant="tertiary" onPress={() => router.push("/proposals")} />
         </>
       ) : null}
     </Screen>
   );
 }
+
+const st = StyleSheet.create({
+  req: { gap: space.x1, paddingVertical: space.x1, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
+  error: { ...type.meta, color: colors.dangerText },
+});

@@ -30,7 +30,8 @@ export function useRenewalIdentity(policy: RenewalPolicy | Policy | null | undef
   const { t } = useTranslation();
   const p = policy as RenewalPolicy | null | undefined;
   const productName = localized(offer?.product?.name, f.language) || p?.product_name || null;
-  const provider = p?.carrier_name || p?.carrier?.party?.display_name || (offer ? providerName(offer, f.language) : null);
+  // The offer being bought names the insurer; the policy's carrier is only the fallback (a compared offer may come from another insurer).
+  const provider = offer?.carrier?.party?.display_name || p?.carrier_name || p?.carrier?.party?.display_name || (offer ? providerName(offer, f.language) : null);
   const lineCode = String(offer?.product?.line_code ?? "").toUpperCase();
   const isMotor = lineCode === "MOTOR" || /motor|auto|véhicule|vehicle/i.test(productName ?? "");
   const vehicle = insuredObjectLabel(p, riskFacts);
@@ -126,7 +127,7 @@ export function NetworkTiles({ value, onChange, disabled, readOnly }: { value: N
               <Text style={[s.networkBadgeText, { color: it.fg }]}>{it.badge}</Text>
             </View>
             <View style={s.flex}>
-              <Text style={s.networkLabel} numberOfLines={1}>{it.label}</Text>
+              <Text style={s.networkLabel} numberOfLines={2}>{it.label}</Text>
               <Text style={s.networkSub} numberOfLines={2}>{it.sub}</Text>
             </View>
             <View style={[s.radio, selected && s.radioOn]}>{selected ? <View style={s.radioInner} /> : null}</View>
@@ -171,12 +172,12 @@ const s = StyleSheet.create({
   totalValue: { ...type.sectionTitle, color: colors.navy950, fontVariant: ["tabular-nums"] },
   infoBox: { borderRadius: radius.card, padding: space.x3, gap: space.x2 },
   infoTitle: { ...type.cardTitle, fontSize: 16, lineHeight: 22, color: colors.navy950 },
-  networks: { flexDirection: "row", gap: space.x2 },
-  network: { flex: 1, minHeight: 64, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.card, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x2, overflow: "hidden" },
+  networks: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
+  network: { flexGrow: 1, flexBasis: 150, minHeight: 64, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.card, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x2, overflow: "hidden" },
   networkOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
-  networkBadge: { width: 48, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  networkBadge: { width: 40, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   networkBadgeText: { fontFamily: "Inter_700Bold", fontSize: 11 },
-  networkLabel: { ...type.label, color: colors.navy950 },
+  networkLabel: { ...type.label, fontSize: 13, lineHeight: 17, color: colors.navy950 },
   networkSub: { ...type.caption, fontFamily: "Inter_400Regular", color: colors.neutral600 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.neutral300, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },
   radioOn: { borderColor: colors.blue600 },

@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Camera, CheckCircle2, CircleAlert, Images, UserRound } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { BadgeCheck, Camera, CheckCircle2, CircleAlert, ClipboardList, Fingerprint, IdCard, Images, ShieldAlert, ShieldCheck, UserRound } from "lucide-react-native";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Banner, BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
-import { colors, space, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
 import { isKycReviewInProgress } from "@/lib/apiErrors";
 import { canSubmitKyc, daysUntil, KYC_DOCUMENT_PURPOSES, KycPurpose, kycPhase, suggestedPurposes } from "@/lib/kyc";
@@ -27,6 +28,8 @@ import { canSubmitKyc, daysUntil, KYC_DOCUMENT_PURPOSES, KycPurpose, kycPhase, s
  * KYC_REVIEW_IN_PROGRESS reloads the live submission instead of resubmitting.
  * With ?first=1 (right after sign-up) the step can be skipped.
  */
+const toneTint = (tone: string): Tint => (tone === "success" ? "green" : tone === "warning" ? "gold" : tone === "danger" ? "red" : tone === "info" ? "blue" : "neutral");
+
 export default function Kyc() {
   const { first } = useLocalSearchParams<{ first?: string }>();
   const onboarding = first === "1";
@@ -85,10 +88,11 @@ export default function Kyc() {
 
   return (
     <Screen>
-      <AppHeader
+      <BrandHeader
         title={onboarding ? t("kycWelcomeTitle") : t("identityVerification")}
         subtitle={onboarding ? t("kycWelcomeSubtitle") : t("kycSubtitle")}
         back={!onboarding}
+        right="help"
       />
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(k) => {
@@ -103,25 +107,35 @@ export default function Kyc() {
           const days = daysUntil(sub?.expires_at);
           const ready = canSubmitKyc(editable, docs.length, requirements) && k.identifiers.length > 0;
           const reviewerNote = sub?.remediation_reason ?? (phase === "more_info" || phase === "rejected" ? sub?.notes : null);
+          const expiringSoon = days !== null && days <= 30;
           return (
             <>
-              <Card>
-                <StatusChip label={td(`kycStatus_${phase === "expired" ? "EXPIRED" : status}`, status)} tone={tone} />
-                <Text style={styles.body}>{t(`kycPhase_${phase}`)}</Text>
-                {sub?.kyc_level ? <Text style={styles.meta}>{t("kycLevel", { level: td(`kycLevel_${sub.kyc_level}`, sub.kyc_level) })}</Text> : null}
-                {sub?.submitted_at ? <Text style={styles.meta}>{t("kycSubmittedOn", { date: date(sub.submitted_at) })}</Text> : null}
-                {sub?.expires_at && phase === "approved" ? (
-                  <Text style={days !== null && days <= 30 ? styles.warn : styles.meta}>
-                    {days !== null && days <= 30 ? t("kycExpiresSoon", { days: Math.max(days, 0) }) : t("kycExpiresOn", { date: date(sub.expires_at) })}
-                  </Text>
+              <Card style={styles.card}>
+                <View style={styles.headRow}>
+                  <TintedIcon icon={phase === "approved" ? BadgeCheck : restart ? ShieldAlert : ShieldCheck} tint={toneTint(tone)} size={56} />
+                  <View style={styles.flex}>
+                    <StatusChip label={td(`kycStatus_${phase === "expired" ? "EXPIRED" : status}`, status)} tone={tone} />
+                    <Text style={styles.body}>{t(`kycPhase_${phase}`)}</Text>
+                  </View>
+                </View>
+                {sub?.kyc_level || sub?.submitted_at || (sub?.expires_at && phase === "approved") ? (
+                  <View style={styles.metaBlock}>
+                    {sub?.kyc_level ? <Text style={styles.meta}>{t("kycLevel", { level: td(`kycLevel_${sub.kyc_level}`, sub.kyc_level) })}</Text> : null}
+                    {sub?.submitted_at ? <Text style={styles.meta}>{t("kycSubmittedOn", { date: date(sub.submitted_at) })}</Text> : null}
+                    {sub?.expires_at && phase === "approved" ? (
+                      <Text style={expiringSoon ? styles.warn : styles.meta}>
+                        {expiringSoon ? t("kycExpiresSoon", { days: Math.max(days, 0) }) : t("kycExpiresOn", { date: date(sub.expires_at) })}
+                      </Text>
+                    ) : null}
+                  </View>
                 ) : null}
-                {phase === "expired" && sub?.expires_at ? <Text style={styles.warn}>{t("kycExpiredOn", { date: date(sub.expired_at ?? sub.expires_at) })}</Text> : null}
-                {reviewerNote ? <Text style={styles.warn}>{t("kycReviewerNote", { note: reviewerNote })}</Text> : null}
+                {phase === "expired" && sub?.expires_at ? <Banner icon={CircleAlert} tint="gold" body={t("kycExpiredOn", { date: date(sub.expired_at ?? sub.expires_at) })} /> : null}
+                {reviewerNote ? <Banner icon={CircleAlert} tint="gold" body={t("kycReviewerNote", { note: reviewerNote })} /> : null}
               </Card>
 
               {requirements.length ? (
-                <Card>
-                  <Text style={styles.title}>{t("kycRequirementsTitle")}</Text>
+                <Card style={styles.card}>
+                  <SectionHeading title={t("kycRequirementsTitle")} icon={ClipboardList} />
                   {requirements.map((r) => (
                     <View key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={styles.row}>
                       {r.satisfied ? <CheckCircle2 size={18} color={colors.success} /> : <CircleAlert size={18} color={r.mandatory ? colors.dangerText : colors.neutral500} />}
@@ -133,8 +147,8 @@ export default function Kyc() {
                 </Card>
               ) : null}
 
-              <Card>
-                <Text style={styles.title}>{t("kycStep1")}</Text>
+              <Card style={styles.card}>
+                <SectionHeading title={t("kycStep1")} icon={Fingerprint} />
                 {k.identifiers.map((i) => (
                   <View key={`${i.type}-${i.masked_value}`} style={styles.row}>
                     <CheckCircle2 size={18} color={i.verified_at ? colors.success : colors.neutral500} />
@@ -157,8 +171,8 @@ export default function Kyc() {
                 />
               ) : null}
 
-              <Card>
-                <Text style={styles.title}>{t("kycStep2")}</Text>
+              <Card style={styles.card}>
+                <SectionHeading title={t("kycStep2")} icon={IdCard} />
                 <Text style={styles.body}>{t("kycDocumentBody")}</Text>
                 {docs.map((d) => (
                   <View key={d.id} style={styles.row}>
@@ -179,7 +193,7 @@ export default function Kyc() {
                       onChange={setPurpose}
                       options={KYC_DOCUMENT_PURPOSES.map((p) => ({ value: p, label: td(`kycPurpose_${p}`, p) }))}
                     />
-                    {photo ? <Text style={styles.body}>{t("kycPhotoReady")}</Text> : null}
+                    {photo ? <Banner icon={CheckCircle2} tint="green" body={t("kycPhotoReady")} /> : null}
                     <Button label={t("kycTakePhoto")} icon={Camera} variant="secondary" loading={busy === "photo"} disabled={!!busy} onPress={() => void takePhoto("camera")} />
                     <Button label={t("evidenceFromLibrary")} icon={Images} variant="tertiary" disabled={!!busy} onPress={() => void takePhoto("library")} />
                     <Button label={t("kycSaveDocument")} loading={busy === "attach"} disabled={!photo || !purpose || !!busy} onPress={() => void attach()} />
@@ -188,8 +202,8 @@ export default function Kyc() {
                 ) : null}
               </Card>
 
-              <Card>
-                <Text style={styles.title}>{t("kycStep3")}</Text>
+              <Card style={styles.card}>
+                <SectionHeading title={t("kycStep3")} icon={UserRound} />
                 <Text style={styles.body}>{t("kycProfileBody")}</Text>
                 <Button label={t("personalInformation")} icon={UserRound} variant="tertiary" onPress={() => router.push("/account/profile")} />
                 {editable ? (
@@ -219,7 +233,10 @@ export default function Kyc() {
   );
 }
 const styles = StyleSheet.create({
-  title: { ...type.cardTitle, color: colors.navy950 },
+  flex: { flex: 1, gap: space.x2 },
+  card: { borderRadius: radius.feature },
+  headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
+  metaBlock: { gap: space.x1, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
   warn: { ...type.meta, color: colors.warningText },
