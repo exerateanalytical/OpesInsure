@@ -1,6 +1,8 @@
 {{-- /account/claims/new[?policy=<id>] — design screens/compare_buy_flow/09_stage.png + 17_stage.png.
      Same flow as the mobile app: GET /mobile/wallet (policies), POST /mobile/claims (FNOL, form claim_fnol),
-     then each file via POST /mobile/documents + POST /mobile/claims/{id}/evidence. The API has no claim drafts. --}}
+     then each file via POST /mobile/documents + POST /mobile/claims/{id}/evidence.
+     Drafts: POST/PATCH /mobile/claims/drafts[/{id}], resumed with ?draft=<id>, filed via POST /mobile/claims/drafts/{id}/submit
+     (no claim number until then). Files are not stored with a draft; they upload after submit. --}}
 @php $L = __('account_claims.js'); $W = $L['wiz']; @endphp
 @extends('public.account.layout', ['title' => __('account_claims.new.title'), 'lede' => __('account_claims.new.lede'),
   'crumbs' => [[__('account_claims.list.title'), '/account/claims'], [__('account_claims.new.title'), null]], 'active' => 'claims'])
@@ -65,6 +67,7 @@
 
     <div class="cl-actions">
       <a class="dbtn dbtn-outline" href="/account/claims" data-back>@include('public.partials.i', ['n' => 'chev-left']){{ $W['back'] }}</a>
+      <button type="button" class="dbtn dbtn-outline" data-save-draft>@include('public.partials.i', ['n' => 'doc']){{ $L['drafts']['save'] }}</button>
       <button type="submit" class="dbtn dbtn-primary" data-next>{{ $W['review'] }}@include('public.partials.i', ['n' => 'arrow'])</button>
     </div>
   </form>
@@ -95,6 +98,7 @@ Opes.page(function (ctx) {
   var K = OpesClaims, T = K.T, W = T.wiz, h = Opes.h, $ = Opes.$, $$ = Opes.$$;
   var form = $('[data-form]'), el = form.elements;
   var policies = [], policy = null, files = [], reviewing = false, idemKey = Opes.uuid(), created = null;
+  var draftId = ctx.params.get('draft') || null, wantType = '';
   var loc = Opes.locale === 'fr' ? 'fr-FR' : 'en-GB';
 
   // Today in Africa/Douala (UTC+1, no DST) as the max incident date.
@@ -136,8 +140,9 @@ Opes.page(function (ctx) {
   function typeCards(list) {
     var box = Opes.clear($('[data-types]'));
     list.forEach(function (t) {
-      box.appendChild(h('label', { class: 'cl-tc' }, h('input', { type: 'radio', name: 'itype', value: t.code, onchange: paintStepper }), Opes.icon(K.typeIcon(t.code)), t.label));
+      box.appendChild(h('label', { class: 'cl-tc' }, h('input', { type: 'radio', name: 'itype', value: t.code, checked: wantType && K.up(wantType) === K.up(t.code) ? true : null, onchange: function () { wantType = t.code; paintStepper(); } }), Opes.icon(K.typeIcon(t.code)), t.label));
     });
+    paintStepper();
   }
   var builtIn = (T.type_cards || []).map(function (c) { return { code: c, label: K.typeLabel(c) }; });
   typeCards(builtIn);
@@ -220,6 +225,46 @@ Opes.page(function (ctx) {
   }
   $('[data-back]').addEventListener('click', function (e) { if (reviewing) { e.preventDefault(); setMode(false); } });
 
+  // ---- drafts ----
+  function draftBody() {
+    var b = { policy_id: policy ? policy.id : null, incident_type: type() || null, description: el.description.value.trim() || null,
+      incident_location: locationText() || null, injuries_reported: el.injuries.checked, police_report_filed: el.police.checked,
+      police_reference: el.police.checked ? (el.police_reference.value.trim() || null) : null,
+      estimated_loss_minor: el.estimate.value ? Math.round(Number(el.estimate.value) * 100) : null,
+      client_state: { date: el.date.value, time: el.time.value, location: el.location.value.trim(), address: el.address.value.trim() } };
+    b.incident_at = incidentAt() || null;
+    return b;
+  }
+  function saveDraft() {
+    var b = draftBody();
+    return (draftId ? Opes.api('/mobile/claims/drafts/' + encodeURIComponent(draftId), { method: 'PATCH', body: b })
+      : Opes.api('/mobile/claims/drafts', { method: 'POST', body: b })).then(function (d) {
+      draftId = d.id;
+      try { history.replaceState(null, '', '/account/claims/new?draft=' + encodeURIComponent(d.id)); } catch (e) { /* ignore */ }
+      return d;
+    });
+  }
+  $('[data-save-draft]').addEventListener('click', function () {
+    var btn = this; Opes.alert(T.drafts.saving, 'info'); Opes.busy(btn, true);
+    saveDraft().then(function () { Opes.alert(T.drafts.saved, 'ok'); }).catch(function (e) { Opes.alert((e && e.message) || Opes.t.error); })
+      .finally(function () { Opes.busy(btn, false); });
+  });
+  function restore(d) {
+    var pl = d.payload || {}, cs = pl.client_state || {};
+    var pick = policies.filter(function (p) { return p.id === d.policy_id; })[0];
+    if (pick) { var r = box.querySelector('input[value="' + pick.id + '"]'); if (r) r.checked = true; choose(pick); }
+    wantType = pl.incident_type || '';
+    var tr = wantType && form.querySelector('input[name="itype"][value="' + wantType + '"]'); if (tr) tr.checked = true;
+    var at = pl.incident_at ? String(pl.incident_at) : '';
+    el.date.value = cs.date || at.slice(0, 10); el.time.value = cs.time || at.slice(11, 16);
+    el.location.value = cs.location !== undefined ? cs.location : (pl.incident_location || ''); el.address.value = cs.address || '';
+    el.description.value = pl.description || ''; $('[data-counter]').textContent = el.description.value.length + '/1000';
+    if (pl.estimated_loss_minor !== null && pl.estimated_loss_minor !== undefined) el.estimate.value = Math.round(pl.estimated_loss_minor / 100);
+    el.injuries.checked = !!pl.injuries_reported; el.police.checked = !!pl.police_report_filed; $('[data-police-ref]').hidden = !el.police.checked;
+    el.police_reference.value = pl.police_reference || '';
+    paintStepper(); Opes.alert(T.drafts.resumed, 'info');
+  }
+
   function submit(btn) {
     btn.disabled = true;
     Opes.alert(W.submitting, 'info');
@@ -227,7 +272,9 @@ Opes.page(function (ctx) {
       injuries_reported: el.injuries.checked, police_report_filed: el.police.checked };
     if (el.police.checked && el.police_reference.value.trim()) body.police_reference = el.police_reference.value.trim();
     if (el.estimate.value) body.estimated_loss_minor = Math.round(Number(el.estimate.value) * 100);
-    var create = created ? Promise.resolve(created) : Opes.api('/mobile/claims', { method: 'POST', body: body, idemKey: idemKey });
+    var create = created ? Promise.resolve(created) : draftId
+      ? saveDraft().then(function () { return Opes.api('/mobile/claims/drafts/' + encodeURIComponent(draftId) + '/submit', { method: 'POST', idemKey: idemKey }); })
+      : Opes.api('/mobile/claims', { method: 'POST', body: body, idemKey: idemKey });
     create.then(function (c) {
       created = c;
       var failed = 0, i = 0;
@@ -266,6 +313,8 @@ Opes.page(function (ctx) {
     var want = ctx.params.get('policy') || (policies.length === 1 ? policies[0].id : '');
     var pick = policies.filter(function (p) { return p.id === want; })[0];
     if (pick) { box.querySelector('input[value="' + pick.id + '"]').checked = true; choose(pick); }
+    if (draftId) return Opes.api('/mobile/claims/drafts/' + encodeURIComponent(draftId)).then(restore)
+      .catch(function () { draftId = null; try { history.replaceState(null, '', '/account/claims/new'); } catch (e) { /* ignore */ } Opes.alert(T.drafts.not_found); });
   }).catch(function (e) { Opes.fail(box, e); });
 });
 </script>

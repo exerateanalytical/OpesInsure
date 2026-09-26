@@ -11,7 +11,7 @@ return [
     'nav' => [
         'insurance' => 'Assurances', 'providers' => 'Assureurs', 'claims' => 'Sinistres', 'how' => 'Comment ça marche', 'about' => 'À propos',
         'search' => 'Rechercher', 'search_label' => 'Rechercher un assureur ou un courtier', 'search_placeholder' => 'Rechercher un assureur ou un courtier…', 'search_go' => 'Rechercher',
-        'sign_in' => 'Connexion', 'compare' => 'Comparer', 'menu' => 'Menu', 'language' => 'Langue', 'main' => 'Navigation principale',
+        'my_account' => 'Mon compte', 'sign_in' => 'Connexion', 'compare' => 'Comparer', 'menu' => 'Menu', 'language' => 'Langue', 'main' => 'Navigation principale',
     ],
 
     'hero' => [

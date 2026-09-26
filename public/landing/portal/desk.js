@@ -2,6 +2,8 @@
 // Data comes only from the real API:
 //   GET  /mobile/carrier/claims                          queue (carrier.claims.read)
 //   GET  /mobile/partner/carrier/claims/{id}             claim + allowed actions + timeline
+//   GET  /mobile/partner/carrier/claims/{id}/evidence    evidence metadata (own carrier, carrier.claims.read)
+//   POST /mobile/partner/carrier/claims/{id}/evidence/{doc}/access   short-lived signed URL for one CLEAN document
 //   POST /mobile/partner/carrier/claims/{id}/acknowledge | request-information | decisions | decisions/{d}/approve
 //   Staff-only extras, used only when the session holds the permission:
 //   GET  /claims/{id} (claims.view), GET /claims/{id}/assessments (claims.view),
@@ -60,8 +62,10 @@
       O.list('/mobile/carrier/claims').then(function (r) { return r.items.filter(function (x) { return x.id === id; })[0] || null; }).catch(function () { return null; }),
       staff ? O.api('/claims/' + encodeURIComponent(id)).catch(function () { return null; }) : Promise.resolve(null),
       staff ? O.api('/claims/' + encodeURIComponent(id) + '/assessments').catch(function () { return null; }) : Promise.resolve(null),
+      O.api('/mobile/partner/carrier/claims/' + encodeURIComponent(id) + '/evidence').catch(function () { return null; }),
     ]).then(function (r) {
       var c = r[0] || {}, q = r[1], s = r[2], a = r[3];
+      c.evidence = Array.isArray(r[4]) ? r[4] : (r[4] && r[4].data) || null;
       var ld = (s && s.loss_details) || {};
       c.queue = q; c.staff = s; c.assess = a; c.staffView = !!s;
       c.incident_type = (ld.incident && ld.incident.incident_type) || (q && q.subject && q.subject.split('·').pop().trim()) || null;
@@ -99,6 +103,54 @@
       D.field(D.t('location'), c.loss_location),
       D.field(D.t('status'), D.chip(c.status)),
       c.approved_amount_minor !== null ? D.field(D.t('approved_amt'), D.money(c.approved_amount_minor), 'money ok') : D.field(D.t('est_cost'), D.money(c.estimated_loss_minor), 'money')));
+  };
+
+  /** Deductible for the claimed coverage when known, else the policy's highest coverage deductible (labelled as such). */
+  D.deductible = function (c) {
+    if (c.deductible_minor !== null && c.deductible_minor !== undefined) return D.money(c.deductible_minor);
+    var d = (c.deductibles || []).filter(function (x) { return x.deductible_minor; });
+    if (!d.length) return (c.deductibles || []).length ? D.money(0) : D.t('deductible_na');
+    return d.map(function (x) { return ((x.name && (x.name[O.locale] || x.name.en)) || D.type(x.code)) + ': ' + D.money(x.deductible_minor); }).join(' · ');
+  };
+  var VEH = ['registration_number', 'make', 'model', 'year', 'body_type', 'usage_type', 'powertrain', 'fiscal_power', 'chassis_number', 'vehicle_value'];
+  /** Insured item fields from the carrier claim payload (vehicle for motor). Null when the API has none. */
+  D.itemFields = function (c) {
+    var it = c.insured_item; if (!it) return null;
+    var keys = VEH.filter(function (k) { return it[k] !== undefined && it[k] !== null && it[k] !== ''; });
+    if (!keys.length) return null;
+    return h('div', { class: 'desk-fields c2' }, keys.map(function (k) {
+      return D.field((T.veh || {})[k] || D.type(k), k === 'vehicle_value' ? O.money(Number(it[k]), {}) : k === 'body_type' || k === 'usage_type' || k === 'powertrain' ? D.type(it[k]) : String(it[k]));
+    }));
+  };
+  /** Open one evidence document through a fresh signed URL. */
+  D.openDoc = function (c, doc, btn) {
+    return D.act(btn, function () { return O.api('/mobile/partner/carrier/claims/' + encodeURIComponent(c.id) + '/evidence/' + encodeURIComponent(doc.document_id) + '/access', { method: 'POST', body: {} }); }, null, function (r) {
+      if (r && r.url) window.open(r.url, '_blank', 'noopener');
+    });
+  };
+  /** Documents / photos list. photosOnly: only images, rendered as thumbnails (signed on demand). */
+  D.docs = function (c, photosOnly) {
+    var ev = c.evidence;
+    if (!ev) return D.note(D.t('docs_err'));
+    var rows = photosOnly ? ev.filter(function (d) { return d.is_image; }) : ev;
+    if (!rows.length) return h('p', { class: 'sub' }, D.t(photosOnly ? 'no_photos' : 'no_docs'));
+    if (photosOnly) {
+      var grid = h('div', { class: 'desk-photos' });
+      rows.slice(0, 12).forEach(function (d) {
+        var cell = h('figure', null, h('figcaption', null, D.type(d.evidence_type)));
+        grid.appendChild(cell);
+        if (!d.downloadable) { cell.insertBefore(D.note(D.t('doc_not_ready')), cell.firstChild); return; }
+        O.api('/mobile/partner/carrier/claims/' + encodeURIComponent(c.id) + '/evidence/' + encodeURIComponent(d.document_id) + '/access', { method: 'POST', body: {} })
+          .then(function (r) { if (r && r.url) cell.insertBefore(h('a', { href: r.url, target: '_blank', rel: 'noopener' }, h('img', { src: r.url, alt: D.type(d.evidence_type), loading: 'lazy', onerror: function () { var a = this.parentNode; a.parentNode.replaceChild(D.note(D.t('doc_missing')), a); } })), cell.firstChild); })
+          .catch(function () { cell.insertBefore(D.note(D.t('doc_not_ready')), cell.firstChild); });
+      });
+      return grid;
+    }
+    return h('ul', { class: 'desk-docs' }, rows.map(function (d) {
+      var size = d.size_bytes ? ' · ' + Math.max(1, Math.round(d.size_bytes / 1024)) + ' KB' : '';
+      var btn = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', disabled: !d.downloadable, title: d.downloadable ? null : D.t('doc_not_ready'), onclick: function (e) { D.openDoc(c, d, e.currentTarget); } }, O.icon(d.is_image ? 'eye' : 'download'), D.t('open'));
+      return h('li', null, h('div', null, h('b', null, D.type(d.evidence_type)), h('small', null, (d.mime_type || '') + size + ' · ' + O.date(d.submitted_at, true))), h('div', null, D.chip(d.status), btn));
+    }));
   };
 
   D.timeline = function (c) {

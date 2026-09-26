@@ -134,3 +134,21 @@ it('403s a customer on every broker workspace endpoint', function (string $metho
     ['POST', '/api/v1/mobile/partner/broker/staff/invitations'],
     ['GET', '/api/v1/mobile/partner/broker/commissions'],
 ]);
+
+it('lets broker staff start a quote on behalf of their own client (web buy flow)', function () {
+    $x = w16BrokerBook();
+    $party = $x['book']['mine']['chain']['party'];
+    $customer = App\Models\TenantCustomer::firstOrCreate(['tenant_id' => $x['tenant']->id, 'party_id' => $party->id], ['status' => 'ACTIVE', 'customer_number' => 'CUS-'.Str::upper(Str::random(8))]);
+    Passport::actingAs($x['broker']['user']);
+    $h = w16BrokerHeaders($x['tenant']);
+
+    \App\Models\InsuranceLine::firstOrCreate(['code' => 'MOTOR'], ['name' => ['en' => 'Motor'], 'description' => ['en' => 'Motor'], 'status' => 'ACTIVE', 'risk_schema' => []]);
+    // The web buy flow loads the broker's clients from /mobile/broker/clients and posts the tenant customer id.
+    $ids = collect($this->getJson('/api/v1/mobile/broker/clients', $h)->assertStatus(200)->json('data'))->pluck('id');
+    expect($ids)->toContain($customer->id);
+
+    $res = $this->postJson('/api/v1/quotes', ['customer_id' => $customer->id, 'line_code' => 'MOTOR', 'channel' => 'BROKER', 'risk_facts' => ['make' => 'Toyota', 'model' => 'Corolla']], w16BrokerHeaders($x['tenant']));
+    expect($res->status())->toBe(202)
+        ->and($res->json('data.party_id'))->toBe($party->id)
+        ->and($res->json('data.channel'))->toBe('BROKER');
+});

@@ -52,4 +52,12 @@ final class MobileClaimController
 
         return response()->json(['data' => $claim], 201);
     }
+
+    /** Claimant withdrawal of an early-stage claim (SUBMITTED / ACKNOWLEDGED / EVIDENCE_PENDING). */
+    public function withdraw(string $claim, Request $request, MobileClaimService $service): JsonResponse
+    {
+        $data = $request->validate(['reason' => 'required|string|min:3|max:1000']);
+
+        return response()->json(['data' => $service->withdraw($claim, $data['reason'], $request->user(), app(TenantContext::class)->id())]);
+    }
 }

@@ -30,7 +30,7 @@ Opes.page(function (ctx) {
         A.field(A.t('origin'), c.origin_locked ? A.t('origin_locked') : A.t('origin_open'))));
 
     // Policies: the broker detail carries them; the agent list is filtered by this client's name (the agent policy shape has no customer id).
-    var pols = c.policies_detail ? Promise.resolve(c.policies_detail) : A.policies().then(function (rows) { return rows.filter(function (p) { return p.customer_name === c.full_name; }); });
+    var pols = c.policies_detail ? Promise.resolve(c.policies_detail) : A.policies().then(function (rows) { return rows.filter(function (p) { return p.customer_id ? p.customer_id === c.id : (p.party_id && c.party_id ? p.party_id === c.party_id : p.customer_name === c.full_name); }); });
     pols.then(function (rows) {
       if (!rows.length) return O.empty(pbox, A.t('no_client_policies'));
       O.clear(pbox).appendChild(A.table(['th_policy', 'th_insurer', 'th_line', 'th_premium', 'th_status', 'th_issued'], rows.map(function (p) {

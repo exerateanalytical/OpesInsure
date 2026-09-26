@@ -5,16 +5,21 @@
   var h = Opes.h, icon = Opes.icon;
 
   var STAGE = { DRAFT: 0, SUBMITTED: 0, ACKNOWLEDGED: 1, EVIDENCE_PENDING: 1, CARRIER_REVIEW: 1, ASSESSMENT: 2, DISPUTED: 2,
-    APPROVED: 3, PARTIALLY_APPROVED: 3, DECLINED: 3, PAID: 4, CLOSED: 5 };
+    APPROVED: 3, PARTIALLY_APPROVED: 3, DECLINED: 3, PAID: 4, CLOSED: 5, WITHDRAWN: 5 };
   var STAGES = ['submitted', 'review', 'assessment', 'approval', 'payment', 'closed'];
   var TONE = { DRAFT: 'muted', SUBMITTED: 'info', ACKNOWLEDGED: 'info', EVIDENCE_PENDING: 'warn', CARRIER_REVIEW: 'info', ASSESSMENT: 'info',
-    DISPUTED: 'warn', APPROVED: 'ok', PARTIALLY_APPROVED: 'ok', PAID: 'ok', CLOSED: 'muted', DECLINED: 'bad' };
+    DISPUTED: 'warn', APPROVED: 'ok', PARTIALLY_APPROVED: 'ok', PAID: 'ok', CLOSED: 'muted', WITHDRAWN: 'muted', DECLINED: 'bad' };
 
   function up(s) { return String(s || '').toUpperCase(); }
+  /** Status shown to the customer: a claim they withdrew is stored CLOSED (ClaimMachine `withdraw`) but reads "Withdrawn". */
+  function shown(c) { return c && c.withdrawn_at ? 'WITHDRAWN' : up(c && c.status); }
+  /** Claimant may withdraw only before assessment (mirrors ClaimMachine::WITHDRAWABLE; the API also returns can_withdraw). */
+  var WITHDRAWABLE = ['SUBMITTED', 'ACKNOWLEDGED', 'EVIDENCE_PENDING'];
   /** Tab bucket: progress | approved | rejected | draft | closed */
   function bucket(c) {
-    var s = up(c.status);
+    var s = shown(c);
     if (s === 'DRAFT') return 'draft';
+    if (s === 'WITHDRAWN') return 'closed';
     if (s === 'DECLINED') return 'rejected';
     if (s === 'APPROVED' || s === 'PARTIALLY_APPROVED' || s === 'PAID') return 'approved';
     if (s === 'CLOSED') return c.approved_amount_minor ? 'approved' : 'closed';
@@ -85,7 +90,7 @@
   function evidenceTypes(p) { return (EV[line(p)] || EV.MOTOR).concat(['OTHER']); }
   function evLabel(k) { return ((T.wiz || {}).evidence || {})[up(k)] || Opes.label(k); }
 
-  window.OpesClaims = { T: T, evidenceTypes: evidenceTypes, evLabel: evLabel, STAGE: STAGE, STAGES: STAGES, bucket: bucket, fmt: fmt, statusLabel: statusLabel, chip: chip, incidentType: incidentType,
+  window.OpesClaims = { T: T, shown: shown, WITHDRAWABLE: WITHDRAWABLE, evidenceTypes: evidenceTypes, evLabel: evLabel, STAGE: STAGE, STAGES: STAGES, bucket: bucket, fmt: fmt, statusLabel: statusLabel, chip: chip, incidentType: incidentType,
     typeLabel: typeLabel, typeIcon: typeIcon, terms: terms, line: line, lineLabel: lineLabel, risk: risk, itemTitle: itemTitle, itemSub: itemSub,
     insurer: insurer, lineIcon: lineIcon, amount: amount, all: all, fileOk: fileOk, uploadEvidence: uploadEvidence, size: size, up: up };
 })();

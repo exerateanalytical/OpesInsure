@@ -44,7 +44,7 @@ Opes.page(function (ctx) {
     var summary = h('section', { class: 'acard' }, h('h2', null, D.t('summary')), h('dl', { class: 'kv' },
       h('dt', null, D.t('claim_no')), h('dd', null, c.claim_number), h('dt', null, D.t('policy_no')), h('dd', null, c.policy_number || '—'),
       h('dt', null, D.t('incident_type')), h('dd', null, D.type(c.incident_type)), h('dt', null, D.t('incident_date')), h('dd', null, O.date(c.loss_occurred_at, true)),
-      h('dt', null, D.t('approved_amt')), h('dd', { style: 'color:#12784A' }, D.money(amount)), h('dt', null, D.t('deductible')), h('dd', null, D.t('deductible_na')),
+      h('dt', null, D.t('approved_amt')), h('dd', { style: 'color:#12784A' }, D.money(amount)), h('dt', null, D.t('deductible')), h('dd', null, D.deductible(c)),
       h('dt', null, D.t('net_payable')), h('dd', null, D.money(amount))));
     var recipient = h('section', { class: 'acard' }, h('h2', null, D.t('recipient')), h('dl', { class: 'kv' }, h('dt', null, D.t('policyholder')), h('dd', null, c.customer_name || '—'), h('dt', null, D.t('policy_no')), h('dd', null, c.policy_number || '—')));
 

@@ -27,10 +27,10 @@ Opes.page(function (ctx) {
       h('tr', null, h('td', null, D.t('est_cost')), h('td', null, D.money(c.estimated_loss_minor))),
       p ? h('tr', null, h('td', null, D.t('decision')), h('td', null, D.t('d_' + p.decision))) : null,
       p ? h('tr', null, h('td', null, D.t('reason')), h('td', null, ((window.DESK_T.reasons || {})[p.reason_code]) || D.type(p.reason_code))) : null,
-      h('tr', null, h('td', null, D.t('deductible')), h('td', null, D.t('deductible_na'))),
+      h('tr', null, h('td', null, D.t('deductible')), h('td', null, D.deductible(c))),
       h('tr', { class: 'tot' }, h('td', null, D.t('net_payable')), h('td', null, amount !== null && amount !== undefined ? D.money(amount) : '—')))));
     var est = D.card(D.t('estimate'), 'edit', p && p.rationale ? h('pre', { class: 'pd-box', style: 'white-space:pre-wrap;font:inherit;font-size:13.5px;margin:0' }, p.rationale) : h('p', { class: 'sub' }, D.t('no_assess')));
-    var docs = D.card(D.t('docs'), 'doc', D.note(D.t('docs_na')));
+    var docs = D.card(D.t('docs'), 'doc', D.docs(c));
     var hist = D.card(D.t('history'), 'clock', D.timeline(c));
 
     O.clear(box).append(h('div', { class: 'agrid' }, D.stepper(c),

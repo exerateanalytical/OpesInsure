@@ -13,4 +13,6 @@ return [
     'override_not_effective' => "La dérogation n'est pas approuvée pour cette offre.",
     'comparison_offers_invalid' => 'Chaque offre comparée doit être une offre valide de ce devis.',
     'comparison_size' => 'Comparez entre :min et :max offres.',
+    'covers_invalid' => "Choisissez les garanties optionnelles parmi celles proposées pour cette branche.",
+    'cover_limits_invalid' => "Chaque plafond doit être un montant entier positif pour une garantie de cette branche.",
 ];

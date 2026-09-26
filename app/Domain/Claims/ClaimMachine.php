@@ -32,6 +32,9 @@ final class ClaimMachine
         'PAYMENT_PENDING' => 'SETTLEMENT_PENDING', 'PAID' => 'SETTLED', 'CLOSED' => 'CLOSED', 'REOPENED' => 'REOPENED',
     ];
 
+    /** Stored statuses from which the claimant may still withdraw (before assessment, decision or payment). */
+    public const WITHDRAWABLE = ['SUBMITTED', 'ACKNOWLEDGED', 'EVIDENCE_PENDING'];
+
     private static ?StateMachineDefinition $machine = null;
 
     public static function blueprintState(string $status): string
@@ -78,6 +81,8 @@ final class ClaimMachine
                 ['event' => 'settle', 'from' => ['APPROVED', 'PARTIALLY_APPROVED', 'PAYMENT_PENDING'], 'to' => 'PAID', 'domain_event' => 'claim.payment.paid'],
                 ['event' => 'close', 'from' => ['APPROVED', 'DECLINED', 'PAID', 'DISPUTED'], 'to' => 'CLOSED'],
                 ['event' => 'reopen', 'from' => ['CLOSED'], 'to' => 'REOPENED'],
+                // Claimant withdrawal before any assessment/decision/payment (MobileClaimService::withdraw).
+                ['event' => 'withdraw', 'from' => ClaimMachine::WITHDRAWABLE, 'to' => 'CLOSED', 'domain_event' => 'claim.withdrawn'],
             ],
         ]);
     }

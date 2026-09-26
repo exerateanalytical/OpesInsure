@@ -1,4 +1,4 @@
-{{-- /account/claims — design screens/compare_buy_flow/08_stage.png. Data: GET /mobile/claims (all pages). --}}
+{{-- /account/claims — design screens/compare_buy_flow/08_stage.png. Data: GET /mobile/claims (all pages) + GET /mobile/claims/drafts (Drafts tab). --}}
 @php $L = __('account_claims.js'); @endphp
 @extends('public.account.layout', ['title' => __('account_claims.list.title'), 'lede' => __('account_claims.list.lede'), 'crumbs' => [[__('account_claims.list.title'), null]], 'active' => 'claims'])
 @include('public.account.claims.assets')
@@ -70,9 +70,15 @@ Opes.page(function () {
   var state = { tab: 'all', page: 1, per: 10 };
   var claims = [];
 
-  function reported(c) { return c.submitted_at || c.created_at; }
+  function reported(c) { return c.__draft ? c.updated_at : (c.submitted_at || c.created_at); }
+  /** A saved draft (claim_drafts) shaped like a claim row. */
+  function fromDraft(d) {
+    var pl = d.payload || {};
+    return { __draft: true, id: d.id, status: 'DRAFT', policy: d.policy || null, updated_at: d.updated_at, incident_type: pl.incident_type,
+      incident_location: pl.incident_location, estimated_loss_minor: pl.estimated_loss_minor, approved_amount_minor: null };
+  }
   function setStats() {
-    var n = claims.length, cnt = { progress: 0, approved: 0, rejected: 0, draft: 0 }, paid = 0;
+    var n = claims.filter(function (c) { return !c.__draft; }).length, cnt = { progress: 0, approved: 0, rejected: 0, draft: 0 }, paid = 0;
     claims.forEach(function (c) {
       var b = K.bucket(c); if (cnt[b] !== undefined) cnt[b]++;
       var s = K.up(c.status);
@@ -86,7 +92,7 @@ Opes.page(function () {
   }
   function fillFilters() {
     var lines = {}, sts = {};
-    claims.forEach(function (c) { var l = K.line(c.policy); if (l) lines[l] = K.lineLabel(c.policy); sts[K.up(c.status)] = K.statusLabel(c.status); });
+    claims.forEach(function (c) { var l = K.line(c.policy); if (l) lines[l] = K.lineLabel(c.policy); sts[K.shown(c)] = K.statusLabel(K.shown(c)); });
     var ls = $('[data-f="line"]'), ss = $('[data-f="status"]');
     Object.keys(lines).forEach(function (k) { ls.appendChild(h('option', { value: k }, lines[k])); });
     Object.keys(sts).forEach(function (k) { ss.appendChild(h('option', { value: k }, sts[k])); });
@@ -97,33 +103,42 @@ Opes.page(function () {
     return claims.filter(function (c) {
       if (state.tab !== 'all' && K.bucket(c) !== state.tab) return false;
       if (line && K.line(c.policy) !== line) return false;
-      if (st && K.up(c.status) !== st) return false;
+      if (st && K.shown(c) !== st) return false;
       var d = (reported(c) || '').slice(0, 10);
       if (from && d < from) return false;
       if (to && d > to) return false;
       if (q) {
-        var hay = [c.claim_number, K.itemTitle(c.policy), K.itemSub(c.policy), c.policy && c.policy.policy_number, K.typeLabel(K.incidentType(c)), K.statusLabel(c.status), c.incident_location].join(' ').toLowerCase();
+        var hay = [c.claim_number, K.itemTitle(c.policy), K.itemSub(c.policy), c.policy && c.policy.policy_number, K.typeLabel(K.incidentType(c)), K.statusLabel(K.shown(c)), c.incident_location].join(' ').toLowerCase();
         if (hay.indexOf(q) < 0) return false;
       }
       return true;
     }).sort(function (a, b) { return String(reported(b)).localeCompare(String(reported(a))); });
   }
+  function discard(c, btn) {
+    if (!window.confirm(T.drafts.discard_confirm)) return;
+    Opes.busy(btn, true);
+    Opes.api('/mobile/claims/drafts/' + encodeURIComponent(c.id), { method: 'DELETE' }).then(function () {
+      claims = claims.filter(function (x) { return x !== c; }); setStats(); render(); Opes.alert(T.drafts.discarded, 'ok');
+    }).catch(function (e) { Opes.busy(btn, false); Opes.alert(e.message); });
+  }
   function row(c) {
-    var p = c.policy || {}, t = K.incidentType(c), href = '/account/claims/' + encodeURIComponent(c.id);
+    var p = c.policy || {}, t = K.incidentType(c), href = c.__draft ? '/account/claims/new?draft=' + encodeURIComponent(c.id) : '/account/claims/' + encodeURIComponent(c.id);
     var dt = reported(c);
     return h('tr', null,
-      h('td', null, h('a', { class: 'rowlink', href: href }, c.claim_number || '—')),
+      h('td', null, h('a', { class: 'rowlink', href: href }, c.__draft ? T.drafts.untitled : (c.claim_number || '—'))),
       h('td', null, Opes.date(dt), h('small', { class: 'cl-sub' }, dt ? new Intl.DateTimeFormat(Opes.locale === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Douala' }).format(new Date(dt)) : '')),
       h('td', null, K.itemTitle(p), h('small', { class: 'cl-sub' }, p.policy_number || '')),
       h('td', null, h('span', { class: 'cl-type' }, Opes.icon(K.typeIcon(t)), K.typeLabel(t))),
-      h('td', null, K.chip(c.status)),
+      h('td', null, K.chip(K.shown(c))),
       h('td', { class: 'num' }, K.amount(c.estimated_loss_minor)),
       h('td', { class: 'num' }, K.amount(c.approved_amount_minor)),
-      h('td', null, h('a', { class: 'dbtn dbtn-outline sm cl-view', href: href }, T.view)));
+      h('td', null, c.__draft ? h('span', { style: 'display:inline-flex;gap:6px' }, h('a', { class: 'dbtn dbtn-outline sm cl-view', href: href, 'data-resume': c.id }, T.drafts.resume),
+        (function () { var b = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-discard': c.id, onclick: function () { discard(c, b); } }, T.drafts.discard); return b; })())
+        : h('a', { class: 'dbtn dbtn-outline sm cl-view', href: href }, T.view)));
   }
   function render() {
     var rows = filtered(), pager = $('[data-pager]');
-    if (!rows.length) { pager.hidden = true; return Opes.empty(body, claims.length ? T.none_filtered : T.none, claims.length ? null : h('a', { class: 'dbtn dbtn-primary sm', href: '/account/claims/new' }, T.file_new)); }
+    if (!rows.length) { pager.hidden = true; return Opes.empty(body, state.tab === 'draft' ? T.drafts.none : claims.length ? T.none_filtered : T.none, claims.length ? null : h('a', { class: 'dbtn dbtn-primary sm', href: '/account/claims/new' }, T.file_new)); }
     var pages = Math.max(1, Math.ceil(rows.length / state.per));
     if (state.page > pages) state.page = pages;
     var start = (state.page - 1) * state.per, slice = rows.slice(start, start + state.per);
@@ -147,8 +162,10 @@ Opes.page(function () {
     if (e.dataset.f === 'per') state.per = Number(e.value) || 10; state.page = 1; render();
   }); });
 
-  return K.all('/mobile/claims').then(function (items) {
-    claims = items; setStats(); fillFilters(); render();
+  return Promise.all([K.all('/mobile/claims'), Opes.api('/mobile/claims/drafts').catch(function () { return []; })]).then(function (r) {
+    var drafts = Array.isArray(r[1]) ? r[1] : (r[1] && r[1].data) || [];
+    claims = r[0].concat(drafts.map(fromDraft));
+    if (location.hash === '#drafts') { var dt = $('[data-tab="draft"]'); if (dt) { state.tab = 'draft'; $$('[data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x === dt ? 'true' : 'false'); }); } } setStats(); fillFilters(); render();
   }).catch(function (e) { Opes.fail(body, e); });
 });
 </script>

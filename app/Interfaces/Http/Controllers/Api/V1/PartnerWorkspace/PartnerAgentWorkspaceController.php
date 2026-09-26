@@ -93,7 +93,12 @@ final class PartnerAgentWorkspaceController
         $book = $this->scope->bookPartyIds($this->scope->agent($request->user()));
         $rows = Policy::with(['party', 'carrier.party'])->where('tenant_id', $t)->whereIn('party_id', $book)->orderByDesc('issued_at')->limit(100)->get();
 
-        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values()]);
+        // customer_id = the TenantCustomer id the agent client list uses, so the web client page can match policies by id.
+        $customers = TenantCustomer::where('tenant_id', $t)->whereIn('party_id', $rows->pluck('party_id')->unique()->all())->pluck('id', 'party_id');
+
+        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p) + [
+            'party_id' => $p->party_id, 'customer_id' => $customers[$p->party_id] ?? null,
+        ])->values()]);
     }
 
     // ------------------------------------------------------------ shapes

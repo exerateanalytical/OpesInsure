@@ -42,13 +42,13 @@ return [
         'status' => [
             'DRAFT' => 'Draft', 'SUBMITTED' => 'Submitted', 'ACKNOWLEDGED' => 'Acknowledged', 'EVIDENCE_PENDING' => 'Documents requested',
             'CARRIER_REVIEW' => 'Insurer review', 'ASSESSMENT' => 'Under assessment', 'APPROVED' => 'Approved', 'PARTIALLY_APPROVED' => 'Partially approved',
-            'DECLINED' => 'Rejected', 'DISPUTED' => 'Disputed', 'PAID' => 'Paid', 'CLOSED' => 'Closed',
+            'DECLINED' => 'Rejected', 'DISPUTED' => 'Disputed', 'PAID' => 'Paid', 'CLOSED' => 'Closed', 'WITHDRAWN' => 'Withdrawn',
         ],
         'events' => [
             'SUBMITTED' => 'Claim submitted', 'ACKNOWLEDGED' => 'Claim acknowledged by the insurer', 'EVIDENCE_REQUESTED' => 'Documents requested',
             'EVIDENCE_PENDING' => 'Documents requested', 'CARRIER_REVIEW' => 'Insurer review started', 'ASSESSMENT' => 'Assessment started',
             'APPROVED' => 'Claim approved', 'PARTIALLY_APPROVED' => 'Claim partially approved', 'DECLINED' => 'Claim rejected', 'DISPUTED' => 'Decision disputed',
-            'PAID' => 'Payment made', 'CLOSED' => 'Claim closed',
+            'PAID' => 'Payment made', 'CLOSED' => 'Claim closed', 'CLAIM_WITHDRAWN' => 'Claim withdrawn by you',
         ],
         'types' => [
             'COLLISION' => 'Accident (Collision)', 'ACCIDENT' => 'Accident', 'THEFT' => 'Theft', 'FIRE' => 'Fire', 'NATURAL_DISASTER' => 'Natural Disaster',
@@ -57,6 +57,13 @@ return [
         ],
         'type_cards' => ['COLLISION', 'THEFT', 'FIRE', 'NATURAL_DISASTER', 'VANDALISM', 'GLASS_DAMAGE', 'WATER_DAMAGE', 'MEDICAL', 'OTHER'],
         'lines' => ['MOTOR' => 'Motor Insurance', 'HOME' => 'Home Insurance', 'TRAVEL' => 'Travel Insurance', 'HEALTH' => 'Health Insurance', 'LIFE' => 'Life Insurance', 'BUSINESS' => 'Business Insurance'],
+        'drafts' => [
+            'none' => 'You have no saved drafts.', 'untitled' => 'Draft', 'saved_on' => 'Saved :date', 'resume' => 'Resume', 'discard' => 'Discard',
+            'discard_confirm' => 'Discard this draft? This cannot be undone.', 'discarded' => 'Draft discarded.',
+            'save' => 'Save as Draft', 'saving' => 'Saving draft…', 'saved' => 'Draft saved. You can resume it later from the Drafts tab.',
+            'resumed' => 'Draft restored. Re-attach any documents before submitting — files are not stored with drafts.',
+            'not_found' => 'This draft could not be found. It may have been submitted or discarded.',
+        ],
         // New claim
         'wiz' => [
             'steps' => [['Policy Selection', 'Choose policy'], ['Incident Details', 'Provide information'], ['Documents', 'Upload files'], ['Review & Submit', 'Confirm and submit']],
@@ -107,6 +114,13 @@ return [
             'next_t' => 'Next Steps', 'important' => 'Important Information', 'important_d' => 'Keep all original documents. Your insurer may request additional documents during the assessment.',
             'print' => 'Print / Save Summary', 'contact' => 'Contact Claims Support', 'uploaded_ok' => 'Document uploaded.',
             'not_found' => 'This claim could not be found in your account.',
+            'withdraw' => [
+                'btn' => 'Withdraw Claim', 'title' => 'Withdraw this claim?',
+                'text' => 'Withdrawing closes the claim and stops the insurer’s review. You can only withdraw before the assessment starts.',
+                'reason' => 'Reason for withdrawing', 'reason_ph' => 'e.g. settled privately with the other party',
+                'confirm' => 'Withdraw Claim', 'cancel' => 'Keep Claim', 'err_reason' => 'Please give a reason (at least 3 characters).',
+                'done' => 'Your claim has been withdrawn.', 'withdrawn_on' => 'Withdrawn on :date',
+            ],
             'next' => [
                 'submitted' => 'Your insurer will acknowledge the claim and tell you which documents are needed.',
                 'review' => 'Upload any missing requested documents so the review can continue.',
@@ -114,6 +128,7 @@ return [
                 'approval' => 'The insurer has made a decision. Check the settlement details below.',
                 'payment' => 'Payment has been made. The claim will be closed shortly.',
                 'closed' => 'This claim is closed. Contact support if you have a question.',
+                'withdrawn' => 'You withdrew this claim. Contact support if you need to reopen it.',
                 'declined' => 'The insurer declined this claim. Contact support if you want to discuss the decision.',
             ],
         ],

@@ -82,3 +82,13 @@
 @media (max-width:1300px){.desk-main,.desk-2{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:900px){[data-desk] .agrid.c2{grid-template-columns:minmax(0,1fr)}}
 .statc>div{min-width:0}
+
+/* Claim evidence (documents list + photo thumbnails) */
+.desk-docs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.desk-docs li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+.desk-docs li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.desk-docs li > div:last-child { flex-direction: row; align-items: center; gap: 8px; }
+.desk-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.desk-photos figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.desk-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: block; }
+.desk-photos figcaption { font-size: 12px; opacity: .75; }

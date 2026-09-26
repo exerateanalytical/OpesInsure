@@ -256,3 +256,77 @@ it('REQ-SET-006: accepts policy_number from carrier app 1.3.0, allocates the num
         ->and($res->json('data.policy_number'))->toBe($policy->policy_number)
         ->and($policy->issuance_reference)->toBe('CARRIER-OWN-42');
 });
+
+// ------------------------------------------------ claim evidence (own carrier)
+
+function w16ClaimEvidence(array $w, Claim $claim, string $scan = 'CLEAN', string $mime = 'image/jpeg'): App\Models\Document
+{
+    $doc = App\Models\Document::create(['tenant_id' => $w['tenant']->id, 'party_id' => $claim->claimant_party_id, 'category' => 'CLAIM_EVIDENCE', 'storage_key' => 'claims/'.Str::random(10),
+        'mime_type' => $mime, 'size_bytes' => 2048, 'sha256' => hash('sha256', Str::random(20)), 'scan_status' => $scan, 'verification_status' => 'UNVERIFIED', 'ocr_data' => []]);
+    DB::table('claim_documents')->insert(['id' => (string) Str::uuid(), 'claim_id' => $claim->id, 'document_id' => $doc->id, 'evidence_type' => 'DAMAGE_PHOTO',
+        'evidence_hash' => $doc->sha256, 'status' => 'SUBMITTED', 'submitted_by' => $w['staff']->id, 'submitted_at' => now()]);
+
+    return $doc;
+}
+
+it('lets insurer staff list and open the evidence of a claim on its own carrier, with a logged signed URL', function () {
+    $w = w16CarrierWorld();
+    $h = w16CarrierHeaders($w['tenant']);
+    $claim = makeMobileTestClaim($w['tenant'], $w['mine']['policy'], $w['mine']['party']);
+    $clean = w16ClaimEvidence($w, $claim);
+    $pending = w16ClaimEvidence($w, $claim, 'PENDING', 'application/pdf');
+
+    Passport::actingAs($w['staff']);
+    $rows = collect($this->getJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/evidence", $h)->assertStatus(200)->json('data'));
+    expect($rows->pluck('document_id')->sort()->values()->all())->toBe(collect([$clean->id, $pending->id])->sort()->values()->all())
+        ->and($rows->firstWhere('document_id', $clean->id))->toMatchArray(['evidence_type' => 'DAMAGE_PHOTO', 'is_image' => true, 'downloadable' => true])
+        ->and($rows->firstWhere('document_id', $pending->id)['downloadable'])->toBeFalse()
+        ->and($rows->first())->not->toHaveKey('storage_key');
+
+    $url = $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/evidence/{$clean->id}/access", [], w16CarrierHeaders($w['tenant']))->assertStatus(200)->json('data.url');
+    expect($url)->toContain('signature=')
+        ->and(DB::table('document_access_log')->where(['document_id' => $clean->id, 'actor_id' => $w['staff']->id, 'purpose' => 'CARRIER_CLAIM_REVIEW'])->exists())->toBeTrue();
+    $this->postJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}/evidence/{$pending->id}/access", [], w16CarrierHeaders($w['tenant']))->assertStatus(422);
+});
+
+it('404s evidence of another insurer\'s claim and of a document not linked to the claim', function () {
+    $w = w16CarrierWorld();
+    $theirs = makeMobileTestClaim($w['tenant'], $w['theirs']['policy'], $w['theirs']['party']);
+    $theirDoc = w16ClaimEvidence($w, $theirs);
+    $mine = makeMobileTestClaim($w['tenant'], $w['mine']['policy'], $w['mine']['party']);
+
+    Passport::actingAs($w['staff']);
+    $this->getJson("/api/v1/mobile/partner/carrier/claims/{$theirs->id}/evidence", w16CarrierHeaders($w['tenant']))->assertStatus(404);
+    $this->postJson("/api/v1/mobile/partner/carrier/claims/{$theirs->id}/evidence/{$theirDoc->id}/access", [], w16CarrierHeaders($w['tenant']))->assertStatus(404);
+    // Own claim id + another claim's document: still 404 (no cross-claim document reads).
+    $this->postJson("/api/v1/mobile/partner/carrier/claims/{$mine->id}/evidence/{$theirDoc->id}/access", [], w16CarrierHeaders($w['tenant']))->assertStatus(404);
+    expect(DB::table('document_access_log')->where('document_id', $theirDoc->id)->exists())->toBeFalse();
+});
+
+it('403s a customer on the carrier claim evidence endpoints', function () {
+    $fixture = makeMobileCustomerFixture('+237670003901');
+    Passport::actingAs($fixture['user']);
+    $z = '00000000-0000-0000-0000-000000000000';
+    $this->getJson("/api/v1/mobile/partner/carrier/claims/{$z}/evidence", w16CarrierHeaders($fixture['tenant']))->assertStatus(403);
+    $this->postJson("/api/v1/mobile/partner/carrier/claims/{$z}/evidence/{$z}/access", [], w16CarrierHeaders($fixture['tenant']))->assertStatus(403);
+});
+
+it('adds the insured vehicle and the coverage deductibles to the carrier claim detail', function () {
+    $w = w16CarrierWorld();
+    $quoteId = (string) Str::uuid();
+    DB::table('quotes')->insert(['id' => $quoteId, 'tenant_id' => $w['tenant']->id, 'party_id' => $w['mine']['party']->id, 'line_code' => 'MOTOR', 'status' => 'ACCEPTED', 'currency' => 'XAF',
+        'risk_facts' => json_encode(['registration_number' => 'LT 123 AB', 'make' => 'Toyota', 'model' => 'Corolla', 'year' => '2021', 'driver_phone' => '+237600000000']), 'channel' => 'B2C', 'version' => 1, 'created_at' => now(), 'updated_at' => now()]);
+    $w['mine']['policy']->update(['terms_snapshot' => ['quote_id' => $quoteId, 'coverage_snapshot' => ['coverages' => [
+        ['code' => 'OWN_DAMAGE', 'name' => ['en' => 'Own damage'], 'limit_minor' => 500000000, 'deductible_minor' => 2500000],
+        ['code' => 'THIRD_PARTY', 'name' => ['en' => 'Third party'], 'limit_minor' => 500000000, 'deductible_minor' => 0],
+    ]]]]);
+    $claim = makeMobileTestClaim($w['tenant'], $w['mine']['policy'], $w['mine']['party']);
+    $claim->update(['loss_details' => ['coverage_code' => 'OWN_DAMAGE', 'description' => 'Rear-ended']]);
+
+    Passport::actingAs($w['staff']);
+    $d = $this->getJson("/api/v1/mobile/partner/carrier/claims/{$claim->id}", w16CarrierHeaders($w['tenant']))->assertStatus(200)->json('data');
+    expect($d['insured_item'])->toMatchArray(['line_code' => 'MOTOR', 'registration_number' => 'LT 123 AB', 'make' => 'Toyota', 'model' => 'Corolla'])
+        ->and($d['insured_item'])->not->toHaveKey('driver_phone')
+        ->and($d['deductible_minor'])->toBe(2500000)
+        ->and(collect($d['deductibles'])->pluck('code')->all())->toBe(['OWN_DAMAGE', 'THIRD_PARTY']);
+});

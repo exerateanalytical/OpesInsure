@@ -13,4 +13,6 @@ return [
     'override_not_effective' => 'The override is not approved for this offer.',
     'comparison_offers_invalid' => 'Every compared offer must be a live offer of this quote.',
     'comparison_size' => 'Compare between :min and :max offers.',
+    'covers_invalid' => 'Choose optional covers from the list offered for this insurance line.',
+    'cover_limits_invalid' => 'Each cover limit must be a positive whole amount for a cover of this insurance line.',
 ];

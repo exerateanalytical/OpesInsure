@@ -97,7 +97,8 @@ final class RatingService
     {
         $runId = (string) Str::uuid();
         $asOf = CarbonImmutable::now();
-        $hashInput = ['facts' => $quote->risk_facts, 'rules_hash' => $tariff->rules_hash];
+        // The quote version is part of the run identity: an amended quote that returns to earlier facts is a new run.
+        $hashInput = ['facts' => $quote->risk_facts, 'rules_hash' => $tariff->rules_hash, 'quote_version' => (int) $quote->version];
         // The verified fiscal power / stamp duty schedule is a rating input too (a re-rate after verification is a new run).
         $fiscal = app(VehicleStampDutyService::class)->resolve((string) $quote->line_code, (array) $quote->risk_facts, $quote->tenant_id, $at->businessDate(), $tariff->product);
         if (! in_array($fiscal['status'], ['NOT_APPLICABLE', 'NOT_CONFIGURED'], true)) {

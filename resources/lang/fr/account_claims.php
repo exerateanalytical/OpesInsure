@@ -42,13 +42,13 @@ return [
         'status' => [
             'DRAFT' => 'Brouillon', 'SUBMITTED' => 'Déclaré', 'ACKNOWLEDGED' => 'Accusé de réception', 'EVIDENCE_PENDING' => 'Documents demandés',
             'CARRIER_REVIEW' => 'Examen assureur', 'ASSESSMENT' => 'En expertise', 'APPROVED' => 'Approuvé', 'PARTIALLY_APPROVED' => 'Approuvé partiellement',
-            'DECLINED' => 'Refusé', 'DISPUTED' => 'Contesté', 'PAID' => 'Payé', 'CLOSED' => 'Clôturé',
+            'DECLINED' => 'Refusé', 'DISPUTED' => 'Contesté', 'PAID' => 'Payé', 'CLOSED' => 'Clôturé', 'WITHDRAWN' => 'Retiré',
         ],
         'events' => [
             'SUBMITTED' => 'Sinistre déclaré', 'ACKNOWLEDGED' => 'Réception confirmée par l\'assureur', 'EVIDENCE_REQUESTED' => 'Documents demandés',
             'EVIDENCE_PENDING' => 'Documents demandés', 'CARRIER_REVIEW' => 'Examen par l\'assureur', 'ASSESSMENT' => 'Expertise démarrée',
             'APPROVED' => 'Sinistre approuvé', 'PARTIALLY_APPROVED' => 'Sinistre approuvé partiellement', 'DECLINED' => 'Sinistre refusé', 'DISPUTED' => 'Décision contestée',
-            'PAID' => 'Paiement effectué', 'CLOSED' => 'Sinistre clôturé',
+            'PAID' => 'Paiement effectué', 'CLOSED' => 'Sinistre clôturé', 'CLAIM_WITHDRAWN' => 'Sinistre retiré par vous',
         ],
         'types' => [
             'COLLISION' => 'Accident (collision)', 'ACCIDENT' => 'Accident', 'THEFT' => 'Vol', 'FIRE' => 'Incendie', 'NATURAL_DISASTER' => 'Catastrophe naturelle',
@@ -57,6 +57,13 @@ return [
         ],
         'type_cards' => ['COLLISION', 'THEFT', 'FIRE', 'NATURAL_DISASTER', 'VANDALISM', 'GLASS_DAMAGE', 'WATER_DAMAGE', 'MEDICAL', 'OTHER'],
         'lines' => ['MOTOR' => 'Assurance automobile', 'HOME' => 'Assurance habitation', 'TRAVEL' => 'Assurance voyage', 'HEALTH' => 'Assurance santé', 'LIFE' => 'Assurance vie', 'BUSINESS' => 'Assurance entreprise'],
+        'drafts' => [
+            'none' => 'Vous n’avez aucun brouillon enregistré.', 'untitled' => 'Brouillon', 'saved_on' => 'Enregistré le :date', 'resume' => 'Reprendre', 'discard' => 'Supprimer',
+            'discard_confirm' => 'Supprimer ce brouillon ? Cette action est irréversible.', 'discarded' => 'Brouillon supprimé.',
+            'save' => 'Enregistrer le brouillon', 'saving' => 'Enregistrement du brouillon…', 'saved' => 'Brouillon enregistré. Vous pourrez le reprendre depuis l’onglet Brouillons.',
+            'resumed' => 'Brouillon restauré. Rajoutez vos documents avant de soumettre — les fichiers ne sont pas conservés dans les brouillons.',
+            'not_found' => 'Ce brouillon est introuvable. Il a peut-être été soumis ou supprimé.',
+        ],
         'wiz' => [
             'steps' => [['Choix du contrat', 'Choisir le contrat'], ['Détails de l\'incident', 'Renseigner'], ['Documents', 'Joindre les fichiers'], ['Vérifier et soumettre', 'Confirmer']],
             's1' => '1. Choisissez le contrat concerné', 's1d' => 'Sélectionnez le contrat à utiliser pour ce sinistre.', 'all_policies' => 'Voir tous mes contrats',
@@ -105,6 +112,13 @@ return [
             'next_t' => 'Prochaines étapes', 'important' => 'Informations importantes', 'important_d' => 'Conservez tous les originaux. Votre assureur peut demander des documents supplémentaires pendant l\'expertise.',
             'print' => 'Imprimer / enregistrer le récapitulatif', 'contact' => 'Contacter le support sinistres', 'uploaded_ok' => 'Document envoyé.',
             'not_found' => 'Ce sinistre est introuvable dans votre compte.',
+            'withdraw' => [
+                'btn' => 'Retirer le sinistre', 'title' => 'Retirer ce sinistre ?',
+                'text' => 'Le retrait clôture le sinistre et arrête l’examen par l’assureur. Vous ne pouvez le retirer qu’avant le début de l’expertise.',
+                'reason' => 'Motif du retrait', 'reason_ph' => 'ex. réglé à l’amiable avec l’autre partie',
+                'confirm' => 'Retirer le sinistre', 'cancel' => 'Conserver le sinistre', 'err_reason' => 'Indiquez un motif (au moins 3 caractères).',
+                'done' => 'Votre sinistre a été retiré.', 'withdrawn_on' => 'Retiré le :date',
+            ],
             'next' => [
                 'submitted' => 'Votre assureur va accuser réception et vous indiquer les documents nécessaires.',
                 'review' => 'Envoyez les documents demandés manquants pour que l\'examen se poursuive.',
@@ -112,6 +126,7 @@ return [
                 'approval' => 'L\'assureur a pris sa décision. Consultez le règlement ci-dessous.',
                 'payment' => 'Le paiement a été effectué. Le sinistre sera bientôt clôturé.',
                 'closed' => 'Ce sinistre est clôturé. Contactez le support pour toute question.',
+                'withdrawn' => 'Vous avez retiré ce sinistre. Contactez le support si vous souhaitez le rouvrir.',
                 'declined' => 'L\'assureur a refusé ce sinistre. Contactez le support pour en discuter.',
             ],
         ],

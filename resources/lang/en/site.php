@@ -11,7 +11,7 @@ return [
     'nav' => [
         'insurance' => 'Insurance', 'providers' => 'Providers', 'claims' => 'Claims', 'how' => 'How It Works', 'about' => 'About',
         'search' => 'Search', 'search_label' => 'Search insurers and brokers', 'search_placeholder' => 'Search an insurer or broker…', 'search_go' => 'Search',
-        'sign_in' => 'Sign In', 'compare' => 'Compare Insurance', 'menu' => 'Menu', 'language' => 'Language', 'main' => 'Main navigation',
+        'my_account' => 'My Account', 'sign_in' => 'Sign In', 'compare' => 'Compare Insurance', 'menu' => 'Menu', 'language' => 'Language', 'main' => 'Main navigation',
     ],
 
     'hero' => [

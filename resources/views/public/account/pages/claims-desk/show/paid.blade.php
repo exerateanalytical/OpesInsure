@@ -32,7 +32,7 @@ Opes.page(function (ctx) {
 
     var details = D.card(D.t('pay_details_t'), 'doc', h('div', { class: 'desk-fields c3' },
       D.field(D.t('claim_no'), c.claim_number), D.field(D.t('approved_amt'), D.money(c.approved_amount_minor), 'money ok'), D.field(D.t('pay_date'), when ? O.date(when, true) : '—'),
-      D.field(D.t('policy_no'), c.policy_number), D.field(D.t('deductible'), D.t('deductible_na')), D.field(D.t('tx_ref'), pay && pay.external_reference),
+      D.field(D.t('policy_no'), c.policy_number), D.field(D.t('deductible'), D.deductible(c)), D.field(D.t('tx_ref'), pay && pay.external_reference),
       D.field(D.t('incident_type'), D.type(c.incident_type)), D.field(D.t('net_payable'), D.money(amount), 'money ok'), D.field(D.t('beneficiary'), c.customer_name)));
 
     var next = D.card(D.t('next_steps'), 'bulb', h('div', null, h('p', { class: 'sub' }, D.t('next_steps_d')), h('div', { class: 'nsteps' },

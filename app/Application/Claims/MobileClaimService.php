@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Application\Claims;
 
+use App\Application\Audit\AuditWriter;
+use App\Application\Events\OutboxWriter;
 use App\Application\Identity\PartyResolver;
+use App\Domain\Claims\ClaimMachine;
 use App\Models\Claim;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -32,6 +36,9 @@ final class MobileClaimService
     public function __construct(
         private PartyResolver $parties,
         private Fnol\FnolService $fnol,
+        private ClaimTransitions $transitions,
+        private AuditWriter $audit,
+        private OutboxWriter $outbox,
     ) {
     }
 
@@ -42,7 +49,47 @@ final class MobileClaimService
 
     public function show(string $claimId, User $user, string $tenantId): Claim
     {
-        return $this->owned($claimId, $user, $tenantId)->load('policy');
+        $claim = $this->owned($claimId, $user, $tenantId)->load('policy');
+
+        return $claim->setAttribute('can_withdraw', self::canWithdraw($claim));
+    }
+
+    public static function canWithdraw(Claim $claim): bool
+    {
+        return in_array($claim->status, ClaimMachine::WITHDRAWABLE, true);
+    }
+
+    /**
+     * Claimant withdrawal: only the claim's own claimant, only before assessment/decision/payment
+     * (ClaimMachine::WITHDRAWABLE → event `withdraw` → CLOSED). Goes through ClaimTransitions (guards +
+     * machine history) and writes claim_events, audit and outbox in one transaction like every claim action.
+     */
+    public function withdraw(string $claimId, string $reason, User $user, string $tenantId): Claim
+    {
+        $this->owned($claimId, $user, $tenantId);
+
+        return DB::transaction(function () use ($claimId, $reason, $user) {
+            $claim = Claim::whereKey($claimId)->lockForUpdate()->firstOrFail();
+            if (! self::canWithdraw($claim)) {
+                throw ValidationException::withMessages(['status' => __('wave12.claim_withdraw_not_allowed')]);
+            }
+            $from = $claim->status;
+            $to = $this->transitions->apply($claim, 'CLOSED', $user, 'WITHDRAWN_BY_CLAIMANT', ['withdrawal_reason' => $reason])->to;
+            $claim->update([
+                'status' => $to, 'closed_at' => now(), 'withdrawn_at' => now(), 'withdrawal_reason' => $reason,
+                'closure_summary' => 'Withdrawn by claimant: '.$reason, 'version' => (int) $claim->version + 1,
+            ]);
+            DB::table('claim_events')->insert([
+                'id' => (string) Str::uuid(), 'claim_id' => $claim->id, 'type' => 'CLAIM_WITHDRAWN', 'from_status' => $from, 'to_status' => $to,
+                'reason_code' => 'WITHDRAWN_BY_CLAIMANT', 'actor_id' => $user->id,
+                'details' => json_encode(['reason' => $reason], JSON_THROW_ON_ERROR), 'occurred_at' => now(),
+            ]);
+            $payload = ['from' => $from, 'to' => $to, 'claim_number' => $claim->claim_number];
+            $this->audit->record('claim.withdrawn', 'claim', $claim->id, $payload + ['reason' => $reason], 'WITHDRAWN_BY_CLAIMANT');
+            $this->outbox->record('claim.withdrawn', 'claim', $claim->id, $payload);
+
+            return $claim->refresh()->load('policy')->setAttribute('can_withdraw', false);
+        });
     }
 
     /** @return LengthAwarePaginator Chronological (oldest first) status-change history for one owned claim. */

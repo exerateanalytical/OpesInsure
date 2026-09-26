@@ -170,3 +170,8 @@
 @media (max-width:420px){.cl-stats{grid-template-columns:minmax(0,1fr)}}
 .cl-top,.cl-main,.cl-main>*,.cl-listcard,[data-page-body]{min-width:0;max-width:100%}
 @media (max-width:420px){.cl-stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.cl-stat{padding:10px;gap:8px}.cl-stat .cl-sq{width:36px;height:36px}.cl-stat:last-child{grid-column:1/-1}}
+/* Withdraw-claim confirm dialog (claims/show) */
+.cl-dlg{border:0;border-radius:14px;padding:20px;width:min(520px,calc(100vw - 32px));box-shadow:0 24px 60px rgba(3,28,68,.3)}.cl-dlg::backdrop{background:rgba(3,28,68,.4)}
+.cl-dlg h2{font-size:18px;color:#0A1E4D;margin:0 0 8px}.cl-dlg p{font-size:13.5px;margin:0 0 12px}.cl-dlg textarea{width:100%;min-height:90px}
+.cl-dlg .btnbar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}.cl-dlg .err{color:#B42318;font-size:13px;margin:6px 0 0}
+.dbtn.cl-danger{color:#B42318;border-color:#F2B8B5}

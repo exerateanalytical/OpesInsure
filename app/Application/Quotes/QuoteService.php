@@ -182,8 +182,7 @@ final class QuoteService
                     'quote_id' => $quote->id, 'carrier_id' => $product->carrier_id, 'product_id' => $product->id, 'tariff_version_id' => $tariff->id,
                     'premium_minor' => $result->netPremiumMinor, 'tax_minor' => $result->taxMinor, 'fee_minor' => $result->feeMinor, 'total_minor' => $result->totalMinor,
                     'currency' => $quote->currency, 'status' => 'OFFERED', 'calculation_breakdown' => $result->lines,
-                    'coverage_snapshot' => ['coverages' => $product->coverageDefinitions->map(fn ($c) => ['code' => $c->code, 'name' => $c->name, 'mandatory' => $c->mandatory, 'limit_minor' => $c->pivot->default_limit_minor, 'deductible_minor' => $c->pivot->default_deductible_minor, 'optional' => $c->pivot->is_optional])->values(),
-                        'exclusions' => $product->exclusions->map(fn ($e) => ['code' => $e->code, 'name' => $e->name])->values()],
+                    'coverage_snapshot' => $this->coverageSnapshot($product, $tariff, (array) $quote->risk_facts),
                     'valid_until' => $validUntil, 'sellability' => $sell,
                 ]);
                 $offer->forceFill(['rating_run_id' => $run['run_id']])->save();
@@ -489,10 +488,83 @@ final class QuoteService
                 throw ValidationException::withMessages(["risk_facts.$key" => __('wave2.risk_fact_required')]);
             }
         }
+        $facts = $this->validateCoverChoices($line, $facts);
         // REQ-RUL-004: configurable QUOTE completeness gate (completeness rule sets; no rules = no-op).
         $this->rules->assertComplete('QUOTE', (string) $line->code, null, $facts, null, $tenantId);
 
         return $facts;
+    }
+
+    /**
+     * Customer cover choices carried in risk_facts (the rating engine reads them from the facts):
+     *  - selected_coverages: list of OPTIONAL coverage codes offered by an active product of the line. Absent = legacy
+     *    behaviour (every optional cover listed in the offer); present (even []) = only these optional covers.
+     *  - cover_limits: {coverage code: limit in minor units} for coverages of the line. A limit only changes an offer
+     *    where the product's tariff prices that cover from the fact `cover_limits.<CODE>` (see coverageSnapshot).
+     */
+    private function validateCoverChoices(InsuranceLine $line, array $facts): array
+    {
+        if (! array_key_exists('selected_coverages', $facts) && ! array_key_exists('cover_limits', $facts)) {
+            return $facts;
+        }
+        $pivots = DB::table('product_coverages')->join('insurance_products', 'insurance_products.id', '=', 'product_coverages.insurance_product_id')
+            ->join('coverage_definitions', 'coverage_definitions.id', '=', 'product_coverages.coverage_definition_id')
+            ->where(['insurance_products.line_code' => $line->code, 'insurance_products.status' => 'ACTIVE'])
+            ->get(['coverage_definitions.code', 'product_coverages.is_optional']);
+        if (array_key_exists('selected_coverages', $facts)) {
+            $optional = $pivots->where('is_optional', true)->pluck('code')->unique()->all();
+            $sel = $facts['selected_coverages'];
+            if (! is_array($sel) || ! array_is_list($sel) || array_diff(array_filter($sel, 'is_string'), $optional) || count(array_filter($sel, 'is_string')) !== count($sel)) {
+                throw ValidationException::withMessages(['risk_facts.selected_coverages' => __('quotes.covers_invalid')]);
+            }
+            $sel = array_values(array_unique($sel));
+            sort($sel);
+            $facts['selected_coverages'] = $sel;
+        }
+        if (array_key_exists('cover_limits', $facts)) {
+            $codes = $pivots->pluck('code')->unique()->all();
+            $limits = $facts['cover_limits'];
+            if (! is_array($limits) || ($limits !== [] && array_is_list($limits))) {
+                throw ValidationException::withMessages(['risk_facts.cover_limits' => __('quotes.cover_limits_invalid')]);
+            }
+            foreach ($limits as $code => $minor) {
+                if (! in_array($code, $codes, true) || ! is_int($minor) || $minor <= 0 || $minor > 1_000_000_000_000_000) {
+                    throw ValidationException::withMessages(["risk_facts.cover_limits.$code" => __('quotes.cover_limits_invalid')]);
+                }
+            }
+            ksort($limits);
+            $facts['cover_limits'] = $limits;
+        }
+
+        return $facts;
+    }
+
+    /**
+     * The offer's coverage snapshot, honouring the customer's cover choices. Optional covers not selected are listed
+     * under optional_available (never under coverages, which feed the policy). Each cover says whether this product's
+     * tariff prices it separately (tariff_priced) and whether its limit follows cover_limits (limit_adjustable).
+     */
+    private function coverageSnapshot(InsuranceProduct $product, \App\Models\TariffVersion $tariff, array $facts): array
+    {
+        $rules = collect($tariff->rules['coverages'] ?? [])->keyBy('code');
+        $choosing = array_key_exists('selected_coverages', $facts);
+        $selected = (array) ($facts['selected_coverages'] ?? []);
+        $covers = [];
+        $available = [];
+        foreach ($product->coverageDefinitions as $c) {
+            $adjustable = ($rules[$c->code]['fact'] ?? null) === 'cover_limits.'.$c->code;
+            $limit = $adjustable && isset($facts['cover_limits'][$c->code]) ? (int) $facts['cover_limits'][$c->code] : $c->pivot->default_limit_minor;
+            $row = ['code' => $c->code, 'name' => $c->name, 'mandatory' => $c->mandatory, 'limit_minor' => $limit, 'deductible_minor' => $c->pivot->default_deductible_minor,
+                'optional' => $c->pivot->is_optional, 'default_limit_minor' => $c->pivot->default_limit_minor, 'tariff_priced' => $rules->has($c->code), 'limit_adjustable' => $adjustable];
+            if ($c->pivot->is_optional && $choosing && ! in_array($c->code, $selected, true)) {
+                $available[] = $row;
+            } else {
+                $covers[] = $row;
+            }
+        }
+
+        return ['coverages' => array_values($covers), 'optional_available' => $available, 'cover_selection' => $choosing ? 'CUSTOMER' : 'DEFAULT',
+            'exclusions' => $product->exclusions->map(fn ($e) => ['code' => $e->code, 'name' => $e->name])->values()];
     }
 
     /** REQ-QUO-003: risk 1 is the primary risk (quote risk_facts); extra risks reference the customer's own insured objects. */

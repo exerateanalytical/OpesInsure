@@ -29,7 +29,8 @@ Opes.page(function (ctx) {
     desc.addEventListener('input', function () { count.textContent = desc.value.length + '/1,000'; });
     var damage = D.card(D.t('damage'), 'motor', h('div', null, h('p', { class: 'sub' }, D.t('damage_sub')),
       c.description ? D.field(D.t('description'), c.description) : null,
-      D.note(D.t('photos_na')),
+      h('div', { style: 'margin-top:12px' }, h('small', { class: 'sub' }, D.t('photos')), D.docs(c, true)),
+      D.itemFields(c),
       h('label', { class: 'afield-s', style: 'margin-top:12px' }, h('span', null, D.t('damage_desc'), ' ', h('i', null, '*')), desc, count)));
 
     // Repair estimate lines (entered here; sent as the decision amount + rationale)

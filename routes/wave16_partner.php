@@ -41,6 +41,13 @@ Route::post('mobile/partner/carrier/products/{product}/status', [Carrier::class,
 Route::get('mobile/partner/carrier/proposals', [Carrier::class, 'proposals'])->middleware('permission:carrier.referrals.read');
 Route::get('mobile/partner/carrier/policies', [Carrier::class, 'policies'])->middleware('permission:carrier.dashboard.read');
 Route::get('mobile/partner/carrier/claims/{claim}', [Carrier::class, 'claim'])->middleware('permission:carrier.claims.read');
+// Claim evidence for the insurer: metadata list + per-document short-lived signed URL (access logged),
+// both scoped to claims on the caller's own carrier (404 otherwise). Claim PAYMENT is deliberately not
+// exposed here: claims.payment.request|approve|execute and claims.settlement.pay are granted by the
+// RoleCatalogue to platform claims/finance roles only (no CARRIER_* role), so the insurer decides
+// (propose / approve decision) and the platform claims finance team pays (POST /claims/{id}/decisions/{d}/payments ...).
+Route::get('mobile/partner/carrier/claims/{claim}/evidence', [Carrier::class, 'claimEvidence'])->middleware('permission:carrier.claims.read');
+Route::post('mobile/partner/carrier/claims/{claim}/evidence/{document}/access', [Carrier::class, 'claimEvidenceAccess'])->middleware(['permission:carrier.claims.read', 'throttle:60,1']);
 Route::post('mobile/partner/carrier/claims/{claim}/acknowledge', [Carrier::class, 'acknowledgeClaim'])->middleware(['permission:carrier.referrals.decide', 'throttle:30,1']);
 Route::post('mobile/partner/carrier/claims/{claim}/request-information', [Carrier::class, 'requestClaimInformation'])->middleware(['permission:carrier.referrals.decide', 'throttle:30,1']);
 Route::post('mobile/partner/carrier/claims/{claim}/decisions', [Carrier::class, 'proposeClaimDecision'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);

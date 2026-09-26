@@ -127,7 +127,10 @@ it('lists only policies of clients attributed to this agent', function () {
     $rows = $this->getJson('/api/v1/mobile/partner/agent/policies', w16AgentHeaders($a['tenant']))->assertStatus(200)->json('data');
     expect(collect($rows)->pluck('policy_number')->all())->toBe(['POL-MINE'])
         ->and($rows[0]['premium_minor'])->toBe(250000)
-        ->and($rows[0]['id'])->toBe($mine->id);
+        ->and($rows[0]['id'])->toBe($mine->id)
+        ->and($rows[0]['party_id'])->toBe($mineChain['party']->id)
+        ->and($rows[0]['customer_name'])->not->toBeEmpty()
+        ->and($rows[0]['customer_id'])->toBe(TenantCustomer::where(['tenant_id' => $a['tenant']->id, 'party_id' => $mineChain['party']->id])->value('id'));
 });
 
 // -------------------------------------------------------------- gates

@@ -68,8 +68,8 @@
       el.appendChild(h('button', { type: 'button', role: 'tab', 'aria-selected': String(cur === d[0]), onclick: function () { A.tabs(el, defs, d[0], on); on(d[0]); } }, d[1] + ' (' + d[2] + ')'));
     });
   };
-  /** The buy flow picks the client from /mobile/agent/clients, so assisted quotes need agent.clients.read. */
-  A.canQuote = function () { return O.can('agent.clients.read'); };
+  /** Assisted quotes: agents pick from /mobile/agent/clients; broker staff from /mobile/broker/clients and need quotes.manage. */
+  A.canQuote = function () { return O.can('agent.clients.read') || (O.can('broker.portal.read') && O.can('quotes.manage')); };
   A.days = function (iso) { if (!iso) return null; return Math.ceil((new Date(iso) - Date.now()) / 86400000); };
 
   // ---------- data ----------

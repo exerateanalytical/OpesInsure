@@ -1,7 +1,8 @@
 {{-- /account/claims/<id> — design screens/compare_buy_flow/10_stage.png + 18_stage.png (customer tracking).
      Data: GET /mobile/claims/{id}, /timeline, /evidence, /evidence-requirements, /settlement; uploads via
      POST /mobile/documents + /mobile/claims/{id}/evidence; files open via POST /mobile/documents/{doc}/access.
-     The customer API has no claim cancellation and no summary PDF, so the page offers print-to-PDF instead. --}}
+     Withdraw: POST /mobile/claims/{id}/withdraw {reason}, offered only while the API says can_withdraw (before assessment).
+     The customer API has no summary PDF, so the page offers print-to-PDF instead. --}}
 @php $L = __('account_claims.js'); $D = $L['d']; @endphp
 @extends('public.account.layout', ['title' => __('account_claims.show.title'), 'lede' => __('account_claims.show.lede'),
   'crumbs' => [[__('account_claims.list.title'), '/account/claims'], [__('account_claims.show.title'), null]], 'active' => 'claims'])
@@ -74,8 +75,31 @@ Opes.page(function (ctx) {
     return [btn, inp];
   }
 
+  /** Confirm dialog with a required reason, then POST /withdraw. */
+  function withdraw(c, btn) {
+    var W = D.withdraw;
+    var ta = h('textarea', { name: 'reason', placeholder: W.reason_ph, minlength: '3', maxlength: '1000', 'aria-label': W.reason });
+    var err = h('p', { class: 'err', role: 'alert', hidden: true });
+    var ok = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok', 'data-withdraw-confirm': '' }, W.confirm);
+    var dlg = h('dialog', { class: 'cl-dlg', 'aria-labelledby': 'cl-wd-t' }, h('form', { method: 'dialog' },
+      h('h2', { id: 'cl-wd-t' }, W.title), h('p', null, W.text), h('label', { class: 'afield-s' }, h('span', null, W.reason + ' '), ta), err,
+      h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, W.cancel), ok)));
+    dlg.querySelector('form').addEventListener('submit', function (e) {
+      if (e.submitter && e.submitter.value === 'cancel') return;
+      e.preventDefault();
+      var reason = ta.value.trim();
+      if (reason.length < 3) { err.textContent = W.err_reason; err.hidden = false; ta.focus(); return; }
+      Opes.busy(ok, true);
+      Opes.api('/mobile/claims/' + encodeURIComponent(c.id) + '/withdraw', { method: 'POST', body: { reason: reason } })
+        .then(function () { dlg.close(); dlg.remove(); Opes.alert(W.done, 'ok'); return load(); })
+        .catch(function (e2) { Opes.busy(ok, false); err.textContent = (e2 && e2.message) || Opes.t.error; err.hidden = false; });
+    });
+    dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); });
+    document.body.appendChild(dlg); dlg.showModal(); ta.focus();
+  }
+
   function render(c, events, evidence, reqs, settle) {
-    var p = c.policy || {}, r = K.risk(p), inc = (c.loss_details && c.loss_details.incident) || {}, s = K.up(c.status);
+    var p = c.policy || {}, r = K.risk(p), inc = (c.loss_details && c.loss_details.incident) || {}, s = K.shown(c);
     var inspection = c.loss_details && c.loss_details.inspection, repair = c.loss_details && c.loss_details.repair;
     var at = c.incident_at || c.loss_occurred_at;
     document.title = (c.claim_number || '') + ' — OpesInsure';
@@ -86,8 +110,10 @@ Opes.page(function (ctx) {
 
     // Header
     body.appendChild(h('div', { class: 'cl-head' },
-      h('div', null, h('h2', null, c.claim_number || '—', K.chip(c.status)), h('small', null, K.fmt(D.submitted_on, { date: Opes.date(c.submitted_at || c.created_at, true) }))),
+      h('div', null, h('h2', null, c.claim_number || '—', K.chip(s)), h('small', null, K.fmt(D.submitted_on, { date: Opes.date(c.submitted_at || c.created_at, true) })),
+        c.withdrawn_at ? h('small', { style: 'display:block' }, K.fmt(D.withdraw.withdrawn_on, { date: Opes.date(iso(c.withdrawn_at), true) }) + (c.withdrawal_reason ? ' — ' + c.withdrawal_reason : '')) : null),
       h('div', { class: 'btns' },
+        c.can_withdraw ? (function () { var b = h('button', { type: 'button', class: 'dbtn dbtn-outline cl-danger', 'data-withdraw': '', onclick: function () { withdraw(c, b); } }, Opes.icon('x'), D.withdraw.btn); return b; })() : null,
         h('button', { type: 'button', class: 'dbtn dbtn-outline', onclick: function () { window.print(); } }, Opes.icon('download'), D.print),
         h('a', { class: 'dbtn dbtn-primary', href: '/account/support?claim_id=' + encodeURIComponent(c.id) }, Opes.icon('chat'), D.contact))));
     body.appendChild(stepper(c, events));
@@ -100,7 +126,7 @@ Opes.page(function (ctx) {
       ['clock', D.date, Opes.date(at)], ['clock', D.time, time(at)], ['pin', D.location, c.incident_location || c.loss_location],
       ['card', D.claimed, c.estimated_loss_minor !== null && c.estimated_loss_minor !== undefined ? K.amount(c.estimated_loss_minor) : null],
       ['check', D.approved, c.approved_amount_minor ? K.amount(c.approved_amount_minor) : null], ['doc', D.carrier_ref, c.carrier_reference],
-      ['refresh', D.status, K.chip(c.status)],
+      ['refresh', D.status, K.chip(s)],
     ]));
 
     // Vehicle / insured item
@@ -154,7 +180,7 @@ Opes.page(function (ctx) {
     if (!events.length) tl.appendChild(h('li', null, h('small', null, D.no_events)));
     events.forEach(function (e, i) {
       var key = K.up(e.type), bad = K.up(e.to_status) === 'DECLINED';
-      tl.appendChild(h('li', { class: bad ? 'bad' : (i === events.length - 1 && s !== 'CLOSED' ? 'cur' : 'done') }, h('span', { class: 'dotc' }),
+      tl.appendChild(h('li', { class: bad ? 'bad' : (i === events.length - 1 && s !== 'CLOSED' && s !== 'WITHDRAWN' ? 'cur' : 'done') }, h('span', { class: 'dotc' }),
         h('b', null, T.events[key] || T.events[K.up(e.to_status)] || K.statusLabel(e.to_status)), h('small', null, Opes.date(iso(e.occurred_at), true))));
     });
     // Remaining stages, pending.
@@ -181,7 +207,7 @@ Opes.page(function (ctx) {
       rp.appendChild(dl([['business', D.garage, repair.garage_name], ['card', D.estimate, repair.estimate_minor ? K.amount(repair.estimate_minor) : null]]));
       side.push(rp);
     }
-    var nk = s === 'DECLINED' ? 'declined' : K.STAGES[cur];
+    var nk = s === 'WITHDRAWN' ? 'withdrawn' : s === 'DECLINED' ? 'declined' : K.STAGES[cur];
     var nx = h('section', { class: 'acard cl-info cl-next' }, h('h2', null, h('span', { style: 'display:inline-flex;gap:8px;align-items:center' }, Opes.icon('help'), D.next_t)), h('p', { style: 'margin:6px 0 0;font-size:13.5px' }, D.next[nk]));
     side.push(nx);
 

@@ -206,3 +206,69 @@ it('REQ-QUO-001 REQ-QUO-006 hook: a manual offer on a REFERRED quote prices it t
     expect($q->lifecycle_state)->toBe('CALCULATED')->and($q->status)->toBe('OFFERED')
         ->and(DB::table('workflow_transition_history')->where(['machine' => 'quote', 'subject_id' => $quote->id])->orderBy('occurred_at')->pluck('to_state')->all())->toBe(['RATING', 'CALCULATED']);
 });
+
+it('WF-011 re-rates an amended quote: PATCH then rate supersedes the old offers instead of violating quote_offers_one_per_tariff', function () {
+    $q = q6bRatedQuote();
+    $old = $q->offers()->pluck('id')->all();
+    $oldPremiums = $q->offers()->orderBy('premium_minor')->pluck('premium_minor')->all();
+    expect($old)->toHaveCount(2);
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 6000000]])->assertOk()->assertJsonPath('data.quote.lifecycle_state', 'DRAFT');
+    $r = q6bAs($this->maker, 'POST', "quotes/{$q->id}/rate")->assertOk();
+    expect($r->json('data.offers'))->toHaveCount(4)
+        ->and(QuoteOffer::whereIn('id', $old)->pluck('status')->unique()->all())->toBe(['SUPERSEDED'])
+        ->and(QuoteOffer::where(['quote_id' => $q->id, 'status' => 'OFFERED'])->orderBy('total_minor')->pluck('premium_minor')->all())->toBe(array_map(fn ($p) => intdiv($p * 6, 5), $oldPremiums));
+    // Amend + re-rate again (third generation) still works.
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000]])->assertOk();
+    q6bAs($this->maker, 'POST', "quotes/{$q->id}/rate")->assertOk();
+    expect(QuoteOffer::where(['quote_id' => $q->id, 'status' => 'OFFERED'])->count())->toBe(2);
+});
+
+it('never returns SQL in an API error body when APP_DEBUG is off', function () {
+    config(['app.debug' => false]);
+    Illuminate\Support\Facades\Route::middleware('api')->get('/api/v1/_q6b_boom', fn () => DB::select('select * from no_such_table_q6b'));
+    $r = $this->getJson('/api/v1/_q6b_boom')->assertStatus(500);
+    expect($r->getContent())->not->toContain('no_such_table_q6b')->not->toContain('SQLSTATE')->and($r->json('message'))->toBe('Server Error');
+});
+
+it('prices customer-selected optional covers and adjustable limits through the rating engine, validated against the line', function () {
+    $lineId = InsuranceLine::where('code', 'MOTOR')->value('id');
+    $cov = fn (string $code, bool $mandatory) => App\Models\CoverageDefinition::firstOrCreate(['insurance_line_id' => $lineId, 'code' => $code], ['name' => ['en' => $code, 'fr' => $code], 'limit_type' => 'AMOUNT', 'mandatory' => $mandatory, 'status' => 'ACTIVE']);
+    $carrier = Carrier::create(['party_id' => Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Gamma Assurances', 'status' => 'ACTIVE'])->id, 'cima_code' => 'CIMA-'.Str::random(6), 'status' => 'ACTIVE']);
+    $p = InsuranceProduct::create(['carrier_id' => $carrier->id, 'line_code' => 'MOTOR', 'code' => 'Q6B-Gamma', 'name' => 'Gamma Motor', 'version' => 1, 'effective_from' => '2026-01-01', 'status' => 'ACTIVE']);
+    $p->coverageDefinitions()->sync([
+        $cov('THIRD_PARTY_LIABILITY', true)->id => ['default_limit_minor' => 500000000, 'default_deductible_minor' => 0, 'configuration' => '{}', 'is_optional' => false],
+        $cov('GLASS', false)->id => ['default_limit_minor' => 50000000, 'default_deductible_minor' => 0, 'configuration' => '{}', 'is_optional' => true],
+        $cov('OWN_DAMAGE', false)->id => ['default_limit_minor' => 200000000, 'default_deductible_minor' => 2500000, 'configuration' => '{}', 'is_optional' => true],
+    ]);
+    q6bTariff($p->id, [...Q6B_RULES, 'coverages' => [
+        ['code' => 'GLASS', 'method' => 'FIXED', 'amount_minor' => 1000000, 'optional' => true],
+        ['code' => 'OWN_DAMAGE', 'method' => 'RATE_X_LIMIT', 'fact' => 'cover_limits.OWN_DAMAGE', 'rate_ppm' => 10000, 'optional' => true],
+    ]]);
+    $gamma = fn (string $qid) => QuoteOffer::where(['quote_id' => $qid, 'product_id' => $p->id, 'status' => 'OFFERED'])->firstOrFail();
+
+    $q = q6bRatedQuote(); // no cover choice: legacy snapshot, optional covers not priced
+    $base = $gamma($q->id)->premium_minor;
+    expect($base)->toBeGreaterThan(0)->and($gamma($q->id)->coverage_snapshot['cover_selection'])->toBe('DEFAULT');
+
+    // Unknown / mandatory codes and bad limits are refused.
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000, 'selected_coverages' => ['NOPE']]])->assertStatus(422)->assertJsonValidationErrors('risk_facts.selected_coverages');
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000, 'selected_coverages' => ['THIRD_PARTY_LIABILITY']]])->assertStatus(422);
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000, 'cover_limits' => ['OWN_DAMAGE' => -5]]])->assertStatus(422)->assertJsonValidationErrors('risk_facts.cover_limits.OWN_DAMAGE');
+
+    // Customer adds GLASS: +10,000 XAF from the tariff; OWN_DAMAGE stays available, not in the policy coverages.
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000, 'selected_coverages' => ['GLASS']]])->assertOk();
+    q6bAs($this->maker, 'POST', "quotes/{$q->id}/rate")->assertOk();
+    $o = $gamma($q->id);
+    expect($o->premium_minor)->toBe($base + 1000000)
+        ->and(collect($o->coverage_snapshot['coverages'])->pluck('code')->sort()->values()->all())->toBe(['GLASS', 'THIRD_PARTY_LIABILITY'])
+        ->and(collect($o->coverage_snapshot['optional_available'])->pluck('code')->all())->toBe(['OWN_DAMAGE'])
+        ->and(collect($o->coverage_snapshot['coverages'])->firstWhere('code', 'GLASS')['tariff_priced'])->toBeTrue();
+
+    // Adds OWN_DAMAGE with a chosen limit of 3,000,000 XAF: priced at 1% of the limit, snapshot carries the chosen limit.
+    q6bAs($this->fx['user'], 'PATCH', "quotes/{$q->id}", ['risk_facts' => ['usage' => 'PRIVATE', 'vehicle_value' => 5000000, 'selected_coverages' => ['GLASS', 'OWN_DAMAGE'], 'cover_limits' => ['OWN_DAMAGE' => 300000000]]])->assertOk();
+    q6bAs($this->maker, 'POST', "quotes/{$q->id}/rate")->assertOk();
+    $o = $gamma($q->id);
+    $od = collect($o->coverage_snapshot['coverages'])->firstWhere('code', 'OWN_DAMAGE');
+    expect($o->premium_minor)->toBe($base + 1000000 + 3000000)->and($od['limit_minor'])->toBe(300000000)->and($od['limit_adjustable'])->toBeTrue()
+        ->and(collect($o->coverage_snapshot['coverages'])->firstWhere('code', 'GLASS')['limit_adjustable'])->toBeFalse();
+});

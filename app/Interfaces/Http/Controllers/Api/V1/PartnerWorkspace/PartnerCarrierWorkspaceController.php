@@ -154,6 +154,100 @@ final class PartnerCarrierWorkspaceController
         return response()->json(['data' => $this->claimOf($this->actions->approveDecision($d, $request->user()), $request)]);
     }
 
+    /**
+     * Evidence / documents attached to a claim on the caller's OWN carrier
+     * (canonical document_subject_links, REQ-DUP-021). Metadata only — the
+     * bytes are reached through evidenceAccess(), which mints a short-lived
+     * signed URL per document and logs the read.
+     */
+    public function claimEvidence(string $claim, Request $request): JsonResponse
+    {
+        $c = $this->scopedClaim($claim, $request);
+        $rows = app(\App\Application\Documents\SubjectDocuments::class)->query('CLAIM', $c->id)
+            ->orderByDesc('links.linked_at')
+            ->get(['links.document_id', 'links.role', 'links.link_status', 'links.linked_at', 'links.verified_at',
+                'documents.category', 'documents.mime_type', 'documents.size_bytes', 'documents.scan_status']);
+
+        return response()->json(['data' => $rows->map(fn ($r) => [
+            'document_id' => $r->document_id, 'evidence_type' => $r->role, 'status' => $r->link_status,
+            'category' => $r->category, 'mime_type' => $r->mime_type, 'size_bytes' => $r->size_bytes !== null ? (int) $r->size_bytes : null,
+            'scan_status' => $r->scan_status, 'is_image' => str_starts_with((string) $r->mime_type, 'image/'),
+            'downloadable' => $r->scan_status === 'CLEAN',
+            'submitted_at' => $r->linked_at ? \Carbon\Carbon::parse($r->linked_at)->toIso8601String() : null,
+            'verified_at' => $r->verified_at ? \Carbon\Carbon::parse($r->verified_at)->toIso8601String() : null,
+        ])->values()]);
+    }
+
+    /** Short-lived signed URL for one CLEAN document linked to an own-carrier claim; logged in document_access_log. */
+    public function claimEvidenceAccess(string $claim, string $document, Request $request): JsonResponse
+    {
+        $c = $this->scopedClaim($claim, $request);
+        $linked = app(\App\Application\Documents\SubjectDocuments::class)->query('CLAIM', $c->id)
+            ->where('links.document_id', $this->uuid($document))->exists();
+        abort_unless($linked, 404);
+        $doc = \App\Models\Document::where('tenant_id', $this->tenant())->findOrFail($document);
+        if ($doc->scan_status !== 'CLEAN') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['document' => __('wave12.document_not_ready')]);
+        }
+        $signed = app(\App\Application\Documents\Adapters\SignedUrlAdapter::class)->sign($doc, 300);
+        DB::table('document_access_log')->insert([
+            'document_id' => $doc->id, 'actor_id' => $request->user()->id, 'action' => 'READ', 'purpose' => 'CARRIER_CLAIM_REVIEW',
+            'request_id' => $request->header('X-Request-Id') ?: (string) Str::uuid(), 'occurred_at' => now(),
+        ]);
+
+        return response()->json(['data' => ['document_id' => $doc->id, 'mime_type' => $doc->mime_type, 'url' => $signed->url, 'expires_at' => $signed->expiresAt]]);
+    }
+
+    /**
+     * Insured item (vehicle facts for MOTOR, from the accepted quote's risk
+     * facts) and the coverage deductibles frozen on the policy terms — only
+     * what the data actually holds; nulls/empty otherwise.
+     *
+     * @return array{insured_item: ?array<string, mixed>, deductibles: array<int, array<string, mixed>>, deductible_minor: ?int}
+     */
+    private function claimRisk(Claim $c): array
+    {
+        $policy = $c->policy;
+        $terms = $policy?->terms_snapshot ?? [];
+        // Risk facts: frozen on the policy terms, else the accepted quote (terms quote_id, else proposal -> offer -> quote).
+        $line = $terms['line_code'] ?? null;
+        $facts = is_array($terms['risk_facts'] ?? null) ? $terms['risk_facts'] : null;
+        if ($facts === null && $policy) {
+            $quoteId = $terms['quote_id'] ?? null;
+            if (! $quoteId && $policy->proposal_id) {
+                $quoteId = DB::table('proposals')->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')
+                    ->where('proposals.id', $policy->proposal_id)->where('proposals.tenant_id', $this->tenant())->value('quote_offers.quote_id');
+            }
+            if ($quoteId && Str::isUuid((string) $quoteId)) {
+                $q = DB::table('quotes')->where('tenant_id', $this->tenant())->where('id', $quoteId)->first(['line_code', 'risk_facts']);
+                if ($q) {
+                    $facts = json_decode((string) $q->risk_facts, true) ?: [];
+                    $line = $line ?? $q->line_code;
+                }
+            }
+        }
+        $item = null;
+        if ($facts !== null) {
+            // Whitelisted insured-item fields only — never contact or personal data from the rating facts.
+            $keys = ['registration_number', 'make', 'model', 'year', 'body_type', 'usage_type', 'vehicle_usage', 'powertrain', 'fiscal_power', 'vehicle_value', 'chassis_number', 'zone'];
+            $item = ['line_code' => $line] + array_filter(array_intersect_key($facts, array_flip($keys)), fn ($v) => $v !== null && $v !== '');
+        }
+        $deductibles = collect($terms['coverage_snapshot']['coverages'] ?? [])->map(fn ($cv) => [
+            'code' => $cv['code'] ?? null, 'name' => $cv['name'] ?? null,
+            'deductible_minor' => isset($cv['deductible_minor']) ? (int) $cv['deductible_minor'] : null,
+            'limit_minor' => isset($cv['limit_minor']) ? (int) $cv['limit_minor'] : null,
+        ])->values()->all();
+        if (! $deductibles && $policy) {
+            $version = DB::table('policy_versions')->where('policy_id', $policy->id)->whereNull('superseded_at')->orderByDesc('version_no')->value('id');
+            $deductibles = $version ? DB::table('policy_coverages')->where('policy_version_id', $version)->orderBy('coverage_code')->get(['coverage_code', 'limit_minor', 'deductible_minor'])
+                ->map(fn ($r) => ['code' => $r->coverage_code, 'name' => null, 'deductible_minor' => $r->deductible_minor !== null ? (int) $r->deductible_minor : null, 'limit_minor' => $r->limit_minor !== null ? (int) $r->limit_minor : null])->all() : [];
+        }
+        $code = $c->loss_details['coverage_code'] ?? null;
+        $match = $code ? collect($deductibles)->firstWhere('code', $code) : null;
+
+        return ['insured_item' => $item, 'deductibles' => $deductibles, 'deductible_minor' => $match['deductible_minor'] ?? null];
+    }
+
     private function scopedClaim(string $id, Request $request): Claim
     {
         $cid = $this->carrier($request);
@@ -178,6 +272,7 @@ final class PartnerCarrierWorkspaceController
         return PartnerWorkspaceShapes::claim($c) + [
             'loss_location' => $c->loss_location, 'description' => $c->loss_details['description'] ?? ($c->loss_details['incident']['description'] ?? null),
             'carrier_id' => $c->policy?->carrier_id, 'actions' => $actions,
+        ] + $this->claimRisk($c) + [
             'pending_decision' => $pending ? [
                 'id' => $pending->id, 'decision' => $pending->decision, 'approved_amount_minor' => (int) $pending->approved_amount_minor, 'reason_code' => $pending->reason_code,
                 'rationale' => $pending->rationale, 'proposed_by_me' => $pending->proposed_by === $me->id, 'proposed_at' => $pending->created_at?->toIso8601String(),

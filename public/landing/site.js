@@ -66,3 +66,13 @@
     t.addEventListener('input', function () { out.textContent = t.value.length + '/' + t.maxLength; });
   });
 })();
+
+// Signed in (session saved by /login, see public/landing/auth.js)? Header "Sign In" becomes "My Account".
+(function () {
+  var s = null;
+  try { s = JSON.parse(localStorage.getItem('opes.web.session') || 'null'); } catch (e) {}
+  if (!s || !s.access_token) return;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-account-link]'), function (a) {
+    a.href = '/account'; a.textContent = a.dataset.labelAccount || 'My Account';
+  });
+})();

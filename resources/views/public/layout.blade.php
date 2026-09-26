@@ -56,7 +56,7 @@
     </nav>
     <div class="head-actions">
       <button class="icon-btn search-toggle" type="button" aria-expanded="false" aria-controls="site-search" aria-label="{{ __('site.nav.search_label') }}">@include('public.partials.i', ['n' => 'search'])</button>
-      <a class="btn btn-sm btn-outline-light" href="/login">{{ __('site.nav.sign_in') }}</a>
+      <a class="btn btn-sm btn-outline-light" href="/login" data-account-link data-label-account="{{ __('site.nav.my_account') }}">{{ __('site.nav.sign_in') }}</a>
       <a class="btn btn-sm btn-gold" href="/insurance">{{ __('site.nav.compare') }} @include('public.partials.i', ['n' => 'arrow'])</a>
       <nav class="lang" aria-label="{{ __('site.nav.language') }}">
         <a href="{{ $langUrl('en') }}" hreflang="en" lang="en" @if($locale === 'en') aria-current="true" @endif>EN</a>
@@ -82,7 +82,7 @@
       </ul>
       <div class="btn-row">
         <a class="btn btn-sm btn-gold" href="/insurance">{{ __('site.nav.compare') }}</a>
-        <a class="btn btn-sm btn-outline-light" href="/login">{{ __('site.nav.sign_in') }}</a>
+        <a class="btn btn-sm btn-outline-light" href="/login" data-account-link data-label-account="{{ __('site.nav.my_account') }}">{{ __('site.nav.sign_in') }}</a>
       </div>
     </div>
   </nav>

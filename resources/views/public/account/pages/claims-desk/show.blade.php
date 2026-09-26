@@ -29,7 +29,9 @@ Opes.page(function (ctx) {
       D.field(D.t('insurer'), c.carrier_name), D.field(D.t('priority'), D.type(c.priority)),
       D.field(D.t('currency'), c.currency), D.field(D.t('status'), D.chip(c.status))));
     var veh = ld.vehicle || (c.staff && c.staff.policy && c.staff.policy.risk_details && c.staff.policy.risk_details.vehicle) || null;
-    var vehicle = D.card(D.t('vehicle'), 'motor', veh ? h('div', { class: 'desk-fields c2' }, Object.keys(veh).slice(0, 8).map(function (k) { return D.field(D.type(k), String(veh[k])); })) : D.note(D.t('vehicle_na')));
+    var itemBox = D.itemFields(c);
+    var vehicle = D.card(D.t('vehicle'), 'motor', h('div', null, itemBox || (veh ? h('div', { class: 'desk-fields c2' }, Object.keys(veh).slice(0, 8).map(function (k) { return D.field(D.type(k), String(veh[k])); })) : D.note(D.t('vehicle_na'))),
+      h('div', { class: 'desk-fields c2' }, D.field(D.t('deductible'), D.deductible(c), 'span2'))));
     var incident = D.card(D.t('incident'), 'pin', h('div', { class: 'desk-fields c2' },
       D.field(D.t('incident_type'), D.type(c.incident_type)), D.field(D.t('incident_date'), O.date(c.loss_occurred_at, true)),
       D.field(D.t('location'), c.loss_location, 'span2'),
@@ -37,14 +39,14 @@ Opes.page(function (ctx) {
       inc.vehicle_drivable !== undefined ? D.field(D.t('drivable'), inc.vehicle_drivable ? D.t('yes') : D.t('no')) : null,
       D.field(D.t('description'), c.description, 'span2')));
 
-    var docs = D.card(D.t('docs'), 'doc', D.note(D.t('docs_na')));
+    var docs = D.card(D.t('docs'), 'doc', D.docs(c));
     var assess = D.card(D.t('assess_sum'), 'scale', assessBody(c));
     var progress = D.card(D.t('progress'), 'clock', D.timeline(c));
     var payments = D.card(D.t('payments'), 'card', payBody(c));
 
     var panels = {
       overview: h('div', { class: 'agrid' }, h('div', { class: 'desk-3' }, policy, vehicle, incident), h('div', { class: 'desk-3' }, progress, docs, assess)),
-      documents: D.card(D.t('docs'), 'doc', D.note(D.t('docs_na'))),
+      documents: h('div', null, D.card(D.t('docs'), 'doc', D.docs(c)), D.card(D.t('photos'), 'eye', D.docs(c, true))),
       assessments: D.card(D.t('assess_sum'), 'scale', assessBody(c)),
       payments: payments,
       timeline: D.card(D.t('progress'), 'clock', D.timeline(c)),

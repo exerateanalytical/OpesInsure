@@ -44,6 +44,7 @@ Opes.page(function (ctx) {
   var B = Buy, T = B.T, h = Opes.h, $ = Opes.$;
   var params = ctx.params, line = String(params.get('line') || '').toUpperCase(), productCode = params.get('product') || '';
   var sc = null, fm = null, assetId = null, prefill = {}, product = null, agent = ctx.kind === 'agent';
+  var broker = agent && !Opes.can('agent.clients.read') && Opes.can('broker.portal.read');
   var linesBox = $('[data-lines]'), formBox = $('[data-form]'), sumBox = $('[data-summary]'), custSel = $('[data-customer]');
   $('[data-steps]').appendChild(B.steps(0));
 
@@ -56,7 +57,8 @@ Opes.page(function (ctx) {
   if (agent) {
     $('[data-customer-card]').hidden = false;
     custSel.appendChild(h('option', { value: '' }, T.loading_list));
-    Opes.list('/mobile/agent/clients').then(function (r) {
+    // Agents pick from their own book; broker staff (no agent.clients.read) from the broker's client list.
+    Opes.list(broker ? '/mobile/broker/clients' : '/mobile/agent/clients').then(function (r) {
       Opes.clear(custSel).appendChild(h('option', { value: '' }, T.choose_customer));
       r.items.forEach(function (c) {
         var p = c.party || {};
@@ -122,7 +124,7 @@ Opes.page(function (ctx) {
     var customerId = agent ? custSel.value : ctx.session.customer_id;
     if (!customerId) return Opes.alert(T.no_customer);
     Opes.busy(btn, true);
-    Opes.api('/quotes', { body: { customer_id: customerId, line_code: line, channel: agent ? 'AGENT' : 'B2C', risk_facts: c.facts, risk_asset_id: assetId || undefined } })
+    Opes.api('/quotes', { body: { customer_id: customerId, line_code: line, channel: broker ? 'BROKER' : (agent ? 'AGENT' : 'B2C'), risk_facts: c.facts, risk_asset_id: assetId || undefined } })
       .then(function (q) {
         if (!rate) { location.href = '/account/quotes?saved=' + encodeURIComponent(q.id); return; }
         return Opes.api('/quotes/' + q.id + '/rate', { method: 'POST', body: {} }).then(function () {
