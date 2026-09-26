@@ -292,8 +292,9 @@ final class SlaService
             return false;
         }
         $from = ['owner_user_id' => $case->owner_user_id, 'queue_id' => $case->queue_id];
-        $case->update(['queue_id' => $queue->id, 'owner_user_id' => null, 'version' => $case->version + 1]);
-        $this->journal->event($case, 'ESCALATED', ['metric' => $metric, 'from' => $from, 'queue_id' => $queue->id, 'queue_code' => $queue->code]);
+        // Gap Closure Pack file 10 escalation reason: an SLA-driven escalation is always SLA_BREACH.
+        $case->update(['queue_id' => $queue->id, 'owner_user_id' => null, 'version' => $case->version + 1, 'escalation_reason' => 'SLA_BREACH', 'escalated_at' => now()]);
+        $this->journal->event($case, 'ESCALATED', ['metric' => $metric, 'from' => $from, 'queue_id' => $queue->id, 'queue_code' => $queue->code, 'escalation_reason' => 'SLA_BREACH']);
         $this->journal->publish('queue.routed', 'case', $case->id, ['queue_id' => $queue->id, 'reason' => 'SLA_BREACH:'.$metric]);
 
         return true;

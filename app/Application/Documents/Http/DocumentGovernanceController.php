@@ -85,6 +85,8 @@ final class DocumentGovernanceController
             'code' => 'required|string|max:64', 'document_type_code' => 'nullable|string|max:96', 'document_group' => 'nullable|string|max:40',
             'security_level' => 'nullable|string|max:32', 'retention_years' => 'required|integer|min:1|max:200',
             'trigger_event' => 'nullable|in:ISSUED_AT,CREATED_AT,VALID_UNTIL', 'disposition' => 'nullable|in:DESTROY,REVIEW', 'legal_basis' => 'required|string|max:2000',
+            'retention_class' => 'nullable|string|max:32', 'legal_hold_override' => 'nullable|boolean', 'destruction_method' => 'nullable|string|max:40',
+            'effective_from' => 'nullable|date', 'effective_until' => 'nullable|date|after_or_equal:effective_from',
         ]);
 
         return response()->json(['data' => $s->draft($this->tenant->id(), $d, $r->user())], 201);

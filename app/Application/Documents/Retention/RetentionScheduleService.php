@@ -33,8 +33,13 @@ final class RetentionScheduleService
         if (! empty($d['security_level']) && ! in_array($d['security_level'], DocumentRegister::SECURITY_LEVELS, true)) {
             throw DocumentGovernanceProblem::make('UNKNOWN_SECURITY_LEVEL', 422, 'Unknown security level.');
         }
+        // Gap Closure Pack file 10: retention classes are PLATFORM_NORMALIZED; durations are PENDING_LEGAL_VALIDATION (never seeded).
+        \App\Application\OperationsTaxonomy\OperationsCatalogue::assert('retention_classes', $d['retention_class'] ?? null, 'retention_class');
         $id = (string) Str::uuid();
         DB::table('retention_schedules')->insert([
+            'retention_class' => $d['retention_class'] ?? null, 'legal_hold_override' => (bool) ($d['legal_hold_override'] ?? true),
+            'destruction_method' => $d['destruction_method'] ?? null, 'effective_from' => $d['effective_from'] ?? null, 'effective_until' => $d['effective_until'] ?? null,
+            'source' => $d['source'] ?? null,
             'id' => $id, 'tenant_id' => $tenantId, 'code' => $d['code'], 'document_type_code' => $d['document_type_code'] ?? null,
             'document_group' => $d['document_group'] ?? null, 'security_level' => $d['security_level'] ?? null,
             'retention_years' => (int) $d['retention_years'], 'trigger_event' => $d['trigger_event'] ?? 'ISSUED_AT', 'disposition' => $d['disposition'] ?? 'DESTROY',
@@ -53,6 +58,10 @@ final class RetentionScheduleService
         }
         if ($s->created_by === $actor->id) {
             throw DocumentGovernanceProblem::make('MAKER_CHECKER', 403, 'The author of a retention schedule cannot approve it.');
+        }
+        // Pack gate (retention.status PENDING_LEGAL_VALIDATION): a class schedule only activates with its legal basis.
+        if (($s->retention_class ?? null) !== null && trim((string) $s->legal_basis) === '') {
+            throw DocumentGovernanceProblem::make('LEGAL_BASIS_REQUIRED', 422, 'A retention class schedule needs a validated legal basis before approval.');
         }
         DB::transaction(function () use ($s, $actor) {
             // one ACTIVE schedule per scope: the previous one is retired, never deleted

@@ -57,13 +57,18 @@ final class ClaimReferenceCodes
      * holds platform-normalised codes, which are NOT an authoritative source.
      */
     public const TAXONOMY_STATUS = [
-        'cause_of_loss' => 'PENDING_SOURCE',
+        // Gap Closure Pack v1 file 03 supplied these (App\Application\Claims\Taxonomy\ClaimTaxonomy).
+        'cause_of_loss' => 'PLATFORM_NORMALIZED',
+        'motor_damage_area' => 'PLATFORM_NORMALIZED',
+        'damage_severity' => 'PLATFORM_NORMALIZED',
+        'injury_severity' => 'PLATFORM_NORMALIZED',
+        'evidence_type' => 'PLATFORM_NORMALIZED',
+        'decision_reason' => 'PLATFORM_NORMALIZED',
+        'rejection_reason' => 'PLATFORM_NORMALIZED',
+        // Still no source for the nature of damage / injury; fraud indicators are owned by gap pack 08.
         'damage_type' => 'PENDING_SOURCE',
         'injury_type' => 'PENDING_SOURCE',
-        'evidence_type' => 'PENDING_SOURCE',
         'fraud_indicator' => 'PENDING_SOURCE',
-        'decision_reason' => 'PENDING_SOURCE',
-        'rejection_reason' => 'PENDING_SOURCE',
     ];
 
     public static function categoryFor(string $claimType): ?string

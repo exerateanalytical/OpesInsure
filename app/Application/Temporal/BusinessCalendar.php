@@ -68,6 +68,16 @@ final class BusinessCalendar
                     $holidays[substr($date, 0, 10)] = true;
                 }
             }
+            // Gap Closure Pack 02: ACTIVE versioned PUBLIC_HOLIDAYS datasets (maker-checker, never hard-coded) are the
+            // same holiday source the SLA BusinessHoursCalendar reads — one holiday source for both calendars.
+            foreach (DB::table('public_holiday_entries as h')->join('reference_datasets as d', 'd.id', '=', 'h.dataset_id')
+                ->where(['d.kind' => 'PUBLIC_HOLIDAYS', 'd.status' => 'ACTIVE', 'd.jurisdiction' => $jurisdiction])
+                ->whereBetween('h.date', ["{$year}-01-01", "{$year}-12-31"])
+                ->whereColumn('h.date', '>=', 'd.effective_from')
+                ->where(fn ($q) => $q->whereNull('d.effective_until')->orWhereColumn('h.date', '<=', 'd.effective_until'))
+                ->pluck('h.date') as $date) {
+                $holidays[substr((string) $date, 0, 10)] = true;
+            }
 
             return ['holidays' => $holidays, 'timezone' => $row->timezone ?? BusinessTime::defaultTimezone()];
         })();

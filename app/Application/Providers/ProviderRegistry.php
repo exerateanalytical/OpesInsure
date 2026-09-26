@@ -118,6 +118,8 @@ final class ProviderRegistry
             if (! in_array($to, self::TRANSITIONS[$from] ?? [], true)) {
                 throw new ApiProblemException('PROVIDER_TRANSITION_INVALID', 409, "Cannot move a provider from {$from} to {$to}.", [], ['from' => $from, 'to' => $to, 'allowed' => self::TRANSITIONS[$from] ?? []]);
             }
+            // Gap pack 03: an imported garage / expert register entry is approved only once its source is verified.
+            \App\Application\Claims\RepairNetwork\RepairNetworkService::assertSourceVerified($p, $to);
             if (in_array($to, ['SUSPENDED', 'TERMINATED'], true) && trim((string) $reason) === '') {
                 throw new ApiProblemException('REASON_REQUIRED', 422, "A reason is required to move a provider to {$to}.");
             }

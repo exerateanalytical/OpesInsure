@@ -163,12 +163,16 @@ final class CaseService
             }
             $to = $result->to;
             $terminal = $type->isTerminal($to);
+            // Gap Closure Pack file 10: optional closure reason on the terminal transition (validated against the taxonomy).
+            $closureReason = $terminal ? ($payload['closure_reason'] ?? null) : null;
+            \App\Application\OperationsTaxonomy\OperationsCatalogue::assert('closure_reasons', $closureReason, 'closure_reason');
             $leftInitial = $from === $type->initialState() && $case->first_responded_at === null;
             $case->update([
                 'status' => $to, 'version' => $case->version + 1,
                 'first_responded_at' => $case->first_responded_at ?? ($leftInitial ? $this->clock->now() : null),
                 'closed_at' => $terminal ? $this->clock->now() : null,
                 'outcome' => $terminal ? ($payload['outcome'] ?? $to) : null,
+                'closure_reason' => $closureReason,
             ]);
             $this->journal->event($case, 'TRANSITIONED', ['event' => $event, 'reason' => $reason] + $payload, $from, $to, $actor?->id);
             $this->sla->onTransition($case, $type, $from, $to, $leftInitial);
@@ -322,8 +326,9 @@ final class CaseService
         if ($due === null && ! empty($d['due_in_business_minutes'])) {
             $due = $this->calendar->addBusinessMinutes($this->clock->now(), (int) $d['due_in_business_minutes'], $case->jurisdiction, $case->branch_id, $this->calendar->timezone($case->branch_id, $case->tenant_id));
         }
+        \App\Application\OperationsTaxonomy\OperationsCatalogue::assert('task_types', $d['task_type'] ?? null, 'task_type');
         $task = CaseTask::create([
-            'case_id' => $case->id, 'template_code' => $d['template_code'] ?? null, 'title' => $d['title'], 'status' => 'OPEN',
+            'case_id' => $case->id, 'template_code' => $d['template_code'] ?? null, 'title' => $d['title'], 'status' => 'OPEN', 'task_type' => $d['task_type'] ?? null,
             'assignee_user_id' => $d['assignee_user_id'] ?? null, 'queue_id' => $d['queue_id'] ?? ($d['assignee_user_id'] ?? null ? null : $case->queue_id),
             'due_at' => $due, 'created_by' => $actor?->id,
         ]);

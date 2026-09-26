@@ -1,0 +1,806 @@
+{
+  "dataset": {
+    "name": "OpesInsure Workflow Institutional Data Master",
+    "version": "1.0.0",
+    "country": "CM",
+    "regulatory_regime": "CIMA",
+    "status_codes": [
+      "VERIFIED",
+      "PLATFORM_NORMALIZED",
+      "UNVERIFIED",
+      "PENDING_SOURCE",
+      "CONFIG_REQUIRED",
+      "DEMO_ONLY",
+      "RETIRED"
+    ],
+    "rules": {
+      "never_invent_regulatory_values": true,
+      "effective_dating_required": true,
+      "provenance_required": true,
+      "regulatory_values_override_tenant_defaults": true
+    }
+  },
+  "regulatory": {
+    "cima_branches": [
+      [
+        "01",
+        "Accidents"
+      ],
+      [
+        "02",
+        "Maladie"
+      ],
+      [
+        "03",
+        "Corps de véhicules terrestres"
+      ],
+      [
+        "04",
+        "Corps de véhicules ferroviaires"
+      ],
+      [
+        "05",
+        "Corps de véhicules aériens"
+      ],
+      [
+        "06",
+        "Corps de véhicules maritimes, lacustres et fluviaux"
+      ],
+      [
+        "07",
+        "Marchandises transportées"
+      ],
+      [
+        "08",
+        "Incendie et éléments naturels"
+      ],
+      [
+        "09",
+        "Autres dommages aux biens"
+      ],
+      [
+        "10",
+        "RC véhicules terrestres automoteurs"
+      ],
+      [
+        "11",
+        "RC véhicules aériens"
+      ],
+      [
+        "12",
+        "RC véhicules maritimes, lacustres et fluviaux"
+      ],
+      [
+        "13",
+        "RC générale"
+      ],
+      [
+        "14",
+        "Crédit"
+      ],
+      [
+        "15",
+        "Caution"
+      ],
+      [
+        "16",
+        "Pertes pécuniaires diverses"
+      ],
+      [
+        "17",
+        "Protection juridique"
+      ],
+      [
+        "18",
+        "Assistance"
+      ],
+      [
+        "20",
+        "Vie-décès"
+      ],
+      [
+        "21",
+        "Assurances liées à des fonds d’investissement"
+      ],
+      [
+        "22",
+        "Opérations tontinières"
+      ],
+      [
+        "23",
+        "Capitalisation"
+      ]
+    ],
+    "product_mapping_rules": {
+      "TRAVEL_MEDICAL": [
+        "02"
+      ],
+      "TRAVEL_ASSISTANCE": [
+        "18"
+      ],
+      "TRAVEL_CANCELLATION": [
+        "16"
+      ],
+      "MOTOR_OWN_DAMAGE_THEFT_FIRE": [
+        "03"
+      ],
+      "HOME_PROPERTY_FIRE": [
+        "08",
+        "09"
+      ],
+      "HOME_HOUSEHOLD_LIABILITY": [
+        "13"
+      ],
+      "BUSINESS_INTERRUPTION": [
+        "16"
+      ],
+      "LIFE_DISABILITY_COMPLEMENTARY": [
+        "20",
+        "21"
+      ]
+    },
+    "insurer_authorizations": {
+      "status": "PENDING_SOURCE",
+      "publication_rule": "BLOCK_NEW_PRODUCT_PUBLICATION_IF_UNKNOWN"
+    },
+    "taxes_levies_fees": {
+      "status": "PENDING_SOURCE",
+      "production_use_allowed": false
+    }
+  },
+  "organization_capabilities": {
+    "execution_modes": [
+      "MANUAL",
+      "CONFIGURED",
+      "HYBRID",
+      "REMOTE_API"
+    ],
+    "capabilities": [
+      "PRODUCT_CATALOGUE",
+      "QUOTATION",
+      "RATING",
+      "UNDERWRITING",
+      "PAYMENT",
+      "POLICY_ISSUANCE",
+      "DOCUMENT_ISSUANCE",
+      "ENDORSEMENT",
+      "RENEWAL",
+      "CLAIMS",
+      "COMMISSION",
+      "ACCOUNTING",
+      "REGULATORY_REPORTING",
+      "API"
+    ],
+    "status": "CONFIG_REQUIRED"
+  },
+  "broker_insurer_agreements": {
+    "status": "CONFIG_REQUIRED",
+    "required_fields": [
+      "broker_id",
+      "insurer_id",
+      "agreement_number",
+      "effective_from",
+      "effective_until",
+      "authorized_products",
+      "quote_rights",
+      "bind_rights",
+      "premium_collection_rights",
+      "document_issuance_rights",
+      "policy_servicing_rights",
+      "claims_assistance_rights",
+      "commission_rules",
+      "settlement_terms",
+      "territory",
+      "status",
+      "source_document"
+    ]
+  },
+  "authority": {
+    "authority_types": [
+      "QUOTE",
+      "BIND",
+      "DISCOUNT",
+      "ENDORSE",
+      "BACKDATE",
+      "CANCEL",
+      "OVERRIDE",
+      "RESERVE_APPROVE",
+      "CLAIM_SETTLE",
+      "REFUND_APPROVE",
+      "WRITE_OFF",
+      "REINSTATE",
+      "PAYMENT_OVERRIDE",
+      "JOURNAL_APPROVE",
+      "FACULTATIVE_APPROVE"
+    ],
+    "status": "CONFIG_REQUIRED"
+  },
+  "kyc_aml": {
+    "risk_dimensions": [
+      "CUSTOMER_RISK",
+      "COUNTRY_RISK",
+      "PRODUCT_RISK",
+      "CHANNEL_RISK",
+      "OCCUPATION_RISK"
+    ],
+    "screening_modes": [
+      "MANUAL_AUDITED",
+      "EXTERNAL_PROVIDER",
+      "HYBRID"
+    ],
+    "beneficial_ownership": {
+      "rule": "MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS",
+      "status": "VERIFIED_RULE"
+    },
+    "kyc_levels": [
+      "BASIC",
+      "STANDARD",
+      "ENHANCED"
+    ],
+    "required_document_matrix_status": "CONFIG_REQUIRED",
+    "refresh_periods_status": "CONFIG_REQUIRED",
+    "pep_provider_status": "CONFIG_REQUIRED",
+    "sanctions_provider_status": "CONFIG_REQUIRED"
+  },
+  "sla_calendars": {
+    "timezone": "Africa/Douala",
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "working_days",
+      "start_time",
+      "end_time",
+      "breaks",
+      "public_holidays",
+      "special_closures",
+      "pause_states",
+      "timezone"
+    ],
+    "platform_defaults": [
+      {
+        "case_type": "MANUAL_QUOTE_ACK",
+        "target": "4 BUSINESS HOURS"
+      },
+      {
+        "case_type": "MANUAL_QUOTE_STANDARD",
+        "target": "2 BUSINESS DAYS"
+      },
+      {
+        "case_type": "MANUAL_QUOTE_COMPLEX",
+        "target": "5 BUSINESS DAYS"
+      }
+    ]
+  },
+  "geography": {
+    "regions": [
+      "Adamawa",
+      "Centre",
+      "East",
+      "Far North",
+      "Littoral",
+      "North",
+      "North-West",
+      "West",
+      "South",
+      "South-West"
+    ],
+    "hierarchy": [
+      "REGION",
+      "DIVISION",
+      "SUBDIVISION",
+      "COUNCIL",
+      "CITY",
+      "LOCALITY"
+    ],
+    "cemac_countries": [
+      "CM",
+      "CF",
+      "TD",
+      "CG",
+      "GQ",
+      "GA"
+    ],
+    "full_administrative_dataset_status": "PENDING_SOURCE",
+    "hazard_zones_status": "PENDING_SOURCE",
+    "public_holidays_status": "PENDING_SOURCE"
+  },
+  "party_roles": {
+    "values": [
+      "POLICYHOLDER",
+      "INSURED",
+      "BENEFICIARY",
+      "CLAIMANT",
+      "PAYER",
+      "PAYEE",
+      "OWNER",
+      "DRIVER",
+      "EMPLOYER",
+      "EMPLOYEE",
+      "DEPENDANT",
+      "BENEFICIAL_OWNER",
+      "DIRECTOR",
+      "TRUSTEE",
+      "SETTLOR",
+      "WITNESS"
+    ],
+    "status": "PLATFORM_NORMALIZED"
+  },
+  "beneficiary_relationships": {
+    "values": [
+      "SPOUSE",
+      "CHILD",
+      "PARENT",
+      "SIBLING",
+      "GRANDCHILD",
+      "GRANDPARENT",
+      "OTHER_RELATIVE",
+      "ESTATE",
+      "TRUST",
+      "EMPLOYER",
+      "ORGANIZATION",
+      "OTHER"
+    ],
+    "status": "PLATFORM_NORMALIZED"
+  },
+  "legal_entity_types": {
+    "values": [
+      "SOLE_PROPRIETORSHIP",
+      "SARL",
+      "SA",
+      "SAS",
+      "SNC",
+      "PARTNERSHIP",
+      "ASSOCIATION",
+      "NGO",
+      "COOPERATIVE",
+      "PUBLIC_ENTITY",
+      "RELIGIOUS_ORGANIZATION",
+      "TRUST_OR_SIMILAR",
+      "OTHER"
+    ],
+    "status": "PLATFORM_NORMALIZED"
+  },
+  "occupations_industries": {
+    "occupation_catalogue_status": "PENDING_SOURCE",
+    "industry_catalogue_status": "PENDING_SOURCE",
+    "business_activity_catalogue_status": "PENDING_SOURCE"
+  },
+  "vehicles": {
+    "curated_make_model_master_status": "PARTIALLY_COMPLETE",
+    "detailed_generation_variant_status": "PENDING_SOURCE",
+    "usage_classes": [
+      "PRIVATE",
+      "TAXI",
+      "RIDE_HAILING",
+      "COMMERCIAL_PASSENGER",
+      "GOODS_TRANSPORT",
+      "SCHOOL_TRANSPORT",
+      "AMBULANCE",
+      "GOVERNMENT",
+      "CORPORATE",
+      "FLEET",
+      "MOTORCYCLE_PRIVATE",
+      "MOTORCYCLE_COMMERCIAL",
+      "SPECIAL_PURPOSE",
+      "OTHER"
+    ],
+    "manual_fallback_status": "PENDING_MASTER_REVIEW"
+  },
+  "property_engineering": {
+    "property_types": [
+      "RESIDENTIAL_HOUSE",
+      "APARTMENT",
+      "OFFICE",
+      "SHOP",
+      "WAREHOUSE",
+      "FACTORY",
+      "HOTEL",
+      "HOSPITAL",
+      "SCHOOL",
+      "RELIGIOUS_BUILDING",
+      "MIXED_USE",
+      "OTHER"
+    ],
+    "occupancy_types": [
+      "OWNER_OCCUPIED",
+      "TENANT_OCCUPIED",
+      "COMMERCIAL",
+      "INDUSTRIAL",
+      "VACANT",
+      "MIXED"
+    ],
+    "construction_materials": [
+      "REINFORCED_CONCRETE",
+      "BLOCK",
+      "BRICK",
+      "STEEL",
+      "WOOD",
+      "MIXED",
+      "OTHER"
+    ],
+    "machinery_catalogue_status": "PENDING_SOURCE",
+    "construction_project_types_status": "PENDING_SOURCE",
+    "engineering_hazard_classes_status": "PENDING_SOURCE"
+  },
+  "health": {
+    "provider_types": [
+      "HOSPITAL",
+      "CLINIC",
+      "HEALTH_CENTRE",
+      "PHARMACY",
+      "LABORATORY",
+      "IMAGING_CENTRE",
+      "DENTAL",
+      "OPTICAL",
+      "PHYSIOTHERAPY",
+      "AMBULANCE",
+      "SPECIALIST_PRACTICE"
+    ],
+    "specialties": [
+      "GENERAL_MEDICINE",
+      "INTERNAL_MEDICINE",
+      "PEDIATRICS",
+      "OBSTETRICS_GYNECOLOGY",
+      "SURGERY",
+      "CARDIOLOGY",
+      "ORTHOPEDICS",
+      "DERMATOLOGY",
+      "ENT",
+      "OPHTHALMOLOGY",
+      "DENTISTRY",
+      "PSYCHIATRY",
+      "RADIOLOGY",
+      "PATHOLOGY",
+      "PHARMACY",
+      "PHYSIOTHERAPY"
+    ],
+    "benefit_categories": [
+      "OUTPATIENT",
+      "INPATIENT",
+      "EMERGENCY",
+      "MATERNITY",
+      "PHARMACY",
+      "LABORATORY",
+      "IMAGING",
+      "SURGERY",
+      "DENTAL",
+      "OPTICAL",
+      "PHYSIOTHERAPY",
+      "AMBULANCE",
+      "PREVENTIVE_CARE",
+      "CHRONIC_CARE"
+    ],
+    "provider_master_status": "PENDING_SOURCE",
+    "service_catalogue_status": "PENDING_SOURCE",
+    "tariff_master_status": "CONFIG_REQUIRED"
+  },
+  "claims": {
+    "claim_types": [
+      "MOTOR_DAMAGE",
+      "MOTOR_TP_BODILY_INJURY",
+      "MOTOR_TP_PROPERTY_DAMAGE",
+      "PROPERTY_DAMAGE",
+      "FIRE",
+      "THEFT",
+      "BUSINESS_INTERRUPTION",
+      "HEALTH_REIMBURSEMENT",
+      "HEALTH_PROVIDER",
+      "LIFE_DEATH",
+      "LIFE_DISABILITY",
+      "TRAVEL_MEDICAL",
+      "TRAVEL_CANCELLATION",
+      "MARINE_CARGO",
+      "ENGINEERING",
+      "LIABILITY",
+      "AGRICULTURE",
+      "LIVESTOCK",
+      "OTHER"
+    ],
+    "reserve_types": [
+      "INDEMNITY",
+      "LEGAL",
+      "ADJUSTER",
+      "MEDICAL",
+      "REPAIR",
+      "SALVAGE",
+      "RECOVERY",
+      "OTHER"
+    ],
+    "recovery_types": [
+      "SUBROGATION",
+      "SALVAGE",
+      "REINSURANCE",
+      "COINSURANCE",
+      "THIRD_PARTY",
+      "OTHER"
+    ],
+    "decision_codes": [
+      "APPROVED",
+      "PARTIALLY_APPROVED",
+      "REJECTED",
+      "CLOSED_NO_PAYMENT"
+    ],
+    "cause_of_loss_status": "PENDING_SOURCE",
+    "damage_taxonomy_status": "PENDING_SOURCE",
+    "injury_taxonomy_status": "PENDING_SOURCE",
+    "evidence_type_status": "PENDING_SOURCE",
+    "fraud_indicator_status": "PENDING_SOURCE",
+    "decision_reason_status": "PENDING_SOURCE",
+    "rejection_reason_status": "PENDING_SOURCE"
+  },
+  "repair_network": {
+    "garage_master_status": "PENDING_SOURCE",
+    "adjuster_expert_master_status": "PENDING_SOURCE",
+    "expert_types": [
+      "MOTOR_ADJUSTER",
+      "PROPERTY_ADJUSTER",
+      "MARINE_SURVEYOR",
+      "MEDICAL_EXPERT",
+      "ENGINEERING_EXPERT",
+      "VALUER",
+      "INVESTIGATOR",
+      "OTHER"
+    ]
+  },
+  "marine_cargo": {
+    "incoterms": [
+      "EXW",
+      "FCA",
+      "CPT",
+      "CIP",
+      "DAP",
+      "DPU",
+      "DDP",
+      "FAS",
+      "FOB",
+      "CFR",
+      "CIF"
+    ],
+    "transport_modes": [
+      "ROAD",
+      "RAIL",
+      "SEA",
+      "AIR",
+      "INLAND_WATERWAY",
+      "MULTIMODAL"
+    ],
+    "cargo_catalogue_status": "PENDING_SOURCE",
+    "packaging_catalogue_status": "PENDING_SOURCE",
+    "port_location_master_status": "PENDING_SOURCE"
+  },
+  "agriculture_livestock": {
+    "crop_master_status": "PENDING_SOURCE",
+    "crop_variety_status": "PENDING_SOURCE",
+    "livestock_species_status": "PENDING_SOURCE",
+    "breed_master_status": "PENDING_SOURCE",
+    "farm_types_status": "PENDING_SOURCE",
+    "agri_hazard_status": "PENDING_SOURCE",
+    "fisheries_aquaculture_status": "PENDING_SOURCE"
+  },
+  "aviation": {
+    "aircraft_make_model_status": "PENDING_SOURCE",
+    "aircraft_categories_status": "PENDING_SOURCE",
+    "usage_types_status": "PENDING_SOURCE",
+    "airport_master_status": "PENDING_SOURCE"
+  },
+  "payments_finance": {
+    "payment_methods": [
+      "CASH",
+      "MTN_MOMO",
+      "ORANGE_MONEY",
+      "BANK_TRANSFER",
+      "CARD",
+      "CHEQUE",
+      "DIRECT_DEBIT",
+      "OTHER"
+    ],
+    "banks_master_status": "PENDING_SOURCE",
+    "mobile_money_provider_master_status": "PARTIALLY_KNOWN",
+    "currencies": [
+      {
+        "code": "XAF",
+        "name": "Central African CFA Franc",
+        "status": "VERIFIED"
+      }
+    ]
+  },
+  "accounting": {
+    "journal_types": [
+      "PREMIUM",
+      "PAYMENT",
+      "COMMISSION",
+      "CLAIM_RESERVE",
+      "CLAIM_PAYMENT",
+      "REFUND",
+      "PROVIDER_PAYMENT",
+      "REINSURANCE",
+      "COINSURANCE",
+      "RECOVERY",
+      "TAX",
+      "ADJUSTMENT"
+    ],
+    "chart_of_accounts_status": "CONFIG_REQUIRED",
+    "gl_mapping_status": "CONFIG_REQUIRED",
+    "cost_centre_status": "CONFIG_REQUIRED"
+  },
+  "commission": {
+    "basis_types": [
+      "WRITTEN_PREMIUM",
+      "COLLECTED_PREMIUM",
+      "NET_PREMIUM",
+      "GROSS_PREMIUM",
+      "FIXED"
+    ],
+    "earning_events": [
+      "POLICY_ISSUED",
+      "PREMIUM_COLLECTED",
+      "INSTALLMENT_PAID",
+      "RENEWAL_PAID"
+    ],
+    "clawback_reasons": [
+      "CANCELLATION",
+      "REFUND",
+      "PAYMENT_REVERSAL",
+      "POLICY_VOID",
+      "CORRECTION"
+    ],
+    "settlement_cycles": [
+      "DAILY",
+      "WEEKLY",
+      "BIWEEKLY",
+      "MONTHLY",
+      "QUARTERLY",
+      "CUSTOM"
+    ]
+  },
+  "reinsurance_coinsurance": {
+    "reinsurance_types": [
+      "TREATY",
+      "FACULTATIVE",
+      "FACULTATIVE_OBLIGATORY"
+    ],
+    "treaty_types": [
+      "QUOTA_SHARE",
+      "SURPLUS",
+      "EXCESS_OF_LOSS",
+      "STOP_LOSS",
+      "OTHER"
+    ],
+    "coinsurance_roles": [
+      "LEAD_INSURER",
+      "PARTICIPATING_INSURER"
+    ],
+    "reinsurer_master_status": "PENDING_SOURCE",
+    "reinsurance_broker_master_status": "PENDING_SOURCE",
+    "bordereau_types": [
+      "RISK",
+      "PREMIUM",
+      "CLAIMS"
+    ]
+  },
+  "documents": {
+    "canonical_document_count": 220,
+    "security_matrix_status": "COMPLETE",
+    "field_spec_status": "COMPLETE",
+    "template_family_status": "PARTIALLY_COMPLETE",
+    "numbering_profiles_status": "CONFIG_REQUIRED",
+    "seal_types": [
+      "CORPORATE",
+      "AUTHENTICATION",
+      "FINANCE",
+      "CLAIMS",
+      "PROVIDER",
+      "BROKER_VERIFIED",
+      "DUPLICATE",
+      "REVOKED"
+    ],
+    "signature_types": [
+      "SYSTEM",
+      "AUTHORIZED_SIGNATORY",
+      "CRYPTOGRAPHIC",
+      "HANDWRITTEN_SCAN"
+    ],
+    "revocation_reasons_status": "PENDING_SOURCE",
+    "replacement_reasons_status": "PENDING_SOURCE",
+    "confidentiality_classes": [
+      "PUBLIC_VERIFY",
+      "CUSTOMER_PRIVATE",
+      "INSURER_CONFIDENTIAL",
+      "MEDICAL_RESTRICTED",
+      "FINANCIAL_RESTRICTED",
+      "REGULATORY_RESTRICTED",
+      "INTERNAL_RESTRICTED"
+    ],
+    "retention_classes_status": "PENDING_SOURCE"
+  },
+  "case_management": {
+    "case_families": [
+      "KYC",
+      "UNDERWRITING",
+      "CLAIMS",
+      "FRAUD_REVIEW",
+      "COMPLAINT",
+      "FINANCE_EXCEPTION",
+      "PROVIDER",
+      "REINSURANCE",
+      "REGULATORY",
+      "OPERATIONS"
+    ],
+    "priorities": [
+      "LOW",
+      "NORMAL",
+      "HIGH",
+      "URGENT",
+      "CRITICAL"
+    ],
+    "task_types_status": "PENDING_SOURCE",
+    "queue_types_status": "PENDING_SOURCE",
+    "closure_reasons_status": "PENDING_SOURCE",
+    "escalation_reasons_status": "PENDING_SOURCE"
+  },
+  "notifications": {
+    "channels": [
+      "EMAIL",
+      "SMS",
+      "WHATSAPP",
+      "PUSH",
+      "IN_APP"
+    ],
+    "delivery_statuses": [
+      "QUEUED",
+      "SENT",
+      "DELIVERED",
+      "FAILED",
+      "BOUNCED",
+      "READ",
+      "CANCELLED"
+    ],
+    "consent_types": [
+      "MARKETING",
+      "SERVICE",
+      "TRANSACTIONAL",
+      "CLAIMS",
+      "HEALTH"
+    ],
+    "notification_event_catalogue_status": "PENDING_SOURCE"
+  },
+  "complaints": {
+    "categories_status": "PENDING_SOURCE",
+    "severity_levels": [
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "regulatory_deadline_status": "PENDING_SOURCE",
+    "platform_sla_status": "CONFIG_REQUIRED"
+  },
+  "fraud_controls": {
+    "indicator_catalogue_status": "PENDING_SOURCE",
+    "decision_rule": "INDICATORS_ARE_NOT_FRAUD_DETERMINATIONS"
+  },
+  "regulatory_reporting": {
+    "report_dictionary_status": "PENDING_SOURCE"
+  },
+  "ict_controls": {
+    "cima_010_24_control_taxonomy_status": "PENDING_SOURCE"
+  },
+  "document_requirement_rules": {
+    "requirement_types": [
+      "REQUIRED",
+      "CONDITIONAL",
+      "OPTIONAL",
+      "INTERNAL",
+      "THIRD_PARTY"
+    ],
+    "lifecycle_stages": [
+      "NEW_BUSINESS",
+      "RENEWAL",
+      "ENDORSEMENT",
+      "CANCELLATION",
+      "CLAIM",
+      "FINANCE",
+      "REINSURANCE"
+    ],
+    "status": "CONFIG_REQUIRED"
+  }
+}

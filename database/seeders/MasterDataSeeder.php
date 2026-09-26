@@ -174,6 +174,11 @@ final class MasterDataSeeder extends Seeder
                             $existing['values'][$at] = $cur;
                         }
                         $existing['allow_other'] = ($existing['allow_other'] ?? false) || ($l['allow_other'] ?? false);
+                        // A placeholder (structure_only) list stops being one once a later source supplies values (gap closure pack 03).
+                        if (! empty($l['values']) && ! empty($existing['structure_only'])) {
+                            $existing['structure_only'] = false;
+                            $existing['note'] = trim(($existing['note'] ?? '').' Populated by '.$doc['__file'].'.');
+                        }
                         $lists[$l['code']] = $existing;
                     } else {
                         $lists[$l['code']] = $l;

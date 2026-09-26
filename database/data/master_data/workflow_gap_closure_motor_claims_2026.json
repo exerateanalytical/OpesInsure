@@ -1,0 +1,1856 @@
+{
+  "schema": "opesinsure.master_data.v1",
+  "file": "workflow_gap_closure_motor_claims_2026",
+  "version": "2026.1",
+  "effective_from": "2026-09-25",
+  "source": "GAP_CLOSURE_PACK_V1 file 03 (Motor, Repair Network, Experts & Claims Reference Master)",
+  "source_reference_default": "GAP_CLOSURE_PACK_V1/03_motor_vehicle_claims_repair_experts.json",
+  "workflow_status_source": "GAP_CLOSURE_PACK_V1",
+  "provenance_default": "PLATFORM_NORMALIZED",
+  "protected": true,
+  "notes": [
+    "Gap Closure Pack v1 file 03 merged by code into existing lists (named workflow_gap_* so it loads after workflow_finance_claims_2026 and refines its statuses).",
+    "Generic causes of loss are aliases of the line-scoped claims.cause_of_loss codes (<CATEGORY>__<CAUSE>); missing line-scoped codes are added. Resolver: App\\Application\\Claims\\Taxonomy\\ClaimTaxonomy.",
+    "Decision / rejection reasons are mirrored into claim_decision_reason_codes (the table the decision endpoint validates) by migration 2026_10_26_300001; synonyms become aliases.",
+    "Garage network and technical expert registers are NOT invented: PENDING_INSURER_NETWORK_SOURCE / PENDING_OFFICIAL_IMPORT, loaded through the ImportPipeline (targets repair_garages, technical_experts)."
+  ],
+  "domains": [
+    {
+      "code": "claims",
+      "lists": [
+        {
+          "code": "cause_of_loss",
+          "values": [
+            {
+              "code": "MOTOR__COLLISION",
+              "aliases": [
+                "COLLISION"
+              ],
+              "label_en": "Collision",
+              "label_fr": "Collision",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "COLLISION"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MARINE__COLLISION",
+              "aliases": [
+                "COLLISION"
+              ],
+              "label_en": "Collision",
+              "label_fr": "Collision",
+              "parent_code": "MARINE",
+              "attributes": {
+                "generic_code": [
+                  "COLLISION"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__OVERTURN",
+              "aliases": [
+                "OVERTURN"
+              ],
+              "label_en": "Overturn",
+              "label_fr": "Renversement",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "OVERTURN"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__IMPACT_FIXED_OBJECT",
+              "aliases": [
+                "IMPACT_FIXED_OBJECT"
+              ],
+              "label_en": "Impact with a fixed object",
+              "label_fr": "Choc contre un objet fixe",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "IMPACT_FIXED_OBJECT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__FIRE",
+              "aliases": [
+                "FIRE"
+              ],
+              "label_en": "Fire",
+              "label_fr": "Incendie",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "FIRE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__FIRE",
+              "aliases": [
+                "FIRE"
+              ],
+              "label_en": "Fire",
+              "label_fr": "Incendie",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "FIRE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__EXPLOSION",
+              "aliases": [
+                "EXPLOSION"
+              ],
+              "label_en": "Explosion",
+              "label_fr": "Explosion",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "EXPLOSION"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__EXPLOSION",
+              "aliases": [
+                "EXPLOSION"
+              ],
+              "label_en": "Explosion",
+              "label_fr": "Explosion",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "EXPLOSION"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__THEFT",
+              "aliases": [
+                "THEFT"
+              ],
+              "label_en": "Theft",
+              "label_fr": "Vol",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "THEFT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__BURGLARY",
+              "aliases": [
+                "THEFT"
+              ],
+              "label_en": "Theft",
+              "label_fr": "Vol",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "THEFT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MARINE__THEFT_PILFERAGE",
+              "aliases": [
+                "THEFT"
+              ],
+              "label_en": "Theft",
+              "label_fr": "Vol",
+              "parent_code": "MARINE",
+              "attributes": {
+                "generic_code": [
+                  "THEFT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__ATTEMPTED_THEFT",
+              "aliases": [
+                "ATTEMPTED_THEFT"
+              ],
+              "label_en": "Attempted theft",
+              "label_fr": "Tentative de vol",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "ATTEMPTED_THEFT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__VANDALISM",
+              "aliases": [
+                "VANDALISM"
+              ],
+              "label_en": "Vandalism",
+              "label_fr": "Vandalisme",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "VANDALISM"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__FLOOD",
+              "aliases": [
+                "FLOOD"
+              ],
+              "label_en": "Flood",
+              "label_fr": "Inondation",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "FLOOD"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__FLOOD",
+              "aliases": [
+                "FLOOD"
+              ],
+              "label_en": "Flood",
+              "label_fr": "Inondation",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "FLOOD"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__STORM",
+              "aliases": [
+                "STORM"
+              ],
+              "label_en": "Storm",
+              "label_fr": "Tempête",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "STORM"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__STORM",
+              "aliases": [
+                "STORM"
+              ],
+              "label_en": "Storm",
+              "label_fr": "Tempête",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "STORM"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__LIGHTNING",
+              "aliases": [
+                "LIGHTNING"
+              ],
+              "label_en": "Lightning",
+              "label_fr": "Foudre",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "LIGHTNING"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__FALLING_OBJECT",
+              "aliases": [
+                "FALLING_OBJECT"
+              ],
+              "label_en": "Falling object",
+              "label_fr": "Chute d'objet",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "FALLING_OBJECT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__GLASS_BREAKAGE",
+              "aliases": [
+                "GLASS_BREAKAGE"
+              ],
+              "label_en": "Glass breakage",
+              "label_fr": "Bris de glace",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "GLASS_BREAKAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__THIRD_PARTY_PROPERTY_DAMAGE",
+              "aliases": [
+                "THIRD_PARTY_DAMAGE"
+              ],
+              "label_en": "Third-party property damage",
+              "label_fr": "Dommages matériels aux tiers",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "THIRD_PARTY_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIABILITY__PROPERTY_DAMAGE",
+              "aliases": [
+                "THIRD_PARTY_DAMAGE"
+              ],
+              "label_en": "Third-party property damage",
+              "label_fr": "Dommages matériels aux tiers",
+              "parent_code": "LIABILITY",
+              "attributes": {
+                "generic_code": [
+                  "THIRD_PARTY_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__THIRD_PARTY_INJURY",
+              "aliases": [
+                "BODILY_INJURY"
+              ],
+              "label_en": "Bodily injury",
+              "label_fr": "Dommages corporels",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "BODILY_INJURY"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIABILITY__BODILY_INJURY",
+              "aliases": [
+                "BODILY_INJURY"
+              ],
+              "label_en": "Bodily injury",
+              "label_fr": "Dommages corporels",
+              "parent_code": "LIABILITY",
+              "attributes": {
+                "generic_code": [
+                  "BODILY_INJURY"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PERSONAL_ACCIDENT__ACCIDENTAL_INJURY",
+              "aliases": [
+                "BODILY_INJURY"
+              ],
+              "label_en": "Bodily injury",
+              "label_fr": "Dommages corporels",
+              "parent_code": "PERSONAL_ACCIDENT",
+              "attributes": {
+                "generic_code": [
+                  "BODILY_INJURY"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__ACCIDENTAL_DAMAGE",
+              "aliases": [
+                "ACCIDENTAL_DAMAGE"
+              ],
+              "label_en": "Accidental damage",
+              "label_fr": "Dommages accidentels",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "ACCIDENTAL_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__WATER_DAMAGE",
+              "aliases": [
+                "WATER_DAMAGE"
+              ],
+              "label_en": "Water damage",
+              "label_fr": "Dégât des eaux",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "WATER_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MARINE__WATER_INGRESS",
+              "aliases": [
+                "WATER_DAMAGE"
+              ],
+              "label_en": "Water damage",
+              "label_fr": "Dégât des eaux",
+              "parent_code": "MARINE",
+              "attributes": {
+                "generic_code": [
+                  "WATER_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__ELECTRICAL_DAMAGE",
+              "aliases": [
+                "ELECTRICAL_DAMAGE"
+              ],
+              "label_en": "Electrical damage",
+              "label_fr": "Dommages électriques",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "ELECTRICAL_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PROPERTY__ELECTRICAL_DAMAGE",
+              "aliases": [
+                "ELECTRICAL_DAMAGE"
+              ],
+              "label_en": "Electrical damage",
+              "label_fr": "Dommages électriques",
+              "parent_code": "PROPERTY",
+              "attributes": {
+                "generic_code": [
+                  "ELECTRICAL_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__MECHANICAL_BREAKDOWN",
+              "aliases": [
+                "MECHANICAL_BREAKDOWN"
+              ],
+              "label_en": "Mechanical breakdown",
+              "label_fr": "Panne mécanique",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "MECHANICAL_BREAKDOWN"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "ENGINEERING__MACHINERY_BREAKDOWN",
+              "aliases": [
+                "MECHANICAL_BREAKDOWN"
+              ],
+              "label_en": "Mechanical breakdown",
+              "label_fr": "Panne mécanique",
+              "parent_code": "ENGINEERING",
+              "attributes": {
+                "generic_code": [
+                  "MECHANICAL_BREAKDOWN"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MOTOR__CARGO_DAMAGE",
+              "aliases": [
+                "CARGO_DAMAGE"
+              ],
+              "label_en": "Cargo damage",
+              "label_fr": "Dommages à la marchandise transportée",
+              "parent_code": "MOTOR",
+              "attributes": {
+                "generic_code": [
+                  "CARGO_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "MARINE__HANDLING_DAMAGE",
+              "aliases": [
+                "CARGO_DAMAGE"
+              ],
+              "label_en": "Cargo damage",
+              "label_fr": "Dommages à la marchandise transportée",
+              "parent_code": "MARINE",
+              "attributes": {
+                "generic_code": [
+                  "CARGO_DAMAGE"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIABILITY__LIABILITY_EVENT",
+              "aliases": [
+                "LIABILITY_EVENT"
+              ],
+              "label_en": "Liability event",
+              "label_fr": "Événement de responsabilité civile",
+              "parent_code": "LIABILITY",
+              "attributes": {
+                "generic_code": [
+                  "LIABILITY_EVENT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "HEALTH__ILLNESS",
+              "aliases": [
+                "MEDICAL_EVENT"
+              ],
+              "label_en": "Medical event",
+              "label_fr": "Événement médical",
+              "parent_code": "HEALTH",
+              "attributes": {
+                "generic_code": [
+                  "MEDICAL_EVENT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "HEALTH__ACCIDENT",
+              "aliases": [
+                "MEDICAL_EVENT"
+              ],
+              "label_en": "Medical event",
+              "label_fr": "Événement médical",
+              "parent_code": "HEALTH",
+              "attributes": {
+                "generic_code": [
+                  "MEDICAL_EVENT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "TRAVEL__MEDICAL_EMERGENCY_ABROAD",
+              "aliases": [
+                "MEDICAL_EVENT"
+              ],
+              "label_en": "Medical event",
+              "label_fr": "Événement médical",
+              "parent_code": "TRAVEL",
+              "attributes": {
+                "generic_code": [
+                  "MEDICAL_EVENT"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIFE__NATURAL_DEATH",
+              "aliases": [
+                "DEATH"
+              ],
+              "label_en": "Death",
+              "label_fr": "Décès",
+              "parent_code": "LIFE",
+              "attributes": {
+                "generic_code": [
+                  "DEATH"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIFE__ACCIDENTAL_DEATH",
+              "aliases": [
+                "DEATH"
+              ],
+              "label_en": "Death",
+              "label_fr": "Décès",
+              "parent_code": "LIFE",
+              "attributes": {
+                "generic_code": [
+                  "DEATH"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PERSONAL_ACCIDENT__ACCIDENTAL_DEATH",
+              "aliases": [
+                "DEATH"
+              ],
+              "label_en": "Death",
+              "label_fr": "Décès",
+              "parent_code": "PERSONAL_ACCIDENT",
+              "attributes": {
+                "generic_code": [
+                  "DEATH"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "LIFE__DISABILITY",
+              "aliases": [
+                "DISABILITY"
+              ],
+              "label_en": "Disability",
+              "label_fr": "Invalidité",
+              "parent_code": "LIFE",
+              "attributes": {
+                "generic_code": [
+                  "DISABILITY"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "PERSONAL_ACCIDENT__PERMANENT_DISABILITY",
+              "aliases": [
+                "DISABILITY"
+              ],
+              "label_en": "Disability",
+              "label_fr": "Invalidité",
+              "parent_code": "PERSONAL_ACCIDENT",
+              "attributes": {
+                "generic_code": [
+                  "DISABILITY"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            },
+            {
+              "code": "OTHER",
+              "aliases": [],
+              "attributes": {
+                "generic_code": [
+                  "OTHER"
+                ],
+                "gap_pack_source": "GAP_CLOSURE_PACK_V1"
+              }
+            }
+          ]
+        },
+        {
+          "code": "motor_damage_area",
+          "label_en": "Motor damage area",
+          "label_fr": "Zone endommagée (automobile)",
+          "values": [
+            {
+              "code": "FRONT_BUMPER",
+              "label_en": "Front bumper",
+              "label_fr": "Pare-chocs avant",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "REAR_BUMPER",
+              "label_en": "Rear bumper",
+              "label_fr": "Pare-chocs arrière",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "BONNET",
+              "label_en": "Bonnet",
+              "label_fr": "Capot",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "BOOT",
+              "label_en": "Boot",
+              "label_fr": "Coffre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "ROOF",
+              "label_en": "Roof",
+              "label_fr": "Toit",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "WINDSCREEN",
+              "label_en": "Windscreen",
+              "label_fr": "Pare-brise",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "REAR_GLASS",
+              "label_en": "Rear glass",
+              "label_fr": "Lunette arrière",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LEFT_FRONT_DOOR",
+              "label_en": "Left front door",
+              "label_fr": "Porte avant gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LEFT_REAR_DOOR",
+              "label_en": "Left rear door",
+              "label_fr": "Porte arrière gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "RIGHT_FRONT_DOOR",
+              "label_en": "Right front door",
+              "label_fr": "Porte avant droite",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "RIGHT_REAR_DOOR",
+              "label_en": "Right rear door",
+              "label_fr": "Porte arrière droite",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LEFT_FRONT_FENDER",
+              "label_en": "Left front fender",
+              "label_fr": "Aile avant gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "RIGHT_FRONT_FENDER",
+              "label_en": "Right front fender",
+              "label_fr": "Aile avant droite",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LEFT_REAR_QUARTER",
+              "label_en": "Left rear quarter panel",
+              "label_fr": "Aile arrière gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "RIGHT_REAR_QUARTER",
+              "label_en": "Right rear quarter panel",
+              "label_fr": "Aile arrière droite",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "HEADLAMP_LEFT",
+              "label_en": "Left headlamp",
+              "label_fr": "Phare gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "HEADLAMP_RIGHT",
+              "label_en": "Right headlamp",
+              "label_fr": "Phare droit",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "TAIL_LAMP_LEFT",
+              "label_en": "Left tail lamp",
+              "label_fr": "Feu arrière gauche",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "TAIL_LAMP_RIGHT",
+              "label_en": "Right tail lamp",
+              "label_fr": "Feu arrière droit",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "FRONT_AXLE",
+              "label_en": "Front axle",
+              "label_fr": "Essieu avant",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "REAR_AXLE",
+              "label_en": "Rear axle",
+              "label_fr": "Essieu arrière",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "SUSPENSION",
+              "label_en": "Suspension",
+              "label_fr": "Suspension",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "ENGINE",
+              "label_en": "Engine",
+              "label_fr": "Moteur",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "TRANSMISSION",
+              "label_en": "Transmission",
+              "label_fr": "Transmission",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "INTERIOR",
+              "label_en": "Interior",
+              "label_fr": "Habitacle",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "CHASSIS",
+              "label_en": "Chassis",
+              "label_fr": "Châssis",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "OTHER",
+              "label_en": "Other",
+              "label_fr": "Autre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        },
+        {
+          "code": "damage_severity",
+          "label_en": "Damage severity",
+          "label_fr": "Gravité des dommages",
+          "note": "Physical damage scale; distinct from claims.severity (handling complexity).",
+          "values": [
+            {
+              "code": "COSMETIC",
+              "label_en": "Cosmetic",
+              "label_fr": "Esthétique",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MINOR",
+              "label_en": "Minor",
+              "label_fr": "Mineur",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MODERATE",
+              "label_en": "Moderate",
+              "label_fr": "Modéré",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MAJOR",
+              "label_en": "Major",
+              "label_fr": "Important",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "SEVERE",
+              "label_en": "Severe",
+              "label_fr": "Grave",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "TOTAL_LOSS",
+              "label_en": "Total loss",
+              "label_fr": "Perte totale",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        },
+        {
+          "code": "injury_severity",
+          "label_en": "Injury severity",
+          "label_fr": "Gravité des blessures",
+          "values": [
+            {
+              "code": "NO_INJURY",
+              "label_en": "No injury",
+              "label_fr": "Aucune blessure",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MINOR",
+              "label_en": "Minor",
+              "label_fr": "Légère",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MODERATE",
+              "label_en": "Moderate",
+              "label_fr": "Modérée",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "SERIOUS",
+              "label_en": "Serious",
+              "label_fr": "Grave",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "CRITICAL",
+              "label_en": "Critical",
+              "label_fr": "Critique",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "PERMANENT_DISABILITY",
+              "label_en": "Permanent disability",
+              "label_fr": "Invalidité permanente",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "FATAL",
+              "label_en": "Fatal",
+              "label_fr": "Mortelle",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        },
+        {
+          "code": "evidence_type",
+          "values": [
+            {
+              "code": "CLAIM_FORM",
+              "label_en": "Claim form",
+              "label_fr": "Déclaration de sinistre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "POLICE_REPORT",
+              "label_en": "Police report",
+              "label_fr": "Procès-verbal de police",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "ACCIDENT_REPORT",
+              "label_en": "Accident report (constat)",
+              "label_fr": "Constat amiable",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "PHOTOS",
+              "label_en": "Photos",
+              "label_fr": "Photos",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "VIDEO",
+              "label_en": "Video",
+              "label_fr": "Vidéo",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "AUDIO",
+              "label_en": "Audio recording",
+              "label_fr": "Enregistrement audio",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "DRIVER_LICENSE",
+              "label_en": "Driving licence",
+              "label_fr": "Permis de conduire",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "REGISTRATION",
+              "label_en": "Vehicle registration",
+              "label_fr": "Carte grise",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "INSURANCE_CERTIFICATE",
+              "label_en": "Insurance certificate",
+              "label_fr": "Attestation d'assurance",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MEDICAL_REPORT",
+              "label_en": "Medical report",
+              "label_fr": "Rapport médical",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MEDICAL_INVOICE",
+              "label_en": "Medical invoice",
+              "label_fr": "Facture médicale",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "REPAIR_ESTIMATE",
+              "label_en": "Repair estimate",
+              "label_fr": "Devis de réparation",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "EXPERT_REPORT",
+              "label_en": "Expert report",
+              "label_fr": "Rapport d'expertise",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "VALUATION",
+              "label_en": "Valuation",
+              "label_fr": "Évaluation",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "PURCHASE_INVOICE",
+              "label_en": "Purchase invoice",
+              "label_fr": "Facture d'achat",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "DEATH_CERTIFICATE",
+              "label_en": "Death certificate",
+              "label_fr": "Acte de décès",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "IDENTITY_DOCUMENT",
+              "label_en": "Identity document",
+              "label_fr": "Pièce d'identité",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "WITNESS_STATEMENT",
+              "label_en": "Witness statement",
+              "label_fr": "Témoignage",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "BANK_DETAILS",
+              "label_en": "Bank details",
+              "label_fr": "Relevé d'identité bancaire",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "OTHER",
+              "label_en": "Other",
+              "label_fr": "Autre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        },
+        {
+          "code": "decision_reason",
+          "values": [
+            {
+              "code": "COVERED_EVENT_CONFIRMED",
+              "label_en": "Covered event confirmed",
+              "label_fr": "Événement garanti confirmé",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "PARTIAL_COVERAGE",
+              "label_en": "Partial coverage",
+              "label_fr": "Couverture partielle",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "DEDUCTIBLE_APPLIED",
+              "label_en": "Deductible applied",
+              "label_fr": "Franchise appliquée",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LIMIT_APPLIED",
+              "label_en": "Limit applied",
+              "label_fr": "Plafond appliqué",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "EXCLUSION_APPLIES",
+              "label_en": "Exclusion applies",
+              "label_fr": "Exclusion applicable",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "POLICY_NOT_EFFECTIVE",
+              "label_en": "Policy not effective",
+              "label_fr": "Police non en vigueur",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "PREMIUM_CONDITION_NOT_MET",
+              "label_en": "Premium condition not met",
+              "label_fr": "Condition de prime non remplie",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "INSUFFICIENT_EVIDENCE",
+              "label_en": "Insufficient evidence",
+              "label_fr": "Preuves insuffisantes",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "DUPLICATE_CLAIM",
+              "label_en": "Duplicate claim",
+              "label_fr": "Sinistre en double",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "FRAUD_REVIEW",
+              "label_en": "Fraud review",
+              "label_fr": "Examen pour fraude",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LATE_NOTIFICATION_REVIEW",
+              "label_en": "Late notification review",
+              "label_fr": "Examen de déclaration tardive",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "LIABILITY_NOT_ESTABLISHED",
+              "label_en": "Liability not established",
+              "label_fr": "Responsabilité non établie",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "AMOUNT_NOT_SUPPORTED",
+              "label_en": "Amount not supported",
+              "label_fr": "Montant non justifié",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "OTHER",
+              "label_en": "Other",
+              "label_fr": "Autre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        },
+        {
+          "code": "rejection_reason",
+          "values": [
+            {
+              "code": "NO_ACTIVE_COVER",
+              "label_en": "No active cover",
+              "label_fr": "Aucune garantie en vigueur",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "RISK_NOT_INSURED",
+              "label_en": "Risk not insured",
+              "label_fr": "Risque non assuré",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "EXCLUDED_EVENT",
+              "label_en": "Excluded event",
+              "label_fr": "Événement exclu",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "POLICY_CANCELLED",
+              "label_en": "Policy cancelled",
+              "label_fr": "Police résiliée",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "MISREPRESENTATION_REVIEWED",
+              "label_en": "Misrepresentation reviewed",
+              "label_fr": "Fausse déclaration établie",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "FRAUD_CONFIRMED_BY_AUTHORIZED_PROCESS",
+              "label_en": "Fraud confirmed by the authorised process",
+              "label_fr": "Fraude confirmée par la procédure habilitée",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "INSUFFICIENT_DOCUMENTATION",
+              "label_en": "Insufficient documentation",
+              "label_fr": "Documentation insuffisante",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "DUPLICATE",
+              "label_en": "Duplicate",
+              "label_fr": "Doublon",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "OUTSIDE_TERRITORY",
+              "label_en": "Outside territory",
+              "label_fr": "Hors territoire",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            },
+            {
+              "code": "OTHER",
+              "label_en": "Other",
+              "label_fr": "Autre",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "partners",
+      "lists": [
+        {
+          "code": "adjuster_type",
+          "values": [
+            {
+              "code": "MOTOR_EXPERT",
+              "aliases": [
+                "AUTOMOBILE"
+              ]
+            },
+            {
+              "code": "PROPERTY_FIRE_EXPERT",
+              "aliases": [
+                "FIRE_RISK",
+                "PROPERTY"
+              ]
+            },
+            {
+              "code": "MARINE_SURVEYOR",
+              "aliases": [
+                "MARINE"
+              ]
+            },
+            {
+              "code": "ENGINEERING_EXPERT",
+              "aliases": [
+                "ENGINEERING"
+              ]
+            },
+            {
+              "code": "MEDICAL_EXPERT",
+              "aliases": [
+                "MEDICAL"
+              ]
+            },
+            {
+              "code": "VALUER",
+              "aliases": [
+                "VALUATION"
+              ]
+            },
+            {
+              "code": "INVESTIGATOR",
+              "aliases": [
+                "INVESTIGATION"
+              ]
+            },
+            {
+              "code": "MISCELLANEOUS_DAMAGE_EXPERT",
+              "label_en": "Miscellaneous damage expert",
+              "label_fr": "Expert en risques divers",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              },
+              "aliases": [
+                "MISCELLANEOUS_DAMAGE"
+              ]
+            },
+            {
+              "code": "INDUSTRIAL_EQUIPMENT_EXPERT",
+              "label_en": "Industrial equipment expert",
+              "label_fr": "Expert en matériel industriel",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              },
+              "aliases": [
+                "INDUSTRIAL_EQUIPMENT"
+              ]
+            }
+          ]
+        },
+        {
+          "code": "garage_service",
+          "values": [
+            {
+              "code": "WINDSCREEN",
+              "aliases": [
+                "GLASS"
+              ]
+            },
+            {
+              "code": "MECHANICAL_REPAIR",
+              "aliases": [
+                "MECHANICAL"
+              ]
+            },
+            {
+              "code": "INSPECTION",
+              "label_en": "Vehicle inspection",
+              "label_fr": "Inspection du véhicule",
+              "attributes": {
+                "source": "GAP_CLOSURE_PACK_V1",
+                "data_status": "PLATFORM_NORMALIZED",
+                "pack_file": "03"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "workflow_statuses": [
+    {
+      "owner_domain": "claims",
+      "owner_item": "cause_of_loss",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "cause_of_loss",
+      "note": "25 generic causes (pack 03) resolved onto line-scoped codes.",
+      "mapping": {
+        "COLLISION": [
+          "MOTOR__COLLISION",
+          "MARINE__COLLISION"
+        ],
+        "OVERTURN": [
+          "MOTOR__OVERTURN"
+        ],
+        "IMPACT_FIXED_OBJECT": [
+          "MOTOR__IMPACT_FIXED_OBJECT"
+        ],
+        "FIRE": [
+          "MOTOR__FIRE",
+          "PROPERTY__FIRE"
+        ],
+        "EXPLOSION": [
+          "MOTOR__EXPLOSION",
+          "PROPERTY__EXPLOSION"
+        ],
+        "THEFT": [
+          "MOTOR__THEFT",
+          "PROPERTY__BURGLARY",
+          "MARINE__THEFT_PILFERAGE"
+        ],
+        "ATTEMPTED_THEFT": [
+          "MOTOR__ATTEMPTED_THEFT"
+        ],
+        "VANDALISM": [
+          "MOTOR__VANDALISM"
+        ],
+        "FLOOD": [
+          "MOTOR__FLOOD",
+          "PROPERTY__FLOOD"
+        ],
+        "STORM": [
+          "MOTOR__STORM",
+          "PROPERTY__STORM"
+        ],
+        "LIGHTNING": [
+          "PROPERTY__LIGHTNING"
+        ],
+        "FALLING_OBJECT": [
+          "MOTOR__FALLING_OBJECT"
+        ],
+        "GLASS_BREAKAGE": [
+          "MOTOR__GLASS_BREAKAGE"
+        ],
+        "THIRD_PARTY_DAMAGE": [
+          "MOTOR__THIRD_PARTY_PROPERTY_DAMAGE",
+          "LIABILITY__PROPERTY_DAMAGE"
+        ],
+        "BODILY_INJURY": [
+          "MOTOR__THIRD_PARTY_INJURY",
+          "LIABILITY__BODILY_INJURY",
+          "PERSONAL_ACCIDENT__ACCIDENTAL_INJURY"
+        ],
+        "ACCIDENTAL_DAMAGE": [
+          "MOTOR__ACCIDENTAL_DAMAGE"
+        ],
+        "WATER_DAMAGE": [
+          "PROPERTY__WATER_DAMAGE",
+          "MARINE__WATER_INGRESS"
+        ],
+        "ELECTRICAL_DAMAGE": [
+          "MOTOR__ELECTRICAL_DAMAGE",
+          "PROPERTY__ELECTRICAL_DAMAGE"
+        ],
+        "MECHANICAL_BREAKDOWN": [
+          "MOTOR__MECHANICAL_BREAKDOWN",
+          "ENGINEERING__MACHINERY_BREAKDOWN"
+        ],
+        "CARGO_DAMAGE": [
+          "MOTOR__CARGO_DAMAGE",
+          "MARINE__HANDLING_DAMAGE"
+        ],
+        "LIABILITY_EVENT": [
+          "LIABILITY__LIABILITY_EVENT"
+        ],
+        "MEDICAL_EVENT": [
+          "HEALTH__ILLNESS",
+          "HEALTH__ACCIDENT",
+          "TRAVEL__MEDICAL_EMERGENCY_ABROAD"
+        ],
+        "DEATH": [
+          "LIFE__NATURAL_DEATH",
+          "LIFE__ACCIDENTAL_DEATH",
+          "PERSONAL_ACCIDENT__ACCIDENTAL_DEATH"
+        ],
+        "DISABILITY": [
+          "LIFE__DISABILITY",
+          "PERSONAL_ACCIDENT__PERMANENT_DISABILITY"
+        ],
+        "OTHER": [
+          "OTHER"
+        ]
+      }
+    },
+    {
+      "owner_domain": "claims",
+      "owner_item": "damage_taxonomy",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "motor_damage_area",
+      "note": "27 motor damage areas + 6-level claims.damage_severity. claims.damage_type (nature of damage) stays empty: no source."
+    },
+    {
+      "owner_domain": "claims",
+      "owner_item": "injury_taxonomy",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "injury_severity",
+      "note": "7-level injury severity. claims.injury_type (nature of injury) stays empty: no source."
+    },
+    {
+      "owner_domain": "claims",
+      "owner_item": "evidence_type",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "evidence_type"
+    },
+    {
+      "owner_domain": "claims",
+      "owner_item": "decision_reason",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "decision_reason",
+      "note": "Mirrored into claim_decision_reason_codes."
+    },
+    {
+      "owner_domain": "claims",
+      "owner_item": "rejection_reason",
+      "owner_status": "POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "MASTER_DATA",
+      "domain": "claims",
+      "list": "rejection_reason",
+      "note": "Mirrored into claim_decision_reason_codes (DECLINE)."
+    },
+    {
+      "owner_domain": "repair_network",
+      "owner_item": "garage_master",
+      "owner_status": "PENDING_INSURER_NETWORK_SOURCE",
+      "status": "PENDING_SOURCE",
+      "target": "EXTERNAL",
+      "note": "provider_profiles category GARAGE; import target repair_garages; computed gate in RepairNetworkReadiness."
+    },
+    {
+      "owner_domain": "repair_network",
+      "owner_item": "adjuster_expert_master",
+      "owner_status": "PENDING_OFFICIAL_IMPORT",
+      "status": "PENDING_SOURCE",
+      "target": "EXTERNAL",
+      "note": "DGTCFM technical experts list; provider_profiles category EXPERT; import target technical_experts."
+    },
+    {
+      "owner_domain": "vehicles",
+      "owner_item": "commercial_vehicle_classes",
+      "owner_status": "CLASSIFICATION_POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "VEHICLE_MASTER",
+      "note": "vehicle_reference_values group commercial_vehicle_class (16)."
+    },
+    {
+      "owner_domain": "vehicles",
+      "owner_item": "motorcycle_classes",
+      "owner_status": "CLASSIFICATION_POPULATED",
+      "status": "PLATFORM_NORMALIZED",
+      "target": "VEHICLE_MASTER",
+      "note": "vehicle_reference_values group motorcycle_class (9)."
+    }
+  ]
+}

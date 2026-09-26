@@ -1,0 +1,229 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "KYC, AML/CFT, PEP, Sanctions & Fraud Control Master"
+  },
+  "sources": {
+    "CIMA_2025_REGULATIONS": "https://cima-afrique.org/document-category/cma-reg/cma-reg-2025/"
+  },
+  "customer_types": [
+    "INDIVIDUAL",
+    "SOLE_PROPRIETOR",
+    "COMPANY",
+    "PARTNERSHIP",
+    "ASSOCIATION",
+    "NGO",
+    "COOPERATIVE",
+    "PUBLIC_ENTITY",
+    "TRUST_OR_SIMILAR",
+    "NON_RESIDENT_ENTITY"
+  ],
+  "kyc_document_matrix": {
+    "status": "PLATFORM_BASELINE_REQUIRES_LEGAL_TENANT_VALIDATION",
+    "baseline": {
+      "INDIVIDUAL": [
+        "IDENTITY_DOCUMENT",
+        "ADDRESS_OR_RESIDENCE_INFO",
+        "PHONE",
+        "DATE_OF_BIRTH",
+        "NATIONALITY"
+      ],
+      "SOLE_PROPRIETOR": [
+        "OWNER_ID",
+        "BUSINESS_REGISTRATION",
+        "TAX_IDENTIFIER",
+        "BUSINESS_ADDRESS",
+        "BENEFICIAL_OWNER_DECLARATION"
+      ],
+      "COMPANY": [
+        "REGISTRATION_DOCUMENT",
+        "ARTICLES_OR_STATUTES",
+        "TAX_IDENTIFIER",
+        "REGISTERED_ADDRESS",
+        "DIRECTOR_IDS",
+        "BENEFICIAL_OWNER_DECLARATION"
+      ],
+      "ASSOCIATION": [
+        "REGISTRATION_OR_AUTHORIZATION",
+        "STATUTES",
+        "OFFICER_IDS",
+        "ADDRESS",
+        "CONTROL_PERSONS"
+      ],
+      "NGO": [
+        "AUTHORIZATION_OR_REGISTRATION",
+        "STATUTES",
+        "OFFICER_IDS",
+        "ADDRESS",
+        "CONTROL_PERSONS"
+      ],
+      "COOPERATIVE": [
+        "REGISTRATION_DOCUMENT",
+        "BYLAWS",
+        "OFFICER_IDS",
+        "MEMBER_OR_CONTROL_INFORMATION",
+        "ADDRESS"
+      ],
+      "PUBLIC_ENTITY": [
+        "CREATING_LEGAL_INSTRUMENT",
+        "OFFICIAL_MANDATE",
+        "AUTHORIZED_SIGNATORY",
+        "OFFICIAL_ADDRESS"
+      ],
+      "TRUST_OR_SIMILAR": [
+        "FOUNDING_DOCUMENT",
+        "SETTLOR",
+        "TRUSTEE",
+        "PROTECTOR_IF_ANY",
+        "BENEFICIARIES_OR_CLASS",
+        "CONTROL_PERSONS"
+      ]
+    }
+  },
+  "beneficial_ownership": {
+    "threshold_rule": "MORE_THAN_25_PERCENT_OR_CONTROL_BY_OTHER_MEANS",
+    "roles": [
+      "DIRECT_OWNER",
+      "INDIRECT_OWNER",
+      "VOTING_CONTROL",
+      "OTHER_CONTROL",
+      "SETTLOR",
+      "TRUSTEE",
+      "PROTECTOR",
+      "BENEFICIARY"
+    ],
+    "status": "VERIFIED_REGULATORY_RULE_BASELINE"
+  },
+  "risk_dimensions": [
+    "CUSTOMER",
+    "COUNTRY",
+    "OCCUPATION",
+    "PRODUCT",
+    "CHANNEL",
+    "TRANSACTION",
+    "GEOGRAPHY"
+  ],
+  "risk_levels": [
+    "LOW",
+    "STANDARD",
+    "ELEVATED",
+    "HIGH",
+    "PROHIBITED_OR_ESCALATE"
+  ],
+  "kyc_refresh": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "risk_level",
+      "refresh_months",
+      "trigger_events",
+      "source_policy_id",
+      "effective_from",
+      "effective_until"
+    ]
+  },
+  "pep_sanctions": {
+    "provider_status": "CONFIG_REQUIRED",
+    "modes": [
+      "MANUAL_AUDITED",
+      "EXTERNAL_PROVIDER",
+      "HYBRID"
+    ],
+    "screening_events": [
+      "ONBOARDING",
+      "BEFORE_BIND",
+      "PERIODIC_RESCREEN",
+      "PROFILE_CHANGE",
+      "PAYMENT_OR_PAYOUT_TRIGGER",
+      "MANUAL_RESCREEN"
+    ],
+    "match_states": [
+      "NO_MATCH",
+      "POTENTIAL_MATCH",
+      "CONFIRMED_MATCH",
+      "FALSE_POSITIVE",
+      "ESCALATED"
+    ]
+  },
+  "country_risk": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "country_code",
+      "risk_level",
+      "basis",
+      "sanctions_status",
+      "fatf_status",
+      "internal_notes",
+      "effective_from",
+      "effective_until",
+      "source"
+    ]
+  },
+  "fraud_indicators": [
+    {
+      "code": "FRD_DUPLICATE_CLAIM",
+      "category": "CLAIM",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_REPEATED_LATE_FNOL",
+      "category": "CLAIM",
+      "severity": "MEDIUM"
+    },
+    {
+      "code": "FRD_POLICY_SHORTLY_BEFORE_LOSS",
+      "category": "CLAIM",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_DOCUMENT_INCONSISTENCY",
+      "category": "DOCUMENT",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_IDENTITY_MISMATCH",
+      "category": "KYC",
+      "severity": "CRITICAL"
+    },
+    {
+      "code": "FRD_PAYMENT_ACCOUNT_MISMATCH",
+      "category": "PAYMENT",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_MULTIPLE_POLICIES_SAME_RISK",
+      "category": "UNDERWRITING",
+      "severity": "MEDIUM"
+    },
+    {
+      "code": "FRD_UNUSUAL_COMMISSION_OVERRIDE",
+      "category": "DISTRIBUTION",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_MANUAL_RATE_OVERRIDE_PATTERN",
+      "category": "UNDERWRITING",
+      "severity": "HIGH"
+    },
+    {
+      "code": "FRD_REPEATED_REFUND_REVERSAL",
+      "category": "FINANCE",
+      "severity": "HIGH"
+    }
+  ],
+  "fraud_rule": "Indicators trigger review; they are not automatic fraud determinations."
+}

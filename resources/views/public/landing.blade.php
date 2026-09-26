@@ -20,7 +20,7 @@
       <h1 id="hero-title">{{ __('site.hero.h1') }} <span class="accent">{{ __('site.hero.h1_accent') }}</span></h1>
       <p class="lede">{{ __('site.hero.lede') }}</p>
       <div class="btn-row">
-        <a class="btn btn-gold" href="{{ url('/app/compare') }}">{{ __('site.hero.cta_compare') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+        <a class="btn btn-gold" href="/insurance">{{ __('site.hero.cta_compare') }} @include('public.partials.i', ['n' => 'arrow'])</a>
         <a class="btn btn-outline" href="#explore">{{ __('site.hero.cta_covered') }}</a>
       </div>
       <ul class="trust">
@@ -51,9 +51,9 @@
     <p class="sub">{{ __('site.explore.sub') }}</p>
     <div class="cats">
       @foreach($cats as $key)
-        <a class="cat" href="{{ url('/app/explore?q='.$key) }}"><span class="badge">@include('public.partials.i', ['n' => $key])</span><span>{{ __('site.explore.cats.'.$key) }}@if($suffix)<br>{{ $suffix }}@endif</span></a>
+        <a class="cat" href="/insurance/{{ $key }}"><span class="badge">@include('public.partials.i', ['n' => $key])</span><span>{{ __('site.explore.cats.'.$key) }}@if($suffix)<br>{{ $suffix }}@endif</span></a>
       @endforeach
-      <a class="cat all" href="{{ url('/app/explore') }}"><span class="badge">@include('public.partials.i', ['n' => 'dots'])</span><span>{{ __('site.explore.all') }}</span></a>
+      <a class="cat all" href="/insurance"><span class="badge">@include('public.partials.i', ['n' => 'dots'])</span><span>{{ __('site.explore.all') }}</span></a>
     </div>
   </div>
 </section>
@@ -167,7 +167,7 @@
   <div class="wrap">
     <h2 id="final-title">{{ __('site.final.title') }}</h2>
     <p class="sub" style="margin-inline:auto">{{ __('site.final.sub') }}</p>
-    <a class="btn btn-gold" href="{{ url('/app/compare') }}">{{ __('site.final.cta') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+    <a class="btn btn-gold" href="/insurance">{{ __('site.final.cta') }} @include('public.partials.i', ['n' => 'arrow'])</a>
   </div>
 </section>
 @endsection

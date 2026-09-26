@@ -25,7 +25,12 @@ final class ReinsuranceController
     public function createReinsurer(Request $r): JsonResponse
     {
         $data = $r->validate(['code' => 'required|string|max:64', 'name' => 'required|string|max:255', 'role' => 'sometimes|string', 'party_id' => 'nullable|uuid|exists:parties,id',
-            'country_code' => 'nullable|string|size:2', 'rating' => 'nullable|string|max:16', 'rating_agency' => 'nullable|string|max:64']);
+            'country_code' => 'nullable|string|size:2', 'rating' => 'nullable|string|max:16', 'rating_agency' => 'nullable|string|max:64',
+            // Gap Closure Pack v1 (07) directory fields; approved-security status is never settable here.
+            'regulator' => 'nullable|string|max:128', 'license_reference' => 'nullable|string|max:128', 'ratings' => 'sometimes|array|max:10',
+            'ratings.*.agency' => 'required_with:ratings|string|max:64', 'ratings.*.rating' => 'required_with:ratings|string|max:16', 'ratings.*.as_of' => 'nullable|date',
+            'contact' => 'sometimes|array', 'website' => 'nullable|url|max:255', 'effective_from' => 'nullable|date', 'effective_until' => 'nullable|date|after_or_equal:effective_from',
+            'source_url' => 'nullable|url|max:1024']);
 
         return response()->json(['data' => $this->treaties->createReinsurer($this->tenant->id(), $data)], 201);
     }
@@ -45,7 +50,9 @@ final class ReinsuranceController
     public function createTreaty(Request $r): JsonResponse
     {
         $data = $r->validate(['code' => 'required|string|max:64', 'name' => 'required|string|max:255', 'treaty_type' => 'required|string', 'reinsurance_type' => 'sometimes|string',
-            'currency' => 'required|string|size:3', 'underwriting_year' => 'nullable|integer|min:1990|max:2100']);
+            'currency' => 'required|string|size:3', 'underwriting_year' => 'nullable|integer|min:1990|max:2100',
+            'treaty_number' => 'nullable|string|max:64', 'cedant_party_id' => 'nullable|uuid|exists:parties,id', 'territories' => 'sometimes|array', 'territories.*' => 'string|max:64',
+            'bordereau_frequency' => 'nullable|string', 'wording_document_id' => 'nullable|uuid']);
 
         return response()->json(['data' => $this->treaties->createTreaty($this->tenant->id(), $data)], 201);
     }
@@ -65,6 +72,8 @@ final class ReinsuranceController
             'retention_minor' => 'nullable|integer|min:0', 'cession_percent' => 'nullable|numeric', 'lines' => 'nullable|integer|min:1', 'max_capacity_minor' => 'nullable|integer|min:0',
             'commission_percent' => 'nullable|numeric', 'brokerage_percent' => 'nullable|numeric', 'tax_percent' => 'nullable|numeric', 'rate_percent' => 'nullable|numeric',
             'attachment_ratio' => 'nullable|numeric|min:0', 'limit_ratio' => 'nullable|numeric|min:0', 'notes' => 'nullable|string|max:1000',
+            'premium_terms' => 'sometimes|array', 'profit_commission' => 'sometimes|array', 'claims_cooperation_threshold_minor' => 'nullable|integer|min:0',
+            'cash_call_threshold_minor' => 'nullable|integer|min:0',
             'layers' => 'sometimes|array', 'layers.*.layer' => 'sometimes|integer', 'layers.*.attachment_minor' => 'required_with:layers|integer|min:0',
             'layers.*.limit_minor' => 'required_with:layers|integer|min:1', 'layers.*.rate_percent' => 'required_with:layers|numeric|min:0|max:100', 'layers.*.reinstatements' => 'sometimes|integer|min:0',
             'layers.*.reinstatement_premium_percent' => 'sometimes|numeric|min:0|max:1000',

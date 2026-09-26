@@ -39,7 +39,7 @@ dataset('public pages', [
     'how it works' => ['/how-it-works', 'How it works'],
     'claims' => ['/claims', 'How to file a claim'],
     'faq' => ['/faq', 'Frequently asked questions'],
-    'contact' => ['/contact', 'Send a message'],
+    'contact' => ['/contact', 'Send us a message'],
     'privacy' => ['/privacy', 'Privacy Policy'],
     'terms' => ['/terms', 'Terms &amp; Conditions'],
     'account delete' => ['/account/delete', 'Delete your OpesInsure account'],

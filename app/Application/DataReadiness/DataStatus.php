@@ -45,6 +45,8 @@ final class DataStatus
         'LEGACY_ACTIVE_AUTHORIZATION_PENDING_VERIFICATION' => self::UNVERIFIED,
         'PARTIALLY_KNOWN' => self::UNVERIFIED, 'PENDING_MASTER_REVIEW' => self::UNVERIFIED, 'LEGACY' => self::UNVERIFIED, 'PLATFORM_DEFAULT_UNVERIFIED' => self::UNVERIFIED,
         'BLOCK_NEW_PRODUCT_PUBLICATION' => self::PENDING_SOURCE,
+        // Gap Closure Pack v1 vocabulary (database/data/gap_closure_2026)
+        'VERIFIED_PUBLIC_SOURCE' => self::VERIFIED, 'PENDING_PRIVATE_SOURCE' => self::PENDING_SOURCE, 'PENDING_OFFICIAL_IMPORT' => self::PENDING_SOURCE,
         // retired
         'REVOKED' => self::RETIRED, 'WITHDRAWN' => self::RETIRED, 'SUPERSEDED' => self::RETIRED, 'EXPIRED' => self::RETIRED,
     ];

@@ -28,6 +28,9 @@ final class ManualJournalService
     public function createDraft(string $tenantId, string $actorId, array $data, string $correlationId): string
     {
         $this->assertLineShape($data['lines']);
+        foreach ($data['lines'] as $line) { // Agent GP6: a cost_centre_id dimension must be an active cost centre of the tenant.
+            app(\App\Application\Finance\ReferenceMasters\FinanceReferenceService::class)->assertDimensions($tenantId, (array) ($line['dimensions'] ?? []));
+        }
         $id = (string) Str::uuid();
         DB::transaction(function () use ($id, $tenantId, $actorId, $data, $correlationId) {
             DB::table('journals')->insert([

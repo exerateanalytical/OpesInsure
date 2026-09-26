@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  */
 final class CarrierBrokerAgreementService
 {
-    public const ACTIONS = ['quote' => 'can_quote', 'bind' => 'can_bind', 'collect_premium' => 'can_collect_premium', 'issue_documents' => 'can_issue_documents', 'service_policy' => 'can_service_policies', 'assist_claims' => 'can_assist_claims'];
+    public const ACTIONS = ['quote' => 'can_quote', 'bind' => 'can_bind', 'collect_premium' => 'can_collect_premium', 'issue_documents' => 'can_issue_documents', 'service_policy' => 'can_service_policies', 'assist_claims' => 'can_assist_claims', 'endorse' => 'can_endorse', 'renew' => 'can_renew'];
 
     private const TRANSITIONS = ['DRAFT' => ['ACTIVE', 'TERMINATED'], 'ACTIVE' => ['SUSPENDED', 'TERMINATED'], 'SUSPENDED' => ['ACTIVE', 'TERMINATED']];
 
@@ -34,6 +34,8 @@ final class CarrierBrokerAgreementService
             'territories' => json_encode(array_values($data['territories'] ?? [])), 'channels' => json_encode(array_values($data['channels'] ?? [])),
             'data_origin' => $data['data_origin'] ?? 'PLATFORM_NORMALIZED', 'is_demo' => (bool) ($data['is_demo'] ?? false),
             'settlement_terms' => isset($data['settlement_terms']) ? json_encode($data['settlement_terms']) : null, 'source_document' => $data['source_document'] ?? null,
+            // Gap closure 01 contract terms (never invented: absent terms stay NULL, data_status stays PENDING_PRIVATE_SOURCE).
+            ...$this->contractTerms($data),
             'created_by' => $maker->id, 'created_at' => now(), 'updated_at' => now(),
         ]);
         $this->audit->record('carrier_broker_agreement.created', 'carrier_broker_agreement', $id, ['agreement_number' => $data['agreement_number']]);
@@ -66,7 +68,7 @@ final class CarrierBrokerAgreementService
         $key = ['agreement_id' => $agreementId, 'line_code' => $line['line_code']];
         $q = DB::table('carrier_broker_agreement_products')->where($key)
             ->when($line['insurance_product_id'] ?? null, fn ($q, $p) => $q->where('insurance_product_id', $p), fn ($q) => $q->whereNull('insurance_product_id'));
-        $values = array_intersect_key($line, array_flip(['can_quote', 'can_bind', 'can_collect_premium', 'can_issue_documents', 'can_service_policies', 'can_assist_claims', 'requires_carrier_approval', 'commission_rule_version_id', 'commission_basis_points', 'status']));
+        $values = array_intersect_key($line, array_flip(['can_quote', 'can_bind', 'can_collect_premium', 'can_issue_documents', 'can_service_policies', 'can_assist_claims', 'can_endorse', 'can_renew', 'requires_carrier_approval', 'commission_rule_version_id', 'commission_basis_points', 'status']));
         $existing = $q->first();
         if ($existing) {
             DB::table('carrier_broker_agreement_products')->where('id', $existing->id)->update([...$values, 'updated_at' => now()]);
@@ -96,6 +98,7 @@ final class CarrierBrokerAgreementService
                 if (! DB::table('carrier_broker_agreement_products')->where('agreement_id', $agreementId)->where('status', 'ACTIVE')->exists()) {
                     throw ValidationException::withMessages(['products' => 'An agreement needs at least one authorised product line before activation.']);
                 }
+                app(\App\Application\MarketData\MarketDataGates::class)->assertAgreementActivatable($a);
                 $update += ['approved_by' => $actor->id, 'approved_at' => now()];
             }
             DB::table('carrier_broker_agreements')->where('id', $agreementId)->update($update);
@@ -137,6 +140,21 @@ final class CarrierBrokerAgreementService
 
         return ['allowed' => true, 'reason' => 'WITHIN_AGREEMENT', 'agreement_id' => $active->id,
             'requires_carrier_approval' => (bool) $line->requires_carrier_approval, 'commission_basis_points' => $this->commission($line)];
+    }
+
+    /** @return array<string, mixed> */
+    private function contractTerms(array $data): array
+    {
+        $json = fn (string $k) => isset($data[$k]) ? json_encode($data[$k]) : null;
+
+        return array_filter([
+            'agreement_type' => $data['agreement_type'] ?? null, 'authorized_cima_branches' => json_encode(array_values($data['authorized_cima_branches'] ?? [])),
+            'premium_remittance_terms' => $json('premium_remittance_terms'), 'cancellation_terms' => $json('cancellation_terms'),
+            'commission_rule_set_id' => $data['commission_rule_set_id'] ?? null, 'sla_profile_id' => $data['sla_profile_id'] ?? null,
+            'settlement_profile_id' => $data['settlement_profile_id'] ?? null, 'data_exchange_mode' => $data['data_exchange_mode'] ?? null,
+            'api_profile_id' => $data['api_profile_id'] ?? null, 'source_document_id' => $data['source_document_id'] ?? null,
+            'data_status' => ! empty($data['is_demo']) ? 'DEMO' : 'PENDING_PRIVATE_SOURCE',
+        ], fn ($v) => $v !== null);
     }
 
     public function find(string $id): object

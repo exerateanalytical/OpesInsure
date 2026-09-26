@@ -1,0 +1,1688 @@
+{
+ "schema": "opesinsure.master_data.v1",
+ "file": "workflow_gap_closure_marine_agri_aviation_reinsurance_2026",
+ "version": "2026.1",
+ "effective_from": "2026-09-25",
+ "source": "GAP_CLOSURE_PACK_V1 files 05 (Marine, Cargo, Agriculture, Livestock & Aviation) and 07 (Reinsurance & Co-insurance)",
+ "source_reference_default": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+ "workflow_status_source": "GAP_CLOSURE_PACK_V1",
+ "provenance_default": "PLATFORM_NORMALIZED",
+ "protected": true,
+ "notes": [
+  "Merged by code into existing lists; Gap Closure codes that differ are aliases, never duplicate values.",
+  "Gated masters (ports, routes, varieties, agro-zones, breeds, aircraft make/model, airports, pilot licences) are placeholders: import through the generic ImportPipeline (target master_data_values).",
+  "Reinsurer / reinsurance-broker directories and treaty / co-insurance records are tenant data (tables reinsurers, reinsurance_treaties, coinsurance_arrangements)."
+ ],
+ "domains": [
+  {
+   "code": "cargo",
+   "lists": [
+    {
+     "code": "transport_mode",
+     "values": [
+      {
+       "code": "INLAND_WATER",
+       "aliases": [
+        "INLAND_WATERWAY"
+       ]
+      }
+     ]
+    },
+    {
+     "code": "packaging",
+     "values": [
+      {
+       "code": "BAG_SACK",
+       "aliases": [
+        "BAG"
+       ]
+      },
+      {
+       "code": "BOX",
+       "label_en": "Box",
+       "label_fr": "Boîte / caisse carton",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "CONTAINER",
+       "label_en": "Container",
+       "label_fr": "Conteneur",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "TANK",
+       "label_en": "Tank",
+       "label_fr": "Citerne",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "REEFER",
+       "label_en": "Reefer (refrigerated)",
+       "label_fr": "Conteneur frigorifique",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "cargo_category",
+     "values": [
+      {
+       "code": "AGRICULTURAL_PRODUCE",
+       "label_en": "Agricultural produce",
+       "label_fr": "Produits agricoles",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FOOD_PRODUCTS",
+       "aliases": [
+        "FOOD_BEVERAGE",
+        "Food and beverage"
+       ]
+      },
+      {
+       "code": "TIMBER_LOGS",
+       "aliases": [
+        "TIMBER"
+       ]
+      },
+      {
+       "code": "MINERALS",
+       "label_en": "Minerals and ores",
+       "label_fr": "Minerais",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PETROLEUM_PRODUCTS",
+       "aliases": [
+        "PETROLEUM"
+       ]
+      },
+      {
+       "code": "MACHINERY_EQUIPMENT",
+       "aliases": [
+        "MACHINERY"
+       ]
+      },
+      {
+       "code": "TEXTILES_CLOTHING",
+       "aliases": [
+        "TEXTILES"
+       ]
+      },
+      {
+       "code": "BUILDING_MATERIALS",
+       "aliases": [
+        "CONSTRUCTION_MATERIALS",
+        "Construction materials"
+       ]
+      },
+      {
+       "code": "LIVESTOCK",
+       "aliases": [
+        "LIVE_ANIMALS",
+        "Live animals"
+       ]
+      },
+      {
+       "code": "HIGH_VALUE_GOODS",
+       "label_en": "High-value goods",
+       "label_fr": "Marchandises de grande valeur",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "risk_class",
+     "label_en": "Cargo risk class",
+     "label_fr": "Classe de risque marchandise",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) marine_cargo.risk_classes.",
+     "allow_other": false,
+     "values": [
+      {
+       "code": "STANDARD",
+       "label_en": "Standard",
+       "label_fr": "Standard",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FRAGILE",
+       "label_en": "Fragile",
+       "label_fr": "Fragile",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PERISHABLE",
+       "label_en": "Perishable",
+       "label_fr": "Périssable",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "TEMPERATURE_CONTROLLED",
+       "label_en": "Temperature-controlled",
+       "label_fr": "Sous température dirigée",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "HAZARDOUS",
+       "label_en": "Hazardous",
+       "label_fr": "Dangereux",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "THEFT_ATTRACTIVE",
+       "label_en": "Theft-attractive",
+       "label_fr": "Attractif pour le vol",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "HIGH_VALUE",
+       "label_en": "High value",
+       "label_fr": "Grande valeur",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "OVERSIZED",
+       "label_en": "Oversized",
+       "label_fr": "Hors gabarit",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "route",
+     "label_en": "Transit route",
+     "label_fr": "Itinéraire de transport",
+     "provenance": "CONFIG_REQUIRED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "CONFIG_REQUIRED: tenant-configured routes (Gap Closure 05 route_master_status). Import through the generic ImportPipeline (target master_data_values); never invented.",
+     "allow_other": true,
+     "values": []
+    }
+   ]
+  },
+  {
+   "code": "agriculture",
+   "lists": [
+    {
+     "code": "crop_family",
+     "label_en": "Crop family",
+     "label_fr": "Famille de culture",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) agriculture.crop_families; agriculture.crop values carry attributes.crop_family.",
+     "allow_other": true,
+     "values": [
+      {
+       "code": "COCOA",
+       "label_en": "Cocoa",
+       "label_fr": "Cacao",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "COFFEE",
+       "label_en": "Coffee",
+       "label_fr": "Café",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "COTTON",
+       "label_en": "Cotton",
+       "label_fr": "Coton",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "BANANA",
+       "label_en": "Banana",
+       "label_fr": "Banane",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PLANTAIN",
+       "label_en": "Plantain",
+       "label_fr": "Plantain",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "MAIZE",
+       "label_en": "Maize",
+       "label_fr": "Maïs",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "RICE",
+       "label_en": "Rice",
+       "label_fr": "Riz",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "SORGHUM",
+       "label_en": "Sorghum",
+       "label_fr": "Sorgho",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "MILLET",
+       "label_en": "Millet",
+       "label_fr": "Mil",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "CASSAVA",
+       "label_en": "Cassava",
+       "label_fr": "Manioc",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "YAM",
+       "label_en": "Yam",
+       "label_fr": "Igname",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "POTATO",
+       "label_en": "Potato",
+       "label_fr": "Pomme de terre",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "SWEET_POTATO",
+       "label_en": "Sweet potato",
+       "label_fr": "Patate douce",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "GROUNDNUT",
+       "label_en": "Groundnut",
+       "label_fr": "Arachide",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "SOYBEAN",
+       "label_en": "Soybean",
+       "label_fr": "Soja",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PALM_OIL",
+       "label_en": "Oil palm",
+       "label_fr": "Palmier à huile",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "RUBBER",
+       "label_en": "Rubber",
+       "label_fr": "Hévéa",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "TEA",
+       "label_en": "Tea",
+       "label_fr": "Thé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "SUGARCANE",
+       "label_en": "Sugarcane",
+       "label_fr": "Canne à sucre",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "VEGETABLES",
+       "label_en": "Vegetables",
+       "label_fr": "Légumes",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FRUITS",
+       "label_en": "Fruits",
+       "label_fr": "Fruits",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not listed",
+       "label_fr": "Autre / Non listé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "crop",
+     "values": [
+      {
+       "code": "COCOA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "COCOA"
+       }
+      },
+      {
+       "code": "COFFEE_ARABICA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "COFFEE"
+       }
+      },
+      {
+       "code": "COFFEE_ROBUSTA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "COFFEE"
+       }
+      },
+      {
+       "code": "COTTON",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "COTTON"
+       }
+      },
+      {
+       "code": "BANANA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "BANANA"
+       }
+      },
+      {
+       "code": "PLANTAIN",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "PLANTAIN"
+       }
+      },
+      {
+       "code": "MAIZE",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "MAIZE"
+       }
+      },
+      {
+       "code": "RICE",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "RICE"
+       }
+      },
+      {
+       "code": "SORGHUM",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "SORGHUM"
+       }
+      },
+      {
+       "code": "MILLET",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "MILLET"
+       }
+      },
+      {
+       "code": "CASSAVA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "CASSAVA"
+       }
+      },
+      {
+       "code": "YAM",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "YAM"
+       }
+      },
+      {
+       "code": "IRISH_POTATO",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "POTATO"
+       }
+      },
+      {
+       "code": "SWEET_POTATO",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "SWEET_POTATO"
+       }
+      },
+      {
+       "code": "GROUNDNUT",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "GROUNDNUT"
+       }
+      },
+      {
+       "code": "SOYBEAN",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "SOYBEAN"
+       }
+      },
+      {
+       "code": "OIL_PALM",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "PALM_OIL"
+       }
+      },
+      {
+       "code": "RUBBER",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "RUBBER"
+       }
+      },
+      {
+       "code": "TEA",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "TEA"
+       }
+      },
+      {
+       "code": "SUGARCANE",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "SUGARCANE"
+       }
+      },
+      {
+       "code": "ONION",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "VEGETABLES"
+       }
+      },
+      {
+       "code": "PEPPER",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "VEGETABLES"
+       }
+      },
+      {
+       "code": "TOMATO",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "VEGETABLES"
+       }
+      },
+      {
+       "code": "BEANS",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "VEGETABLES"
+       }
+      },
+      {
+       "code": "PINEAPPLE",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "FRUITS"
+       }
+      },
+      {
+       "code": "COCOYAM",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "OTHER"
+       }
+      },
+      {
+       "code": "OTHER",
+       "aliases": [],
+       "attributes": {
+        "crop_family": "OTHER"
+       }
+      }
+     ]
+    },
+    {
+     "code": "farm_type",
+     "values": [
+      {
+       "code": "COMMERCIAL_FARM",
+       "aliases": [
+        "COMMERCIAL"
+       ]
+      },
+      {
+       "code": "IRRIGATED",
+       "label_en": "Irrigated farm",
+       "label_fr": "Exploitation irriguée",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "farming_system": "IRRIGATED"
+       }
+      },
+      {
+       "code": "RAINFED",
+       "label_en": "Rain-fed farm",
+       "label_fr": "Exploitation pluviale",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "farming_system": "RAIN_FED"
+       }
+      },
+      {
+       "code": "GREENHOUSE",
+       "label_en": "Greenhouse",
+       "label_fr": "Serre",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "farming_system": "GREENHOUSE"
+       }
+      },
+      {
+       "code": "MIXED",
+       "label_en": "Mixed farm",
+       "label_fr": "Exploitation mixte",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "farming_system": "MIXED_CROP_LIVESTOCK"
+       }
+      }
+     ]
+    },
+    {
+     "code": "peril",
+     "label_en": "Agricultural peril",
+     "label_fr": "Péril agricole",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) agriculture.perils; attributes.weather_exposure links to agriculture.weather_exposure (no duplicate hazard list).",
+     "allow_other": false,
+     "values": [
+      {
+       "code": "DROUGHT",
+       "label_en": "Drought",
+       "label_fr": "Sécheresse",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "DROUGHT"
+       }
+      },
+      {
+       "code": "EXCESS_RAIN",
+       "label_en": "Excess rain",
+       "label_fr": "Pluies excessives",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "EXCESS_RAINFALL"
+       },
+       "aliases": [
+        "EXCESS_RAINFALL"
+       ]
+      },
+      {
+       "code": "FLOOD",
+       "label_en": "Flood",
+       "label_fr": "Inondation",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "FLOOD"
+       }
+      },
+      {
+       "code": "WINDSTORM",
+       "label_en": "Windstorm",
+       "label_fr": "Tempête",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "WINDSTORM"
+       }
+      },
+      {
+       "code": "HAIL",
+       "label_en": "Hail",
+       "label_fr": "Grêle",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "HAIL"
+       }
+      },
+      {
+       "code": "FIRE",
+       "label_en": "Fire",
+       "label_fr": "Incendie",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "BUSHFIRE"
+       },
+       "aliases": [
+        "BUSHFIRE"
+       ]
+      },
+      {
+       "code": "PEST",
+       "label_en": "Pest",
+       "label_fr": "Ravageurs",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "PESTS_DISEASES"
+       }
+      },
+      {
+       "code": "DISEASE",
+       "label_en": "Disease",
+       "label_fr": "Maladie",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "weather_exposure": "PESTS_DISEASES"
+       }
+      },
+      {
+       "code": "THEFT",
+       "label_en": "Theft",
+       "label_fr": "Vol",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "WILDLIFE_DAMAGE",
+       "label_en": "Wildlife damage",
+       "label_fr": "Dégâts de la faune sauvage",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PRICE_OR_YIELD_TRIGGER",
+       "label_en": "Price or yield trigger (index)",
+       "label_fr": "Déclencheur prix ou rendement (indiciel)",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "agro_zone",
+     "label_en": "Agro-ecological zone",
+     "label_fr": "Zone agro-écologique",
+     "provenance": "PENDING_OFFICIAL_IMPORT",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "PENDING_OFFICIAL_IMPORT (Gap Closure 05 agro_zone_master_status): import the official IRAD/MINADER zones through the ImportPipeline; never invented.",
+     "allow_other": true,
+     "values": []
+    }
+   ]
+  },
+  {
+   "code": "livestock",
+   "lists": [
+    {
+     "code": "animal_type",
+     "values": [
+      {
+       "code": "BEES",
+       "aliases": [
+        "BEE"
+       ]
+      },
+      {
+       "code": "CHICKEN",
+       "label_en": "Chicken",
+       "label_fr": "Poulet",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "group": "POULTRY"
+       }
+      },
+      {
+       "code": "DUCK",
+       "label_en": "Duck",
+       "label_fr": "Canard",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "group": "POULTRY"
+       }
+      },
+      {
+       "code": "DONKEY",
+       "label_en": "Donkey",
+       "label_fr": "Âne",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "production_system",
+     "label_en": "Livestock production system",
+     "label_fr": "Système d'élevage",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) livestock.production_systems; aquaculture detail stays in fisheries.production_system.",
+     "allow_other": false,
+     "values": [
+      {
+       "code": "PASTORAL",
+       "label_en": "Pastoral",
+       "label_fr": "Pastoral",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "RANCH",
+       "label_en": "Ranch",
+       "label_fr": "Ranch",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "INTENSIVE",
+       "label_en": "Intensive",
+       "label_fr": "Intensif",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "SEMI_INTENSIVE",
+       "label_en": "Semi-intensive",
+       "label_fr": "Semi-intensif",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "BACKYARD",
+       "label_en": "Backyard",
+       "label_fr": "Élevage familial",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "AQUACULTURE",
+       "label_en": "Aquaculture",
+       "label_fr": "Aquaculture",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "fisheries_list": "fisheries.production_system"
+       }
+      },
+      {
+       "code": "MIXED",
+       "label_en": "Mixed",
+       "label_fr": "Mixte",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "peril",
+     "label_en": "Livestock peril",
+     "label_fr": "Péril d'élevage",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) livestock.perils.",
+     "allow_other": true,
+     "values": [
+      {
+       "code": "ACCIDENT",
+       "label_en": "Accident",
+       "label_fr": "Accident",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "DISEASE",
+       "label_en": "Disease",
+       "label_fr": "Maladie",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "EPIDEMIC",
+       "label_en": "Epidemic",
+       "label_fr": "Épizootie",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FIRE",
+       "label_en": "Fire",
+       "label_fr": "Incendie",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FLOOD",
+       "label_en": "Flood",
+       "label_fr": "Inondation",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "THEFT",
+       "label_en": "Theft",
+       "label_fr": "Vol",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PREDATION",
+       "label_en": "Predation",
+       "label_fr": "Prédation",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "DROUGHT",
+       "label_en": "Drought",
+       "label_fr": "Sécheresse",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not listed",
+       "label_fr": "Autre / Non listé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "aviation_insurance",
+   "lists": [
+    {
+     "code": "airframe_category",
+     "label_en": "Aircraft category (airframe)",
+     "label_fr": "Catégorie d'aéronef",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/05_marine_agriculture_livestock_aviation.json",
+     "note": "Gap Closure Pack v1 (05) aviation.aircraft_categories (airframe). aviation_insurance.aircraft_category remains the operating category that prefixes manufacturer/model codes.",
+     "allow_other": true,
+     "values": [
+      {
+       "code": "FIXED_WING",
+       "label_en": "Fixed wing",
+       "label_fr": "Avion (voilure fixe)",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "HELICOPTER",
+       "label_en": "Helicopter",
+       "label_fr": "Hélicoptère",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "ULTRALIGHT",
+       "label_en": "Ultralight",
+       "label_fr": "ULM",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "GLIDER",
+       "label_en": "Glider",
+       "label_fr": "Planeur",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "DRONE_UAS",
+       "label_en": "Drone / UAS",
+       "label_fr": "Drone / aéronef sans pilote",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not listed",
+       "label_fr": "Autre / Non listé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "aircraft_use",
+     "values": [
+      {
+       "code": "PRIVATE_PLEASURE",
+       "aliases": [
+        "PRIVATE"
+       ]
+      },
+      {
+       "code": "SCHEDULED_PASSENGER",
+       "aliases": [
+        "COMMERCIAL_PASSENGER"
+       ]
+      },
+      {
+       "code": "CARGO",
+       "aliases": [
+        "COMMERCIAL_CARGO"
+       ]
+      },
+      {
+       "code": "NON_SCHEDULED_PASSENGER",
+       "aliases": [
+        "CHARTER"
+       ]
+      },
+      {
+       "code": "FLIGHT_INSTRUCTION",
+       "aliases": [
+        "TRAINING"
+       ]
+      },
+      {
+       "code": "AGRICULTURAL",
+       "label_en": "Agricultural (aerial application)",
+       "label_fr": "Épandage agricole",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "MEDEVAC",
+       "label_en": "Medical evacuation",
+       "label_fr": "Évacuation sanitaire",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "GOVERNMENT",
+       "label_en": "Government / state",
+       "label_fr": "État / gouvernement",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "reinsurance",
+   "lists": [
+    {
+     "code": "treaty_type",
+     "values": [
+      {
+       "code": "EXCESS_OF_LOSS",
+       "aliases": [
+        "PER_RISK_EXCESS_OF_LOSS",
+        "CATASTROPHE_EXCESS_OF_LOSS"
+       ]
+      }
+     ]
+    },
+    {
+     "code": "treaty_form",
+     "label_en": "Treaty form",
+     "label_fr": "Forme de traité",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/07_reinsurance_coinsurance.json",
+     "note": "Gap Closure Pack v1 (07) treaty_types; engine_family = the calculation family used by CessionCalculator.",
+     "allow_other": true,
+     "values": [
+      {
+       "code": "QUOTA_SHARE",
+       "label_en": "Quota share",
+       "label_fr": "Quote-part",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "QUOTA_SHARE"
+       }
+      },
+      {
+       "code": "SURPLUS",
+       "label_en": "Surplus",
+       "label_fr": "Excédent de plein",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "SURPLUS"
+       }
+      },
+      {
+       "code": "PER_RISK_EXCESS_OF_LOSS",
+       "label_en": "Per-risk excess of loss",
+       "label_fr": "Excédent de sinistre par risque",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "EXCESS_OF_LOSS"
+       }
+      },
+      {
+       "code": "CATASTROPHE_EXCESS_OF_LOSS",
+       "label_en": "Catastrophe excess of loss",
+       "label_fr": "Excédent de sinistre catastrophe",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "EXCESS_OF_LOSS"
+       }
+      },
+      {
+       "code": "AGGREGATE_EXCESS_OF_LOSS",
+       "label_en": "Aggregate excess of loss",
+       "label_fr": "Excédent de sinistre annuel (agrégat)",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "OTHER"
+       }
+      },
+      {
+       "code": "STOP_LOSS",
+       "label_en": "Stop loss",
+       "label_fr": "Excédent de perte",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "STOP_LOSS"
+       }
+      },
+      {
+       "code": "FACULTATIVE_OBLIGATORY",
+       "label_en": "Facultative-obligatory",
+       "label_fr": "Facultative-obligatoire",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "OTHER"
+       }
+      },
+      {
+       "code": "OTHER",
+       "label_en": "Other / Not listed",
+       "label_fr": "Autre / Non listé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_family": "OTHER"
+       }
+      }
+     ]
+    },
+    {
+     "code": "coinsurance_role",
+     "values": [
+      {
+       "code": "FOLLOWER",
+       "aliases": [
+        "PARTICIPANT"
+       ]
+      }
+     ]
+    },
+    {
+     "code": "coinsurance_status",
+     "label_en": "Co-insurance arrangement status",
+     "label_fr": "Statut de coassurance",
+     "provenance": "PLATFORM_NORMALIZED",
+     "source_reference": "GAP_CLOSURE_PACK_V1/07_reinsurance_coinsurance.json",
+     "note": "Gap Closure Pack v1 (07) coinsurance.arrangement_statuses; engine_status = coinsurance_arrangements.status.",
+     "allow_other": false,
+     "values": [
+      {
+       "code": "PROPOSED",
+       "label_en": "Proposed",
+       "label_fr": "Proposé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_status": "DRAFT"
+       }
+      },
+      {
+       "code": "BOUND",
+       "label_en": "Bound",
+       "label_fr": "Engagé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_status": "DRAFT"
+       }
+      },
+      {
+       "code": "ACTIVE",
+       "label_en": "Active",
+       "label_fr": "Actif",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_status": "ACTIVE"
+       }
+      },
+      {
+       "code": "EXPIRED",
+       "label_en": "Expired",
+       "label_fr": "Expiré",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_status": "ACTIVE"
+       }
+      },
+      {
+       "code": "CANCELLED",
+       "label_en": "Cancelled",
+       "label_fr": "Annulé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_V1",
+        "data_status": "PLATFORM_NORMALIZED",
+        "engine_status": "TERMINATED"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "workflow_statuses": [
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "incoterms",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "incoterm",
+   "note": "11 Incoterms 2020 codes (Gap Closure 05).",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "transport_modes",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "transport_mode",
+   "note": "INLAND_WATERWAY is an alias of INLAND_WATER.",
+   "mapping": {
+    "INLAND_WATERWAY": "INLAND_WATER"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "packaging_catalogue",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "packaging",
+   "note": "11 Gap Closure packaging types; BAG alias of BAG_SACK; BOX, CONTAINER, TANK, REEFER added.",
+   "mapping": {
+    "BAG": "BAG_SACK"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "cargo_catalogue",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "cargo_category",
+   "note": "15 Gap Closure cargo families merged by code/alias.",
+   "mapping": {
+    "FOOD_BEVERAGE": "FOOD_PRODUCTS",
+    "TIMBER": "TIMBER_LOGS",
+    "PETROLEUM": "PETROLEUM_PRODUCTS",
+    "MACHINERY": "MACHINERY_EQUIPMENT",
+    "TEXTILES": "TEXTILES_CLOTHING",
+    "CONSTRUCTION_MATERIALS": "BUILDING_MATERIALS",
+    "LIVE_ANIMALS": "LIVESTOCK"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "risk_classes",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "risk_class",
+   "note": "8 cargo risk classes (Gap Closure 05).",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "port_location_master",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "port",
+   "note": "Gap gate: official port master (UN/LOCODE / port authorities) to be imported through the ImportPipeline; the existing Douala/Kribi/Limbe entries stay, unverified.",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "marine_cargo",
+   "owner_item": "route_master",
+   "owner_status": "CONFIG_REQUIRED",
+   "status": "CONFIG_REQUIRED",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "route",
+   "note": "Tenant-configured transit routes; empty until configured."
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "crop_master",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "crop",
+   "note": "22 Gap Closure crop families in agriculture.crop_family; every crop carries attributes.crop_family.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "crop_family",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "crop_family",
+   "note": "Gap Closure 05 crop_families.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "crop_variety",
+   "owner_status": "PENDING_AGRICULTURE_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "crop_variety",
+   "note": "Gap gate: variety master from an agriculture source (IRAD / MINADER); import only."
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "agro_zone_master",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "agro_zone",
+   "note": "Gap gate: official agro-ecological zones; import only."
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "farm_types",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "farm_type",
+   "note": "8 Gap Closure farm types; COMMERCIAL alias of COMMERCIAL_FARM; IRRIGATED/RAINFED/GREENHOUSE/MIXED link to farming_system.",
+   "mapping": {
+    "COMMERCIAL": "COMMERCIAL_FARM"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "agri_hazard",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "agriculture",
+   "list": "peril",
+   "note": "11 Gap Closure agricultural perils; weather perils link to agriculture.weather_exposure.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "livestock_species",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "animal_type",
+   "note": "12 Gap Closure species; BEE alias of BEES; CHICKEN/DUCK (group POULTRY) and DONKEY added.",
+   "mapping": {
+    "BEE": "BEES"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "livestock_production_systems",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "production_system",
+   "note": "Gap Closure 05 livestock.production_systems.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "livestock_perils",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "peril",
+   "note": "Gap Closure 05 livestock.perils.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "agriculture_livestock",
+   "owner_item": "breed_master",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "livestock",
+   "list": "breed",
+   "note": "Gap gate: official breed master (MINEPIA); existing breed values stay, unverified; import only.",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "aircraft_categories",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "airframe_category",
+   "note": "Gap Closure 05 airframe categories (FIXED_WING … DRONE_UAS).",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "usage_types",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "aircraft_use",
+   "note": "9 Gap Closure usage types merged by code/alias.",
+   "mapping": {
+    "PRIVATE": "PRIVATE_PLEASURE",
+    "COMMERCIAL_PASSENGER": "SCHEDULED_PASSENGER",
+    "COMMERCIAL_CARGO": "CARGO",
+    "CHARTER": "NON_SCHEDULED_PASSENGER",
+    "TRAINING": "FLIGHT_INSTRUCTION"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "aircraft_make_model",
+   "owner_status": "PENDING_LICENSED_OR_AUTHORITY_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "model",
+   "note": "Gap gate: licensed / civil-aviation-authority make-model source; existing entries stay, unverified.",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "airport_master",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "cargo",
+   "list": "airport",
+   "note": "Gap gate: official airport master (CCAA / ICAO); import only.",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "aviation",
+   "owner_item": "pilot_license_mapping",
+   "owner_status": "PENDING_CIVIL_AVIATION_SOURCE",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "aviation_insurance",
+   "list": "pilot_licence",
+   "note": "Gap gate: CCAA licence-class mapping.",
+   "values_status": "UNVERIFIED"
+  },
+  {
+   "owner_domain": "reinsurance_coinsurance",
+   "owner_item": "treaty_types",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "EXTERNAL",
+   "note": "8 Gap Closure treaty forms: reinsurance_treaties.treaty_form; engine family in treaty_type (ReinsuranceReference::TREATY_FORMS).",
+   "mapping": {
+    "PER_RISK_EXCESS_OF_LOSS": "EXCESS_OF_LOSS",
+    "CATASTROPHE_EXCESS_OF_LOSS": "EXCESS_OF_LOSS",
+    "AGGREGATE_EXCESS_OF_LOSS": "OTHER",
+    "FACULTATIVE_OBLIGATORY": "OTHER"
+   }
+  },
+  {
+   "owner_domain": "reinsurance_coinsurance",
+   "owner_item": "coinsurance_roles",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "reinsurance",
+   "list": "coinsurance_role",
+   "note": "LEAD_INSURER => LEAD, PARTICIPANT => FOLLOWER.",
+   "mapping": {
+    "LEAD_INSURER": "LEAD",
+    "PARTICIPANT": "FOLLOWER"
+   },
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "reinsurance_coinsurance",
+   "owner_item": "treaty_forms",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "reinsurance",
+   "list": "treaty_form",
+   "note": "Gap Closure 07 treaty_types.",
+   "values_status": "PLATFORM_NORMALIZED"
+  },
+  {
+   "owner_domain": "reinsurance_coinsurance",
+   "owner_item": "coinsurance_statuses",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "reinsurance",
+   "list": "coinsurance_status",
+   "note": "Gap Closure 07 arrangement_statuses.",
+   "values_status": "PLATFORM_NORMALIZED"
+  }
+ ]
+}

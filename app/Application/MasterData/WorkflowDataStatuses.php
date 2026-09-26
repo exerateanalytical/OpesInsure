@@ -59,7 +59,7 @@ final class WorkflowDataStatuses
             $fields = [
                 'owner_domain' => $e['owner_domain'], 'owner_item' => $e['owner_item'], 'status' => $e['status'], 'owner_status' => $e['owner_status'],
                 'target' => $e['target'], 'domain_code' => $e['domain'] ?? null, 'list_code' => $e['list'] ?? null, 'values_status' => $e['values_status'] ?? null,
-                'source' => self::SOURCE, 'source_version' => (string) ($doc['version'] ?? ''), 'effective_from' => $doc['effective_from'] ?? null,
+                'source' => (string) ($doc['workflow_status_source'] ?? self::SOURCE), 'source_version' => (string) ($doc['version'] ?? ''), 'effective_from' => $doc['effective_from'] ?? null,
                 'note' => $e['note'] ?? null, 'mapping' => isset($e['mapping']) ? json_encode($e['mapping'], JSON_UNESCAPED_UNICODE) : null,
             ];
             $row = DB::table(self::TABLE)->where('item_key', $key)->first();

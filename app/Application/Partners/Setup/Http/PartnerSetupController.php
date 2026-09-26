@@ -60,6 +60,8 @@ final class PartnerSetupController
 
     private function payload(PartnerSetup $setup, Request $r): array
     {
-        return ['data' => $setup, 'meta' => ['checklist' => $this->setups->evaluate($setup), 'available_events' => $this->setups->available($setup, $r->user())]];
+        return ['data' => $setup, 'meta' => ['checklist' => $this->setups->evaluate($setup), 'available_events' => $this->setups->available($setup, $r->user()),
+            // Gap Closure Pack file 11: private datasets this organization must supply (staged via the private_onboarding import).
+            'private_onboarding' => app(\App\Application\PrivateOnboarding\PrivateOnboardingService::class)->readiness('BROKER', $setup->partner_id)]];
     }
 }

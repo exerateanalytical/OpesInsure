@@ -32,11 +32,51 @@ final class TreatyService
         $this->require(! DB::table('reinsurers')->where('tenant_id', $tenantId)->where('code', $data['code'])->exists(), 'code', 'Reinsurer code already used.');
         $row = ['id' => (string) Str::uuid(), 'tenant_id' => $tenantId, 'party_id' => $data['party_id'] ?? null, 'code' => $data['code'], 'name' => $data['name'],
             'role' => $data['role'] ?? 'REINSURER', 'country_code' => $data['country_code'] ?? null, 'rating' => $data['rating'] ?? null,
-            'rating_agency' => $data['rating_agency'] ?? null, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()];
+            'rating_agency' => $data['rating_agency'] ?? null, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]
+            + $this->directoryFields($data);
         DB::table('reinsurers')->insert($row);
         $this->audit->record('reinsurance.reinsurer.created', 'reinsurer', $row['id'], ['code' => $row['code'], 'role' => $row['role']]);
 
-        return $row;
+        return (array) DB::table('reinsurers')->where('id', $row['id'])->first();
+    }
+
+    /**
+     * Gap Closure Pack v1 (07) directory fields. A new reinsurer / broker always starts PENDING_VERIFICATION: its approved-security
+     * status is set only by approveSecurity() (tenant approver or CIMA source), never by the creator or an import.
+     */
+    public function directoryFields(array $data): array
+    {
+        $ratings = $data['ratings'] ?? (isset($data['rating']) ? [['agency' => $data['rating_agency'] ?? null, 'rating' => $data['rating']]] : []);
+
+        return ['regulator' => $data['regulator'] ?? null, 'license_reference' => $data['license_reference'] ?? null, 'ratings' => json_encode(array_values($ratings)),
+            'contact' => json_encode((object) ($data['contact'] ?? [])), 'website' => $data['website'] ?? null, 'effective_from' => $data['effective_from'] ?? null,
+            'effective_until' => $data['effective_until'] ?? null, 'source_url' => $data['source_url'] ?? null, 'verification_status' => 'PENDING_VERIFICATION',
+            'approved_security_status' => 'PENDING_VERIFICATION', 'data_source' => $data['data_source'] ?? 'MANUAL'];
+    }
+
+    /** Approved-security decision (checker): every decision needs a reason; CIMA_APPROVED also needs the source URL. */
+    public function approveSecurity(string $tenantId, string $id, string $status, string $reason, ?string $sourceUrl): array
+    {
+        $this->require(in_array($status, ReinsuranceReference::SECURITY_STATUSES, true), 'approved_security_status', 'Unknown approved-security status.');
+        $this->require($status !== 'CIMA_APPROVED' || ($sourceUrl !== null && $sourceUrl !== ''), 'source_url', 'CIMA_APPROVED needs the source URL of the CIMA / regulator list.');
+        $old = $this->reinsurer($tenantId, $id);
+        $approved = in_array($status, ReinsuranceReference::APPROVED_SECURITY, true);
+        DB::table('reinsurers')->where('id', $id)->update(['approved_security_status' => $status, 'security_approved_by' => $approved ? auth()->id() : null,
+            'security_approved_at' => $approved ? now() : null, 'security_approval_reason' => $reason, 'source_url' => $sourceUrl ?? $old->source_url,
+            'verification_status' => $status === 'CIMA_APPROVED' ? 'VERIFIED_PUBLIC_SOURCE' : ($approved ? 'TENANT_APPROVED' : $old->verification_status), 'updated_at' => now()]);
+        $this->audit->recordChange('reinsurance.reinsurer.security_changed', 'reinsurer', $id, ['approved_security_status' => $old->approved_security_status],
+            ['approved_security_status' => $status], $reason);
+
+        return (array) $this->reinsurer($tenantId, $id);
+    }
+
+    /** Gate shared by treaty activation and facultative signing: every participant must be approved security. */
+    public static function assertApprovedSecurity(array $reinsurerIds): void
+    {
+        $bad = DB::table('reinsurers')->whereIn('id', $reinsurerIds)->whereNotIn('approved_security_status', ReinsuranceReference::APPROVED_SECURITY)->pluck('code')->all();
+        if ($bad !== []) {
+            throw ValidationException::withMessages(['participants' => 'Reinsurers not approved as security (PENDING_CIMA_OR_TENANT_APPROVED_SOURCE): '.implode(', ', $bad).'.']);
+        }
     }
 
     public function updateReinsurerStatus(string $tenantId, string $id, string $status, string $reason): array
@@ -51,12 +91,22 @@ final class TreatyService
 
     public function createTreaty(string $tenantId, array $data): array
     {
-        $this->require(in_array($data['treaty_type'], ReinsuranceReference::TREATY_TYPES, true), 'treaty_type', 'Unknown treaty type.');
+        $form = strtoupper((string) $data['treaty_type']);
+        $family = ReinsuranceReference::treatyFamily($form);
+        $this->require($family !== null, 'treaty_type', 'Unknown treaty type.');
+        $data['treaty_type'] = $family;
+        if ($form === 'FACULTATIVE_OBLIGATORY') {
+            $data['reinsurance_type'] = 'FACULTATIVE_OBLIGATORY';
+        }
+        $this->require(! isset($data['bordereau_frequency']) || in_array($data['bordereau_frequency'], ReinsuranceReference::BORDEREAU_FREQUENCIES, true), 'bordereau_frequency', 'Unknown bordereau frequency.');
         $this->require(in_array($data['reinsurance_type'] ?? 'TREATY', self::TREATY_REINSURANCE_TYPES, true), 'reinsurance_type', 'Treaties are TREATY or FACULTATIVE_OBLIGATORY; facultative placements are separate.');
         $this->require(! DB::table('reinsurance_treaties')->where('tenant_id', $tenantId)->where('code', $data['code'])->exists(), 'code', 'Treaty code already used.');
         $row = ['id' => (string) Str::uuid(), 'tenant_id' => $tenantId, 'code' => $data['code'], 'name' => $data['name'], 'reinsurance_type' => $data['reinsurance_type'] ?? 'TREATY',
             'treaty_type' => $data['treaty_type'], 'currency' => strtoupper($data['currency']), 'underwriting_year' => $data['underwriting_year'] ?? null,
-            'status' => 'DRAFT', 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now()];
+            'status' => 'DRAFT', 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now(),
+            'treaty_form' => isset(ReinsuranceReference::TREATY_FORMS[$form]) ? $form : null, 'treaty_number' => $data['treaty_number'] ?? null,
+            'cedant_party_id' => $data['cedant_party_id'] ?? null, 'territories' => json_encode(array_values($data['territories'] ?? [])),
+            'bordereau_frequency' => $data['bordereau_frequency'] ?? null, 'wording_document_id' => $data['wording_document_id'] ?? null];
         DB::table('reinsurance_treaties')->insert($row);
         $this->audit->record('reinsurance.treaty.created', 'reinsurance_treaty', $row['id'], ['code' => $row['code'], 'treaty_type' => $row['treaty_type']]);
 
@@ -90,6 +140,9 @@ final class TreatyService
                 'brokerage_percent' => $data['brokerage_percent'] ?? 0, 'tax_percent' => $data['tax_percent'] ?? 0,
                 'layers' => json_encode(array_values($data['layers'] ?? [])), 'rate_percent' => $data['rate_percent'] ?? null,
                 'attachment_ratio' => $data['attachment_ratio'] ?? null, 'limit_ratio' => $data['limit_ratio'] ?? null, 'notes' => $data['notes'] ?? null,
+                'premium_terms' => isset($data['premium_terms']) ? json_encode($data['premium_terms']) : null,
+                'profit_commission' => isset($data['profit_commission']) ? json_encode($data['profit_commission']) : null,
+                'claims_cooperation_threshold_minor' => $data['claims_cooperation_threshold_minor'] ?? null, 'cash_call_threshold_minor' => $data['cash_call_threshold_minor'] ?? null,
                 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now()];
             DB::table('reinsurance_treaty_versions')->insert($row);
             foreach ($participants as $p) {
@@ -111,6 +164,7 @@ final class TreatyService
         $total = round(array_sum(array_map(fn ($p) => (float) $p['share_percent'], $v['participants'])), 4);
         $this->require(abs($total - 100.0) < 0.00005, 'participants', "Participant shares total {$total}%, must be 100%.");
         $this->require(! DB::table('reinsurers')->whereIn('id', array_column($v['participants'], 'reinsurer_id'))->where('status', '!=', 'ACTIVE')->exists(), 'participants', 'All participants must be ACTIVE.');
+        self::assertApprovedSecurity(array_column($v['participants'], 'reinsurer_id'));
 
         DB::transaction(function () use ($v, $tenantId) {
             $dayBefore = Carbon::parse($v['effective_from'])->subDay()->toDateString();

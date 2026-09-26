@@ -1,0 +1,593 @@
+{
+ "schema": "opesinsure.master_data.v1",
+ "file": "workflow_gap_closure_geography_2026",
+ "version": "2026.1",
+ "effective_from": "2026-09-25",
+ "source": "GAP_CLOSURE_PACK_V1 file 02 (Cameroon Geography, Calendar, Occupation, Industry & Legal Entity Master)",
+ "source_reference_default": "GAP_CLOSURE_PACK_V1/02_geography_calendar_occupation_industry_entities.json",
+ "workflow_status_source": "GAP_CLOSURE_PACK_V1",
+ "provenance_default": "PLATFORM_NORMALIZED",
+ "protected": true,
+ "notes": [
+  "Gap Closure Pack v1 file 02 merged by code into existing lists (named workflow_gap_* so it loads after workflow_2026 and refines its statuses).",
+  "Region official codes (MINAT) become aliases + attributes.official_code; no region is duplicated.",
+  "Public-holiday RULES only (Law 73/5). Dated yearly datasets are generated on demand as DRAFT reference_datasets and need maker-checker activation; Eid dates are CONFIG_REQUIRED each year.",
+  "PENDING_OFFICIAL_IMPORT catalogues (divisions/subdivisions/councils, INS trades, NACAM) are not invented: they load through the ImportPipeline (target master_data_values)."
+ ],
+ "domains": [
+  {
+   "code": "geography",
+   "lists": [
+    {
+     "code": "cameroon_region",
+     "values": [
+      {
+       "code": "ADAMAOUA",
+       "aliases": [
+        "AD"
+       ],
+       "attributes": {
+        "official_code": "AD",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "CENTRE",
+       "aliases": [
+        "CE"
+       ],
+       "attributes": {
+        "official_code": "CE",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "EST",
+       "aliases": [
+        "ES"
+       ],
+       "attributes": {
+        "official_code": "ES",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "EXTREME_NORD",
+       "aliases": [
+        "EN"
+       ],
+       "attributes": {
+        "official_code": "EN",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "LITTORAL",
+       "aliases": [
+        "LT"
+       ],
+       "attributes": {
+        "official_code": "LT",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "NORD",
+       "aliases": [
+        "NO"
+       ],
+       "attributes": {
+        "official_code": "NO",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "NORD_OUEST",
+       "aliases": [
+        "NW"
+       ],
+       "attributes": {
+        "official_code": "NW",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "OUEST",
+       "aliases": [
+        "OU"
+       ],
+       "attributes": {
+        "official_code": "OU",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "SUD",
+       "aliases": [
+        "SU"
+       ],
+       "attributes": {
+        "official_code": "SU",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      },
+      {
+       "code": "SUD_OUEST",
+       "aliases": [
+        "SW"
+       ],
+       "attributes": {
+        "official_code": "SW",
+        "source_url": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+        "verification_status": "VERIFIED_PUBLIC_SOURCE"
+       }
+      }
+     ]
+    },
+    {
+     "code": "admin_level",
+     "values": [
+      {
+       "code": "COUNTRY",
+       "label_en": "Country",
+       "label_fr": "Pays",
+       "attributes": {
+        "rank": 0,
+        "maps_to_list": "country"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "calendars",
+   "label_en": "Calendars",
+   "label_fr": "Calendriers",
+   "lists": [
+    {
+     "code": "public_holiday_rule",
+     "label_en": "Public holiday rule (Cameroon)",
+     "label_fr": "Règle de jour férié (Cameroun)",
+     "hierarchical": false,
+     "provenance": "GOVERNMENT",
+     "source_reference": "Law No. 73/5 of 7 December 1973, as amended - https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+     "note": "Civil holiday on Sunday/holiday -> following day treated as holiday for labour/remuneration; other bridge/adjacent days require specific Presidential order. Annual exceptions (bridge days, Eid dates): CONFIG_REQUIRED.",
+     "values": [
+      {
+       "code": "NEW_YEAR",
+       "label_en": "New Year's Day",
+       "label_fr": "Jour de l'An",
+       "attributes": {
+        "group": "CIVIL",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": true,
+        "month": 1,
+        "day": 1
+       }
+      },
+      {
+       "code": "YOUTH_DAY",
+       "label_en": "Youth Day",
+       "label_fr": "Fête de la Jeunesse",
+       "attributes": {
+        "group": "CIVIL",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": true,
+        "month": 2,
+        "day": 11
+       }
+      },
+      {
+       "code": "LABOUR_DAY",
+       "label_en": "Labour Day",
+       "label_fr": "Fête du Travail",
+       "attributes": {
+        "group": "CIVIL",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": true,
+        "month": 5,
+        "day": 1
+       }
+      },
+      {
+       "code": "NATIONAL_DAY",
+       "label_en": "National Day",
+       "label_fr": "Fête Nationale",
+       "attributes": {
+        "group": "CIVIL",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": true,
+        "month": 5,
+        "day": 20
+       }
+      },
+      {
+       "code": "GOOD_FRIDAY",
+       "label_en": "Good Friday",
+       "label_fr": "Vendredi Saint",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "CHRISTIAN_MOVABLE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "easter_offset_days": -2
+       }
+      },
+      {
+       "code": "ASCENSION",
+       "label_en": "Ascension Day",
+       "label_fr": "Ascension",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "CHRISTIAN_MOVABLE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "easter_offset_days": 39
+       }
+      },
+      {
+       "code": "ASSUMPTION",
+       "label_en": "Assumption",
+       "label_fr": "Assomption",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "month": 8,
+        "day": 15
+       }
+      },
+      {
+       "code": "CHRISTMAS",
+       "label_en": "Christmas",
+       "label_fr": "Noël",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "FIXED_DATE",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "month": 12,
+        "day": 25
+       }
+      },
+      {
+       "code": "EID_AL_FITR",
+       "label_en": "End of Ramadan",
+       "label_fr": "Fin du Ramadan",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "ANNUAL_OFFICIAL_CONFIRMATION",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "date_status": "CONFIG_REQUIRED"
+       }
+      },
+      {
+       "code": "EID_AL_ADHA",
+       "label_en": "Feast of Sacrifice",
+       "label_fr": "Fête du Mouton",
+       "attributes": {
+        "group": "RELIGIOUS",
+        "calculation": "ANNUAL_OFFICIAL_CONFIRMATION",
+        "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+        "source_url": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+        "sunday_substitute": false,
+        "date_status": "CONFIG_REQUIRED"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "occupations",
+   "lists": [
+    {
+     "code": "risk_class",
+     "values": [
+      {
+       "code": "LOW_RISK",
+       "aliases": [
+        "LOW"
+       ],
+       "attributes": {
+        "platform_level": "LOW",
+        "rank": 1
+       }
+      },
+      {
+       "code": "STANDARD",
+       "attributes": {
+        "platform_level": "STANDARD",
+        "rank": 2
+       }
+      },
+      {
+       "code": "HAZARDOUS",
+       "aliases": [
+        "ELEVATED"
+       ],
+       "attributes": {
+        "platform_level": "ELEVATED",
+        "rank": 3
+       }
+      },
+      {
+       "code": "VERY_HAZARDOUS",
+       "aliases": [
+        "HIGH"
+       ],
+       "attributes": {
+        "platform_level": "HIGH",
+        "rank": 4
+       }
+      },
+      {
+       "code": "PROHIBITED_OR_REVIEW",
+       "label_en": "Prohibited or referral required",
+       "label_fr": "Exclu ou soumis à examen",
+       "attributes": {
+        "platform_level": "PROHIBITED_OR_REVIEW",
+        "rank": 5,
+        "requires_referral": true
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "organizations",
+   "lists": [
+    {
+     "code": "legal_entity_type",
+     "values": [
+      {
+       "code": "INDIVIDUAL",
+       "label_en": "Individual (natural person)",
+       "label_fr": "Personne physique",
+       "aliases": [
+        "NATURAL_PERSON",
+        "PERSONNE_PHYSIQUE"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "workflow_statuses": [
+  {
+   "owner_domain": "geography",
+   "owner_item": "regions",
+   "owner_status": "VERIFIED_PUBLIC_SOURCE",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "cameroon_region",
+   "note": "10 regions (Decret 2008/376); MINAT official codes AD..SW added as aliases and attributes.official_code.",
+   "mapping": {
+    "AD": "ADAMAOUA",
+    "CE": "CENTRE",
+    "ES": "EST",
+    "EN": "EXTREME_NORD",
+    "LT": "LITTORAL",
+    "NO": "NORD",
+    "NW": "NORD_OUEST",
+    "OU": "OUEST",
+    "SU": "SUD",
+    "SW": "SUD_OUEST"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "hierarchy",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "admin_level",
+   "note": "COUNTRY > REGION > DIVISION > SUBDIVISION > COUNCIL > CITY > LOCALITY.",
+   "mapping": {
+    "COUNTRY": "country",
+    "REGION": "cameroon_region",
+    "DIVISION": "cameroon_department",
+    "SUBDIVISION": "cameroon_arrondissement",
+    "COUNCIL": "cameroon_commune",
+    "CITY": "city",
+    "LOCALITY": "quarter"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "geo_record_schema",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "EXTERNAL",
+   "note": "Geography record fields map onto master_data_values (no parallel geo table).",
+   "mapping": {
+    "geo_id": "master_data_values.id",
+    "parent_geo_id": "parent_value_id",
+    "level": "list_code via admin_level.maps_to_list",
+    "official_code": "attributes.official_code",
+    "name_en": "label_en",
+    "name_fr": "label_fr",
+    "capital_or_seat": "attributes.capital",
+    "region_code": "attributes.region_code",
+    "latitude": "attributes.latitude",
+    "longitude": "attributes.longitude",
+    "effective_from": "effective_from",
+    "effective_until": "effective_until",
+    "source_url": "source_reference",
+    "verification_status": "source_type / verified_at"
+   }
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "full_administrative_dataset",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "geography",
+   "list": "cameroon_arrondissement",
+   "note": "Subdivisions, councils and localities: load the official MINAT dataset through the ImportPipeline (target master_data_values, maker-checker). Lists stay structure-only until then; nothing invented."
+  },
+  {
+   "owner_domain": "geography",
+   "owner_item": "public_holidays",
+   "owner_status": "CONFIG_REQUIRED",
+   "status": "CONFIG_REQUIRED",
+   "target": "MASTER_DATA",
+   "domain": "calendars",
+   "list": "public_holiday_rule",
+   "note": "Rules (Law 73/5) seeded. Each year POST /api/v1/reference-datasets/public-holidays/generate drafts the dated PUBLIC_HOLIDAYS dataset; Eid al-Fitr / Eid al-Adha and decreed bridge days are added from the official announcement; a checker activates it. Until then SLA calendars count no public holidays."
+  },
+  {
+   "owner_domain": "sla_calendars",
+   "owner_item": "business_calendars",
+   "owner_status": "CONFIG_REQUIRED",
+   "status": "CONFIG_REQUIRED",
+   "target": "EXTERNAL",
+   "note": "Per-organization calendars are configured by each tenant/branch; no hours are invented.",
+   "mapping": {
+    "calendar_id": "calendar_business_hours.id",
+    "organization_id": "calendar_business_hours.branch_id (tenant via branch)",
+    "working_days": "calendar_business_hours.weekday",
+    "start_time": "calendar_business_hours.opens",
+    "end_time": "calendar_business_hours.closes",
+    "breaks": "calendar_breaks",
+    "timezone": "tenant/branch timezone (REQ-TMP-003)",
+    "holiday_calendar_id": "reference_datasets (kind PUBLIC_HOLIDAYS, ACTIVE)",
+    "special_closures": "calendar_exceptions",
+    "effective_from": "valid_from",
+    "effective_until": "valid_to"
+   }
+  },
+  {
+   "owner_domain": "sla_calendars",
+   "owner_item": "annual_holiday_exceptions",
+   "owner_status": "CONFIG_REQUIRED",
+   "status": "CONFIG_REQUIRED",
+   "target": "EXTERNAL",
+   "note": "Eid dates and presidential bridge days are confirmed yearly; add them to the drafted PUBLIC_HOLIDAYS dataset (holiday_type DECREED / RELIGIOUS_MOVABLE)."
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "occupation_catalogue",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "occupations",
+   "list": "occupation",
+   "values_status": "UNVERIFIED",
+   "note": "Source: INS Cameroonian Nomenclature of Trades (https://ins-cameroun.cm/nomenclature-camerounaise-des-metiers/). Import via ImportPipeline into occupations.occupation (INS code as attributes.ins_trade_code). Risk classes stay null until set by an insurer/owner.",
+   "mapping": {
+    "risk_fields": [
+     "underwriting_risk_class",
+     "aml_risk_class",
+     "accident_risk_class",
+     "life_risk_class"
+    ],
+    "risk_levels_list": "occupations.risk_class"
+   }
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "industry_catalogue",
+   "owner_status": "PENDING_OFFICIAL_IMPORT",
+   "status": "PENDING_SOURCE",
+   "target": "MASTER_DATA",
+   "domain": "industries",
+   "list": "activity",
+   "values_status": "UNVERIFIED",
+   "note": "Source: INS NACAM/NPC Rev.1 (https://ins-cameroun.cm/statistique/nomenclature_des-activites-et-des-produits-au-cameroun-nacam_npc-rev1/). Import via ImportPipeline into industries.activity (nacam_code, section, parent_code, risk classes as attributes).",
+   "mapping": {
+    "fields": [
+     "nacam_code",
+     "name_fr",
+     "name_en",
+     "parent_code",
+     "section",
+     "risk_class",
+     "aml_risk_class",
+     "property_risk_class",
+     "liability_risk_class"
+    ]
+   }
+  },
+  {
+   "owner_domain": "occupations_industries",
+   "owner_item": "platform_risk_levels",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "occupations",
+   "list": "risk_class",
+   "note": "LOW=LOW_RISK, ELEVATED=HAZARDOUS, HIGH=VERY_HAZARDOUS (aliases); PROHIBITED_OR_REVIEW added.",
+   "mapping": {
+    "LOW": "LOW_RISK",
+    "STANDARD": "STANDARD",
+    "ELEVATED": "HAZARDOUS",
+    "HIGH": "VERY_HAZARDOUS",
+    "PROHIBITED_OR_REVIEW": "PROHIBITED_OR_REVIEW"
+   }
+  },
+  {
+   "owner_domain": "legal_entity_types",
+   "owner_item": "values",
+   "owner_status": "PLATFORM_NORMALIZED",
+   "status": "PLATFORM_NORMALIZED",
+   "target": "MASTER_DATA",
+   "domain": "organizations",
+   "list": "legal_entity_type",
+   "note": "OHADA forms kept; PARTNERSHIP -> SNC, PUBLIC_ENTITY -> PUBLIC_ESTABLISHMENT, TRUST_OR_SIMILAR, RELIGIOUS_ORGANIZATION; INDIVIDUAL added.",
+   "mapping": {
+    "INDIVIDUAL": "INDIVIDUAL",
+    "SOLE_PROPRIETORSHIP": "SOLE_PROPRIETORSHIP",
+    "SARL": "SARL",
+    "SA": "SA",
+    "SAS": "SAS",
+    "SNC": "SNC",
+    "PARTNERSHIP": "SNC",
+    "ASSOCIATION": "ASSOCIATION",
+    "NGO": "NGO",
+    "COOPERATIVE": "COOPERATIVE",
+    "PUBLIC_ENTITY": "PUBLIC_ESTABLISHMENT",
+    "RELIGIOUS_ORGANIZATION": "RELIGIOUS_ORGANIZATION",
+    "TRUST_OR_SIMILAR": "TRUST_OR_SIMILAR"
+   }
+  },
+  {
+   "owner_domain": "legal_entity_types",
+   "owner_item": "registration_document_matrix",
+   "owner_status": "PENDING_VERIFICATION",
+   "status": "UNVERIFIED",
+   "target": "EXTERNAL",
+   "note": "Official registration documents per legal form are not verified; KYC document requirements are not derived from legal form until verified."
+  }
+ ]
+}

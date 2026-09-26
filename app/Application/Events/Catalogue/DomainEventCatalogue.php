@@ -425,6 +425,14 @@ final class DomainEventCatalogue
             $d('health.preauth.cancelled', 'health_preauthorization', 'Preauthorization cancelled; benefit reservations released.', [], [], true),
             $d('health.preauth.extension_requested', 'health_preauthorization', 'Hospital stay extension requested on an admission preauthorization.', [], [], true),
             $d('health.preauth.extension_decided', 'health_preauthorization', 'Hospital stay extension decided (maker-checker).', [], [], true),
+            // Provider Portal Gap-Free spec v1 (App\Application\Providers\Workspace)
+            $d('provider_portal.eligibility.checked', 'health_eligibility_check', 'Point-of-care eligibility checked from the provider portal.', ['EligibilityChecked'], [], true),
+            $d('provider_portal.treatment_episode.closed', 'treatment_episode', 'Treatment episode completed by the provider.', ['TreatmentEpisodeCompleted'], [], true),
+            $d('provider_portal.claim.created', 'health_provider_claim', 'Provider claim created from the provider portal (or a treatment episode).', ['ProviderClaimCreated'], [], true),
+            $d('provider_portal.claim.query_responded', 'health_provider_claim', 'Provider answered an insurer query on a provider claim.', ['ProviderClaimQueryRaised'], [], true),
+            $d('provider_portal.reconciliation.matched', 'provider_reconciliation', 'Insurer payment allocated to provider claims.', ['ProviderPaymentReconciled'], [], true),
+            $d('provider_portal.dispute.opened', 'provider_dispute', 'Provider dispute opened (reason-coded).', ['ProviderDisputeOpened'], [], true),
+            $d('provider_portal.dispute.resolved', 'provider_dispute', 'Provider dispute resolved.', ['ProviderDisputeResolved'], [], true),
             // Batch 13A — REQ-PRV-001/002/004 providers (App\Application\Providers)
             $d('provider.registered', 'provider', 'Provider registered in the provider master.', [], [], true),
             $d('provider.credentialing_changed', 'provider', 'Provider credentialing status changed.', [], [], true),

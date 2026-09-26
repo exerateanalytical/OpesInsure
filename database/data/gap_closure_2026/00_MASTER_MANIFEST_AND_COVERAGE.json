@@ -1,0 +1,332 @@
+{
+  "package": {
+    "name": "OpesInsure Institutional Data Gap Closure Pack",
+    "version": "1.0.0",
+    "generated_at": "2026-09-25T17:36:27",
+    "implementation_source_of_truth_for_reference_data": true,
+    "instruction_to_claude": "Load all JSON files in this pack together. Treat VERIFIED_PUBLIC_SOURCE and PLATFORM_NORMALIZED values as seedable. Treat PENDING_PRIVATE_SOURCE, CONFIG_REQUIRED, PENDING_OFFICIAL_IMPORT and PENDING_VERIFICATION as explicit production gates, not missing fields to invent. Implement schemas, admin/import workflows, validation and safe fallback states for every gated dataset. Do not enable workflows that require unverified values.",
+    "bundled_existing_files": [
+      "OpesInsure_Cameroon_29_Insurers_Institutional_Directory_v1.json",
+      "OpesInsure_Workflow_Institutional_Data_Master_v1.json",
+      "OpesInsure_Cameroon_Vehicle_Power_Fiscal_Power_Institutional_Master_v1.json",
+      "OpesInsure_Finance_Counterparty_Accounts_Commission_Subledger_v1.json",
+      "OpesInsure_Canonical_Implementation_Specification_v1.json"
+    ]
+  },
+  "files": [
+    "01_insurance_market_products_contracts.json",
+    "02_geography_calendar_occupation_industry_entities.json",
+    "03_motor_vehicle_claims_repair_experts.json",
+    "04_health_provider_services_tariffs.json",
+    "05_marine_agriculture_livestock_aviation.json",
+    "06_banking_payments_accounting_gl.json",
+    "07_reinsurance_coinsurance.json",
+    "08_kyc_aml_pep_sanctions_fraud.json",
+    "09_regulatory_reporting_aml_ict_controls.json",
+    "10_operations_documents_cases_sla_retention_notifications.json",
+    "11_private_tenant_onboarding_templates.json"
+  ],
+  "existing_related_files": [
+    "OpesInsure_Cameroon_29_Insurers_Institutional_Directory_v1.json",
+    "OpesInsure_Workflow_Institutional_Data_Master_v1.json",
+    "OpesInsure_Cameroon_Vehicle_Power_Fiscal_Power_Institutional_Master_v1.json",
+    "OpesInsure_Finance_Counterparty_Accounts_Commission_Subledger_v1.json",
+    "OpesInsure_Canonical_Implementation_Specification_v1.json"
+  ],
+  "coverage_matrix": [
+    {
+      "gap": "Insurer CIMA branch authorizations",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PENDING_OFFICIAL_IMPORT"
+    },
+    {
+      "gap": "Complete broker directory enrichment",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "VERIFIED_POPULATION_SCHEMA_ENRICHMENT_CONTINUES"
+    },
+    {
+      "gap": "Broker–insurer agreements",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "Real insurer product catalogue",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "Commission tables",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "Taxes, levies and statutory charges",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PENDING_VERIFICATION"
+    },
+    {
+      "gap": "Cameroon administrative geography",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "REGIONS_POPULATED_DEEP_HIERARCHY_IMPORT_PENDING"
+    },
+    {
+      "gap": "Public holiday calendar",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "LEGAL_BASELINE_POPULATED"
+    },
+    {
+      "gap": "Business-hour calendars",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Occupation catalogue",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "OFFICIAL_INS_IMPORT_PENDING"
+    },
+    {
+      "gap": "Industry and business-activity catalogue",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "OFFICIAL_INS_IMPORT_PENDING"
+    },
+    {
+      "gap": "Legal entity classifications",
+      "file": "02_geography_calendar_occupation_industry_entities.json",
+      "status": "PLATFORM_BASELINE_POPULATED"
+    },
+    {
+      "gap": "Vehicle detailed technical master",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "EXTERNAL_MASTER_PLUS_POPULATION_PENDING"
+    },
+    {
+      "gap": "Vehicle fiscal CV by model/variant",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "EXTERNAL_MASTER_PLUS_POPULATION_PENDING"
+    },
+    {
+      "gap": "Commercial trucks/buses/motorcycles",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "CLASSIFICATION_POPULATED_VARIANTS_PENDING"
+    },
+    {
+      "gap": "Motor usage classifications linked to underwriting",
+      "file": "01_insurance_market_products_contracts.json",
+      "status": "PLATFORM_POPULATED_TENANT_PRICING_PENDING"
+    },
+    {
+      "gap": "Health provider directory",
+      "file": "04_health_provider_services_tariffs.json",
+      "status": "OFFICIAL_IMPORT_PENDING"
+    },
+    {
+      "gap": "Health provider specialties",
+      "file": "04_health_provider_services_tariffs.json",
+      "status": "TAXONOMY_POPULATED_ASSIGNMENTS_PENDING"
+    },
+    {
+      "gap": "Health service/procedure catalogue",
+      "file": "04_health_provider_services_tariffs.json",
+      "status": "SERVICE_FAMILIES_POPULATED_LOCAL_MAPPING_REQUIRED"
+    },
+    {
+      "gap": "Provider tariffs",
+      "file": "04_health_provider_services_tariffs.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "Approved garages and repairers",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "PENDING_INSURER_NETWORK_SOURCE"
+    },
+    {
+      "gap": "Loss adjusters, surveyors and experts",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "OFFICIAL_SOURCE_DEFINED_IMPORT_PENDING"
+    },
+    {
+      "gap": "Claims cause-of-loss taxonomy",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "POPULATED"
+    },
+    {
+      "gap": "Damage taxonomy",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "POPULATED"
+    },
+    {
+      "gap": "Injury taxonomy",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "POPULATED"
+    },
+    {
+      "gap": "Claims decision/rejection reason codes",
+      "file": "03_motor_vehicle_claims_repair_experts.json",
+      "status": "POPULATED"
+    },
+    {
+      "gap": "Fraud indicators",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "BASELINE_POPULATED"
+    },
+    {
+      "gap": "Marine/cargo data",
+      "file": "05_marine_agriculture_livestock_aviation.json",
+      "status": "BASELINE_POPULATED_PORTS_PENDING"
+    },
+    {
+      "gap": "Agriculture data",
+      "file": "05_marine_agriculture_livestock_aviation.json",
+      "status": "BASELINE_POPULATED_VARIETIES_ZONES_PENDING"
+    },
+    {
+      "gap": "Livestock data",
+      "file": "05_marine_agriculture_livestock_aviation.json",
+      "status": "BASELINE_POPULATED_BREEDS_PENDING"
+    },
+    {
+      "gap": "Aviation data",
+      "file": "05_marine_agriculture_livestock_aviation.json",
+      "status": "BASELINE_POPULATED_MODELS_AIRPORTS_PENDING"
+    },
+    {
+      "gap": "Bank directory",
+      "file": "06_banking_payments_accounting_gl.json",
+      "status": "CURRENT_OFFICIAL_IMPORT_PENDING"
+    },
+    {
+      "gap": "Payment-provider master",
+      "file": "06_banking_payments_accounting_gl.json",
+      "status": "PUBLIC_INSTITUTIONS_POPULATED_TENANT_CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Chart of accounts templates",
+      "file": "06_banking_payments_accounting_gl.json",
+      "status": "BASELINE_POPULATED_TENANT_MAPPING_REQUIRED"
+    },
+    {
+      "gap": "Accounting-event-to-GL mapping",
+      "file": "06_banking_payments_accounting_gl.json",
+      "status": "CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Reinsurer directory",
+      "file": "07_reinsurance_coinsurance.json",
+      "status": "PENDING_CIMA_OR_TENANT_SOURCE"
+    },
+    {
+      "gap": "Reinsurance broker directory",
+      "file": "07_reinsurance_coinsurance.json",
+      "status": "PENDING_SOURCE"
+    },
+    {
+      "gap": "Treaty master data",
+      "file": "07_reinsurance_coinsurance.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "Co-insurance arrangements",
+      "file": "07_reinsurance_coinsurance.json",
+      "status": "PENDING_PRIVATE_SOURCE"
+    },
+    {
+      "gap": "KYC required-document matrix",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "BASELINE_POPULATED_LEGAL_VALIDATION_REQUIRED"
+    },
+    {
+      "gap": "KYC refresh periods",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "CONFIG_REQUIRED"
+    },
+    {
+      "gap": "PEP/sanctions provider",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Country-risk catalogue",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Occupation-risk and product-risk scoring",
+      "file": "08_kyc_aml_pep_sanctions_fraud.json",
+      "status": "FRAMEWORK_DEFINED_CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Regulatory reporting dictionary",
+      "file": "09_regulatory_reporting_aml_ict_controls.json",
+      "status": "FORM_BY_FORM_IMPORT_PENDING"
+    },
+    {
+      "gap": "Complaint taxonomy and verified deadlines",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "TAXONOMY_POPULATED_DEADLINES_PENDING"
+    },
+    {
+      "gap": "Retention schedule",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "CLASSES_POPULATED_LEGAL_DURATIONS_PENDING"
+    },
+    {
+      "gap": "CIMA ICT control catalogue",
+      "file": "09_regulatory_reporting_aml_ict_controls.json",
+      "status": "CONTROL_DOMAINS_POPULATED"
+    },
+    {
+      "gap": "AML control catalogue",
+      "file": "09_regulatory_reporting_aml_ict_controls.json",
+      "status": "CONTROL_DOMAINS_POPULATED"
+    },
+    {
+      "gap": "Notification event catalogue",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "POPULATED"
+    },
+    {
+      "gap": "Document numbering profiles",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "SCHEMA_COMPLETE_CONFIG_REQUIRED"
+    },
+    {
+      "gap": "Seal/signatory authority registry",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "SCHEMA_COMPLETE_PRIVATE_SOURCE_REQUIRED"
+    },
+    {
+      "gap": "Document retention/revocation/replacement reason dictionaries",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "REASONS_POPULATED_RETENTION_DURATIONS_PENDING"
+    },
+    {
+      "gap": "SLA/case taxonomy",
+      "file": "10_operations_documents_cases_sla_retention_notifications.json",
+      "status": "TAXONOMY_POPULATED_TENANT_TARGETS_CONFIG_REQUIRED"
+    }
+  ],
+  "coverage_validation": {
+    "requested_gap_count": 54,
+    "mapped_gap_count": 54,
+    "unmapped_gaps": [],
+    "structural_coverage_complete": true,
+    "public_or_private_value_population_note": "Structural coverage is complete. Some real-world values are necessarily gated because they are private contracts, tenant settings, negotiated tariffs, internal authority mandates, or require an authoritative government/regulator import. They are never fabricated."
+  },
+  "source_registry": {
+    "DGTCFM_INSURERS_2026": "https://dgtcfm.cm/liste-des-compagnies/",
+    "DGTCFM_BROKERS_2026": "https://dgtcfm.cm/les-acteurs-de-la-profession/liste-des-courtiers/",
+    "DGTCFM_EXPERTS": "https://dgtcfm.cm/les-acteurs-de-la-profession/liste-des-experts-techniques/",
+    "DGTCFM_PAYMENT_INSTITUTIONS": "https://dgtcfm.cm/etablissements-de-paiement-agrees-au-cameroun/",
+    "DGTCFM_MARKET_STATS": "https://dgtcfm.cm/statistiques/",
+    "INS_NACAM": "https://ins-cameroun.cm/statistique/nomenclature_des-activites-et-des-produits-au-cameroun-nacam_npc-rev1/",
+    "INS_TRADES": "https://ins-cameroun.cm/nomenclature-camerounaise-des-metiers/",
+    "MINAT_REGIONS": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+    "MINFOPRA_HOLIDAYS": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+    "MINSANTE_DOCS": "https://www.minsante.cm/site/?field_categorie_doc_tid=3&q=fr%2Ftest",
+    "MINSANTE_PUBLIC_FACILITIES": "https://cdnss.minsante.cm/sites/default/files/001-069.pdf",
+    "CIMA_2025_REGULATIONS": "https://cima-afrique.org/document-category/cma-reg/cma-reg-2025/",
+    "CIMA_2024_REGULATIONS": "https://cima-afrique.org/document-category/cma-reg/cma-reg-2024/",
+    "CIMA_010_24": "https://cima-afrique.org/document/reglement-n010-24-relatif-a-la-securite-et-a-la-gouvernance-des-technologies-de-linformation-et-de-la-communication-et-au-plan-de-continuite/?lang=en",
+    "BEAC_CREDIT_INSTITUTIONS": "https://www.beac.int/wp-content/uploads/2019/01/BMM_JUIN-2021.pdf"
+  }
+}

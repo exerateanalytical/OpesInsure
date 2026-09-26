@@ -44,8 +44,11 @@ function reiReinsurer(string $code, string $role = 'REINSURER'): string
 {
     Passport::actingAs(test()->maker, [], 'api');
 
-    return test()->postJson('/api/v1/reinsurance/reinsurers', ['code' => $code, 'name' => "Re {$code}", 'role' => $role, 'country_code' => 'FR', 'rating' => 'A+'], test()->h)
+    $id = test()->postJson('/api/v1/reinsurance/reinsurers', ['code' => $code, 'name' => "Re {$code}", 'role' => $role, 'country_code' => 'FR', 'rating' => 'A+'], test()->h)
         ->assertCreated()->json('data.id');
+    \Illuminate\Support\Facades\DB::table('reinsurers')->where('id', $id)->update(['approved_security_status' => 'TENANT_APPROVED']); // Gap Closure 07 approved-security gate
+
+    return $id;
 }
 
 /** Creates a treaty + version with the given terms, activates it by the checker; returns [treatyId, versionId]. */

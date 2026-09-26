@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class SlaPolicyResolver
 {
-    private const SCOPES = ['tenant_id' => 'tenant_id', 'carrier_id' => 'carrier_id', 'product_id' => 'product_id', 'branch_id' => 'branch_id', 'market' => 'jurisdiction', 'case_subtype' => 'case_subtype'];
+    private const SCOPES = ['tenant_id' => 'tenant_id', 'carrier_id' => 'carrier_id', 'product_id' => 'product_id', 'branch_id' => 'branch_id', 'market' => 'jurisdiction', 'case_subtype' => 'case_subtype', 'priority' => 'priority']; // priority: Gap Closure Pack SLA profiles
 
     public function __construct(private readonly Clock $clock) {}
 

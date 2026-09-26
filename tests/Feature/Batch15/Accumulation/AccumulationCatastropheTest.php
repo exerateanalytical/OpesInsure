@@ -55,6 +55,7 @@ function catZone(string $code, array $geo, ?array $polygon = null): string
 function catQuotaShare(int $percent): void
 {
     $re = test()->postJson('/api/v1/reinsurance/reinsurers', ['code' => 'RE'.$percent, 'name' => 'Re', 'country_code' => 'FR'], test()->h)->assertCreated()->json('data.id');
+    \Illuminate\Support\Facades\DB::table('reinsurers')->where('id', $re)->update(['approved_security_status' => 'TENANT_APPROVED']); // Gap Closure 07 approved-security gate
     $t = test()->postJson('/api/v1/reinsurance/treaties', ['code' => 'QS'.$percent, 'name' => 'QS', 'treaty_type' => 'QUOTA_SHARE', 'currency' => 'XAF'], test()->h)->assertCreated()->json('data.id');
     $v = test()->postJson("/api/v1/reinsurance/treaties/{$t}/versions", ['effective_from' => '2020-01-01', 'cession_percent' => $percent,
         'participants' => [['reinsurer_id' => $re, 'share_percent' => 100, 'is_lead' => true]]], test()->h)->assertCreated()->json('data.id');
@@ -136,6 +137,7 @@ it('REQ-CAT-003: declares an event, links in-window claims, aggregates losses wi
     $zone = catZone('DLA', ['Littoral']);
     $policy = catPolicy(100_000_000, ['region' => 'Littoral']);
     $re = $this->postJson('/api/v1/reinsurance/reinsurers', ['code' => 'XLRE', 'name' => 'Re'], $this->h)->assertCreated()->json('data.id');
+    \Illuminate\Support\Facades\DB::table('reinsurers')->where('id', $re)->update(['approved_security_status' => 'TENANT_APPROVED']); // Gap Closure 07 approved-security gate
     $t = $this->postJson('/api/v1/reinsurance/treaties', ['code' => 'CATXL', 'name' => 'Cat XL', 'treaty_type' => 'EXCESS_OF_LOSS', 'currency' => 'XAF'], $this->h)->assertCreated()->json('data.id');
     $v = $this->postJson("/api/v1/reinsurance/treaties/{$t}/versions", ['effective_from' => '2020-01-01',
         'layers' => [['layer' => 1, 'attachment_minor' => 10_000_000, 'limit_minor' => 20_000_000, 'rate_percent' => 5]],

@@ -530,6 +530,11 @@ return [
         'reinsurance.cessions.calculate' => ['description' => 'Calculate and record the cessions of a policy.', 'suggested_roles' => ['REINSURANCE_OFFICER']],
     ],
 
+    // Gap Closure Pack v1 (07) — reinsurer approved-security decision (ReinsuranceDirectoryServiceProvider).
+    'reinsurance_directory' => [
+        'reinsurance.reinsurers.approve_security' => ['description' => 'Approve, reject or suspend a reinsurer / broker as security (tenant or CIMA source).', 'suggested_roles' => ['CARRIER_SUPER_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
     // Batch 8 — special policies (cargo, life surrender), portfolio transfer / portability, document governance,
     // and the policy lifecycle (cancellation, suspension, reinstatement, recovery, waiver). Maker vs checker:
     // *.request / *.manage sit with staff and officers, *.approve with senior / manager roles.
@@ -898,13 +903,74 @@ return [
         'finance.accounts.export' => ['description' => 'Finance accounts export.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
     ],
 
+    // Gap Closure Pack 08 / 09 — compliance catalogues (routes/compliance_catalogue.php).
+    'compliance_catalogue' => [
+        'compliance.catalogue.view' => ['description' => 'View KYC matrix, refresh policies, country risk, fraud indicators, report dictionary and AML/ICT controls.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'compliance.catalogue.configure' => ['description' => 'Configure a tenant KYC refresh policy (maker).', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
+        'compliance.catalogue.approve' => ['description' => 'Approve a tenant KYC refresh policy (checker).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'SYSTEM_ADMIN']],
+        'compliance.controls.assess' => ['description' => 'Record an AML / ICT control assessment.', 'suggested_roles' => ['COMPLIANCE_ADMIN']],
+        'fraud.indicators.flag' => ['description' => 'Flag a fraud indicator for review (never a determination).', 'suggested_roles' => ['COMPLIANCE_ADMIN', 'CLAIMS_MANAGER', 'FINANCE_MANAGER']],
+    ],
+
+    // Agent GP6 — gap closure pack 06 reference masters (banks, payment provider profiles, GL control accounts, cost centres).
+    'finance_reference' => [
+        'finance.institutions.manage' => ['description' => 'Edit the banks / payment institutions master (verification status needs a source URL).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN']],
+        'finance.payment_providers.configure' => ['description' => 'Create / edit / submit a tenant payment provider profile (maker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER']],
+        'finance.payment_providers.approve' => ['description' => 'Approve, reject or suspend a payment provider profile (checker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'FINANCE_MANAGER']],
+        'finance.gl.configure' => ['description' => 'Propose GL control-account mappings and manage cost centres (maker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER']],
+        'finance.gl.approve' => ['description' => 'Approve a GL control-account mapping (checker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'FINANCE_MANAGER']],
+        // Gap Closure Pack v1 files 10 + 11 (App\Application\OperationsTaxonomy, App\Application\PrivateOnboarding).
+        'operations.taxonomy.read' => ['description' => 'Read the operations taxonomies (case task/queue/closure/escalation codes, complaint, notification, document and retention codes) and their gates.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'operations.taxonomy.manage' => ['description' => 'Type work queues with the operations queue taxonomy.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'operations.cases.escalate' => ['description' => 'Escalate a case with a coded escalation reason.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'operations.notification_templates.approve' => ['description' => 'Approve seeded platform notification event templates.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'onboarding.private_data.view' => ['description' => 'View private onboarding datasets, templates, staged records and readiness.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+        'onboarding.private_data.review' => ['description' => 'Accept or reject staged private onboarding records (maker-checker).', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN']],
+    ],
+
+    // Agent GP4 — Provider Portal Gap-Free spec v1 (App\Application\Providers\Workspace, routes/provider_workspace.php).
+    // provider.eligibility.check is reused from the 'provider' section (not redeclared).
+    'provider_workspace' => [
+        'provider.dashboard.view' => ['description' => 'Open the provider portal dashboards (executive, insurance desk, billing, finance).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.patient.search' => ['description' => 'Search a patient / member at the point of care.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR']],
+        'provider.benefits.view' => ['description' => 'View the benefits / remaining limits returned by an eligibility check.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR']],
+        'provider.preauth.create' => ['description' => 'Submit or cancel a preauthorization request for the provider.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR']],
+        'provider.preauth.view' => ['description' => 'View the provider preauthorizations and admissions (facility scope).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING']],
+        'provider.preauth.respond_to_query' => ['description' => 'Answer an insurer information request on a preauthorization.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR']],
+        'provider.admission.create' => ['description' => 'Admit / discharge a patient on an approved admission preauthorization.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR']],
+        'provider.admission.extend' => ['description' => 'Request a hospital stay extension.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR']],
+        'provider.treatment.view' => ['description' => 'View treatment episodes (clinical fields only for clinical roles).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING']],
+        'provider.treatment.update' => ['description' => 'Open treatment episodes and record rendered services.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR']],
+        'provider.claim.create' => ['description' => 'Create a provider claim (directly or from a treatment episode).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING']],
+        'provider.claim.submit' => ['description' => 'Submit a provider claim to the insurer.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING']],
+        'provider.claim.view' => ['description' => 'View the provider claims / invoices (facility scope).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.claim.respond_to_query' => ['description' => 'Answer an insurer query on a provider claim.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING']],
+        'provider.invoice.create' => ['description' => 'Create a provider invoice (same record as the provider claim).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING']],
+        'provider.invoice.submit' => ['description' => 'Submit a provider invoice (same record as the provider claim).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING']],
+        'provider.tariff.view' => ['description' => 'View a tariff schedule agreed with an insurer.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.contract.view' => ['description' => 'View a provider-insurer contract.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.finance.view' => ['description' => 'View per-insurer provider accounts (derived, never editable).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
+        'provider.settlement.view' => ['description' => 'View insurer settlements and settlement statements (DOC-198).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
+        'provider.reconciliation.view' => ['description' => 'View payment reconciliation and exceptions.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
+        'provider.reconciliation.match' => ['description' => 'Record insurer payments and allocate them to claims (manual match needs a reason).', 'suggested_roles' => ['PROVIDER_FINANCE']],
+        'provider.dispute.create' => ['description' => 'Open a reason-coded dispute on a claim, line, settlement or payment.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.dispute.view' => ['description' => 'View provider disputes.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_BILLING', 'PROVIDER_FINANCE']],
+        'provider.documents.view' => ['description' => 'View provider documents (medical documents: clinical roles only).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR']],
+        'provider.documents.download' => ['description' => 'Download provider documents.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_DOCTOR']],
+        'provider.reports.view' => ['description' => 'View provider reports.', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
+        'provider.reports.export' => ['description' => 'Export provider reports (exactly the filtered rows; audited).', 'suggested_roles' => ['PROVIDER_ADMIN', 'PROVIDER_FINANCE']],
+        'provider.users.manage' => ['description' => 'Manage provider users, roles and facility scope.', 'suggested_roles' => ['PROVIDER_ADMIN']],
+        'provider.settings.manage' => ['description' => 'Manage facilities, departments and integration settings.', 'suggested_roles' => ['PROVIDER_ADMIN']],
+        'provider.audit.view' => ['description' => 'View the provider audit log.', 'suggested_roles' => ['PROVIDER_ADMIN']],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',
             'commission', 'ledger', 'reconciliation', 'refund', 'statements', 'bordereaux', 'underwriting', 'quotes', 'proposals',
             'parties', 'partners', 'partner', 'payments', 'renewals', 'documents', 'fraud', 'stickers', 'privacy', 'reports',
             'regulator', 'fulfilment', 'fulfilments', 'support', 'cases', 'distribution', 'kyc', 'crm', 'beneficiaries', 'rating',
-            'finance', 'premium_status', 'premium_components', 'clearing', 'cashier', 'technical_accounting', 'legal', 'collections',
+            'finance', 'premium_status', 'premium_components', 'clearing', 'cashier', 'technical_accounting', 'legal', 'collections', 'onboarding',
         ],
         'permissions' => ['trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'attribution.transfer'],
         'platform_exceptions' => ['documents.templates.manage', 'cases.calendar.manage', 'cases.admin'],

@@ -16,7 +16,7 @@ final class InstitutionOffice extends Model
 
     public const TYPES = ['HEAD_OFFICE', 'DIRECT_BRANCH'];
 
-    protected $fillable = ['carrier_id', 'office_type', 'name', 'city', 'address', 'phone', 'sort_order', 'source'];
+    protected $fillable = ['carrier_id', 'office_type', 'name', 'city', 'address', 'phone', 'sort_order', 'source', 'partner_id'];
 
     public function carrier(): BelongsTo
     {

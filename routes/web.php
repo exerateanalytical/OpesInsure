@@ -21,6 +21,15 @@ Route::middleware(SetPublicLocale::class)->group(function (): void {
     Route::get('/terms', [Site::class, 'terms'])->name('public.terms');
     Route::get('/partners', [Site::class, 'partners'])->name('public.partners');
 
+    // Marketplace hub, one directory per insurance line, and side-by-side compare.
+    Route::get('/insurance', [Site::class, 'marketplace'])->name('public.marketplace');
+    Route::get('/insurance/{line}', [Site::class, 'directory'])->where('line', 'motor|health|travel|home|business|life|accident')->name('public.directory');
+    Route::get('/compare', [Site::class, 'compare'])->name('public.compare');
+
+    // Website sign-in / sign-up: same customer accounts as the app (api/v1 auth/mobile/*, public/accounts).
+    Route::get('/login', [Site::class, 'login'])->name('public.login');
+    Route::get('/signup', [Site::class, 'signup'])->name('public.signup');
+
     Route::get('/providers', [Site::class, 'providers'])->name('public.providers');
     Route::get('/contact', [Site::class, 'contact'])->name('public.contact');
     Route::post('/contact', [Site::class, 'submitContact'])->middleware('throttle:5,1')->name('public.contact.submit');

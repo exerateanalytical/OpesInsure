@@ -112,6 +112,8 @@ final class ComplaintService
         if (! isset(CaseTypeCatalogue::COMPLAINT_SEVERITY_MAP[$severity])) {
             throw CaseProblem::make('SEVERITY_INVALID', 422, 'Unknown complaint severity.', ['allowed' => array_keys(CaseTypeCatalogue::COMPLAINT_SEVERITY_MAP)]);
         }
+        // Gap Closure Pack file 10 complaint categories (PLATFORM_NORMALIZED).
+        \App\Application\OperationsTaxonomy\OperationsCatalogue::assert('complaint_categories', $category, 'category');
 
         return DB::transaction(function () use ($case, $category, $severity, $regulatory, $actor) {
             $complaint = $this->complaint($case);
@@ -150,6 +152,8 @@ final class ComplaintService
     /** @param array{outcome: string, resolution_summary: string, root_cause?: ?string, redress_amount?: ?float} $d */
     public function proposeResolution(WorkCase $case, array $d, User $actor): object
     {
+        \App\Application\OperationsTaxonomy\OperationsCatalogue::assert('complaint_resolution_reasons', $d['resolution_reason'] ?? null, 'resolution_reason');
+
         return DB::transaction(function () use ($case, $d, $actor) {
             $complaint = $this->complaint($case);
             $decision = $this->cases->decide($case, [
@@ -158,7 +162,7 @@ final class ComplaintService
             ], $actor);
             DB::table('complaints')->where('id', $complaint->id)->update([
                 'outcome' => $d['outcome'], 'resolution_summary' => $d['resolution_summary'], 'root_cause' => $d['root_cause'] ?? null,
-                'redress_amount' => $d['redress_amount'] ?? null, 'updated_at' => $this->clock->now(),
+                'redress_amount' => $d['redress_amount'] ?? null, 'resolution_reason' => $d['resolution_reason'] ?? null, 'updated_at' => $this->clock->now(),
             ]);
 
             return $this->step($case, 'propose_resolution', $actor, null, fn () => [], ['decision_id' => $decision->id]);

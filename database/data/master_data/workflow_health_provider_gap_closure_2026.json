@@ -1,0 +1,733 @@
+{
+ "schema": "opesinsure.master_data.v1",
+ "file": "workflow_health_provider_gap_closure_2026",
+ "version": "2026.1",
+ "effective_from": "2026-01-01",
+ "source": "Gap closure pack 04 (database/data/gap_closure_2026/04_health_provider_services_tariffs.json) + OpesInsure_Provider_Portal_Hospital_Clinic_Gap_Free_Implementation_Spec_v1.json",
+ "provenance_default": "GAP_CLOSURE_PACK_04",
+ "protected": true,
+ "notes": [
+  "PLATFORM_NORMALIZED vocabularies only. Synonyms of existing codes are added as aliases, never as new codes (REQ-DUP).",
+  "provider_master (PENDING_OFFICIAL_IMPORT) and provider_tariffs (PENDING_PRIVATE_SOURCE) carry no values here: they are production gates in the Data Readiness registry (ProviderDataGates)."
+ ],
+ "domains": [
+  {
+   "code": "provider",
+   "label_en": "Health providers",
+   "label_fr": "Prestataires de santé",
+   "lists": [
+    {
+     "code": "provider_type",
+     "label_en": "Provider type",
+     "label_fr": "Type de prestataire",
+     "provenance": "GAP_CLOSURE_PACK_04",
+     "source_reference": "database/data/gap_closure_2026/04_health_provider_services_tariffs.json provider_types (MINSANTE facility typology)",
+     "values": [
+      {
+       "code": "GENERAL_HOSPITAL",
+       "label_en": "General hospital",
+       "label_fr": "Hôpital général",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "CENTRAL_HOSPITAL",
+       "label_en": "Central hospital",
+       "label_fr": "Hôpital central",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "REGIONAL_HOSPITAL",
+       "label_en": "Regional hospital",
+       "label_fr": "Hôpital régional",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "DISTRICT_HOSPITAL",
+       "label_en": "District hospital",
+       "label_fr": "Hôpital de district",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "MEDICAL_CENTRE",
+       "aliases": [
+        "CMA"
+       ]
+      },
+      {
+       "code": "HEALTH_CENTRE",
+       "aliases": [
+        "CSI"
+       ]
+      },
+      {
+       "code": "PRIVATE_HOSPITAL",
+       "label_en": "Private hospital",
+       "label_fr": "Hôpital privé",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "CLINIC",
+       "aliases": [
+        "PRIVATE_CLINIC"
+       ]
+      },
+      {
+       "code": "INDIVIDUAL_PRACTITIONER",
+       "aliases": [
+        "MEDICAL_CABINET"
+       ]
+      },
+      {
+       "code": "PHARMACY"
+      },
+      {
+       "code": "LABORATORY"
+      },
+      {
+       "code": "IMAGING_CENTRE"
+      },
+      {
+       "code": "DENTAL",
+       "aliases": [
+        "DENTAL_CLINIC"
+       ]
+      },
+      {
+       "code": "OPTICAL",
+       "aliases": [
+        "OPTICAL_CENTRE"
+       ]
+      },
+      {
+       "code": "PHYSIOTHERAPY"
+      },
+      {
+       "code": "AMBULANCE_PROVIDER",
+       "aliases": [
+        "AMBULANCE"
+       ]
+      },
+      {
+       "code": "SPECIALIST_PRACTICE"
+      }
+     ]
+    },
+    {
+     "code": "medical_specialty",
+     "label_en": "Medical specialty",
+     "label_fr": "Spécialité médicale",
+     "provenance": "GAP_CLOSURE_PACK_04",
+     "source_reference": "database/data/gap_closure_2026/04_health_provider_services_tariffs.json specialties",
+     "values": [
+      {
+       "code": "GENERAL_PRACTICE",
+       "aliases": [
+        "GENERAL_MEDICINE"
+       ]
+      },
+      {
+       "code": "INTERNAL_MEDICINE"
+      },
+      {
+       "code": "PAEDIATRICS",
+       "aliases": [
+        "PEDIATRICS"
+       ]
+      },
+      {
+       "code": "NEONATOLOGY",
+       "label_en": "Neonatology",
+       "label_fr": "Neonatology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "GYNAECOLOGY_OBSTETRICS",
+       "aliases": [
+        "OBSTETRICS_GYNECOLOGY"
+       ]
+      },
+      {
+       "code": "GENERAL_SURGERY"
+      },
+      {
+       "code": "ORTHOPAEDICS",
+       "aliases": [
+        "ORTHOPEDICS_TRAUMATOLOGY"
+       ]
+      },
+      {
+       "code": "CARDIOLOGY"
+      },
+      {
+       "code": "NEUROLOGY"
+      },
+      {
+       "code": "NEUROSURGERY",
+       "label_en": "Neurosurgery",
+       "label_fr": "Neurosurgery",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "DERMATOLOGY"
+      },
+      {
+       "code": "ENT"
+      },
+      {
+       "code": "OPHTHALMOLOGY"
+      },
+      {
+       "code": "DENTISTRY"
+      },
+      {
+       "code": "PSYCHIATRY"
+      },
+      {
+       "code": "PSYCHOLOGY",
+       "label_en": "Psychology",
+       "label_fr": "Psychology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "UROLOGY"
+      },
+      {
+       "code": "NEPHROLOGY"
+      },
+      {
+       "code": "GASTROENTEROLOGY",
+       "label_en": "Gastroenterology",
+       "label_fr": "Gastroenterology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "ENDOCRINOLOGY",
+       "label_en": "Endocrinology",
+       "label_fr": "Endocrinology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PULMONOLOGY",
+       "label_en": "Pulmonology",
+       "label_fr": "Pulmonology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "INFECTIOUS_DISEASE",
+       "label_en": "Infectious disease",
+       "label_fr": "Infectious disease",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "ONCOLOGY"
+      },
+      {
+       "code": "HEMATOLOGY",
+       "label_en": "Hematology",
+       "label_fr": "Hematology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "RHEUMATOLOGY",
+       "label_en": "Rheumatology",
+       "label_fr": "Rheumatology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "ANAESTHESIOLOGY",
+       "aliases": [
+        "ANESTHESIOLOGY"
+       ]
+      },
+      {
+       "code": "INTENSIVE_CARE",
+       "label_en": "Intensive care",
+       "label_fr": "Intensive care",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "EMERGENCY_MEDICINE",
+       "label_en": "Emergency medicine",
+       "label_fr": "Emergency medicine",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "RADIOLOGY"
+      },
+      {
+       "code": "PATHOLOGY"
+      },
+      {
+       "code": "LABORATORY_MEDICINE",
+       "label_en": "Laboratory medicine",
+       "label_fr": "Laboratory medicine",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PHARMACY"
+      },
+      {
+       "code": "PHYSIOTHERAPY"
+      },
+      {
+       "code": "NUTRITION",
+       "label_en": "Nutrition",
+       "label_fr": "Nutrition",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "OCCUPATIONAL_MEDICINE",
+       "label_en": "Occupational medicine",
+       "label_fr": "Occupational medicine",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    },
+    {
+     "code": "service_family",
+     "label_en": "Medical service family",
+     "label_fr": "Famille de prestations médicales",
+     "provenance": "GAP_CLOSURE_PACK_04",
+     "source_reference": "database/data/gap_closure_2026/04_health_provider_services_tariffs.json service_families",
+     "values": [
+      {
+       "code": "CONSULTATION",
+       "label_en": "Consultation",
+       "label_fr": "Consultation",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "CONSULTATION"
+       }
+      },
+      {
+       "code": "EMERGENCY",
+       "label_en": "Emergency",
+       "label_fr": "Emergency",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "EMERGENCY_VISIT"
+       }
+      },
+      {
+       "code": "INPATIENT",
+       "label_en": "Inpatient",
+       "label_fr": "Inpatient",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "HOSPITAL_DAY"
+       }
+      },
+      {
+       "code": "ICU",
+       "label_en": "Icu",
+       "label_fr": "Icu",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "ICU_DAY"
+       }
+      },
+      {
+       "code": "SURGERY",
+       "label_en": "Surgery",
+       "label_fr": "Surgery",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "SURGERY"
+       }
+      },
+      {
+       "code": "MATERNITY",
+       "label_en": "Maternity",
+       "label_fr": "Maternity",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "MATERNITY_SERVICE"
+       }
+      },
+      {
+       "code": "DELIVERY",
+       "label_en": "Delivery",
+       "label_fr": "Delivery",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "MATERNITY_SERVICE"
+       }
+      },
+      {
+       "code": "LABORATORY",
+       "label_en": "Laboratory",
+       "label_fr": "Laboratory",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "LAB_TEST"
+       }
+      },
+      {
+       "code": "PATHOLOGY",
+       "label_en": "Pathology",
+       "label_fr": "Pathology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "LAB_TEST"
+       }
+      },
+      {
+       "code": "IMAGING_XRAY",
+       "label_en": "Imaging xray",
+       "label_fr": "Imaging xray",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "IMAGING"
+       }
+      },
+      {
+       "code": "IMAGING_ULTRASOUND",
+       "label_en": "Imaging ultrasound",
+       "label_fr": "Imaging ultrasound",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "IMAGING"
+       }
+      },
+      {
+       "code": "IMAGING_CT",
+       "label_en": "Imaging ct",
+       "label_fr": "Imaging ct",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "IMAGING"
+       }
+      },
+      {
+       "code": "IMAGING_MRI",
+       "label_en": "Imaging mri",
+       "label_fr": "Imaging mri",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "IMAGING"
+       }
+      },
+      {
+       "code": "PHARMACY",
+       "label_en": "Pharmacy",
+       "label_fr": "Pharmacy",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "PHARMACY_ITEM"
+       }
+      },
+      {
+       "code": "DENTAL",
+       "label_en": "Dental",
+       "label_fr": "Dental",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "DENTAL_SERVICE"
+       }
+      },
+      {
+       "code": "OPTICAL",
+       "label_en": "Optical",
+       "label_fr": "Optical",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OPTICAL_SERVICE"
+       }
+      },
+      {
+       "code": "PHYSIOTHERAPY",
+       "label_en": "Physiotherapy",
+       "label_fr": "Physiotherapy",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "PHYSIOTHERAPY"
+       }
+      },
+      {
+       "code": "AMBULANCE",
+       "label_en": "Ambulance",
+       "label_fr": "Ambulance",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "AMBULANCE"
+       }
+      },
+      {
+       "code": "PREVENTIVE",
+       "label_en": "Preventive",
+       "label_fr": "Preventive",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      },
+      {
+       "code": "VACCINATION",
+       "label_en": "Vaccination",
+       "label_fr": "Vaccination",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      },
+      {
+       "code": "CHRONIC_CARE",
+       "label_en": "Chronic care",
+       "label_fr": "Chronic care",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      },
+      {
+       "code": "DIALYSIS",
+       "label_en": "Dialysis",
+       "label_fr": "Dialysis",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      },
+      {
+       "code": "ONCOLOGY",
+       "label_en": "Oncology",
+       "label_fr": "Oncology",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      },
+      {
+       "code": "MENTAL_HEALTH",
+       "label_en": "Mental health",
+       "label_fr": "Mental health",
+       "attributes": {
+        "source": "GAP_CLOSURE_PACK_04",
+        "data_status": "PLATFORM_NORMALIZED",
+        "medical_service_category": "OTHER"
+       }
+      }
+     ]
+    },
+    {
+     "code": "provider_user_role",
+     "label_en": "Provider user role",
+     "label_fr": "Rôle utilisateur prestataire",
+     "provenance": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+     "source_reference": "OpesInsure_Provider_Portal_Hospital_Clinic_Gap_Free_Implementation_Spec_v1.json roles",
+     "values": [
+      {
+       "code": "PROVIDER_ADMIN",
+       "aliases": [
+        "PROVIDER_ADMINISTRATOR"
+       ]
+      },
+      {
+       "code": "FRONT_DESK",
+       "aliases": [
+        "RECEPTION_ELIGIBILITY_OFFICER"
+       ]
+      },
+      {
+       "code": "INSURANCE_DESK_OFFICER",
+       "label_en": "Insurance desk officer",
+       "label_fr": "Insurance desk officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PRACTITIONER",
+       "aliases": [
+        "DOCTOR"
+       ]
+      },
+      {
+       "code": "NURSE",
+       "label_en": "Nurse",
+       "label_fr": "Nurse",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PREAUTHORIZATION_OFFICER",
+       "label_en": "Preauthorization officer",
+       "label_fr": "Preauthorization officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "BILLING_OFFICER"
+      },
+      {
+       "code": "CLAIMS_OFFICER",
+       "label_en": "Claims officer",
+       "label_fr": "Claims officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FINANCE_OFFICER",
+       "label_en": "Finance officer",
+       "label_fr": "Finance officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "CASHIER",
+       "label_en": "Cashier",
+       "label_fr": "Cashier",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "MEDICAL_RECORDS_OFFICER",
+       "label_en": "Medical records officer",
+       "label_fr": "Medical records officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "PROVIDER_COMPLIANCE_OFFICER",
+       "label_en": "Provider compliance officer",
+       "label_fr": "Provider compliance officer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "BRANCH_MANAGER",
+       "label_en": "Branch manager",
+       "label_fr": "Branch manager",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "FINANCE_DIRECTOR",
+       "label_en": "Finance director",
+       "label_fr": "Finance director",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "EXECUTIVE_VIEWER",
+       "label_en": "Executive viewer",
+       "label_fr": "Executive viewer",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      },
+      {
+       "code": "AUDITOR",
+       "label_en": "Auditor",
+       "label_fr": "Auditor",
+       "attributes": {
+        "source": "PROVIDER_PORTAL_GAP_FREE_SPEC_V1",
+        "data_status": "PLATFORM_NORMALIZED"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

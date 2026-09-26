@@ -84,9 +84,9 @@ final class CaseController
 
     public function transition(Request $r, string $case): JsonResponse
     {
-        $d = $r->validate(['event' => 'required|string|max:64', 'reason' => 'nullable|string|max:1000', 'outcome' => 'nullable|string|max:32', 'payload' => 'nullable|array']);
+        $d = $r->validate(['event' => 'required|string|max:64', 'reason' => 'nullable|string|max:1000', 'outcome' => 'nullable|string|max:32', 'payload' => 'nullable|array', 'closure_reason' => 'nullable|string|max:32']);
         $c = $this->find($case);
-        $payload = ($d['payload'] ?? []) + (isset($d['outcome']) ? ['outcome' => $d['outcome']] : []);
+        $payload = ($d['payload'] ?? []) + (isset($d['outcome']) ? ['outcome' => $d['outcome']] : []) + (isset($d['closure_reason']) ? ['closure_reason' => $d['closure_reason']] : []);
         $c = $this->cases->transition($c, $d['event'], $r->user(), $d['reason'] ?? null, $payload);
 
         return response()->json(['data' => $this->present($c, $r)]);
@@ -115,6 +115,7 @@ final class CaseController
         $d = $r->validate([
             'title' => 'required|string|max:255', 'template_code' => 'nullable|string|max:64', 'assignee_user_id' => 'nullable|uuid',
             'queue_id' => 'nullable|uuid', 'due_at' => 'nullable|date', 'due_in_business_minutes' => 'nullable|integer|min:1|max:5256000',
+            'task_type' => 'nullable|string|max:32',
         ]);
 
         return response()->json(['data' => $this->cases->addTask($this->find($case), $d, $r->user())], 201);

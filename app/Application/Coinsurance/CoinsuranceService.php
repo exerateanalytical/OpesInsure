@@ -63,6 +63,7 @@ final class CoinsuranceService
                 'id' => $id, 'tenant_id' => $tenantId, 'policy_id' => $data['policy_id'] ?? null, 'reference' => $data['reference'],
                 'currency' => $data['currency'] ?? 'XAF', 'status' => 'DRAFT', 'allow_partial_placement' => $partial,
                 'lead_rights' => json_encode($rights), 'effective_from' => $data['effective_from'], 'effective_until' => $data['effective_until'] ?? null,
+                'settlement_method' => $data['settlement_method'] ?? null, 'agreement_document_id' => $data['agreement_document_id'] ?? null,
                 'created_by' => $actor->id, 'version' => 1, 'created_at' => now(), 'updated_at' => now(),
             ]);
             foreach ($participants as $p) {
@@ -210,7 +211,11 @@ final class CoinsuranceService
         return ['id' => $a->id, 'kind' => 'COINSURANCE', 'reference' => $a->reference, 'policy_id' => $a->policy_id, 'currency' => $a->currency, 'status' => $a->status,
             'allow_partial_placement' => (bool) $a->allow_partial_placement, 'lead_rights' => json_decode($a->lead_rights, true),
             'effective_from' => $a->effective_from, 'effective_until' => $a->effective_until, 'created_by' => $a->created_by, 'activated_by' => $a->activated_by,
-            'version' => (int) $a->version, 'placed_bps' => array_sum(array_column($participants, 'share_bps')), 'participants' => $participants];
+            'version' => (int) $a->version, 'placed_bps' => array_sum(array_column($participants, 'share_bps')), 'participants' => $participants,
+            // Gap Closure Pack v1 (07) coinsurance record view.
+            'workflow_status' => ReinsuranceReference::coinsuranceWorkflowStatus($a->status, $a->effective_until),
+            'lead_insurer_id' => collect($participants)->firstWhere('role', 'LEAD')['carrier_id'] ?? null,
+            'settlement_method' => $a->settlement_method ?? null, 'agreement_document_id' => $a->agreement_document_id ?? null];
     }
 
     public function list(string $tenantId, ?string $policyId = null): array

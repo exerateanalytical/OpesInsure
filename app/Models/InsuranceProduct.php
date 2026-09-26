@@ -23,13 +23,17 @@ final class InsuranceProduct extends Model
 
     protected $fillable = ['carrier_id', 'line_code', 'code', 'name', 'version', 'effective_from', 'effective_until', 'status', 'coverages', 'eligibility_rules',
         'created_by', 'published_by', 'published_at', 'regulatory_reference', 'carrier_product_id', 'base_version_id', 'sales_start', 'sales_end',
-        'new_business_allowed', 'renewal_allowed', 'approved_by', 'approved_at', 'suspended_at', 'suspension_reason', 'retired_at', 'snapshot', 'snapshot_hash'];
+        'new_business_allowed', 'renewal_allowed', 'approved_by', 'approved_at', 'suspended_at', 'suspension_reason', 'retired_at', 'snapshot', 'snapshot_hash',
+        // Gap closure 01 catalogue fields (direct B2C stays off until the insurer source is attached).
+        'product_class', 'distribution_channels', 'direct_b2c_enabled', 'tariff_mode', 'underwriting_mode', 'claims_requirements', 'renewal_rules',
+        'cancellation_rules', 'document_requirement_profile_id', 'source_document_ids', 'catalogue_data_status'];
 
     protected function casts(): array
     {
         return ['effective_from' => 'date', 'effective_until' => 'date', 'coverages' => 'array', 'eligibility_rules' => 'array', 'published_at' => 'datetime',
             'sales_start' => 'date', 'sales_end' => 'date', 'new_business_allowed' => 'boolean', 'renewal_allowed' => 'boolean', 'approved_at' => 'datetime',
-            'suspended_at' => 'datetime', 'retired_at' => 'datetime', 'snapshot' => 'array'];
+            'suspended_at' => 'datetime', 'retired_at' => 'datetime', 'snapshot' => 'array',
+            'distribution_channels' => 'array', 'direct_b2c_enabled' => 'boolean', 'claims_requirements' => 'array', 'renewal_rules' => 'array', 'cancellation_rules' => 'array', 'source_document_ids' => 'array'];
     }
 
     protected static function booted(): void

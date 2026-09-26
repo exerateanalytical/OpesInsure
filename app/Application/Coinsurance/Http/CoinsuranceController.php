@@ -37,6 +37,8 @@ final class CoinsuranceController
             'participants.*.role' => 'required|string|max:32',
             'participants.*.share_bps' => 'required|integer|min:1|max:10000',
             'participants.*.share_overrides_bps' => 'nullable|array',
+            'settlement_method' => 'nullable|string|max:32|regex:/^[A-Z0-9_]+$/',
+            'agreement_document_id' => 'nullable|uuid',
         ]);
 
         return response()->json(['data' => $this->service->create($this->tenant->id(), $d, $r->user())], 201);

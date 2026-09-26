@@ -170,6 +170,7 @@ final class FacultativePlacementService
         $this->require($pl->submitted_by === null || $pl->submitted_by !== $checker->id, 'approver', 'The submitter of a facultative slip cannot approve it.');
         $parts = DB::table('facultative_participants')->where('placement_id', $id)->where('signed_percent', '>', 0)->get();
         $this->require(! DB::table('reinsurers')->whereIn('id', $parts->pluck('reinsurer_id'))->where('status', '!=', 'ACTIVE')->exists(), 'participants', 'All signed reinsurers must be ACTIVE.');
+        \App\Application\Reinsurance\TreatyService::assertApprovedSecurity($parts->pluck('reinsurer_id')->all());
         $policy = DB::table('policies')->where('id', $pl->policy_id)->first();
         $amounts = $this->amounts($pl);
 

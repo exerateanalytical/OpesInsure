@@ -175,7 +175,9 @@ final class CimaAuthorizationService
         if (! in_array($auth->status, $allowed[$status] ?? [], true)) {
             throw ValidationException::withMessages(['status' => ["Cannot move an authorization from {$auth->status} to {$status}."]]);
         }
-        $auth->update(['status' => $status] + ($status === 'REVOKED' ? ['effective_until' => now()->toDateString(), 'revocation_date' => now()->toDateString()] : []));
+        $auth->update(['status' => $status] + ($status === 'REVOKED' ? ['effective_until' => now()->toDateString(), 'revocation_date' => now()->toDateString()] : [])
+            // Gap closure 01: the reason of a suspension / revocation is kept on the record.
+            + ($status === 'SUSPENDED' ? ['suspension_reason' => $reason] : []) + ($status === 'REVOKED' ? ['revocation_reason' => $reason] : []));
         $this->audit->record('regulatory.authorization.'.strtolower($status), 'insurer_regulatory_authorization', $auth->id, [], $reason);
 
         return $auth->refresh();

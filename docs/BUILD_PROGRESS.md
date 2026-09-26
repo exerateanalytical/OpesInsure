@@ -16,6 +16,8 @@ Updated: 2026-09-25 03:40 (session 5b0d3161)
 - Server: opesinsure@187.77.110.114, key ~/.ssh/opesinsure_deploy.
 
 ## Status
+- 2026-09-26: LIVE r20260926-042840 = master c0d005a (cloud Batches 7-17 + decisions + directory + data master + canonical documents/web UI + letterheads). Verified: verify-live 75/76, purchase POL-2026-000005, FNOL 201, schedule:list OK, stamp-duty schedules DRAFT.
+- NEXT: Gap Closure Pack (database/data/gap_closure_2026, 8 agents done, uncommitted in the local tree): merge master, one combined test run in ../opesinsure-test, then deploy.
 - Phase 1 LIVE (26c8b9a).
 - Phase 2 (676908c) LIVE (release r20260925-034108): public website + legal pages, cases/tasks/SLA, RBAC, approvals, organisations + timezones, route aliases, vehicle Africa config, selection-first forms.
 - APK 1.3.0 LIVE on /download.
@@ -49,7 +51,7 @@ The owner is opening a separate session for the app. Once it has started, it OWN
    - timezone picker (GET settings/timezones, PATCH me/settings);
    - vehicle suggestions via POST master-data/suggestions;
    - switch POST /mobile/policy-service-requests to /policies/{id}/service-requests.
-3. Phases 1-6 LIVE. Decisions + directory + data master committed as c0a8d01 (pushed to GitHub) but NOT yet deployed. Next: finish the isolated test worktree ../opesinsure-test (copy vendor + composer dump-autoload), run the full suite there on DB opesinsure_test_phase7, then back up, rehearse, deploy c0a8d01, and message the mobile session so it can publish the directory OTA (app commit 3b8a943). Canonical spec agents cs1 (documents) and cs2 (web UI) are running. Post-commit auto-push hook did not fire: push manually. Then Batch 7.
+3. LIVE: phases 1-6, decisions batch (r20260925-144020), cloud Batches 7-9 (r20260925-163340). master 4ac5273 = cloud Batches 10-17 + local canonical documents/UI + letterheads, full suite running in ../opesinsure-test (DB opesinsure_test_b1017), then deploy per docs/LOCAL_SESSION_RESUME.md section 3 (release guides BATCH9 → 10 → 11_12 → 13_17; stamp-duty schedules stay DRAFT; schedule:list; verify-live + purchase + FNOL). 8 agents (gp1-gp8) are implementing the Gap Closure Pack in database/data/gap_closure_2026 for the NEXT deploy.
 - Deploy note: run composer dump-autoload in the deploy snapshot before building the tarball (classes were deleted in Batch 6).
 - Batch 6 follow-ups: 7B UnderwritingService::decide → ProposalService::applyUnderwritingDecision; 7C/7D issuance → PolicyIssuabilityService::assertIssuable + CoverTermsService::resolveStart; mobile: carrier "Quote requests" screens + "sent to insurer" state; INFORMATION_REQUIRED/RESUBMITTED labels, resubmit + withdraw screens, 422 after submission, DECLINED/EXPIRED quote statuses. Wave10Controller::saveComparison should delegate to QuoteComparisonService or become an alias.
 - More follow-ups from Batch 5: hook RuleEngine::assertComplete into bind/issue/claim (Batches 6-7, 11); DocumentRequirementService::applicable should use the rules engine (DOCUMENTS domain); ProposalService should read PROPOSAL question sets instead of disclosure_schema_versions directly; RiskFactsProcessor and RiskAssetTypes should read via QuestionSetCatalogue; Filament UI for rules and question sets.

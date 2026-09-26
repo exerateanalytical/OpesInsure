@@ -34,6 +34,8 @@ final class VehicleMasterAdminService
     /** Variant field => vehicle_reference_values group its code must exist in (null = free value). */
     public const VARIANT_FIELDS = ['name' => null, 'year_from' => null, 'year_to' => null, 'engine_capacity_cc' => null, 'active' => null,
         'power_hp' => null, 'power_kw' => null, 'torque_nm' => null, 'cylinders' => null,
+        // Gap pack 03 required_complete_variant_fields (power_ps / fiscal_power_cv live in vehicle_power_specs / vehicle_fiscal_power_records).
+        'engine_code' => null, 'seat_count' => null, 'curb_weight_kg' => null, 'gross_vehicle_weight_kg' => null, 'payload_kg' => null,
         'body_type' => 'body_type', 'powertrain' => 'powertrain', 'hybrid_subtype' => 'hybrid_subtype', 'transmission' => 'transmission', 'drive_type' => 'drive_type'];
 
     public function createMake(array $data, ?User $actor, string $provenance = 'MANUAL_VERIFIED'): VehicleMake
@@ -210,7 +212,8 @@ final class VehicleMasterAdminService
                 throw ValidationException::withMessages([$field => "Unknown $group code {$attrs[$field]}."]);
             }
         }
-        foreach (['engine_capacity_cc' => 30000, 'power_hp' => 3000, 'torque_nm' => 5000, 'cylinders' => 24] as $field => $max) {
+        foreach (['engine_capacity_cc' => 30000, 'power_hp' => 3000, 'torque_nm' => 5000, 'cylinders' => 24, 'seat_count' => 120,
+            'curb_weight_kg' => 60000, 'gross_vehicle_weight_kg' => 120000, 'payload_kg' => 100000] as $field => $max) {
             if (isset($attrs[$field])) {
                 $n = is_numeric($attrs[$field]) ? (int) $attrs[$field] : 0;
                 if ($n < 1 || $n > $max) {

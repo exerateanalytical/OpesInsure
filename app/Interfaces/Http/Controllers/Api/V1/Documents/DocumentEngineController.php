@@ -71,8 +71,8 @@ final class DocumentEngineController
     public function requestStatusChange(string $document, Request $request, DocumentStatusService $service): JsonResponse
     {
         $doc = Document::where('tenant_id', app(TenantContext::class)->id())->findOrFail($document);
-        $data = $request->validate(['action' => 'required|in:REVOKE,REPLACE,CANCEL', 'reason' => 'required|string|min:5|max:1000', 'replacement_document_id' => 'nullable|uuid']);
-        $change = $service->request($doc, $data['action'], $data['reason'], $request->user(), $data['replacement_document_id'] ?? null);
+        $data = $request->validate(['action' => 'required|in:REVOKE,REPLACE,CANCEL', 'reason' => 'required|string|min:5|max:1000', 'replacement_document_id' => 'nullable|uuid', 'reason_code' => 'nullable|string|max:40']);
+        $change = $service->request($doc, $data['action'], $data['reason'], $request->user(), $data['replacement_document_id'] ?? null, $data['reason_code'] ?? null);
 
         return response()->json(['data' => $change], 201);
     }

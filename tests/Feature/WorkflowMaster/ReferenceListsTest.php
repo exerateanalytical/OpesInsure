@@ -62,7 +62,7 @@ it('uses the same 7 status codes as the dataset and records a status for every o
     $rows = DB::table('master_data_workflow_statuses')->pluck('status', 'item_key');
     expect(array_diff(array_keys($expected), $rows->keys()->all()))->toBe([])
         ->and($rows->every(fn ($s) => in_array($s, WorkflowDataStatuses::CODES, true)))->toBeTrue()
-        ->and(DB::table('master_data_workflow_statuses')->where('source', '!=', 'OWNER_WORKFLOW_DATA_MASTER_V1')->count())->toBe(0);
+        ->and(DB::table('master_data_workflow_statuses')->whereNotIn('source', ['OWNER_WORKFLOW_DATA_MASTER_V1', 'GAP_CLOSURE_PACK_V1'])->count())->toBe(0); // gp2: Gap Closure Pack 02 refines some items
 
     // Raw owner wording kept; mapped onto the 7 codes.
     expect(DB::table('master_data_workflow_statuses')->where('item_key', 'vehicles.manual_fallback')->first())
@@ -77,7 +77,7 @@ it('merges geography by code: 10 regions with owner names as aliases, hierarchy 
         ->and(wm2Hit('geography', 'cameroon_region', 'north west'))->toBe('NORD_OUEST');
 
     $levels = DB::table('master_data_values')->where(['domain_code' => 'geography', 'list_code' => 'admin_level'])->orderBy('sort_order')->get();
-    expect($levels->pluck('code')->all())->toBe(['REGION', 'DIVISION', 'SUBDIVISION', 'COUNCIL', 'CITY', 'LOCALITY'])
+    expect($levels->pluck('code')->all())->toBe(['REGION', 'DIVISION', 'SUBDIVISION', 'COUNCIL', 'CITY', 'LOCALITY', 'COUNTRY']) // COUNTRY (rank 0) added by Gap Closure Pack 02
         ->and(json_decode($levels[1]->attributes, true)['maps_to_list'])->toBe('cameroon_department')
         ->and($levels[1]->source_reference)->toBe('OWNER_WORKFLOW_DATA_MASTER_V1')
         ->and(wm2Hit('geography', 'admin_level', 'departement'))->toBe('DIVISION');
@@ -88,7 +88,7 @@ it('merges geography by code: 10 regions with owner names as aliases, hierarchy 
     // Full administrative dataset / hazard zones / holidays: pending, nothing invented.
     expect(wm2Codes('geography', 'cameroon_arrondissement'))->toBe([])
         ->and(app(WorkflowDataStatuses::class)->forList('geography', 'cameroon_arrondissement')['status'])->toBe('PENDING_SOURCE')
-        ->and(DB::table('master_data_workflow_statuses')->where('item_key', 'geography.public_holidays')->value('status'))->toBe('PENDING_SOURCE');
+        ->and(DB::table('master_data_workflow_statuses')->where('item_key', 'geography.public_holidays')->value('status'))->toBe('CONFIG_REQUIRED'); // gp2: rules seeded, yearly dataset still to configure
 })->group('REQ-MDM-003');
 
 it('maps legal entity types, beneficiary relationships, property, cargo lists by code without duplicates [REQ-MDM-003]', function () {

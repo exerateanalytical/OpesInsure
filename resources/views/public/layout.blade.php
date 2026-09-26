@@ -4,7 +4,7 @@
   $description = trim($__env->yieldContent('description')) ?: __('site.meta_description');
   $canonical = url()->current();
   $nav = [
-    ['/#explore', 'insurance', null],
+    ['/insurance', 'insurance', 'public.marketplace'],
     ['/providers', 'providers', 'public.providers'],
     ['/claims', 'claims', 'public.claims'],
     ['/how-it-works', 'how', 'public.how-it-works'],
@@ -56,8 +56,8 @@
     </nav>
     <div class="head-actions">
       <button class="icon-btn search-toggle" type="button" aria-expanded="false" aria-controls="site-search" aria-label="{{ __('site.nav.search_label') }}">@include('public.partials.i', ['n' => 'search'])</button>
-      <a class="btn btn-sm btn-outline-light" href="/admin/login">{{ __('site.nav.sign_in') }}</a>
-      <a class="btn btn-sm btn-gold" href="{{ url('/app/compare') }}">{{ __('site.nav.compare') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+      <a class="btn btn-sm btn-outline-light" href="/login">{{ __('site.nav.sign_in') }}</a>
+      <a class="btn btn-sm btn-gold" href="/insurance">{{ __('site.nav.compare') }} @include('public.partials.i', ['n' => 'arrow'])</a>
       <nav class="lang" aria-label="{{ __('site.nav.language') }}">
         <a href="{{ $langUrl('en') }}" hreflang="en" lang="en" @if($locale === 'en') aria-current="true" @endif>EN</a>
         <a href="{{ $langUrl('fr') }}" hreflang="fr" lang="fr" @if($locale === 'fr') aria-current="true" @endif>FR</a>
@@ -81,8 +81,8 @@
         <li><a href="/providers">{{ __('site.nav.search') }}</a></li>
       </ul>
       <div class="btn-row">
-        <a class="btn btn-sm btn-gold" href="{{ url('/app/compare') }}">{{ __('site.nav.compare') }}</a>
-        <a class="btn btn-sm btn-outline-light" href="/admin/login">{{ __('site.nav.sign_in') }}</a>
+        <a class="btn btn-sm btn-gold" href="/insurance">{{ __('site.nav.compare') }}</a>
+        <a class="btn btn-sm btn-outline-light" href="/login">{{ __('site.nav.sign_in') }}</a>
       </div>
     </div>
   </nav>
@@ -103,7 +103,7 @@
         <h2>{{ __('site.footer.insurance') }}</h2>
         <ul>
           @foreach(__('site.explore.cats') as $key => $label)
-            <li><a href="{{ url('/app/explore?q='.$key) }}">{{ $label }}</a></li>
+            <li><a href="/insurance/{{ $key }}">{{ $label }}</a></li>
           @endforeach
         </ul>
       </div>
@@ -111,6 +111,8 @@
         <h2>{{ __('site.footer.company') }}</h2>
         <ul>
           <li><a href="/about">{{ __('site.footer.about') }}</a></li>
+          <li><a href="/insurance">{{ __('desk.tab.all') }}</a></li>
+          <li><a href="/compare">{{ __('desk.compare.title') }}</a></li>
           <li><a href="/providers">{{ __('site.footer.providers') }}</a></li>
           <li><a href="/partners">{{ __('site.footer.partner') }}</a></li>
           <li><a href="/how-it-works">{{ __('site.footer.how') }}</a></li>

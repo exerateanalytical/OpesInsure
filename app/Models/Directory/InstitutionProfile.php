@@ -18,7 +18,8 @@ final class InstitutionProfile extends Model
     public const STATUSES = ['VERIFIED', 'PARTIALLY_VERIFIED', 'VERIFIED_HQ_BRANCHES_PENDING', 'VERIFIED_NETWORK_SHARED_WITH_GROUP'];
 
     protected $fillable = ['carrier_id', 'directory_id', 'directory_name', 'website', 'po_box', 'phones', 'emails', 'sources', 'maps_listing',
-        'verification_status', 'verified_at', 'regulatory_reference_note', 'regulatory_reference_status', 'dataset', 'dataset_version', 'admin_edited_at', 'admin_edited_by'];
+        'verification_status', 'verified_at', 'regulatory_reference_note', 'regulatory_reference_status', 'dataset', 'dataset_version', 'admin_edited_at', 'admin_edited_by',
+        'partner_id', 'official_sequence', 'locality', 'street_address', 'responsible_person', 'license_reference', 'authorized_year', 'source_url', 'import_batch_id'];
 
     protected function casts(): array
     {

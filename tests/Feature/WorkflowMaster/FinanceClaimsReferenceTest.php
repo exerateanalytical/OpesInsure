@@ -64,7 +64,8 @@ it('seeds the workflow lists into existing domains without duplicating codes [RE
 it('keeps PENDING_SOURCE and CONFIG_REQUIRED domains empty and structure-only', function () {
     (new MasterDataSeeder)->run();
     $empty = [
-        'claims.damage_type', 'claims.injury_type', 'claims.evidence_type', 'claims.fraud_indicator', 'claims.decision_reason', 'claims.rejection_reason',
+        // evidence_type / decision_reason / rejection_reason were supplied by Gap Closure Pack 03 (tests/Feature/GapClosure/MotorClaimsRepairExpertsTest.php).
+        'claims.damage_type', 'claims.injury_type', 'claims.fraud_indicator',
         'partners.adjuster', 'provider.medical_service', 'provider.provider_tariff', 'financial_institutions.bank',
         'finance.chart_of_accounts', 'finance.gl_mapping', 'reinsurance.reinsurer', 'reinsurance.reinsurance_broker',
     ];

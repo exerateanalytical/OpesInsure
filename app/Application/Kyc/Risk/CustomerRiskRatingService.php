@@ -119,7 +119,8 @@ final class CustomerRiskRatingService
 
             return ($edd !== [] && in_array('EDD', $when, true)) || in_array($rating, $when, true);
         };
-        $refresh = $cfg['refresh_months'][$rating] ?? null;
+        // Gap Closure Pack 08: an approved (VERIFIED) tenant refresh policy wins over the config default.
+        $refresh = app(\App\Application\Compliance\Catalogue\ComplianceCatalogueService::class)->monthsFor($s->tenant_id, $rating) ?? ($cfg['refresh_months'][$rating] ?? null);
         $rescreen = $cfg['rescreen_months'][$rating] ?? null;
 
         $a = KycRiskAssessment::create([

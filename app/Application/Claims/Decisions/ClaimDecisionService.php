@@ -191,7 +191,8 @@ final class ClaimDecisionService
     /** @return list<string> */
     private function reasons(string $decision, array $codes): array
     {
-        $codes = array_values(array_unique(array_map('strtoupper', $codes)));
+        // Gap closure pack 03 synonyms (e.g. NO_ACTIVE_COVER, LIMIT_APPLIED) resolve onto the stored reason code.
+        $codes = array_values(array_unique(array_map(fn ($c) => \App\Application\Claims\Taxonomy\ClaimTaxonomy::reasonCode((string) $c), $codes)));
         if ($codes === []) {
             throw ValidationException::withMessages(['reason_codes' => 'At least one reason code is required.']);
         }

@@ -20,8 +20,47 @@ final class ReinsuranceReference
 
     public const TREATY_TYPES = ['QUOTA_SHARE', 'SURPLUS', 'EXCESS_OF_LOSS', 'STOP_LOSS', 'OTHER'];
 
-    /** Workflow role => master-data reinsurance.coinsurance_role code. */
-    public const COINSURANCE_ROLES = ['LEAD_INSURER' => 'LEAD', 'PARTICIPATING_INSURER' => 'FOLLOWER'];
+    /**
+     * Gap Closure Pack v1 (07) treaty_types => engine family stored in reinsurance_treaties.treaty_type (the form itself is kept in
+     * treaty_form). Aggregate XL and facultative-obligatory have no automatic calculation in CessionCalculator: family OTHER.
+     */
+    public const TREATY_FORMS = [
+        'QUOTA_SHARE' => 'QUOTA_SHARE', 'SURPLUS' => 'SURPLUS', 'PER_RISK_EXCESS_OF_LOSS' => 'EXCESS_OF_LOSS',
+        'CATASTROPHE_EXCESS_OF_LOSS' => 'EXCESS_OF_LOSS', 'AGGREGATE_EXCESS_OF_LOSS' => 'OTHER', 'STOP_LOSS' => 'STOP_LOSS',
+        'FACULTATIVE_OBLIGATORY' => 'OTHER', 'OTHER' => 'OTHER',
+    ];
+
+    /** Reinsurer approved-security states; only APPROVED_SECURITY may participate in an activated treaty or signed facultative placement. */
+    public const SECURITY_STATUSES = ['PENDING_VERIFICATION', 'TENANT_APPROVED', 'CIMA_APPROVED', 'REJECTED', 'SUSPENDED'];
+
+    public const APPROVED_SECURITY = ['TENANT_APPROVED', 'CIMA_APPROVED'];
+
+    public const BORDEREAU_FREQUENCIES = ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL'];
+
+    /** Gap Closure arrangement_statuses => engine coinsurance_arrangements.status (BOUND is not a separate engine state). */
+    public const COINSURANCE_STATUSES = ['PROPOSED' => 'DRAFT', 'BOUND' => 'DRAFT', 'ACTIVE' => 'ACTIVE', 'EXPIRED' => 'ACTIVE', 'CANCELLED' => 'TERMINATED'];
+
+    /** Workflow / Gap Closure role => master-data reinsurance.coinsurance_role code. */
+    public const COINSURANCE_ROLES = ['LEAD_INSURER' => 'LEAD', 'PARTICIPATING_INSURER' => 'FOLLOWER', 'PARTICIPANT' => 'FOLLOWER'];
+
+    /** Engine treaty family for a treaty_type or Gap Closure treaty form; null when unknown. */
+    public static function treatyFamily(string $code): ?string
+    {
+        $code = strtoupper($code);
+
+        return self::TREATY_FORMS[$code] ?? (in_array($code, self::TREATY_TYPES, true) ? $code : null);
+    }
+
+    /** Gap Closure arrangement status for an engine arrangement (EXPIRED is computed from effective_until). */
+    public static function coinsuranceWorkflowStatus(string $status, ?string $effectiveUntil, ?string $today = null): string
+    {
+        return match ($status) {
+            'DRAFT' => 'PROPOSED',
+            'TERMINATED' => 'CANCELLED',
+            'ACTIVE' => ($effectiveUntil !== null && substr($effectiveUntil, 0, 10) < ($today ?? now()->toDateString())) ? 'EXPIRED' : 'ACTIVE',
+            default => $status,
+        };
+    }
 
     /** Workflow bordereau type => stored bordereaux.type / reinsurance.bordereau_type code. */
     public const BORDEREAU_TYPES = ['RISK' => 'RISK', 'PREMIUM' => 'PREMIUM', 'CLAIMS' => 'CLAIM'];

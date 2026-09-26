@@ -107,7 +107,7 @@ final class ComplaintController
     public function resolution(Request $r, string $complaint): JsonResponse
     {
         $d = $r->validate(['outcome' => 'required|in:UPHELD,PARTIALLY_UPHELD,NOT_UPHELD', 'resolution_summary' => 'required|string|min:10|max:10000',
-            'root_cause' => 'nullable|string|max:64', 'redress_amount' => 'nullable|numeric|min:0']);
+            'root_cause' => 'nullable|string|max:64', 'redress_amount' => 'nullable|numeric|min:0', 'resolution_reason' => 'nullable|string|max:40']);
         $this->complaints->proposeResolution($this->find($complaint), $d, $r->user());
 
         return $this->ok($complaint, $r);

@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "Banking, Payment, Accounting & GL Reference Master"
+  },
+  "sources": {
+    "DGTCFM_PAYMENT_INSTITUTIONS": "https://dgtcfm.cm/etablissements-de-paiement-agrees-au-cameroun/",
+    "BEAC_CREDIT_INSTITUTIONS": "https://www.beac.int/wp-content/uploads/2019/01/BMM_JUIN-2021.pdf"
+  },
+  "banks": {
+    "status": "PENDING_CURRENT_OFFICIAL_IMPORT",
+    "historical_beac_reference": [
+      "Afriland First Bank",
+      "BICEC",
+      "BGFIBANK Cameroun",
+      "Citibank Cameroun",
+      "Commercial Bank of Cameroon",
+      "Crédit Foncier du Cameroun",
+      "Ecobank Cameroun",
+      "SCB Cameroun / Attijariwafa bank",
+      "Société Générale Cameroun",
+      "Union Bank of Cameroon",
+      "United Bank for Africa"
+    ],
+    "record_schema": [
+      "bank_id",
+      "legal_name",
+      "trade_name",
+      "bank_code",
+      "bic_swift",
+      "status",
+      "head_office_city",
+      "website",
+      "phones",
+      "branches",
+      "effective_from",
+      "effective_until",
+      "source_url",
+      "verification_status"
+    ]
+  },
+  "payment_institutions": {
+    "verified_public_source_records": [
+      {
+        "name": "Orange Money Cameroun",
+        "city": "Douala",
+        "status": "VERIFIED_PUBLIC_SOURCE"
+      },
+      {
+        "name": "Mobile Money Corporation",
+        "city": "Douala",
+        "status": "VERIFIED_PUBLIC_SOURCE"
+      }
+    ],
+    "provider_profiles": [
+      "MTN_MOMO",
+      "ORANGE_MONEY",
+      "BANK_TRANSFER",
+      "CARD_GATEWAY",
+      "CASH",
+      "CHEQUE",
+      "DIRECT_DEBIT"
+    ]
+  },
+  "payment_provider_config": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "provider_id",
+      "provider_type",
+      "legal_entity_id",
+      "api_base_url",
+      "environment",
+      "merchant_identifier",
+      "collection_account",
+      "settlement_account",
+      "callback_profile",
+      "reconciliation_reference_rules",
+      "settlement_cycle",
+      "fees",
+      "effective_from",
+      "effective_until"
+    ],
+    "secrets_policy": "Credentials never stored in institutional JSON; use secrets manager."
+  },
+  "chart_of_accounts_templates": {
+    "status": "PLATFORM_NORMALIZED_BASELINE_TENANT_MAPPING_REQUIRED",
+    "control_accounts": [
+      "CASH_AND_BANK",
+      "CUSTOMER_RECEIVABLES",
+      "BROKER_RECEIVABLES",
+      "INSURER_PAYABLES",
+      "COMMISSION_RECEIVABLES",
+      "COMMISSION_PAYABLES",
+      "PREMIUM_INCOME",
+      "UNEARNED_PREMIUM",
+      "CLAIMS_EXPENSE",
+      "CLAIMS_PAYABLE",
+      "CLAIM_RESERVES",
+      "REINSURANCE_PAYABLE",
+      "REINSURANCE_RECEIVABLE",
+      "PROVIDER_PAYABLE",
+      "TAX_PAYABLE",
+      "LEVY_PAYABLE",
+      "REFUND_PAYABLE",
+      "SUSPENSE",
+      "SETTLEMENT_CLEARING"
+    ]
+  },
+  "event_to_gl_mapping": {
+    "status": "CONFIG_REQUIRED",
+    "events": [
+      "PREMIUM_BILLED",
+      "PREMIUM_COLLECTED",
+      "PREMIUM_REMITTED",
+      "COMMISSION_ACCRUED",
+      "COMMISSION_PAID",
+      "COMMISSION_CLAWED_BACK",
+      "CLAIM_RESERVED",
+      "CLAIM_PAID",
+      "REFUND_APPROVED",
+      "REFUND_PAID",
+      "PROVIDER_PAYABLE_RECOGNIZED",
+      "PROVIDER_PAID",
+      "REINSURANCE_PREMIUM_CEDED",
+      "REINSURANCE_RECOVERY_RECOGNIZED",
+      "TAX_RECOGNIZED",
+      "LEVY_RECOGNIZED",
+      "PAYMENT_REVERSED",
+      "CREDIT_NOTE",
+      "DEBIT_NOTE"
+    ],
+    "mapping_fields": [
+      "event_code",
+      "debit_account",
+      "credit_account",
+      "amount_source",
+      "currency_rule",
+      "dimension_mappings",
+      "effective_from",
+      "effective_until",
+      "tenant_id",
+      "approval_status"
+    ]
+  }
+}

@@ -40,7 +40,10 @@ function e7Reinsurer(string $code): string
 {
     Passport::actingAs(test()->maker, [], 'api');
 
-    return test()->postJson('/api/v1/reinsurance/reinsurers', ['code' => $code, 'name' => "Re {$code}", 'role' => 'REINSURER'], test()->h)->assertCreated()->json('data.id');
+    $id = test()->postJson('/api/v1/reinsurance/reinsurers', ['code' => $code, 'name' => "Re {$code}", 'role' => 'REINSURER'], test()->h)->assertCreated()->json('data.id');
+    \Illuminate\Support\Facades\DB::table('reinsurers')->where('id', $id)->update(['approved_security_status' => 'TENANT_APPROVED']); // Gap Closure 07 approved-security gate
+
+    return $id;
 }
 
 function e7Treaty(string $code, string $type, array $terms, array $participants): string

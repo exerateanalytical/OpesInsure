@@ -21,7 +21,8 @@ final class VehicleVariantTarget implements ImportTarget
     use ResolvesVehicleModel;
 
     private const ATTRIBUTES = ['name', 'year_from', 'year_to', 'body_type', 'powertrain', 'hybrid_subtype', 'transmission', 'drive_type',
-        'engine_capacity_cc', 'power_hp', 'power_kw', 'torque_nm', 'cylinders'];
+        'engine_capacity_cc', 'power_hp', 'power_kw', 'torque_nm', 'cylinders',
+        'engine_code', 'seat_count', 'curb_weight_kg', 'gross_vehicle_weight_kg', 'payload_kg'];
 
     private const CODES = ['body_type', 'powertrain', 'hybrid_subtype', 'transmission', 'drive_type'];
 

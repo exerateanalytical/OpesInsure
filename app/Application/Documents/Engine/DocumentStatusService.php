@@ -25,8 +25,13 @@ final class DocumentStatusService
 {
     public function __construct(private AuditWriter $audit, private ApprovalService $approvals) {}
 
-    public function request(Document $document, string $action, string $reason, User $actor, ?string $replacementId = null): DocumentStatusChange
+    public function request(Document $document, string $action, string $reason, User $actor, ?string $replacementId = null, ?string $reasonCode = null): DocumentStatusChange
     {
+        // Gap Closure Pack file 10: optional coded reason (revocation list for REVOKE/CANCEL, replacement list for REPLACE).
+        $list = \App\Application\OperationsTaxonomy\OperationsCatalogue::reasonListFor($action);
+        if ($reasonCode !== null && ! \App\Application\OperationsTaxonomy\OperationsCatalogue::has($list, $reasonCode)) {
+            throw ValidationException::withMessages(['reason_code' => "Unknown reason code {$reasonCode} for {$action}."]);
+        }
         if (! in_array($action, ['REVOKE', 'REPLACE', 'CANCEL'], true)) {
             throw ValidationException::withMessages(['action' => 'Action must be REVOKE, REPLACE or CANCEL.']);
         }
@@ -45,8 +50,8 @@ final class DocumentStatusService
         if (DocumentStatusChange::where('document_id', $document->id)->where('status', 'PENDING')->exists()) {
             throw ValidationException::withMessages(['document' => 'A status change is already pending for this document.']);
         }
-        return DB::transaction(function () use ($document, $action, $reason, $replacementId, $actor): DocumentStatusChange {
-            $change = DocumentStatusChange::create(['document_id' => $document->id, 'action' => $action, 'reason' => $reason, 'replacement_document_id' => $replacementId, 'status' => 'PENDING', 'requested_by' => $actor->id]);
+        return DB::transaction(function () use ($document, $action, $reason, $replacementId, $actor, $reasonCode): DocumentStatusChange {
+            $change = DocumentStatusChange::create(['document_id' => $document->id, 'action' => $action, 'reason' => $reason, 'reason_code' => $reasonCode, 'replacement_document_id' => $replacementId, 'status' => 'PENDING', 'requested_by' => $actor->id]);
             $this->approvals->open($actor, $this->approvalInput($change, $document));
             $this->audit->record('document.status_change.requested', 'document', $document->id, ['action' => $action, 'change_id' => $change->id], $reason);
 

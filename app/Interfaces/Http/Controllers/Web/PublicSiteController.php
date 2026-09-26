@@ -41,7 +41,7 @@ final class PublicSiteController
         'partners' => 'public.pages.partners',
     ];
 
-    public function __construct(private PublicProviderDirectory $directory) {}
+    public function __construct(private PublicProviderDirectory $directory, private PublicMarketplace $market) {}
 
     public function home(): View
     {
@@ -69,6 +69,64 @@ final class PublicSiteController
     {
         return view(self::PAGES[$slug], ['contacts' => $this->contacts(), 'stats' => $this->directory->stats()]);
     }
+
+    /** Marketplace hub ("/insurance") — every line; the directories below reuse the same view. */
+    public function marketplace(Request $request): View
+    {
+        return $this->catalogue($request, null);
+    }
+
+    /** Category directory ("/insurance/{line}"). */
+    public function directory(Request $request, string $line): View
+    {
+        abort_unless(isset(PublicMarketplace::LINES[$line]), 404);
+
+        return $this->catalogue($request, $line);
+    }
+
+    private function catalogue(Request $request, ?string $slug): View
+    {
+        $line = $slug ? PublicMarketplace::LINES[$slug] : null;
+        $cat = $slug ?? (in_array($request->query('cat'), array_keys(PublicMarketplace::LINES), true) ? $request->query('cat') : null);
+        $filters = [
+            'line' => $cat ? PublicMarketplace::LINES[$cat] : null,
+            'q' => mb_substr(trim((string) $request->query('q', '')), 0, 80),
+            'providers' => array_values(array_filter(array_map('strval', (array) $request->query('provider', [])))),
+            'price' => array_key_exists((string) $request->query('price'), PublicMarketplace::PRICE_BANDS) ? (string) $request->query('price') : '',
+            'sort' => in_array($request->query('sort'), ['popular', 'price_asc', 'price_desc', 'name'], true) ? $request->query('sort') : 'popular',
+        ];
+        $rows = $this->market->filter($filters);
+        $pages = max(1, (int) ceil(count($rows) / PublicMarketplace::PER_PAGE));
+        $page = min($pages, max(1, (int) $request->query('page', 1)));
+
+        return view($slug ? 'public.pages.directory' : 'public.pages.marketplace', [
+            'slug' => $slug, 'cat' => $cat, 'filters' => $filters, 'total' => count($rows), 'page' => $page, 'pages' => $pages,
+            'products' => array_slice($rows, ($page - 1) * PublicMarketplace::PER_PAGE, PublicMarketplace::PER_PAGE),
+            'counts' => $this->market->lineCounts(), 'providerFacet' => $this->market->providers($filters['line']),
+            'compare' => array_slice(array_values(array_filter((array) $request->query('cmp', []), 'is_string')), 0, 4),
+        ]);
+    }
+
+    /** Side-by-side comparison of up to four published products ("/compare?p[]=CODE"). */
+    public function compare(Request $request): View
+    {
+        $codes = array_slice(array_values(array_unique(array_filter((array) $request->query('p', []), 'is_string'))), 0, 4);
+        $picked = $this->market->byCodes($codes);
+        $line = $picked[0]['line'] ?? (PublicMarketplace::LINES[$request->query('line')] ?? 'MOTOR');
+        $slug = array_flip(PublicMarketplace::LINES)[$line];
+        $covers = collect($picked)->flatMap(fn ($p) => $p['covers'])->unique('code')->values()->all();
+
+        return view('public.pages.compare', [
+            'picked' => $picked, 'covers' => $covers, 'slug' => $slug,
+            'view' => $request->query('view') === 'table' ? 'table' : 'list',
+            'candidates' => $this->market->filter(['line' => $line, 'sort' => 'price_asc']),
+            'counts' => $this->market->lineCounts(),
+        ]);
+    }
+
+    public function login(): View { return view('public.auth.login'); }
+
+    public function signup(): View { return view('public.auth.signup'); }
 
     public function providers(Request $request): View
     {
@@ -190,7 +248,7 @@ final class PublicSiteController
 
     public function sitemap(): Response
     {
-        $paths = ['/', '/providers', '/download', ...array_map(fn ($s) => '/'.$s, array_keys(self::PAGES)), '/contact', '/account/delete'];
+        $paths = ['/', '/insurance', ...array_map(fn ($l) => '/insurance/'.$l, array_keys(PublicMarketplace::LINES)), '/compare', '/providers', '/download', ...array_map(fn ($s) => '/'.$s, array_keys(self::PAGES)), '/contact', '/account/delete'];
 
         return response()->view('public.sitemap', ['paths' => $paths], 200)->header('Content-Type', 'application/xml; charset=UTF-8');
     }

@@ -13,7 +13,7 @@ final class DocumentStatusChange extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['document_id', 'action', 'reason', 'replacement_document_id', 'status', 'requested_by', 'decided_by', 'decided_at', 'decision_note'];
+    protected $fillable = ['document_id', 'action', 'reason', 'reason_code', 'replacement_document_id', 'status', 'requested_by', 'decided_by', 'decided_at', 'decision_note'];
 
     protected function casts(): array
     {
