@@ -85,10 +85,7 @@ it('REQ-CIMA-002 imports CIMA branch authorizations with evidence through the pi
     $batch = $pipe->upload('cima_insurer_authorizations', [], gp1File($csv), 'auth.csv', $maker);
     expect($batch->report['valid'])->toBe(1)->and(count($batch->report['errors']))->toBe(3);
 
-    $good = implode("
-", array_slice(explode("
-", $csv), 0, 2))."
-";
+    $good = implode("\n", array_slice(explode("\n", $csv), 0, 2)) . "\n";
     $batch = gp1Import('cima_insurer_authorizations', [], $good, $maker, $checker);
     $auth = InsurerRegulatoryAuthorization::where('authorization_reference', 'CRCA-2026-001')->firstOrFail();
     expect($batch->status)->toBe('IMPORTED')->and($auth->status)->toBe('PENDING_APPROVAL')->and($auth->import_batch_id)->toBe($batch->id)
@@ -120,10 +117,7 @@ it('REQ-GC-001 enriches DGTCFM brokers in the canonical directory, never creatin
     $pipe = app(ImportPipeline::class);
     $batch = $pipe->upload('broker_directory_enrichment', [], gp1File($csv), 'brokers.csv', $maker);
     expect($batch->report['valid'])->toBe(1)->and(count($batch->report['errors']))->toBe(1);
-    $good = implode("
-", array_slice(explode("
-", $csv), 0, 2))."
-";
+    $good = implode("\n", array_slice(explode("\n", $csv), 0, 2)) . "\n";
     gp1Import('broker_directory_enrichment', [], $good, $maker, $checker);
 
     $profile = DB::table('institution_profiles')->where('partner_id', $broker->id)->first();
@@ -174,10 +168,7 @@ it('REQ-COM-002 imports commission tables as DRAFT rules that cite their source;
     expect(fn () => $pipe->upload('commission_tables', [], gp1File($csv), 'c.csv', $maker))->toThrow(ValidationException::class);
     $batch = $pipe->upload('commission_tables', ['tenant_id' => $this->tenant->id], gp1File($csv), 'c.csv', $maker);
     expect($batch->report['valid'])->toBe(1)->and(count($batch->report['errors']))->toBe(3);
-    $good = implode("
-", array_slice(explode("
-", $csv), 0, 2))."
-";
+    $good = implode("\n", array_slice(explode("\n", $csv), 0, 2)) . "\n";
     gp1Import('commission_tables', ['tenant_id' => $this->tenant->id], $good, $maker, $checker);
 
     $rule = CommissionRuleVersion::where('carrier_id', $carrier->id)->where('beneficiary_type', 'BROKER')->firstOrFail();
