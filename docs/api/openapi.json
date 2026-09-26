@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8080"
+            "url": "http://opesinsure.test"
         }
     ],
     "paths": {
@@ -68206,6 +68206,30 @@
                 "security": []
             }
         },
+        "/api/v1/public/document-signing-keys": {
+            "get": {
+                "operationId": "get_api_v1_public_document_signing_keys",
+                "tags": [
+                    "public"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Documents\\PublicDocumentVerificationController@keys",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/v1/public/document-types": {
             "get": {
                 "operationId": "get_api_v1_public_document_types",
@@ -68446,6 +68470,41 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/public/letterheads/{asset}/logo": {
+            "get": {
+                "operationId": "get_api_v1_public_letterheads_asset_logo",
+                "tags": [
+                    "public"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Letterheads\\PublicLetterheadLogoController",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "x-route-name": "letterheads.logo",
+                "parameters": [
+                    {
+                        "name": "asset",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "security": []
             }
         },
         "/api/v1/public/master-data/{domain}": {
@@ -68963,6 +69022,40 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/public/verify-document/{token}": {
+            "get": {
+                "operationId": "get_api_v1_public_verify_document_token",
+                "tags": [
+                    "public"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Documents\\PublicDocumentVerificationController@verify",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "security": []
             }
         },
         "/api/v1/question-sets": {
@@ -84124,7 +84217,7 @@
                 "type": "oauth2",
                 "flows": {
                     "clientCredentials": {
-                        "tokenUrl": "http://localhost:8080/oauth/token",
+                        "tokenUrl": "http://opesinsure.test/oauth/token",
                         "scopes": {
                             "quotes.read": "Read quote requests and offers",
                             "quotes.write": "Submit quote requests",
