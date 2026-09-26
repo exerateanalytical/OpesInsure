@@ -179,7 +179,11 @@ final class DocumentShellView
             default => 'UAT — NOT VALID',
         };
 
+        // D2 mapped field rules (MAPPED_PLATFORM_SOURCE): rendered in their zone only when the platform holds a value.
+        $mappedRows = self::mappedRows((array) ($in['requirements']['mapped'] ?? []), $v, $label, $money);
+
         return [
+            'mappedParty' => $mappedRows['C'], 'mappedContent' => $mappedRows['D'],
             'lang' => $lang, 'shell' => $shell, 'shellCode' => $shellCode, 'L' => $L,
             'titleFr' => $in['template']->title_fr, 'titleEn' => $in['template']->title_en, 'documentNumber' => $in['number'],
             'issuerName' => $in['issuerName'], 'family' => $family, 'familyColor' => $color, 'letterhead' => $in['letterhead'] ?? null,
@@ -203,5 +207,78 @@ final class DocumentShellView
                 'classification' => $class.' · '.implode('/', (array) $security['access_profiles']).($watermark ? ' · '.$watermark['profile'] : ''),
             ],
         ];
+    }
+
+    /** Keys already printed by a fixed zone row, or document-level keys owned by Zones A/B/F. */
+    private const SHOWN = ['party.name', 'policy.insurer', 'policy.product', 'policy.insurance_class', 'policy.number', 'policy.effective_from', 'policy.effective_until',
+        'risk.summary', 'risk.registration_number', 'risk.vin', 'risk.make', 'risk.model', 'risk.usage', 'risk.model_year', 'premium.gross', 'premium.taxes',
+        'payment.reference', 'payment.amount', 'payment.paid_at', 'payment.method', 'payment.status', 'coverage.lines', 'endorsement.changes', 'claim.number', 'endorsement.number'];
+
+    /** Zone C = parties / insured risk; Zone D = transaction content. */
+    private const PARTY_PREFIXES = ['party.', 'insured.', 'beneficiary.', 'risk.', 'consent.', 'intermediary.'];
+
+    /**
+     * @param  array<string, array{key: string|null, source: string|null}>  $mapped  DocumentFieldRequirements::requiredKeys()['mapped']
+     * @return array{C: array<int, array{label: string, value: string, strong: bool}>, D: array<int, array{label: string, value: string, strong: bool}>}
+     */
+    public static function mappedRows(array $mapped, array $values, callable $label, callable $money): array
+    {
+        $out = ['C' => [], 'D' => []];
+        $seen = [];
+        foreach ($mapped as $bullet => $m) {
+            $key = $m['key'] ?? null;
+            if (! is_string($key) || isset($seen[$key]) || in_array($key, self::SHOWN, true) || preg_match('/^(document|verification|template|confidentiality|issuer)\./', $key)) {
+                continue;
+            }
+            $seen[$key] = true;
+            $value = self::format($values[$key] ?? null, $key, $money);
+            if ($value === null) {
+                continue; // absent: never a blank placeholder
+            }
+            $zone = 'D';
+            foreach (self::PARTY_PREFIXES as $pfx) {
+                if (str_starts_with($key, $pfx)) {
+                    $zone = 'C';
+                }
+            }
+            $out[$zone][] = ['label' => isset(CanonicalFieldDictionary::KEYS[$key]) ? $label($key) : ucfirst((string) $bullet), 'value' => $value, 'strong' => false];
+        }
+
+        return $out;
+    }
+
+    private static function format(mixed $v, string $key, callable $money): ?string
+    {
+        if ($v === null || $v === '' || $v === [] || $v === false) {
+            return null;
+        }
+        if (is_bool($v)) {
+            return 'Yes / Oui';
+        }
+        if (is_int($v) && (str_starts_with($key, 'premium.') || str_ends_with($key, '_minor') || str_contains($key, 'amount'))) {
+            return $money($v);
+        }
+        if (is_scalar($v)) {
+            $s = trim((string) $v);
+
+            return $s === '' ? null : $s;
+        }
+        if (is_array($v)) {
+            $parts = [];
+            foreach ($v as $k => $item) {
+                $txt = is_array($item) ? ($item['name'] ?? $item['label'] ?? $item['code'] ?? null) : $item;
+                if (is_array($txt)) {
+                    $txt = $txt['en'] ?? reset($txt);
+                }
+                if ($txt === null || $txt === '' || ! is_scalar($txt)) {
+                    continue;
+                }
+                $parts[] = is_string($k) ? ucwords(str_replace('_', ' ', $k)).': '.$txt : (string) $txt;
+            }
+
+            return $parts === [] ? null : implode(' · ', array_slice($parts, 0, 20));
+        }
+
+        return null;
     }
 }

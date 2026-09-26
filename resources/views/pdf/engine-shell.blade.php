@@ -85,6 +85,7 @@
 <div class="zone">
   <div class="zone-title">{{ $L('Parties et risque', 'Parties and risk') }}</div>
   <table class="grid">@foreach($party as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
+  @if(!empty($mappedParty))<table class="grid" style="margin-top:4px">@foreach($mappedParty as $r)<tr><td class="k">{{ $r['label'] }}</td><td>{{ $r['value'] }}</td></tr>@endforeach</table>@endif
   @if(!empty($vehicle))
     <table class="grid" style="margin-top:4px">@foreach($vehicle as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if(!empty($r['strong']))<strong style="font-size:13px">{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
   @endif
@@ -121,6 +122,10 @@
   @if(!empty($payment))
     <h2>{{ $L('Paiement', 'Payment') }}</h2>
     <table class="grid">@foreach($payment as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
+  @endif
+  @if(!empty($mappedContent))
+    <h2>{{ $L('Détails', 'Details') }}</h2>
+    <table class="grid">@foreach($mappedContent as $r)<tr><td class="k">{{ $r['label'] }}</td><td>{{ $r['value'] }}</td></tr>@endforeach</table>
   @endif
   @if(!empty($changes))
     <h2>{{ $L('Modifications', 'Changes') }}</h2>
