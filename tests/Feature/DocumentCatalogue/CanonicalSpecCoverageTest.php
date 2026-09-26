@@ -86,13 +86,42 @@ it('REQ-DOC-CANON-D2-005: every previously unmapped detailed field rule is mappe
         ->and($counts['ENFORCED'])->toBe(180); // enforcement is unchanged: mapped rules render when present, never block
 });
 
-it('REQ-DOC-CANON-D2-006: mapped sources name real tables', function () {
-    $tables = collect(DB::select("select table_name from information_schema.tables where table_schema = 'public'"))->pluck('table_name')->flip();
-    foreach (DetailedFieldSourceMap::MAP as $bullet => [$key, $source]) {
-        if ($key === null) {
-            continue;
+it('REQ-DOC-CANON-D2-006: every mapped table.column exists in the migrated schema', function () {
+    $cols = [];
+    foreach (DB::select("select table_name, column_name from information_schema.columns where table_schema = 'public'") as $r) {
+        $cols[$r->table_name][$r->column_name] = true;
+    }
+    $missing = [];
+    foreach (DetailedFieldSourceMap::references() as $ref) {
+        if (! isset($cols[$ref['table']]) || ($ref['column'] !== null && ! isset($cols[$ref['table']][$ref['column']]))) {
+            $missing[] = $ref['bullet'].' -> '.$ref['table'].($ref['column'] ? '.'.$ref['column'] : '');
         }
-        preg_match('/^([a-z_]+)/', $source, $m);
-        expect($tables->has($m[1]) || str_starts_with($source, 'derived') || str_starts_with($source, 'sum('))->toBeTrue("$bullet -> $source");
+    }
+    expect($missing)->toBe([]);
+});
+
+it('REQ-DOC-CANON-D2-007: payment.amount_words prints XAF amounts in French and English', function () {
+    $w = App\Application\Shared\AmountInWords::class;
+    expect($w::fr(0))->toBe('zéro')
+        ->and($w::fr(21))->toBe('vingt et un')
+        ->and($w::fr(71))->toBe('soixante et onze')
+        ->and($w::fr(80))->toBe('quatre-vingts')
+        ->and($w::fr(81))->toBe('quatre-vingt-un')
+        ->and($w::fr(97))->toBe('quatre-vingt-dix-sept')
+        ->and($w::fr(200))->toBe('deux cents')
+        ->and($w::fr(1000))->toBe('mille')
+        ->and($w::fr(200000))->toBe('deux cent mille')
+        ->and($w::fr(2_000_000))->toBe('deux millions')
+        ->and($w::fr(125_450))->toBe('cent vingt-cinq mille quatre cent cinquante')
+        ->and($w::en(125_450))->toBe('one hundred twenty-five thousand four hundred fifty')
+        ->and($w::en(1_000_001))->toBe('one million one')
+        ->and($w::bilingual(10_000_000))->toBe('cent mille francs CFA / one hundred thousand CFA francs');
+});
+
+it('REQ-DOC-CANON-D2-008: template statements are TEMPLATE_TEXT, not read from a platform column', function () {
+    foreach (DetailedFieldSourceMap::MAP as [$key, $source]) {
+        if ($key !== null && str_starts_with($key, 'template.')) {
+            expect($source)->toBe(DetailedFieldSourceMap::TEMPLATE_TEXT);
+        }
     }
 });

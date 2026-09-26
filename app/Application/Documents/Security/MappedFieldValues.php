@@ -269,7 +269,8 @@ final class MappedFieldValues
             'coverage.mandatory_flags' => implode(' · ', array_filter(array_map(fn ($c) => is_array($c) && isset($c['mandatory']) ? $name($c).' ('.($c['mandatory'] ? 'mandatory / obligatoire' : 'optional / facultative').')' : null, $coverages))) ?: null,
             'policy.term' => $policy->coverage_starts_at && $policy->coverage_ends_at ? $policy->coverage_starts_at->format('d/m/Y').' → '.$policy->coverage_ends_at->format('d/m/Y') : null,
             'policy.certificates' => $policy->certificate_number,
-            'payment.amount_words' => null,
+            'payment.amount_words' => ($pay = $ctx['payment'] ?? ($policy->payment_intent_id ? DB::table('payment_intents')->where('id', $policy->payment_intent_id)->first() : null)) && isset($pay->amount_minor)
+                ? \App\Application\Shared\AmountInWords::bilingual((int) $pay->amount_minor, (string) ($pay->currency ?? $policy->currency ?? 'XAF')) : null,
         ], fn ($x) => $x !== null && $x !== '');
     }
 

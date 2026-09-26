@@ -181,3 +181,22 @@ have platform data and can be re-pointed in a follow-up: broker and agent (`part
 - **Finance and regulatory:** carried-forward settlement balance, a separate reviewer on regulatory runs,
   verified CIMA return line items (PENDING_OFFICIAL_IMPORT), governing law on reinsurance, witness and notary on
   beneficiary designations, and payment preference on proposals.
+
+## 5. Follow-up: schema audit, amount in words, template text, resolution coverage
+
+- **Schema audit.** `DetailedFieldSourceMap::references()` parses every source with the grammar that
+  `MappedFieldValues::read()` uses, and test REQ-DOC-CANON-D2-006 fails if any table or column it names is missing
+  from the migrated schema. The audit found no missing columns: `regulatory_report_runs.period_from` and
+  `period_to` do exist, and `period_key` has been added. It did find 11 sources written in a form the reader
+  could not parse (`+` joins, lists that span several tables, and arrows with no target column). These were
+  rewritten, along with 6 derived expressions (`x`, `-` and bare words).
+- **`payment.amount_words`.** `App\Application\Shared\AmountInWords` is a pure-PHP helper that writes the
+  amount in French and English, for example "cent mille francs CFA / one hundred thousand CFA francs". It follows
+  the French spelling rules (vingt et un, soixante et onze, quatre-vingts, deux cents, mille, millions).
+  `MappedFieldValues` reads it from the payment in context.
+- **`template.statement.*` and `template.general_conditions` (12 keys).** `document_templates.content` has only
+  `sections`, with no field for each statement, so these keys are marked `TEMPLATE_TEXT`: the wording comes from
+  the published template and no platform column is read.
+- **Resolution coverage** (MappedFieldCoverageTest, with a fixture row seeded for every mapped table): **N = 234 of
+  M = 234** keys whose source exists now resolve. Before this follow-up it was 96 of 234. There are 246 distinct
+  mapped keys; the other 12 are the TEMPLATE_TEXT keys.

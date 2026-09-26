@@ -15,11 +15,17 @@ namespace App\Application\DocumentCatalogue;
  *                   keys is an owner decision, recorded in docs/spec/canonical/FIELD_RULE_COVERAGE.md.
  *  - [null, gap]    stays PENDING_VERIFICATION; `gap` names the data source the platform is missing.
  *
- * Only real columns are named (checked against the migrated schema). Nothing here invents a value.
+ * Only real columns are named: DetailedFieldSourceMap::references() is checked against the migrated schema by
+ * MappedFieldSchemaTest. Source grammar (the one MappedFieldValues::read parses): alternatives split by " / ",
+ * "table.col", "table.col1, col2", "table.fk -> table2.col", "sum(table.col)", a bare "table", "(notes)" ignored.
+ * TEMPLATE_TEXT: a fixed wording that belongs to the published document template (document_templates.content has
+ * no per-statement field), so no platform column is read. Nothing here invents a value.
  * Keys are looked up by the full normalized bullet, then by the bullet without its conditional wording.
  */
 final class DetailedFieldSourceMap
 {
+    public const TEMPLATE_TEXT = 'TEMPLATE_TEXT';
+
     /** @var array<string, array{0: string|null, 1: string}> */
     public const MAP = [
         // ---------- DOC-001 quote ----------
@@ -30,12 +36,12 @@ final class DetailedFieldSourceMap
         'discounts' => ['premium.discounts', 'quote_offers.calculation_breakdown (discount lines)'],
         'loadings' => ['premium.loadings', 'quote_offers.calculation_breakdown (loading lines)'],
         'installment option if offered' => ['premium.instalments', 'policy_premium_instalments / premium_cover_rules'],
-        'optional/mandatory' => ['coverage.mandatory_flags', 'policy_coverages.mandatory, policy_coverages.optional'],
-        'material exclusions/conditions or references' => ['coverage.exclusions', 'product_exclusions + exclusion_definitions'],
+        'optional/mandatory' => ['coverage.mandatory_flags', 'policy_coverages.mandatory, optional'],
+        'material exclusions/conditions or references' => ['coverage.exclusions', 'product_exclusions.exclusion_definition_id -> exclusion_definitions.name'],
         'outstanding requirements' => ['underwriting.outstanding_requirements', 'proposals.information_request / underwriting_referral_tasks'],
         'premium contribution where exposed' => ['premium.gross', 'quote_offers.total_minor'],
         'referral/conditional status where relevant' => ['underwriting.referral_status', 'underwriting_decisions.outcome / quote_offers.sellability'],
-        'that quotation does not itself prove active insurance unless legally/product-configured otherwise' => ['template.statement.quote_not_cover', 'document_templates.content (fixed statement)'],
+        'that quotation does not itself prove active insurance unless legally/product-configured otherwise' => ['template.statement.quote_not_cover', 'TEMPLATE_TEXT'],
         'valid-until date' => ['quote.valid_until', 'quote_offers.valid_until'],
         'validity period' => ['document.validity', 'quote_offers.valid_until / health_preauthorizations.gop_valid_until'],
         'whether subject to underwriting' => ['underwriting.required', 'insurance_products.underwriting_mode'],
@@ -69,7 +75,7 @@ final class DetailedFieldSourceMap
         'endorsements' => ['policy.endorsements', 'policy_transactions (type ENDORSEMENT)'],
         'endorsements incorporated' => ['policy.endorsements', 'policy_transactions (type ENDORSEMENT, status APPLIED)'],
         'endorsement references' => ['policy.endorsements', 'policy_transactions.transaction_number'],
-        'general conditions' => ['template.general_conditions', 'document_templates (product general conditions, product_id)'],
+        'general conditions' => ['template.general_conditions', 'TEMPLATE_TEXT'],
         'notification/contact information' => ['issuer.contact', 'institution_profiles.phones, emails / institution_offices'],
         'policy schedule' => ['policy.schedule', 'policy_schedule_items / policy_coverages'],
         'schedules' => ['policy.schedule', 'policy_schedule_items'],
@@ -78,9 +84,9 @@ final class DetailedFieldSourceMap
         'conditions precedent' => ['underwriting.conditions', 'underwriting_decisions.conditions'],
         'coverage being temporarily evidenced' => ['coverage.lines', 'policy_coverages'],
         'expiration date/time' => ['policy.effective_until', 'policies.coverage_ends_at'],
-        'explicit temporary/provisional nature' => ['template.statement.provisional', 'document_templates.content (fixed statement)'],
+        'explicit temporary/provisional nature' => ['template.statement.provisional', 'TEMPLATE_TEXT'],
         'inception date/time' => ['policy.effective_from', 'policies.coverage_starts_at'],
-        'linked proposal/quote/policy' => ['proposal.number', 'proposals.proposal_number, quotes.quote_number, policies.policy_number'],
+        'linked proposal/quote/policy' => ['proposal.number', 'proposals.proposal_number / quotes.quote_number / policies.policy_number'],
         'policyholder/insured' => ['party.name', 'policies.party_id -> parties.display_name'],
         'premium/payment status where required' => ['payment.status', 'payment_intents.status / policy_premium_instalments.status'],
         'risk' => ['risk.summary', 'policy_risks.display_name, facts'],
@@ -112,7 +118,7 @@ final class DetailedFieldSourceMap
         'emergency/provider contact' => [null, 'No emergency/assistance contact configured per product or network (provider_networks has no contact)'],
         'member name' => ['member.name', 'health_members.display_name'],
         'member number' => ['member.reference', 'health_members.member_number'],
-        'network/plan' => ['member.network', 'health_policy_networks -> provider_networks.name'],
+        'network/plan' => ['member.network', 'health_policy_networks.provider_network_id -> provider_networks.name'],
         'optional copay/network indication' => ['benefit.copay', 'health_benefit_schedules.copay_bp'],
         'policy/group number' => ['policy.number', 'policies.policy_number'],
         'qr/member verification' => ['verification.token', 'health_member_cards.token_hash'],
@@ -129,7 +135,7 @@ final class DetailedFieldSourceMap
         'conditions' => ['decision.conditions', 'health_preauthorizations.decision_notes / underwriting_decisions.conditions'],
         'exclusions/not-covered items' => ['preauth.declined_lines', 'health_preauthorization_lines.decline_reason'],
         'insurer responsibility' => ['preauth.insurer_amount', 'health_preauthorizations.insurer_amount_minor'],
-        'member' => ['member.reference', 'health_preauthorizations.member_ref -> health_members'],
+        'member' => ['member.reference', 'health_preauthorizations.member_ref'],
         'member responsibility' => ['preauth.member_amount', 'health_preauthorization_lines.copay_minor'],
         'provider/facility' => ['provider.name', 'provider_profiles.official_name / provider_facilities'],
         'request reference' => ['preauth.number', 'health_preauthorizations.preauth_number'],
@@ -164,7 +170,7 @@ final class DetailedFieldSourceMap
         'surrender values' => ['life.surrender_value', 'life_surrender_quotes.net_value_minor'],
         'term' => ['policy.term', 'policies.coverage_starts_at, coverage_ends_at'],
         'validity/assumption basis' => [null, 'No verified life illustration basis (interest/mortality assumptions) configured'],
-        'warnings' => ['template.statement.illustration_warning', 'document_templates.content (fixed statement)'],
+        'warnings' => ['template.statement.illustration_warning', 'TEMPLATE_TEXT'],
 
         // ---------- DOC-082 beneficiary designation ----------
         'allocation percentage' => ['beneficiary.allocation', 'beneficiary_designations.allocation_pct'],
@@ -184,7 +190,7 @@ final class DetailedFieldSourceMap
         'benefit limits' => ['benefit.limits', 'health_benefit_schedules.period_limit_minor, per_event_limit_minor'],
         'claims rules' => ['product.claims_requirements', 'insurance_products.claims_requirements'],
         'contribution/premium basis' => [null, 'No group contribution basis (per member / payroll) stored on group schemes'],
-        'corporate contacts' => ['party.contact', 'party_contacts of the policyholder organisation'],
+        'corporate contacts' => ['party.contact', 'party_contacts.normalized_value (policyholder organisation)'],
         'covered member categories' => ['schedule.categories', 'policy_schedule_items.category'],
         'dependant rules' => ['product.eligibility_rules', 'insurance_products.eligibility_rules'],
         'eligibility rules' => ['product.eligibility_rules', 'insurance_products.eligibility_rules'],
@@ -201,12 +207,12 @@ final class DetailedFieldSourceMap
         'coverage type' => ['policy.insurance_class', 'insurance_products.product_class'],
         'insured professional/entity' => ['party.name', 'parties.display_name'],
         'limit per claim' => ['coverage.limits', 'policy_limits (limit_type PER_CLAIM)'],
-        'material limitations/references' => ['coverage.exclusions', 'product_exclusions + exclusion_definitions'],
+        'material limitations/references' => ['coverage.exclusions', 'product_exclusions.exclusion_definition_id -> exclusion_definitions.name'],
         'profession/activity' => ['risk.summary', 'policy_risks.facts (activity)'],
         'territorial/jurisdictional scope' => [null, 'No territory/jurisdiction field on products or policies'],
 
         // ---------- DOC-133 marine cargo certificate ----------
-        'beneficiary/loss payee if applicable' => ['policy.loss_payee', 'policy_parties (role LOSS_PAYEE)'],
+        'beneficiary/loss payee if applicable' => ['policy.loss_payee', 'policy_parties.display_name, role (role LOSS_PAYEE)'],
         'bill of lading/airway bill/transport reference' => ['cargo.reference', 'cargo_declarations.reference'],
         'certificate period' => ['cargo.shipment_date', 'cargo_declarations.shipment_date'],
         'conveyance/vessel/vehicle' => ['cargo.conveyance', 'cargo_declarations.conveyance'],
@@ -225,7 +231,7 @@ final class DetailedFieldSourceMap
         'destination/territory' => ['risk.facts.destination', 'quote_risks.facts (destination)'],
         'emergency assistance' => [null, 'No travel assistance provider/contract recorded'],
         'emergency assistance number' => [null, 'No verified travel assistance phone number recorded'],
-        'exclusions/reference' => ['coverage.exclusions', 'product_exclusions + exclusion_definitions'],
+        'exclusions/reference' => ['coverage.exclusions', 'product_exclusions.exclusion_definition_id -> exclusion_definitions.name'],
         'insured traveler' => ['party.insured', 'policy_parties (role INSURED)'],
         'medical cover limit' => ['coverage.limits', 'policy_coverages.limit_minor (medical coverage)'],
         'other key benefits' => ['coverage.lines', 'policy_coverages'],
@@ -243,17 +249,17 @@ final class DetailedFieldSourceMap
         'premium increase/reduction' => ['endorsement.premium_delta', 'policy_transactions.premium_delta_minor'],
         'revised policy period where applicable' => ['policy.period', 'policy_versions.valid_from, valid_to'],
         'tax/fee delta' => [null, 'policy_transactions carries premium_delta_minor only; no separate tax/fee delta'],
-        'terms unaffected statement' => ['template.statement.terms_unaffected', 'document_templates.content (fixed statement)'],
+        'terms unaffected statement' => ['template.statement.terms_unaffected', 'TEMPLATE_TEXT'],
 
         // ---------- DOC-151 renewal notice ----------
         'current expiry date' => ['policy.effective_until', 'policies.coverage_ends_at'],
         'expiring product/plan' => ['policy.product', 'quote_offers.product_id -> insurance_products.name'],
         'material coverage changes' => ['renewal.changes', 'renewal_cases.renewal_quote_id -> quote_offers.coverage_snapshot (diff)'],
         'material exclusions/term changes' => ['renewal.changes', 'quote_offers.coverage_snapshot (renewal quote) vs policies.terms_snapshot'],
-        'non-renewal/lapse consequence' => ['template.statement.lapse', 'document_templates.content (fixed statement)'],
+        'non-renewal/lapse consequence' => ['template.statement.lapse', 'TEMPLATE_TEXT'],
         'payment requirements' => ['payment.instructions', 'payment_provider_profiles / collection_accounts'],
         'proposed renewal period' => ['renewal.period', 'quotes.risk_facts (renewal quote period)'],
-        'renewal acceptance instructions' => ['template.statement.renewal_acceptance', 'document_templates.content'],
+        'renewal acceptance instructions' => ['template.statement.renewal_acceptance', 'TEMPLATE_TEXT'],
         'renewal deadline' => ['renewal.due_on', 'renewal_cases.due_on'],
         'renewal premium' => ['renewal.premium', 'renewal_cases.renewal_quote_id -> quote_offers.total_minor'],
         'support contact' => ['issuer.contact', 'institution_profiles.phones, emails'],
@@ -281,7 +287,7 @@ final class DetailedFieldSourceMap
         'damage/injury description' => ['claim.loss_details', 'claims.loss_details'],
         'detailed narrative' => ['claim.loss_details', 'claim_fnol_snapshots.reported_facts'],
         'estimated loss if known' => ['claim.estimated_loss', 'claims.estimated_loss_minor'],
-        'fraud warning' => ['template.statement.fraud_warning', 'document_templates.content (fixed statement)'],
+        'fraud warning' => ['template.statement.fraud_warning', 'TEMPLATE_TEXT'],
         'insured object' => ['risk.summary', 'claim_fnol_snapshots.policy_snapshot (risks)'],
         'invoices' => ['claim.evidence', 'claim_documents (evidence_type INVOICE)'],
         'location' => ['claim.loss_location', 'claims.loss_location'],
@@ -295,7 +301,7 @@ final class DetailedFieldSourceMap
         'repair estimates' => ['claim.evidence', 'claim_documents (evidence_type REPAIR_ESTIMATE)'],
         'reporting channel' => ['claim.channel', 'claim_fnol_snapshots.channel'],
         'third parties' => ['claim.involved_parties', 'claim_involved_parties (role THIRD_PARTY)'],
-        'truth declaration' => ['template.statement.truth_declaration', 'document_templates.content (fixed statement)'],
+        'truth declaration' => ['template.statement.truth_declaration', 'TEMPLATE_TEXT'],
         'videos' => ['claim.evidence', 'claim_documents (evidence_type VIDEO)'],
         'witnesses' => ['claim.involved_parties', 'claim_involved_parties (role WITNESS)'],
 
@@ -305,8 +311,8 @@ final class DetailedFieldSourceMap
         'current claim status' => ['claim.status', 'claims.status'],
         'next steps' => [null, 'No configured next-steps text per claim status'],
         'reported date' => ['claim.reported_at', 'claims.submitted_at'],
-        'sla/expected response wording only when configured' => ['sla.due_at', 'sla_clocks (claim acknowledgement SLA)'],
-        'statement that acknowledgement is not an admission of liability/coverage where applicable' => ['template.statement.no_admission', 'document_templates.content (fixed statement)'],
+        'sla/expected response wording only when configured' => ['sla.due_at', 'sla_clocks.due_at, deadline_label (claim acknowledgement SLA)'],
+        'statement that acknowledgement is not an admission of liability/coverage where applicable' => ['template.statement.no_admission', 'TEMPLATE_TEXT'],
 
         // ---------- DOC-169 assessment report ----------
         'affected risk' => ['risk.summary', 'claim_fnol_snapshots.policy_snapshot (risks)'],
@@ -322,7 +328,7 @@ final class DetailedFieldSourceMap
         'inspection date' => [null, 'No inspection date on claim_assessments'],
         'observed damage' => ['claim.assessment_rationale', 'claim_assessments.rationale, heads'],
         'photographs/attachments' => ['claim.evidence', 'claim_documents / claim_assessments.adjuster_report_document_id'],
-        'pre-loss value where applicable' => ['risk.value', 'risk_asset_vehicles.market_value / declared_value'],
+        'pre-loss value where applicable' => ['risk.value', 'risk_asset_vehicles.market_value, declared_value'],
         'recommended settlement' => ['claim.recommended_total', 'claim_assessments.recommended_total_minor'],
         'repair/replacement assessment' => ['claim.assessment_heads', 'claim_assessments.heads'],
         'reservations' => ['claim.assessment_review_note', 'claim_assessments.review_note'],
@@ -336,26 +342,26 @@ final class DetailedFieldSourceMap
         'decision reference' => ['claim.decision_id', 'claim_decisions.id'],
         'decision timestamp' => ['claim.decided_at', 'claim_decisions.approved_at'],
         'decision: approved / partially approved / rejected' => ['claim.decision', 'claim_decisions.decision'],
-        'delegated authority reference' => ['approval.authority', 'claim_decisions.authority_check_id / authority_snapshot'],
+        'delegated authority reference' => ['approval.authority', 'claim_decisions.authority_check_id, authority_snapshot'],
         'explanation' => ['claim.decision_rationale', 'claim_decisions.rationale'],
         'gross assessed loss' => ['settlement.gross', 'claim_settlements.gross_minor'],
         'insured/claimant' => ['party.claimant', 'claims.claimant_party_id -> parties.display_name'],
         'limits/sublimits' => ['coverage.limits', 'policy_limits'],
         'policy clause/coverage references' => ['claim.coverage_check', 'claim_coverage_checks.coverage_code'],
         'prior payments' => ['settlement.prior_payments', 'claim_settlements.prior_payments_minor'],
-        'reason codes' => ['claim.reason_codes', 'claim_decisions.reason_codes -> claim_decision_reason_codes'],
+        'reason codes' => ['claim.reason_codes', 'claim_decisions.reason_codes, reason_code'],
         'recoveries/offsets where applicable' => ['claim.recoveries', 'claim_recoveries.recovered_amount_minor'],
         'rejected amount' => ['settlement.excluded', 'claim_settlements.excluded_minor'],
 
         // ---------- DOC-177 settlement offer ----------
-        'acceptance instructions' => ['template.statement.offer_acceptance', 'document_templates.content'],
+        'acceptance instructions' => ['template.statement.offer_acceptance', 'TEMPLATE_TEXT'],
         'banking/payment requirements' => ['payee.bank', 'claim_involved_parties.bank_account_masked'],
         'calculation' => ['settlement.breakdown', 'claim_settlements.breakdown'],
         'claimant/payee' => ['settlement.payee', 'claim_settlements.payee_party_id -> parties.display_name'],
         'insurer contact' => ['issuer.contact', 'institution_profiles.phones, emails'],
         'offer amount' => ['settlement.amount', 'claim_settlements.amount_minor'],
         'prior/interim payments' => ['settlement.prior_payments', 'claim_settlements.prior_payments_minor'],
-        'release/discharge requirements' => ['settlement.discharge', 'claim_settlements.discharge_document_id, signature_request_id'],
+        'release/discharge requirements' => ['settlement.discharge', 'claim_settlements.discharge_signed_at / claim_settlements.discharge_document_id -> documents.document_number'],
         'settlement reference' => ['settlement.reference', 'claim_settlements.reference'],
         'tax/withholding where applicable' => [null, 'No verified withholding-tax rule for claim settlements (tax_levy_versions covers premium only)'],
         'validity period of offer' => [null, 'No offer validity/expiry on claim_settlements (offered_at only)'],
@@ -363,7 +369,7 @@ final class DetailedFieldSourceMap
         // ---------- DOC-179 discharge ----------
         'agreed amount' => ['settlement.amount', 'claim_settlements.amount_minor'],
         'date' => ['settlement.discharge_signed_at', 'claim_settlements.discharge_signed_at'],
-        'declaration' => ['template.statement.discharge', 'document_templates.content (fixed statement)'],
+        'declaration' => ['template.statement.discharge', 'TEMPLATE_TEXT'],
         'nature of settlement' => ['settlement.nature', 'claim_decisions.kind / claim_settlements.breakdown'],
         'outstanding/reserved matters if partial' => ['claim.reserve_outstanding', 'claims.current_reserve_minor'],
         'payment details/reference where appropriate' => ['claim_payment.reference', 'claim_payments.external_reference'],
@@ -386,11 +392,11 @@ final class DetailedFieldSourceMap
         // ---------- DOC-186 premium invoice ----------
         'billed party' => ['party.name', 'financial_obligations.debtor_id -> parties.display_name'],
         'billing period' => ['policy.period', 'policies.coverage_starts_at, coverage_ends_at'],
-        'amount previously paid' => ['obligation.paid', 'financial_obligations.amount_minor - outstanding_minor / policy_premium_instalments.paid_minor'],
+        'amount previously paid' => ['obligation.paid', 'policy_premium_instalments.paid_minor / financial_obligations.amount_minor, outstanding_minor'],
         'branch/contact' => ['branch.name', 'tenant_branches.name, phone_e164, email'],
         'due date' => ['obligation.due_at', 'financial_obligations.due_at / policy_premium_instalments.due_date'],
         'fees' => ['premium.fees', 'quote_offers.fee_minor / premium_components (FEE)'],
-        'insurer/payee' => ['policy.insurer', 'policies.carrier_id -> carriers'],
+        'insurer/payee' => ['policy.insurer', 'policies.carrier_id -> carriers.legal_name'],
         'levies' => ['premium.taxes', 'premium_components (LEVY)'],
         'payment instructions' => ['payment.instructions', 'collection_accounts / payment_provider_profiles'],
         'payment references' => ['payment.reference', 'payment_intents.provider_reference'],
@@ -399,7 +405,7 @@ final class DetailedFieldSourceMap
         'total' => ['obligation.amount', 'financial_obligations.amount_minor'],
 
         // ---------- DOC-190 receipt ----------
-        'amount in words where configured' => ['payment.amount_words', 'derived from payment_intents.amount_minor (renderer)'],
+        'amount in words where configured' => ['payment.amount_words', 'payment_intents.amount_minor (AmountInWords, FR/EN)'],
         'reversal/refund status where applicable' => ['refund.status', 'refunds.status'],
 
         // ---------- DOC-194 broker/agent statement ----------
@@ -413,7 +419,7 @@ final class DetailedFieldSourceMap
         'policies/transactions' => ['statement.items', 'partner_statement_items'],
         'preparation/approval' => ['approval.record', 'partner_statements.prepared_by, approved_by, approved_at'],
         'remittances' => ['statement.remittances', 'premium_remittances'],
-        'reporting period' => ['statement.period', 'partner_statements.period_start, period_end / bordereaux.period_start, period_end / regulatory_report_runs.period_from, period_to'],
+        'reporting period' => ['statement.period', 'partner_statements.period_start, period_end / bordereaux.period_start, period_end / regulatory_report_runs.period_key, period_from, period_to'],
         'settlement due' => ['statement.closing_balance', 'partner_statements.closing_balance_minor'],
         'written premium' => ['statement.written_premium', 'bordereaux.gross_premium_minor'],
 
@@ -431,7 +437,7 @@ final class DetailedFieldSourceMap
         'settlement status' => ['settlement_batch.status', 'settlement_batches.status'],
 
         // ---------- DOC-201 reinsurance slip ----------
-        'amount ceded' => ['reinsurance.ceded_premium', 'facultative_placements.placed_share_percent x premium_minor / reinsurance_cessions.ceded_premium_minor'],
+        'amount ceded' => ['reinsurance.ceded_premium', 'reinsurance_cessions.ceded_premium_minor / facultative_placements.placed_share_percent, premium_minor'],
         'brokerage' => ['reinsurance.brokerage', 'facultative_placements.brokerage_percent'],
         'cedant' => ['reinsurance.cedant', 'reinsurance_treaties.cedant_party_id / facultative_placements.tenant_id'],
         'claims cooperation terms' => ['reinsurance.claims_cooperation', 'reinsurance_treaty_versions.claims_cooperation_threshold_minor'],
@@ -441,14 +447,14 @@ final class DetailedFieldSourceMap
         'original policy/product' => ['policy.number', 'facultative_placements.policy_id -> policies.policy_number'],
         'original premium' => ['reinsurance.original_premium', 'facultative_placements.premium_minor'],
         'participation' => ['reinsurance.participation', 'facultative_participants.signed_percent'],
-        'reinsurance broker where applicable' => ['reinsurance.broker', 'facultative_placements.broker_id'],
+        'reinsurance broker where applicable' => ['reinsurance.broker', 'facultative_placements.broker_id -> partners.legal_name'],
         'reinsurer/participants' => ['reinsurer.name', 'facultative_participants.reinsurer_id -> reinsurers.name'],
         'retention' => ['reinsurance.retention', 'reinsurance_treaty_versions.retention_minor'],
         'signature/acceptance status' => ['reinsurance.status', 'facultative_placements.status, decided_at'],
         'slip number' => ['reinsurance.reference', 'facultative_placements.reference'],
         'sum insured/exposure' => ['reinsurance.sum_insured', 'facultative_placements.sum_insured_minor'],
         'terms' => ['reinsurance.terms', 'facultative_placements.terms'],
-        'type of reinsurance' => ['reinsurance.type', 'reinsurance_treaties.reinsurance_type / facultative'],
+        'type of reinsurance' => ['reinsurance.type', 'reinsurance_treaties.reinsurance_type (facultative when facultative_placements)'],
 
         // ---------- DOC-206 / DOC-208 bordereaux ----------
         'bordereau number' => ['bordereau.number', 'bordereaux.bordereau_number'],
@@ -487,7 +493,7 @@ final class DetailedFieldSourceMap
         'preauthorization rules' => [null, 'No preauthorization rule set on provider_contracts'],
         'provider legal entity' => ['provider.name', 'provider_profiles.official_name, registration_number'],
         'renewal/termination' => [null, 'No renewal/termination terms on provider_contracts'],
-        'service scope' => ['provider.services', 'provider_facility_services / provider_tariff_lines'],
+        'service scope' => ['provider.services', 'provider_tariff_lines.medical_service_id -> medical_services.name / provider_facility_services.specialty_code'],
         'supporting documents' => ['provider_contract.document', 'provider_contracts.document_reference'],
         'tariff schedule reference' => ['provider.tariff', 'provider_tariff_versions.version, source_document_reference'],
 
@@ -496,14 +502,14 @@ final class DetailedFieldSourceMap
         'approver' => ['approval.decided_by', 'regulatory_report_runs.approved_by'],
         'certification/declaration' => [null, 'No verified CIMA certification wording for returns'],
         'preparer' => ['regulatory.prepared_by', 'regulatory_report_runs.prepared_by'],
-        'regulator' => ['regulatory.authority', 'regulatory_report_definitions.jurisdiction -> regulatory_authorities'],
+        'regulator' => ['regulatory.authority', 'regulatory_report_definitions.jurisdiction (regulatory_authorities by regime)'],
         'reporting currency' => ['regulatory.currency', 'regulatory_report_runs.payload (currency)'],
         'reporting entity' => ['issuer.legal_name', 'regulatory_report_runs.tenant_id -> tenants.legal_name'],
         'required regulatory line items' => [null, 'CIMA return line items are PENDING_OFFICIAL_IMPORT (regulatory_report_dictionary_lines not verified)'],
         'return type' => ['regulatory.report_type', 'regulatory_report_definitions.report_type, code'],
         'reviewer' => [null, 'regulatory_report_runs has preparer and approver only; no separate reviewer'],
-        'source-system lineage' => ['regulatory.lineage', 'regulatory_report_run_lineage'],
-        'submission period' => ['regulatory.period', 'regulatory_report_runs.period_from, period_to'],
+        'source-system lineage' => ['regulatory.lineage', 'regulatory_report_run_lineage.source_table, source_id'],
+        'submission period' => ['regulatory.period', 'regulatory_report_runs.period_key, period_from, period_to'],
         'submission reference' => ['regulatory.external_reference', 'regulatory_report_runs.external_reference'],
         'totals' => ['regulatory.totals', 'regulatory_report_runs.payload (totals), row_count'],
     ];
@@ -523,5 +529,36 @@ final class DetailedFieldSourceMap
         return $hit[0] === null
             ? ['status' => 'UNMAPPED_PENDING_VERIFICATION', 'key' => null, 'source' => $hit[1]]
             : ['status' => 'MAPPED_PLATFORM_SOURCE', 'key' => $hit[0], 'source' => $hit[1]];
+    }
+    /**
+     * Every table and column a mapped source names, parsed with the MappedFieldValues::read grammar.
+     *
+     * @return array<int, array{bullet: string, table: string, column: string|null}>
+     */
+    public static function references(): array
+    {
+        $out = [];
+        foreach (self::MAP as $bullet => [$key, $source]) {
+            if ($key === null || $source === self::TEMPLATE_TEXT) {
+                continue;
+            }
+            foreach (preg_split('#\s+/\s+#', $source) as $alt) {
+                $alt = preg_match('/^\s*sum\(([\w.]+)\)/', $alt, $m) ? $m[1] : trim((string) preg_replace('/\s*\(.*$/', '', $alt));
+                if (preg_match('/^(\w+)\.(\w+)\s*->\s*(\w+)\.(\w+)$/', $alt, $m)) {
+                    $out[] = ['bullet' => $bullet, 'table' => $m[1], 'column' => $m[2]];
+                    $out[] = ['bullet' => $bullet, 'table' => $m[3], 'column' => $m[4]];
+                } elseif (preg_match('/^(\w+)\.(\w+(?:\s*,\s*\w+)*)$/', $alt, $m)) {
+                    foreach (array_map('trim', explode(',', $m[2])) as $c) {
+                        $out[] = ['bullet' => $bullet, 'table' => $m[1], 'column' => $c];
+                    }
+                } elseif (preg_match('/^(\w+)$/', $alt, $m)) {
+                    $out[] = ['bullet' => $bullet, 'table' => $m[1], 'column' => null];
+                } else {
+                    $out[] = ['bullet' => $bullet, 'table' => '?unparseable: '.$alt, 'column' => null];
+                }
+            }
+        }
+
+        return $out;
     }
 }
