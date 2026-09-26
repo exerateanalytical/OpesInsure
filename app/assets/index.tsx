@@ -7,14 +7,15 @@ import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { AssetsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
+import { normalizeAssetList } from "@/lib/riskAsset";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function Assets() {
   const { t, td } = useTranslation();
-  const { data, loading, error, reload } = useLoad(() => AssetsApi.list(), []);
+  const { data, loading, error, reload } = useLoad(async () => normalizeAssetList(await AssetsApi.list()), []);
   const [filter, setFilter] = useState<string | null>(null);
-  const types = [...new Set((Array.isArray(data) ? data : []).map((x) => x.type).filter(Boolean))];
+  const types = [...new Set((data ?? []).map((x) => x.type).filter(Boolean))];
   return (
     <Screen scroll={false}>
       <BrandHeader title={t("assetsTitle")} subtitle={t("assetsSubtitle")} back right={null} />
@@ -52,7 +53,7 @@ export default function Assets() {
             contentContainerStyle={s.content}
             refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void reload()} />}
             renderItem={({ item: x }) => {
-              const verified = x.status === "VERIFIED";
+              const verified = x.status === "VERIFIED" || x.status === "ACTIVE";
               const title = x.label || x.registration_number || t("assetVehicle");
               const sub = [x.make, x.model, x.year].filter(Boolean).join(" · ");
               return (

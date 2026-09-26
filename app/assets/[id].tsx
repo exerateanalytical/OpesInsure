@@ -7,26 +7,27 @@ import { BrandHeader, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { AssetsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
+import { normalizeAsset } from "@/lib/riskAsset";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function Asset() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td } = useTranslation();
-  const { data: a, loading, error, reload } = useLoad(() => AssetsApi.show(id), [id]);
+  const { data: a, loading, error, reload } = useLoad(async () => normalizeAsset(await AssetsApi.show(id)), [id]);
   return (
     <Screen>
       <BrandHeader title={a?.label ?? t("assetVehicle")} back right={null} />
       <StatePanel loading={loading} error={error} data={a} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("assetsLoading")}>
         {(a) => {
-          const verified = a.status === "VERIFIED";
+          const verified = a.status === "VERIFIED" || a.status === "ACTIVE";
           return (
             <Card style={s.card}>
               <View style={s.headRow}>
                 <TintedIcon icon={CarFront} tint={verified ? "green" : "gold"} size={56} />
                 <View style={s.flex}>
                   <StatusChip label={td(`status_${a.status}`, a.status)} tone={verified ? "success" : "warning"} />
-                  <Text style={s.title}>{a.registration_number}</Text>
+                  <Text style={s.title}>{a.registration_number ?? a.label}</Text>
                   <Text style={s.body}>{[a.make, a.model, a.year].filter(Boolean).join(" · ")}</Text>
                 </View>
               </View>

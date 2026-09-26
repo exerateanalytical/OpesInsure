@@ -5,6 +5,9 @@ import { AlertTriangle, CreditCard, Eye, FileText, Flag, LifeBuoy, Link2, Lucide
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, type Tint } from "@/components/design";
 import { CustomerApi } from "@/api/customer";
+import { WalletApi } from "@/api/client";
+import { ChoiceChips } from "@/components/portal/Workspace";
+import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -53,6 +56,8 @@ export default function NewSupport() {
   const [subject, setSubject] = useState(params.subject ?? (params.reference ? `${params.reference} — ` : ""));
   const [description, setDescription] = useState(params.body ?? "");
   const [busy, setBusy] = useState(false);
+  const [policyId, setPolicyId] = useState<string | null>(null);
+  const policies = useLoad(() => (params.policyId || params.claimId || params.paymentId ? Promise.resolve([]) : WalletApi.all(2)), []);
   const [error, setError] = useState<string | null>(null);
   const linked = params.claimId
     ? t("supportLinkedClaim", { ref: params.reference ?? params.claimId })
@@ -73,7 +78,7 @@ export default function NewSupport() {
         description: `${description.trim()}${context}`,
         ...(params.claimId ? { claim_id: params.claimId } : {}),
         ...(params.paymentId ? { payment_id: params.paymentId } : {}),
-        ...(params.policyId ? { policy_id: params.policyId } : {}),
+        ...(params.policyId ? { policy_id: params.policyId } : policyId ? { policy_id: policyId } : {}),
       });
       router.replace({ pathname: "/support/[id]", params: { id: created.id } });
     } catch (e) {
@@ -112,13 +117,25 @@ export default function NewSupport() {
         </View>
         {category === "PRIVACY_REQUEST" ? <StatusChip label={t("privacyRequestNote")} tone="info" /> : null}
       </Card>
+      {policies.data?.length ? (
+        <Card style={s.card}>
+          <SectionHeading title={t("supportRelatedPolicy")} />
+          <ChoiceChips<string>
+            label={t("supportRelatedPolicy")}
+            value={policyId}
+            onChange={(v) => setPolicyId(v === policyId ? null : v)}
+            options={policies.data.map((p) => ({ value: p.id, label: `${p.policy_number}${p.product_name ? ` · ${p.product_name}` : ""}` }))}
+          />
+        </Card>
+      ) : null}
       <Card style={s.card}>
-        <TextField label={t("supportSubject")} value={subject} onChangeText={setSubject} hint={t("minChars", { count: 4 })} />
+        <TextField label={t("supportSubject")} maxLength={200} value={subject} onChangeText={setSubject} hint={t("minChars", { count: 4 })} />
         <TextField
           label={t("supportDescribe")}
           multiline
           value={description}
           onChangeText={setDescription}
+          maxLength={10000}
           style={s.area}
           hint={t("minChars", { count: 15 })}
         />

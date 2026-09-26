@@ -139,23 +139,23 @@ export default function SupportDetail() {
                 <View style={styles.metaGrid}>
                   <View style={styles.metaCell}>
                     <TintedIcon icon={Flag} tint="gold" size={36} />
-                    <View style={styles.flex}>
+                    <View style={styles.metaText}>
                       <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
-                      <Text style={[styles.metaValue, c.priority === "HIGH" && styles.gold]} numberOfLines={1}>{td(`priority_${c.priority}`, c.priority)}</Text>
+                      <Text style={[styles.metaValue, c.priority === "HIGH" && styles.gold]}>{td(`priority_${c.priority}`, c.priority)}</Text>
                     </View>
                   </View>
                   <View style={[styles.metaCell, styles.metaBorder]}>
                     <TintedIcon icon={CalendarDays} tint="blue" size={36} />
-                    <View style={styles.flex}>
+                    <View style={styles.metaText}>
                       <Text style={styles.metaLabel}>{t("supportCreated")}</Text>
-                      <Text style={styles.metaValue} numberOfLines={1}>{date(c.created_at)}</Text>
+                      <Text style={styles.metaValue}>{date(c.created_at)}</Text>
                     </View>
                   </View>
                   <View style={[styles.metaCell, styles.metaBorder]}>
                     <TintedIcon icon={FileText} tint="blue" size={36} />
-                    <View style={styles.flex}>
+                    <View style={styles.metaText}>
                       <Text style={styles.metaLabel}>{t("supportCategoryLabel")}</Text>
-                      <Text style={styles.metaValue} numberOfLines={2}>{td(`supportCategory_${c.category}`, c.category)}</Text>
+                      <Text style={styles.metaValue}>{td(`supportCategory_${c.category}`, c.category)}</Text>
                     </View>
                   </View>
                 </View>
@@ -293,7 +293,8 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
   metaGrid: { flexDirection: "row", borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
-  metaCell: { flex: 1, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x1 },
+  metaText: { alignSelf: "stretch" },
+  metaCell: { flex: 1, alignItems: "flex-start", gap: space.x1, paddingHorizontal: space.x2 },
   metaBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x2 },
   metaLabel: { ...type.meta, color: colors.neutral500 },
   metaValue: { ...type.label, color: colors.navy950 },

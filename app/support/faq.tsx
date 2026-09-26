@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronDown, ChevronUp, CircleHelp, MessageCircle } from "lucide-react-native";
+import { CarFront, ChevronDown, ChevronRight, ChevronUp, CircleHelp, CreditCard, FileText, MessageCircle, ShieldCheck, Siren, UserRound } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import { Button, Card, ripple, Screen } from "@/components/ui";
-import { BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
+import { BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { SupportContactList } from "@/components/auth/SupportContacts";
 import { useTranslation } from "@/i18n";
@@ -12,19 +13,20 @@ import { matchesQuery } from "@/lib/customerLogic";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 /** Curated help centre (static, bilingual). Topics group the questions. */
-const TOPICS: { title: CopyKey; items: [CopyKey, CopyKey][] }[] = [
-  { title: "faqTopicBuying", items: [["faqQ1", "faqA1"], ["faqQ2", "faqA2"], ["faqQ3", "faqA3"]] },
-  { title: "faqTopicPayments", items: [["faqQ4", "faqA4"], ["faqQ5", "faqA5"]] },
-  { title: "faqTopicPolicies", items: [["faqQ6", "faqA6"], ["faqQ7", "faqA7"]] },
-  { title: "faqTopicClaims", items: [["faqQ8", "faqA8"], ["faqQ9", "faqA9"], ["faqQ10", "faqA10"]] },
-  { title: "faqTopicAccount", items: [["faqQ11", "faqA11"], ["faqQ12", "faqA12"]] },
+const TOPICS: { title: CopyKey; body: CopyKey; icon: LucideIcon; tint: Tint; items: [CopyKey, CopyKey][] }[] = [
+  { title: "faqTopicBuying", body: "faqTileBuying", icon: CarFront, tint: "gold", items: [["faqQ1", "faqA1"], ["faqQ2", "faqA2"], ["faqQ3", "faqA3"]] },
+  { title: "faqTopicPayments", body: "faqTilePayments", icon: CreditCard, tint: "red", items: [["faqQ4", "faqA4"], ["faqQ5", "faqA5"]] },
+  { title: "faqTopicPolicies", body: "faqTilePolicies", icon: FileText, tint: "blue", items: [["faqQ6", "faqA6"], ["faqQ7", "faqA7"]] },
+  { title: "faqTopicClaims", body: "faqTileClaims", icon: ShieldCheck, tint: "green", items: [["faqQ8", "faqA8"], ["faqQ9", "faqA9"], ["faqQ10", "faqA10"]] },
+  { title: "faqTopicAccount", body: "faqTileAccount", icon: UserRound, tint: "blue", items: [["faqQ11", "faqA11"], ["faqQ12", "faqA12"]] },
 ];
 
 export default function Faq() {
   const { t } = useTranslation();
   const [open, setOpen] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const topics = TOPICS.map((topic) => ({
+  const [topic, setTopic] = useState<CopyKey | null>(null);
+  const topics = TOPICS.filter((x) => !topic || x.title === topic).map((topic) => ({
     ...topic,
     items: topic.items.filter(([q, a]) => matchesQuery(query, t(q), t(a))),
   })).filter((topic) => topic.items.length);
@@ -32,6 +34,27 @@ export default function Faq() {
     <Screen>
       <BrandHeader title={t("faqTitle")} subtitle={t("faqSubtitle")} back right={null} />
       <SearchBar value={query} onChangeText={setQuery} label={t("faqSearch")} placeholder={t("faqSearch")} clearLabel={t("clearSearch")} />
+      <View style={styles.grid}>
+        {TOPICS.map((x) => {
+          const on = topic === x.title;
+          return (
+            <Pressable
+              key={x.title}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={t(x.title)}
+              onPress={() => setTopic(on ? null : x.title)}
+              android_ripple={ripple()}
+              style={({ pressed }) => [styles.tile, on && styles.tileOn, pressed && styles.pressed]}
+            >
+              <TintedIcon icon={x.icon} tint={x.tint} size={40} />
+              <Text style={styles.tileTitle}>{t(x.title)}</Text>
+              <Text style={styles.tileBody}>{t(x.body)}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {topic ? <Button label={t("faqAllTopics")} variant="tertiary" onPress={() => setTopic(null)} /> : null}
       {topics.length === 0 ? <Text style={styles.body}>{t("faqNoResults")}</Text> : null}
       {topics.map((topic) => (
         <View key={topic.title} style={styles.topic}>
@@ -62,11 +85,30 @@ export default function Faq() {
         <Button label={t("supportNewTicket")} icon={MessageCircle} onPress={() => router.push("/support/new")} />
       </Card>
       <SupportContactList heading={t("talkToUs")} />
+      <Pressable accessibilityRole="button" onPress={() => router.push("/claim/emergency" as never)} android_ripple={ripple()} style={({ pressed }) => [styles.urgent, pressed && styles.pressed]}>
+        <TintedIcon icon={Siren} tint="red" size={48} />
+        <View style={styles.flex}>
+          <Text style={styles.urgentKicker}>{t("faqUrgentKicker")}</Text>
+          <Text style={styles.urgentTitle}>{t("faqUrgentTitle")}</Text>
+          <Text style={styles.urgentBody}>{t("faqUrgentBody")}</Text>
+        </View>
+        <ChevronRight size={22} color={colors.gold500} />
+      </Pressable>
     </Screen>
   );
 }
 const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
+  flex: { flex: 1, gap: 2 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
+  tile: { flexGrow: 1, flexBasis: "45%", minHeight: 48, padding: space.x4, gap: space.x2, borderRadius: radius.feature, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
+  tileOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
+  tileTitle: { ...type.label, color: colors.navy950 },
+  tileBody: { ...type.meta, color: colors.neutral600 },
+  urgent: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.navy950 },
+  urgentKicker: { ...type.caption, color: colors.gold500, letterSpacing: 1, textTransform: "uppercase" },
+  urgentTitle: { ...type.label, fontSize: 17, color: colors.white },
+  urgentBody: { ...type.meta, color: colors.neutral200 },
   topic: { gap: space.x3 },
   item: { borderRadius: radius.feature, padding: space.x3, gap: 0 },
   itemOpen: { borderColor: colors.blue100 },
