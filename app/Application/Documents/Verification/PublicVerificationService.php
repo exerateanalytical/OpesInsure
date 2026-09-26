@@ -212,7 +212,10 @@ class PublicVerificationService
                 'issued_at' => ($d->issued_at ?? $d->created_at)?->toIso8601String(), 'policy_reference' => $policy?->policy_number ? \App\Application\Documents\Security\DocumentVerificationPresenter::mask((string) $policy->policy_number, 4) : null, // canonical crypto spec §27: masked publicly
                 'language' => $d->language, 'sha256' => $d->sha256, 'carrier_original' => (bool) $d->is_carrier_original,
                 'vehicle' => $d->subject_type === 'VEHICLE' ? $d->subject_key : null,
-                'replaced_by' => $successor ? ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? $successor->verification_code) : null,
+                // Canonical crypto spec §27: the successor number is shown in full only for public-proof documents.
+                'replaced_by' => $successor ? (\App\Application\Documents\Security\DocumentVerificationPresenter::disclosure($d) === 'PUBLIC_PROOF'
+                    ? ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? $successor->verification_code)
+                    : \App\Application\Documents\Security\DocumentVerificationPresenter::mask((string) ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? ''), 4)) : null,
             ],
         ];
     }
