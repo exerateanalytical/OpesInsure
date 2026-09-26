@@ -1,5 +1,6 @@
 {{-- Shared body for /privacy and /terms. Terms text reuses the mobile app's draft (mobile app/app/terms.tsx). --}}
-@include('public.partials.page-hero', ['title' => __($key.'.title'), 'lede' => __($key.'.lede')])
+@include('public.partials.page-hero', ['title' => __($key.'.title'), 'lede' => __($key.'.lede'), 'img' => 'about-cima'])
+<div class="ip">
 <section><div class="wrap prose">
   {{-- Owner decision 30: stays DRAFT_LEGAL_REVIEW_REQUIRED until counsel reviews the text. --}}
   <div class="note" role="note" data-legal-status="DRAFT_LEGAL_REVIEW_REQUIRED"><span aria-hidden="true">&#9888;</span><span><strong>{{ __('site.common.draft') }}</strong> <code>DRAFT_LEGAL_REVIEW_REQUIRED</code><br>{{ __('site.common.draft_body') }}</span></div>
@@ -16,3 +17,4 @@
     </ul>
   </div>
 </div></section>
+</div>

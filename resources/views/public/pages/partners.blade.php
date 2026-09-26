@@ -2,7 +2,8 @@
 @section('title', __('site.partners.title').' — OpesInsure')
 @section('description', __('site.partners.lede'))
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.partners.title'), 'lede' => __('site.partners.lede')])
+@include('public.partials.page-hero', ['title' => __('site.partners.title'), 'lede' => __('site.partners.lede'), 'img' => 'about-building'])
+<div class="ip">
 <section><div class="wrap">
   <div class="grid" style="margin-top:0">
     @foreach(__('site.partners.who') as $i => [$t, $d])
@@ -26,4 +27,5 @@
     @if($stats['insurers'])<p style="margin-top:12px;font-size:14px">{{ __('site.providers_page.totals', ['insurers' => $stats['insurers'], 'brokers' => $stats['brokers']]) }} — <a class="link" href="/providers">{{ __('site.providers.view_all') }}</a></p>@endif
   </aside>
 </div></section>
+</div>
 @endsection

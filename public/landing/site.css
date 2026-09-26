@@ -772,3 +772,59 @@ details.faq p{padding:0 0 18px;color:var(--muted)}
   .auth-foot .motto{max-width:100%;letter-spacing:.08em;font-size:12px;overflow-wrap:anywhere}
   .auth-foot .motto span{margin:0 6px}
 }
+
+/* ============ Info pages (new layout) ============
+   how-it-works, claims, faq, partners, providers, privacy, terms, account-delete, open-app, download, verify, demo.
+   Hero = partials/page-hero (.ip-hero); body wrapped in .ip so the legacy blocks pick up the desktop look. */
+.ip-hero{padding:0;overflow:hidden;background:linear-gradient(180deg,#F8FBFF,#fff);min-height:340px;border-bottom:1px solid #E6EDF7}
+.ip-photo{position:absolute;right:0;top:0;bottom:0;width:46%}
+.ip-photo img{width:100%;height:100%;object-fit:cover;object-position:center;clip-path:polygon(16% 0,100% 0,100% 100%,0 100%)}
+.ip-photo::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,var(--gold-o),var(--gold-2))}
+.ip-copy{position:relative;z-index:1;max-width:640px;padding:34px 0 36px 44px}
+.ip-copy h1{font-size:clamp(34px,3.8vw,54px);font-weight:800;line-height:1.05;letter-spacing:-.035em;color:#0A1E4D;margin-bottom:14px;max-width:none}
+.ip-copy h1 .ip-sub{display:block;font-size:.55em;font-weight:600;letter-spacing:-.01em;color:#46546B;margin-top:8px}
+.ip-copy .lede{color:#2C3A52;font-size:16.5px;max-width:58ch;margin-bottom:20px}
+.ip-points{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,max-content));gap:10px 22px}
+.ip-points li{display:flex;gap:10px;align-items:center;font-size:13.5px;font-weight:600;color:#2C3A52}
+.ip-points .d{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;color:#fff}.ip-points .d .ic{width:16px;height:16px}
+.ip-dl{display:flex;gap:26px;align-items:flex-start;max-width:720px}
+.ip-dl .app-icon{width:104px;height:104px;border-radius:24px;flex:none;box-shadow:0 10px 26px rgba(12,40,90,.16)}
+.ip-hero .btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 18px rgba(13,79,219,.22)}
+.ip-hero .btn-outline,.ip .btn-outline,.ip .btn-ghost{background:#fff;color:var(--royal);border:1.5px solid var(--royal)}
+.ip-hero .btn,.ip .btn{border-radius:8px}
+/* body */
+.ip{background:var(--bg-soft)}
+.ip section{padding:44px 0}
+.ip section.alt{background:#fff;border-top:1px solid #E6EDF7;border-bottom:1px solid #E6EDF7}
+.ip section.ip-first{padding-top:30px}
+.ip .wrap{width:min(1440px,100% - 48px)}
+.ip .wrap.prose{max-width:none}
+.ip .prose{background:#fff;border:1px solid #E3EAF4;border-radius:14px;box-shadow:0 4px 18px rgba(12,40,90,.05);padding:32px clamp(18px,4vw,48px);width:min(980px,100% - 48px)}
+.ip h2{color:#0A1E4D}
+.ip .sub{color:#46546B}
+.ip .card{border-color:#E3EAF4;border-radius:14px;box-shadow:0 4px 18px rgba(12,40,90,.05)}
+.ip aside.card{border-top:4px solid var(--gold-o)}
+.ip .card .ico{background:#E6EEFF;color:var(--royal)}
+.ip .btn-gold,.ip .btn-primary{background:var(--royal);color:#fff;box-shadow:0 8px 18px rgba(13,79,219,.22)}
+.ip .btn-gold:hover,.ip .btn-primary:hover{background:var(--royal-2);box-shadow:0 10px 22px rgba(13,79,219,.28)}
+.ip .link{color:var(--royal)}
+.ip .numbered li{border-color:#E3EAF4;box-shadow:0 4px 18px rgba(12,40,90,.04)}
+.ip .numbered li::before{background:var(--royal)}
+.ip .filters{background:#fff;border:1px solid #E3EAF4;border-radius:14px;box-shadow:0 4px 18px rgba(12,40,90,.05)}
+.ip details.faq{background:#fff;border-color:#E3EAF4;border-radius:10px}
+.ip details.faq summary{color:#0A1E4D}
+.ip .partner{background:#EEF3FC;color:var(--ink)}
+.ip .partner h2{color:#0A1E4D}.ip .partner p{color:#46546B}
+.ip .partner .hs{background:linear-gradient(145deg,#F7B84B,#E58E16);color:#fff}
+.ip .tablewrap{background:#fff;border-radius:14px}
+@media (max-width:1024px){
+  .ip-photo{position:relative;width:100%;height:220px}.ip-photo img{clip-path:none}
+  .ip-copy{padding:22px 0 28px;max-width:none}
+}
+@media (max-width:640px){
+  .ip-points{grid-template-columns:1fr}
+  .ip-dl{flex-direction:column;gap:16px}.ip-dl .app-icon{width:76px;height:76px;border-radius:18px}
+  .ip section{padding:30px 0}
+  .ip .wrap,.ip .prose{width:calc(100% - 32px)}
+  .ip .prose{padding:22px 16px}
+}

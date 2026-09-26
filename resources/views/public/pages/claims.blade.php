@@ -2,7 +2,8 @@
 @section('title', __('site.claims.title').' — OpesInsure')
 @section('description', __('site.claims.lede'))
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.claims.title'), 'lede' => __('site.claims.lede')])
+@include('public.partials.page-hero', ['title' => __('site.claims.title'), 'lede' => __('site.claims.lede'), 'img' => 'hero-accident'])
+<div class="ip">
 <section><div class="wrap two-col">
   <div>
     <h2>{{ __('site.claims.steps_title') }}</h2>
@@ -23,4 +24,5 @@
     <p style="margin-top:14px"><a class="link" href="/contact?topic=claim">{{ __('site.common.contact_support') }} @include('public.partials.i', ['n' => 'arrow'])</a></p>
   </aside>
 </div></section>
+</div>
 @endsection

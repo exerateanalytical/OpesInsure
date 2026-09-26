@@ -2,7 +2,8 @@
 @section('title', __('site.how_page.title').' — OpesInsure')
 @section('description', __('site.how_page.lede'))
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.how_page.title'), 'lede' => __('site.how_page.lede')])
+@include('public.partials.page-hero', ['title' => __('site.how_page.title'), 'lede' => __('site.how_page.lede'), 'img' => 'banner'])
+<div class="ip">
 <section><div class="wrap">
   <h2>{{ __('site.how.title') }}</h2>
   <p class="sub">{{ __('site.how.sub') }}</p>
@@ -20,4 +21,5 @@
   <div><h2>{{ __('site.how_page.verify_title') }}</h2><p class="sub">{{ __('site.how_page.verify_body') }}</p></div>
   <div class="card"><div class="ico">@include('public.partials.i', ['n' => 'shield'])</div><h3>{{ __('site.faq.items')[5][0] }}</h3><p>{{ __('site.faq.items')[5][1] }}</p></div>
 </div></section>
+</div>
 @endsection

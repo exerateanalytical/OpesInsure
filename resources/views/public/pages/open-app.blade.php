@@ -2,7 +2,8 @@
 @section('title', __('site.open_app.title').' — OpesInsure')
 @push('head')<meta name="robots" content="noindex">@endpush
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.open_app.title'), 'lede' => __('site.open_app.lede')])
+@include('public.partials.page-hero', ['title' => __('site.open_app.title'), 'lede' => __('site.open_app.lede'), 'img' => 'hero-market'])
+<div class="ip">
 <section><div class="wrap two-col">
   <div>
     <p style="margin-bottom:18px">{{ __('site.open_app.install') }}</p>
@@ -15,4 +16,5 @@
   </div>
   <div class="card"><p style="font-size:14px;color:var(--muted)">{{ __('site.common.open_app') }}</p><code style="display:block;margin-top:8px;word-break:break-all">{{ $path }}</code></div>
 </div></section>
+</div>
 @endsection

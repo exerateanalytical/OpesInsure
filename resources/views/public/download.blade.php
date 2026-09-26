@@ -1,12 +1,14 @@
 @extends('public.layout')
 @section('title', __('public.download_title'))
 @section('content')
-<div class="hero"><div class="wrap">
-<div class="hero-flex">
+<section class="ip-hero" aria-labelledby="page-title">
+<div class="ip-photo" aria-hidden="true"><picture><source type="image/webp" srcset="/landing/img/desk/banner.webp"><img src="/landing/img/desk/banner.webp" alt="" fetchpriority="high"></picture></div>
+<div class="wrap-x"><div class="ip-copy ip-dl">
 <img class="app-icon" src="{{ asset('img/app-icon.png') }}" alt="{{ __('public.download_title') }}" width="1254" height="1254">
 <div>
-  <span class="eyebrow">{{ __('public.download_eyebrow') }}</span>
-  <h1>{{ __('public.download_heading') }}</h1>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">{{ __('desk.home') }}</a>@include('public.partials.i', ['n' => 'chev'])<span aria-current="page">{{ __('public.download_eyebrow') }}</span></nav>
+  <p class="d-eyebrow">{{ __('public.download_eyebrow') }}</p>
+  <h1 id="page-title">{{ __('public.download_heading') }}</h1>
   <p class="lede">{{ __('public.download_lede') }}</p>
   <div class="btn-row">
     @if($android)
@@ -17,14 +19,15 @@
       <span class="btn btn-primary" aria-disabled="true">{{ __('public.download_android_pending') }}</span>
     @endif
     @if($ios)
-      <a class="btn btn-ghost" href="{{ $ios }}">{{ __('public.download_ios') }}</a>
+      <a class="btn btn-outline" href="{{ $ios }}">{{ __('public.download_ios') }}</a>
     @else
-      <span class="btn btn-ghost" aria-disabled="true">{{ __('public.download_ios_pending') }}</span>
+      <span class="btn btn-outline" aria-disabled="true">{{ __('public.download_ios_pending') }}</span>
     @endif
   </div>
 </div>
-</div>
 </div></div>
+</section>
+<div class="ip">
 
 @unless($android && $ios)
 <section style="padding-bottom:0"><div class="wrap">
@@ -69,4 +72,5 @@
     @endforeach
   </div>
 </div></section>
+</div>
 @endsection

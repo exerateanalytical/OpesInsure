@@ -2,7 +2,8 @@
 @section('title', __('site.delete.title').' — OpesInsure')
 @section('description', __('site.delete.lede'))
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.delete.title'), 'lede' => __('site.delete.lede')])
+@include('public.partials.page-hero', ['title' => __('site.delete.title'), 'lede' => __('site.delete.lede'), 'img' => 'hero-home'])
+<div class="ip">
 <section><div class="wrap two-col">
   <div>
     <div class="card">
@@ -50,4 +51,5 @@
     @if($contacts['email'])<p style="margin-top:8px"><a class="link" href="mailto:{{ $contacts['email'] }}">{{ $contacts['email'] }}</a></p>@endif
   </aside>
 </div></section>
+</div>
 @endsection

@@ -2,8 +2,9 @@
 @section('title', __('site.providers_page.title').' — OpesInsure')
 @section('description', __('site.providers_page.lede'))
 @section('content')
-@include('public.partials.page-hero', ['title' => __('site.providers_page.title'), 'lede' => __('site.providers_page.lede')])
-<section style="padding-top:0"><div class="wrap">
+@include('public.partials.page-hero', ['title' => __('site.providers_page.title'), 'lede' => __('site.providers_page.lede'), 'img' => 'city'])
+<div class="ip">
+<section class="ip-first"><div class="wrap">
   <form class="filters" id="provider-filters" action="/providers" method="get" role="search">
     <div class="field">
       <label for="f-q">{{ __('site.providers_page.search') }}</label>
@@ -61,4 +62,5 @@
     <a class="btn btn-gold btn-sm" href="/partners">{{ __('site.partner.cta') }} @include('public.partials.i', ['n' => 'arrow'])</a>
   </div>
 </section>
+</div>
 @endsection

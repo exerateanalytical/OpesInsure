@@ -18,10 +18,15 @@
 @extends('public.layout')
 @section('title', 'OpesInsure — Verify a certificate / Vérifier une attestation')
 @section('content')
-<div class="hero" style="padding:48px 0 52px"><div class="wrap">
-  <span class="eyebrow">Certificate verification · Vérification d'attestation</span>
-  <h1 style="max-width:none">Is this cover valid?<br><span style="font-weight:600;opacity:.8">Cette assurance est-elle valide&nbsp;?</span></h1>
-</div></div>
+<section class="ip-hero" aria-labelledby="page-title">
+  <div class="ip-photo" aria-hidden="true"><picture><source type="image/webp" srcset="/landing/img/desk/hero-motor.webp"><img src="/landing/img/desk/hero-motor.jpg" alt="" fetchpriority="high"></picture></div>
+  <div class="wrap-x"><div class="ip-copy">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home / Accueil</a>@include('public.partials.i', ['n' => 'chev'])<span aria-current="page">Verify / Vérifier</span></nav>
+    <p class="d-eyebrow">Certificate verification · Vérification d'attestation</p>
+    <h1 id="page-title">Is this cover valid?<br><span class="ip-sub">Cette assurance est-elle valide&nbsp;?</span></h1>
+  </div></div>
+</section>
+<div class="ip">
 <section><div class="wrap" style="max-width:720px">
   @if($result === null)
     <div class="card">
@@ -65,4 +70,5 @@
     </div>
   @endif
 </div></section>
+</div>
 @endsection
