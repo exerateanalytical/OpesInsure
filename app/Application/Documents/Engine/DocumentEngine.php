@@ -295,7 +295,11 @@ final class DocumentEngine
         // Security profile (never below the catalogue's canonical floor).
         $evidence = $transaction instanceof PolicyTransaction && $transaction->approved_by && $transaction->approved_by !== $transaction->requested_by
             ? 'POLICY_TRANSACTION_APPROVED:'.$transaction->id : null;
-        $security = $this->security->resolve($type, $profile, ['maker_checker_evidence' => $evidence]);
+        // Issuance state behind the Security Matrix §6 seals (a seal only when its backend authority exists).
+        $security = $this->security->resolve($type, $profile, ['maker_checker_evidence' => $evidence, 'issuer_type' => $issuer, 'carrier_id' => $policy->carrier_id,
+            'payment_reconciled' => $trigger === 'PAYMENT_RECONCILED', 'claim_authorized' => $trigger === 'CLAIM_APPROVED' && $claim !== null,
+            'provider_guarantee' => in_array($trigger, ['PREAUTH_APPROVED', 'PREAUTH_PARTIALLY_APPROVED', 'PREAUTH_EXTENSION_APPROVED'], true),
+            'duplicate' => (bool) ($ctx['duplicate_of'] ?? false)]);
 
         // Canonical field values + required-field validation (numbering not yet consumed).
         $subjectFacts = $this->packs->subjectFacts($policy, $subject ? $subjectType : null, $subject['key'] ?? null);

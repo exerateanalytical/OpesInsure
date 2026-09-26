@@ -28,6 +28,9 @@ final class SeedDocumentCatalogue extends Command
             // Canonical document spec (security profiles, field requirements, shells) onto the same catalogue.
             $spec = $this->laravel->make(\Database\Seeders\CanonicalDocumentSpecSeeder::class);
             $spec->run();
+            // Security Matrix §4–11 profiles (physical, watermark, seal, verification rules) on the same catalogue.
+            $matrix = $this->laravel->make(\Database\Seeders\SecurityMatrixProfileSeeder::class);
+            $matrix->run();
         } catch (Throwable $e) {
             // Never fail a deploy's optimize step; data already present stays intact.
             report($e);
@@ -40,6 +43,10 @@ final class SeedDocumentCatalogue extends Command
         $r = $spec->report;
         $this->components->info(isset($r['skipped']) ? 'Canonical document spec skipped: '.$r['skipped']
             : sprintf('Canonical document spec: %d records (%d PENDING_VERIFICATION mapping), %d catalogue types profiled, %d updated.', $r['specs'] ?? 0, $r['pending_verification'] ?? 0, $r['catalogue_types_mapped'] ?? 0, $r['catalogue_types_updated'] ?? 0));
+
+        $mr = $matrix->report;
+        $this->components->info(isset($mr['skipped']) ? 'Security matrix profiles skipped: '.$mr['skipped']
+            : sprintf('Security matrix: %d dictionary rows, %d specs profiled, %d catalogue types updated.', $mr['dictionary'] ?? 0, $mr['specs_profiled'] ?? 0, $mr['catalogue_types_updated'] ?? 0));
 
         return self::SUCCESS;
     }

@@ -15,6 +15,9 @@ return [
     'spec_path' => env('DOCUMENT_SPEC_PATH', base_path('docs/spec/canonical/OpesInsure_Canonical_Implementation_Specification_v1.json')),
     'manifest_path' => env('DOCUMENT_SPEC_MANIFEST_PATH', base_path('docs/spec/canonical/OpesInsure_Canonical_Implementation_Manifest_v1.json')),
 
+    // Security Matrix v1 markdown (§4–11: physical / watermark / seal profiles, public verification rules).
+    'security_matrix_path' => env('DOCUMENT_SECURITY_MATRIX_PATH', base_path('docs/spec/canonical/OpesInsure_220_Document_Security_Matrix_v1.md')),
+
     // Field completeness (document_implementation_policy §1.1): a required field whose canonical source
     // exists but is empty blocks issuance of that document (pack item state BLOCKED_MISSING_FIELDS).
     'field_enforcement' => env('DOCUMENT_FIELD_ENFORCEMENT', 'block'), // block | record

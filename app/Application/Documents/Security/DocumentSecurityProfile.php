@@ -76,6 +76,17 @@ final class DocumentSecurityProfile
                 'requirement' => $req($c), 'variant' => $variant($c), 'physical' => true, 'note' => 'requires controlled secure printing, serial inventory and custody'];
         }
 
+        // Security Matrix §4/§5/§6 profiles: assigned per type, applied from the actual issuance state.
+        $profiles = self::matrixProfiles($type, $issuance, $context, $rank);
+        $controls['watermark']['profile'] = $profiles['watermark'];
+        $controls['seal']['profiles'] = $profiles['seals'];
+        if ($controls['seal']['status'] === 'APPLIED' && ($profiles['seals']['SEAL-01']['status'] ?? null) === 'APPLIED') {
+            $controls['seal']['corporate_seal_artwork'] = 'APPLIED';
+        }
+        foreach (CanonicalDocumentSpec::PHYSICAL_CONTROLS as $c) {
+            $controls[$c]['profiles'] = $profiles['physical'];
+        }
+
         $blocking = [];
         foreach (['signature', 'maker_checker'] as $c) {
             if ($controls[$c]['status'] === 'CONFIG_REQUIRED') {
@@ -95,7 +106,38 @@ final class DocumentSecurityProfile
             'canonical_spec_id' => $type['canonical_spec_id'] ?? null, 'master_shell_code' => $type['master_shell_code'] ?? null,
             'confidentiality_class' => $type['confidentiality_class'] ?? self::classFromLevel((string) ($type['security_level'] ?? 'CUSTOMER_PRIVATE')),
             'access_profiles' => (array) ($type['access_profiles'] ?? []),
-            'controls' => $controls, 'unmet_required_controls' => $blocking,
+            'controls' => $controls, 'unmet_required_controls' => $blocking, 'profiles' => $profiles,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $type
+     * @param  array<string, mixed>  $context  issuer_type, payment_reconciled, claim_authorized, provider_guarantee, duplicate, status
+     * @return array{watermark: array<string, mixed>, seals: array<string, array{status: string, reason: string}>, physical: array<string, array<string, mixed>>, status_overlay: string|null}
+     */
+    private static function matrixProfiles(array $type, ?DocumentIssuanceProfile $issuance, array $context, int $rank): array
+    {
+        $class = $type['confidentiality_class'] ?? self::classFromLevel((string) ($type['security_level'] ?? 'CUSTOMER_PRIVATE'));
+        $wm = $type['watermark_profile_code'] ?? null;
+        $wm ??= match ($class) {
+            'PUBLIC_VERIFY' => 'WM-PUBLIC-PROOF', 'MEDICAL_RESTRICTED' => 'WM-MEDICAL', 'FINANCIAL_RESTRICTED' => 'WM-FINANCE', default => 'WM-PRIVATE',
+        };
+        $seals = (array) ($type['seal_profile_codes'] ?? []);
+        if ($seals === [] && $rank >= 3) {
+            $seals = ['SEAL-01', 'SEAL-02']; // unprofiled S3+ type: tier baseline (§2 S3 requires SEAL)
+        }
+        $carrierId = $context['carrier_id'] ?? $issuance?->carrier_id;
+        $duplicate = (bool) ($context['duplicate'] ?? false);
+
+        return [
+            'watermark' => ['code' => $wm, 'status_profile' => 'WM-STATUS'],
+            'seals' => SecurityMatrix::sealStates($seals, [
+                'issuer_type' => $context['issuer_type'] ?? null, 'payment_reconciled' => (bool) ($context['payment_reconciled'] ?? false),
+                'claim_authorized' => (bool) ($context['claim_authorized'] ?? false), 'provider_guarantee' => (bool) ($context['provider_guarantee'] ?? false),
+                'duplicate' => $duplicate, 'corporate_seal_artwork' => PhysicalSecurityRegistry::corporateSealArtwork($carrierId),
+            ]),
+            'physical' => PhysicalSecurityRegistry::profileStates((array) ($type['physical_profile_codes'] ?? []), $carrierId),
+            'status_overlay' => SecurityMatrix::statusOverlay($context['status'] ?? null, false, $duplicate),
         ];
     }
 

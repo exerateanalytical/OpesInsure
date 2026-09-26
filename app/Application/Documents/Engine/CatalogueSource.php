@@ -66,6 +66,9 @@ final class CatalogueSource
                 'security_tier_ceiling' => $r['security_tier_ceiling'] ?? null, 'security_controls' => self::json($r['security_controls'] ?? null),
                 'confidentiality_class' => $r['confidentiality_class'] ?? null, 'access_profiles' => self::json($r['access_profiles'] ?? null),
                 'master_shell_code' => $r['master_shell_code'] ?? null,
+                // Security Matrix §5/§6/§4 profiles (SecurityMatrixProfileSeeder).
+                'watermark_profile_code' => $r['watermark_profile_code'] ?? null, 'seal_profile_codes' => self::json($r['seal_profile_codes'] ?? null),
+                'physical_profile_codes' => self::json($r['physical_profile_codes'] ?? null),
             ];
         }
 

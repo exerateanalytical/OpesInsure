@@ -964,6 +964,14 @@ return [
         'provider.audit.view' => ['description' => 'View the provider audit log.', 'suggested_roles' => ['PROVIDER_ADMIN']],
     ],
 
+    // Security Matrix §4–11 (agent D1): physical security assets (print supplier, stock / hologram serials, seal artwork).
+    'document_security' => [
+        'documents.physical_security.manage' => [
+            'description' => 'Record and verify physical security assets (secure print supplier, stock and hologram serial batches, UV capability, seal artwork). Maker-checker: the recorder cannot verify.',
+            'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN'],
+        ],
+    ],
+
     'business_data' => [
         'modules' => [
             'customers', 'policies', 'risk_assets', 'claims', 'carrier', 'broker', 'agent', 'provider', 'payout', 'settlement',

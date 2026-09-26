@@ -109,8 +109,15 @@ final class DocumentVerificationPresenter
         }
         $holder = $public ? self::maskName((string) ($policy?->party?->display_name ?? '')) : null;
 
-        return [
+        $effective = DocumentEngine::effectiveStatus($d);
+
+        // Security Matrix §7: only the allow-listed privacy-safe fields leave this method (sanitizePublic).
+        return SecurityMatrix::sanitizePublic([
             'result' => $eval['legacy'], 'verification_result' => $eval['code'], 'reference' => $reference, 'disclosure' => $disclosure,
+            // §8: lifecycle without reasons or actors (a revocation reason may reveal investigation findings).
+            'lifecycle' => self::publicLifecycle($d, $effective),
+            // §6 SEAL-08 / §5 WM-STATUS: revoked and replaced documents keep verifying, with their status seal.
+            'status_seal' => match ($effective) { 'REVOKED' => 'SEAL-08', default => $d->duplicate_of_document_id ? 'SEAL-07' : null },
             'carrier_name' => $issuer === 'OpesInsure' ? $policy?->carrier?->party?->display_name : $issuer,
             'product_class' => $public ? $product?->line_code : null, 'product_name' => $public ? $product?->name : null,
             'policy_status' => $public ? $policy?->status : null,
@@ -134,8 +141,35 @@ final class DocumentVerificationPresenter
                 'signature_status' => $eval['integrity']['signature'] ?? null,
                 'replaced_by' => $successor ? ($public ? ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? $successor->verification_code)
                     : self::mask((string) ($successor->document_number ?? $successor->provenance['carrier_document_number'] ?? ''), 4)) : null,
-                'revoked_at' => DocumentEngine::effectiveStatus($d) === 'REVOKED' ? $d->status_changed_at?->toIso8601String() : null,
+                'revoked_at' => $effective === 'REVOKED' ? $d->status_changed_at?->toIso8601String() : null,
             ],
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private static function publicLifecycle(Document $d, string $effective): array
+    {
+        return ['status' => $effective, 'superseded_by' => $d->superseded_by_document_id !== null, 'replacement_of' => $d->supersedes_document_id !== null,
+            'duplicate' => $d->duplicate_of_document_id !== null, 'revoked' => $effective === 'REVOKED',
+            'revoked_at' => $effective === 'REVOKED' ? $d->status_changed_at?->toIso8601String() : null, 'verifies_as' => $effective === 'REVOKED' ? 'REVOKED' : null];
+    }
+
+    /**
+     * §8 revocation / replacement record of one document (internal channels only: carries actor and reasons).
+     *
+     * @return array<string, mixed>
+     */
+    public function revocationRecord(Document $d, ?Policy $policy = null): array
+    {
+        $effective = DocumentEngine::effectiveStatus($d);
+        $revoked = $effective === 'REVOKED';
+
+        return [
+            'original_document_id' => $d->id, 'status' => $effective,
+            'superseded_by' => $d->superseded_by_document_id, 'replacement_of' => $d->supersedes_document_id, 'duplicate_of' => $d->duplicate_of_document_id,
+            'revoked_at' => $revoked ? $d->status_changed_at?->toIso8601String() : null, 'revoked_by' => $revoked ? $d->status_changed_by : null,
+            'revocation_reason' => $revoked ? $d->status_reason : null, 'replacement_reason' => $d->replacement_reason,
+            'verification_result' => $this->evaluate($d, $policy)['code'],
         ];
     }
 

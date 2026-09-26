@@ -130,20 +130,45 @@ final class DocumentShellView
 
         // Watermark (security matrix §5 profiles) and status overlays (WM-STATUS).
         $class = $security['confidentiality_class'];
+        $wmProfile = $controls['watermark']['profile']['code'] ?? match ($class) {
+            'PUBLIC_VERIFY' => 'WM-PUBLIC-PROOF', 'MEDICAL_RESTRICTED' => 'WM-MEDICAL', 'FINANCIAL_RESTRICTED' => 'WM-FINANCE', default => $family === 'CLAIMS' ? 'WM-CLAIMS' : 'WM-PRIVATE',
+        };
         $watermark = null;
         if ($controls['watermark']['status'] === 'APPLIED') {
-            $fragment = match (true) {
-                $class === 'PUBLIC_VERIFY' => substr($in['number'], -6),
-                $class === 'MEDICAL_RESTRICTED' => 'MEDICAL · '.DocumentVerificationPresenter::mask((string) ($in['subject']['key'] ?? $policy->policy_number), 4),
-                $class === 'FINANCIAL_RESTRICTED' => 'FINANCE · '.DocumentVerificationPresenter::mask((string) ($v['payment.reference'] ?? $policy->policy_number), 4),
-                $family === 'CLAIMS' => 'CLAIMS · '.DocumentVerificationPresenter::mask((string) ($claim?->claim_number ?? $policy->policy_number), 4),
+            // Each profile prints only its own fragment; WM-MEDICAL never carries diagnosis text.
+            $fragment = match ($wmProfile) {
+                'WM-PUBLIC-PROOF' => substr($in['number'], -6),
+                'WM-MEDICAL' => 'MEDICAL · RESTRICTED · '.DocumentVerificationPresenter::mask((string) ($in['subject']['key'] ?? $policy->policy_number), 4),
+                'WM-FINANCE' => 'FINANCE · '.DocumentVerificationPresenter::mask((string) ($v['payment.reference'] ?? $policy->policy_number), 4),
+                'WM-CLAIMS' => 'CLAIMS · '.DocumentVerificationPresenter::mask((string) ($claim?->claim_number ?? $policy->policy_number), 4),
                 default => DocumentVerificationPresenter::mask((string) $policy->policy_number, 4),
             };
-            $watermark = ['text' => mb_strtoupper($in['issuerName']).' · '.$fragment, 'opacity' => ($controls['watermark']['variant'] ?? null) === 'LIGHT' ? 0.05 : 0.09];
+            $watermark = ['text' => mb_strtoupper($in['issuerName']).' · '.$fragment, 'opacity' => ($controls['watermark']['variant'] ?? null) === 'LIGHT' ? 0.05 : 0.09,
+                'profile' => $wmProfile, 'rosette' => $wmProfile === 'WM-PUBLIC-PROOF'];
         }
-        $overlay = null;
+        // Seals (§6): only those whose backend authority exists at issuance; SEAL-01 needs verified corporate artwork.
+        $sealNames = ['SEAL-01' => ["Sceau de l'émetteur", 'Corporate'], 'SEAL-02' => ['Authentification', 'Authentication'], 'SEAL-03' => ['Finance', 'Finance'],
+            'SEAL-04' => ['Sinistres', 'Claims'], 'SEAL-05' => ['Prestataire', 'Provider'], 'SEAL-06' => ['Vérifié courtier', 'Broker verified'], 'SEAL-07' => ['Duplicata', 'Duplicate']];
+        $seals = [];
+        $sealPending = [];
+        foreach ((array) ($controls['seal']['profiles'] ?? []) as $code => $st) {
+            if (($st['status'] ?? null) === 'APPLIED' && isset($sealNames[$code])) {
+                $seals[] = ['code' => $code, 'label' => $L(...$sealNames[$code])];
+            } elseif (($st['status'] ?? null) === 'CONFIG_REQUIRED') {
+                $sealPending[] = $code;
+            }
+        }
+        if ($seals === [] && $controls['seal']['status'] === 'APPLIED' && ! isset($controls['seal']['profiles'])) {
+            $seals[] = ['code' => 'SEAL-02', 'label' => $L(...$sealNames['SEAL-02'])];
+        }
+        // Physical profiles (§4): printed as a statement, never simulated (§10: no decorative hologram / UV).
+        $physical = [];
+        foreach ((array) ($controls['uv']['profiles'] ?? []) as $ps => $st) {
+            $physical[] = $ps.' '.$st['status'];
+        }
+        $overlay = $security['profiles']['status_overlay'] ?? null;
         $wv = (string) ($controls['watermark']['variant'] ?? '');
-        if (str_starts_with($wv, 'STATUS:')) {
+        if ($overlay === null && str_starts_with($wv, 'STATUS:')) {
             $overlay = substr($wv, 7);
         }
         $env = app()->environment();
@@ -160,10 +185,11 @@ final class DocumentShellView
             'issuerName' => $in['issuerName'], 'family' => $family, 'familyColor' => $color, 'letterhead' => $in['letterhead'] ?? null,
             'tier' => $security['tier'], 'assurance' => $security['assurance'], 'confidentiality' => $class, 'specId' => $security['canonical_spec_id'],
             'guillocheHeader' => $controls['guilloche']['status'] === 'APPLIED' ? SecurityArtwork::guilloche($seed, 760, 46, $color, ($controls['guilloche']['variant'] ?? '') === 'LIGHT' ? 0.22 : 0.4, ($controls['guilloche']['variant'] ?? '') === 'LIGHT' ? 8 : 16) : null,
-            'rosette' => $controls['guilloche']['status'] === 'APPLIED' && in_array($shell, ['CERTIFICATE', 'MOTOR', 'SCHEDULE'], true) ? SecurityArtwork::rosette($seed, 300, $color, 0.10) : null,
+            'rosette' => $controls['guilloche']['status'] === 'APPLIED' && (in_array($shell, ['CERTIFICATE', 'MOTOR', 'SCHEDULE'], true) || ($watermark['rosette'] ?? false)) ? SecurityArtwork::rosette($seed, 300, $color, 0.10) : null,
             'microtext' => $controls['microtext']['status'] === 'APPLIED' ? SecurityArtwork::microtext($in['issuerName'], $in['number']) : null,
             'antiCopy' => $controls['anti_copy']['status'] === 'APPLIED' ? SecurityArtwork::antiCopy(240, 96, $color) : null,
-            'seal' => $controls['seal']['status'] === 'APPLIED' ? SecurityArtwork::seal($seed, 96, $color) : null,
+            'seal' => $controls['seal']['status'] === 'APPLIED' && $seals !== [] ? SecurityArtwork::seal($seed, 96, $color) : null,
+            'seals' => $seals, 'sealPending' => $sealPending, 'physicalProfiles' => $physical,
             'watermark' => $watermark, 'statusOverlay' => $overlay, 'envMark' => $envMark,
             'identity' => $identity, 'party' => $party, 'vehicle' => $vehicle, 'sections' => $in['sections'], 'coverages' => $in['coverages'],
             'premium' => $premium, 'payment' => $payment, 'changes' => $changes, 'notices' => $notices, 'eventLabel' => $in['label'],
@@ -174,7 +200,7 @@ final class DocumentShellView
             'footer' => [
                 'registered_office' => self::PENDING, 'contact' => self::PENDING,
                 'template' => $in['template']->code.' v'.$in['template']->version.' ('.$in['template']->ownership.')',
-                'classification' => $class.' · '.implode('/', (array) $security['access_profiles']),
+                'classification' => $class.' · '.implode('/', (array) $security['access_profiles']).($watermark ? ' · '.$watermark['profile'] : ''),
             ],
         ];
     }
