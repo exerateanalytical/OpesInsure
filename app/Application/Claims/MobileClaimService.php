@@ -44,12 +44,17 @@ final class MobileClaimService
 
     public function list(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->with('policy')->orderByDesc('submitted_at')->paginate($perPage);
+        $page = $this->ownedQuery($user, $tenantId)->with('policy')->orderByDesc('submitted_at')->paginate($perPage);
+        $page->getCollection()->each(fn (Claim $c) => $c->setAttribute('carrier_logo_url', \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($c->policy?->carrier_id)));
+
+        return $page;
     }
 
     public function show(string $claimId, User $user, string $tenantId): Claim
     {
         $claim = $this->owned($claimId, $user, $tenantId)->load('policy');
+
+        $claim->setAttribute('carrier_logo_url', \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($claim->policy?->carrier_id));
 
         return $claim->setAttribute('can_withdraw', self::canWithdraw($claim));
     }

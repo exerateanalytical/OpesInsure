@@ -38,6 +38,8 @@ final class MobileProposalService
             'quote_id' => $p->offer?->quote_id,
             'product_name' => $p->offer?->product?->name,
             'carrier_name' => $p->offer?->carrier?->party?->display_name,
+            'carrier_logo_url' => \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($p->offer?->carrier_id),
+            'policy_id' => \App\Models\Policy::where('proposal_id', $p->id)->value('id'),
             'total_minor' => (int) ($terms['total_minor'] ?? $p->offer?->total_minor ?? 0),
             'currency' => $terms['currency'] ?? $p->offer?->currency ?? 'XAF',
             'counter_offer' => $counter,

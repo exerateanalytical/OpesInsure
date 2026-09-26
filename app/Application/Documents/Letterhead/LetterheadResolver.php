@@ -46,6 +46,17 @@ final class LetterheadResolver
         return app()->environment(['local', 'testing']) ? $url : preg_replace('#^http://#', 'https://', $url);
     }
 
+    /** The carrier's public-display logo URL (same rule as publicLogoUrl), for mobile payloads. */
+    public static function carrierLogoUrl(?string $carrierId): ?string
+    {
+        if (! $carrierId) {
+            return null;
+        }
+
+        return self::publicLogoUrl(LetterheadAsset::where('owner_type', 'CARRIER')->where('carrier_id', $carrierId)
+            ->where('status', 'ACTIVE')->where('public_display', true)->whereNotNull('logo_path')->orderByDesc('version')->first());
+    }
+
     public static function dataUri(?LetterheadAsset $a, string $kind): ?string
     {
         $path = $a?->{$kind.'_path'};

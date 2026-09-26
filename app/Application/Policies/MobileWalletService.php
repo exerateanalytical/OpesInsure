@@ -67,6 +67,7 @@ final class MobileWalletService
 
         return [
             'carrier_name' => $policy->carrier?->party?->display_name,
+            'carrier_logo_url' => \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($policy->carrier_id),
             'carrier_phone' => $policy->carrier?->party?->contacts()->where('type', 'PHONE')->value('normalized_value'),
             'product_name' => $product?->name,
             'line_code' => $product?->line_code ?? $policy->proposal?->offer?->quote?->line_code,

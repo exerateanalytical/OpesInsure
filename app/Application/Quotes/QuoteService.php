@@ -436,7 +436,10 @@ final class QuoteService
     /** The quote + ranked offers envelope every quote read returns (mobile and core). */
     public function envelope(Quote $quote): array
     {
-        return ['quote' => $quote, 'offers' => $quote->offers()->with(['carrier.party', 'product'])->orderBy('comparison_rank')->get()];
+        $offers = $quote->offers()->with(['carrier.party', 'product'])->orderBy('comparison_rank')->get()
+            ->each(fn ($o) => $o->setAttribute('carrier_logo_url', \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($o->carrier_id)));
+
+        return ['quote' => $quote, 'offers' => $offers];
     }
 
     private function ownedQuery(User $user, string $tenantId): Builder
