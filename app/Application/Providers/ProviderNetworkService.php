@@ -193,6 +193,7 @@ final class ProviderNetworkService
         ]);
         $this->audit->record('provider_contract.created', 'provider_contract', $id, ['provider_id' => $p->id, 'network_id' => $networkId]);
         $this->outbox->record('provider_contract.created', 'provider_contract', $id, ['contract_id' => $id, 'provider_id' => $p->id]);
+        app(\App\Application\Providers\Workspace\ProviderDocumentService::class)->onContractActivated($tenantId, $id, ($actorId ? \App\Models\User::find($actorId) : null)); // D4: DOC-215 provider contract
 
         return $this->contract($tenantId, $id);
     }
@@ -256,6 +257,7 @@ final class ProviderNetworkService
             DB::table('provider_tariff_versions')->where('id', $tariffId)->update(['status' => 'APPROVED', 'approved_by' => $approverId, 'approved_at' => now(), 'updated_at' => now()]);
             $this->audit->record('provider_tariff.approved', 'provider_contract', $t->provider_contract_id, ['tariff_version_id' => $tariffId, 'version' => $t->version]);
             $this->outbox->record('provider_tariff.approved', 'provider_contract', $t->provider_contract_id, ['tariff_version_id' => $tariffId, 'version' => $t->version]);
+            app(\App\Application\Providers\Workspace\ProviderDocumentService::class)->onTariffApproved($tenantId, $tariffId, \App\Models\User::find($approverId)); // D4: DOC-216 provider tariff schedule
 
             return $this->tariff($tenantId, $tariffId);
         });

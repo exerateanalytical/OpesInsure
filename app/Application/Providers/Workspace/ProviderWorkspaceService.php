@@ -65,6 +65,7 @@ final class ProviderWorkspaceService
 
         $out = $this->presentEligibility($tenantId, $s, $r['check_id'], $r);
         $this->outbox->record('provider_portal.eligibility.checked', 'health_eligibility_check', $r['check_id'], ['provider_id' => $s->providerId, 'coverage_status' => $out['coverage_status']]);
+        app(ProviderDocumentService::class)->onEligibilityChecked($tenantId, $r['check_id'], $user); // D4: DOC-064 eligibility confirmation
 
         return $out;
     }

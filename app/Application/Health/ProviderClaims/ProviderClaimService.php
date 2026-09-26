@@ -200,6 +200,7 @@ final class ProviderClaimService
             }
             $this->audit->record('health.provider_claim.adjudicated', 'health_provider_claim', $id, ['decision' => $to] + $totals);
             $this->outbox->record('health.provider_claim.adjudicated', 'health_provider_claim', $id, ['provider_claim_id' => $id, 'decision' => $to] + $totals);
+            app(\App\Application\Providers\Workspace\ProviderDocumentService::class)->onClaimAdjudicated($tenantId, $id, ($actorId ? \App\Models\User::find($actorId) : null)); // D4: DOC-072 explanation of benefits
 
             return $this->find($tenantId, $id);
         });

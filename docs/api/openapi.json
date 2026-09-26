@@ -38549,6 +38549,98 @@
                 }
             }
         },
+        "/api/v1/health/provider-documents": {
+            "get": {
+                "operationId": "get_api_v1_health_provider_documents",
+                "tags": [
+                    "health"
+                ],
+                "summary": "App\\Application\\Providers\\Workspace\\Http\\ProviderDocumentController@insurerIndex",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "documents.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/health/provider-documents/{id}/download": {
+            "get": {
+                "operationId": "get_api_v1_health_provider_documents_id_download",
+                "tags": [
+                    "health"
+                ],
+                "summary": "App\\Application\\Providers\\Workspace\\Http\\ProviderDocumentController@insurerDownload",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "documents.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/health/provider-settlements": {
             "post": {
                 "operationId": "post_api_v1_health_provider_settlements",
@@ -70442,6 +70534,98 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "provider.documents.view"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/provider-portal/documents/issued": {
+            "get": {
+                "operationId": "get_api_v1_provider_portal_documents_issued",
+                "tags": [
+                    "provider-portal"
+                ],
+                "summary": "App\\Application\\Providers\\Workspace\\Http\\ProviderDocumentController@providerIndex",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "provider.documents.view"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/provider-portal/documents/{id}/download": {
+            "get": {
+                "operationId": "get_api_v1_provider_portal_documents_id_download",
+                "tags": [
+                    "provider-portal"
+                ],
+                "summary": "App\\Application\\Providers\\Workspace\\Http\\ProviderDocumentController@providerDownload",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",

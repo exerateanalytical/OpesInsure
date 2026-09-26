@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Application\Providers\Portal\ProviderScope;
+use App\Application\Providers\Workspace\Http\ProviderDocumentController as PD;
 use App\Application\Providers\Workspace\Http\ProviderWorkspaceController as W;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +66,9 @@ Route::prefix('api/v1/provider-portal')->middleware(['api', 'auth:api', 'tenant'
     Route::get('reports/{report}', [W::class, 'report'])->middleware('permission:provider.reports.view');
     Route::get('audit', [W::class, 'audit'])->middleware('permission:provider.audit.view');
     Route::get('documents', [W::class, 'documents'])->middleware('permission:provider.documents.view');
+    // D4: engine-issued provider documents (eligibility confirmation, preauth request, EOB, settlement statement, contract, tariff schedule + GOP pack).
+    Route::get('documents/issued', [PD::class, 'providerIndex'])->middleware('permission:provider.documents.view');
+    Route::get('documents/{id}/download', [PD::class, 'providerDownload'])->middleware('permission:provider.documents.view')->whereUuid('id');
     Route::get('notifications', [W::class, 'notifications'])->middleware('permission:provider.dashboard.view');
 
     Route::get('roles', [W::class, 'roles'])->middleware('permission:provider.users.manage');
@@ -78,5 +82,8 @@ Route::prefix('api/v1/provider-portal')->middleware(['api', 'auth:api', 'tenant'
 
 // Insurer back office: resolve a provider dispute (the dispute row is never deleted).
 Route::prefix('api/v1/health')->middleware(['api', 'auth:api', 'tenant', 'json.api'])->group(function (): void {
+    // D4: provider documents for the insurer (documents.read + the security level permission, enforced in the service).
+    Route::get('provider-documents', [PD::class, 'insurerIndex'])->middleware('permission:documents.read');
+    Route::get('provider-documents/{id}/download', [PD::class, 'insurerDownload'])->middleware('permission:documents.read')->whereUuid('id');
     Route::post('provider-disputes/{id}/resolve', [W::class, 'resolveDispute'])->middleware(['permission:health.provider_claims.adjudicate', 'idempotency:health.provider_dispute.resolve'])->whereUuid('id');
 });

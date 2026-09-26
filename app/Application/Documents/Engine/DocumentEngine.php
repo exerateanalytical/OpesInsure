@@ -128,6 +128,66 @@ final class DocumentEngine
         $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'DOCUMENT', $title, $body, 'INFO', "/policy/{$policy->id}");
     }
 
+    /**
+     * D4 - provider-flow documents (canonical DOC-064 eligibility confirmation, DOC-065 preauthorization
+     * request, DOC-072 explanation of benefits, DOC-198 provider settlement statement, DOC-215 provider
+     * contract, DOC-216 provider tariff schedule). They belong to a provider event rather than to a policy
+     * pack: no manifest, the policy is optional (a contract or a settlement has none), and the document is
+     * addressed to the provider (documents.provider_profile_id). Same finalization sequence as a pack item
+     * (issuer authorization, published template, required fields, number, verification code, snapshot,
+     * master shell, signature, immutable record). Idempotent per (type, subject, trigger).
+     *
+     * @param  array{tenant_id: string, carrier_id: ?string, currency?: ?string, policy?: ?Policy, provider_id: string, subject: array{type: string, key: string, label: string}, fields?: array<string, mixed>, sources?: array<string, mixed>, valid_from?: mixed, valid_until?: mixed}  $ctx
+     * @return array<int, array<string, mixed>> one item per issued type (state GENERATED + document_id, or the blocking state and reason)
+     */
+    public function issueProviderDocument(string $trigger, array $ctx, ?User $actor = null): array
+    {
+        $codes = self::PROVIDER_TRIGGERS[$trigger] ?? throw ValidationException::withMessages(['trigger' => "Document trigger {$trigger} refused: unsupported provider trigger."]);
+        if (empty($ctx['tenant_id']) || empty($ctx['provider_id']) || empty($ctx['subject']['key'])) {
+            throw ValidationException::withMessages(['trigger' => "Document trigger {$trigger} refused: tenant, provider and subject are required."]);
+        }
+
+        return DB::transaction(function () use ($trigger, $codes, $ctx, $actor): array {
+            $policy = isset($ctx['policy']) && $ctx['policy'] instanceof Policy
+                ? Policy::with(['carrier.party', 'party', 'tenant', 'proposal.offer.product', 'proposal.offer.quote'])->findOrFail($ctx['policy']->id)
+                // No policy (contract, tariff, settlement): a transient, never-saved issuing context.
+                : (new Policy())->forceFill(['tenant_id' => $ctx['tenant_id'], 'carrier_id' => $ctx['carrier_id'] ?? null, 'currency' => $ctx['currency'] ?? 'XAF', 'version' => 0]);
+            $label = self::PROVIDER_LABELS[$trigger].' '.$ctx['subject']['label'];
+            $out = [];
+            foreach ($codes as $code) {
+                $existing = Document::where('tenant_id', $ctx['tenant_id'])->where('document_type_code', $code)->where('subject_key', $ctx['subject']['key'])
+                    ->where('generation_trigger', $trigger)->whereIn('status', DocumentRegister::CURRENT_STATUSES)->latest('created_at')->first();
+                if ($existing) {
+                    $out[] = ['state' => 'GENERATED', 'document_id' => $existing->id, 'document_type_code' => $code, 'idempotent' => true];
+
+                    continue;
+                }
+                $item = ['document_type_code' => $code, 'required_level' => 'REQUIRED', 'per_subject' => $ctx['subject']['type'], 'mode' => 'GENERATE'];
+                $out[] = $this->produce($policy, null, ['pack_code' => 'PROVIDER_'.$trigger, 'insurance_class' => 'HEALTH'], $item, $ctx['subject'], $trigger, $ctx, $label, $actor);
+            }
+            $this->audit->record('document.provider.issued', 'provider', $ctx['provider_id'], ['trigger' => $trigger, 'subject' => $ctx['subject']['key'],
+                'items' => array_map(fn ($i) => ['type' => $i['document_type_code'], 'state' => $i['state'], 'document_id' => $i['document_id'] ?? null], $out)]);
+
+            return $out;
+        });
+    }
+
+    /** Provider trigger => canonical document codes it issues (D4). */
+    public const PROVIDER_TRIGGERS = [
+        'ELIGIBILITY_CHECKED' => ['ELIGIBILITY_CONFIRMATION'],
+        'PREAUTH_SUBMITTED' => ['PREAUTHORIZATION_REQUEST'],
+        'PROVIDER_CLAIM_ADJUDICATED' => ['EXPLANATION_OF_BENEFITS'],
+        'PROVIDER_SETTLEMENT_PAID' => ['PROVIDER_SETTLEMENT_STATEMENT'],
+        'PROVIDER_CONTRACT_ACTIVATED' => ['PROVIDER_CONTRACT'],
+        'PROVIDER_TARIFF_APPROVED' => ['PROVIDER_TARIFF_SCHEDULE'],
+    ];
+
+    private const PROVIDER_LABELS = [
+        'ELIGIBILITY_CHECKED' => 'ELIGIBILITY / ÉLIGIBILITÉ', 'PREAUTH_SUBMITTED' => 'PREAUTHORIZATION REQUEST / DEMANDE DE PRISE EN CHARGE',
+        'PROVIDER_CLAIM_ADJUDICATED' => 'EOB / RELEVÉ DES PRESTATIONS', 'PROVIDER_SETTLEMENT_PAID' => 'SETTLEMENT / RÈGLEMENT',
+        'PROVIDER_CONTRACT_ACTIVATED' => 'PROVIDER CONTRACT / CONVENTION', 'PROVIDER_TARIFF_APPROVED' => 'TARIFF / GRILLE TARIFAIRE',
+    ];
+
     /** Same as fire() but never throws into the caller's business transaction (savepoint + report). */
     public function fireQuietly(string $trigger, Policy $policy, array $ctx = [], ?User $actor = null): ?DocumentPackManifest
     {
@@ -206,7 +266,8 @@ final class DocumentEngine
         $broker = $policy->tenant?->type === 'BROKER';
 
         return match (true) {
-            $origin === 'SYSTEM' || $code === 'POLICY_ISSUE_CONFIRMATION' => 'PLATFORM',
+            // PROVIDER origin (preauthorization request): compiled by the platform from the provider's submission.
+            $origin === 'SYSTEM' || $origin === 'PROVIDER' || $code === 'POLICY_ISSUE_CONFIRMATION' => 'PLATFORM',
             $broker && ($origin === 'BROKER' || ($origin === null && $type['group_code'] === 'PRE_CONTRACT')) => 'BROKER',
             default => 'INSURER',
         };
@@ -219,7 +280,7 @@ final class DocumentEngine
     }
 
     /** @return array<string, mixed> manifest item */
-    private function produce(Policy $policy, DocumentPackManifest $manifest, array $pack, array $item, ?array $subject, string $trigger, array $ctx, string $label, ?User $actor): array
+    private function produce(Policy $policy, ?DocumentPackManifest $manifest, array $pack, array $item, ?array $subject, string $trigger, array $ctx, string $label, ?User $actor): array
     {
         $code = $item['document_type_code'];
         $type = $this->register->describe($code);
@@ -262,7 +323,7 @@ final class DocumentEngine
         } catch (DocumentIssuanceBlocked $blocked) {
             // Canonical spec: a missing required field / unmet required control blocks issuance with a clear
             // reason — never a blank document. Nothing was numbered or stored (no numbering gap).
-            $this->audit->record('document.issuance.blocked', 'document_pack_manifest', $manifest->id, ['type' => $code, 'state' => $blocked->state, 'missing' => $blocked->missing, 'subject' => $subject['key'] ?? null]);
+            $this->audit->record('document.issuance.blocked', $manifest ? 'document_pack_manifest' : 'provider', $manifest?->id ?? ($ctx['provider_id'] ?? null), ['type' => $code, 'state' => $blocked->state, 'missing' => $blocked->missing, 'subject' => $subject['key'] ?? null]);
 
             return ['state' => $blocked->state, 'reason' => $blocked->getMessage(), 'missing_fields' => $blocked->missing, 'template_id' => $template->id] + $base;
         }
@@ -278,7 +339,7 @@ final class DocumentEngine
      * render in the master shell with the tier's security controls -> final file SHA-256 -> platform
      * signature (CONFIG_REQUIRED without a key) -> immutable registry record -> audit -> ISSUED/VALID.
      */
-    private function generate(Policy $policy, DocumentPackManifest $manifest, DocumentTemplate $template, array $type, string $issuer, ?DocumentIssuanceProfile $profile, ?array $subject, ?string $subjectType, string $trigger, array $ctx, string $label, ?User $actor): Document
+    private function generate(Policy $policy, ?DocumentPackManifest $manifest, DocumentTemplate $template, array $type, string $issuer, ?DocumentIssuanceProfile $profile, ?array $subject, ?string $subjectType, string $trigger, array $ctx, string $label, ?User $actor): Document
     {
         $code = $type['code'];
         $certificateLike = $type['display_group'] === 'CERTIFICATES';
@@ -306,7 +367,8 @@ final class DocumentEngine
         $issuedAt = now();
         $requirements = $this->fields->requiredKeys($type, $subject ? $subjectType : null);
         $pendingNumber = '(pending)';
-        $values = $this->fields->resolve($policy, [
+        // Event-supplied canonical values (provider flows: provider.name, member.reference ...) fill what the policy cannot.
+        $values = $this->fields->resolve($policy, (array) ($ctx['fields'] ?? []) + [
             'document.number' => $pendingNumber, 'document.type_code' => $code, 'document.title' => trim($template->title_en.' / '.$template->title_fr, ' /'),
             'document.template_version' => $template->version, 'document.issued_at' => $issuedAt->toIso8601String(), 'document.status' => $certificateLike ? 'VALID' : 'ISSUED',
             'document.security_tier' => $security['tier'], 'issuer.legal_name' => $issuerName, 'verification.code' => 'pending', 'verification.token' => 'pending',
@@ -344,6 +406,10 @@ final class DocumentEngine
             $heading = $lang === 'EN' ? ($s['heading_en'] ?? null) : ($lang === 'FR' ? ($s['heading_fr'] ?? null) : trim(($s['heading_fr'] ?? '').' / '.($s['heading_en'] ?? ''), ' /'));
             $sections[] = ['heading' => $heading, 'paragraphs' => $paragraphs];
         }
+        // Event facts rendered after the template text (provider flows: eligibility result, EOB lines, settlement lines ...).
+        foreach ((array) ($ctx['sections'] ?? []) as $s) {
+            $sections[] = ['heading' => (string) ($s['heading'] ?? ''), 'paragraphs' => array_values(array_map('strval', (array) ($s['paragraphs'] ?? [])))];
+        }
 
         // Frozen issuance snapshot (document_implementation_policy §1.4) and its hashes (crypto spec §5).
         $snapshot = [
@@ -353,7 +419,8 @@ final class DocumentEngine
             'issuer' => ['type' => $issuer, 'name' => $issuerName, 'carrier_id' => $policy->carrier_id, 'tenant_id' => $policy->tenant_id, 'intermediary' => $broker,
                 'authorization_reference' => $profile?->authorization_reference, 'letterhead' => $letterhead['snapshot']],
             'sources' => ['party_id' => $policy->party_id, 'policy_id' => $policy->id, 'policy_version' => (int) $policy->version, 'product_id' => $product?->id,
-                'product_version' => $product?->version, 'claim_id' => $claim?->id, 'policy_transaction_id' => $transaction?->id, 'payment_id' => ($ctx['payment'] ?? null)?->id],
+                'product_version' => $product?->version, 'claim_id' => $claim?->id, 'policy_transaction_id' => $transaction?->id, 'payment_id' => ($ctx['payment'] ?? null)?->id]
+                + (isset($ctx['provider_id']) ? ['provider_profile_id' => $ctx['provider_id']] + (array) ($ctx['sources'] ?? []) : []),
             'subject' => $subject ? ['type' => $subjectType, 'key' => $subject['key'], 'label' => $subject['label'], 'facts' => $subjectFacts] : null,
             'fields' => $values, 'required_fields' => $requirements['required'],
             'security' => ['tier' => $security['tier'], 'confidentiality_class' => $security['confidentiality_class'], 'access_profiles' => $security['access_profiles'], 'master_shell_code' => $security['master_shell_code']],
@@ -382,7 +449,7 @@ final class DocumentEngine
         ]);
         $security['controls']['signature']['status'] = $signature['status'] === 'SIGNED' ? 'APPLIED' : $security['controls']['signature']['status'];
 
-        $key = 'documents/'.$policy->tenant_id.'/'.$policy->id.'/'.$number['number'].'.pdf';
+        $key = 'documents/'.$policy->tenant_id.'/'.($policy->id ?? 'provider-'.($ctx['provider_id'] ?? 'none')).'/'.$number['number'].'.pdf';
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
         $status = $profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED');
@@ -391,7 +458,7 @@ final class DocumentEngine
             'tenant_id' => $policy->tenant_id, 'party_id' => $policy->party_id, 'policy_id' => $policy->id,
             'category' => 'ENGINE_'.$code, 'storage_key' => $key, 'mime_type' => 'application/pdf', 'size_bytes' => strlen($bytes), 'sha256' => $sha,
             'scan_status' => 'CLEAN', 'verification_status' => 'VERIFIED', 'ocr_data' => [],
-            'document_type_code' => $code, 'document_type_id' => $type['id'], 'document_group' => $type['group_code'], 'pack_code' => $manifest->pack_code, 'pack_manifest_id' => $manifest->id,
+            'document_type_code' => $code, 'document_type_id' => $type['id'], 'document_group' => $type['group_code'], 'pack_code' => $manifest?->pack_code ?? ('PROVIDER_'.$trigger), 'pack_manifest_id' => $manifest?->id,
             'document_template_id' => $template->id, 'template_version' => $template->version, 'template_hash' => $template->content_hash,
             'product_id' => $product?->id, 'product_version' => $product?->version, 'policy_version' => (int) $policy->version,
             'policy_transaction_id' => $transaction?->id, 'renewal_of_policy_id' => $trigger === 'RENEWAL_ISSUED' ? $policy->previous_policy_id : null, 'claim_id' => $claim?->id,
@@ -411,6 +478,7 @@ final class DocumentEngine
             'security_tier' => $security['tier'], 'security_controls' => json_encode($security['controls']),
             'confidentiality_class' => $security['confidentiality_class'], 'access_profiles' => json_encode($security['access_profiles']),
             'master_shell_code' => $security['master_shell_code'], 'issuance_snapshot' => $this->json->encode($snapshot), 'snapshot_hash' => $snapshotHash,
+            'provider_profile_id' => $ctx['provider_id'] ?? null,
             'content_hash_sha256' => $contentHash, 'verification_token_hash' => VerificationCredentials::tokenHash($token),
             'signature' => json_encode($signature), 'field_validation' => json_encode(['required' => $requirements['required'], 'missing' => $missing,
                 'groups' => $requirements['groups'], 'no_canonical_source' => $requirements['no_source'], 'unmapped_pending_verification' => $requirements['unmapped'],

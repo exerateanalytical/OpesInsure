@@ -70,6 +70,7 @@ final class ProviderSettlementService
             DB::table('health_provider_settlement_batches')->where('id', $batchId)->update(['status' => 'PAID', 'payment_reference' => $paymentReference, 'paid_at' => now(), 'paid_by' => $actorId, 'updated_at' => now()]);
             $this->audit->record('health.provider_settlement.paid', 'health_provider_settlement_batch', $batchId, ['payment_reference' => $paymentReference, 'total_minor' => (int) $b->total_minor]);
             $this->outbox->record('health.provider_settlement.paid', 'health_provider_settlement_batch', $batchId, ['batch_id' => $batchId, 'provider_id' => $b->provider_profile_id, 'total_minor' => (int) $b->total_minor, 'currency' => $b->currency]);
+            app(\App\Application\Providers\Workspace\ProviderDocumentService::class)->onSettlementPaid($tenantId, $batchId, ($actorId ? \App\Models\User::find($actorId) : null)); // D4: DOC-198 provider settlement statement
 
             return $this->batch($tenantId, $batchId);
         });

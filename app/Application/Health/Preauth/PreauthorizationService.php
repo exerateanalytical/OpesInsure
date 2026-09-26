@@ -126,6 +126,7 @@ final class PreauthorizationService
             $this->insertLines($id, null, $lines);
             $this->event($id, null, 'request', null, 'REQUESTED', $actor, null, ['eligible' => $eligible, 'lines' => count($lines)]);
             $this->publish('request', $id, ['request_type' => $type, 'provider_id' => $p->id, 'policy_id' => $policy->id, 'eligible' => $eligible, 'status' => 'REQUESTED']);
+            app(\App\Application\Providers\Workspace\ProviderDocumentService::class)->onPreauthSubmitted($tenantId, $id, $actor); // D4: DOC-065 preauthorization request
 
             return $this->find($tenantId, $id);
         });
