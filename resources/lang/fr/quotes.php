@@ -15,4 +15,5 @@ return [
     'comparison_size' => 'Comparez entre :min et :max offres.',
     'covers_invalid' => "Choisissez les garanties optionnelles parmi celles proposées pour cette branche.",
     'cover_limits_invalid' => "Chaque plafond doit être un montant entier positif pour une garantie de cette branche.",
+    'partner_outside_book' => "Ce client ne fait pas partie de votre portefeuille. Un partenaire ne peut coter et agir que pour ses propres clients ou les nouveaux clients qu'il enregistre.",
 ];

@@ -12,6 +12,20 @@
         <h2>{{ __('account_buy.customer_h') }}</h2>
         <p class="sub">{{ __('account_buy.customer_s') }}</p>
         <label class="afield-s"><span>{{ __('account_buy.customer_h') }} <i>*</i></span><select data-customer></select></label>
+        {{-- Owner decision: partners quote for their own book or for a NEW client they onboard here (origin-locked to them). --}}
+        <p class="sub" data-book-note hidden>{{ __('account_buy.customer_book') }}</p>
+        <div class="bbar" data-new-client-bar hidden><button type="button" class="dbtn dbtn-outline sm" data-new-client>+ {{ __('account_buy.new_client') }}</button></div>
+        <form class="bform" data-new-client-form hidden novalidate>
+          <h3>{{ __('account_buy.new_client_h') }}</h3>
+          <label class="afield-s"><span>{{ __('account_buy.nc_name') }} <i>*</i></span><input name="full_name" autocomplete="off" maxlength="160" required></label>
+          <label class="afield-s"><span>{{ __('account_buy.nc_phone') }} <i>*</i></span><input name="phone_e164" type="tel" inputmode="tel" placeholder="+2376XXXXXXXX" maxlength="32" required></label>
+          <label class="afield-s"><span>{{ __('account_buy.nc_city') }} <i>*</i></span><input name="city" maxlength="80" required></label>
+          <label class="bcheck"><input type="checkbox" name="consent" required> <span>{{ __('account_buy.nc_consent') }}</span></label>
+          <div class="bactions">
+            <button type="button" class="dbtn dbtn-outline sm" data-nc-cancel>{{ __('account_buy.nc_cancel') }}</button>
+            <button type="submit" class="dbtn dbtn-primary sm" data-nc-save>{{ __('account_buy.nc_save') }}</button>
+          </div>
+        </form>
       </section>
       <section class="acard">
         <div class="acard-h"><span>{{ __('account_buy.product_h') }}</span>
@@ -45,6 +59,7 @@ Opes.page(function (ctx) {
   var params = ctx.params, line = String(params.get('line') || '').toUpperCase(), productCode = params.get('product') || '';
   var sc = null, fm = null, assetId = null, prefill = {}, product = null, agent = ctx.kind === 'agent';
   var broker = agent && !Opes.can('agent.clients.read') && Opes.can('broker.portal.read');
+  var canOnboard = agent && (broker ? Opes.can('crm.leads.manage') : Opes.can('agent.clients.manage'));
   var linesBox = $('[data-lines]'), formBox = $('[data-form]'), sumBox = $('[data-summary]'), custSel = $('[data-customer]');
   $('[data-steps]').appendChild(B.steps(0));
 
@@ -64,8 +79,33 @@ Opes.page(function (ctx) {
         var p = c.party || {};
         custSel.appendChild(h('option', { value: c.id, selected: params.get('customer') === c.id }, [p.display_name || c.full_name || c.display_name || c.id, c.phone_e164].filter(Boolean).join(' · ')));
       });
-      if (!r.items.length) Opes.alert(T.agent_no_customers, 'info');
+      if (!r.items.length) Opes.alert(canOnboard ? T.agent_no_book : T.agent_no_customers, 'info');
     }).catch(function () { Opes.clear(custSel).appendChild(h('option', { value: '' }, '—')); Opes.alert(T.agent_no_customers, 'info'); });
+
+    // "New client": onboard through the partner's own intake (agent: POST /mobile/agent/clients,
+    // broker: POST /mobile/broker/clients). The client is origin-locked to this partner, so it is
+    // in their book immediately and can be quoted straight away.
+    var ncForm = $('[data-new-client-form]');
+    if (canOnboard) {
+      $('[data-book-note]').hidden = false;
+      $('[data-new-client-bar]').hidden = false;
+      $('[data-new-client]').addEventListener('click', function () { ncForm.hidden = false; ncForm.elements.full_name.focus(); });
+      $('[data-nc-cancel]').addEventListener('click', function () { ncForm.hidden = true; });
+      ncForm.addEventListener('submit', function (e) {
+        e.preventDefault(); Opes.alert('');
+        var el = ncForm.elements, name = el.full_name.value.trim(), phone = el.phone_e164.value.trim(), city = el.city.value.trim();
+        if (name.length < 3 || !phone || !city || !el.consent.checked) return Opes.alert(T.nc_missing);
+        var btn = $('[data-nc-save]'); Opes.busy(btn, true);
+        Opes.api(broker ? '/mobile/broker/clients' : '/mobile/agent/clients', { body: { full_name: name, phone_e164: phone, city: city, consent_reference: 'WEB-' + Date.now() } })
+          .then(function (c) {
+            Opes.busy(btn, false);
+            custSel.appendChild(h('option', { value: c.id, selected: true }, [c.full_name || name, c.phone_e164].filter(Boolean).join(' · ')));
+            custSel.value = c.id; ncForm.reset(); ncForm.hidden = true;
+            Opes.alert(T.nc_added.replace(':n', c.full_name || name), 'ok');
+          })
+          .catch(function (err) { Opes.busy(btn, false); Opes.alert((err && err.message) || Opes.t.error); });
+      });
+    }
   }
 
   function pick(code) {

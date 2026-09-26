@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
+use App\Application\Agents\AgentClientIntakeService;
 use App\Application\Audit\AuditWriter;
 use App\Application\FinancialDistribution\MobilePartnerFinanceService;
 use App\Application\Identity\PartyResolver;
@@ -13,6 +14,7 @@ use App\Models\TenantCustomer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /** The broker portal (app/broker/*) in the shapes the app renders. */
 final class MobileBrokerOpsController
@@ -46,6 +48,21 @@ final class MobileBrokerOpsController
         $t = app(TenantContext::class)->id();
 
         return response()->json(['data' => $this->clientQuery($request, $t)->get()->map(fn (TenantCustomer $c) => $this->clientOf($c, $t))->values()]);
+    }
+
+    /** Onboard a new client for the broker (same contract as POST mobile/agent/clients). */
+    public function createClient(Request $request, AgentClientIntakeService $intake): JsonResponse
+    {
+        $data = $request->validate(['full_name' => 'required|string|min:3|max:160', 'phone_e164' => 'required|string|max:32', 'city' => 'required|string|max:80', 'consent_reference' => 'required|string|max:255']);
+        $t = app(TenantContext::class)->id();
+        $result = $intake->registerForBroker([
+            'type' => 'PERSON', 'display_name' => $data['full_name'], 'phone_e164' => $data['phone_e164'], 'notice_version' => 'broker-2026-01', 'evidence_reference' => $data['consent_reference'], 'consent' => true,
+        ], $request->user(), $t);
+        $customer = TenantCustomer::with('party.contacts')->findOrFail($result['id']);
+        $existing = DB::table('party_addresses')->where(['party_id' => $customer->party_id, 'type' => 'HOME'])->value('id');
+        DB::table('party_addresses')->updateOrInsert(['party_id' => $customer->party_id, 'type' => 'HOME'], ['id' => $existing ?? (string) Str::uuid(), 'city' => $data['city'], 'country_code' => 'CM', 'is_primary' => true, 'created_at' => now(), 'updated_at' => now()]);
+
+        return response()->json(['data' => $this->clientOf($customer, $t)], 201);
     }
 
     public function client(string $customer, Request $request): JsonResponse

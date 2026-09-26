@@ -82,6 +82,8 @@ Route::post('mobile/agent/sales/{id}/payment-request', [MobileAgentPortalControl
 
 // broker/*
 Route::get('mobile/broker/clients', [MobileBrokerOpsController::class, 'clients'])->middleware('permission:broker.portal.read');
+// Broker client onboarding: the new client is origin-locked to the caller's own BROKER partner (so it is in the book at once).
+Route::post('mobile/broker/clients', [MobileBrokerOpsController::class, 'createClient'])->middleware(['permission:crm.leads.manage', 'idempotency:mobile.broker.clients.store', 'throttle:10,1']);
 Route::get('mobile/broker/clients/{customer}', [MobileBrokerOpsController::class, 'client'])->middleware('permission:broker.portal.read');
 Route::get('mobile/broker/production', [MobileBrokerOpsController::class, 'production'])->middleware('permission:broker.portal.read');
 Route::get('mobile/broker/renewals', [MobileBrokerOpsController::class, 'renewals'])->middleware('permission:broker.portal.read');

@@ -7,7 +7,9 @@ namespace App\Application\Agents;
 use App\Application\Customers\AttributionService;
 use App\Application\Customers\CustomerService;
 use App\Application\Customers\PartyService;
+use App\Application\Identity\PartyResolver;
 use App\Application\Privacy\ConsentService;
+use App\Models\Partner;
 use App\Models\Party;
 use App\Models\Tenant;
 use App\Models\TenantCustomer;
@@ -45,6 +47,7 @@ final class AgentClientIntakeService
         private readonly CustomerService $customers,
         private readonly ConsentService $consents,
         private readonly AttributionService $attributions,
+        private readonly PartyResolver $resolver,
     ) {
     }
 
@@ -102,7 +105,36 @@ final class AgentClientIntakeService
      */
     public function register(array $data, User $user, string $tenantId): array
     {
-        $partner = $this->partners->resolveActive($user);
+        return $this->registerFor($this->partners->resolveActive($user), $data, $user, $tenantId);
+    }
+
+    /**
+     * Broker client onboarding (owner decision "partners quote for their own
+     * clients and new clients"): the same intake, origin-locked to the
+     * caller's own BROKER Partner — never one taken from the request.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{id: string, party_id: string, customer_number: string, attribution_id: string}
+     */
+    public function registerForBroker(array $data, User $user, string $tenantId): array
+    {
+        $partner = $this->resolver->partnerForUser($user);
+        if (! $partner || $partner->type !== 'BROKER') {
+            throw new AuthorizationException(__('quotes.partner_outside_book'));
+        }
+        if ($partner->status !== 'ACTIVE') {
+            throw ValidationException::withMessages(['partner' => [__('wave1.partner_not_active')]]);
+        }
+
+        return $this->registerFor($partner, $data, $user, $tenantId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{id: string, party_id: string, customer_number: string, attribution_id: string}
+     */
+    private function registerFor(Partner $partner, array $data, User $user, string $tenantId): array
+    {
         $phone = $this->normalizePhone((string) $data['phone_e164']);
 
         if (! preg_match('/^\+[1-9]\d{7,14}$/', $phone)) {
@@ -134,7 +166,7 @@ final class AgentClientIntakeService
             // throw rolls this whole transaction back, so no half-registered
             // party/customer/consent is left behind for a client the agent
             // cannot own.
-            $attribution = $this->attributions->lock($party, $partner, 'AGENT', $data['notice_version'], $data['evidence_reference'], $user);
+            $attribution = $this->attributions->lock($party, $partner, $partner->type, $data['notice_version'], $data['evidence_reference'], $user);
 
             return [
                 'id' => $customer->id,

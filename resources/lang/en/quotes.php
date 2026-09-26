@@ -15,4 +15,5 @@ return [
     'comparison_size' => 'Compare between :min and :max offers.',
     'covers_invalid' => 'Choose optional covers from the list offered for this insurance line.',
     'cover_limits_invalid' => 'Each cover limit must be a positive whole amount for a cover of this insurance line.',
+    'partner_outside_book' => 'This client is not in your book. Partners can only quote for, and act on, their own clients or new clients they onboard.',
 ];

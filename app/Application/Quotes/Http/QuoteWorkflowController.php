@@ -152,7 +152,11 @@ final class QuoteWorkflowController
             abort(403, 'Permission denied.');
         }
 
-        return $this->own->apply(Quote::where('tenant_id', $this->tenant()), $user)->findOrFail($id);
+        $quote = $this->own->apply(Quote::where('tenant_id', $this->tenant()), $user)->findOrFail($id);
+        // Owner decision: partners act only on quotes of clients in their own book.
+        app(\App\Application\Partners\PartnerBook::class)->assertInBook($user, $quote->party_id);
+
+        return $quote;
     }
 
     private function tenant(): string

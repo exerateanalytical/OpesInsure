@@ -11,9 +11,11 @@ final class QuoteLifecycleController
  public function __construct(private OwnershipScope $own) {}
  /* Customers only ever resolve their own quotes (audit A1). */
  private function quote(string $id):Quote{return $this->own->apply(Quote::where('tenant_id',app(TenantContext::class)->id()),request()->user())->findOrFail($id);}
+ /** Mutations: a partner may only act on quotes of clients in their own book. */
+ private function bookQuote(string $id):Quote{$q=$this->quote($id);app(\App\Application\Partners\PartnerBook::class)->assertInBook(request()->user(),$q->party_id);return $q;}
  /* REQ-QUO-004: the owner customer opening a generated/sent quote marks it VIEWED. */
  public function show(string $quote,QuoteService $s):JsonResponse{$q=$this->quote($quote);if($this->own->isOwnerScoped(request()->user()))$q=$s->markViewed($q,request()->user());return response()->json(['data'=>$s->envelope($q)]);}
- public function rate(Request $r,string $quote,QuoteService $s):JsonResponse{$q=$s->rate($this->quote($quote),$r->user());return response()->json(['data'=>['quote'=>$q,'offers'=>$q->offers()->with(['carrier.party','product'])->orderBy('comparison_rank')->get()]]);}
+ public function rate(Request $r,string $quote,QuoteService $s):JsonResponse{$q=$s->rate($this->bookQuote($quote),$r->user());return response()->json(['data'=>['quote'=>$q,'offers'=>$q->offers()->with(['carrier.party','product'])->orderBy('comparison_rank')->get()]]);}
  /* The offer must belong to this quote — never an offer id lifted from someone else's quote. */
- public function accept(Request $r,string $quote,string $offer,QuoteService $s):JsonResponse{$q=$this->quote($quote);$s->accept($q,$q->offers()->findOrFail($offer),$r->user());return response()->json(['data'=>['quote_id'=>$q->id,'offer_id'=>$offer,'status'=>'ACCEPTED']]);}
+ public function accept(Request $r,string $quote,string $offer,QuoteService $s):JsonResponse{$q=$this->bookQuote($quote);$s->accept($q,$q->offers()->findOrFail($offer),$r->user());return response()->json(['data'=>['quote_id'=>$q->id,'offer_id'=>$offer,'status'=>'ACCEPTED']]);}
 }
