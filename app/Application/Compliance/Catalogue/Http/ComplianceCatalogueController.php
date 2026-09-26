@@ -79,7 +79,7 @@ final class ComplianceCatalogueController
     public function assessments(string $control): JsonResponse
     {
         return response()->json(['data' => DB::table('compliance_control_assessments')->where('tenant_id', $this->tenant->id())->where('control_id', $control)
-            ->orderByDesc('assessed_at')->get()]);
+            ->orderByDesc('assessed_at')->orderByDesc('seq')->get()]);
     }
 
     public function assess(Request $r, string $control): JsonResponse

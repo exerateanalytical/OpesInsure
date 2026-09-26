@@ -31,6 +31,17 @@ uses(RefreshDatabase::class);
 
 require_once __DIR__.'/../Concerns/wave_auth_helpers.php';
 
+/** Uploads and, before submitting, asserts the batch validated — a failure prints the actual row errors / mapping gaps. */
+function gp1Import(string $target, array $params, string $csv, $maker, $checker)
+{
+    $pipe = app(ImportPipeline::class);
+    $b = $pipe->upload($target, $params, gp1File($csv), $target.'.csv', $maker);
+    expect(['status' => $b->status, 'errors' => $b->report['errors'] ?? null, 'needs_mapping' => $b->report['needs_mapping'] ?? null])
+        ->toBe(['status' => 'VALIDATED', 'errors' => [], 'needs_mapping' => null]);
+
+    return $pipe->approve($pipe->submit($b, $maker), $checker);
+}
+
 function gp1File(string $csv): string
 {
     $p = tempnam(sys_get_temp_dir(), 'gp1').'.csv';
@@ -78,7 +89,7 @@ it('REQ-CIMA-002 imports CIMA branch authorizations with evidence through the pi
 ", array_slice(explode("
 ", $csv), 0, 2))."
 ";
-    $batch = $pipe->approve($pipe->submit($pipe->upload('cima_insurer_authorizations', [], gp1File($good), 'auth.csv', $maker), $maker), $checker);
+    $batch = gp1Import('cima_insurer_authorizations', [], $good, $maker, $checker);
     $auth = InsurerRegulatoryAuthorization::where('authorization_reference', 'CRCA-2026-001')->firstOrFail();
     expect($batch->status)->toBe('IMPORTED')->and($auth->status)->toBe('PENDING_APPROVAL')->and($auth->import_batch_id)->toBe($batch->id)
         ->and(app(CimaAuthorizationService::class)->isAuthorized($carrier->id, $branch->code))->toBeFalse();
@@ -113,7 +124,7 @@ it('REQ-GC-001 enriches DGTCFM brokers in the canonical directory, never creatin
 ", array_slice(explode("
 ", $csv), 0, 2))."
 ";
-    $pipe->approve($pipe->submit($pipe->upload('broker_directory_enrichment', [], gp1File($good), 'b.csv', $maker), $maker), $checker);
+    gp1Import('broker_directory_enrichment', [], $good, $maker, $checker);
 
     $profile = DB::table('institution_profiles')->where('partner_id', $broker->id)->first();
     expect(Partner::count())->toBe($partners)
@@ -167,7 +178,7 @@ it('REQ-COM-002 imports commission tables as DRAFT rules that cite their source;
 ", array_slice(explode("
 ", $csv), 0, 2))."
 ";
-    $pipe->approve($pipe->submit($pipe->upload('commission_tables', ['tenant_id' => $this->tenant->id], gp1File($good), 'c.csv', $maker), $maker), $checker);
+    gp1Import('commission_tables', ['tenant_id' => $this->tenant->id], $good, $maker, $checker);
 
     $rule = CommissionRuleVersion::where('carrier_id', $carrier->id)->where('beneficiary_type', 'BROKER')->firstOrFail();
     expect($rule->status)->toBe('DRAFT')->and($rule->basis_points)->toBe(1250)->and($rule->basis_type)->toBe('COLLECTED_PREMIUM')

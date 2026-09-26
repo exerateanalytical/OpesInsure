@@ -161,7 +161,7 @@ final class ComplianceCatalogueService
 
     public function controls(?string $framework, ?string $tenantId): array
     {
-        $latest = $tenantId ? DB::table('compliance_control_assessments')->where('tenant_id', $tenantId)->orderByDesc('assessed_at')->get()->unique('control_id')->keyBy('control_id') : collect();
+        $latest = $tenantId ? DB::table('compliance_control_assessments')->where('tenant_id', $tenantId)->orderByDesc('assessed_at')->orderByDesc('seq')->get()->unique('control_id')->keyBy('control_id') : collect();
 
         return DB::table('compliance_controls')->when($framework, fn ($q) => $q->where('framework', strtoupper($framework)))->orderBy('framework')->orderBy('control_code')->get()
             ->map(fn ($c) => ['evidence_types' => json_decode((string) $c->evidence_types, true), 'rateable' => self::controlRateable($c),
