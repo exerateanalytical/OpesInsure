@@ -31,6 +31,8 @@ final class SeedDocumentCatalogue extends Command
             // Security Matrix §4–11 profiles (physical, watermark, seal, verification rules) on the same catalogue.
             $matrix = $this->laravel->make(\Database\Seeders\SecurityMatrixProfileSeeder::class);
             $matrix->run();
+            // D4: PLATFORM templates of the provider documents, seeded in REVIEW (one-step admin approve-publish).
+            $this->laravel->make(\Database\Seeders\ProviderDocumentTemplateSeeder::class)->run();
         } catch (Throwable $e) {
             // Never fail a deploy's optimize step; data already present stays intact.
             report($e);

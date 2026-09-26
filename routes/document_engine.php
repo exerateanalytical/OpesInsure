@@ -18,7 +18,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('document-status-changes/{change}/{decision}', [C::class, 'decideStatusChange'])->whereIn('decision', ['approve', 'reject'])->middleware('permission:documents.status.approve');
         Route::get('products/{product}/document-gate', [C::class, 'productGate'])->middleware('permission:documents.templates.manage');
         Route::post('document-templates', [C::class, 'createTemplate'])->middleware('permission:documents.templates.manage');
-        Route::post('document-templates/{template}/{action}', [C::class, 'templateTransition'])->whereIn('action', ['submit', 'approve', 'publish', 'retire'])->middleware('permission:documents.templates.manage');
+        Route::post('document-templates/{template}/{action}', [C::class, 'templateTransition'])->whereIn('action', ['submit', 'approve', 'publish', 'retire', 'approve-publish'])->middleware('permission:documents.templates.manage');
     });
 
     Route::get('mobile/policy-packs/{policy}/download', [C::class, 'packDownload'])

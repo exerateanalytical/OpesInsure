@@ -42,7 +42,9 @@ function e3Template(string $code): void
 {
     $t = DocumentTemplate::create([
         'code' => DocumentTemplateService::lineage(['document_type_code' => $code, 'ownership' => 'PLATFORM', 'language' => 'BILINGUAL']), 'document_type_code' => $code,
-        'ownership' => 'PLATFORM', 'language' => 'BILINGUAL', 'version' => 1, 'status' => 'PUBLISHED', 'title_en' => $code, 'title_fr' => $code,
+        'ownership' => 'PLATFORM', 'language' => 'BILINGUAL', 'status' => 'PUBLISHED',
+        // After the D4 seed (REVIEW v1 of the same lineage) this is the next version.
+        'version' => 1 + (int) DocumentTemplate::where('code', DocumentTemplateService::lineage(['document_type_code' => $code, 'ownership' => 'PLATFORM', 'language' => 'BILINGUAL']))->max('version'), 'title_en' => $code, 'title_fr' => $code,
         'content' => ['sections' => [['heading_en' => 'GOP', 'heading_fr' => 'PEC', 'body_en' => 'Policy {policy_number}', 'body_fr' => 'Police {policy_number}']]],
         'content_hash' => 'x', 'effective_from' => now()->subYear()->toDateString(), 'created_by' => makeAuthTestUser(test()->tenant, [])->id,
     ]);

@@ -70,15 +70,12 @@ beforeEach(function () {
     $this->h = ['X-Tenant-ID' => $this->tenant->id];
     $this->artisan('opesinsure:seed-document-catalogue')->assertSuccessful();
     DocumentIssuanceProfile::create(['carrier_id' => $f['carrier']->id, 'issuance_mode' => 'OPES_GENERATED', 'opes_rendering_authorized' => true, 'authorization_reference' => 'AUTH-D4', 'default_language' => 'BILINGUAL']);
-    $author = makeAuthTestUser($this->tenant, []);
-    foreach (D4_CODES as $code) {
-        $t = DocumentTemplate::create([
-            'code' => DocumentTemplateService::lineage(['document_type_code' => $code, 'ownership' => 'PLATFORM', 'language' => 'BILINGUAL']), 'document_type_code' => $code,
-            'ownership' => 'PLATFORM', 'language' => 'BILINGUAL', 'version' => 1, 'status' => 'PUBLISHED', 'title_en' => $code, 'title_fr' => $code,
-            'content' => ['sections' => [['heading_en' => 'Document', 'heading_fr' => 'Document', 'body_en' => 'Reference {subject} — {document_number}', 'body_fr' => 'Référence {subject} — {document_number}']]],
-            'content_hash' => 'x', 'effective_from' => now()->subYear()->toDateString(), 'created_by' => $author->id,
-        ]);
-        $t->update(['content_hash' => app(DocumentTemplateService::class)->hash($t)]);
+    // Seeded PLATFORM templates (REVIEW) activated by an administrator with the one-step approve-publish.
+    $this->admin = makeAuthTestUser($this->tenant, ['documents.templates.manage']);
+    if (! ($this->skipTemplateActivation ?? false)) {
+        foreach (DocumentTemplate::where('status', 'REVIEW')->where('ownership', 'PLATFORM')->get() as $t) {
+            app(DocumentTemplateService::class)->approveAndPublishSystem($t, $this->admin);
+        }
     }
 
     $this->policy = Policy::create(['tenant_id' => $this->tenant->id, 'proposal_id' => $f['proposal']->id, 'carrier_id' => $f['carrier']->id, 'party_id' => $f['party']->id,
@@ -217,3 +214,42 @@ it('D4: without an insurer issuance authorization nothing is numbered (AWAITING_
     expect(fn () => app(\App\Application\Documents\Engine\DocumentEngine::class)->issueProviderDocument('SOMETHING_ELSE', ['tenant_id' => $this->tenant->id, 'provider_id' => $this->clinic->id,
         'subject' => ['type' => 'X', 'key' => 'x', 'label' => 'x']]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });
+
+it('D4 templates: 12 provider templates are seeded PLATFORM/REVIEW by the system author with spec content; one-step approve-publish is for seeded templates only', function () {
+    $seeded = DocumentTemplate::where('created_by', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)->get();
+    expect($seeded)->toHaveCount(12)->and($seeded->pluck('status')->unique()->all())->toBe(['PUBLISHED'])
+        ->and($seeded->pluck('ownership')->unique()->all())->toBe(['PLATFORM']);
+    $eob = $seeded->firstWhere('document_type_code', 'EXPLANATION_OF_BENEFITS');
+    expect($eob->title_en)->toBe('Explanation of Benefits')->and($eob->content['canonical_spec_id'])->toBe('DOC-072')->and($eob->content['source'])->toBe('OWNER_CANONICAL_IMPLEMENTATION_SPEC_V1');
+    expect(DB::table('users')->where('id', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)->value('status'))->not->toBe('ACTIVE');
+
+    // Re-seeding never touches or duplicates an existing lineage.
+    $this->artisan('opesinsure:seed-document-catalogue')->assertSuccessful();
+    expect(DocumentTemplate::where('created_by', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)->count())->toBe(12);
+
+    // A regular template cannot use the one-step path (normal maker-checker).
+    $other = app(DocumentTemplateService::class)->createDraft(['document_type_code' => 'EXPLANATION_OF_BENEFITS', 'ownership' => 'PLATFORM', 'language' => 'FR', 'content' => ['sections' => []]], $this->admin);
+    Passport::actingAs($this->admin, [], 'api');
+    $this->postJson('/api/v1/document-templates/'.$other->id.'/approve-publish', [], $this->h)->assertStatus(422);
+});
+
+it('D4 templates: via the API, a seeded REVIEW template is activated in one step; then platform-issued DOC-065 issues without carrier authorization while insurer-issued documents still need it', function () {
+    // Fresh lineage state: retire what beforeEach published, re-seed REVIEW versions is not possible (lineage exists) — so work on a new provider event with authorization withdrawn.
+    DocumentIssuanceProfile::query()->update(['opes_rendering_authorized' => false]);
+    $pa = app(PreauthorizationService::class)->request($this->tenant->id, ['request_type' => 'OUTPATIENT', 'policy_id' => $this->policy->id, 'provider_id' => $this->clinic->id,
+        'details' => ['consultation_date' => now()->toDateString(), 'diagnosis_code' => 'J06.9'], 'lines' => [['service_code' => 'CONS_D4', 'quantity' => 1]]], $this->user);
+    expect(DB::table('documents')->where('subject_key', 'preauth-request:'.$pa->id)->value('issuer_type'))->toBe('PLATFORM');
+    $net = app(ProviderNetworkService::class);
+    $k = $net->createContract($this->tenant->id, DB::table('provider_networks')->where('code', 'D4NET')->value('id'), ['provider_id' => $this->clinic->id, 'contract_number' => 'D4-009', 'effective_from' => '2026-02-01'], null);
+    expect(DB::table('documents')->where('subject_key', 'provider-contract:'.$k->id)->exists())->toBeFalse()
+        ->and(app(ProviderDocumentService::class)->onContractActivated($this->tenant->id, $k->id, null)[0]['state'])->toBe('AWAITING_CARRIER_DOCUMENT');
+
+    // The HTTP one-step action on a seeded REVIEW template (new seed lineage simulated by retiring + re-seeding one type).
+    $tpl = DocumentTemplate::where('document_type_code', 'PROVIDER_TARIFF_SCHEDULE')->where('status', 'PUBLISHED')->first();
+    $draft = $tpl->replicate(['status', 'published_by', 'published_at', 'approved_by', 'approved_at']);
+    $draft->forceFill(['version' => 2, 'status' => 'REVIEW'])->save();
+    Passport::actingAs($this->admin, [], 'api');
+    $this->postJson('/api/v1/document-templates/'.$draft->id.'/approve-publish', [], $this->h)->assertOk()->assertJsonPath('data.status', 'PUBLISHED');
+    expect($tpl->refresh()->status)->toBe('RETIRED');
+});
+

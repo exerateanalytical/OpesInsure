@@ -111,6 +111,7 @@ final class DocumentEngineController
             'submit' => $templates->submit($t, $user),
             'approve' => $templates->approve($t, $user),
             'publish' => $templates->publish($t, $user, $request->input('effective_from')),
+            'approve-publish' => $templates->approveAndPublishSystem($t, $user),
             'retire' => $templates->retire($t, (string) $request->input('reason', 'Retired'), $user),
             default => abort(404),
         };

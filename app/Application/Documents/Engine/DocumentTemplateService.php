@@ -106,6 +106,20 @@ final class DocumentTemplateService
         });
     }
 
+    /**
+     * One-step activation of a system-seeded template (ProviderDocumentTemplateSeeder): the seed is authored by the
+     * disabled system account, so the administrator is the checker; approve + publish in one transaction, with the
+     * usual status, maker-checker and content-hash checks of each step. Refused for any other template.
+     */
+    public function approveAndPublishSystem(DocumentTemplate $t, User $actor): DocumentTemplate
+    {
+        if ($t->created_by !== \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID || empty($t->content['system_seeded'])) {
+            throw ValidationException::withMessages(['template' => 'One-step approval is only available for system-seeded templates.']);
+        }
+
+        return DB::transaction(fn (): DocumentTemplate => $this->publish($this->approve($t, $actor), $actor));
+    }
+
     public function retire(DocumentTemplate $t, string $reason, User $actor): DocumentTemplate
     {
         return DB::transaction(function () use ($t, $reason, $actor): DocumentTemplate {
