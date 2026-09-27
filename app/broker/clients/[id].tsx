@@ -7,6 +7,8 @@ import { AppHeader, Card, Money, Screen, StatusChip } from "@/components/ui";
 import { BrokerApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { Customer360Panel } from "@/components/crm/Customer360Panel";
+import { ClientDocumentsCard } from "@/components/partner/ClientDocumentsCard";
+import { BrokerWorkspaceApi } from "@/api/partner";
 export default function BrokerClientDetail() {
   const { t } = useTranslation();
   const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
@@ -32,6 +34,7 @@ export default function BrokerClientDetail() {
             <Text>Next renewal: {x?.renewal_due_at ?? t("agNone")}</Text>
           </Card>
           <Customer360Panel partyId={x?.party_id ?? partyId ?? null} />
+          <ClientDocumentsCard customerId={id} load={BrokerWorkspaceApi.clientDocuments} />
           </>
         )}
       </StatePanel>

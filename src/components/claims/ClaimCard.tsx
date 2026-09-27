@@ -44,7 +44,7 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
   const carriers = useCarriers();
   const mark = carrierMark(carriers, p?.carrier_id ?? p?.carrier?.id, {
     name: providerName(p),
-    logoUrl: (claim as { carrier_logo_url?: string | null }).carrier_logo_url ?? (p as { carrier_logo_url?: string | null } | null | undefined)?.carrier_logo_url,
+    logoUrl: claim.carrier_logo_url ?? p?.carrier_logo_url,
   });
   const needsAction = normalizeClaimStatus(claim.status) === "EVIDENCE_PENDING";
   return (

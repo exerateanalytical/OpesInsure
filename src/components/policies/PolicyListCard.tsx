@@ -34,7 +34,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
   const carriers = useCarriers();
   const mark = carrierMark(carriers, policy.carrier_id ?? w.carrier?.id, {
     name: w.carrier_name ?? w.carrier?.party?.display_name,
-    logoUrl: (w as { carrier_logo_url?: string | null }).carrier_logo_url,
+    logoUrl: w.carrier_logo_url,
   });
   const provider = mark.name ?? t("licensedCarrier");
   const cat = policyCategory(policy);

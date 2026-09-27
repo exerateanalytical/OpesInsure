@@ -78,7 +78,7 @@ export default function PolicyDocuments() {
                 <ChevronRight size={20} color={colors.navy900} />
               </View>
               <View style={s.providerRow}>
-                <InstitutionMark logoUrl={insurer?.logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={24} />
+                <InstitutionMark logoUrl={p?.carrier_logo_url ?? insurer?.logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={24} />
                 <Text style={s.body}>{provider}</Text>
               </View>
             </View>

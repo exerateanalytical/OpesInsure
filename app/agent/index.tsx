@@ -15,6 +15,7 @@ import {
   Store,
   UserPlus,
   Search,
+  ShieldAlert,
 } from "lucide-react-native";
 import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
@@ -62,6 +63,8 @@ export default function AgentHome() {
           { label: t("agQuotes"), subtitle: t("agQuotesPrepared"), icon: FileSignature, href: "/agent/quotes" },
           { label: t("portalTab_Customers"), subtitle: t("agOriginProtectedClients"), icon: ContactRound, href: "/agent/clients" },
           { label: t("policies"), subtitle: t("agClientsCover"), icon: FileText, href: "/agent/policies" },
+          { label: t("ptProposals"), subtitle: t("ptProposalsSubtitle"), icon: FileSignature, href: "/agent/proposals" },
+          { label: t("claims"), subtitle: t("ptClaimsSubtitle"), icon: ShieldAlert, href: "/agent/claims" },
           { label: t("notifPref_renewals"), subtitle: t("agPoliciesDueSoon"), icon: RefreshCw, href: "/agent/renewals" },
           { label: t("agCommissions"), subtitle: t("agEarningsWithdrawals"), icon: CircleDollarSign, href: "/agent/wallet" },
           { label: t("agNewSale"), subtitle: t("agQuoteAndRequest"), icon: ShoppingBag, href: "/agent/sales/new" },

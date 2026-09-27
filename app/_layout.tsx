@@ -182,6 +182,8 @@ export default function RootLayout() {
           <Stack.Screen name="agent/quotes/[id]" />
           <Stack.Screen name="agent/catalogue" />
           <Stack.Screen name="agent/policies" />
+          <Stack.Screen name="agent/proposals" />
+          <Stack.Screen name="agent/claims" />
         </Stack.Protected>
         <Stack.Protected guard={broker}>
           <Stack.Screen name="broker/index" />
@@ -201,6 +203,7 @@ export default function RootLayout() {
           <Stack.Screen name="broker/catalogue" />
           <Stack.Screen name="broker/policies" />
           <Stack.Screen name="broker/claims" />
+          <Stack.Screen name="broker/proposals" />
           <Stack.Screen name="broker/staff" />
           <Stack.Screen name="broker/commissions" />
         </Stack.Protected>

@@ -2901,4 +2901,13 @@ export const fr: Record<keyof typeof en, string> = {
   coEncrypted: "Vos informations de paiement sont chiffrées et sécurisées.",
   appealNotEligible: "Pas encore éligible à un recours",
   claimPoliciesCount: "{count} polices",
+  ptProposals: "Propositions",
+  ptProposalsSubtitle: "Demandes soumises pour vos clients",
+  ptNoProposals: "Aucune proposition",
+  ptNoProposalsBody: "Les propositions soumises pour vos clients apparaîtront ici.",
+  ptProposalsLoading: "Chargement des propositions…",
+  ptClaimsSubtitle: "Sinistres déclarés sur les contrats de vos clients",
+  ptClientDocuments: "Documents du client",
+  ptNoClientDocuments: "Aucun document émis pour ce client.",
+  ptDocNotCurrent: "Non valide",
 };

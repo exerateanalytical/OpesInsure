@@ -2912,4 +2912,13 @@ export const en = {
   coEncrypted: "Your payment information is encrypted and secure.",
   appealNotEligible: "Not eligible for appeal yet",
   claimPoliciesCount: "{count} policies",
+  ptProposals: "Proposals",
+  ptProposalsSubtitle: "Applications submitted for your clients",
+  ptNoProposals: "No proposals yet",
+  ptNoProposalsBody: "Proposals you submit for clients will appear here.",
+  ptProposalsLoading: "Loading proposals…",
+  ptClaimsSubtitle: "Claims filed on your clients’ policies",
+  ptClientDocuments: "Client documents",
+  ptNoClientDocuments: "No issued documents for this client yet.",
+  ptDocNotCurrent: "Not current",
 };

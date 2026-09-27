@@ -7,7 +7,7 @@ import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
-import { ApiError, InsuranceApi, ProposalSummary, ProposalsApi, WalletApi } from "@/api/client";
+import { ApiError, InsuranceApi, ProposalSummary, ProposalsApi } from "@/api/client";
 import { ProposalLifecycleApi } from "@/api/workflow";
 import { RecentProposals } from "@/store/insurance";
 import { localized, mergePages, proposalStatusInfo } from "@/lib/purchase";
@@ -44,19 +44,10 @@ export default function Applications() {
   const [filter, setFilter] = useState<Filter>("all");
   /** Checklist completion per proposal (GET /proposals/{id}/checklist); missing when the API has none. */
   const [progress, setProgress] = useState<Record<string, number>>({});
-  /** proposal_id -> policy id for proposals already issued as policies (they are not drafts any more). */
-  const [issued, setIssued] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    WalletApi.all()
-      .then((policies) => {
-        const map: Record<string, string> = {};
-        for (const pol of policies) if (pol.proposal_id) map[pol.proposal_id] = pol.id;
-        setIssued(map);
-      })
-      .catch(() => undefined);
     try {
       const result = await ProposalsApi.list(1);
       setItems(result.items);
@@ -111,7 +102,7 @@ export default function Applications() {
   };
 
   // A proposal whose policy is issued is no longer a draft: it lives under My policies.
-  const drafts = useMemo(() => items.filter((p) => !issued[p.id]), [items, issued]);
+  const drafts = useMemo(() => items.filter((p) => !p.policy_id), [items]);
   const issuedCount = items.length - drafts.length;
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: drafts.length, progress: 0, awaiting: 0, ready: 0 };

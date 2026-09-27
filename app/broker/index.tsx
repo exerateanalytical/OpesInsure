@@ -66,6 +66,7 @@ export default function BrokerHome() {
           { label: t("catTitle"), subtitle: t("catMenuSubtitle"), icon: PackageCheck, href: "/broker/catalogue" },
           { label: t("agQuotes"), subtitle: t("brQuotesForClients"), icon: FileSignature, href: "/broker/quotes" },
           { label: t("policies"), subtitle: t("brPoliciesPlaced"), icon: FileText, href: "/broker/policies" },
+          { label: t("ptProposals"), subtitle: t("ptProposalsSubtitle"), icon: FileSignature, href: "/broker/proposals" },
           { label: t("claims"), subtitle: t("brClaimsOnBook"), icon: ShieldAlert, href: "/broker/claims" },
           { label: t("brStaff"), subtitle: t("brTeamInvitations"), icon: Users, href: "/broker/staff" },
           { label: t("agCommissions"), subtitle: t("brAccrualsStatements"), icon: Wallet, href: "/broker/commissions" },

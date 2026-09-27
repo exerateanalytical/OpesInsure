@@ -51,6 +51,35 @@ export type PartnerClaim = {
   submitted_at: string | null;
 };
 
+export type PartnerProposal = {
+  id: string;
+  proposal_number: string;
+  customer_id: string | null;
+  customer_name: string;
+  status: string;
+  line_code: string | null;
+  carrier_name: string | null;
+  total_minor: number | null;
+  currency: string;
+  submitted_at: string | null;
+  decided_at: string | null;
+  created_at: string | null;
+};
+/** Issued documents of one book client (DocumentAccessPolicy::intermediaryMay). download_url only when current. */
+export type ClientDocument = {
+  id: string;
+  title: string;
+  title_fr: string | null;
+  group: string | null;
+  document_number: string | null;
+  status: string;
+  is_current: boolean;
+  policy_id: string | null;
+  policy_number: string | null;
+  issued_at: string | null;
+  download_url: string | null;
+};
+
 export const money = (minor?: number | null) =>
   `${new Intl.NumberFormat("fr-CM").format(Math.round((minor ?? 0) / 100))} FCFA`;
 export const shortDate = (iso?: string | null) =>
@@ -117,6 +146,10 @@ export const AgentWorkspaceApi = {
   }) => api<ConsentedClient>("/mobile/partner/agent/clients", post(payload)),
   quotes: () => api<PartnerQuote[]>("/mobile/partner/agent/quotes"),
   policies: () => api<PartnerPolicy[]>("/mobile/partner/agent/policies"),
+  proposals: () => api<PartnerProposal[]>("/mobile/partner/agent/proposals"),
+  claims: () => api<PartnerClaim[]>("/mobile/partner/agent/claims"),
+  clientDocuments: (customerId: string) =>
+    api<ClientDocument[]>(`/mobile/partner/agent/clients/${encodeURIComponent(customerId)}/documents`),
 };
 
 // ------------------------------------------------------------------ broker
@@ -183,6 +216,9 @@ export const BrokerWorkspaceApi = {
   quotes: () => api<PartnerQuote[]>("/mobile/partner/broker/quotes"),
   policies: () => api<PartnerPolicy[]>("/mobile/partner/broker/policies"),
   claims: () => api<PartnerClaim[]>("/mobile/partner/broker/claims"),
+  proposals: () => api<PartnerProposal[]>("/mobile/partner/broker/proposals"),
+  clientDocuments: (customerId: string) =>
+    api<ClientDocument[]>(`/mobile/partner/broker/clients/${encodeURIComponent(customerId)}/documents`),
   staff: () => api<BrokerStaff>("/mobile/partner/broker/staff"),
   inviteStaff: (payload: { recipient_phone_e164?: string; recipient_email?: string }) =>
     api<BrokerInvitation>("/mobile/partner/broker/staff/invitations", post(payload)),

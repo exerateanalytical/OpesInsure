@@ -664,6 +664,8 @@ export type QuoteOffer = {
   carrier?: { id?: string; party?: { display_name?: string } } | null;
   product?: { id?: string; name?: string; line_code?: string } | null;
   decline_reason_code?: string | null;
+  /** Insurer logo from the server; null until the carrier has one (initials fallback). */
+  carrier_logo_url?: string | null;
 };
 export type Quote = {
   id: string;
@@ -702,6 +704,10 @@ export type Proposal = {
   };
   disclosure_schema?: { questions?: unknown[] };
   quote_offer_id?: string;
+  /** Policy issued from this proposal (server field); null/absent until issued. */
+  policy_id?: string | null;
+  /** Insurer logo; null until the carrier has one (UI falls back to initials). */
+  carrier_logo_url?: string | null;
   submitted_at?: string | null;
   decided_at?: string | null;
   created_at?: string;
@@ -890,6 +896,8 @@ export type ClaimEvent = {
 };
 export type Claim = {
   id: string;
+  /** Insurer logo from the server; null until the carrier has one (initials fallback). */
+  carrier_logo_url?: string | null;
   claim_number: string;
   policy_id: string;
   status: string;
@@ -1495,6 +1503,8 @@ export type WalletDocument = {
   download_url?: string | null;
 };
 export type WalletPolicy = Policy & {
+  /** Insurer logo from the server; null until the carrier has one (initials fallback). */
+  carrier_logo_url?: string | null;
   carrier_name?: string | null;
   product_name?: string | null;
   documents?: WalletDocument[];

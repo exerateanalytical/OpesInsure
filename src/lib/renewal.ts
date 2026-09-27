@@ -101,8 +101,10 @@ export function offerDiscount(offer: unknown): { minor: number; percent: number 
   return { minor, percent, label };
 }
 
-/** Insurer logo when the eager-loaded carrier row carries one (logo_url / party.logo_url). */
+/** Insurer logo: the offer's own carrier_logo_url first, else the eager-loaded carrier row (logo_url / party.logo_url). */
 export function carrierLogo(offer: unknown): string | null {
+  const own = (offer as { carrier_logo_url?: unknown } | null | undefined)?.carrier_logo_url;
+  if (typeof own === "string" && /^https:\/\//i.test(own)) return own;
   const c = (offer as { carrier?: Record<string, unknown> | null })?.carrier;
   const party = (c?.party ?? {}) as Record<string, unknown>;
   const v = c?.logo_url ?? c?.logo ?? party.logo_url ?? party.logo;
