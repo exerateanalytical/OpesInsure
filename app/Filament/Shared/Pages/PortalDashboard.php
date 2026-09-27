@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Shared\Pages;
 
 use App\Domain\Tenancy\TenantContext;
+use App\Filament\Shared\Widgets;
 use App\Filament\Shared\Widgets\PortalMetricsWidget;
 use App\Models\Tenant;
 use Filament\Facades\Filament;
@@ -27,6 +28,7 @@ final class PortalDashboard extends Dashboard
 
     public function getWidgets(): array
     {
-        return [PortalMetricsWidget::class];
+        return [PortalMetricsWidget::class, Widgets\PremiumCollectedChartWidget::class, Widgets\MyWorkWidget::class,
+            Widgets\ExpiringPoliciesWidget::class, Widgets\OpenClaimsWidget::class, Widgets\RecentActivityWidget::class];
     }
 }

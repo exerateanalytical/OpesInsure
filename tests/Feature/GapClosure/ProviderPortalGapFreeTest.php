@@ -292,3 +292,56 @@ it('REQ-PRV-001 REQ-PRV-002: pack 04 vocabularies seed as master data (synonyms 
     expect($t->check(['official_name' => 'Hôpital de District de Bonassama', 'provider_type' => 'DISTRICT_HOSPITAL', 'city' => 'Douala', 'source_url' => 'https://minsante.cm/x'], [], $seen)['status'])->toBe('DUPLICATE');
     expect(collect(app(DataReadinessRegistry::class)->domain('health'))->firstWhere('item', 'gap04.provider_master')['status'])->toBe('UNVERIFIED');
 });
+
+// ----------------------------------------------------------------- web screens (provider panel forms reuse the API actions)
+
+function gp4Web(object $t): void
+{
+    test()->actingAs($t->user, 'web');
+    app(\App\Domain\Tenancy\TenantContext::class)->set($t->tenant->id);
+    app()->instance(\App\Application\Providers\Portal\ProviderScope::class.'@panel',
+        new \App\Application\Providers\Portal\ProviderScope($t->clinic->id, [$t->clinic->id], $t->clinic->party_id, null));
+}
+
+it('REQ-PRV-003 web: preauthorization request form posts through the API action; claim capture → submit → EOB detail; admissions screen', function () {
+    gp4Web($this);
+    $pa = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::class)
+        ->set('request_type', 'OUTPATIENT')->set('policy_id', $this->policy->id)->set('member_ref', $this->f['party']->id)->set('facility_id', $this->main->id)
+        ->set('service_code', 'CONS_GP4')->set('quantity', '1')->set('details', ['consultation_date' => '2026-03-10', 'diagnosis_code' => 'J06'])
+        ->call('submitRequest')->assertSet('state', 'SUCCESS')->assertSee('CONS_GP4');
+    $id = $pa->get('selected');
+    expect(DB::table('health_preauthorizations')->where('id', $id)->value('provider_profile_id'))->toBe($this->clinic->id);
+    // A missing required type field is a field error, nothing is created.
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::class)
+        ->set('request_type', 'OUTPATIENT')->set('policy_id', $this->policy->id)->set('service_code', 'CONS_GP4')->call('submitRequest')
+        ->assertSet('state', 'VALIDATION_FAILED')->assertHasErrors('details.consultation_date');
+    expect(DB::table('health_preauthorizations')->count())->toBe(1);
+
+    $c = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ClaimsPage::class)
+        ->set('contract_id', $this->contract->id)->set('invoice_reference', 'WEB-INV-1')->set('service_date', '2026-03-10')->set('policy_id', $this->policy->id)
+        ->set('facility_id', $this->main->id)->set('lines', [['medical_service_id' => $this->cons->id, 'provider_code' => null, 'quantity' => '1', 'unit_price_minor' => '15000']])
+        ->call('createClaim')->assertSet('state', 'SUCCESS');
+    $claim = $c->get('selected');
+    expect(DB::table('health_provider_claims')->where('id', $claim)->value('status'))->toBe('DRAFT');
+    $c->call('submitClaim')->assertSet('state', 'SUCCESS')->assertSee('WEB-INV-1');
+    expect(DB::table('health_provider_claims')->where('id', $claim)->value('status'))->toBe('SUBMITTED');
+
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\AdmissionsPage::class)->assertOk();
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ContractsPage::class)->call('open', $this->contract->id)->assertSee('CONS_GP4');
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\DocumentsPage::class)->assertOk();
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ReportsPage::class)->set('report', 'CLAIMS_BY_STATUS')->assertSee('SUBMITTED')
+        ->call('exportCsv')->assertFileDownloaded('claims_by_status.csv');
+});
+
+it('REQ-PRV-003 web: another provider\'s claim or contract never opens on this provider\'s screens', function () {
+    $otherClaim = app(ProviderClaimService::class)->create($this->tenant->id, ['provider_id' => $this->clinic->id, 'contract_id' => $this->contract->id, 'invoice_reference' => 'MINE-1',
+        'service_date' => '2026-03-10', 'policy_id' => $this->policy->id, 'lines' => [['medical_service_id' => $this->cons->id, 'unit_price_minor' => 15000]]], null);
+    // Acting for the outsider provider: the clinic's claim and contract are invisible.
+    $this->clinic = $this->outsider;
+    $this->user = gp4Employee($this->tenant, $this->outsider);
+    gp4Web($this);
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ClaimsPage::class)->assertDontSee('MINE-1')
+        ->call('open', $otherClaim->id)->assertSee('Provider claim not found.');
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ContractsPage::class)->assertDontSee('GP4-001')
+        ->call('open', $this->contract->id)->assertSee('Contract not found.');
+});

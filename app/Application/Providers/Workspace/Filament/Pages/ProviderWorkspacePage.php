@@ -11,7 +11,12 @@ use App\Domain\Tenancy\TenantContext;
 use App\Models\User;
 use BackedEnum;
 use Filament\Pages\Page;
+use App\Application\Providers\Workspace\Http\ProviderWorkspaceController;
+use App\Interfaces\Http\Errors\ApiProblemException;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
 /**
@@ -57,9 +62,15 @@ abstract class ProviderWorkspacePage extends Page
         return auth()->user();
     }
 
+    /** Active provider: the request attribute set by ResolveProviderPanelScope, else the panel binding it registers for the same request. */
     protected function scope(): ProviderScope
     {
-        return ProviderScope::of(request());
+        $s = request()->attributes->get(ProviderScope::ATTRIBUTE);
+        if (! $s instanceof ProviderScope && app()->bound(ProviderScope::class.'@panel')) {
+            $s = app(ProviderScope::class.'@panel');
+        }
+
+        return $s instanceof ProviderScope ? $s : ProviderScope::of(request());
     }
 
     protected function tenantId(): string
@@ -96,6 +107,87 @@ abstract class ProviderWorkspacePage extends Page
     protected function columns(): array
     {
         return [];
+    }
+
+    /** Record opened in the detail panel (claim EOB, settlement statement, contract tariffs …). */
+    public ?string $selected = null;
+
+    /**
+     * Per-row actions: list of ['label' => …, 'action' => livewire method, 'arg' => …] or ['label' => …, 'url' => …].
+     *
+     * @param  array<string, mixed>  $row
+     * @return list<array<string, string>>
+     */
+    public function rowActions(array $row): array
+    {
+        return [];
+    }
+
+    public function open(string $id): void
+    {
+        $this->selected = $id;
+    }
+
+    public function closeDetail(): void
+    {
+        $this->selected = null;
+    }
+
+    /** Detail panel for $selected: ['title' => …, 'cards' => [...], 'rows' => [...]]. @return array<string, mixed>|null */
+    protected function detail(): ?array
+    {
+        return null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function detailPayload(): ?array
+    {
+        if ($this->selected === null) {
+            return null;
+        }
+        try {
+            $d = $this->detail();
+        } catch (ApiProblemException|HttpExceptionInterface $e) {
+            return ['title' => $this->selected, 'cards' => [], 'rows' => [], 'error' => $e->getMessage()];
+        }
+
+        return $d === null ? null : $d + ['cards' => [], 'rows' => [], 'error' => null];
+    }
+
+    /**
+     * Provider-side mutation through the SAME controller action as the API (validation, facility scope, audit, outbox and
+     * document issuance are not re-implemented here). Validation errors land on the form fields; business refusals set
+     * the screen state and message.
+     *
+     * @param  array<string, mixed>  $input
+     * @param  array<string, string>  $fieldMap  request key => livewire property (error mapping)
+     * @return array<string, mixed>|null the created/updated resource, null on refusal
+     */
+    protected function callWorkspace(string $action, array $input, ?string $id = null, array $fieldMap = []): ?array
+    {
+        $r = Request::create('/api/v1/provider-portal', 'POST', $input);
+        $r->setUserResolver(fn () => $this->user());
+        $r->attributes->set(ProviderScope::ATTRIBUTE, $this->scope());
+        $this->resetErrorBag();
+        try {
+            $c = app(ProviderWorkspaceController::class);
+            $res = $id === null ? $c->{$action}($r) : $c->{$action}($r, $id);
+            $this->state = 'SUCCESS';
+            $this->stateMessage = __('provider_workspace.states.SUCCESS');
+
+            return json_decode((string) $res->getContent(), true)['data'] ?? [];
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $k => $msgs) {
+                $this->addError($fieldMap[$k] ?? $k, $msgs[0]);
+            }
+            $this->state = 'VALIDATION_FAILED';
+            $this->stateMessage = collect($e->errors())->flatten()->first();
+        } catch (ApiProblemException|HttpExceptionInterface $e) {
+            $this->state = 'VALIDATION_FAILED';
+            $this->stateMessage = $e->getMessage();
+        }
+
+        return null;
     }
 
     /** @return array{cards: array, columns: list<string>, rows: list<array>, state: string, message: ?string} */

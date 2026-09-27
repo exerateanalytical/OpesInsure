@@ -7,7 +7,7 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 
-/** Provider Portal screen "settlements" (Gap-Free spec ui_screen_register). */
+/** Provider Portal screens "settlements" and "settlement_detail" (remittance: statement figures derived from the batch claims, per-claim lines). */
 final class SettlementsPage extends ProviderWorkspacePage
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
@@ -19,6 +19,19 @@ final class SettlementsPage extends ProviderWorkspacePage
     protected static string $permission = 'provider.settlement.view';
 
     protected static string $screen = 'settlements';
+
+    public function rowActions(array $row): array
+    {
+        return isset($row['id']) ? [['label' => __('provider_workspace.ui.open'), 'action' => 'open', 'arg' => $row['id']]] : [];
+    }
+
+    protected function detail(): ?array
+    {
+        $d = $this->ws()->settlement($this->user(), $this->scope(), $this->selected);
+
+        return ['title' => __('provider_workspace.screens.settlement_detail').' '.($d['settlement']['batch_number'] ?? ''), 'cards' => $d['statement'],
+            'rows' => array_map(fn ($l) => (array) $l, $d['lines'])];
+    }
 
     protected function rows(): array
     {
