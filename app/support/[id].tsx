@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { ArrowUpCircle, CalendarDays, ChevronRight, Clock3, FileText, Flag, Headset, MessageSquare, MessagesSquare, Paperclip, Send, Tag, Ticket, User } from "lucide-react-native";
@@ -21,6 +21,8 @@ const HIGH = ["PAYMENT", "CLAIM", "FRAUD", "SECURITY"];
 export default function SupportDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td, date } = useTranslation();
+  const { width } = useWindowDimensions();
+  const oneLineReply = Platform.OS === "web" && width >= 380;
   const q = useLoad(() => SupportApi.show(id), [id]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"reply" | "attach" | "escalate" | null>(null);
@@ -104,7 +106,7 @@ export default function SupportDetail() {
                 placeholder={t("supportReplyPlaceholder")}
                 placeholderTextColor={colors.neutral500}
                 multiline
-                numberOfLines={Platform.OS === "web" ? 1 : undefined}
+                numberOfLines={oneLineReply ? 1 : undefined}
                 style={styles.replyInput}
               />
               <View style={styles.sendWrap}>

@@ -23,6 +23,8 @@ import { IssueReportApi } from "@/api/client";
  * from memory later. Reports land in mobile_issue_reports (see
  * MobileIssueReportController) and are reviewable from the admin panel.
  */
+const TAB_ROUTES = new Set(["/", "/explore", "/policies", "/claims", "/profile"]);
+
 export function IssueReportButton() {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -57,6 +59,9 @@ export function IssueReportButton() {
     }
   };
 
+  // Only on the main tabs: elsewhere screens pin their own action bars and
+  // a floating button would cover them (e.g. Pay on renewal review).
+  if (!open && !TAB_ROUTES.has(pathname)) return null;
   return (
     <>
       <Pressable
