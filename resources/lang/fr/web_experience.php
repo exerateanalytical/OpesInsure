@@ -89,6 +89,8 @@ return [
         'group_distribution' => 'Distribution', 'agreements' => 'Conventions et délégations', 'agreement' => 'Convention assureur-courtier', 'number' => 'Numéro', 'broker' => 'Courtier',
         'effective_from' => 'En vigueur du', 'effective_until' => 'En vigueur jusqu’au', 'approved_at' => 'Approuvée le', 'products' => 'Produits autorisés', 'can_quote' => 'Peut coter', 'can_bind' => 'Peut souscrire', 'commission_bp' => 'Commission (points de base)',
         'bordereaux' => 'Bordereaux', 'settlements' => 'Règlements', 'receivables' => 'Commissions à recevoir', 'staff' => 'Personnel',
+        'policy' => 'Police', 'cover' => 'Couverture et prime', 'claim' => 'Sinistre', 'loss' => 'Survenance', 'amounts' => 'Montants', 'quote' => 'Devis', 'proposal' => 'Proposition', 'document' => 'Document',
+        'integrity' => 'Intégrité et vérification', 'party' => 'Identité', 'customer' => 'Relation client', 'partner' => 'Profil partenaire', 'lifecycle' => 'Cycle de vie',
     ],
     // Pages de détail des dossiers principaux (onglet lié RecordShell + CoreRecordOverview).
     'related' => [
@@ -99,10 +101,6 @@ return [
             'commissions' => 'Commissions', 'statements' => 'Relevés partenaire', 'licences' => 'Agréments', 'attributions' => 'Rattachements clients', 'customer_relationships' => 'Relations clients',
             'underwriting' => 'Souscription', 'versions' => 'Autres versions',
         ],
-    ],
-    'sections' => [
-        'policy' => 'Police', 'cover' => 'Couverture et prime', 'claim' => 'Sinistre', 'loss' => 'Survenance', 'amounts' => 'Montants', 'quote' => 'Devis', 'proposal' => 'Proposition', 'document' => 'Document',
-        'integrity' => 'Intégrité et vérification', 'party' => 'Identité', 'customer' => 'Relation client', 'partner' => 'Profil partenaire', 'lifecycle' => 'Cycle de vie',
     ],
     'claim_work' => ['empty' => 'Aucun enregistrement pour le moment.'],
     'fields' => [

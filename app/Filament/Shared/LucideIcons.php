@@ -41,6 +41,8 @@ final class LucideIcons
         'BuildingStorefront' => 'store', 'BellAlert' => 'bell-ring', 'ArrowUpTray' => 'upload', 'ArrowPath' => 'refresh-cw',
         'ArchiveBoxArrowDown' => 'archive-restore', 'Home' => 'house', 'User' => 'user', 'Eye' => 'eye', 'XCircle' => 'circle-x', 'ArrowDownTray' => 'download',
         'ArrowRightCircle' => 'circle-arrow-right', 'MagnifyingGlass' => 'search',
+        'Bell' => 'bell', 'Check' => 'check', 'CommandLine' => 'terminal', 'FingerPrint' => 'fingerprint', 'Folder' => 'folder', 'Heart' => 'heart-pulse',
+        'PaintBrush' => 'paintbrush', 'PaperAirplane' => 'send', 'PencilSquare' => 'square-pen', 'Photo' => 'image', 'Plus' => 'plus', 'XMark' => 'x',
     ];
 
     public const ALIASES = [

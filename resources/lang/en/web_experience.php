@@ -89,6 +89,8 @@ return [
         'group_distribution' => 'Distribution', 'agreements' => 'Contracts & delegated authority', 'agreement' => 'Carrier-broker agreement', 'number' => 'Number', 'broker' => 'Broker',
         'effective_from' => 'Effective from', 'effective_until' => 'Effective until', 'approved_at' => 'Approved', 'products' => 'Authorised products', 'can_quote' => 'May quote', 'can_bind' => 'May bind', 'commission_bp' => 'Commission (basis points)',
         'bordereaux' => 'Bordereaux', 'settlements' => 'Settlements', 'receivables' => 'Commission receivables', 'staff' => 'Staff',
+        'policy' => 'Policy', 'cover' => 'Cover & premium', 'claim' => 'Claim', 'loss' => 'Loss', 'amounts' => 'Amounts', 'quote' => 'Quote', 'proposal' => 'Proposal', 'document' => 'Document',
+        'integrity' => 'Integrity & verification', 'party' => 'Identity', 'customer' => 'Customer relationship', 'partner' => 'Partner profile', 'lifecycle' => 'Lifecycle',
     ],
     // Core-record detail pages (RecordShell related tab + CoreRecordOverview).
     'related' => [
@@ -99,10 +101,6 @@ return [
             'commissions' => 'Commissions', 'statements' => 'Partner statements', 'licences' => 'Licences', 'attributions' => 'Customer attributions', 'customer_relationships' => 'Customer relationships',
             'underwriting' => 'Underwriting', 'versions' => 'Other versions',
         ],
-    ],
-    'sections' => [
-        'policy' => 'Policy', 'cover' => 'Cover & premium', 'claim' => 'Claim', 'loss' => 'Loss', 'amounts' => 'Amounts', 'quote' => 'Quote', 'proposal' => 'Proposal', 'document' => 'Document',
-        'integrity' => 'Integrity & verification', 'party' => 'Identity', 'customer' => 'Customer relationship', 'partner' => 'Partner profile', 'lifecycle' => 'Lifecycle',
     ],
     'claim_work' => ['empty' => 'None recorded yet.'],
     'fields' => [
