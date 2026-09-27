@@ -79,7 +79,7 @@ final class CaseRecordResource extends Resource
             Tables\Columns\TextColumn::make('confidentiality')->badge()->toggleable(),
             Tables\Columns\TextColumn::make('due_at')->dateTime()->sortable(),
             Tables\Columns\TextColumn::make('opened_at')->dateTime()->sortable()->toggleable(),
-        ])->recordActions([Actions\ViewAction::make()]);
+        ])->recordActions([Actions\ViewAction::make(), \App\Filament\Shared\Actions\WorkQueueActions::assign()]);
     }
 
     public static function getPages(): array

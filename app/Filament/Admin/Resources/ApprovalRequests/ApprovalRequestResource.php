@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\ApprovalRequests;
 
-use App\Application\Approvals\ApprovalService;
 use App\Domain\Tenancy\TenantContext;
-use App\Filament\Admin\Concerns\ServiceValidation;
+use App\Filament\Shared\Actions\ApprovalActions;
 use App\Models\ApprovalRequest;
 use BackedEnum;
 use Filament\Actions;
-use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -82,7 +80,6 @@ final class ApprovalRequestResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $svc = fn (): ApprovalService => app(ApprovalService::class);
 
         return $table->defaultSort('created_at', 'desc')->columns([
             Tables\Columns\TextColumn::make('action_code')->label('Action')->badge()->searchable(),
@@ -101,23 +98,9 @@ final class ApprovalRequestResource extends Resource
             Actions\Action::make('details')->label(__('web_experience.approval.heading'))->icon('lucide-eye')->color('gray')
                 ->modalHeading(__('web_experience.approval.heading'))->modalSubmitAction(false)
                 ->modalContent(fn ($record) => view('filament.shared.approval-panel', ['approval' => app(\App\Application\WebExperiences\ApprovalPanelData::class)->for($record, auth()->user())])),
-            // Self-approval is disabled with an explanation (not hidden); ApprovalService still enforces it server-side.
-            Actions\Action::make('approve')->color('success')->requiresConfirmation()
-                ->visible(fn ($record) => $record->status === 'PENDING' && ($record->requested_by === auth()->id() || $svc()->canDecide($record, auth()->user())))
-                ->disabled(fn ($record) => $record->requested_by === auth()->id())
-                ->tooltip(fn ($record) => $record->requested_by === auth()->id() ? __('web_experience.approval.self_approval_disabled') : null)
-                ->schema([Forms\Components\Textarea::make('note')])
-                ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $svc()->approve($record, auth()->user(), $data['note'] ?? null))),
-            Actions\Action::make('reject')->color('danger')
-                ->visible(fn ($record) => $record->status === 'PENDING' && ($record->requested_by === auth()->id() || $svc()->canDecide($record, auth()->user())))
-                ->disabled(fn ($record) => $record->requested_by === auth()->id())
-                ->tooltip(fn ($record) => $record->requested_by === auth()->id() ? __('web_experience.approval.self_approval_disabled') : null)
-                ->schema([Forms\Components\Textarea::make('note')->required()])
-                ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $svc()->reject($record, auth()->user(), $data['note']))),
-            Actions\Action::make('withdraw')->color('gray')->requiresConfirmation()
-                ->visible(fn ($record) => $record->status === 'PENDING' && $record->requested_by === auth()->id())
-                ->schema([Forms\Components\Textarea::make('reason')->required()])
-                ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $svc()->cancel($record, auth()->user(), $data['reason']))),
+            // Approve / reject / withdraw are shared (App\Filament\Shared\Actions\ApprovalActions): same permissions as the API;
+            // self-approval is disabled with an explanation, ApprovalService still enforces it server-side.
+            ...ApprovalActions::all(),
         ]);
     }
 
