@@ -16,4 +16,11 @@ return [
         'leads' => 'Leads',
         'commissions' => 'Commissions & statements',
     ],
+    // Staff / memberships list (shared MembershipResource: admin "Access & roles", portal "Staff").
+    'staff' => [
+        'model' => 'Access assignment', 'plural' => 'Access & roles', 'user' => 'User', 'organization' => 'Organisation', 'branch' => 'Branch', 'all_branches' => 'All branches',
+        'role' => 'Primary role', 'status' => 'Status', 'revoke' => 'Revoke access', 'empty_t' => 'No access assignments', 'empty_d' => 'Invite a colleague or assign an existing user to an organisation.',
+    ],
+    'statuses' => ['ACTIVE' => 'Active', 'SUSPENDED' => 'Suspended', 'REVOKED' => 'Revoked'],
+    'roles' => ['BROKER_ADMIN' => 'Broker administrator', 'BROKER_SUPERVISOR' => 'Broker supervisor', 'BROKER_STAFF' => 'Broker staff', 'BRANCH_MANAGER' => 'Branch manager', 'AGENT' => 'Agent'],
 ];

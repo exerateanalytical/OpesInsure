@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
 use App\Application\PartnerWorkspace\AgentLeadService;
+use App\Application\PartnerWorkspace\PartnerBookQuery;
 use App\Application\PartnerWorkspace\PartnerWorkspaceScope;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Policy;
@@ -99,6 +100,29 @@ final class PartnerAgentWorkspaceController
         return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p) + [
             'party_id' => $p->party_id, 'customer_id' => $customers[$p->party_id] ?? null,
         ])->values()]);
+    }
+
+    /** Proposals of clients origin-locked to this agent (UI audit 2026-09-27: web book pages). */
+    public function proposals(Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        $t = $this->tenant();
+
+        return response()->json(['data' => $book->proposals($t, $this->scope->bookPartyIds($this->scope->agent($request->user())))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
+    }
+
+    /** Claims on policies of clients origin-locked to this agent (same rule as the broker claims list). */
+    public function claims(Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        return response()->json(['data' => $book->claims($this->tenant(), $this->scope->bookPartyIds($this->scope->agent($request->user())))
+            ->map(fn ($c) => PartnerWorkspaceShapes::claim($c))->values()]);
+    }
+
+    /** Documents of one book client, filtered by DocumentAccessPolicy::intermediaryMay. */
+    public function clientDocuments(string $customer, Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        $client = $book->client($this->tenant(), $this->scope->bookPartyIds($this->scope->agent($request->user())), $customer);
+
+        return response()->json(['data' => $book->clientDocuments($client)]);
     }
 
     // ------------------------------------------------------------ shapes

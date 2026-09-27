@@ -8,6 +8,7 @@
   <section class="acard" data-page-body></section>
   <section class="acard"><h2>{{ $K['js']['client_policies'] }}</h2><div data-policies></div></section>
   <section class="acard"><h2>{{ $K['js']['client_quotes'] }}</h2><div data-quotes></div></section>
+  <section class="acard"><h2>{{ $K['js']['client_documents'] }}</h2><div data-documents></div></section>
 </div>
 @endsection
 @push('scripts')
@@ -21,7 +22,8 @@ Opes.page(function (ctx) {
     var initials = String(c.full_name || '').split(/\s+/).map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase();
     O.clear(box).append(
       h('div', { class: 'ag-head' }, h('div', { class: 'who' }, h('span', { class: 'av' }, initials || '··'), h('div', null, h('h2', null, c.full_name), h('small', null, [c.phone_e164, c.city].filter(Boolean).join(' · ')))),
-        h('div', { class: 'btns' }, h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers' }, A.t('back')), A.canQuote() ? h('a', { class: 'dbtn dbtn-primary sm', href: '/account/buy?customer=' + encodeURIComponent(c.id) }, O.icon('compare'), A.t('new_quote_client')) : null)),
+        h('div', { class: 'btns' }, h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers' }, A.t('back')), A.canQuote() ? h('a', { class: 'dbtn dbtn-primary sm', href: '/account/buy?customer=' + encodeURIComponent(c.id) }, O.icon('compare'), A.t('new_quote_client')) : null,
+          A.canFileClaim() ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/claim' }, O.icon('shield'), A.t('file_claim')) : null)),
       h('hr', { class: 'ag-hr' }),
       h('div', { class: 'ag-fields' },
         A.field(A.t('th_phone'), c.phone_e164), A.field(A.t('th_city'), c.city),
@@ -47,6 +49,17 @@ Opes.page(function (ctx) {
           h('td', null, O.chip(q.status)), h('td', null, O.date(q.created_at)), h('td', null, O.date(q.expires_at)));
       })));
     }).catch(function (e) { A.fail(qbox, e); });
+
+    // Client documents: issued documents an intermediary may see (DocumentAccessPolicy::intermediaryMay), signed download links.
+    var dbox = O.$('[data-documents]'); O.loading(dbox);
+    A.clientDocuments(c.id).then(function (rows) {
+      if (!rows.length) return O.empty(dbox, A.t('no_client_documents'));
+      O.clear(dbox).appendChild(A.table(['th_document', 'th_number', 'th_policy', 'th_status', 'th_issued', 'th_actions'], rows.map(function (d) {
+        return h('tr', null, h('td', null, h('b', null, (O.locale === 'fr' && d.title_fr) || d.title || '—')), h('td', null, d.document_number || '—'), h('td', null, d.policy_number || '—'),
+          h('td', null, O.chip(d.status, A.label(d.status))), h('td', null, O.date(d.issued_at)),
+          h('td', { class: 'acts' }, d.download_url ? h('a', { class: 'dbtn dbtn-outline sm', href: d.download_url, target: '_blank', rel: 'noopener' }, O.icon('download'), A.t('download')) : '—'));
+      })));
+    }).catch(function (e) { A.fail(dbox, e); });
   }).catch(function (e) { A.fail(box, e); O.clear(pbox); O.clear(qbox); });
 });
 </script>

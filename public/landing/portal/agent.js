@@ -88,6 +88,12 @@
   A.renewals = function () { return O.list(A.mode() === 'broker' ? '/mobile/broker/renewals' : '/mobile/agent/renewals').then(function (r) { return r.items; }); };
   A.quotes = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/quotes' : '/mobile/partner/agent/quotes').then(function (r) { return r.items; }); };
   A.policies = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/policies' : '/mobile/partner/agent/policies').then(function (r) { return r.items; }); };
+  // Book pages (UI audit 2026-09-27): same partner scoping as the quotes / policies lists.
+  A.proposals = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/proposals' : '/mobile/partner/agent/proposals').then(function (r) { return r.items; }); };
+  A.claims = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/claims' : '/mobile/partner/agent/claims').then(function (r) { return r.items; }); };
+  A.clientDocuments = function (id) { return O.list((A.mode() === 'broker' ? '/mobile/partner/broker/clients/' : '/mobile/partner/agent/clients/') + encodeURIComponent(id) + '/documents').then(function (r) { return r.items; }); };
+  /** Agent-assisted FNOL (POST /mobile/partner/agent/claims) exists for agents only. */
+  A.canFileClaim = function () { return A.mode() === 'agent' && O.can('agent.clients.manage'); };
   A.dashboard = function () { return O.api(A.mode() === 'broker' ? '/mobile/broker/dashboard' : '/mobile/agent/dashboard'); };
 
   /** POST with extra headers (the step-up grant). Same auth headers as Opes.api; a 401 here is shown, never a sign-out. */

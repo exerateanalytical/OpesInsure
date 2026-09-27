@@ -34,6 +34,18 @@ final class DocumentAccessPolicy
         return $profiles === [] || array_intersect($profiles, ['A1', 'A2']) !== [];
     }
 
+    /** Levels the client's intermediary (agent / broker) may see: the customer levels minus medical. */
+    public const INTERMEDIARY_LEVELS = ['PUBLIC_VERIFIABLE', 'CUSTOMER_PRIVATE', 'FINANCIAL_RESTRICTED'];
+
+    /**
+     * The attributed agent or broker, for a document of a client in their book (the caller checks the book).
+     * Profile A2 is "customer + intermediary"; medical documents stay with the customer and staff.
+     */
+    public static function intermediaryMay(Document $d): bool
+    {
+        return in_array($d->security_level ?? 'CUSTOMER_PRIVATE', self::INTERMEDIARY_LEVELS, true) && self::customerMay($d);
+    }
+
     public static function staffMay(User $user, Document $d): bool
     {
         $needed = match ($d->security_level ?? 'CUSTOMER_PRIVATE') {

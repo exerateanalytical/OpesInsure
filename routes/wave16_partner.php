@@ -26,11 +26,16 @@ Route::post('mobile/partner/agent/leads/{lead}/convert', [Agent::class, 'convert
 Route::post('mobile/partner/agent/clients', [Agent::class, 'createClient'])->middleware(['permission:agent.clients.manage', 'throttle:10,1']);
 Route::get('mobile/partner/agent/quotes', [Agent::class, 'quotes'])->middleware('permission:agent.clients.read');
 Route::get('mobile/partner/agent/policies', [Agent::class, 'policies'])->middleware('permission:agent.clients.read');
+Route::get('mobile/partner/agent/proposals', [Agent::class, 'proposals'])->middleware('permission:agent.clients.read');
+Route::get('mobile/partner/agent/claims', [Agent::class, 'claims'])->middleware('permission:agent.clients.read');
+Route::get('mobile/partner/agent/clients/{customer}/documents', [Agent::class, 'clientDocuments'])->middleware('permission:agent.clients.read')->whereUuid('customer');
 
 // ----------------------------------------------------------------- broker
 Route::get('mobile/partner/broker/quotes', [Broker::class, 'quotes'])->middleware('permission:broker.portal.read');
 Route::get('mobile/partner/broker/policies', [Broker::class, 'policies'])->middleware('permission:broker.portal.read');
 Route::get('mobile/partner/broker/claims', [Broker::class, 'claims'])->middleware('permission:broker.portal.read');
+Route::get('mobile/partner/broker/proposals', [Broker::class, 'proposals'])->middleware('permission:broker.portal.read');
+Route::get('mobile/partner/broker/clients/{customer}/documents', [Broker::class, 'clientDocuments'])->middleware('permission:broker.portal.read')->whereUuid('customer');
 Route::get('mobile/partner/broker/staff', [Broker::class, 'staff'])->middleware('permission:broker.portal.read');
 Route::post('mobile/partner/broker/staff/invitations', [Broker::class, 'inviteStaff'])->middleware(['permission:broker.portal.read', 'throttle:10,1']);
 Route::get('mobile/partner/broker/commissions', [Broker::class, 'commissions'])->middleware('permission:broker.finance.read');

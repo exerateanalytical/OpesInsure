@@ -175,6 +175,8 @@
     $$('[data-user-role]').forEach(function (e) { e.textContent = (T.roles || {})[s.kind] || ''; });
     $$('[data-user-initials]').forEach(function (e) { e.textContent = n.split(/\s+/).map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase() || '··'; });
     $$('[data-role]').forEach(function (e) { e.hidden = !(e.dataset.role === s.kind || (e.dataset.role === 'agent' && s.kind === 'agent') || (e.dataset.role === 'officer' && s.kind === 'officer')); });
+    // data-perm="a|b": also needs one of these workspace permissions (e.g. Staff is for brokerages only).
+    $$('[data-perm]').forEach(function (e) { if (!e.hidden) e.hidden = !e.dataset.perm.split('|').some(can); });
     api('/mobile/notifications', { raw: true, query: { unread: 1, per_page: 1 } }).then(function (j) {
       var n2 = (j && j.meta && (j.meta.unread_count !== undefined ? j.meta.unread_count : j.meta.total)) || 0;
       $$('[data-unread],[data-unread-count]').forEach(function (e) { e.hidden = !n2; if (e.hasAttribute('data-unread-count')) e.textContent = n2; });

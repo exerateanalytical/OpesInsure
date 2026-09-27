@@ -18,9 +18,11 @@
     ['documents', '/account/documents', 'doc', null],
     ['vehicles', '/account/vehicles', 'motor', null],
     ['customers', '/account/customers', 'users', 'agent'],
+    ['book', '/account/book', 'list', 'agent', 'agent.clients.read|broker.portal.read'],
     ['leads', '/account/leads', 'target', 'agent'],
     ['reports', '/account/reports', 'grid', 'agent'],
     ['commissions', '/account/commissions', 'piggy', 'agent'],
+    ['staff', '/account/staff', 'handshake', 'agent', 'broker.portal.read'],
     ['desk', '/account/claims-desk', 'scale', 'officer'],
     ['profile', '/account/profile', 'user', null],
     ['notifications', '/account/notifications', 'bell', null],
@@ -70,8 +72,9 @@
 <div class="acct-frame">
   <aside class="acct-side" aria-label="{{ $A['account_nav'] }}">
     <nav>
-      @foreach($side as [$key, $href, $icon, $role])
-        <a href="{{ $href }}" @if($role) data-role="{{ $role }}" hidden @endif @if($active === $key) aria-current="page" @endif>@include('public.partials.i', ['n' => $icon])<span>{{ $A['side'][$key] }}</span>@if($key === 'notifications')<em class="badge" data-unread-count hidden></em>@endif</a>
+      @foreach($side as $item)
+        @php [$key, $href, $icon, $role] = $item; $perm = $item[4] ?? null; @endphp
+        <a href="{{ $href }}" @if($role) data-role="{{ $role }}" hidden @endif @if($perm) data-perm="{{ $perm }}" @endif @if($active === $key) aria-current="page" @endif>@include('public.partials.i', ['n' => $icon])<span>{{ $A['side'][$key] }}</span>@if($key === 'notifications')<em class="badge" data-unread-count hidden></em>@endif</a>
       @endforeach
     </nav>
     <div class="side-help">

@@ -17015,7 +17015,7 @@
                     }
                 ],
                 "x-permissions": [
-                    "claims.read"
+                    "claims.view"
                 ],
                 "security": [
                     {
@@ -17065,7 +17065,7 @@
                     }
                 ],
                 "x-permissions": [
-                    "claims.read"
+                    "claims.view"
                 ],
                 "security": [
                     {
@@ -52483,6 +52483,46 @@
             }
         },
         "/api/v1/mobile/partner/agent/claims": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_claims",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentWorkspaceController@claims",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
             "post": {
                 "operationId": "post_api_v1_mobile_partner_agent_claims",
                 "tags": [
@@ -52643,6 +52683,56 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/documents": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_clients_customer_documents",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentWorkspaceController@clientDocuments",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
             }
         },
         "/api/v1/mobile/partner/agent/leads": {
@@ -53103,6 +53193,48 @@
                 ]
             }
         },
+        "/api/v1/mobile/partner/agent/proposals": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_proposals",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentWorkspaceController@proposals",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/agent/quotes": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_agent_quotes",
@@ -53187,6 +53319,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/partner/broker/clients/{customer}/documents": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_broker_clients_customer_documents",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerBrokerWorkspaceController@clientDocuments",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/broker/commissions": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_broker_commissions",
@@ -53236,6 +53418,48 @@
                     "mobile"
                 ],
                 "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerBrokerWorkspaceController@policies",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/broker/proposals": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_broker_proposals",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerBrokerWorkspaceController@proposals",
                 "responses": {
                     "200": {
                         "description": "OK"

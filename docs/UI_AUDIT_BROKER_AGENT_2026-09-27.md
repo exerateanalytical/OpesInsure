@@ -41,12 +41,20 @@ No role saw **Quotes**. BROKER_* roles did not see **Policies**, **Claims**, **R
 - **G4:** `/broker` had no way to start client onboarding, quoting for the book, leads or commission statements. The portal is read-only (D4), and these flows live in the partner workspace. **Fixed:** there is a new **Partner workspace** navigation group in `/broker` with My clients, New client, New quote, Leads, and Commissions & statements. Each link is shown only when the user holds the permission the target API already requires (`broker.portal.read`, `crm.leads.manage`, `quotes.manage`, `crm.leads.read`, `broker.finance.read`). These are links only; nothing is granted.
 - **G5:** `/account/customers` had "New quote" but no **New client** button. Onboarding was hidden behind a "+ New client" toggle inside the buy page. **Fixed:** a New client button on the client list opens `/account/buy?new_client=1`, and the buy page opens the onboarding form straight away. The button is hidden unless the partner can onboard (agent: `agent.clients.manage`; broker: `crm.leads.manage`). The rule "partners quote only for their own attributed clients or new clients they onboard" is unchanged: the form still posts to `/mobile/agent/clients` or `/mobile/broker/clients`, which lock the client's origin to the partner (PartnerBook, 1827f54).
 
-### 3.3 Flows with no web UI (open, not built in this pass)
-- **G6: Agent-assisted claims (FNOL for a client).** `POST /mobile/partner/agent/claims` (AgentFnolController) exists, but `/account/claims/new` files only for the signed-in user. A client selector (from the book) and a policy picker on the client detail page are needed.
-- **G7: Broker claims support.** `GET /mobile/partner/broker/claims` exists, but no web page lists the broker book's claims.
-- **G8: Book lists.** Partner quotes and policies (`/mobile/partner/{agent,broker}/quotes|policies`) appear only as charts on `/account/reports` and per client on the client page. There is no list of the book's quotes, proposals or policies with status filters.
-- **G9: Documents for the book.** `/account/documents` shows only the signed-in user's own documents. There is no way to see or download a client's certificate from the partner workspace.
-- **G10: Broker staff management on the web.** `/broker/memberships` is read-only. The staff-invitation API (`POST /mobile/partner/broker/staff/invitations`) has no web form.
+### 3.3 Flows that had no web UI (fixed in the follow-up pass)
+- **G6: Agent-assisted claims (FNOL for a client). Fixed.** New page `/account/customers/{id}/claim`, reached from a "File a claim" button on the client page. The button is shown to agents with `agent.clients.manage`. The page offers the client's active policies and posts to the existing `POST /mobile/partner/agent/claims`. That endpoint calls `FnolService::submitForCustomer`, which refuses a claimant outside the agent's book (tested). Brokers have no assisted-FNOL API, so the page shows them a "not available" panel.
+- **G7 and G8: Book lists. Fixed.** New page `/account/book` (side nav "My Book"), with tabs for Quotes, Proposals, Policies and Claims, plus search.
+  - New read endpoints: `GET /mobile/partner/agent/proposals`, `GET /mobile/partner/agent/claims` and `GET /mobile/partner/broker/proposals`.
+  - They use the partner permissions the existing lists already use (`agent.clients.read` / `broker.portal.read`).
+  - The existing broker claims list now uses the same shared query (`App\Application\PartnerWorkspace\PartnerBookQuery`), so agents and brokers are scoped identically. Rows are limited to `PartnerWorkspaceScope::bookPartyIds`.
+- **G9: Documents for the book. Fixed.** There is a Documents section on the client page, backed by `GET /mobile/partner/{agent,broker}/clients/{id}/documents`.
+  - A client outside the caller's book returns 404.
+  - Only issued documents on the client's policies are listed, filtered by the new `DocumentAccessPolicy::intermediaryMay`: the customer-visible levels and A1/A2 profiles, **minus medical**. Insurer-confidential, internal and regulatory documents never appear.
+  - Downloads use the existing short-lived signed route `mobile.policy-documents.download`.
+- **G10: Staff invitation form. Fixed.** New page `/account/staff` (side nav, shown only with `broker.portal.read`).
+  - It lists members and pending invitations from `GET /mobile/partner/broker/staff`.
+  - The invite form posts to the existing `POST /mobile/partner/broker/staff/invitations` (`InvitationService::issue`). The form appears only when the API reports `can_invite`, and the API still enforces BROKER_ADMIN.
+  - To hide the item from agents, the side nav gained an optional `data-perm` attribute (`portal.js`).
 
 ## 4. Design inconsistencies
 
@@ -57,10 +65,10 @@ No role saw **Quotes**. BROKER_* roles did not see **Policies**, **Claims**, **R
 | D3 | FR: the skip link on every panel page showed the raw key `filament-panels::layout.skip_to_content.label` | **Fixed:** `resources/lang/vendor/filament-panels/fr/layout.php` |
 | D4 | FR: the sidebar group "Financial operations" was a literal English group key | **Fixed for `/broker`:** a panel group label (`partner_portal.financial_operations`). The admin panel still uses the literal (admin audit) |
 | D5 | Commission receivables, Settlements and Bordereaux columns showed raw attribute names ("Amount minor", "Policy id", "Net amount minor", "Gross premium minor") in both languages | **Fixed:** translated column labels (`partner_portal.columns.*`) |
-| D6 | The same columns used Filament `->money(divideBy: 100)` ("XAF 500.00"). The rest of the UI uses `Money::display` ("500 FCFA", locale grouping) | **Fixed** on those three resources. Twelve other admin resources still use `divideBy` (admin audit) |
+| D6 | The same columns used Filament `->money(divideBy: 100)` ("XAF 500.00"). The rest of the UI uses `Money::display` ("500 FCFA", locale grouping) | **Fixed** on those three resources, then on the remaining 12 admin resources (14 columns). No `divideBy` money column is left in `app/Filament` |
 | D7 | Status badges on those three lists had no colour; the rest of the UI uses `RecordInfolist::color` | **Fixed** |
 | D8 | Settlement period dates were raw ISO strings | **Fixed** (`->date()`) |
-| D9 | The Staff list (`/broker/memberships`) title "Tenant Memberships" and its columns (User, Organization, Branch, Primary role) are English in FR. Role codes are shown raw (`BROKER_STAFF`) | Open (shared MembershipResource) |
+| D9 | The Staff list (`/broker/memberships`) title "Tenant Memberships" and its columns (User, Organization, Branch, Primary role) were English in FR, and role codes were shown raw (`BROKER_STAFF`) | **Fixed:** translated titles, columns, status values, filter, revoke label and empty state (`partner_portal.staff/statuses/roles`). Broker role codes show as labels; other roles fall back to `RoleCatalogue::LABELS` |
 | D10 | Bordereaux URL is `/broker/bordereaux/bordereaus` (auto-pluralised slug) | Open. Changing the slug also changes admin URLs |
 | D11 | Commission receivables show a copyable policy UUID instead of the policy number (the model has no `policy` relation) | Open |
 | D12 | Icons: the resources declare Heroicons, and `LucideIcons` swaps them centrally when the panel is served. The new workspace links use `lucide-*` directly | OK |
@@ -76,6 +84,13 @@ Duplicates: none added. The broker portal reuses the admin resources through `Po
 - `resources/views/public/account/pages/customers.blade.php`, `buy.blade.php`: New client entry point.
 - `resources/lang/{en,fr}/partner_portal.php`, `resources/lang/{en,fr}/organisation_settings.php`, `resources/lang/vendor/filament-{tables,panels}/fr/*.php`.
 - `tests/Feature/Web/BrokerAgentNavCrawlTest.php`: crawls every `/broker` nav URL per broker role in EN and FR (no 500, 403 or 404, no raw translation keys), crawls every `/account` side-nav link in EN and FR, and checks the workspace-link visibility and the New client entry point.
+
+### Follow-up pass (same day)
+- `app/Application/PartnerWorkspace/PartnerBookQuery.php` (new, shared by the agent and broker controllers), `app/Application/Documents/Engine/DocumentAccessPolicy.php` (`intermediaryMay`, additive).
+- `app/Interfaces/Http/Controllers/Api/V1/PartnerWorkspace/{PartnerAgentWorkspaceController,PartnerBrokerWorkspaceController,PartnerWorkspaceShapes}.php`, `routes/wave16_partner.php`: five GET endpoints.
+- `resources/views/public/account/pages/{book,staff}.blade.php`, `pages/customers/show/claim.blade.php`, `pages/customers/show.blade.php`, `layout.blade.php`, `public/landing/portal/{agent,portal}.js`, `resources/lang/{en,fr}/{account,account_agent,partner_portal}.php`.
+- `app/Filament/Admin/Resources/Memberships/MembershipResource.php` (FR labels), and 12 admin resources (money display).
+- `tests/Feature/Partners/PartnerWorkspaceBookTest.php` (book scoping, client documents and levels, assisted FNOL book check, invitation gate, pages in EN/FR). The crawl test also covers `/account/book`, `/account/staff` and the French Staff page.
 
 ## 6. Owner actions
 1. Decide G1 (a, b or c) and G2 (whether broker roles get `distribution.agreements.view`).

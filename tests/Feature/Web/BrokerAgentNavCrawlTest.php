@@ -88,6 +88,7 @@ it('labels the broker portal in French (nav groups, organisation settings, table
         ->assertSee("Paramètres de l'organisation")->assertSee('Montant')->assertDontSee('filament-tables::')
         ->assertDontSee('Financial operations')->assertDontSee('Amount minor');
     $this->get('/broker/organisation-settings')->assertOk()->assertSee('Mes préférences')->assertSee('Enregistrer')->assertDontSee('My preferences');
+    $this->get('/broker/memberships')->assertOk()->assertSee('Utilisateur')->assertSee('Rôle principal')->assertSee('Administrateur du cabinet')->assertSee('Actif')->assertDontSee('Tenant Memberships')->assertDontSee('Primary role');
 });
 
 it('hides partner-workspace links from roles without the target API permission', function () {
@@ -106,7 +107,7 @@ it('crawls every link of the web account side navigation (customer, agent, broke
     preg_match_all('#href="(/account[^"]*)"#', $side, $m);
     $urls = array_values(array_unique($m[1]));
 
-    expect($urls)->toContain('/account/policies', '/account/quotes', '/account/claims', '/account/documents', '/account/customers', '/account/leads', '/account/commissions', '/account/claims-desk');
+    expect($urls)->toContain('/account/policies', '/account/quotes', '/account/claims', '/account/documents', '/account/customers', '/account/leads', '/account/commissions', '/account/claims-desk', '/account/book', '/account/staff');
     expect(brokerCrawlUrls($this, $urls))->toBe([]);
     foreach (['en', 'fr'] as $lang) {
         expect(brokerCrawlUrls($this, array_map(fn ($u) => $u.'?lang='.$lang, $urls)))->toBe([]);

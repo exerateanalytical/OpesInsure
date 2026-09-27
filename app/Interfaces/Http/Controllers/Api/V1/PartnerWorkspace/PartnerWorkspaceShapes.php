@@ -45,6 +45,18 @@ final class PartnerWorkspaceShapes
         ];
     }
 
+    public static function proposal(\App\Models\Proposal $p, string $tenantId): array
+    {
+        $o = $p->offer;
+
+        return [
+            'id' => $p->id, 'proposal_number' => $p->proposal_number, 'customer_id' => TenantCustomer::where(['tenant_id' => $tenantId, 'party_id' => $p->party_id])->value('id'),
+            'customer_name' => $p->party?->display_name ?? 'Client', 'status' => $p->status, 'line_code' => $o?->quote?->line_code,
+            'carrier_name' => $o?->carrier?->party?->display_name, 'total_minor' => $o ? (int) $o->total_minor : null, 'currency' => $o?->currency ?? 'XAF',
+            'submitted_at' => $p->submitted_at?->toIso8601String(), 'decided_at' => $p->decided_at?->toIso8601String(), 'created_at' => $p->created_at?->toIso8601String(),
+        ];
+    }
+
     public static function money(int $minor): string
     {
         return number_format($minor / 100, 0, '.', ' ').' FCFA';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
 use App\Application\Identity\InvitationService;
+use App\Application\PartnerWorkspace\PartnerBookQuery;
 use App\Application\PartnerWorkspace\PartnerWorkspaceScope;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Claim;
@@ -55,13 +56,23 @@ final class PartnerBrokerWorkspaceController
         return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values()]);
     }
 
-    public function claims(Request $request): JsonResponse
+    public function claims(Request $request, PartnerBookQuery $book): JsonResponse
     {
-        $book = $this->book($request);
-        $rows = Claim::with(['policy.party', 'claimant'])->where('tenant_id', $this->tenant())->whereHas('policy', fn ($p) => $p->whereIn('party_id', $book))
-            ->orderByDesc('submitted_at')->limit(100)->get();
+        return response()->json(['data' => $book->claims($this->tenant(), $this->book($request))->map(fn (Claim $c) => PartnerWorkspaceShapes::claim($c))->values()]);
+    }
 
-        return response()->json(['data' => $rows->map(fn (Claim $c) => PartnerWorkspaceShapes::claim($c))->values()]);
+    /** Proposals of the broker's attributed book (UI audit 2026-09-27: web book pages). */
+    public function proposals(Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        $t = $this->tenant();
+
+        return response()->json(['data' => $book->proposals($t, $this->book($request))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
+    }
+
+    /** Documents of one book client, filtered by DocumentAccessPolicy::intermediaryMay. */
+    public function clientDocuments(string $customer, Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        return response()->json(['data' => $book->clientDocuments($book->client($this->tenant(), $this->book($request), $customer))]);
     }
 
     public function commissions(Request $request): JsonResponse
