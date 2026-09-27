@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { AlertTriangle, Bell, CheckCircle2, ChevronRight, CreditCard, FileText, Info, LucideIcon, Search, ShieldCheck } from "lucide-react-native";
 import { Button, Chip, ChipRow, ripple, Screen } from "@/components/ui";
@@ -36,6 +36,8 @@ const KIND: Record<Kind, { icon: LucideIcon; tint: Tint; label: CopyKey; action:
 
 export default function Notifications() {
   const { t, date } = useTranslation();
+  // Under 400dp the time moves under the body so it does not squeeze the title.
+  const narrow = useWindowDimensions().width < 400;
   const q = useLoad(() => CustomerApi.notifications());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,10 +175,11 @@ export default function Notifications() {
               <View style={styles.flex}>
                 <View style={styles.titleRow}>
                   <Text style={[styles.title, !n.read && styles.bold, styles.flex]} numberOfLines={2}>{n.title}</Text>
-                  <Text style={styles.meta}>{relative(n.created_at)}</Text>
+                  {narrow ? null : <Text style={styles.meta}>{relative(n.created_at)}</Text>}
                   {!n.read ? <View style={[styles.dot, n.severity === "CRITICAL" && styles.dotCritical]} accessibilityElementsHidden /> : null}
                 </View>
                 <Text style={styles.body} numberOfLines={3}>{n.body}</Text>
+                {narrow ? <Text style={[styles.meta, styles.metaBelow]}>{relative(n.created_at)}</Text> : null}
                 {target && kind && !n.read ? (
                   <View style={[styles.action, alert && styles.actionStrong]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                     <Text style={[styles.actionText, alert && styles.actionTextStrong]}>{t(KIND[kind].action)}</Text>
@@ -221,7 +224,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   title: { ...type.label, color: colors.navy950, fontFamily: "Inter_500Medium" },
   bold: { fontFamily: "Inter_700Bold" },
-  body: { ...type.body, color: colors.neutral600, marginTop: 4 },
+  body: { ...type.body, fontSize: 15, lineHeight: 21, color: colors.neutral600, marginTop: 4 },
+  metaBelow: { marginTop: 4 },
   meta: { ...type.caption, color: colors.neutral500, fontFamily: "Inter_400Regular" },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.blue600 },
   error: { ...type.meta, color: colors.dangerText },

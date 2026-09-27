@@ -278,7 +278,7 @@ export function IconTile({ icon: Icon, label, tint = "blue", onPress, disabled, 
       style={({ pressed }) => [s.tile, { backgroundColor: c.bg }, pressed && s.pressed, disabled && s.disabled, style]}
     >
       <Icon size={28} color={c.fg} />
-      <Text style={[s.tileLabel, { color: tint === "neutral" ? colors.navy950 : c.fg }]} numberOfLines={2}>{label}</Text>
+      <Text style={[s.tileLabel, { color: tint === "neutral" ? colors.navy950 : c.fg }]} numberOfLines={3}>{label}</Text>
     </Pressable>
   );
 }

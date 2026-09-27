@@ -104,7 +104,7 @@ export default function Explore() {
               style={({ pressed }) => [styles.featured, pressed && styles.pressed]}
             >
               <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={48} />
-              <Text style={styles.featuredName} numberOfLines={2}>{p.name}</Text>
+              <Text style={styles.featuredName} numberOfLines={3}>{p.name}</Text>
             </Pressable>
           ))}
         </ScrollView>

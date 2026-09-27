@@ -94,6 +94,6 @@ const s = StyleSheet.create({
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginVertical: 2 },
   shrink: { flexShrink: 1 },
   chipRow: { flexDirection: "row", marginBottom: 4 },
-  number: { ...type.body, fontSize: 15, color: colors.neutral700 },
+  number: { ...type.body, fontSize: 14, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
 });

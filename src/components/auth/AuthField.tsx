@@ -26,7 +26,10 @@ export function AuthTextField({
   return (
     <View style={styles.fieldWrap}>
       <View style={[styles.field, error && styles.fieldError]}>
-        <Icon size={authIcon.normal} strokeWidth={authIcon.strokeWidth} color={authColors.slate500} />
+        {/* Fixed box: RN-web let the svg shrink to a dot at 360dp. */}
+        <View style={styles.iconBox}>
+          <Icon size={authIcon.normal} strokeWidth={authIcon.strokeWidth} color={authColors.slate500} />
+        </View>
         <TextInput
           accessibilityLabel={props.placeholder}
           placeholderTextColor={authColors.slate500}
@@ -135,7 +138,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: authSpace[4],
   },
   fieldError: { borderColor: authColors.danger },
+  iconBox: { flexShrink: 0 },
   input: {
+    minWidth: 0,
     flex: 1,
     fontSize: 16,
     fontFamily: "Inter_400Regular",

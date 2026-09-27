@@ -304,7 +304,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
               {d.website ? (
                 <Pressable accessibilityRole="link" accessibilityLabel={t("openWebsite")} onPress={() => open(d.website)} style={styles.contactRow}>
                   <ExternalLink size={16} color={colors.blue600} />
-                  <Text style={styles.contactText} numberOfLines={1}>{t("openWebsite")}</Text>
+                  <Text style={styles.contactText}>{t("openWebsite")}</Text>
                 </Pressable>
               ) : null}
             </View>
