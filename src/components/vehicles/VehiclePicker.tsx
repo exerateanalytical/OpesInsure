@@ -142,8 +142,12 @@ export function VehiclePicker({
   const [generationsState, setGenerationsState] = useState<LoadState>("idle");
   const [variants, setVariants] = useState<VehicleVariant[]>([]);
   const [variantsState, setVariantsState] = useState<LoadState>("idle");
-  const modelCode = value?.manual ? undefined : value?.model_code;
-  const generation = useMemo(() => generations.find((g) => g.code === value?.generation_code) ?? null, [generations, value?.generation_code]);
+  // Hosts may rebuild `value` from flat form values (dropping generation /
+  // variant codes), so the picker keeps its own copy of those choices.
+  const [generationPick, setGenerationPick] = useState<string | undefined>(value?.generation_code);
+  const [variantPick, setVariantPick] = useState<string | undefined>(value?.variant_code);
+  const modelCode = value?.model_code;
+  const generation = useMemo(() => generations.find((g) => g.code === generationPick) ?? null, [generations, generationPick]);
 
   useEffect(() => {
     setGenerations([]);
@@ -223,8 +227,10 @@ export function VehiclePicker({
   };
 
   const pickMake = (m: VehicleMake) => {
-    if (m.code === make?.code && !value?.manual) return;
+    if (m.code === make?.code) return;
     setMake(m);
+    setGenerationPick(undefined);
+    setVariantPick(undefined);
     setModels([]);
     setNotice(null);
     onChange({ make_code: m.code, make: m.name, model: "", year: value?.year });
@@ -245,20 +251,26 @@ export function VehiclePicker({
       variant_code: undefined,
       variant: undefined,
     });
+    setGenerationPick(undefined);
+    setVariantPick(undefined);
   };
 
   const pickGeneration = (g: VehicleGeneration) => {
     if (!value) return;
+    setGenerationPick(g.code);
+    setVariantPick(undefined);
     onChange({ ...value, generation_code: g.code, generation: g.name, body_type: g.body_type ?? value.body_type, variant_code: undefined, variant: undefined });
   };
 
   const pickYear = (y: string) => {
     if (!value) return;
+    setVariantPick(undefined);
     onChange({ ...value, year: y, variant_code: undefined, variant: undefined });
   };
 
   const pickVariant = (v: VehicleVariant) => {
     if (!value) return;
+    setVariantPick(v.code);
     onChange(applyVariant(value, v));
   };
 
@@ -305,7 +317,7 @@ export function VehiclePicker({
   }
 
   // A manually typed vehicle has no master codes: show it as a summary card.
-  if (value?.manual && value.make) {
+  if (value?.manual && value.make && !value.make_code) {
     return (
       <View style={st.wrap}>
         <Text style={st.label}>{`${t("vehicleMake")} · ${t("vehicleModel")}`}</Text>
@@ -386,7 +398,7 @@ export function VehiclePicker({
       {showGeneration ? (
         <SelectField
           label={t("vehicleGeneration")}
-          value={value?.generation_code}
+          value={generationPick}
           loading={generationsState === "loading"}
           options={generations.map((g) => ({ value: g.code, label: g.name, subtitle: g.year_from ? `${g.year_from}–${g.year_to ?? t("vehicleGenerationNow")}` : undefined }))}
           onChange={(code) => {
@@ -401,7 +413,7 @@ export function VehiclePicker({
       {showVariant ? (
         <SelectField
           label={t("vehicleEngineVariant")}
-          value={value?.variant_code}
+          value={variantPick}
           loading={variantsState === "loading"}
           hint={t("vehicleVariantHint")}
           options={variants.map((v) => ({ value: v.code, label: v.name, subtitle: variantSummary(v) || undefined }))}
