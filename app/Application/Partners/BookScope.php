@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  *
  *  - ORGANIZATION (BROKER_ADMIN)     → the whole company book / every colleague of the company;
  *  - TEAM (BROKER_SUPERVISOR)        → clients recorded by the caller's team (DataScopeResolver::teamUserIds);
- *  - ASSIGNED (BROKER_STAFF, AGENT)  → clients the caller recorded;
+ *  - ASSIGNED (BROKER_STAFF)         → clients the caller recorded (an AGENT is its own partner: whole agent book);
  *  - BRANCH (BRANCH_MANAGER)         → clients recorded by users of the caller's branches;
  *  - OWN (CUSTOMER)                  → the caller's own party;
  *  - TENANT / CARRIER_RELATIONSHIP   → null: not book-scoped (tenant or carrier scoping applies instead);
@@ -42,18 +42,40 @@ final class BookScope
     /** Party ids the caller may see, or null when the caller is not book-scoped. */
     public function parties(User $user): ?Builder
     {
-        $attributions = fn (): Builder => DB::table('customer_attributions')->where('status', 'ACTIVE')->select('party_id');
-        $partner = fn (): ?string => $this->parties->partnerForUser($user)?->getKey();
-
-        return match ($this->scope($user)) {
+        return match ($scope = $this->scope($user)) {
             DataScope::TENANT, DataScope::CARRIER_RELATIONSHIP => null,
-            DataScope::ORGANIZATION => ($p = $partner()) ? $attributions()->where('partner_id', $p) : (self::tenantIsCompany() ? null : self::none('party_id')),
-            DataScope::TEAM => ($p = $partner()) ? $attributions()->where('partner_id', $p)->whereIn('recorded_by', $this->scopes->teamUserIds($user)) : self::none('party_id'),
-            DataScope::ASSIGNED => ($p = $partner()) ? $attributions()->where('partner_id', $p)->where('recorded_by', $user->getKey()) : self::none('party_id'),
-            DataScope::BRANCH => $attributions()->whereIn('recorded_by', $this->branchUsers($user)),
+            DataScope::ORGANIZATION => ($p = $this->parties->partnerForUser($user)) ? $this->bookOf($user, $p, $scope) : (self::tenantIsCompany() ? null : self::none('party_id')),
+            DataScope::TEAM, DataScope::ASSIGNED => $this->bookOf($user, $this->parties->partnerForUser($user), $scope),
+            DataScope::BRANCH => $this->attributions()->whereIn('recorded_by', $this->branchUsers($user)),
             DataScope::OWN => $user->party_id ? DB::query()->selectRaw('?::uuid as party_id', [$user->party_id]) : self::none('party_id'),
             default => self::none('party_id'),
         };
+    }
+
+    /**
+     * The part of $partner's book (ACTIVE attributions) the caller may see: the whole book for ORGANIZATION scope
+     * or when the partner is an AGENT (the agent is the partner), the team's recordings for TEAM, the caller's own
+     * recordings for ASSIGNED. Used by the partner workspace (PartnerWorkspaceScope::bookPartyIds) and the portals.
+     */
+    public function bookOf(User $user, ?\App\Models\Partner $partner, ?DataScope $scope = null): Builder
+    {
+        if ($partner === null) {
+            return self::none('party_id');
+        }
+        $book = $this->attributions()->where('partner_id', $partner->getKey());
+
+        return match ($partner->type === 'AGENT' ? DataScope::ORGANIZATION : ($scope ?? $this->scope($user))) {
+            DataScope::ORGANIZATION, DataScope::TENANT, DataScope::CARRIER_RELATIONSHIP => $book,
+            DataScope::TEAM => $book->whereIn('recorded_by', $this->scopes->teamUserIds($user)),
+            DataScope::ASSIGNED => $book->where('recorded_by', $user->getKey()),
+            DataScope::BRANCH => $book->whereIn('recorded_by', $this->branchUsers($user)),
+            default => self::none('party_id'),
+        };
+    }
+
+    private function attributions(): Builder
+    {
+        return DB::table('customer_attributions')->where('status', 'ACTIVE')->select('party_id');
     }
 
     /** User ids of the colleagues the caller may see (staff list), or null when not book-scoped. */

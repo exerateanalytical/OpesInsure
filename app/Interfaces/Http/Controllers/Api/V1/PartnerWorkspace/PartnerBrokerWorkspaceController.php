@@ -38,7 +38,7 @@ final class PartnerBrokerWorkspaceController
     /** @return list<string> */
     private function book(Request $request): array
     {
-        return $this->scope->bookPartyIds($this->scope->broker($request->user()));
+        return $this->scope->bookPartyIds($request->user(), $this->scope->broker($request->user()));
     }
 
     public function quotes(Request $request): JsonResponse

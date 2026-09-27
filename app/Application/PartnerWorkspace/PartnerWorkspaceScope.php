@@ -49,14 +49,13 @@ final class PartnerWorkspaceScope
         return $partner && $partner->type === 'BROKER' ? $partner : null;
     }
 
-    /** @return list<string> party ids origin-locked to $partner */
-    public function bookPartyIds(?Partner $partner): array
+    /**
+     * @return list<string> party ids of $partner's book that $user may see (owner decision 2026-09-27, BookScope::bookOf):
+     * the whole book for a broker admin or an agent, the team's clients for a supervisor, their own for broker staff.
+     */
+    public function bookPartyIds(User $user, ?Partner $partner): array
     {
-        if (! $partner) {
-            return [];
-        }
-
-        return DB::table('customer_attributions')->where('partner_id', $partner->id)->where('status', 'ACTIVE')->pluck('party_id')->unique()->values()->all();
+        return $partner ? app(\App\Application\Partners\BookScope::class)->bookOf($user, $partner)->pluck('party_id')->unique()->values()->all() : [];
     }
 
     public function carrierId(User $user, string $tenantId): ?string

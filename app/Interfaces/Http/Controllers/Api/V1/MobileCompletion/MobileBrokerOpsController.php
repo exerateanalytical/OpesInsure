@@ -26,7 +26,7 @@ final class MobileBrokerOpsController
         $t = app(TenantContext::class)->id();
         $base = $this->finance->dashboard($request->user(), $t);
         $partner = $this->parties->partnerForUser($request->user());
-        $clientIds = $partner ? DB::table('customer_attributions')->where('partner_id', $partner->id)->where('status', 'ACTIVE')->pluck('party_id')->all() : [];
+        $clientIds = app(\App\Application\PartnerWorkspace\PartnerWorkspaceScope::class)->bookPartyIds($request->user(), $partner);
         $policies = Policy::where('tenant_id', $t)->whereIn('party_id', $clientIds);
         $xaf = fn ($minor) => number_format(((int) $minor) / 100, 0, '.', ' ').' FCFA';
         $outstanding = (int) collect($base['commission'])->sum('outstanding_minor');
@@ -155,7 +155,7 @@ final class MobileBrokerOpsController
         $partner = $this->parties->partnerForUser($request->user());
         $q = TenantCustomer::with('party.contacts')->where('tenant_customers.tenant_id', $t)->orderByDesc('tenant_customers.created_at');
 
-        return $partner ? $q->whereHas('party.attributions', fn ($a) => $a->where('partner_id', $partner->id)->where('status', 'ACTIVE')) : $q->whereRaw('1 = 0');
+        return $partner ? $q->whereIn('tenant_customers.party_id', app(\App\Application\Partners\BookScope::class)->bookOf($request->user(), $partner)) : $q->whereRaw('1 = 0');
     }
 
     private function clientOf(TenantCustomer $c, string $t): array

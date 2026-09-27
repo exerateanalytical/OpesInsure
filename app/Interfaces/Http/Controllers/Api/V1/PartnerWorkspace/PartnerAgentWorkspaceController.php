@@ -78,7 +78,7 @@ final class PartnerAgentWorkspaceController
     {
         $t = $this->tenant();
         $partner = $this->scope->agent($request->user());
-        $book = $this->scope->bookPartyIds($partner);
+        $book = $this->scope->bookPartyIds($request->user(), $partner);
         $quotes = Quote::with(['party', 'offers'])->where('tenant_id', $t)
             ->where(fn ($q) => $q->where('comparison_context->agent_user_id', $request->user()->id)
                 ->orWhere(fn ($q) => $q->where('channel', 'AGENT')->whereIn('party_id', $book)->whereNull('comparison_context->agent_user_id')))
@@ -91,7 +91,7 @@ final class PartnerAgentWorkspaceController
     public function policies(Request $request): JsonResponse
     {
         $t = $this->tenant();
-        $book = $this->scope->bookPartyIds($this->scope->agent($request->user()));
+        $book = $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user()));
         $rows = Policy::with(['party', 'carrier.party'])->where('tenant_id', $t)->whereIn('party_id', $book)->orderByDesc('issued_at')->limit(100)->get();
 
         // customer_id = the TenantCustomer id the agent client list uses, so the web client page can match policies by id.
@@ -107,20 +107,20 @@ final class PartnerAgentWorkspaceController
     {
         $t = $this->tenant();
 
-        return response()->json(['data' => $book->proposals($t, $this->scope->bookPartyIds($this->scope->agent($request->user())))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
+        return response()->json(['data' => $book->proposals($t, $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
     }
 
     /** Claims on policies of clients origin-locked to this agent (same rule as the broker claims list). */
     public function claims(Request $request, PartnerBookQuery $book): JsonResponse
     {
-        return response()->json(['data' => $book->claims($this->tenant(), $this->scope->bookPartyIds($this->scope->agent($request->user())))
+        return response()->json(['data' => $book->claims($this->tenant(), $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())))
             ->map(fn ($c) => PartnerWorkspaceShapes::claim($c))->values()]);
     }
 
     /** Documents of one book client, filtered by DocumentAccessPolicy::intermediaryMay. */
     public function clientDocuments(string $customer, Request $request, PartnerBookQuery $book): JsonResponse
     {
-        $client = $book->client($this->tenant(), $this->scope->bookPartyIds($this->scope->agent($request->user())), $customer);
+        $client = $book->client($this->tenant(), $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())), $customer);
 
         return response()->json(['data' => $book->clientDocuments($client)]);
     }

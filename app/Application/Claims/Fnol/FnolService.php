@@ -65,7 +65,7 @@ final class FnolService
     public function submitForCustomer(string $tenantId, array $data, User $agent): Claim
     {
         $partner = $this->scope->activeAgent($agent);
-        if (! in_array($data['claimant_party_id'], $this->scope->bookPartyIds($partner), true)) {
+        if (! in_array($data['claimant_party_id'], $this->scope->bookPartyIds($agent, $partner), true)) {
             throw ValidationException::withMessages(['claimant_party_id' => 'This customer is not in your book.']);
         }
 

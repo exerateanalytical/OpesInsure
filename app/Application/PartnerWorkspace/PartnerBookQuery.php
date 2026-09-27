@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\URL;
 
 /**
  * Read models for the partner workspace book pages (agent and broker), shared so both controllers
- * scope identically. The book is always PartnerWorkspaceScope::bookPartyIds() — parties with an
+ * scope identically. The book is always PartnerWorkspaceScope::bookPartyIds() (BookScope: company / team / own) — parties with an
  * ACTIVE customer_attribution to the caller's own partner — inside the current tenant.
  */
 final class PartnerBookQuery

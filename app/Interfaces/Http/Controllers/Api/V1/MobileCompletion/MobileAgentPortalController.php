@@ -224,7 +224,7 @@ final class MobileAgentPortalController
 
     private function clientPartyIds(Partner $partner, string $t): array
     {
-        return DB::table('customer_attributions')->where('partner_id', $partner->id)->where('status', 'ACTIVE')->pluck('party_id')->all();
+        return app(\App\Application\PartnerWorkspace\PartnerWorkspaceScope::class)->bookPartyIds(request()->user(), $partner);
     }
 
     private function profileOf(Partner $partner, Request $request): array
