@@ -1,7 +1,8 @@
-import React, { ReactNode, useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { Check, CheckSquare, ChevronDown, CircleAlert, Square, X } from "lucide-react-native";
+import React, { ReactNode, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Check, CheckSquare, CircleAlert, Square, X } from "lucide-react-native";
 import { StepIndicator } from "@/components/design";
+import { SelectField } from "@/components/forms/SelectField";
 import { Button, Card, StatusChip } from "@/components/ui";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { isValidIsoDate, RiskOption } from "@/lib/riskSchema";
@@ -117,44 +118,9 @@ export function ToneChip({ label, tone }: { label: string; tone: Tone }) {
 }
 
 /** Tappable select that opens a modal list — used for every enum field. */
+/** Closed-list picker: the shared SelectField (TextField look + bottom sheet with search for long lists). */
 export function PickerField({ label, value, options, onChange, error, placeholder }: { label: string; value: string | undefined; options: RiskOption[]; onChange: (v: string) => void; error?: string; placeholder?: string }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const current = options.find((o) => o.value === value);
-  return (
-    <View style={s.field}>
-      <Text style={s.fieldLabel}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${current?.label ?? t("notChosen")}`} onPress={() => setOpen(true)} style={[s.select, error ? s.selectError : null]}>
-        <Text style={[s.selectText, !current && s.placeholder]}>{current?.label ?? placeholder ?? t("chooseOption")}</Text>
-        <ChevronDown size={18} color={colors.neutral500} />
-      </Pressable>
-      {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t("close")} />
-        <View style={s.sheet}>
-          <Text style={s.sheetTitle}>{label}</Text>
-          <FlatList
-            data={options}
-            keyExtractor={(o) => o.value}
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="radio"
-                accessibilityState={{ selected: item.value === value }}
-                style={[s.option, item.value === value && s.optionOn]}
-                onPress={() => {
-                  onChange(item.value);
-                  setOpen(false);
-                }}
-              >
-                <Text style={s.optionText}>{item.label}</Text>
-                {item.value === value ? <Check size={18} color={colors.blue600} /> : null}
-              </Pressable>
-            )}
-          />
-        </View>
-      </Modal>
-    </View>
-  );
+  return <SelectField label={label} value={value} options={options} onChange={onChange} error={error} placeholder={placeholder} />;
 }
 
 const monthNames = (language: string) => {
@@ -249,8 +215,8 @@ const s = StyleSheet.create({
   dotTextActive: { color: colors.blue600 },
   stepLabel: { ...type.caption, color: colors.neutral500, textAlign: "center" },
   stepLabelOn: { color: colors.navy950 },
-  field: { gap: space.x1 },
-  fieldLabel: { ...type.label, color: colors.navy950 },
+  field: { gap: space.x2 },
+  fieldLabel: { ...type.label, color: colors.neutral800 },
   select: { minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.white },
   selectError: { borderColor: colors.danger },
   selectText: { ...type.body, color: colors.navy950, flex: 1 },
@@ -263,7 +229,7 @@ const s = StyleSheet.create({
   optionText: { ...type.body, color: colors.navy950 },
   dateRow: { flexDirection: "row", gap: space.x2 },
   flex: { flex: 1 },
-  choice: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
+  choice: { flex: 1, minHeight: 52, borderWidth: 1, borderColor: colors.neutral300, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   consentRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   checkbox: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
   consentText: { ...type.body, color: colors.neutral700 },

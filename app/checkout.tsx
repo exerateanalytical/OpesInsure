@@ -171,6 +171,7 @@ export default function Checkout() {
               <Smartphone size={16} color={colors.neutral600} />
               <Text style={[ps.meta, st.flex]}>{t("coPinNote")}</Text>
             </View>
+            <Banner icon={Lock} tint="blue" body={t("coEncrypted")} />
           </Card>
 
           <Card>

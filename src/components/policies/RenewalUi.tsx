@@ -162,7 +162,7 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   priceRow: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 36 },
-  priceLabel: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral600, flexGrow: 1, flexShrink: 1, flexBasis: 80 },
+  priceLabel: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral600, flexGrow: 1, flexShrink: 1, flexBasis: 80, minWidth: 104 },
   priceValueWrap: { alignItems: "flex-end", flexShrink: 1 },
   priceValue: { ...type.body, fontSize: 14, lineHeight: 20, textAlign: "right", color: colors.navy950, fontVariant: ["tabular-nums"] },
   priceValueStrong: { fontFamily: "Inter_700Bold" },

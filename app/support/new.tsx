@@ -7,6 +7,7 @@ import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, type Tint } fro
 import { CustomerApi } from "@/api/customer";
 import { WalletApi } from "@/api/client";
 import { ChoiceChips } from "@/components/portal/Workspace";
+import { SelectField } from "@/components/forms/SelectField";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -120,12 +121,22 @@ export default function NewSupport() {
       {policies.data?.length ? (
         <Card style={s.card}>
           <SectionHeading title={t("supportRelatedPolicy")} />
-          <ChoiceChips<string>
-            label={t("supportRelatedPolicy")}
-            value={policyId}
-            onChange={(v) => setPolicyId(v === policyId ? null : v)}
-            options={policies.data.map((p) => ({ value: p.id, label: `${p.policy_number}${p.product_name ? ` · ${p.product_name}` : ""}` }))}
-          />
+          {policies.data.length > 4 ? (
+            // Long lists: a drop-down; the first row clears the link.
+            <SelectField
+              label={t("supportRelatedPolicy")}
+              value={policyId ?? ""}
+              onChange={(v) => setPolicyId(v || null)}
+              options={[{ value: "", label: t("mdNotChosen") }, ...policies.data.map((p) => ({ value: p.id, label: p.policy_number, subtitle: p.product_name ?? undefined }))]}
+            />
+          ) : (
+            <ChoiceChips<string>
+              label={t("supportRelatedPolicy")}
+              value={policyId}
+              onChange={(v) => setPolicyId(v === policyId ? null : v)}
+              options={policies.data.map((p) => ({ value: p.id, label: `${p.policy_number}${p.product_name ? ` · ${p.product_name}` : ""}` }))}
+            />
+          )}
         </Card>
       ) : null}
       <Card style={s.card}>

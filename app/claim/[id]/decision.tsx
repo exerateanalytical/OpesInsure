@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Calendar, CircleCheck, CircleX, Coins, FileText, Landmark, MessageSquareWarning, ShieldCheck, Target } from "lucide-react-native";
+import { ArrowRight, Calendar, Car, Check, X, Coins, FileText, Landmark, MessageSquareWarning, ShieldCheck, Target } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, MetaGrid, type HeroMeta } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
@@ -79,7 +79,9 @@ export default function ClaimDecision() {
           return (
             <>
               <View style={[s.outcome, declined ? s.outcomeRed : s.outcomeGreen]} accessibilityRole="summary">
-                {declined ? <CircleX size={52} color={colors.danger} /> : <CircleCheck size={52} color={colors.success} />}
+                <View style={[s.outcomeIcon, declined ? s.outcomeIconRed : s.outcomeIconGreen]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  {declined ? <X size={34} color={colors.white} strokeWidth={3} /> : <Check size={34} color={colors.white} strokeWidth={3} />}
+                </View>
                 <View style={s.flex}>
                   <Text style={[s.outcomeTitle, declined ? s.red : s.green]}>
                     {declined ? t("decisionDeclined") : partial ? t("decisionPartial") : t("decisionApproved")}
@@ -92,8 +94,11 @@ export default function ClaimDecision() {
                 <MetaGrid items={meta} columns={2} />
                 {cl.description ? (
                   <View style={s.summary}>
-                    <Text style={s.label}>{t("decisionIncidentSummary")}</Text>
-                    <Text style={s.body}>{cl.description}</Text>
+                    <Car size={24} color={colors.navy900} />
+                    <View style={s.flex}>
+                      <Text style={s.label}>{t("decisionIncidentSummary")}</Text>
+                      <Text style={s.body}>{cl.description}</Text>
+                    </View>
                   </View>
                 ) : null}
                 {provider ? (
@@ -166,12 +171,15 @@ const s = StyleSheet.create({
   outcomeGreen: { backgroundColor: colors.successSoft, borderColor: colors.successSoft },
   outcomeRed: { backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft },
   outcomeTitle: { ...type.cardTitle, fontSize: 22, lineHeight: 28 },
+  outcomeIcon: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
+  outcomeIconGreen: { backgroundColor: colors.success },
+  outcomeIconRed: { backgroundColor: colors.danger },
   green: { color: colors.successText },
   red: { color: colors.dangerText },
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
   label: { ...type.meta, color: colors.neutral600 },
-  summary: { gap: 2, paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.neutral100 },
+  summary: { flexDirection: "row", alignItems: "flex-start", gap: space.x3, paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.neutral100 },
   insurer: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   headRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   cardTitle: { ...type.cardTitle, color: colors.navy900 },

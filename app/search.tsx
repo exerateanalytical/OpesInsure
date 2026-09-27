@@ -12,6 +12,7 @@ import {
   Search as SearchIcon,
   ShieldCheck,
   Tag,
+  ArrowUpDown,
   Users,
 } from "lucide-react-native";
 import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
@@ -27,6 +28,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { groupSearch, SEARCH_TYPES, SearchResponse, searchHitRoute, SearchRole, SearchType } from "@/lib/crm";
 import { matchesQuery } from "@/lib/customerLogic";
 import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
+import { applyExploreFilters, exploreSections } from "@/components/customer/exploreFilters";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -77,34 +79,61 @@ export default function GlobalSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.q]);
   const [sheet, setSheet] = useState(false);
-  const sheetValue = useMemo<FilterValues>(() => ({ type: [only] }), [only]);
+  // Marketplace refinements (category / insurer / sort) shared with Explore's filter sheet.
+  const [extra, setExtra] = useState<FilterValues>({ cat: [], prov: [], sort: ["best"] });
+  const sortBy = extra.sort?.[0] ?? "best";
+  const sheetValue = useMemo<FilterValues>(() => ({ type: [only], ...extra }), [only, extra]);
+  const marketSections = useMemo(() => (customer ? exploreSections(providers.data ?? [], t) : []), [customer, providers.data, t]);
   const groups = groupSearch(state.data);
   const shownGroups = only === "all" ? groups : groups.filter((g) => g.type === only);
 
-  const products = useMemo(
-    () => (customer && asked ? CATEGORIES.filter((c) => c.id !== "more" && matchesQuery(asked, t(c.label), t(c.caption), td(`lineFamily_${c.id}`, t(c.label)), c.id)) : []),
-    [asked, customer, t, td],
-  );
-  const matchedProviders = useMemo(
-    () =>
-      customer && asked
-        ? (providers.data ?? []).filter((p) => matchesQuery(asked, p.name, p.short_name, p.city, p.code, ...(p.products ?? []).map((x) => `${x.name} ${x.line_code}`)))
-        : [],
-    [asked, customer, providers.data],
-  );
+  const productsFor = (f: FilterValues) =>
+    customer && asked
+      ? CATEGORIES.filter(
+          (c) => c.id !== "more" && (!f.cat?.length || f.cat.includes(c.id)) && matchesQuery(asked, t(c.label), t(c.caption), td(`lineFamily_${c.id}`, t(c.label)), c.id),
+        )
+      : [];
+  const providersFor = (f: FilterValues) =>
+    customer && asked
+      ? applyExploreFilters(
+          (providers.data ?? []).filter((p) => matchesQuery(asked, p.name, p.short_name, p.city, p.code, ...(p.products ?? []).map((x) => `${x.name} ${x.line_code}`))),
+          f,
+        )
+      : [];
+  /** Individual published products (GET /public/institutions -> products[]) matching the query, one card per insurer product. */
+  const offersFor = (f: FilterValues) => {
+    if (!customer || !asked) return [];
+    const out = (providers.data ?? [])
+      .filter((p) => !f.prov?.length || f.prov.includes(p.id))
+      .flatMap((p) =>
+        (p.products ?? []).map((x) => ({ provider: p, product: x, category: CATEGORIES.find((c) => c.id !== "more" && c.lines.some((l) => (x.line_code ?? "").toUpperCase().includes(l))) })),
+      )
+      .filter(
+        (o) =>
+          (!f.cat?.length || (!!o.category && f.cat.includes(o.category.id))) &&
+          matchesQuery(asked, o.product.name, o.product.line_code, o.provider.name, o.provider.short_name, o.category ? t(o.category.label) : ""),
+      );
+    return (f.sort?.[0] ?? "best") === "name" ? [...out].sort((a, b) => a.product.name.localeCompare(b.product.name)) : out;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const products = useMemo(() => productsFor(extra), [asked, customer, t, td, extra]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const matchedProviders = useMemo(() => providersFor(extra), [asked, customer, providers.data, extra]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const offers = useMemo(() => offersFor(extra), [asked, customer, providers.data, extra, t]);
   const providersForLine = (c: Category) => (providers.data ?? []).filter((p) => (p.products ?? []).some((x) => c.lines.includes((x.line_code ?? "").toUpperCase())));
 
   const apiCount = state.data ? (SEARCH_TYPES as readonly string[]).reduce((n, k) => n + (state.data?.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0), 0) : 0;
-  const total = apiCount + products.length + matchedProviders.length;
+  const total = apiCount + products.length + offers.length + matchedProviders.length;
   const searched = !!state.data && !state.loading;
-  const nothing = searched && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length);
+  const nothing = searched && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length && !offers.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length);
   const count = (k: string) => (state.data ? ` (${state.data.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0})` : "");
 
   const scopes: { value: Scope; label: string }[] = [
     { value: "all", label: `${t("searchAll")}${state.data ? ` (${total})` : ""}` },
     ...(customer
       ? [
-          { value: "products" as Scope, label: `${t("searchType_products")}${asked ? ` (${products.length})` : ""}` },
+          { value: "products" as Scope, label: `${t("searchType_products")}${asked ? ` (${products.length + offers.length})` : ""}` },
           { value: "providers" as Scope, label: `${t("searchType_providers")}${asked ? ` (${matchedProviders.length})` : ""}` },
         ]
       : []),
@@ -113,8 +142,11 @@ export default function GlobalSearch() {
   ];
 
   // Result counts per scope, for the filter sheet's live total.
-  const scopeCount = (v: Scope) =>
-    v === "all" ? total : v === "products" ? products.length : v === "providers" ? matchedProviders.length : state.data?.counts?.[v] ?? groups.find((g) => g.type === v)?.hits.length ?? 0;
+  const scopeCount = (v: Scope, f: FilterValues = extra) => {
+    const prod = productsFor(f).length + offersFor(f).length;
+    const prov = providersFor(f).length;
+    return v === "all" ? apiCount + prod + prov : v === "products" ? prod : v === "providers" ? prov : state.data?.counts?.[v] ?? groups.find((g) => g.type === v)?.hits.length ?? 0;
+  };
   const openProduct = (c: Category) => router.push({ pathname: "/quote/product/[id]", params: { id: c.id } });
   const quoteProduct = (c: Category) => router.push({ pathname: "/quote/product", params: { product: c.id } });
 
@@ -131,20 +163,21 @@ export default function GlobalSearch() {
         autoFocus={!text}
         onFilter={() => setSheet(true)}
         filterLabel={t("filtersTitle")}
-        filterCount={only === "all" ? 0 : 1}
+        filterCount={(only === "all" ? 0 : 1) + (extra.cat?.length ?? 0) + (extra.prov?.length ?? 0) + (sortBy === "best" ? 0 : 1)}
       />
       <FiltersSheet
         visible={sheet}
         onClose={() => setSheet(false)}
-        sections={[{ key: "type", single: true, title: t("filterSearchType"), subtitle: t("filterSearchTypeBody"), options: scopes.map((o) => ({ value: o.value, label: o.label })) }]}
+        sections={[...marketSections.slice(0, 2), { key: "type", single: true, title: t("filterSearchType"), subtitle: t("filterSearchTypeBody"), options: scopes.map((o) => ({ value: o.value, label: o.label })) }, ...marketSections.slice(2)]}
         value={sheetValue}
         onApply={(f: FilterValues) => {
           const next = (f.type?.[0] ?? "all") as Scope;
           setOnly(next);
+          setExtra({ cat: f.cat ?? [], prov: f.prov ?? [], sort: f.sort?.length ? f.sort : ["best"] });
           if (text.trim().length >= 2) void run(next);
         }}
-        count={(f) => scopeCount((f.type?.[0] ?? "all") as Scope)}
-        subtitle={t("filtersSearchSubtitle")}
+        count={(f) => scopeCount((f.type?.[0] ?? "all") as Scope, f)}
+        subtitle={customer ? t("filtersSubtitle") : t("filtersSearchSubtitle")}
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
         {scopes.map((o) => (
@@ -160,6 +193,20 @@ export default function GlobalSearch() {
           />
         ))}
       </ScrollView>
+      {searched && customer ? (
+        <View style={s.sortRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t("ofSort")}: ${t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}`}
+            onPress={() => setExtra((e) => ({ ...e, sort: [sortBy === "name" ? "best" : "name"] }))}
+            android_ripple={ripple()}
+            style={({ pressed }) => [s.sortBtn, pressed && s.pressed]}
+          >
+            <ArrowUpDown size={16} color={colors.navy900} />
+            <Text style={s.sortText}>{t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {tooShort ? <Text style={s.meta}>{t("searchMinChars")}</Text> : null}
       {state.loading ? <LoadingState /> : null}
       {state.error ? <ErrorState error={state.error} onRetry={() => void run()} /> : null}
@@ -201,6 +248,53 @@ export default function GlobalSearch() {
                     <ChevronRight size={18} color={colors.blue600} />
                   </Pressable>
                   <Pressable accessibilityRole="button" onPress={() => quoteProduct(c)} android_ripple={ripple(true)} style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}>
+                    <Text style={s.primaryText}>{t("searchGetQuote")}</Text>
+                    <ArrowRight size={18} color={colors.white} />
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {searched && (only === "all" || only === "products") && offers.length ? (
+        <View style={s.section}>
+          <SectionHeading title={`${t("searchOffersTitle")} (${offers.length})`} />
+          {offers.map(({ provider: p, product: x, category: c }) => {
+            const Icon = c?.icon ?? ShieldCheck;
+            return (
+              <View key={`${p.id}-${x.id}`} style={s.card}>
+                <View style={s.productRow}>
+                  <View style={s.offerTile}>
+                    <Icon size={30} color={colors.navy800} strokeWidth={1.6} />
+                  </View>
+                  <View style={s.flex}>
+                    <Text style={s.cardTitle}>{x.name}</Text>
+                    <View style={s.logoRow}>
+                      <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={26} />
+                      <Text style={[s.meta, s.flex]}>{p.short_name ?? p.name}</Text>
+                    </View>
+                    <View style={s.tagRow}>
+                      {c ? <Text style={s.tag}>{t(c.label)}</Text> : null}
+                      {x.line_code ? <Text style={s.tag}>{x.line_code}</Text> : null}
+                    </View>
+                  </View>
+                </View>
+                <View style={s.actions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.id } })}
+                    style={({ pressed }) => [s.outlineBtn, pressed && s.pressed]}
+                  >
+                    <Text style={s.linkText}>{t("searchViewDetails")}</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push({ pathname: "/quote/product", params: c ? { product: c.id } : {} })}
+                    android_ripple={ripple(true)}
+                    style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
+                  >
                     <Text style={s.primaryText}>{t("searchGetQuote")}</Text>
                     <ArrowRight size={18} color={colors.white} />
                   </Pressable>
@@ -309,6 +403,13 @@ const s = StyleSheet.create({
   linkText: { ...type.label, color: colors.blue600 },
   primaryBtn: { flex: 1, minHeight: 46, borderRadius: radius.control, backgroundColor: colors.blue600, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
   primaryText: { ...type.label, color: colors.white },
+  sortRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end" },
+  sortBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  sortText: { ...type.label, color: colors.navy900, fontSize: 13 },
+  offerTile: { width: 72, height: 72, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: space.x2 },
+  tag: { ...type.caption, color: colors.navy800, backgroundColor: colors.blue50, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, overflow: "hidden" },
+  outlineBtn: { flex: 1, minHeight: 46, borderRadius: radius.control, borderWidth: 1, borderColor: colors.blue600, alignItems: "center", justifyContent: "center", paddingHorizontal: space.x2 },
   strip: { gap: space.x3, paddingRight: space.x2 },
   providerCard: { width: 150, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, gap: space.x2, overflow: "hidden" },
   providerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

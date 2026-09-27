@@ -64,7 +64,7 @@ export default function Settlement() {
   const title = policyTitle(policy, t("claimPolicyLabel"));
   const header = (
     <>
-      <BrandHeader title={t("settleTitle")} subtitle={x ? t("settleDue", { date: date(x.decision_deadline) }) : t("settleSubtitle")} />
+      <BrandHeader title={t("settleTitle")} subtitle={x?.status === "OFFERED" ? t("settleDue", { date: date(x.decision_deadline) }) : t("settleSubtitle")} />
       {c ? (
         <HeroCard
           icon={productIcon(title, policyLine(policy))}
@@ -109,7 +109,7 @@ export default function Settlement() {
       <Card>
         <View style={s.headRow}>
           <Text accessibilityRole="header" style={[s.cardTitle, s.flex]}>{t("settleTracking")}</Text>
-          <StatusChip label={td(`status_${x.status}`, x.status)} tone={x.status === "ACCEPTED" ? "success" : "warning"} />
+          <StatusChip label={td(`status_${x.status}`, x.status)} tone={x.status === "ACCEPTED" || x.status === "PAID" || (x.payment_status ?? "").toUpperCase() === "PAID" ? "success" : "warning"} />
         </View>
         <Text style={s.meta}>{t("settleTrackingBody")}</Text>
         {steps.map((step, i) => (
@@ -148,10 +148,12 @@ export default function Settlement() {
 
 /** Approved → offer accepted → payment initiated → paid, from the offer and payment status. */
 function settlementSteps(x: ClaimSettlement) {
-  const accepted = x.status === "ACCEPTED" || x.status === "PAID";
+  const offerAccepted = x.status === "ACCEPTED" || x.status === "PAID";
   const pay = (x.payment_status ?? "").toUpperCase();
   const paid = pay === "PAID" || pay === "SETTLED" || pay === "COMPLETED";
   const initiated = paid || ["PENDING", "INITIATED", "PROCESSING", "SUBMITTED"].includes(pay);
+  // A payment is only raised on an accepted offer, so a started payment implies acceptance.
+  const accepted = offerAccepted || initiated;
   return [
     { key: "approved", label: "settleStepApproved", body: "settleStepApprovedBody", done: true },
     { key: "accepted", label: "settleStepAccepted", body: "settleStepAcceptedBody", done: accepted },

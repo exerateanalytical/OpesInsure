@@ -2,7 +2,6 @@ import React from "react";
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LucideIcon } from "lucide-react-native";
 import { authColors, authIcon, authSpace, authType, colors, type } from "@/theme/tokens";
-import { useColumns } from "@/components/responsive";
 import { KenteBand } from "@/components/HeritagePattern";
 import { EntryLockup } from "@/components/BrandMark";
 
@@ -105,20 +104,25 @@ export function OnboardingFeatureRow({ items, tone = "badge" }: { items: Feature
  * gold ring, around the dotted-Africa network art. */
 export function OnboardingNodeGrid({ items }: { items: FeatureItem[] }) {
   // 2x2 on phones; a single column when a cell would be under 150dp.
-  const grid = useColumns({ max: 2, minItem: 150, gap: authSpace[2] });
+  const { width } = useWindowDimensions();
+  const gap = authSpace[2];
+  const available = Math.min(width, 480) - authSpace[5] * 2;
+  const cols = (available - gap) / 2 >= 140 ? 2 : 1;
+  const grid = { row: { flexDirection: "row", flexWrap: "wrap", gap } as const, item: { width: Math.floor((available - gap * (cols - 1)) / cols) } as const };
   return (
     <View style={styles.nodeWrap}>
-      <Image
-        source={mapNetwork}
-        style={styles.nodeMap}
-        resizeMode="contain"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      />
       <View style={[styles.nodeGrid, grid.row]}>
-        {items.map((item) => {
+        {items.map((item, i) => {
           const Icon = item.icon;
-          return (
+          // The map sits in its own row between the two pairs so it never runs under a caption.
+          const map =
+            cols === 2 && i === 2 ? (
+              <View key="map" pointerEvents="none" style={styles.nodeMapRow}>
+                <Image source={mapNetwork} style={styles.nodeMap} resizeMode="contain" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+              </View>
+            ) : null;
+          return [
+            map,
             <View key={item.label} style={[styles.nodeItem, grid.item]}>
               <View style={styles.nodeBadgeRing}>
                 <View style={styles.nodeBadge}>
@@ -127,8 +131,8 @@ export function OnboardingNodeGrid({ items }: { items: FeatureItem[] }) {
               </View>
               <Text style={styles.rowLabel}>{item.label}</Text>
               {item.caption ? <Text style={styles.nodeCaption}>{item.caption}</Text> : null}
-            </View>
-          );
+            </View>,
+          ];
         })}
       </View>
     </View>
@@ -207,8 +211,9 @@ const styles = StyleSheet.create({
   rowLabel: { ...authType.label, fontSize: 15, color: authColors.navy950, textAlign: "center" },
   rowCaption: { ...authType.body, fontSize: 13, lineHeight: 18, color: authColors.textSecondary, textAlign: "center" },
 
-  nodeWrap: { alignItems: "center", justifyContent: "center", minHeight: 300 },
-  nodeMap: { position: "absolute", width: 230, height: 230, opacity: 0.85 },
+  nodeWrap: { alignItems: "center", justifyContent: "center" },
+  nodeMap: { width: 96, height: 72, opacity: 0.8 },
+  nodeMapRow: { width: "100%", alignItems: "center", marginTop: -authSpace[4], marginBottom: -authSpace[1] },
   nodeGrid: {
     width: "100%",
     justifyContent: "center",

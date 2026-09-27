@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, SectionList, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check, ChevronDown, Search, X } from "lucide-react-native";
-import { Button } from "@/components/ui";
+import { Button, FIELD, fieldStyles } from "@/components/ui";
 import { useTranslation } from "@/i18n";
 import { loadList, suggestValue, type MasterList } from "@/lib/masterData";
 import { groupByParent, labelOf, narrowByParent, OTHER, parseList, searchMasterValues, type MasterValue } from "@/lib/masterFields";
@@ -51,6 +52,8 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
   const [q, setQ] = useState("");
   const [otherMode, setOtherMode] = useState(false);
   const [draft, setDraft] = useState(otherText ?? "");
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   const load = useCallback(async () => {
     setState("loading");
@@ -109,28 +112,30 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
   };
 
   return (
-    <View style={s.field}>
-      <Text style={s.label}>{fieldLabel}</Text>
+    <View style={fieldStyles.field}>
+      <Text style={fieldStyles.label}>{fieldLabel}</Text>
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole="combobox"
         accessibilityLabel={`${label}: ${display || t("mdNotChosen")}`}
+        accessibilityState={{ expanded: open, busy: state === "loading" }}
         onPress={() => (state === "error" ? void load() : setOpen(true))}
-        style={[s.select, error ? s.selectError : null]}
+        style={({ pressed }) => [fieldStyles.control, pressed && fieldStyles.controlPressed, error ? fieldStyles.controlError : null]}
       >
-        {state === "loading" ? <ActivityIndicator color={colors.blue600} /> : null}
-        <Text style={[s.selectText, !display && s.placeholder]} numberOfLines={2}>
+        <Text style={[fieldStyles.value, !display && fieldStyles.placeholder, state === "error" && s.loadError]} numberOfLines={2}>
           {state === "error" ? t("mdLoadFailed") : display || placeholder || (multiple ? t("mdChooseSeveral") : t("mdChoose"))}
         </Text>
-        <ChevronDown size={18} color={colors.neutral500} />
+        {state === "loading" ? <ActivityIndicator size="small" color={colors.blue600} /> : <ChevronDown size={20} color={colors.neutral600} />}
       </Pressable>
-      {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+      {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={fieldStyles.error}>{error}</Text> : null}
+      <Modal visible={open} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setOpen(false)}>
+        <View style={s.root}>
         <Pressable style={s.backdrop} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t("mdClose")} />
-        <View style={s.sheet}>
+        <View style={[s.sheet, { maxHeight: Math.round(height * 0.85), paddingBottom: Math.max(insets.bottom, space.x4) }]} accessibilityViewIsModal>
+          <View style={s.handle} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
           <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>{label}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t("mdClose")} onPress={() => setOpen(false)}>
-              <X size={20} color={colors.neutral500} />
+            <Text accessibilityRole="header" style={s.sheetTitle}>{label}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("mdClose")} onPress={() => setOpen(false)} hitSlop={8} style={s.closeBtn}>
+              <X size={20} color={colors.neutral600} />
             </Pressable>
           </View>
           {otherMode ? (
@@ -157,6 +162,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
               </View>
               {state === "loading" && !data ? <ActivityIndicator color={colors.blue600} /> : null}
               <SectionList
+                style={s.list}
                 sections={sections}
                 keyExtractor={(v) => v.code}
                 keyboardShouldPersistTaps="handled"
@@ -177,28 +183,27 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
             </>
           )}
         </View>
+        </View>
       </Modal>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  field: { gap: space.x1 },
-  label: { ...type.label, color: colors.navy950 },
-  select: { minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.white },
-  selectError: { borderColor: colors.danger },
-  selectText: { ...type.body, color: colors.navy950, flex: 1 },
-  placeholder: { color: colors.neutral400 },
-  error: { ...type.meta, color: colors.dangerText },
-  backdrop: { flex: 1, backgroundColor: "rgba(7,26,43,0.4)" },
-  sheet: { maxHeight: "80%", backgroundColor: colors.white, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, padding: space.x4, gap: space.x2 },
-  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  loadError: { color: colors.dangerText },
+  root: { flex: 1, justifyContent: "flex-end" },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(11,31,78,0.45)" },
+  sheet: { width: "100%", maxWidth: 720, alignSelf: "center", backgroundColor: colors.white, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, paddingHorizontal: space.x4, paddingTop: space.x2, gap: space.x3 },
+  handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: colors.neutral300 },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
   sheetTitle: { ...type.cardTitle, color: colors.navy950, flex: 1 },
-  search: { flexDirection: "row", alignItems: "center", gap: space.x2, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, minHeight: 44 },
-  searchInput: { ...type.body, flex: 1, color: colors.navy950 },
-  input: { ...type.body, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, color: colors.navy950 },
+  closeBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -space.x2 },
+  search: { flexDirection: "row", alignItems: "center", gap: space.x2, borderWidth: 1, borderColor: colors.neutral300, borderRadius: FIELD.radius, paddingHorizontal: space.x3, minHeight: 48, backgroundColor: colors.neutral50 },
+  searchInput: { ...type.body, flex: 1, color: colors.navy950, paddingVertical: 0, minHeight: 46 },
+  input: { ...type.body, minHeight: FIELD.height, borderWidth: 1, borderColor: colors.neutral300, borderRadius: FIELD.radius, paddingHorizontal: FIELD.padX, color: colors.navy950 },
+  list: { flexGrow: 0, flexShrink: 1 },
   group: { ...type.caption, color: colors.neutral600, paddingTop: space.x2, paddingBottom: space.x1, backgroundColor: colors.white },
-  option: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.x3, borderRadius: radius.control },
+  option: { minHeight: 52, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x3, paddingHorizontal: space.x3, paddingVertical: space.x2, borderRadius: FIELD.radius },
   optionOn: { backgroundColor: colors.blue50 },
   optionText: { ...type.body, color: colors.navy950, flex: 1 },
   otherText: { color: colors.blue600 },

@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Car, Check, ChevronRight, CircleAlert, RefreshCw } from "lucide-react-native";
 import { Button, TextField , Chip } from "@/components/ui";
 import { PickerField } from "@/components/purchase/PurchaseUi";
+import { SelectField } from "@/components/forms/SelectField";
 
 import { VehiclesApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -59,6 +60,9 @@ export function useVehicleReference() {
 
 const toOptions = (rows: { code: string; label: string }[] | undefined) => (rows ?? []).map((r) => ({ value: r.code, label: r.label }));
 
+/** Longer lists than this collapse (makes) or open a sheet (models). */
+const MAX_INLINE = 8;
+
 type Mode = "make" | "model" | "generation" | "year" | "variant" | "done" | "manual";
 
 /**
@@ -87,6 +91,7 @@ export function VehiclePicker({
   // --- makes ---------------------------------------------------------------
   const [query, setQuery] = useState("");
   const [chinese, setChinese] = useState(false);
+  const [showAllMakes, setShowAllMakes] = useState(false);
   const [makes, setMakes] = useState<VehicleMake[]>([]);
   const [makesState, setMakesState] = useState<"loading" | "error" | "ready">("loading");
   const requestId = useRef(0);
@@ -370,7 +375,7 @@ export function VehiclePicker({
   if (mode === "model" && make) {
     return (
       <View style={st.wrap}>
-        <Text style={st.label}>{t("vehicleModel")}</Text>
+        <Text style={st.label}>{t("vehicleMake")}</Text>
         <View style={st.selected}>
           <Car size={20} color={colors.blue600} />
           <Text style={[st.rowTitle, st.flex]}>{make.name}</Text>
@@ -378,11 +383,25 @@ export function VehiclePicker({
             <Text style={st.link}>{t("vehicleChange")}</Text>
           </Pressable>
         </View>
-        <TextField label={t("vehicleSearchModel")} value={modelQuery} onChangeText={setModelQuery} autoCorrect={false} />
+        {modelsState === "ready" && models.length > MAX_INLINE ? null : (
+          <TextField label={t("vehicleSearchModel")} value={modelQuery} onChangeText={setModelQuery} autoCorrect={false} />
+        )}
         {modelsState === "loading" ? (
           <Inline label={t("vehicleLoadingModels")} />
         ) : modelsState === "error" ? (
           <InlineError label={t("vehicleLoadError")} retry={t("retry")} onRetry={loadModels} />
+        ) : models.length > MAX_INLINE ? (
+          // Long model lists open a searchable sheet instead of pushing the form down by dozens of rows.
+          <SelectField
+            label={t("vehicleModel")}
+            value={value?.model_code}
+            options={models.map((m) => ({ value: m.code, label: m.name, subtitle: m.aliases.length ? m.aliases.join(" · ") : undefined }))}
+            onChange={(code) => {
+              const m = models.find((x) => x.code === code);
+              if (m) pickModel(m);
+            }}
+            error={error}
+          />
         ) : visibleModels.length ? (
           <View style={st.list}>
             {visibleModels.map((m) => (
@@ -411,13 +430,16 @@ export function VehiclePicker({
         <InlineError label={t("vehicleLoadError")} retry={t("retry")} onRetry={loadMakes} />
       ) : makes.length ? (
         <View style={st.list}>
-          {makes.map((m) => (
+          {(showAllMakes || query.trim() ? makes : makes.slice(0, MAX_INLINE)).map((m) => (
             <Row key={m.code} title={m.name} subtitle={m.aliases.length ? m.aliases.join(" · ") : undefined} onPress={() => pickMake(m)} />
           ))}
         </View>
       ) : (
         <Text style={st.meta}>{t("vehicleNoMakes", { query: query.trim() })}</Text>
       )}
+      {!query.trim() && !showAllMakes && makes.length > MAX_INLINE ? (
+        <Button label={`${t("showAll")} (${makes.length})`} variant="tertiary" size="small" onPress={() => setShowAllMakes(true)} />
+      ) : null}
       {manualLink}
     </View>
   );

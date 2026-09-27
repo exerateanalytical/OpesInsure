@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
@@ -62,6 +62,7 @@ function termProgress(startsAt: string | null | undefined, endsAt: string | null
  */
 export function PolicyDetailView({ id }: { id: string }) {
   const f = useFormatters();
+  const narrow = useWindowDimensions().width < 380;
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [p, setP] = useState<WalletPolicy | null>(null);
@@ -227,7 +228,7 @@ export function PolicyDetailView({ id }: { id: string }) {
                   <Icon size={18} color={danger ? colors.danger : colors.navy800} />
                   <View style={st.metaText}>
                     <Text style={st.metaLabel}>{m.label}</Text>
-                    <Text style={[st.metaValue, danger && st.metaDanger]}>{m.value}</Text>
+                    <Text style={[st.metaValue, narrow && st.metaValueNarrow, danger && st.metaDanger]}>{m.value}</Text>
                   </View>
                 </View>
               );
@@ -427,6 +428,7 @@ const st = StyleSheet.create({
   metaText: { flex: 1, minWidth: 0 },
   metaLabel: { fontSize: 12, lineHeight: 16, fontFamily: "Inter_500Medium", color: colors.neutral600 },
   metaValue: { fontSize: 14, lineHeight: 19, fontFamily: "Inter_600SemiBold", color: colors.navy950 },
+  metaValueNarrow: { fontSize: 12.5, lineHeight: 17, letterSpacing: -0.2 },
   metaDanger: { color: colors.dangerText },
   rowTitle: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   cardTitle: { fontSize: 16, lineHeight: 22, fontFamily: "Inter_700Bold", color: colors.navy950 },

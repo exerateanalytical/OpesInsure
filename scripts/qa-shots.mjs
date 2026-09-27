@@ -82,6 +82,8 @@ async function resolveRoute(page, route) {
     return {
       policy: active?.id,
       claim: claims[0]?.id,
+      // A claim past its decision (decision / settlement screens); falls back to the first claim.
+      claimDecided: (claims.find((c) => ["APPROVED", "PARTIALLY_APPROVED", "DECLINED", "SETTLED", "PAID", "CLOSED"].includes(c.status)) ?? claims[0])?.id,
       payment: payments[0]?.id,
       proposal: proposals[0]?.id,
       quote: quotes[0]?.id,
@@ -138,11 +140,22 @@ try {
         await sleep(s.via.wait ?? 5000);
         target = await page.evaluate(() => location.pathname);
       } else target = await open(page, s.route);
-      if (s.after) {
-        // Optional in-page step before the shot, e.g. advance a carousel: click `[aria-label=after.click]` `after.times` times.
-        for (let i = 0; i < (s.after.times ?? 1); i++) {
-          await page.evaluate((label) => document.querySelector(`[aria-label="${label}"]`)?.click(), s.after.click);
-          await sleep(s.after.wait ?? 1200);
+      // Optional in-page steps before the shot, e.g. advance a carousel: click `[aria-label=after.click]` `after.times` times.
+      // `after` may also be an array of steps run in order; `clickPrefix` matches an aria-label prefix and
+      // `each: true` clicks the i-th match on the i-th time (e.g. tick several "Add to comparison" boxes).
+      for (const step of s.after ? (Array.isArray(s.after) ? s.after : [s.after]) : []) {
+        for (let i = 0; i < (step.times ?? 1); i++) {
+          await page.evaluate(
+            (label, prefix, each, n) => {
+              const els = document.querySelectorAll(prefix ? `[aria-label^="${prefix}"]` : `[aria-label="${label}"]`);
+              (each ? els[n] : els[0])?.click();
+            },
+            step.click,
+            step.clickPrefix,
+            !!step.each,
+            i,
+          );
+          await sleep(step.wait ?? 1200);
         }
       }
       const file = path.join(outDir, `${s.name}@${w}.png`);

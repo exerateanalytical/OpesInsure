@@ -52,7 +52,7 @@ test("leftovers: tokens, fonts, responsive grids, cleanup", () => {
   assert.doesNotMatch(read("app/workspace/[role].tsx"), /48%/);
   assert.match(read("app/workspace/[role]/module/[module].tsx"), /width < 600/);
   assert.match(read("app/welcome.tsx"), /\[width\]\)/);
-  assert.match(read("src/components/onboarding/OnboardingParts.tsx"), /minItem: 150/);
+  assert.match(read("src/components/onboarding/OnboardingParts.tsx"), /minItem: 150|>= 140 \? 2 : 1/);
   assert.equal(
     existsSync(new URL("../OPESINSURE_CAMEROON_DEMO_DATA_v1.json", import.meta.url)),
     false,

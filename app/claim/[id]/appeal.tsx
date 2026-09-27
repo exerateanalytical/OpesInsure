@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Check, CircleCheck, FileText, Headphones } from "lucide-react-native";
+import { ArrowRight, Check, CircleCheck, FileText, Headphones, Lock } from "lucide-react-native";
 import { Button, Card, Chip, ChipRow, ripple, Screen, StatusChip, TextField } from "@/components/ui";
 import { BrandHeader, CtaBar, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
@@ -58,9 +58,9 @@ export default function Appeal() {
   return (
     <Screen
       footer={
-        allowed ? (
+        claim.data ? (
           <CtaBar>
-            <Button label={t("appealSubmit")} icon={ArrowRight} loading={busy} disabled={!valid} onPress={() => void submit()} />
+            {allowed ? <Button label={t("appealSubmit")} icon={ArrowRight} loading={busy} disabled={!valid} onPress={() => void submit()} /> : null}
             <Button
               label={t("contactSupport")}
               icon={Headphones}
@@ -134,10 +134,22 @@ export default function Appeal() {
               {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
             </>
           ) : (
-            <Card>
-              <StatusChip label={td(claimStatusKey(c.status), c.status)} tone="neutral" />
-              <Text style={s.body}>{t("appealNotAvailable")}</Text>
-            </Card>
+            <View style={s.locked}>
+              <View style={s.row}>
+                <TintedIcon icon={Lock} tint="neutral" size={52} />
+                <View style={s.flex}>
+                  <Text style={s.title}>{t("appealNotEligible")}</Text>
+                  <Text style={s.body}>{t("appealNotAvailable")}</Text>
+                </View>
+              </View>
+              <View style={s.facts}>
+                <Fact label={t("claimNumberLabel")} value={c.claim_number} />
+                <View style={s.fact}>
+                  <Text style={s.meta}>{t("appealDecision")}</Text>
+                  <StatusChip label={td(claimStatusKey(c.status), c.status)} tone="neutral" />
+                </View>
+              </View>
+            </View>
           )
         }
       </StatePanel>
@@ -158,6 +170,7 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   eligible: { backgroundColor: colors.blue50, borderRadius: radius.feature, padding: space.x4, gap: space.x3, borderWidth: 1, borderColor: colors.blue100 },
+  locked: { backgroundColor: colors.white, borderRadius: radius.feature, padding: space.x4, gap: space.x3, borderWidth: 1, borderColor: colors.neutral200 },
   facts: { flexDirection: "row", flexWrap: "wrap", gap: space.x3, paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.blue100 },
   fact: { flexBasis: 96, flexGrow: 1, gap: 2 },
   title: { ...type.cardTitle, color: colors.navy950 },

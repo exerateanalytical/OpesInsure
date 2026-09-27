@@ -1,7 +1,9 @@
 import React from "react";
 import { Text } from "react-native";
 import { TextField } from "@/components/ui";
-import { DateField, PickerField, YesNoField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { DateField, YesNoField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { SelectField } from "@/components/forms/SelectField";
+import { OptionGroup } from "@/components/forms/OptionGroup";
 import { DateTimeField, toCameroonIso } from "@/components/DateTimeField";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { RepeaterField } from "@/components/masterData/RepeaterField";
@@ -96,7 +98,12 @@ export function ContractField({ field, value, values, error, onChange, setAny, o
     case "vehicle_variant":
       return null; // chosen inside the make picker
     case "select":
-      return <PickerField label={label} value={value} options={field.options ?? []} onChange={onChange} error={error} />;
+      // 2–4 choices stay visible as radio rows; longer lists open a searchable sheet.
+      return (field.options?.length ?? 0) >= 2 && (field.options?.length ?? 0) <= 4 ? (
+        <OptionGroup label={label} value={value} options={field.options ?? []} onChange={onChange} error={error} hint={field.help} />
+      ) : (
+        <SelectField label={label} value={value} options={field.options ?? []} onChange={onChange} error={error} hint={field.help} placeholder={field.placeholder} />
+      );
     case "date": {
       const min = resolveDateBound(field.dateMin);
       const max = resolveDateBound(field.dateMax);

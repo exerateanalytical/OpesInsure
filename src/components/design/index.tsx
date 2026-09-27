@@ -379,7 +379,7 @@ export function CtaBar({ children }: { children: ReactNode }) {
 }
 
 /** Selectable option card with a radio (design: Renewal Options, policy picker). */
-export function RadioCard({ selected, onPress, icon: Icon, tint = "blue", title, subtitle, right, children, style }: { selected: boolean; onPress: () => void; icon?: LucideIcon; tint?: Tint; title: string; subtitle?: string | null; right?: ReactNode; children?: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function RadioCard({ selected, onPress, icon: Icon, tint = "blue", title, subtitle, right, trailing, children, style }: { selected: boolean; onPress: () => void; icon?: LucideIcon; tint?: Tint; title: string; subtitle?: string | null; right?: ReactNode; /** Rendered after the radio dot (e.g. a chevron). */ trailing?: ReactNode; children?: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
     <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={[title, subtitle].filter(Boolean).join(". ")} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [s.radioCard, selected && s.radioCardOn, pressed && s.pressed, style]}>
       <View style={s.radioRow}>
@@ -391,6 +391,7 @@ export function RadioCard({ selected, onPress, icon: Icon, tint = "blue", title,
         </View>
         {right}
         <View style={[s.radio, selected && s.radioOn]}>{selected ? <View style={s.radioInner} /> : null}</View>
+        {trailing}
       </View>
     </Pressable>
   );

@@ -144,9 +144,9 @@ export default function Renew() {
 
           <Card>
             <SectionHeading title={t("rnOptions")} />
-            <RadioCard selected={option === "same"} onPress={() => setOption("same")} icon={RefreshCcw} tint="blue" title={t("rnOptSame")} subtitle={t("rnOptSameSub")} right={<ChevronRight size={20} color={colors.navy900} />} />
-            <RadioCard selected={option === "compare"} onPress={() => setOption("compare")} icon={Scale} tint="blue" title={t("rnOptCompare")} subtitle={t("rnOptCompareSub")} right={<ChevronRight size={20} color={colors.navy900} />} />
-            <RadioCard selected={option === "update"} onPress={() => setOption("update")} icon={FilePenLine} tint="blue" title={t("rnOptUpdate")} subtitle={t("rnOptUpdateSub")} right={<ChevronRight size={20} color={colors.navy900} />} />
+            <RadioCard selected={option === "same"} onPress={() => setOption("same")} icon={RefreshCcw} tint="blue" title={t("rnOptSame")} subtitle={t("rnOptSameSub")} trailing={<ChevronRight size={20} color={colors.navy900} />} />
+            <RadioCard selected={option === "compare"} onPress={() => setOption("compare")} icon={Scale} tint="blue" title={t("rnOptCompare")} subtitle={t("rnOptCompareSub")} trailing={<ChevronRight size={20} color={colors.navy900} />} />
+            <RadioCard selected={option === "update"} onPress={() => setOption("update")} icon={FilePenLine} tint="blue" title={t("rnOptUpdate")} subtitle={t("rnOptUpdateSub")} trailing={<ChevronRight size={20} color={colors.navy900} />} />
           </Card>
 
           <Banner icon={ShieldAlert} tint="gold" body={t(identity.isMotor ? "rnLapseWarning" : "rnLapseWarningGeneric")} />

@@ -277,7 +277,7 @@ const st = StyleSheet.create({
   expiryValue: { ...type.label, color: colors.dangerText },
   headText: { flexBasis: 130, flexGrow: 1, flexShrink: 1, minWidth: 0 },
   segments: { flexDirection: "row", gap: space.x2 },
-  segment: { flexBasis: 0, flexGrow: 1, minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 6, paddingVertical: 6, borderRadius: radius.control, borderWidth: 1.5, borderColor: colors.neutral200, backgroundColor: colors.white },
+  segment: { flexBasis: 0, flexGrow: 1, minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4, paddingVertical: 6, borderRadius: radius.control, borderWidth: 1.5, borderColor: colors.neutral200, backgroundColor: colors.white },
   segmentOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
   segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy950, textAlign: "center", flexShrink: 1 },
   segmentTextOn: { color: colors.white },

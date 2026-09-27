@@ -1,30 +1,42 @@
 import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-import { Columns3, Info } from "lucide-react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Car, Columns3, Info, Pencil, ShieldCheck } from "lucide-react-native";
 import { CompareTable, compareTableStyles } from "@/components/offers/CompareTable";
+import { OfferCard, useNow } from "@/components/offers/OfferCard";
 import { router, useLocalSearchParams } from "expo-router";
-import { Banner, BrandHeader, SectionHeading } from "@/components/design";
-import { Button, Card, Screen } from "@/components/ui";
+import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
+import { Button, Card, Chip, ChipRow, ripple, Screen } from "@/components/ui";
 import { EmptyState } from "@/components/StatePanel";
-import { ErrorCard, QuoteSteps } from "@/components/purchase/PurchaseUi";
+import { ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { useInsurance } from "@/store/insurance";
-import { compareRows, providerName } from "@/lib/purchase";
-import { carrierLogo } from "@/lib/renewal";
+import { compareRows, OfferSort, providerName, sortOffers } from "@/lib/purchase";
+import { bestValueOfferId, carrierLogo, riskVehicleLabel } from "@/lib/renewal";
 import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 import { useFormatters } from "@/hooks/useFormatters";
+import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
-/** Side-by-side table for the selected offers (2–3 ticked, or every
- * insurer via t("qtCompareAll")) with normalized rows; scrolls horizontally. */
+/**
+ * Compare offers (design opesinsure_compare_offers_screen): quote summary
+ * with "Edit quote", sort chips, one full offer card per selected insurer
+ * (Best Value in gold), then the normalized side-by-side table (2–3 ticked,
+ * or every insurer via t("qtCompareAll")) which scrolls horizontally.
+ */
 export default function CompareOffers() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const { ids = "" } = useLocalSearchParams<{ ids?: string }>();
   const all = useInsurance((s) => s.offers);
+  const quote = useInsurance((s) => s.quote);
+  const product = useInsurance((s) => s.product);
   const f = useFormatters();
+  const now = useNow();
+  const [sort, setSort] = useState<OfferSort>("price");
   const offers = useMemo(() => {
     const wanted = ids.split(",").filter(Boolean);
     return all.filter((o) => wanted.includes(o.id));
   }, [all, ids]);
+  const sorted = useMemo(() => sortOffers(offers, sort), [offers, sort]);
+  const best = useMemo(() => bestValueOfferId(offers), [offers]);
   const rows = useMemo(() => compareRows(offers, f.language), [offers, f.language]);
   const logoFor = useInsurerLogos();
   const marks = offers.map((o) => {
@@ -59,12 +71,41 @@ export default function CompareOffers() {
       </Screen>
     );
 
+  const vehicle = riskVehicleLabel(quote?.risk_facts);
+  const productLabel = product ? td(`qtProd_${product}`, product) : null;
+
   return (
     <Screen>
-      <BrandHeader title={t("compare")} subtitle={t("qtCompareSubtitle", { count: offers.length })} />
+      <BrandHeader title={t("cmpPageTitle")} subtitle={t("cmpPageSubtitle")} />
       <QuoteSteps current={2} />
+      {quote ? (
+        <Card>
+          <View style={st.quoteRow}>
+            <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? Car : ShieldCheck} tint="gold" size={56} />
+            <View style={st.flex}>
+              <Text style={st.quoteTitle}>{vehicle ?? productLabel ?? t("insuranceOffer")}</Text>
+              <Text style={ps.meta}>{[vehicle && productLabel ? productLabel : null, quote.quote_number].filter(Boolean).join(" · ")}</Text>
+            </View>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("ofEditQuote")} onPress={() => router.push("/quote/risk")} android_ripple={ripple()} style={({ pressed }) => [st.editBtn, pressed && st.pressed]}>
+              <Text style={st.editText}>{t("ofEditQuote")}</Text>
+              <Pencil size={16} color={colors.blue600} />
+            </Pressable>
+          </View>
+        </Card>
+      ) : null}
+      <ChipRow>
+        <Chip role="tab" label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
+        <Chip role="tab" label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
+        <Chip role="tab" label={t("ofSortInsurer")} selected={sort === "insurer"} onPress={() => setSort("insurer")} />
+        <Chip role="tab" label={t("ofSortExcess")} selected={sort === "excess"} onPress={() => setSort("excess")} />
+      </ChipRow>
+      {error ? <ErrorCard error={error} fallback={t("ofSelectFailed")} /> : null}
+      {sorted.map((o) => (
+        <OfferCard key={o.id} offer={o} all={offers} best={best === o.id} onSelect={() => void choose(o.id)} selecting={choosing === o.id} disabled={!!choosing} now={now} />
+      ))}
       <Card>
         <SectionHeading icon={Columns3} title={t("compare")} />
+        <Text style={ps.meta}>{t("qtCompareSubtitle", { count: offers.length })}</Text>
         <CompareTable
           rows={rows}
           columns={offers.length}
@@ -82,8 +123,16 @@ export default function CompareOffers() {
           )}
         />
       </Card>
-      {error ? <ErrorCard error={error} fallback={t("ofSelectFailed")} /> : null}
       <Banner icon={Info} tint="blue" body={t("qtCompareNote")} />
     </Screen>
   );
 }
+
+const st = StyleSheet.create({
+  flex: { flex: 1 },
+  pressed: { opacity: 0.85 },
+  quoteRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  quoteTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
+  editBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue50, overflow: "hidden" },
+  editText: { ...type.label, color: colors.blue600 },
+});

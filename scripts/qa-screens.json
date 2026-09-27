@@ -1,49 +1,593 @@
 [
-  { "name": "splash", "design": "opesinsure_light_theme_splash_screen.png", "route": "/", "signedOut": true },
-  { "name": "onboarding", "design": "01-onboarding-buy-renew-claim.png", "route": "/welcome", "signedOut": true, "after": { "click": "Next", "times": 1 } },
-  { "name": "login", "design": "opesinsure_blue_gold_login_screen.png", "route": "/sign-in", "signedOut": true },
-  { "name": "sign-up", "design": "opesinsure_account_creation_screen.png", "route": "/sign-up", "signedOut": true },
-
-  { "name": "home", "design": "opesinsure_home_dashboard.png", "route": "/" },
-  { "name": "explore", "design": "opesinsure_explore_insurance_dashboard.png", "route": "/explore" },
-  { "name": "my-policies", "design": "opesinsure_my_policies_dashboard.png", "route": "/policies" },
-  { "name": "claims", "design": "opesinsure_claims_dashboard.png", "route": "/claims" },
-  { "name": "profile", "design": "opesinsure_profile_app_screen.png", "route": "/profile" },
-  { "name": "notifications", "design": "opesinsure_notifications_dashboard.png", "route": "/notifications" },
-  { "name": "search", "design": "47-search-results-top-results-providers.png", "route": "/search?q=motor" },
-  { "name": "insurer-profile", "design": "zenith_insurance_cameroon_app_profile.png", "route": "/institutions/insurer/{insurer}" },
-
-  { "name": "product-detail", "design": "motor_insurance_product_app_ui.png", "route": "/quote/product/motor" },
-  { "name": "quote-product", "design": "12-get-a-quote-motor-step1.png", "route": "/quote/product" },
-  { "name": "quote-form", "design": "opesinsure_motor_insurance_quote_form.png", "route": "/quote/risk", "via": { "route": "/quote/product", "clickPrefix": "Motor insurance.", "wait": 7000 } },
-  { "name": "payment-history", "design": "opesinsure_payment_history_dashboard.png", "route": "/payments" },
-  { "name": "transaction-detail", "design": "42-transaction-detail.png", "route": "/payments/{payment}" },
-  { "name": "receipt", "design": "payment_successful_receipt_ui.png", "route": "/payments/{payment}/receipt" },
-
-  { "name": "policy-details", "design": "opesinsure_policy_details_dashboard.png", "route": "/policy/{policy}" },
-  { "name": "policy-documents", "design": "opesinsure_policy_documents_screen.png", "route": "/policy/{policy}/documents" },
-  { "name": "renew-policy", "design": "opesinsure_policy_renewal_screen.png", "route": "/policy/{policy}/renew" },
-  { "name": "renewal-quote", "design": "opesinsure_renewal_quote_screen.png", "route": "/policy/{policy}/renewal-quote" },
-  { "name": "renewal-offers", "design": "insurance_offer_comparison_app_ui.png", "route": "/policy/{policy}/renewal-offers" },
-  { "name": "renewal-review", "design": "insurance_renewal_review_and_payment.png", "route": "/policy/{policy}/renewal-review", "via": { "route": "/policy/{policy}/renewal-offers", "click": "Select Offer" } },
-  { "name": "saved-quotes", "design": "opesinsure_saved_quotes_dashboard.png", "route": "/quotes" },
-  { "name": "draft-applications", "design": "opesinsure_draft_applications_dashboard.png", "route": "/proposals" },
-
-  { "name": "claim-select-policy", "design": "opesinsure_select_policy_screen.png", "route": "/claim/new" },
-  { "name": "claim-detail", "design": "opesinsure_claim_detail_dashboard.png", "route": "/claim/{claim}" },
-  { "name": "claim-timeline", "design": "opesinsure_claim_timeline_dashboard.png", "route": "/claim/{claim}/timeline" },
-  { "name": "claim-evidence", "design": "opesinsure_evidence_upload_screen.png", "route": "/claim/{claim}/evidence?wizard=1" },
-  { "name": "claim-information", "design": "insurance_claim_information_request.png", "route": "/claim/{claim}/information" },
-
-  { "name": "kyc", "design": "OpesInsure_Batch7_01_KYC_Verification.png", "route": "/onboarding/kyc" },
-  { "name": "personal-details", "design": "OpesInsure_Batch7_02_Personal_Details.png", "route": "/account/profile" },
-  { "name": "my-assets", "design": "OpesInsure_Batch7_03_My_Assets.png", "route": "/assets" },
-  { "name": "beneficiaries", "design": "OpesInsure_Batch7_04_Beneficiaries_Dependents.png", "route": "/account/beneficiaries" },
-  { "name": "payment-methods", "design": "OpesInsure_Batch7_05_Payment_Methods.png", "route": "/account/payment-methods" },
-  { "name": "security", "design": "opesinsure_security_biometrics_dashboard.png", "route": "/account/security" },
-  { "name": "language", "design": "opesinsure_language_preferences_ui.png", "route": "/account/language" },
-  { "name": "privacy", "design": "privacy_consent_legal_settings.png", "route": "/account/privacy" },
-  { "name": "help-centre", "design": "opesinsure_help_centre_mobile_app.png", "route": "/support/faq" },
-  { "name": "new-ticket", "design": "opesinsure_new_support_ticket.png", "route": "/support/new" },
-  { "name": "ticket-detail", "design": "insurance_ticket_detail_screen.png", "route": "/support/{ticket}" }
+ {
+  "name": "splash",
+  "design": "opesinsure_light_theme_splash_screen.png",
+  "route": "/",
+  "signedOut": true
+ },
+ {
+  "name": "onboarding",
+  "design": "01-onboarding-buy-renew-claim.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 1
+  }
+ },
+ {
+  "name": "login",
+  "design": "opesinsure_blue_gold_login_screen.png",
+  "route": "/sign-in",
+  "signedOut": true
+ },
+ {
+  "name": "sign-up",
+  "design": "opesinsure_account_creation_screen.png",
+  "route": "/sign-up",
+  "signedOut": true
+ },
+ {
+  "name": "home",
+  "design": "opesinsure_home_dashboard.png",
+  "route": "/"
+ },
+ {
+  "name": "explore",
+  "design": "opesinsure_explore_insurance_dashboard.png",
+  "route": "/explore"
+ },
+ {
+  "name": "my-policies",
+  "design": "opesinsure_my_policies_dashboard.png",
+  "route": "/policies"
+ },
+ {
+  "name": "claims",
+  "design": "opesinsure_claims_dashboard.png",
+  "route": "/claims"
+ },
+ {
+  "name": "profile",
+  "design": "opesinsure_profile_app_screen.png",
+  "route": "/profile"
+ },
+ {
+  "name": "notifications",
+  "design": "opesinsure_notifications_dashboard.png",
+  "route": "/notifications"
+ },
+ {
+  "name": "search",
+  "design": "47-search-results-top-results-providers.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "insurer-profile",
+  "design": "zenith_insurance_cameroon_app_profile.png",
+  "route": "/institutions/insurer/{insurer}"
+ },
+ {
+  "name": "product-detail",
+  "design": "motor_insurance_product_app_ui.png",
+  "route": "/quote/product/motor"
+ },
+ {
+  "name": "quote-product",
+  "design": "12-get-a-quote-motor-step1.png",
+  "route": "/quote/product"
+ },
+ {
+  "name": "quote-form",
+  "design": "opesinsure_motor_insurance_quote_form.png",
+  "route": "/quote/risk",
+  "via": {
+   "route": "/quote/product",
+   "clickPrefix": "Motor insurance.",
+   "wait": 7000
+  }
+ },
+ {
+  "name": "payment-history",
+  "design": "opesinsure_payment_history_dashboard.png",
+  "route": "/payments"
+ },
+ {
+  "name": "transaction-detail",
+  "design": "42-transaction-detail.png",
+  "route": "/payments/{payment}"
+ },
+ {
+  "name": "receipt",
+  "design": "payment_successful_receipt_ui.png",
+  "route": "/payments/{payment}/receipt"
+ },
+ {
+  "name": "policy-details",
+  "design": "opesinsure_policy_details_dashboard.png",
+  "route": "/policy/{policy}"
+ },
+ {
+  "name": "policy-documents",
+  "design": "opesinsure_policy_documents_screen.png",
+  "route": "/policy/{policy}/documents"
+ },
+ {
+  "name": "renew-policy",
+  "design": "opesinsure_policy_renewal_screen.png",
+  "route": "/policy/{policy}/renew"
+ },
+ {
+  "name": "renewal-quote",
+  "design": "opesinsure_renewal_quote_screen.png",
+  "route": "/policy/{policy}/renewal-quote"
+ },
+ {
+  "name": "renewal-offers",
+  "design": "insurance_offer_comparison_app_ui.png",
+  "route": "/policy/{policy}/renewal-offers"
+ },
+ {
+  "name": "renewal-review",
+  "design": "insurance_renewal_review_and_payment.png",
+  "route": "/policy/{policy}/renewal-review",
+  "via": {
+   "route": "/policy/{policy}/renewal-offers",
+   "click": "Select Offer"
+  }
+ },
+ {
+  "name": "saved-quotes",
+  "design": "opesinsure_saved_quotes_dashboard.png",
+  "route": "/quotes"
+ },
+ {
+  "name": "draft-applications",
+  "design": "opesinsure_draft_applications_dashboard.png",
+  "route": "/proposals"
+ },
+ {
+  "name": "claim-select-policy",
+  "design": "opesinsure_select_policy_screen.png",
+  "route": "/claim/new"
+ },
+ {
+  "name": "claim-detail",
+  "design": "opesinsure_claim_detail_dashboard.png",
+  "route": "/claim/{claim}"
+ },
+ {
+  "name": "claim-timeline",
+  "design": "opesinsure_claim_timeline_dashboard.png",
+  "route": "/claim/{claim}/timeline"
+ },
+ {
+  "name": "claim-evidence",
+  "design": "opesinsure_evidence_upload_screen.png",
+  "route": "/claim/{claim}/evidence?wizard=1"
+ },
+ {
+  "name": "claim-information",
+  "design": "insurance_claim_information_request.png",
+  "route": "/claim/{claim}/information"
+ },
+ {
+  "name": "kyc",
+  "design": "OpesInsure_Batch7_01_KYC_Verification.png",
+  "route": "/onboarding/kyc"
+ },
+ {
+  "name": "personal-details",
+  "design": "OpesInsure_Batch7_02_Personal_Details.png",
+  "route": "/account/profile"
+ },
+ {
+  "name": "my-assets",
+  "design": "OpesInsure_Batch7_03_My_Assets.png",
+  "route": "/assets"
+ },
+ {
+  "name": "beneficiaries",
+  "design": "OpesInsure_Batch7_04_Beneficiaries_Dependents.png",
+  "route": "/account/beneficiaries"
+ },
+ {
+  "name": "payment-methods",
+  "design": "OpesInsure_Batch7_05_Payment_Methods.png",
+  "route": "/account/payment-methods"
+ },
+ {
+  "name": "security",
+  "design": "opesinsure_security_biometrics_dashboard.png",
+  "route": "/account/security"
+ },
+ {
+  "name": "language",
+  "design": "opesinsure_language_preferences_ui.png",
+  "route": "/account/language"
+ },
+ {
+  "name": "privacy",
+  "design": "privacy_consent_legal_settings.png",
+  "route": "/account/privacy"
+ },
+ {
+  "name": "help-centre",
+  "design": "opesinsure_help_centre_mobile_app.png",
+  "route": "/support/faq"
+ },
+ {
+  "name": "new-ticket",
+  "design": "opesinsure_new_support_ticket.png",
+  "route": "/support/new"
+ },
+ {
+  "name": "ticket-detail",
+  "design": "insurance_ticket_detail_screen.png",
+  "route": "/support/{ticket}"
+ },
+ {
+  "name": "onboarding-compare",
+  "design": "02-onboarding-compare-with-confidence.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 0
+  }
+ },
+ {
+  "name": "onboarding-marketplace",
+  "design": "03-onboarding-one-marketplace.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 2
+  }
+ },
+ {
+  "name": "onboarding-light",
+  "design": "opesinsure_light_africa_onboarding_screen.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 2
+  }
+ },
+ {
+  "name": "explore-full",
+  "design": "04-explore-full.png",
+  "route": "/explore"
+ },
+ {
+  "name": "explore-10",
+  "design": "10-explore.png",
+  "route": "/explore"
+ },
+ {
+  "name": "my-policies-full",
+  "design": "05-my-policies-full.png",
+  "route": "/policies"
+ },
+ {
+  "name": "my-policies-09",
+  "design": "09-my-policies.png",
+  "route": "/policies"
+ },
+ {
+  "name": "home-08",
+  "design": "08-home.png",
+  "route": "/"
+ },
+ {
+  "name": "claims-11",
+  "design": "11-claims.png",
+  "route": "/claims"
+ },
+ {
+  "name": "claims-dark",
+  "design": "29-my-claims-dark-header.png",
+  "route": "/claims"
+ },
+ {
+  "name": "policy-documents-14",
+  "design": "14-policy-documents-and-certificates.png",
+  "route": "/policy/{policy}/documents"
+ },
+ {
+  "name": "policy-documents-57",
+  "design": "57-policy-documents-and-certificates.png",
+  "route": "/policy/{policy}/documents"
+ },
+ {
+  "name": "renew-policy-17",
+  "design": "17-renew-policy.png",
+  "route": "/policy/{policy}/renew"
+ },
+ {
+  "name": "renew-policy-55",
+  "design": "55-renew-policy.png",
+  "route": "/policy/{policy}/renew"
+ },
+ {
+  "name": "policy-details-18",
+  "design": "18-policy-details.png",
+  "route": "/policy/{policy}"
+ },
+ {
+  "name": "policy-details-54",
+  "design": "54-policy-details.png",
+  "route": "/policy/{policy}"
+ },
+ {
+  "name": "renewal-review-19",
+  "design": "19-renewal-review-and-pay.png",
+  "route": "/policy/{policy}/renewal-review",
+  "via": {
+   "route": "/policy/{policy}/renewal-offers",
+   "click": "Select Offer"
+  }
+ },
+ {
+  "name": "renewal-review-53",
+  "design": "53-renewal-review-and-pay.png",
+  "route": "/policy/{policy}/renewal-review",
+  "via": {
+   "route": "/policy/{policy}/renewal-offers",
+   "click": "Select Offer"
+  }
+ },
+ {
+  "name": "renewal-offers-20",
+  "design": "20-compare-renewal-offers.png",
+  "route": "/policy/{policy}/renewal-offers"
+ },
+ {
+  "name": "renewal-offers-52",
+  "design": "52-compare-renewal-offers.png",
+  "route": "/policy/{policy}/renewal-offers"
+ },
+ {
+  "name": "renewal-quote-21",
+  "design": "21-renewal-quote.png",
+  "route": "/policy/{policy}/renewal-quote"
+ },
+ {
+  "name": "renewal-quote-50",
+  "design": "50-renewal-quote.png",
+  "route": "/policy/{policy}/renewal-quote"
+ },
+ {
+  "name": "draft-applications-22",
+  "design": "22-draft-applications.png",
+  "route": "/proposals"
+ },
+ {
+  "name": "draft-applications-51",
+  "design": "51-draft-applications.png",
+  "route": "/proposals"
+ },
+ {
+  "name": "saved-quotes-24",
+  "design": "24-saved-quotes.png",
+  "route": "/quotes"
+ },
+ {
+  "name": "saved-quotes-49",
+  "design": "49-saved-quotes.png",
+  "route": "/quotes"
+ },
+ {
+  "name": "search-23",
+  "design": "23-search-results-a.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-25",
+  "design": "25-search-results-b.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-26",
+  "design": "26-search-results-c.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-43",
+  "design": "43-search-results-car-insurance-products.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-44",
+  "design": "44-search-results-motor-sorted-list.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-45",
+  "design": "45-search-results-relevance-list.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-46",
+  "design": "46-search-results-mixed-categories.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "search-48",
+  "design": "48-search-results-get-a-quote-tab.png",
+  "route": "/search?q=motor"
+ },
+ {
+  "name": "claim-select-policy-27",
+  "design": "27-claim-start-select-policy-a.png",
+  "route": "/claim/new"
+ },
+ {
+  "name": "claim-select-policy-33",
+  "design": "33-claim-select-policy.png",
+  "route": "/claim/new"
+ },
+ {
+  "name": "claim-select-policy-35",
+  "design": "35-claim-select-policy-narrow.png",
+  "route": "/claim/new"
+ },
+ {
+  "name": "claim-evidence-32",
+  "design": "32-claim-upload-evidence-a.png",
+  "route": "/claim/{claim}/evidence?wizard=1"
+ },
+ {
+  "name": "claim-evidence-34",
+  "design": "34-claim-upload-evidence-b.png",
+  "route": "/claim/{claim}/evidence?wizard=1"
+ },
+ {
+  "name": "claim-evidence-36",
+  "design": "36-claim-upload-evidence-narrow.png",
+  "route": "/claim/{claim}/evidence?wizard=1"
+ },
+ {
+  "name": "claim-detail-39",
+  "design": "39-claim-details-narrow.png",
+  "route": "/claim/{claim}"
+ },
+ {
+  "name": "ticket-detail-41",
+  "design": "41-support-ticket-detail.png",
+  "route": "/support/{ticket}"
+ },
+ {
+  "name": "product-detail-59",
+  "design": "59-product-detail-motor-insurance.png",
+  "route": "/quote/product/motor"
+ },
+ {
+  "name": "claim-appeal",
+  "design": "opesinsure_claim_appeal_screen.png",
+  "route": "/claim/{claim}/appeal"
+ },
+ {
+  "name": "claim-decision",
+  "design": "opesinsure_claim_decision_screen.png",
+  "route": "/claim/{claimDecided}/decision"
+ },
+ {
+  "name": "claim-settlement",
+  "design": "opesinsure_claim_settlement_dashboard.png",
+  "route": "/claim/{claimDecided}/settlement"
+ },
+ {
+  "name": "claim-incident",
+  "design": "opesinsure_incident_details_screen.png",
+  "route": "/claim/{claim}/incident"
+ },
+ {
+  "name": "claim-incident-31",
+  "design": "31-claim-incident-details.png",
+  "route": "/claim/{claim}/incident"
+ },
+ {
+  "name": "claim-incident-37",
+  "design": "37-claim-incident-details-narrow.png",
+  "route": "/claim/{claim}/incident"
+ },
+ {
+  "name": "claim-review-submit",
+  "design": "opesinsure_review_and_submit_claim.png",
+  "route": "/claim/new/review?id={claim}"
+ },
+ {
+  "name": "claim-review-submit-30",
+  "design": "30-claim-review-submit.png",
+  "route": "/claim/new/review?id={claim}"
+ },
+ {
+  "name": "claim-review-submit-28",
+  "design": "28-claim-review-submit-dark-header.png",
+  "route": "/claim/new/review?id={claim}"
+ },
+ {
+  "name": "claim-review-submit-40",
+  "design": "40-claim-review-submit-narrow.png",
+  "route": "/claim/new/review?id={claim}"
+ },
+ {
+  "name": "compare-offers",
+  "design": "opesinsure_compare_offers_screen.png",
+  "route": "/quote/compare",
+  "via": {
+   "route": "/quotes/{quote}",
+   "click": "Resume comparison",
+   "wait": 9000
+  },
+  "after": [
+   {
+    "click": "Add to comparison",
+    "each": true,
+    "times": 2,
+    "wait": 800
+   },
+   {
+    "clickPrefix": "Compare 2 offers",
+    "wait": 5000
+   }
+  ]
+ },
+ {
+  "name": "filters",
+  "design": "opesinsure_filters_mobile_ui.png",
+  "route": "/search?q=motor",
+  "after": {
+   "click": "Filters",
+   "times": 1
+  }
+ },
+ {
+  "name": "checkout",
+  "design": "opesinsure_review_pay_checkout.png",
+  "route": "/checkout?proposalId={proposal}"
+ },
+ {
+  "name": "checkout-13",
+  "design": "13-review-and-pay.png",
+  "route": "/checkout?proposalId={proposal}"
+ },
+ {
+  "name": "payment-processing",
+  "design": "opesinsure_payment_processing_screen.png",
+  "route": "/payment?proposalId={proposal}"
+ },
+ {
+  "name": "payment-processing-15",
+  "design": "15-payment-processing.png",
+  "route": "/payment?proposalId={proposal}"
+ },
+ {
+  "name": "payment-processing-58",
+  "design": "58-payment-processing.png",
+  "route": "/payment?proposalId={proposal}"
+ },
+ {
+  "name": "payment-confirmation",
+  "design": "opesinsure_payment_confirmation.png",
+  "route": "/confirmation?proposalId={proposal}"
+ },
+ {
+  "name": "policy-confirmation",
+  "design": "opesinsure_policy_confirmation_screen.png",
+  "route": "/confirmation?proposalId={proposal}"
+ },
+ {
+  "name": "covered-16",
+  "design": "16-youre-covered-confirmation.png",
+  "route": "/confirmation?proposalId={proposal}"
+ },
+ {
+  "name": "covered-56",
+  "design": "56-youre-covered.png",
+  "route": "/confirmation?proposalId={proposal}"
+ }
 ]

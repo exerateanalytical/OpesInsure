@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -146,13 +146,17 @@ export function Button({
   variant = "primary",
   loading = false,
   disabled = false,
+  size = "default",
 }: {
   label: string;
   onPress?: () => void;
   icon?: LucideIcon;
+  /** tertiary = ghost (text only). */
   variant?: "primary" | "secondary" | "tertiary" | "danger";
   loading?: boolean;
   disabled?: boolean;
+  /** small = 48dp (still a full touch target); default = 52dp. */
+  size?: "default" | "small";
 }) {
   return (
     <Pressable
@@ -164,6 +168,7 @@ export function Button({
       android_ripple={ripple(variant === "primary")}
       style={({ pressed }) => [
         styles.button,
+        size === "small" && styles.buttonSmall,
         styles[`button_${variant}`],
         pressed && styles.pressed,
         disabled && styles.disabled,
@@ -202,16 +207,34 @@ export function TextField({
   hint,
   ...props
 }: TextInputProps & { label: string; error?: string; hint?: string }) {
+  const [focused, setFocused] = useState(false);
+  const disabled = props.editable === false;
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={hint}
-        accessibilityState={{ disabled: props.editable === false }}
+        accessibilityState={{ disabled }}
         placeholderTextColor={colors.neutral500}
+        selectionColor={colors.blue600}
         {...props}
-        style={[styles.input, error && styles.inputError, props.style]}
+        onFocus={(e) => {
+          setFocused(true);
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          props.onBlur?.(e);
+        }}
+        style={[
+          styles.input,
+          props.multiline && styles.inputMultiline,
+          focused && styles.inputFocused,
+          error && styles.inputError,
+          disabled && styles.inputDisabled,
+          props.style,
+        ]}
       />
       {error ? (
         <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text>
@@ -310,6 +333,49 @@ export function Money({
   );
 }
 
+/**
+ * One measurement for every form control (TextField, SelectField,
+ * MasterSelectField, DateField, Button): 52dp high, 12 radius, 16dp inner
+ * padding, 14/19 semibold label 8dp above, 16/24 value text.
+ */
+export const FIELD = {
+  height: 52,
+  radius: 12,
+  padX: space.x4,
+  labelGap: space.x2,
+  /** Focus/error ring drawn outside the border (web outline, native shadow-free inset). */
+  ring: (color: string) =>
+    Platform.OS === "web"
+      ? ({ outlineColor: color, outlineWidth: 1, outlineStyle: "solid" } as unknown as { borderWidth?: number })
+      : { borderWidth: 2 },
+} as const;
+
+/** Shared look of a select trigger so pickers match TextField exactly. */
+export const fieldStyles = StyleSheet.create({
+  field: { gap: FIELD.labelGap },
+  label: { ...type.label, color: colors.neutral800 },
+  control: {
+    minHeight: FIELD.height,
+    borderWidth: 1,
+    borderColor: colors.neutral300,
+    borderRadius: FIELD.radius,
+    backgroundColor: colors.white,
+    paddingHorizontal: FIELD.padX,
+    paddingVertical: space.x3 - 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.x2,
+  },
+  controlPressed: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
+  controlError: { borderColor: colors.danger, ...FIELD.ring(colors.danger) },
+  controlDisabled: { backgroundColor: colors.neutral100, borderColor: colors.neutral200 },
+  value: { ...type.body, color: colors.navy950, flex: 1 },
+  placeholder: { color: colors.neutral500 },
+  disabledText: { color: colors.neutral600 },
+  error: { ...type.meta, color: colors.dangerText },
+  hint: { ...type.meta, color: colors.neutral600 },
+});
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.neutral50 },
   flex: { flex: 1 },
@@ -360,9 +426,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   button: {
-    minHeight: 50,
+    minHeight: FIELD.height,
     overflow: "hidden",
-    borderRadius: radius.control,
+    borderRadius: FIELD.radius,
     paddingHorizontal: space.x4,
     flexDirection: "row",
     alignItems: "center",
@@ -386,6 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSoft,
     borderColor: colors.danger,
   },
+  buttonSmall: { minHeight: 48 },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.48 },
   buttonLabel: { ...type.label },
@@ -396,17 +463,21 @@ const styles = StyleSheet.create({
   field: { gap: space.x2 },
   label: { ...type.label, color: colors.neutral800 },
   input: {
-    height: 50,
+    minHeight: FIELD.height,
     borderWidth: 1,
     borderColor: colors.neutral300,
-    borderRadius: radius.control,
+    borderRadius: FIELD.radius,
     backgroundColor: colors.white,
-    paddingHorizontal: space.x3,
-    fontSize: 16,
-    fontFamily: "Inter_400Regular",
+    paddingHorizontal: FIELD.padX,
+    paddingVertical: 0,
+    ...type.body,
     color: colors.navy950,
   },
-  inputError: { borderColor: colors.danger, borderWidth: 1.5 },
+  inputMultiline: { paddingVertical: space.x3 },
+  // Focus/error borders keep a 1dp width and use a same-colour ring so the text never shifts.
+  inputFocused: { borderColor: colors.blue600, ...FIELD.ring(colors.blue600) },
+  inputError: { borderColor: colors.danger, ...FIELD.ring(colors.danger) },
+  inputDisabled: { backgroundColor: colors.neutral100, color: colors.neutral600, borderColor: colors.neutral200 },
   error: { ...type.meta, color: colors.dangerText },
   hint: { ...type.meta, color: colors.neutral600 },
   chip: {

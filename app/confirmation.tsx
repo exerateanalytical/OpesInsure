@@ -6,7 +6,7 @@ import { openDocumentUrl } from "@/components/documents/openDocument";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { ActionTile, Banner, BrandHeader, CtaBar, HeroCard, HeroMeta } from "@/components/design";
 import { ErrorCard, InfoRow, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
-import { InsuranceApi, PolicyApi, PurchaseStatus, TokenVault } from "@/api/client";
+import { InsuranceApi, Payment, PaymentsApi, PolicyApi, PurchaseStatus, TokenVault } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { useFormatters } from "@/hooks/useFormatters";
 import { openableUrl } from "@/lib/purchase";
@@ -18,7 +18,9 @@ const mark = require("../assets/brand/mark.png");
 export default function Confirmation() {
   const params = useLocalSearchParams<{ proposalId?: string }>();
   const proposal = useInsurance((s) => s.proposal);
-  const payment = useInsurance((s) => s.payment);
+  const storePayment = useInsurance((s) => s.payment);
+  // Receipt facts come from the paid payment itself: the store copy when this device paid, else read by id.
+  const [fetchedPayment, setFetchedPayment] = useState<Payment | null>(null);
   const f = useFormatters();
   const { t, td } = useTranslation();
   const [result, setResult] = useState<PurchaseStatus | null>(null);
@@ -26,7 +28,19 @@ export default function Confirmation() {
   const [checking, setChecking] = useState(false);
   const [certBusy, setCertBusy] = useState(false);
   const [certMessage, setCertMessage] = useState<string | null>(null);
-  const proposalId = params.proposalId || proposal?.id || payment?.proposal_id;
+  const resultPaymentId = result?.payment?.id ?? null;
+  const payment = storePayment && (!resultPaymentId || storePayment.id === resultPaymentId) ? storePayment : fetchedPayment ?? storePayment;
+  const proposalId = params.proposalId || proposal?.id || storePayment?.proposal_id;
+  useEffect(() => {
+    if (!resultPaymentId || storePayment?.id === resultPaymentId || fetchedPayment?.id === resultPaymentId) return;
+    let live = true;
+    PaymentsApi.show(resultPaymentId)
+      .then((p) => live && setFetchedPayment(p))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [resultPaymentId, storePayment?.id, fetchedPayment?.id]);
 
   const check = useCallback(async () => {
     if (!proposalId) {
@@ -181,7 +195,7 @@ export default function Confirmation() {
               </View>
               <View style={st.flex}>
                 <Text style={st.receiptLabel}>{t("cfPaymentRef")}</Text>
-                <Text style={st.receiptValue} numberOfLines={1}>{paymentRef ?? "—"}</Text>
+                <Text style={st.receiptValue} selectable>{paymentRef ?? "—"}</Text>
               </View>
               <View style={st.receiptDivider} />
               <View style={st.flex}>
