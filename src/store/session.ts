@@ -290,6 +290,7 @@ export const roleToPortal = (role: string | null | undefined): Portal | null => 
     case "FINANCE_ADMIN":
     case "FINANCE_MANAGER":
     case "FINANCE_OPERATOR":
+    case "FINANCE_OFFICER":
       return "finance";
     case "CLAIMS_MANAGER":
     case "CLAIMS_OFFICER":

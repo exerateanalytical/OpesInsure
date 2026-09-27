@@ -91,7 +91,7 @@ type State = {
   setInsured: (v: InsuredPerson) => void;
   setQuoteResult: (q: Quote, o: QuoteOffer[]) => void;
   loadQuote: (id: string) => Promise<QuoteResult>;
-  submitQuote: (customerId: string) => Promise<QuoteResult>;
+  submitQuote: (customerId: string, coords?: { latitude?: number; longitude?: number }) => Promise<QuoteResult>;
   rerateQuote: (id: string) => Promise<QuoteResult>;
   selectOffer: (v: QuoteOffer) => Promise<void>;
   setProposal: (v: Proposal) => void;
@@ -152,7 +152,7 @@ export const useInsurance = create<State>((set, get) => ({
     }
   },
 
-  async submitQuote(customerId) {
+  async submitQuote(customerId, coords) {
     set({ busy: true, error: null });
     try {
       const line_code = String(get().product ?? "").toUpperCase();
@@ -171,6 +171,7 @@ export const useInsurance = create<State>((set, get) => ({
         channel: "B2C",
         risk_facts,
         ...(get().riskAssetId ? { risk_asset_id: get().riskAssetId! } : {}),
+        ...(coords?.latitude != null && coords?.longitude != null ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
       });
       const result = await InsuranceApi.rateQuote(quote.id);
       set({ quote: result.quote, offers: result.offers, busy: false });

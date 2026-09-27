@@ -4,6 +4,7 @@ import { Href, router, useLocalSearchParams } from "expo-router";
 import { ArrowRight, CalendarDays, Layers, RefreshCcw, ShieldCheck, Trash2, UserRoundSearch } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, HeroCard } from "@/components/design";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { QuoteResult, QuotesApi } from "@/api/client";
@@ -39,7 +40,9 @@ export default function QuoteDetail() {
   const expired = !declined && outcome === "EXPIRED";
   const referred = status === "REFERRED";
   const lowest = summary?.lowest_total_minor ?? (offers.length ? Math.min(...offers.map((o) => o.total_minor)) : null);
-  const canResume = !declined && (summary?.can_resume ?? (["SUBMITTED", "OFFERED", "REFERRED"].includes(status) && !expired));
+  // allowed_actions (when the server sends it) narrows the local rules.
+  const canResume = allowedAction(data, "resume", !declined && (summary?.can_resume ?? (["SUBMITTED", "OFFERED", "REFERRED"].includes(status) && !expired)));
+  const canRemove = allowedAction(data, "cancel", true);
   const name = summary?.product_name ?? (localized(offers[0]?.product?.name, f.language) || humanize(quote?.line_code));
 
   const run = async (kind: "resume" | "rerate", fn: () => Promise<void>) => {
@@ -109,7 +112,7 @@ export default function QuoteDetail() {
         data ? (
           <CtaBar>
             {primary}
-            <Button label={t("qwRemove")} icon={Trash2} variant="danger" disabled={!!busy} onPress={remove} />
+            {canRemove ? <Button label={t("qwRemove")} icon={Trash2} variant="danger" disabled={!!busy} onPress={remove} /> : null}
           </CtaBar>
         ) : null
       }

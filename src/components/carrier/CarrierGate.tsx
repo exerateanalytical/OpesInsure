@@ -4,6 +4,7 @@ import { LockKeyhole } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
 import { TintedIcon } from "@/components/design";
 import { useSession } from "@/store/session";
+import { useCapabilities } from "@/store/capabilities";
 import { canUseCarrierModule, CarrierModule, hasPermission } from "@/lib/carrierAccess";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -22,7 +23,8 @@ export const usePermission = (permission: string) => hasPermission(useWorkspaceP
 export function CarrierGate({ module, children }: { module: CarrierModule; children: ReactNode }) {
   const { t } = useTranslation();
   const perms = useWorkspacePermissions();
-  if (canUseCarrierModule(perms, module)) return <>{children}</>;
+  const caps = useCapabilities((s) => s.caps);
+  if (canUseCarrierModule(perms, module, caps)) return <>{children}</>;
   return (
     <Screen>
       <AppHeader title={t("dtForbiddenTitle")} back />

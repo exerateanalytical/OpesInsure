@@ -7,6 +7,8 @@ import { useColumns } from "@/components/responsive";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import type { CopyKey as TranslationKey } from "@/i18n/strings";
+import { useCapabilities } from "@/store/capabilities";
+import { hrefVisible } from "@/lib/capabilities";
 
 export type DashboardMetric = { label: string; value: string; tone?: string; key?: string; href?: string };
 
@@ -26,12 +28,15 @@ const URGENT = new Set(["warning", "danger"]);
 export function KpiGrid({ metrics, routes }: { metrics: DashboardMetric[]; routes: Record<string, KpiRoute> }) {
   const { t } = useTranslation();
   const grid = useColumns({ minItem: 150 });
+  const caps = useCapabilities((s) => s.caps);
   const urgent = metrics.filter((m) => URGENT.has(m.tone ?? "") && m.value !== "0");
   const rest = metrics.filter((m) => !urgent.includes(m));
 
   const card = (m: DashboardMetric) => {
     const route = routes[m.key ?? m.label];
-    const href = m.href ?? route?.href;
+    // The metric stays visible; only the drill-in link is dropped for a module the server reports as not viewable.
+    const rawHref = m.href ?? route?.href;
+    const href = rawHref && hrefVisible(caps, rawHref) ? rawHref : undefined;
     const label = route ? t(route.label) : m.label;
     const isUrgent = urgent.includes(m);
     const body = (

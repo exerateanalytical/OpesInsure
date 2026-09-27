@@ -6,6 +6,7 @@ import { Text } from "react-native";
 import { ReceiptText, RefreshCw, ShieldAlert, ShieldPlus, UserPlus } from "lucide-react-native";
 import { usePermission } from "@/components/carrier/CarrierGate";
 import { AppHeader, Card, Money, Screen, SectionTitle, StatusChip } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { BrokerApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { Customer360Panel } from "@/components/crm/Customer360Panel";
@@ -20,8 +21,9 @@ export default function BrokerClientDetail() {
   const { t } = useTranslation();
   const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
   const q = useLoad(() => BrokerApi.client(id), [id]);
-  const canReportClaim = usePermission("broker.claims.file");
   const x = q.data;
+  // Permission gate, narrowed by the record's allowed_actions when the server sends it.
+  const canReportClaim = allowedAction(x, "file_for_client", usePermission("broker.claims.file"));
   const name = encodeURIComponent(x?.full_name ?? "");
   return (
     <Screen>

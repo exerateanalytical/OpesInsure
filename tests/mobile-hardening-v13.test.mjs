@@ -187,7 +187,7 @@ test("release config: one version, appVersion runtime, separate APK channel", ()
   const pkg = json("package.json");
   const app = json("app.json");
   const eas = json("eas.json");
-  assert.equal(pkg.version, "1.5.0");
+  assert.equal(pkg.version, "1.5.1");
   assert.equal(app.expo.version, pkg.version);
   assert.deepEqual(app.expo.runtimeVersion, { policy: "appVersion" });
   const config = read("app.config.js");

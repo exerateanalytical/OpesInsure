@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, Car, Info, Plus, UserRound, Users } from "lucide-react-native";
@@ -17,6 +17,8 @@ import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDat
 import { useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { ContractField } from "@/components/forms/ContractField";
 import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
+import { claimCoordinates } from "@/lib/deviceLocation";
+import type { DeviceFix } from "@/lib/locationMatch";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
 import { useTranslation } from "@/i18n";
@@ -44,6 +46,8 @@ export default function Risk() {
   const submit = useInsurance((s) => s.submitQuote);
   const customerId = useSession((s) => s.activeWorkspace?.customer_id);
   const line = (product ?? "").toUpperCase();
+  // Last device fix from the location autofill: sent as latitude/longitude on POST /quotes when present.
+  const fixRef = useRef<DeviceFix | null>(null);
 
   const [schema, setSchema] = useState<RiskSchema | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(true);
@@ -111,7 +115,7 @@ export default function Risk() {
     setFacts(buildFacts(schema, values));
     setSubmitError(null);
     try {
-      const result = await submit(customerId);
+      const result = await submit(customerId, claimCoordinates(fixRef.current));
       const status = String(result.quote.status).toUpperCase();
       if (status === "REFERRED" || (!result.offers.length && status !== "OFFERED"))
         router.replace({ pathname: "/quote/referral", params: { quoteId: result.quote.id } });
@@ -235,7 +239,7 @@ export default function Risk() {
             <Card>
               {stepTitle(current) ? <SectionHeading title={stepTitle(current) ?? ""} /> : null}
               {current.fields.some((f) => f.master?.list === "cameroon_region") ? (
-                <FormLocationAutofill form={`quote.${line}`} fields={current.fields} values={values} setValues={setValues} />
+                <FormLocationAutofill form={`quote.${line}`} fields={current.fields} values={values} setValues={setValues} onFix={(fix) => { fixRef.current = fix; }} />
               ) : null}
               {current.fields.map((f) => (
                 isFieldVisible(f, values) ? (

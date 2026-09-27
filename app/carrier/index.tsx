@@ -21,6 +21,7 @@ import { carrierTabs } from "@/components/portal/tabs";
 import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
 import { useWorkspacePermissions } from "@/components/carrier/CarrierGate";
 import { CARRIER_ROUTE_MODULE, canUseCarrierModule } from "@/lib/carrierAccess";
+import { useCapabilities } from "@/store/capabilities";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -38,9 +39,11 @@ export default function CarrierHome() {
   // NAV-003: show only modules this workspace is granted (the server still
   // enforces every route; CarrierGate covers direct links).
   const perms = useWorkspacePermissions();
+  // GET /mobile/capabilities narrows the menu further when the server sent it.
+  const caps = useCapabilities((s) => s.caps);
   const allowed = (href: string) => {
     const mod = CARRIER_ROUTE_MODULE[href.split("/")[2] ?? ""];
-    return !mod || canUseCarrierModule(perms, mod);
+    return !mod || canUseCarrierModule(perms, mod, caps);
   };
   const kpiRoutes = Object.fromEntries(Object.entries(KPI_ROUTES).filter(([, r]) => allowed(r.href)));
   return (

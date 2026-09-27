@@ -16,7 +16,7 @@ import { colors, radius, space, type } from "@/theme/tokens";
  * location shown is the server-derived country, never device GPS.
  */
 export default function LoginActivityScreen() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const f = useFormatters();
   const { data, loading, error, reload, lastUpdatedAt, stale } = useFreshLoad(() => AccountApi.loginActivity(), [], "security");
   return (
@@ -47,6 +47,10 @@ export default function LoginActivityScreen() {
                 .filter(Boolean)
                 .join(" · ");
               const method = (row.method ?? "").replaceAll("_", " ").toLowerCase() || "-";
+              const event = (row.event_type ?? "").toUpperCase();
+              // Non sign-in events (sign-out, OTP, step-up, attestation...) show their own label.
+              const eventLabel = event && event !== "LOGIN" ? td(`loginEvent_${event}`, event.replaceAll("_", " ").toLowerCase()) : null;
+              const outcome = (row.outcome ?? "").toUpperCase();
               return (
                 <Card key={row.id} style={styles.card}>
                   <View style={styles.row}>
@@ -56,13 +60,16 @@ export default function LoginActivityScreen() {
                       size={44}
                     />
                     <View style={styles.flex}>
-                      <Text style={styles.title}>{t(failed ? "secActivityFailed" : "secActivitySignIn", { method })}</Text>
+                      <Text style={styles.title}>{eventLabel ?? t(failed ? "secActivityFailed" : "secActivitySignIn", { method })}</Text>
                       <Text style={styles.body}>{f.dateTime(row.occurred_at)}</Text>
                       <Text style={styles.body}>{meta}</Text>
                     </View>
                   </View>
-                  {row.new_device || flags.length ? (
+                  {row.new_device || flags.length || outcome ? (
                     <View style={styles.chips}>
+                      {outcome ? (
+                        <StatusChip label={td(`loginOutcome_${outcome}`, outcome.replaceAll("_", " ").toLowerCase())} tone={failed ? "danger" : "success"} />
+                      ) : null}
                       {row.new_device ? <StatusChip label={t("secActivityNewDevice")} tone="warning" /> : null}
                       {flags.map((flag) => (
                         <StatusChip key={flag} label={flag.replaceAll("_", " ")} tone="danger" />

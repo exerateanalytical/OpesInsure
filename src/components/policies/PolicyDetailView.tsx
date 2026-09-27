@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
 import { Calendar, Car, Check, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { BrandHeader, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { LoadingState } from "@/components/StatePanel";
 import { FlowRow } from "@/components/FlowPrimitives";
@@ -168,7 +169,10 @@ export function PolicyDetailView({ id }: { id: string }) {
   const premium = p.premium_minor ?? p.terms_snapshot?.total_minor ?? null;
   const cover = normalizeCoverage(p.terms_snapshot?.coverage_snapshot ?? p.proposal?.offer?.coverage_snapshot, f.language);
   const insured = insuredLabel(p);
-  const canRenew = ["active", "expired"].includes(info.bucket) && p.status !== "CANCELLATION_PENDING";
+  // allowed_actions (when the server sends it) narrows the local status rules.
+  const canRenew = allowedAction(p, "renew", ["active", "expired"].includes(info.bucket) && p.status !== "CANCELLATION_PENDING");
+  const canClaim = allowedAction(p, "file_claim", !!info.claimable);
+  const canService = allowedAction(p, "request_service", true);
   const delivery = p.delivery ?? null;
   const term = termProgress(p.coverage_starts_at, p.coverage_ends_at);
   const coverageType = coverageTypeLabel(p) ?? (cover.coverages.length ? t("pdCoverageCount", { count: cover.coverages.length }) : "—");
@@ -282,7 +286,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         <View style={st.tiles}>
           <IconTile icon={FileText} label={t("pdViewDocuments")} tint="blue" onPress={openDocumentsPage} />
           <IconTile icon={RefreshCcw} label={t("pdRenewPolicy")} tint="gold" disabled={!canRenew} onPress={() => router.push({ pathname: "/policy/[id]/renew", params: { id: p.id } })} />
-          <IconTile icon={ShieldAlert} label={t("pdFileClaim")} tint="red" disabled={!info.claimable} onPress={() => router.push({ pathname: "/claim/new", params: { policyId: p.id } })} />
+          <IconTile icon={ShieldAlert} label={t("pdFileClaim")} tint="red" disabled={!canClaim} onPress={() => router.push({ pathname: "/claim/new", params: { policyId: p.id } })} />
           <IconTile icon={Headset} label={t("pdContact")} tint="blue" disabled={contactBusy} onPress={() => void contactProvider()} />
         </View>
         {!info.claimable ? <Text style={ps.meta}>{t("pdClaimInForce")}</Text> : null}
@@ -376,7 +380,7 @@ export function PolicyDetailView({ id }: { id: string }) {
 
         <BeneficiariesSection policyId={p.id} />
 
-        <Button label={t("pdChange")} icon={Settings2} variant="secondary" onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} />
+        {canService ? <Button label={t("pdChange")} icon={Settings2} variant="secondary" onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} /> : null}
 
         {delivery ? (
           <Card>

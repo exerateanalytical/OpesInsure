@@ -40,6 +40,18 @@ import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { ClaimAction, claimActionAllowed, claimStage, claimStatusKey, claimTone, DETAIL_STAGES } from "@/lib/claimStatus";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { allowedAction } from "@/lib/capabilities";
+
+/** Local claim action -> server `allowed_actions` name (unmapped actions keep the status rule only). */
+const SERVER_ACTION: Partial<Record<ClaimAction, string>> = {
+  evidence: "add_evidence",
+  appeal: "appeal",
+  decision: "decide_settlement",
+};
+const serverAllows = (claim: object, action: ClaimAction) => {
+  const server = SERVER_ACTION[action];
+  return server ? allowedAction(claim, server, true) : true;
+};
 
 const ACTIONS: { action: ClaimAction; label: CopyKey; icon: typeof Camera; path: string }[] = [
   { action: "decision", label: "claimDecisionTitle", icon: Scale, path: "/claim/[id]/decision" },
@@ -117,14 +129,15 @@ export default function ClaimDetail() {
     >
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(claim) => {
-          const canUpload = claimActionAllowed("evidence", claim.status);
+          // allowed_actions (when the server sends it) narrows the status rules.
+          const canUpload = claimActionAllowed("evidence", claim.status) && serverAllows(claim, "evidence");
           const policy = policies.find((p) => p.id === claim.policy_id) ?? claimPolicy(claim);
           const title = policyTitle(policy, t("claimPolicyLabel"));
           const ProductIcon = productIcon(title, policyLine(policy));
           const incidentType = claimExtra(claim, "incident_type");
           const status = td(claimStatusKey(claim.status), claim.status);
           const statusDate = lastEvent?.occurred_at ?? claim.created_at;
-          const actions = ACTIONS.filter((a) => claimActionAllowed(a.action, claim.status));
+          const actions = ACTIONS.filter((a) => claimActionAllowed(a.action, claim.status) && serverAllows(claim, a.action));
           return (
             <>
               <BrandHeader

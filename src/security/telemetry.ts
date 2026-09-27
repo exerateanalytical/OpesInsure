@@ -12,7 +12,8 @@ export type TelemetryEvent =
   | "APP_LAUNCHED" | "APP_CRASHED" | "APP_FOREGROUNDED" | "APP_BACKGROUNDED"
   | "SCREEN_VIEWED" | "API_ERROR" | "NETWORK_TIMEOUT" | "JS_EXCEPTION"
   | "PAYMENT_FAILED" | "OFFLINE_SYNC_FAILED" | "STEP_UP_CHALLENGE_FAILED"
-  | "FORCE_UPDATE_SHOWN" | "MAINTENANCE_SHOWN" | "DEVICE_RISK_LIMITED";
+  | "FORCE_UPDATE_SHOWN" | "MAINTENANCE_SHOWN" | "DEVICE_RISK_LIMITED"
+  | "PUSH_REGISTRATION_FAILED";
 
 const forbidden = /name|email|phone|token|address|document|payload|body|pin|otp|password/i;
 const clean = (value: Record<string, unknown>) =>
@@ -40,6 +41,19 @@ export const Telemetry = {
     return currentScreen;
   },
   async capture(event: TelemetryEvent, attributes: Record<string, unknown> = {}) {
+    await Telemetry.send(event, attributes);
+  },
+  /**
+   * Like capture, but when the server rejects `event` with 422 (an older
+   * backend without it in its allow-list) the same report is re-sent as
+   * `fallback` with `error_code: event`.
+   */
+  async captureWithFallback(event: TelemetryEvent, fallback: TelemetryEvent, attributes: Record<string, unknown> = {}) {
+    const status = await Telemetry.send(event, attributes);
+    if (status === 422) await Telemetry.send(fallback, { error_code: event, ...attributes });
+  },
+  /** Sends one event; resolves to the HTTP status of a failure (0 when unknown), or null on success. */
+  async send(event: TelemetryEvent, attributes: Record<string, unknown> = {}): Promise<number | null> {
     try {
       await RuntimeApi.telemetry({
         event,
@@ -48,8 +62,10 @@ export const Telemetry = {
         release_channel: environmentConfig.releaseChannel,
         attributes: clean({ screen: currentScreen, platform: Platform.OS, ...attributes }),
       });
-    } catch {
+      return null;
+    } catch (error) {
       // Telemetry must never block an insurance operation or expose its payload.
+      return typeof (error as { status?: unknown })?.status === "number" ? (error as { status: number }).status : 0;
     }
   },
   /** Startup time from JS module evaluation to first usable render. */

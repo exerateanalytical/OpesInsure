@@ -20,6 +20,8 @@ import { BiometricLock } from "@/security/biometric";
 import { environmentConfig } from "@/config/environment";
 import { environmentBanner } from "@/lib/environmentBanner";
 import { useTimezone } from "@/store/timezone";
+// Side effect: keeps GET /mobile/capabilities cached for the active workspace.
+import "@/store/capabilities";
 import {
   backoffDelay,
   isIdleExpired,

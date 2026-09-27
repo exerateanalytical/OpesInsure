@@ -46,6 +46,8 @@ export function resolveNotificationTarget(data: unknown): string | null {
   const raw = [record.path, record.target, record.deep_link, record.url].find(
     (v) => typeof v === "string" && v.length > 0,
   ) as string | undefined;
+  // Security alerts (SecurityAlerts: type SECURITY) always open the security centre.
+  if (isSecurityNotification(record)) return SECURITY_TARGET;
   if (!raw) return null;
   let path = raw.trim();
   if (path.startsWith("opesinsure://")) path = `/${path.slice("opesinsure://".length)}`;
@@ -60,6 +62,15 @@ export function resolveNotificationTarget(data: unknown): string | null {
   return ALLOWED_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix))
     ? path
     : null;
+}
+
+export const SECURITY_TARGET = "/account/security";
+
+/** A security alert (new device, payout destination changed, sign-out everywhere...). */
+export function isSecurityNotification(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const r = data as Record<string, unknown>;
+  return [r.type, r.category].some((v) => typeof v === "string" && v.toUpperCase() === "SECURITY");
 }
 
 /** 65 → "1:05". Negative values clamp to 0:00. */

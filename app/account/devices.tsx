@@ -13,7 +13,7 @@ import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function Devices() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const f = useFormatters();
   const { data, loading, error, reload } = useLoad(() => AccountApi.devices(), []);
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,6 +52,23 @@ export default function Devices() {
                   <View style={styles.flex}>
                     <Text style={styles.title}>{device.name}</Text>
                     <Text style={styles.body}>{t("devLastSeen", { platform: device.platform, date: f.dateTime(device.last_seen_at) })}</Text>
+                    {/* Detail fields from newer backends; each shown only when sent. */}
+                    {device.model || device.os_version || device.app_version ? (
+                      <Text style={styles.body}>
+                        {[device.model, device.os_version, device.app_version ? `v${device.app_version}` : null].filter(Boolean).join(" · ")}
+                      </Text>
+                    ) : null}
+                    {device.approx_location ? <Text style={styles.body}>{t("devApproxLocation", { place: device.approx_location })}</Text> : null}
+                    {device.first_seen_at ? <Text style={styles.body}>{t("devFirstSeen", { date: f.dateTime(device.first_seen_at) })}</Text> : null}
+                    {device.last_auth_method ? <Text style={styles.body}>{t("devLastAuth", { method: device.last_auth_method.replaceAll("_", " ").toLowerCase() })}</Text> : null}
+                    {device.attestation_status ? (
+                      <View style={styles.chipStart}>
+                        <StatusChip
+                          label={td(`devAttest_${device.attestation_status.toUpperCase()}`, device.attestation_status)}
+                          tone={device.attestation_status.toUpperCase() === "PASS" ? "success" : device.attestation_status.toUpperCase() === "FAIL" ? "danger" : "neutral"}
+                        />
+                      </View>
+                    ) : null}
                   </View>
                   {device.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
                 </View>
@@ -72,4 +89,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
   body: { ...type.meta, color: colors.neutral600, marginTop: 2 },
+  chipStart: { flexDirection: "row", marginTop: space.x1 },
 });

@@ -474,3 +474,31 @@ export const CarrierWorkspaceApi = {
   payments: () => api<CarrierPayments>("/mobile/partner/carrier/payments"),
   partners: () => api<DistributionPartner[]>("/mobile/partner/carrier/partners"),
 };
+
+// ------------------------------------------------------------------ staff security (mobile audit B4)
+export type StaffSecurityStatus = {
+  user_id: string;
+  full_name?: string | null;
+  role_code?: string | null;
+  status: string;
+  last_sign_in_at: string | null;
+  active_sessions: number;
+  security_state: "NORMAL" | "AT_RISK" | "SUSPENDED" | string;
+  recent_failed_sign_ins?: number;
+};
+/** partner/staff/{user}/security (staff.security.read) and the two containment actions (staff.security.manage). */
+export const StaffSecurityApi = {
+  show: (userId: string) => api<StaffSecurityStatus>(`/partner/staff/${userId}/security`),
+  suspendAccess: (userId: string, reason: string) =>
+    api<{ user_id: string; status: string; sessions_revoked: boolean }>(`/partner/staff/${userId}/suspend-access`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+      idempotent: true,
+    }),
+  forceReauth: (userId: string, reason?: string) =>
+    api<{ user_id: string; status: string; sessions_revoked: boolean }>(`/partner/staff/${userId}/force-reauth`, {
+      method: "POST",
+      body: JSON.stringify(reason?.trim() ? { reason: reason.trim() } : {}),
+      idempotent: true,
+    }),
+};

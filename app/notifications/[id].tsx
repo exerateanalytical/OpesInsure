@@ -1,14 +1,14 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlertTriangle, CalendarDays, CheckCircle2, ExternalLink, Info } from "lucide-react-native";
+import { AlertTriangle, CalendarDays, CheckCircle2, ExternalLink, Info, ShieldAlert } from "lucide-react-native";
 import { Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon, type Tint } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { NotificationsApi, type CustomerNotification } from "@/api/client";
 import { useTranslation } from "@/i18n";
-import { resolveNotificationTarget } from "@/lib/customerLogic";
+import { isSecurityNotification, resolveNotificationTarget } from "@/lib/customerLogic";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const severityIcon = (severity: CustomerNotification["severity"]) =>
@@ -31,7 +31,7 @@ export default function NotificationDetail() {
             <>
               <Card style={styles.card}>
                 <View style={styles.headRow}>
-                  <TintedIcon icon={severityIcon(n.severity)} tint={severityTint(n.severity)} size={56} />
+                  <TintedIcon icon={isSecurityNotification(n) ? ShieldAlert : severityIcon(n.severity)} tint={severityTint(n.severity)} size={56} />
                   <View style={styles.flex}>
                     <StatusChip
                       label={td(`severity_${n.severity}`, n.severity)}

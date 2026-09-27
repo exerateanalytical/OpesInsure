@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
 import { BrokerWorkspaceApi, humanize, shortDate, type BrokerStaffMember } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { StaffSecurityCard } from "@/components/partner/StaffSecurityCard";
 
 type Row = BrokerStaffMember & { id: string; can_admin: boolean };
 
@@ -32,6 +33,8 @@ export default function BrokerStaffDetail() {
               ]}
             />
             {m.can_admin && !m.is_me ? <UnavailableSection title={t("bkStaffAdmin")} message={t("bkStaffAdminPending")} /> : null}
+            {/* Mobile audit B4: account security + containment, gated by capabilities/permissions. */}
+            <StaffSecurityCard userId={m.user_id} isMe={m.is_me} />
           </>
         ) : null
       }

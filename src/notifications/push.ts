@@ -23,9 +23,9 @@ export type PushResult =
   | { status: "unavailable"; reason: string };
 
 const report = (reason: string) =>
-  // Backend allow-list has no push-specific code; API_ERROR + error_code is
-  // the accepted shape (config/mobile_runtime.php telemetry).
-  void Telemetry.capture("API_ERROR", { error_code: "PUSH_REGISTRATION_FAILED", reason: reason.slice(0, 80) });
+  // PUSH_REGISTRATION_FAILED is in the backend allow-list (config/mobile_runtime.php
+  // telemetry.events); an older backend answers 422 and gets API_ERROR + error_code.
+  void Telemetry.captureWithFallback("PUSH_REGISTRATION_FAILED", "API_ERROR", { reason: reason.slice(0, 80) });
 
 async function ensureChannels() {
   if (Platform.OS !== "android") return;

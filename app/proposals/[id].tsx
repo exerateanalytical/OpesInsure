@@ -5,6 +5,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { CheckCircle2, FileText, FileUp, Hourglass, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, DetailRow, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard, InfoRow, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
@@ -135,7 +136,8 @@ export default function ProposalDetail() {
         },
       },
     ]);
-  const canUpload = info.stage === "documents" || info.stage === "information";
+  // allowed_actions (when the server sends it) narrows the local stage rules.
+  const canUpload = allowedAction(p, "attach_document", info.stage === "documents" || info.stage === "information");
 
   const decision = p?.underwriting_case?.decisions?.[p.underwriting_case.decisions.length - 1];
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
@@ -143,7 +145,7 @@ export default function ProposalDetail() {
   const primary = p ? (
     p?.policy_id ? (
       <Button label={t("draftsViewPolicy")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: p.policy_id! } })} />
-    ) : info.stage === "disclosures" ? (
+    ) : info.stage === "disclosures" && allowedAction(p, "answer_disclosures", true) ? (
       <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
     ) : info.stage === "payable" ? (
       <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/quote/terms", params: { proposalId: p.id } })} />
@@ -232,7 +234,7 @@ export default function ProposalDetail() {
             </Card>
           ) : null}
 
-          {canWithdrawProposal(p.status, checklist?.available_transitions) ? (
+          {allowedAction(p, "withdraw", canWithdrawProposal(p.status, checklist?.available_transitions)) ? (
             <Button label={t("prWithdraw")} icon={Undo2} variant="danger" loading={withdrawing} disabled={withdrawing} onPress={withdraw} />
           ) : null}
           {withdrawError ? <ErrorCard error={withdrawError} fallback={t("prWithdrawFailed")} /> : null}

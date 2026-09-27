@@ -4,6 +4,7 @@ import { StatePanel } from "@/components/StatePanel";
 import { router, useLocalSearchParams } from "expo-router";
 import { Text } from "react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { AgentApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { Customer360Panel } from "@/components/crm/Customer360Panel";
@@ -42,10 +43,13 @@ export default function AgentClientDetail() {
           />
           <Customer360Panel partyId={x?.party_id ?? partyId ?? null} />
           <ClientDocumentsCard customerId={id} load={AgentWorkspaceApi.clientDocuments} />
-          <Button
-            label={t("agStartAssistedSale")}
-            onPress={() => router.push(`/agent/sales/new?customerId=${id}`)}
-          />
+          {/* allowed_actions (when sent) must list create_quote. */}
+          {allowedAction(x, "create_quote", true) ? (
+            <Button
+              label={t("agStartAssistedSale")}
+              onPress={() => router.push(`/agent/sales/new?customerId=${id}`)}
+            />
+          ) : null}
           </>
         )}
       </StatePanel>

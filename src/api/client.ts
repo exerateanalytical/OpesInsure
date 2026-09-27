@@ -402,6 +402,8 @@ export type LoginActivity = {
   anomaly_flags: string[] | null;
   occurred_at: string;
   outcome?: string | null;
+  /** LOGIN, LOGOUT, OTP_FAILED, SIGN_OUT_EVERYWHERE, STEP_UP, ATTESTATION... (newer backends). */
+  event_type?: string | null;
   app_version?: string | null;
   masked_ip?: string | null;
 };
@@ -1413,6 +1415,9 @@ export const InsuranceApi = {
     channel: "B2C";
     risk_asset_id?: string;
     risk_facts: Record<string, unknown>;
+    /** Device fix from the location autofill, only when one exists (ignored by older backends). */
+    latitude?: number;
+    longitude?: number;
   }) =>
     api<Quote>("/quotes", {
       method: "POST",
@@ -2076,6 +2081,8 @@ export type DeviceRiskResult = {
   action: "ALLOW" | "LIMIT" | "BLOCK";
   reasons: string[];
   expires_at: string;
+  /** Newer backends: the platform verdict and whether the server has a verifier configured. */
+  attestation?: { verdict?: string | null; reasons?: string[]; config_status?: "CONFIGURED" | "CONFIG_REQUIRED" | string | null } | null;
 };
 export const DeviceSecurityApi = {
   nonce: () =>

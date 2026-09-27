@@ -80,7 +80,7 @@ export default function AgentSaleDetail() {
             <Button variant="secondary" icon={FileSignature} label={t("slOpenProposal")} onPress={() => router.push("/agent/proposals")} />
           ) : null}
           {x?.policy_id ? (
-            <Button variant="secondary" icon={FileText} label={t("slOpenPolicy")} onPress={() => router.push({ pathname: "/agent/policies/[id]", params: { id: x.policy_id } })} />
+            <Button variant="secondary" icon={FileText} label={t("slOpenPolicy")} onPress={() => router.push({ pathname: "/agent/policies/[id]", params: { id: String(x.policy_id ?? "") } })} />
           ) : issued ? (
             <Button variant="secondary" icon={FileText} label={t("slOpenPolicies")} onPress={() => router.push("/agent/policies")} />
           ) : null}

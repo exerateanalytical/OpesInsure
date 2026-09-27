@@ -4,6 +4,7 @@ import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { type LucideIcon, ArrowRight, Building2, Calendar, Car, CheckCircle2, CircleCheck, Coins, Copy, CreditCard, Download, FileText, Headset, RefreshCcw, Share2, Shield, ShieldCheck, User, Wallet } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
+import { allowedAction } from "@/lib/capabilities";
 import { Banner, BrandHeader, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { LoadingState } from "@/components/StatePanel";
@@ -157,7 +158,7 @@ export default function PaymentDetail() {
           </Card>
 
           {retryError ? isProviderNotConfigured(retryError) ? <ProviderNotConfigured error={retryError} /> : <ErrorCard error={retryError} fallback={t("pmRetryFailed")} /> : null}
-          {p.status === "FAILED" ? <Button label={t("pmRetry")} loading={retrying} onPress={() => void retry()} /> : null}
+          {allowedAction(p, "retry", p.status === "FAILED") ? <Button label={t("pmRetry")} loading={retrying} onPress={() => void retry()} /> : null}
           {pending ? <Button label={t("pmRefresh")} icon={RefreshCcw} variant="secondary" loading={loading} onPress={() => void reload()} /> : null}
 
           {policy ? (
@@ -189,7 +190,7 @@ export default function PaymentDetail() {
                 <IconTile icon={Headset} label={t("contactSupport")} tint="neutral" onPress={() => router.push("/support/new")} />
               </View>
               <Button label={t("pmViewReceipt")} variant="secondary" onPress={() => router.push({ pathname: "/payments/[id]/receipt", params: { id } })} />
-              <Button label={t("pmRefund")} variant="tertiary" onPress={() => router.push({ pathname: "/payments/[id]/refund", params: { id } })} />
+              {allowedAction(p, "refund", true) ? <Button label={t("pmRefund")} variant="tertiary" onPress={() => router.push({ pathname: "/payments/[id]/refund", params: { id } })} /> : null}
             </>
           ) : (
             <View style={st.tiles}>

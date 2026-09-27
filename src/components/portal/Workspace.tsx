@@ -6,6 +6,8 @@ import { Card, Chip, ripple } from "@/components/ui";
 import { useColumns } from "@/components/responsive";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { translateNow } from "@/i18n";
+import { useCapabilities } from "@/store/capabilities";
+import { hrefVisible } from "@/lib/capabilities";
 
 export type WorkspaceItem = {
   label: string;
@@ -17,9 +19,11 @@ export type WorkspaceItem = {
 /** The partner dashboard grid: every menu entry that is not a tab. */
 export function WorkspaceMenu({ items }: { items: WorkspaceItem[] }) {
   const grid = useColumns();
+  // GET /mobile/capabilities: a module the server reports as not viewable is left out.
+  const caps = useCapabilities((s) => s.caps);
   return (
     <View style={grid.row}>
-      {items.map((it) => (
+      {items.filter((it) => hrefVisible(caps, it.href)).map((it) => (
         <Pressable
           key={it.href}
           accessibilityRole="button"

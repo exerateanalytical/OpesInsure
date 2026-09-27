@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import * as Application from "expo-application";
-import { CircleAlert, ShieldAlert, ShieldCheck } from "lucide-react-native";
+import { CircleAlert, Info, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import { DeviceRiskResult } from "@/api/client";
 import { DeviceAttestation } from "@/security/attestation";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -52,7 +52,16 @@ export default function DeviceStatus() {
               <Text style={styles.meta}>{t("devAssessment", { id: result.assessment_id })}</Text>
             </View>
           </View>
-          {result.reasons.map((reason) => (
+          {result.attestation?.config_status === "CONFIG_REQUIRED" ? (
+            // Server has no integrity verifier yet: informational, never an error.
+            <View style={styles.reasonRow}>
+              <Info size={16} color={colors.neutral600} />
+              <Text style={styles.meta}>{t("devAttestNotConfigured")}</Text>
+            </View>
+          ) : null}
+          {result.reasons
+            .filter((reason) => result.attestation?.config_status !== "CONFIG_REQUIRED" || !NOT_CONFIGURED_REASONS.includes(reason))
+            .map((reason) => (
             <View key={reason} style={styles.reasonRow}>
               <CircleAlert size={16} color={colors.warningText} />
               <Text style={styles.reason}>{reason.replaceAll("_", " ")}</Text>
@@ -64,6 +73,8 @@ export default function DeviceStatus() {
     </Screen>
   );
 }
+/** Reasons that only mean "verifier not configured on the server" (shown as the neutral note instead). */
+const NOT_CONFIGURED_REASONS = ["NOT_CONFIGURED", "ATTESTATION_UNAVAILABLE"];
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: space.x1 },
   card: { borderRadius: radius.feature },

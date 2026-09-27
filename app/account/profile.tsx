@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { CreditCard, IdCard, ShieldCheck, UsersRound } from "lucide-react-native";
@@ -12,6 +12,9 @@ import { Preferences } from "@/store/preferences";
 import { profileToValues } from "@/lib/inputForms";
 import { useTranslation } from "@/i18n";
 import { accountProfileStepUpPurpose } from "@/lib/stepUpFlow";
+import { allowedAction } from "@/lib/capabilities";
+import { claimCoordinates } from "@/lib/deviceLocation";
+import type { DeviceFix } from "@/lib/locationMatch";
 import { STEP_UP_CANCELLED, withStepUp } from "@/security/step-up";
 import { colors, type } from "@/theme/tokens";
 
@@ -32,6 +35,10 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [seed, setSeed] = useState<Record<string, string> | null>(null);
+  // Raw GET customer-profile answer, for its allowed_actions (absent on older backends).
+  const [serverProfile, setServerProfile] = useState<object | null>(null);
+  // Device fix from the address autofill: latitude/longitude ride on the PATCH only when present.
+  const fixRef = useRef<DeviceFix | null>(null);
   const emailOk = !email.trim() || /^\S+@\S+\.\S+$/.test(email.trim());
 
   useEffect(() => {
@@ -44,7 +51,9 @@ export default function Profile() {
       });
       let server: Record<string, string> = {};
       try {
-        server = profileToValues(await AccountApi.customerProfile());
+        const raw = await AccountApi.customerProfile();
+        if (live) setServerProfile(raw);
+        server = profileToValues(raw);
       } catch {
         // Offline: the form still opens with what the device knows.
       }
@@ -97,19 +106,24 @@ export default function Profile() {
       </View>
 
       <Text style={styles.body}>{t("profileServerNote")}</Text>
+      {allowedAction(serverProfile, "update_profile", true) ? (
       <SchemaForm
         form="customer_profile"
         initialValues={seed}
         submitLabel={t("profileSaveForm")}
         flat
+        onLocation={(fix) => {
+          fixRef.current = fix;
+        }}
         onSubmit={async (payload) => {
           setNotice(null);
           // An empty beneficiaries list clears them; other empties are left untouched.
-          await AccountApi.updateCustomerProfile({ beneficiaries: [], ...payload });
+          await AccountApi.updateCustomerProfile({ beneficiaries: [], ...payload, ...claimCoordinates(fixRef.current) });
           await Preferences.forgetProfileExtras();
           setNotice(t("profileSaved"));
         }}
       />
+      ) : null}
 
       <Banner icon={IdCard} tint="blue" body={t("personalReverifyNote")} />
       <TimezonePicker />

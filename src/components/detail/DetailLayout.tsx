@@ -16,6 +16,8 @@ import { TintedIcon } from "@/components/design";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
 import { useResilience } from "@/store/resilience";
 import { handleStepUpRequired } from "@/security/step-up";
+import { useCapabilities } from "@/store/capabilities";
+import { gateWithCapability } from "@/lib/capabilities";
 import { errorMessage } from "@/components/portal/Workspace";
 import { formatDisplayDate, useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -252,6 +254,8 @@ export type DetailAction = {
   confirm?: string;
   /** Step-up purpose; a STEP_UP_REQUIRED answer routes to re-authentication. */
   stepUpPurpose?: string;
+  /** GET /mobile/capabilities module action; when the server reports it unavailable the action is hidden. */
+  capability?: { module: string; action: string };
   /** May resolve to a message that replaces `successMessage`. */
   run: () => Promise<unknown>;
   successMessage?: string;
@@ -266,7 +270,8 @@ export function DetailActions({ actions, title }: { actions: DetailAction[]; tit
   const [confirming, setConfirming] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; tone: "ok" | "error" } | null>(null);
-  const visible = actions.filter((a) => a.allowed);
+  const caps = useCapabilities((s) => s.caps);
+  const visible = actions.filter((a) => gateWithCapability(a.allowed, caps, a.capability?.module, a.capability?.action));
   if (!visible.length) return null;
   const exec = async (a: DetailAction) => {
     setConfirming(null);
