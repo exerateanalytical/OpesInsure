@@ -28,7 +28,7 @@ final class ProviderOperationsService
 
     private const ALLOCATABLE = ['APPROVED', 'PARTIALLY_APPROVED', 'PAYABLE', 'PAID'];
 
-    private const OPEN_DISPUTE = ['DRAFT', 'SUBMITTED', 'ACKNOWLEDGED', 'UNDER_REVIEW', 'MORE_INFORMATION_REQUIRED', 'ESCALATED'];
+    public const OPEN_DISPUTE = ['DRAFT', 'SUBMITTED', 'ACKNOWLEDGED', 'UNDER_REVIEW', 'MORE_INFORMATION_REQUIRED', 'ESCALATED'];
 
     public function __construct(
         private readonly ProviderAccess $access,
@@ -369,6 +369,13 @@ final class ProviderOperationsService
         return DB::table('provider_disputes')->where('tenant_id', $tenantId)->whereIn('provider_profile_id', $this->access->organisation($s->providerId))
             ->when($f['dispute_status'] ?? $f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))->orderByDesc('created_at')
             ->paginate(min((int) ($f['per_page'] ?? 50), 200))->toArray();
+    }
+
+    /** Insurer-side (back office) list of every provider dispute in the tenant, newest first. */
+    public function insurerDisputes(string $tenantId, ?string $status): array
+    {
+        return DB::table('provider_disputes')->where('tenant_id', $tenantId)->when($status, fn ($q, $v) => $q->where('status', $v))
+            ->orderByDesc('created_at')->limit(200)->get()->all();
     }
 
     /** Insurer-side resolution (back office). The dispute row stays; only its status/resolution change. */

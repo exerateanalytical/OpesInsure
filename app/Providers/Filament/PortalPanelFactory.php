@@ -24,14 +24,17 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
  */
 final class PortalPanelFactory
 {
-    /** @param  list<class-string>  $resources */
-    public static function configure(Panel $panel, string $id, array $resources): Panel
+    /**
+     * @param  list<class-string>  $resources
+     * @param  list<class-string>  $pages  extra experience-specific pages (additive; each gates itself with canAccess)
+     */
+    public static function configure(Panel $panel, string $id, array $resources, array $pages = []): Panel
     {
         return self::chrome($panel->id($id)->path($id)
             ->login(PortalLogin::class)->passwordReset()->profile()
             ->brandName(fn (): string => 'OpesInsure · '.__('web_experience.portals.'.$id))
             ->resources($resources)
-            ->pages([PortalDashboard::class, \App\Filament\Shared\Pages\PortalOrganisationSettings::class, \App\Filament\Shared\Pages\ReportsPage::class])
+            ->pages([PortalDashboard::class, \App\Filament\Shared\Pages\PortalOrganisationSettings::class, \App\Filament\Shared\Pages\ReportsPage::class, ...$pages])
             ->middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, AuthenticateSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class, SubstituteBindings::class, DisableBladeIconComponents::class, DispatchServingFilamentEvent::class, SetPanelLocale::class])
             ->authMiddleware([AuthenticatePortal::class, ResolvePortalTenant::class], isPersistent: true));
     }

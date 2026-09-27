@@ -61,9 +61,13 @@ return [
     'providerClaimReview' => ['label' => 'Commencer l’examen', 'done' => 'Facture prestataire en examen'],
     'providerClaimAdjudicate' => ['label' => 'Statuer', 'done' => 'Facture prestataire liquidée', 'help' => 'Les lignes non modifiées sont valorisées au tarif conventionné. Rejetez une ligne avec un motif ou réduisez son montant admis.'],
     'providerClaimResolveDispute' => ['label' => 'Traiter la contestation', 'done' => 'Contestation traitée'],
+    'preauthProposeExtension' => ['label' => 'Proposer une décision de prolongation', 'done' => 'Décision de prolongation proposée'],
+    'preauthDecideExtension' => ['label' => 'Valider la prolongation', 'done' => 'Prolongation décidée', 'help' => 'Confirme la décision proposée (seconde personne).'],
+    'providerDisputeResolve' => ['label' => 'Répondre à la contestation', 'done' => 'Contestation mise à jour'],
     'viewDetail' => ['label' => 'Ouvrir'],
 
     'fields' => [
+        'extension' => 'Prolongation de séjour',
         'lines' => 'Lignes', 'approved_quantity' => 'Quantité accordée', 'approved_amount_minor' => 'Montant accordé (unités mineures)', 'decline_reason' => 'Motif de refus / réduction',
         'reject_line' => 'Rejeter la ligne', 'allowed_minor' => 'Montant admis (unités mineures)', 'explanation' => 'Explication',
         'policy' => 'Police', 'claimant' => 'Déclarant', 'loss_occurred_at' => 'Date du sinistre', 'loss_location' => 'Lieu du sinistre',
@@ -96,6 +100,7 @@ return [
     ],
     'screens' => [
         'group' => 'Santé',
+        'provider_disputes' => 'Contestations prestataires',
         'preauth_queue' => 'File des prises en charge',
         'provider_claims' => 'Factures prestataires',
         'provider_settlements' => 'Lots de règlement prestataires',

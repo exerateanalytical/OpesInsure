@@ -496,3 +496,60 @@ it('REQ-PRV-003 web: a provider form action on a real /livewire/update round-tri
     ])->assertOk();
     expect(DB::table('provider_reconciliations')->where('payment_reference', 'VIR-RT')->where('tenant_id', $this->tenant->id)->count())->toBe(1);
 });
+
+it('REQ-UI-001: the insurer portal serves the health section (same pages and permission gates as admin)', function () {
+    $pages = \Filament\Facades\Filament::getPanel('insurer')->getPages();
+    expect($pages)->toContain(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class, \App\Filament\Admin\Pages\HealthProviderClaimQueue::class,
+        \App\Filament\Admin\Pages\HealthProviderSettlements::class, \App\Filament\Admin\Pages\HealthProviderDisputes::class)
+        ->and(\Filament\Facades\Filament::getPanel('broker')->getPages())->not->toContain(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class);
+    gp4Insurer($this, []);
+    expect(\App\Filament\Admin\Pages\HealthProviderClaimQueue::canAccess())->toBeFalse();
+    gp4Insurer($this, ['health.provider_claims.view']);
+    expect(\App\Filament\Admin\Pages\HealthProviderClaimQueue::canAccess())->toBeTrue();
+});
+
+it('REQ-HLT-002 web (insurer): stay extension proposal and decision run through PreauthorizationService (maker-checker)', function () {
+    gp4Web($this);
+    $id = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::class)
+        ->set('request_type', 'OUTPATIENT')->set('policy_id', $this->policy->id)->set('member_ref', $this->f['party']->id)->set('facility_id', $this->main->id)
+        ->set('service_code', 'CONS_GP4')->set('quantity', '1')->set('details', ['consultation_date' => '2026-03-10', 'diagnosis_code' => 'J06'])
+        ->call('submitRequest')->assertSet('state', 'SUCCESS')->get('selected');
+    // Admitted stay with a pending extension request (the provider side of this flow is covered by the admissions tests).
+    DB::table('health_preauthorizations')->where('id', $id)->update(['request_type' => 'ADMISSION', 'status' => 'ADMITTED', 'admitted_on' => '2026-03-10', 'approved_until' => '2026-03-12']);
+    $ext = (string) Str::uuid();
+    DB::table('health_preauthorization_extensions')->insert(['id' => $ext, 'health_preauthorization_id' => $id, 'sequence' => 1, 'status' => 'REQUESTED', 'requested_until' => '2026-03-15',
+        'requested_amount_minor' => 0, 'reason' => 'Complication', 'requested_by' => $this->user->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $maker = gp4Insurer($this, ['health.preauth.view', 'health.preauth.review', 'health.preauth.approve']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class)->assertTableActionHidden('preauthDecideExtension', $id)
+        ->callTableAction('preauthProposeExtension', $id, ['extension_id' => $ext, 'decision' => 'APPROVED', 'approved_until' => '2026-03-14'])->assertHasNoTableActionErrors();
+    expect(DB::table('health_preauthorization_extensions')->where('id', $ext)->value('status'))->toBeIn(['PENDING_APPROVAL', 'REFERRED']);
+    // The maker cannot decide their own proposal: refused by the service, nothing changes.
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class)->callTableAction('preauthDecideExtension', $id, ['extension_id' => $ext]);
+    expect(DB::table('health_preauthorization_extensions')->where('id', $ext)->value('status'))->toBe('PENDING_APPROVAL');
+    gp4Insurer($this, ['health.preauth.view', 'health.preauth.approve']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class)->callTableAction('preauthDecideExtension', $id, ['extension_id' => $ext]);
+    expect(DB::table('health_preauthorization_extensions')->where('id', $ext)->value('status'))->toBe('APPROVED')
+        ->and((string) DB::table('health_preauthorizations')->where('id', $id)->value('approved_until'))->toStartWith('2026-03-14');
+});
+
+it('REQ-HLT-003 web (insurer): provider-portal disputes are listed tenant-wide and answered through ProviderOperationsService::resolveDispute', function () {
+    $claim = app(ProviderClaimService::class)->create($this->tenant->id, ['provider_id' => $this->clinic->id, 'contract_id' => $this->contract->id, 'invoice_reference' => 'DSP-R',
+        'service_date' => '2026-03-10', 'policy_id' => $this->policy->id, 'lines' => [['medical_service_id' => $this->cons->id, 'unit_price_minor' => 15000]]], $this->user->id);
+    DB::table('health_provider_claims')->where('id', $claim->id)->update(['provider_facility_id' => $this->main->id]);
+    gp4Web($this);
+    $id = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\DisputesPage::class)
+        ->set('subject_type', 'CLAIM')->set('claim_id', $claim->id)->set('reason_code', 'PAYMENT_DELAY')->set('description', 'Unpaid after 60 days')
+        ->call('openDispute')->assertSet('state', 'SUCCESS')->get('selected');
+    $number = DB::table('provider_disputes')->where('id', $id)->value('dispute_number');
+
+    gp4Insurer($this, ['health.provider_claims.view']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderDisputes::class)->assertSee($number)->assertTableActionHidden('providerDisputeResolve', $id);
+    gp4Insurer($this, ['health.provider_claims.view', 'health.provider_claims.adjudicate']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderDisputes::class)
+        ->callTableAction('providerDisputeResolve', $id, ['status' => 'RESOLVED_PROVIDER', 'resolution_amount_minor' => 9600, 'response' => 'Paid in next batch'])
+        ->assertHasNoTableActionErrors();
+    $d = DB::table('provider_disputes')->find($id);
+    expect($d->status)->toBe('RESOLVED_PROVIDER')->and((int) $d->resolution_amount_minor)->toBe(9600)->and($d->resolved_at)->not->toBeNull();
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderDisputes::class)->assertTableActionHidden('providerDisputeResolve', $id);
+});

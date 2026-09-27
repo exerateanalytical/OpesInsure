@@ -28,6 +28,9 @@ use Illuminate\Support\Facades\DB;
  *   preauthReturn       POST health/preauthorizations/{p}/proposal/return    health.preauth.approve  PreauthorizationService::returnProposal
  *   preauthDecide       POST health/preauthorizations/{p}/decision           health.preauth.approve  PreauthorizationService::decide  (issues the guarantee of payment)
  *   preauthCancel       POST health/preauthorizations/{p}/cancel             health.preauth.review   PreauthorizationService::cancel
+ *   preauthProposeExtension POST health/preauthorizations/{p}/extensions/{e}/proposal health.preauth.review PreauthorizationService::proposeExtension
+ *   preauthDecideExtension  POST health/preauthorizations/{p}/extensions/{e}/decision health.preauth.approve PreauthorizationService::decideExtension
+ *   providerDisputeResolve  POST provider-disputes/{id}/resolve             health.provider_claims.adjudicate       ProviderOperationsService::resolveDispute
  *   providerClaimReview POST health/provider-claims/{c}/review               health.provider_claims.adjudicate       ProviderClaimService::startReview
  *   providerClaimAdjudicate POST health/provider-claims/{c}/adjudicate       health.provider_claims.adjudicate       ProviderClaimService::adjudicate (line overrides)
  *   providerClaimResolveDispute POST health/provider-claims/{c}/dispute/resolve health.provider_claims.adjudicate   ProviderClaimService::resolveDispute
@@ -40,7 +43,58 @@ final class HealthProviderActions
     /** @return list<Action> */
     public static function preauth(): array
     {
-        return [self::preauthRequestInfo(), self::preauthPropose(), self::preauthReturn(), self::preauthDecide(), self::preauthCancel()];
+        return [self::preauthRequestInfo(), self::preauthPropose(), self::preauthReturn(), self::preauthDecide(), self::preauthProposeExtension(), self::preauthDecideExtension(), self::preauthCancel()];
+    }
+
+    /** Stay extensions of the pre-authorization in the given statuses: id => "#seq until date". @param list<string> $statuses */
+    private static function extensions(mixed $record, array $statuses): array
+    {
+        return $record === null ? [] : DB::table('health_preauthorization_extensions')->where('health_preauthorization_id', WorkflowAction::id($record))
+            ->whereIn('status', $statuses)->orderBy('sequence')->get()->mapWithKeys(fn ($e) => [$e->id => '#'.$e->sequence.' → '.$e->requested_until.' ('.$e->status.')'])->all();
+    }
+
+    public static function preauthProposeExtension(): Action
+    {
+        $p = 'health.preauth.review';
+
+        return WorkflowAction::make('preauthProposeExtension', $p)->icon('heroicon-o-calendar-days')
+            ->visible(fn ($record) => self::extensions($record, ['REQUESTED']) !== [])
+            ->schema(fn ($record) => [
+                Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['REQUESTED']))->required(),
+                Select::make('decision')->label(__('workflow_actions.fields.decision'))->options(WorkflowAction::options(PreauthLifecycle::DECISIONS, 'preauth'))->required()->live(),
+                DatePicker::make('approved_until')->label(__('workflow_actions.fields.valid_until')),
+                TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->maxLength(64)->required(fn (callable $get) => $get('decision') === 'DECLINED'),
+            ])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(PreauthorizationService::class)->proposeExtension(
+                self::tenant(), WorkflowAction::id($record), $data['extension_id'], array_filter(array_diff_key($data, ['extension_id' => 1]), fn ($v) => filled($v)), auth()->user())));
+    }
+
+    public static function preauthDecideExtension(): Action
+    {
+        $p = 'health.preauth.approve';
+
+        return WorkflowAction::make('preauthDecideExtension', $p)->icon('heroicon-o-shield-check')->color('success')->requiresConfirmation()
+            ->visible(fn ($record) => self::extensions($record, ['PENDING_APPROVAL', 'REFERRED']) !== [])
+            ->schema(fn ($record) => [Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['PENDING_APPROVAL', 'REFERRED']))->required()])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(PreauthorizationService::class)->decideExtension(self::tenant(), WorkflowAction::id($record), $data['extension_id'], auth()->user())));
+    }
+
+    /** Insurer-side resolution of a provider-portal dispute (provider_disputes). */
+    public static function providerDisputeResolve(): Action
+    {
+        $p = 'health.provider_claims.adjudicate';
+
+        return WorkflowAction::make('providerDisputeResolve', $p)->icon('heroicon-o-scale')
+            ->visible(fn ($record) => in_array(self::status($record), \App\Application\Providers\Workspace\ProviderOperationsService::OPEN_DISPUTE, true))
+            ->schema([
+                Select::make('status')->label(__('workflow_actions.fields.outcome'))->required()
+                    ->options(WorkflowAction::options(['ACKNOWLEDGED', 'UNDER_REVIEW', 'MORE_INFORMATION_REQUIRED', 'RESOLVED_PROVIDER', 'RESOLVED_INSURER', 'PARTIALLY_RESOLVED', 'ESCALATED', 'CLOSED'])),
+                TextInput::make('resolution_amount_minor')->label(__('workflow_actions.fields.amount_minor'))->integer()->minValue(0),
+                Textarea::make('response')->label(__('workflow_actions.fields.resolution'))->required()->minLength(3)->maxLength(5000),
+            ])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(\App\Application\Providers\Workspace\ProviderOperationsService::class)->resolveDispute(
+                self::tenant(), WorkflowAction::id($record), $data['status'], filled($data['resolution_amount_minor'] ?? null) ? (int) $data['resolution_amount_minor'] : null, $data['response'], auth()->user())));
     }
 
     public static function preauthRequestInfo(): Action

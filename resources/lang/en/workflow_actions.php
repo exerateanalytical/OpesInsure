@@ -61,9 +61,13 @@ return [
     'providerClaimReview' => ['label' => 'Start review', 'done' => 'Provider claim under review'],
     'providerClaimAdjudicate' => ['label' => 'Adjudicate', 'done' => 'Provider claim adjudicated', 'help' => 'Lines left untouched are priced on the contracted tariff. Reject a line with a reason code, or lower its allowed amount.'],
     'providerClaimResolveDispute' => ['label' => 'Resolve dispute', 'done' => 'Dispute resolved'],
+    'preauthProposeExtension' => ['label' => 'Propose stay extension decision', 'done' => 'Extension decision proposed'],
+    'preauthDecideExtension' => ['label' => 'Approve stay extension', 'done' => 'Extension decided', 'help' => 'Confirms the proposed extension decision (a second person).'],
+    'providerDisputeResolve' => ['label' => 'Respond to dispute', 'done' => 'Dispute updated'],
     'viewDetail' => ['label' => 'Open'],
 
     'fields' => [
+        'extension' => 'Stay extension',
         'lines' => 'Lines', 'approved_quantity' => 'Approved quantity', 'approved_amount_minor' => 'Approved amount (minor units)', 'decline_reason' => 'Decline / reduction reason',
         'reject_line' => 'Reject line', 'allowed_minor' => 'Allowed amount (minor units)', 'explanation' => 'Explanation',
         'policy' => 'Policy', 'claimant' => 'Claimant', 'loss_occurred_at' => 'Date of loss', 'loss_location' => 'Place of loss',
@@ -96,6 +100,7 @@ return [
     ],
     'screens' => [
         'group' => 'Health',
+        'provider_disputes' => 'Provider disputes',
         'preauth_queue' => 'Pre-authorization queue',
         'provider_claims' => 'Provider claims',
         'provider_settlements' => 'Provider settlement batches',

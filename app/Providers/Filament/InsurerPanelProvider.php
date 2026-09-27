@@ -20,6 +20,12 @@ final class InsurerPanelProvider extends PanelProvider
             \App\Filament\Admin\Resources\CarrierBrokerAgreements\CarrierBrokerAgreementResource::class,
             \App\Filament\Admin\Resources\Bordereaux\BordereauResource::class,
             \App\Filament\Admin\Resources\CarrierSettlements\CarrierSettlementResource::class,
+        ], [
+            // Health section (carrier staff): same pages and permissions as the admin panel (HealthQueuePage::canAccess).
+            \App\Filament\Admin\Pages\HealthPreauthorizationQueue::class,
+            \App\Filament\Admin\Pages\HealthProviderClaimQueue::class,
+            \App\Filament\Admin\Pages\HealthProviderSettlements::class,
+            \App\Filament\Admin\Pages\HealthProviderDisputes::class,
         ]);
     }
 }
