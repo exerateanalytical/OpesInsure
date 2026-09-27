@@ -40,7 +40,6 @@ export const Telemetry = {
     return currentScreen;
   },
   async capture(event: TelemetryEvent, attributes: Record<string, unknown> = {}) {
-    if (environmentConfig.demoMode) return;
     try {
       await RuntimeApi.telemetry({
         event,

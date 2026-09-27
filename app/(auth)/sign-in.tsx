@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -20,9 +20,7 @@ import { AuthTextField } from "@/components/auth/AuthField";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
-import { AuthApi, type AuthTokens, type OtpChannel } from "@/api/client";
-import { DemoAccountPicker } from "@/components/auth/DemoAccountPicker";
-import { demoCredential, normalizeDemoDirectory, type DemoAccountLike, type DemoDirectory } from "@/lib/demoLogin";
+import { AuthApi, type OtpChannel } from "@/api/client";
 import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
@@ -51,58 +49,11 @@ export default function SignIn() {
   const [channel, setChannel] = useState<OtpChannel>("whatsapp");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [demo, setDemo] = useState<DemoDirectory | null>(null);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   // Server lockout (429 / 423): a dedicated countdown state, not a red line.
   const [locked, setLocked] = useState<number | null>(null);
   const unlock = useCallback(() => setLocked(null), []);
-
-  // Demo phones come from the real server (GET /public/demo-accounts), which
-  // only answers while its demo mode is on; everywhere else this is null and
-  // the block does not render.
-  useEffect(() => {
-    let live = true;
-    if (process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "false") return;
-    AuthApi.demoAccounts()
-      .then((d) => {
-        if (live) setDemo(normalizeDemoDirectory(d));
-      })
-      // Demo accounts are optional (server-gated); no list on failure.
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  // Picking an account signs in against the live server: the shared demo
-  // password (data.password, top level) via password login, else the OTP
-  // pair with the server's demo code (data.otp, 123456).
-  const [demoAccountId, setDemoAccountId] = useState<string | null>(null);
-  const signInAsDemoAccount = async (account: DemoAccountLike) => {
-    if (!demo || busy) return;
-    setBusy(true);
-    setDemoAccountId(account.phone_e164);
-    setError(undefined);
-    try {
-      const credential = demoCredential(demo, account);
-      let auth: AuthTokens;
-      if (credential.kind === "password") {
-        auth = await AuthApi.passwordLogin(credential.phone, credential.password);
-      } else {
-        const challenge = await AuthApi.requestOtp(credential.phone);
-        auth = await AuthApi.verifyOtp(challenge.challenge_id, credential.phone, credential.otp);
-      }
-      await finishSignIn(auth, invite);
-    } catch (e) {
-      setPhone(account.phone_e164);
-      if (isLockout(e)) setLocked(lockoutSeconds(e));
-      else setError(e instanceof Error ? e.message : t("demoUnavailable"));
-    } finally {
-      setBusy(false);
-      setDemoAccountId(null);
-    }
-  };
 
   const submit = async () => {
     const normalized = normalizeCameroonPhone(phone);
@@ -236,14 +187,6 @@ export default function SignIn() {
               </Text>
             </Pressable>
 
-            {demo && demo.accounts.length > 0 ? (
-              <DemoAccountPicker
-                accounts={demo.accounts}
-                busyPhone={demoAccountId}
-                disabled={busy || !!locked}
-                onPick={(account) => void signInAsDemoAccount(account)}
-              />
-            ) : null}
 
             <Button variant="brandOutline" label={t("createAccount")} onPress={() => router.push("/(auth)/sign-up")} />
             <View style={styles.trustRow}>

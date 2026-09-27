@@ -250,9 +250,6 @@ export const fr: Record<keyof typeof en, string> = {
   browseInsurers: "Explorer sans se connecter",
   browseBrokers: "Parcourir les courtiers",
   partnerJoinInvitation: "Invitation partenaire",
-  demoAccounts: "Comptes de démonstration",
-  demoHint: "Touchez un compte pour vous connecter au serveur (code {otp} si aucun mot de passe n’est indiqué), ou appui long pour le préremplir.",
-  demoUnavailable: "Le compte de démonstration est indisponible.",
   phoneInvalid: "Saisissez un numéro de mobile camerounais valide.",
   passwordRequired: "Saisissez votre mot de passe.",
   signInFailed: "Connexion impossible.",
@@ -1506,9 +1503,7 @@ export const fr: Record<keyof typeof en, string> = {
   prReviewPay: "Vérifier les conditions et payer",
   prTrackIssuance: "Suivre l'émission du contrat",
   prAll: "Toutes mes demandes",
-  // --- 1.3.x : sélecteur démo, filtres d’offres, identité ------------------
-  demoChoose: "Choisir un compte de démonstration",
-  demoPickHint: "Choisissez un compte pour vous connecter directement au serveur de démonstration.",
+  // --- 1.3.x : filtres d’offres, identité ---------------------------------
   ofInsurersAnswered: "{insurers} assureur(s) ont répondu · {offers} offre(s)",
   ofInsurerOffers: "{count} offre(s)",
   ofInsurerFilterHint: "Affiche uniquement les offres de cet assureur ; touchez à nouveau pour tout afficher.",
@@ -1553,7 +1548,6 @@ export const fr: Record<keyof typeof en, string> = {
   leadSave: "Enregistrer le prospect",
   leadNewTitle: "Nouveau prospect",
   leadNewSubtitle: "Un prospect n'est pas un client tant qu'il n'a pas donné son accord",
-  envBannerDemo: "Environnement de démonstration — aucun contrat ni paiement réel",
   envBannerGeneric: "Environnement {banner}",
   // --- Disclosure questions ---
   disclosureTitle: "Déclaration du risque",
@@ -3336,4 +3330,13 @@ export const fr: Record<keyof typeof en, string> = {
   fltSheetSubtitle: "Affinez cette liste. Seuls les dossiers auxquels vous avez accès sont inclus.",
   fltUnsave: "Supprimer le filtre enregistré {name}",
   fltWithinDays: "Sous {days} jours",
+  exploreLicensedBrokers: "Courtiers agréés",
+  seeAllBrokers: "Voir tous les courtiers",
+  homeFindBroker: "Trouver un courtier",
+  homeFindBrokerBody: "Parcourez tous les courtiers agréés par la DGTCFM/MINFI et contactez-en un directement.",
+  searchBrokersMatching: "Courtiers correspondant à « {q} »",
+  brokerLicenceNumber: "Agrément {number}",
+  brokerCityCountry: "{city}, Cameroun",
+  brokerLicenceExpires: "Agrément valable jusqu’au {date}",
+  brokerNoContact: "Aucun contact publié au registre pour le moment.",
 };

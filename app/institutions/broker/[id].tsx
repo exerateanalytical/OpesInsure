@@ -1,8 +1,9 @@
 import React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { Phone } from "lucide-react-native";
+import { Globe, Mail, Phone } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -22,23 +23,26 @@ export default function BrokerDetail() {
         {(broker) => (
           <>
             <Card feature>
-              <Text style={styles.title}>{broker.name}</Text>
+              <View style={styles.head}>
+                <InstitutionMark logoUrl={institutionLogo(broker)} initials={broker.initials} size={56} />
+                <Text style={[styles.title, styles.flex]}>{broker.name}</Text>
+              </View>
               <View style={styles.badges}>
                 {broker.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
                 {broker.regulator_number ? (
                   <StatusChip label={t("regulatorNumber", { number: broker.regulator_number })} tone="info" />
                 ) : null}
                 {broker.licence_number ? (
-                  <StatusChip label={`Licence ${broker.licence_number}`} tone="info" />
+                  <StatusChip label={t("brokerLicenceNumber", { number: broker.licence_number })} tone="info" />
                 ) : null}
               </View>
-              {broker.city ? <Text style={styles.body}>{broker.city}, Cameroon</Text> : null}
+              {broker.city ? <Text style={styles.body}>{t("brokerCityCountry", { city: broker.city })}</Text> : null}
               {broker.canonical_id ? (
                 <Text style={styles.canonical}>{t("canonicalId", { id: broker.canonical_id })}</Text>
               ) : null}
               {broker.licence_expires_on ? (
                 <Text style={styles.body}>
-                  {formatDisplayDate(broker.licence_expires_on)}
+                  {t("brokerLicenceExpires", { date: formatDisplayDate(broker.licence_expires_on) })}
                 </Text>
               ) : null}
               {broker.phone ? (
@@ -48,6 +52,26 @@ export default function BrokerDetail() {
                   variant="secondary"
                   onPress={() => void Linking.openURL(`tel:${broker.phone}`)}
                 />
+              ) : null}
+              {(broker.contacts?.phones ?? []).filter((p) => p !== broker.phone).map((p) => (
+                <Button key={p} label={p} icon={Phone} variant="secondary" onPress={() => void Linking.openURL(`tel:${p}`)} />
+              ))}
+              {(broker.contacts?.emails ?? []).map((e) => (
+                <Button key={e} label={e} icon={Mail} variant="secondary" onPress={() => void Linking.openURL(`mailto:${e}`)} />
+              ))}
+              {broker.website || broker.contacts?.website ? (
+                <Button
+                  label={t("openWebsite")}
+                  icon={Globe}
+                  variant="secondary"
+                  onPress={() => {
+                    const w = (broker.website || broker.contacts?.website) as string;
+                    void Linking.openURL(/^https?:/.test(w) ? w : `https://${w}`);
+                  }}
+                />
+              ) : null}
+              {!broker.phone && !broker.contacts?.phones?.length && !broker.contacts?.emails?.length ? (
+                <Text style={styles.body}>{t("brokerNoContact")}</Text>
               ) : null}
             </Card>
             <BrandArt name="map_neon" width={88} opacity={0.85} />
@@ -62,6 +86,8 @@ export default function BrokerDetail() {
   );
 }
 const styles = StyleSheet.create({
+  head: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  flex: { flex: 1 },
   title: { ...type.pageTitle, color: colors.navy950 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   body: { ...type.body, color: colors.neutral600 },

@@ -50,7 +50,7 @@ export default function Payment() {
     setChecking(true);
     try {
       const current = useInsurance.getState().payment ? await refresh() : await recover();
-      // The purchase-status endpoint is authoritative (and settles demo payments).
+      // The purchase-status endpoint is authoritative (server-side provider status).
       const agg = await refreshPurchase().catch(() => null);
       setError(null);
       const status = agg?.status ?? "";

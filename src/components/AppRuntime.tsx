@@ -269,7 +269,7 @@ export function AppRuntime({ children }: { children: ReactNode }) {
         <NewVersionNotice />
         {envBanner ? (
           <View accessibilityRole="text" style={styles.env}>
-            <Text style={styles.envText}>{envBanner.kind === "demo" ? t("envBannerDemo") : t("envBannerGeneric", { banner: envBanner.banner })}</Text>
+            <Text style={styles.envText}>{t("envBannerGeneric", { banner: envBanner.banner })}</Text>
           </View>
         ) : null}
         {!online ? (

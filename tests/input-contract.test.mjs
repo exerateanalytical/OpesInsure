@@ -209,8 +209,10 @@ test("endpoint pickers read policies pages, catalogue lines and the insurer regi
 
 test("environment banner only when the runtime bootstrap sets one", () => {
   assert.equal(environmentBanner(undefined), null);
-  assert.equal(environmentBanner({ name: "production", demo_mode: false, banner: null }), null);
-  assert.deepEqual(environmentBanner({ name: "production", demo_mode: true, banner: "DEMO" }), { kind: "demo" });
+  assert.equal(environmentBanner({ name: "production", banner: null }), null);
+  // Demo mode is removed: a DEMO banner from the server is never rendered.
+  assert.equal(environmentBanner({ name: "demo", banner: "DEMO" }), null);
+  assert.equal(environmentBanner({ banner: "Demo environment" }), null);
   assert.deepEqual(environmentBanner({ banner: "STAGING" }), { kind: "label", banner: "STAGING" });
 });
 
@@ -237,7 +239,7 @@ test("screens render the server forms with the shared renderer; timezone, canoni
   assert.match(read("src/lib/masterData.ts"), /screen: input\.screen/);
   const en = read("src/i18n/en.ts");
   const fr = read("src/i18n/fr.ts");
-  for (const key of ["formLoadFailed", "formFixErrors", "timezoneTitle", "timezoneDefault", "envBannerDemo", "kycSaveDocument", "leadSave"]) {
+  for (const key of ["formLoadFailed", "formFixErrors", "timezoneTitle", "timezoneDefault", "envBannerGeneric", "kycSaveDocument", "leadSave"]) {
     assert.ok(en.includes(`  ${key}:`), `en ${key}`);
     assert.ok(fr.includes(`  ${key}:`), `fr ${key}`);
   }

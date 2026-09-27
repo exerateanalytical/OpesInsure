@@ -252,9 +252,6 @@ export const en = {
   browseInsurers: "Explore without signing in",
   browseBrokers: "Browse brokers",
   partnerJoinInvitation: "Partner invitation",
-  demoAccounts: "Demo accounts",
-  demoHint: "Tap an account to sign in against the live server (code {otp} where no password is listed), or long-press to prefill it above.",
-  demoUnavailable: "Demo account is unavailable.",
   phoneInvalid: "Enter a valid Cameroon mobile number.",
   passwordRequired: "Enter your password.",
   signInFailed: "Unable to sign in.",
@@ -1517,9 +1514,7 @@ export const en = {
   prReviewPay: "Review terms and pay",
   prTrackIssuance: "Track policy issuance",
   prAll: "All my applications",
-  // --- 1.3.x: demo picker, offers filters, heritage identity ---------------
-  demoChoose: "Choose a demo account",
-  demoPickHint: "Pick an account to sign in to the live demo server straight away.",
+  // --- 1.3.x: offers filters, heritage identity ------------------------------
   ofInsurersAnswered: "{insurers} insurer(s) answered · {offers} offer(s)",
   ofInsurerOffers: "{count} offer(s)",
   ofInsurerFilterHint: "Shows only this insurer's offers; tap again to show all.",
@@ -1564,7 +1559,6 @@ export const en = {
   leadSave: "Save lead",
   leadNewTitle: "New lead",
   leadNewSubtitle: "A prospect is not a client until they consent",
-  envBannerDemo: "Demo environment — no real policies or payments",
   envBannerGeneric: "{banner} environment",
   // --- Disclosure questions ---
   disclosureTitle: "Risk disclosure",
@@ -3347,4 +3341,13 @@ export const en = {
   fltSheetSubtitle: "Narrow this list. Only records you are allowed to see are included.",
   fltUnsave: "Delete saved filter {name}",
   fltWithinDays: "Within {days} days",
+  exploreLicensedBrokers: "Licensed brokers",
+  seeAllBrokers: "See all brokers",
+  homeFindBroker: "Find a broker",
+  homeFindBrokerBody: "Browse every broker licensed by DGTCFM/MINFI and contact one directly.",
+  searchBrokersMatching: "Brokers matching “{q}”",
+  brokerLicenceNumber: "Licence {number}",
+  brokerCityCountry: "{city}, Cameroon",
+  brokerLicenceExpires: "Licence valid until {date}",
+  brokerNoContact: "No contact details published on the register yet.",
 };

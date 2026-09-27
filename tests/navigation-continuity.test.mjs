@@ -1,15 +1,14 @@
 // 1.3.x owner-reported fixes: return-from-another-app continuity, welcome
-// pager, demo account picker, all-insurer offers + filters, heritage identity.
+// pager, demo removal, all-insurer offers + filters, heritage identity.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   hydrateStartStatus,
   resolveSystemPath,
   statusAfterNetworkFailure,
 } from "../src/lib/navigationContinuity.ts";
 import { clampPage, nextPage, pageFromOffset, previousPage, tapAllowed } from "../src/lib/pager.ts";
-import { DEMO_FALLBACK_OTP, demoCredential, normalizeDemoDirectory } from "../src/lib/demoLogin.ts";
 import { coverLevel, filterOffers, insurerSummary, sortOffers, compareRows } from "../src/lib/purchase.ts";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
@@ -84,29 +83,19 @@ test("welcome pager: clamped pages, rapid taps, back, measured width", () => {
   assert.match(welcome, /primary\(\(\) => leave\("\/\(auth\)\/sign-up"\)\)/);
 });
 
-// --- 3. Demo account picker ---------------------------------------------------
+// --- 3. Demo mode removed ------------------------------------------------------
 
-test("demo login: top-level data.password first, then OTP (123456 fallback)", () => {
-  const acct = { label: "Customer", phone_e164: "+237600000001" };
-  assert.deepEqual(demoCredential({ otp: "123456", password: "Demo#1", accounts: [acct] }, acct), {
-    kind: "password",
-    phone: "+237600000001",
-    password: "Demo#1",
-  });
-  assert.deepEqual(demoCredential({ otp: "654321", password: null, accounts: [acct] }, acct), {
-    kind: "otp",
-    phone: "+237600000001",
-    otp: "654321",
-  });
-  assert.equal(demoCredential({ otp: null, password: "", accounts: [acct] }, acct).otp, DEMO_FALLBACK_OTP);
-  assert.equal(normalizeDemoDirectory(null), null);
-  assert.equal(normalizeDemoDirectory({ otp: "1", accounts: [] }), null);
-  assert.equal(normalizeDemoDirectory({ otp: 123456, password: "p", accounts: [acct, { bad: 1 }] }).accounts.length, 1);
+test("sign-in has no demo account picker or demo login", () => {
   const signIn = read("app/(auth)/sign-in.tsx");
-  assert.match(signIn, /<DemoAccountPicker/);
-  assert.doesNotMatch(signIn, /demo\.accounts\.map\(/, "no list of buttons");
-  assert.match(read("src/components/auth/DemoAccountPicker.tsx"), /t\("demoChoose"\)/);
-  assert.match(read("src/i18n/en.ts"), /demoChoose: "Choose a demo account"/);
+  assert.doesNotMatch(signIn, /DemoAccountPicker|demoLogin|demoAccounts|SHOW_DEMO_LOGIN/i);
+  assert.doesNotMatch(read("app/(auth)/verify.tsx"), /prefill/);
+  assert.ok(!existsSync(new URL("../src/components/auth/DemoAccountPicker.tsx", import.meta.url)));
+  assert.ok(!existsSync(new URL("../src/lib/demoLogin.ts", import.meta.url)));
+  assert.ok(!existsSync(new URL("../.env.demo.example", import.meta.url)));
+  assert.doesNotMatch(read("src/api/client.ts"), /demo-accounts|DemoAccount/);
+  assert.doesNotMatch(read("src/security/telemetry.ts"), /demoMode/);
+  assert.doesNotMatch(read("src/i18n/en.ts"), /demoChoose|demoAccounts|envBannerDemo/);
+  assert.doesNotMatch(read("src/i18n/fr.ts"), /demoChoose|demoAccounts|envBannerDemo/);
 });
 
 // --- 4. Offers from every insurer ---------------------------------------------
@@ -213,7 +202,7 @@ test("vector heritage pattern replaces stretched raster art on auth screens", ()
 test("OTA-safe: no new dependencies, no native config changes in this fix", () => {
   const pkg = JSON.parse(read("package.json"));
   assert.ok(pkg.dependencies["react-native-svg"], "svg was already a dependency");
-  for (const f of ["src/components/HeritagePattern.tsx", "src/components/auth/DemoAccountPicker.tsx", "app/welcome.tsx"]) {
+  for (const f of ["src/components/HeritagePattern.tsx", "app/welcome.tsx"]) {
     for (const m of read(f).matchAll(/from "([^"@.][^"]*|@[^/"]+\/[^/"]+)"/g)) {
       const dep = m[1].startsWith("@") ? m[1] : m[1].split("/")[0];
       if (dep.startsWith("@/")) continue;

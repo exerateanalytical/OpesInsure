@@ -63,6 +63,15 @@ export default function Explore() {
         .slice(0, 8),
     [providers.data],
   );
+  // Licensed brokers in regulator order (max 10) for the brokers carousel.
+  const featuredBrokers = useMemo(
+    () =>
+      (providers.data ?? [])
+        .filter((p: Institution) => p.type === "broker")
+        .sort((x, y) => (x.regulator_number ?? 9999) - (y.regulator_number ?? 9999))
+        .slice(0, 10),
+    [providers.data],
+  );
   const shown = useMemo(
     () =>
       filtered.filter(
@@ -97,6 +106,9 @@ export default function Explore() {
       {featured.length ? (
         <FeaturedProviders providers={featured} />
       ) : null}
+
+      <SectionHeading title={t("exploreLicensedBrokers")} action={t("seeAllBrokers")} onAction={() => router.push("/institutions/brokers")} />
+      {featuredBrokers.length ? <FeaturedProviders providers={featuredBrokers} kind="broker" /> : null}
 
       <SectionHeading title={t("explorePopularProducts")} />
       {categories.filter((c) => ["motor", "health", "travel", "home"].includes(c.id)).map((c) => {

@@ -498,15 +498,6 @@ export type AuthTokens = {
   refresh_token: string;
   expires_in: number;
 } & SessionBootstrap;
-export type DemoAccount = {
-  label: string;
-  full_name: string;
-  phone_e164: string;
-  role_code: string;
-  /** Only present while the server is in demo mode. */
-  password?: string;
-};
-
 export type VerificationChannel = "whatsapp" | "sms" | "email";
 export type OtpChannel = "whatsapp" | "sms";
 
@@ -642,23 +633,6 @@ export const AuthApi = {
       method: "POST",
       idempotent: true,
     }),
-  /**
-   * Demo credentials the SERVER is seeded with. The bundled demo dataset has
-   * its own personas, but those exist only inside the in-app demo adapter — a
-   * build pointed at a real API must offer the accounts that API actually has.
-   * The endpoint only exists while the server has demo mode on, so a 404 here
-   * is the normal answer in production and simply hides the affordance.
-   */
-  demoAccounts: async (): Promise<{ otp: string; password?: string | null; accounts: DemoAccount[] } | null> => {
-    try {
-      // data.password is the shared demo password (top level, not per account).
-      return await api<{ otp: string; password?: string | null; accounts: DemoAccount[] }>("/public/demo-accounts", {
-        anonymous: true,
-      });
-    } catch {
-      return null;
-    }
-  },
   session: () => api<SessionBootstrap>("/auth/mobile/session"),
   logout: async () => {
     const refresh_token = await TokenVault.refresh();
@@ -1944,8 +1918,8 @@ export const SyncApi = {
 };
 
 export type RuntimeBootstrap = {
-  /** Optional {name, demo_mode, banner}: a banner (DEMO, STAGING, …) is shown when set. */
-  environment?: { name?: string; demo_mode?: boolean; banner?: string | null } | null;
+  /** Optional {name, banner}: a non-demo label banner (e.g. STAGING) is shown when set; DEMO is never shown. */
+  environment?: { name?: string; banner?: string | null } | null;
   release: {
     minimum_version: string;
     latest_version?: string | null;

@@ -96,13 +96,9 @@ test("customer account offers email verification", () => {
   assert.match(read("app/(customer)/(tabs)/profile.tsx"), /requestEmailVerification/);
 });
 
-test("review follow-ups: demo password from server, challenge on reset, email resend", () => {
+test("review follow-ups: no demo credentials, challenge on reset, email resend", () => {
   const signIn = read("app/(auth)/sign-in.tsx");
-  assert.doesNotMatch(signIn, /Demo@12345/);
-  // Shared demo password is data.password (top level); per-account kept as
-  // a fallback in src/lib/demoLogin.ts.
-  assert.match(signIn, /demoCredential\(demo, account\)/);
-  assert.match(read("src/lib/demoLogin.ts"), /directory\.password/);
+  assert.doesNotMatch(signIn, /Demo@12345|demoCredential|demoAccounts/);
   const client = read("src/api/client.ts");
   assert.match(client, /challenge_id,\s*code,\s*password,/);
   assert.doesNotMatch(client, /recent_sales/);

@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
-const profile = process.argv.includes("--production") ? "production" : "demo";
+const profile = process.argv.includes("--production") ? "production" : "preview";
 const errors = [];
 const required = [
   "app.config.js",
@@ -13,12 +13,17 @@ const required = [
 ];
 for (const path of required) if (!existsSync(path)) errors.push(`MISSING:${path}`);
 const eas = readJson("eas.json");
-if (eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN !== "false")
-  errors.push("PRODUCTION_DEMO_MODE_NOT_FALSE");
+// Demo mode is gone: no profile may bake a demo environment or demo login.
+for (const [name, p] of Object.entries(eas.build)) {
+  if (/demo/i.test(name) || /demo/i.test(p.channel ?? "")) errors.push(`DEMO_PROFILE_FORBIDDEN:${name}`);
+  const env = p.env ?? {};
+  if ("EXPO_PUBLIC_SHOW_DEMO_LOGIN" in env) errors.push(`DEMO_LOGIN_FLAG_FORBIDDEN:${name}`);
+  if (env.EXPO_PUBLIC_APP_ENV && !["staging", "production"].includes(env.EXPO_PUBLIC_APP_ENV))
+    errors.push(`INVALID_APP_ENV:${name}`);
+}
 if (eas.build.production.channel !== "production")
   errors.push("PRODUCTION_CHANNEL_INVALID");
-// production-apk bakes a different JS env (SHOW_DEMO_LOGIN=true): it must
-// never share an update channel with the store build.
+// production-apk is a separately distributed binary: it must never share an update channel with the store build.
 const apk = eas.build["production-apk"];
 if (apk && (apk.channel ?? eas.build[apk.extends]?.channel) === eas.build.production.channel)
   errors.push("PRODUCTION_APK_SHARES_UPDATE_CHANNEL");

@@ -4,7 +4,7 @@
  * profile was built with (read from eas.json), to that profile's channel.
  * EXPO_PUBLIC_* values are baked into the JS bundle at update time, so a bare
  * `eas update` would take whatever is in the shell / .env.* and could flip
- * SHOW_DEMO_LOGIN or blank the API URL for a whole population.
+ * the app environment or blank the API URL for a whole population.
  *
  *   node scripts/publish-update.mjs production-apk --message "..."
  *   node scripts/publish-update.mjs production --message "..." --dry-run

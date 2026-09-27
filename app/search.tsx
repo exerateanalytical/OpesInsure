@@ -24,6 +24,7 @@ import { CATEGORIES, Category } from "@/components/customer/categories";
 import { SearchApi } from "@/api/crm";
 import { CustomerApi } from "@/api/customer";
 import type { Institution } from "@/api/extra";
+import { filterBrokers } from "@/lib/institutions";
 import { useLoad } from "@/hooks/useLoad";
 import { groupSearch, SEARCH_TYPES, SearchResponse, searchHitRoute, SearchRole, SearchType } from "@/lib/crm";
 import { matchesQuery } from "@/lib/customerLogic";
@@ -34,7 +35,7 @@ import { colors, radius, space, type } from "@/theme/tokens";
 
 const ROLES: SearchRole[] = ["customer", "agent", "broker", "carrier"];
 /** Local scopes (catalogue categories + licensed providers) shown to customers next to the API entity types. */
-type Scope = "all" | "products" | "providers" | SearchType;
+type Scope = "all" | "products" | "providers" | "brokers" | SearchType;
 const HIT_ICONS: Record<string, LucideIcon> = {
   customers: Users,
   policies: ShieldCheck,
@@ -58,6 +59,7 @@ export default function GlobalSearch() {
   const [asked, setAsked] = useState("");
   // Customers also match the marketplace catalogue and the public provider register (GET /public/institutions).
   const providers = useLoad(() => (customer ? CustomerApi.institutions("insurer") : Promise.resolve([] as Institution[])), [customer]);
+  const brokers = useLoad(() => (customer ? CustomerApi.institutions("broker") : Promise.resolve([] as Institution[])), [customer]);
 
   const run = async (scope: Scope = only) => {
     const q = text.trim();
@@ -121,12 +123,15 @@ export default function GlobalSearch() {
   const matchedProviders = useMemo(() => providersFor(extra), [asked, customer, providers.data, extra]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const offers = useMemo(() => offersFor(extra), [asked, customer, providers.data, extra, t]);
+  const brokersFor = () => (customer && asked ? filterBrokers(brokers.data ?? [], asked) : []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const matchedBrokers = useMemo(() => brokersFor(), [asked, customer, brokers.data]);
   const providersForLine = (c: Category) => (providers.data ?? []).filter((p) => (p.products ?? []).some((x) => c.lines.includes((x.line_code ?? "").toUpperCase())));
 
   const apiCount = state.data ? (SEARCH_TYPES as readonly string[]).reduce((n, k) => n + (state.data?.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0), 0) : 0;
-  const total = apiCount + products.length + offers.length + matchedProviders.length;
+  const total = apiCount + products.length + offers.length + matchedProviders.length + matchedBrokers.length;
   const searched = !!state.data && !state.loading;
-  const nothing = searched && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length && !offers.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length);
+  const nothing = searched && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length && !offers.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length) && (only !== "all" && only !== "brokers" ? true : !matchedBrokers.length);
   const count = (k: string) => (state.data ? ` (${state.data.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0})` : "");
 
   const scopes: { value: Scope; label: string }[] = [
@@ -135,6 +140,7 @@ export default function GlobalSearch() {
       ? [
           { value: "products" as Scope, label: `${t("searchType_products")}${asked ? ` (${products.length + offers.length})` : ""}` },
           { value: "providers" as Scope, label: `${t("searchType_providers")}${asked ? ` (${matchedProviders.length})` : ""}` },
+          { value: "brokers" as Scope, label: `${t("brokers")}${asked ? ` (${matchedBrokers.length})` : ""}` },
         ]
       : []),
     // A customer searches only their own records: the CRM "customers" entity type is a staff scope.
@@ -145,7 +151,8 @@ export default function GlobalSearch() {
   const scopeCount = (v: Scope, f: FilterValues = extra) => {
     const prod = productsFor(f).length + offersFor(f).length;
     const prov = providersFor(f).length;
-    return v === "all" ? apiCount + prod + prov : v === "products" ? prod : v === "providers" ? prov : state.data?.counts?.[v] ?? groups.find((g) => g.type === v)?.hits.length ?? 0;
+    const brk = matchedBrokers.length;
+    return v === "all" ? apiCount + prod + prov + brk : v === "products" ? prod : v === "providers" ? prov : v === "brokers" ? brk : state.data?.counts?.[v] ?? groups.find((g) => g.type === v)?.hits.length ?? 0;
   };
   const openProduct = (c: Category) => router.push({ pathname: "/quote/product/[id]", params: { id: c.id } });
   const quoteProduct = (c: Category) => router.push({ pathname: "/quote/product", params: { product: c.id } });
@@ -297,30 +304,47 @@ export default function GlobalSearch() {
         </View>
       ) : null}
 
-      {searched && (only === "all" || only === "providers") && matchedProviders.length ? (
-        <View style={s.section}>
-          <SectionHeading title={t("searchProvidersMatching", { q: asked })} action={t("seeAll")} onAction={() => router.push("/institutions/insurers" as never)} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.strip}>
-            {matchedProviders.map((p) => (
-              <Pressable
-                key={p.id}
-                accessibilityRole="button"
-                accessibilityLabel={p.name}
-                onPress={() => router.push({ pathname: p.type === "insurer" ? "/institutions/insurer/[id]" : "/institutions/broker/[id]", params: { id: p.id } })}
-                android_ripple={ripple()}
-                style={({ pressed }) => [s.providerCard, pressed && s.pressed]}
-              >
-                <View style={s.providerTop}>
-                  <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={56} />
-                  <ChevronRight size={18} color={colors.blue600} />
-                </View>
-                <Text style={s.providerName}>{p.name}</Text>
-                <Text style={s.meta}>{p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : p.city ?? ""}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      ) : null}
+      {searched
+        ? ([
+            { scope: "providers", list: matchedProviders, title: t("searchProvidersMatching", { q: asked }), href: "/institutions/insurers" },
+            { scope: "brokers", list: matchedBrokers, title: t("searchBrokersMatching", { q: asked }), href: "/institutions/brokers" },
+          ] as const)
+            .filter((sec) => (only === "all" || only === sec.scope) && sec.list.length)
+            .map((sec) => (
+              <View key={sec.scope} style={s.section}>
+                <SectionHeading title={sec.title} action={t("seeAll")} onAction={() => router.push(sec.href as never)} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.strip}>
+                  {sec.list.map((p) => (
+                    <Pressable
+                      key={p.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={p.name}
+                      onPress={() => router.push({ pathname: p.type === "broker" ? "/institutions/broker/[id]" : "/institutions/insurer/[id]", params: { id: p.id } })}
+                      android_ripple={ripple()}
+                      style={({ pressed }) => [s.providerCard, pressed && s.pressed]}
+                    >
+                      <View style={s.providerTop}>
+                        <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={56} />
+                        <ChevronRight size={18} color={colors.blue600} />
+                      </View>
+                      <Text style={s.providerName}>{p.name}</Text>
+                      <Text style={s.meta}>
+                        {p.type === "broker"
+                          ? p.regulator_number
+                            ? t("regulatorNumber", { number: p.regulator_number })
+                            : t("broker")
+                          : p.products?.length
+                            ? p.products.length === 1
+                              ? t("productsCountOne")
+                              : t("productsCount", { count: p.products.length })
+                            : p.city ?? ""}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ))
+        : null}
 
       {!state.loading
         ? shownGroups.map((g) => (

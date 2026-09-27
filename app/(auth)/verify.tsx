@@ -31,13 +31,11 @@ export default function Verify() {
     phone: string;
     expiresIn: string;
     channel?: string;
-    prefill?: string;
     invite?: string;
   }>();
   const initialExpiry = Number(params.expiresIn) > 0 ? Number(params.expiresIn) : 300;
   const [challengeId, setChallengeId] = useState(params.challengeId);
-  // A demo sign-in passes the known code through so a reviewer never types it.
-  const [code, setCode] = useState(params.prefill ?? "");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string>();

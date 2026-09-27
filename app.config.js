@@ -4,7 +4,7 @@ const base = require("./app.json");
 const { version } = require("./package.json");
 
 module.exports = () => {
-  const environment = process.env.EXPO_PUBLIC_APP_ENV ?? "demo";
+  const environment = process.env.EXPO_PUBLIC_APP_ENV ?? "staging";
   const production = environment === "production";
   return {
     ...base.expo,
@@ -51,7 +51,7 @@ module.exports = () => {
     extra: {
       ...base.expo.extra,
       appEnvironment: environment,
-      releaseChannel: process.env.EXPO_PUBLIC_RELEASE_CHANNEL ?? "demo",
+      releaseChannel: process.env.EXPO_PUBLIC_RELEASE_CHANNEL ?? (production ? "production" : "development"),
       eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? base.expo.extra?.eas?.projectId },
     },
   };

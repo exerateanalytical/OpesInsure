@@ -1,7 +1,7 @@
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 
-export type AppEnvironment = "demo" | "staging" | "production";
+export type AppEnvironment = "staging" | "production";
 
 /** Production host. Used as the fallback for production bundles so an
  * `eas update` published without EXPO_PUBLIC_* env cannot trip the
@@ -9,22 +9,15 @@ export type AppEnvironment = "demo" | "staging" | "production";
 export const PRODUCTION_API_BASE_URL = "https://insurance.opesdatacenter.tech/api/v1";
 export const PUBLIC_SITE_URL = "https://insurance.opesdatacenter.tech";
 
-const environment = (process.env.EXPO_PUBLIC_APP_ENV ?? (__DEV__ ? "demo" : "production")) as AppEnvironment;
+const environment = (process.env.EXPO_PUBLIC_APP_ENV ?? (__DEV__ ? "staging" : "production")) as AppEnvironment;
 const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_BASE_URL || (environment === "production" ? PRODUCTION_API_BASE_URL : "");
-// Demo mode = a non-production build environment. It is not the same thing as
-// showing the demo accounts on sign-in: that list is served by the backend only
-// while server-side demo mode is on, so production builds may show it safely.
-const demoMode = environment === "demo";
-const showDemoLogin = process.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN === "true";
 const releaseChannel =
   process.env.EXPO_PUBLIC_RELEASE_CHANNEL || (environment === "production" ? "production" : "development");
 
 export const environmentConfig = {
   environment,
   apiBaseUrl,
-  demoMode,
-  showDemoLogin,
   releaseChannel,
   // Single source of truth: the native version, else the app config version
   // (app.config.js reads package.json). No stale hard-coded fallback.
@@ -43,10 +36,9 @@ export const legalLinks = (server?: { privacy_policy_url?: string | null; accoun
 
 export function productionConfigurationIssues() {
   const issues: string[] = [];
-  if (!(["demo", "staging", "production"] as string[]).includes(environment))
+  if (!(["staging", "production"] as string[]).includes(environment))
     issues.push("INVALID_APP_ENV");
   if (environment === "production") {
-    if (demoMode) issues.push("DEMO_MODE_FORBIDDEN");
     if (!apiBaseUrl.startsWith("https://")) issues.push("HTTPS_API_REQUIRED");
     if (/example\.com|localhost|10\.0\.2\.2/.test(apiBaseUrl))
       issues.push("NON_PRODUCTION_API_HOST");

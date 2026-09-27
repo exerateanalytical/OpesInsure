@@ -1,6 +1,6 @@
 /**
  * Browser-preview stand-in for expo-secure-store (which throws on web).
- * sessionStorage keeps demo tokens for the tab only; nothing here ships in
+ * sessionStorage keeps session tokens for the tab only; nothing here ships in
  * the Android/iOS bundles (Metro picks the .web.ts file for web alone).
  */
 export const WHEN_UNLOCKED_THIS_DEVICE_ONLY = "WHEN_UNLOCKED_THIS_DEVICE_ONLY";

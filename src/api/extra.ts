@@ -170,7 +170,6 @@ export type Institution = {
   product_families?: string[];
   product_families_status?: string | null;
   is_official_register?: boolean;
-  is_demo?: boolean;
   data_origin?: string | null;
   source_authority?: string | null;
   reference_year?: number | null;

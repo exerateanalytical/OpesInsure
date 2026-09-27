@@ -23,9 +23,9 @@ const AUTO_MS = 4000;
 const RESUME_MS = 6000;
 const CARD_HEIGHT = 148;
 
-/** Featured insurers: a 2-up paging carousel that auto-advances (pauses on touch,
+/** Featured insurers or licensed brokers (kind): a 2-up paging carousel that auto-advances (pauses on touch,
  * off-focus and under reduce-motion). Identical fixed-size cards, no arrows. */
-export function FeaturedProviders({ providers }: { providers: Institution[] }) {
+export function FeaturedProviders({ providers, kind = "insurer" }: { providers: Institution[]; kind?: "insurer" | "broker" }) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const content = Math.min(width, CONTENT_MAX_WIDTH) - space.x5 * 2;
@@ -99,13 +99,22 @@ export function FeaturedProviders({ providers }: { providers: Institution[] }) {
       >
         {providers.map((p) => {
           const count = p.products?.length ?? 0;
-          const meta = count ? (count === 1 ? t("productsCountOne") : t("productsCount", { count })) : t("insurer");
+          const meta =
+            kind === "broker"
+              ? p.regulator_number
+                ? t("regulatorNumber", { number: p.regulator_number })
+                : t("broker")
+              : count
+                ? count === 1
+                  ? t("productsCountOne")
+                  : t("productsCount", { count })
+                : t("insurer");
           return (
             <Pressable
               key={p.id}
               accessibilityRole="button"
               accessibilityLabel={`${p.name}. ${meta}`}
-              onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.id } })}
+              onPress={() => router.push({ pathname: kind === "broker" ? "/institutions/broker/[id]" : "/institutions/insurer/[id]", params: { id: p.id } })}
               android_ripple={ripple()}
               style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
             >

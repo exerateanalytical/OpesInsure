@@ -9,9 +9,8 @@
             "distribution": "internal",
             "channel": "development",
             "env": {
-                "EXPO_PUBLIC_APP_ENV": "demo",
+                "EXPO_PUBLIC_APP_ENV": "staging",
                 "EXPO_PUBLIC_RELEASE_CHANNEL": "development",
-                "EXPO_PUBLIC_SHOW_DEMO_LOGIN": "true",
                 "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
             }
         },
@@ -21,7 +20,6 @@
             "env": {
                 "EXPO_PUBLIC_APP_ENV": "staging",
                 "EXPO_PUBLIC_RELEASE_CHANNEL": "preview",
-                "EXPO_PUBLIC_SHOW_DEMO_LOGIN": "false",
                 "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
             }
         },
@@ -31,7 +29,6 @@
             "env": {
                 "EXPO_PUBLIC_APP_ENV": "production",
                 "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
-                "EXPO_PUBLIC_SHOW_DEMO_LOGIN": "false",
                 "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
             },
             "android": {
@@ -44,26 +41,12 @@
             "env": {
                 "EXPO_PUBLIC_APP_ENV": "production",
                 "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
-                "EXPO_PUBLIC_SHOW_DEMO_LOGIN": "false",
                 "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
             },
             "android": {
                 "buildType": "apk"
             },
             "channel": "production-apk"
-        },
-        "demo-apk": {
-            "distribution": "internal",
-            "channel": "demo",
-            "android": {
-                "buildType": "apk"
-            },
-            "env": {
-                "EXPO_PUBLIC_APP_ENV": "demo",
-                "EXPO_PUBLIC_RELEASE_CHANNEL": "demo",
-                "EXPO_PUBLIC_SHOW_DEMO_LOGIN": "true",
-                "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1"
-            }
         }
     },
     "submit": {

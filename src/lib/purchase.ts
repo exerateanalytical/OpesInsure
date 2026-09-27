@@ -533,7 +533,7 @@ export function purchaseStep(paymentStatus: string | null | undefined, purchaseS
 type ErrorLike = { status?: number; code?: string; message?: string; fields?: Record<string, unknown> } | null | undefined;
 
 /**
- * Real (non-demo) accounts get 422 with errors.provider[0] (or 503)
+ * Accounts get 422 with errors.provider[0] (or 503)
  * "payment provider not configured" from POST /payments/{id}/initiate.
  */
 export function isProviderNotConfigured(error: unknown): boolean {

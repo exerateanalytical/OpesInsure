@@ -275,8 +275,8 @@ export const useInsurance = create<State>((set, get) => ({
   },
 
   /**
-   * /mobile/purchases/{proposal}/status is the authoritative view (and the
-   * only endpoint that settles demo payments). 404 means the proposal is not
+   * /mobile/purchases/{proposal}/status is the authoritative view of the
+   * provider-confirmed payment and issuance. 404 means the proposal is not
    * linked to this account.
    */
   async refreshPurchase() {

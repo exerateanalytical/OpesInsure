@@ -404,7 +404,8 @@ test("patch six has bilingual resilience copy and accessibility semantics", () =
 });
 test("patch seven fails closed for unsafe production configuration", () => {
   const environment = read("src/config/environment.ts");
-  assert.match(environment, /DEMO_MODE_FORBIDDEN/);
+  assert.match(environment, /INVALID_APP_ENV/);
+  assert.doesNotMatch(environment, /"demo"/);
   assert.match(environment, /HTTPS_API_REQUIRED/);
   assert.match(environment, /NON_PRODUCTION_API_HOST/);
   assert.match(environment, /PRODUCTION_CHANNEL_REQUIRED/);
@@ -459,7 +460,9 @@ test("patch eight defines production EAS profiles and dynamic native configurati
   const eas = JSON.parse(read("eas.json"));
   const config = read("app.config.js");
   assert.equal(eas.build.production.channel, "production");
-  assert.equal(eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN, "false");
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_APP_ENV, "production");
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_SHOW_DEMO_LOGIN, undefined);
+  assert.equal(eas.build["demo-apk"], undefined);
   assert.match(config, /runtimeVersion/);
   assert.match(config, /associatedDomains/);
   assert.match(config, /autoVerify:\s*true/);

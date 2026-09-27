@@ -18,6 +18,7 @@ import {
   CircleHelp,
   Clock3,
   FileText,
+  Handshake,
   LifeBuoy,
   LucideIcon,
   Mail,
@@ -237,6 +238,7 @@ export default function CustomerHome() {
           <IconTile icon={Wallet} label={t("homePayments")} onPress={() => router.push("/payments")} />
           <IconTile icon={LifeBuoy} label={t("homeGetSupport")} onPress={() => router.push("/support")} />
         </View>
+        <Banner icon={Handshake} tint="blue" title={t("homeFindBroker")} body={t("homeFindBrokerBody")} onPress={() => router.push("/institutions/brokers")} />
 
         <Text accessibilityRole="header" style={styles.section}>{t("protect")}</Text>
         <View style={grid.row}>

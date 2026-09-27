@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Design QA harness. Signs in to the web preview (http://localhost:8089) as a
- * demo account, opens each screen with LIVE data, and captures it at 360, 390
+ * Design QA harness. Signs in to the web preview (http://localhost:8089) with
+ * the normal phone + one-time-code flow, opens each screen with LIVE data, and captures it at 360, 390
  * and 430 dp wide. Then `python scripts/qa-compose.py` puts the captures next
  * to the design image so differences are visible side by side.
  *
@@ -9,6 +9,14 @@
  *   node scripts/qa-shots.mjs policy-details  # only screens whose name contains the filter
  *
  * Output: docs/qa/shots/<name>@<width>.png
+ *
+ * Sign-in (required for signed-in screens):
+ *   QA_PHONE  Cameroon mobile number(s), comma-separated; a screen's
+ *             "account": N in qa-screens.json picks the N-th number (default 0).
+ *   QA_OTP    the one-time code the server accepts for those numbers
+ *             (single value, or comma-separated per account).
+ * There is no demo account picker any more; without these vars signed-in
+ * screens cannot be captured.
  *
  * Font-scale stress (A11Y-005): QA_FONT_SCALE=1.3 or 2 multiplies every text
  * node's font-size/line-height (as Android "Font size" would) and writes
@@ -48,12 +56,28 @@ async function signIn(page, account = 0) {
     } catch {}
   });
   await page.goto(`${BASE}/sign-in`, { waitUntil: "networkidle2", timeout: 180000 });
-  await page.waitForSelector("[role=combobox]", { timeout: 60000 });
-  await page.click("[role=combobox]");
+  const phones = (process.env.QA_PHONE ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+  const otps = (process.env.QA_OTP ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+  const phone = phones[account];
+  const otp = otps[account] ?? otps[0];
+  if (!phone || !otp) throw new Error(`QA_PHONE (entry ${account}) and QA_OTP must be set to capture signed-in screens`);
+  const clickText = (labels) =>
+    page.evaluate((labels) => {
+      const el = [...document.querySelectorAll("[role=button],button,a,div")].find((e) => labels.includes((e.textContent ?? "").trim()));
+      el?.click();
+      return !!el;
+    }, labels);
+  await page.waitForSelector("input[type=tel], input[inputmode=tel], input[autocomplete=tel]", { timeout: 60000 });
+  await clickText(["Use a one-time code instead", "Utiliser un code à usage unique"]);
   await sleep(500);
-  const items = await page.$$("[role=menuitem]");
-  await items[account].click();
-  await page.waitForFunction(() => location.pathname !== "/sign-in", { timeout: 60000 });
+  await page.type("input[type=tel], input[inputmode=tel], input[autocomplete=tel]", phone);
+  await clickText(["Send code", "Envoyer le code"]);
+  await page.waitForFunction(() => location.pathname.includes("verify"), { timeout: 60000 });
+  await page.waitForSelector("input[placeholder='000000']", { timeout: 60000 });
+  await page.type("input[placeholder='000000']", otp);
+  await sleep(300);
+  await clickText(["Verify and continue", "Vérifier et continuer"]);
+  await page.waitForFunction(() => !/sign-in|verify/.test(location.pathname), { timeout: 60000 });
   await sleep(4000);
 }
 
@@ -141,7 +165,7 @@ try {
       else if (s.via) {
         // Optional UI path: open `via.route`, click the element labelled `via.click`, capture where it lands.
         await open(page, s.via.route);
-        // Labels may list EN|FR alternatives separated by "|" (the demo account locale decides the language).
+        // Labels may list EN|FR alternatives separated by "|" (the signed-in account locale decides the language).
         // `via.clickPrefix` (optional) matches an aria-label that starts with the text, e.g. a RadioCard "Title. Subtitle".
         await page.evaluate((label, prefix) => document.querySelector(String(prefix ?? label).split("|").map((t) => (prefix ? `[aria-label^="${t}"]` : `[aria-label="${t}"]`)).join(","))?.click(), s.via.click, s.via.clickPrefix);
         await sleep(s.via.wait ?? 5000);

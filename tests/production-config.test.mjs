@@ -11,7 +11,18 @@ test("production APK passes the runtime production-configuration gate", () => {
   assert.equal(env.EXPO_PUBLIC_APP_ENV, "production");
   assert.equal(env.EXPO_PUBLIC_RELEASE_CHANNEL, "production");
   assert.match(env.EXPO_PUBLIC_API_BASE_URL, /^https:\/\//);
-  // Showing the server-gated demo login must not count as demo mode.
-  assert.match(envSrc, /const demoMode = environment === "demo";/);
-  assert.doesNotMatch(envSrc, /demoMode = process\.env\.EXPO_PUBLIC_SHOW_DEMO_LOGIN/);
+  // Demo mode is removed: only staging/production are valid app environments.
+  assert.doesNotMatch(envSrc, /demoMode|showDemoLogin|SHOW_DEMO_LOGIN/);
+  assert.match(envSrc, /\(\["staging", "production"\] as string\[\]\)\.includes\(environment\)/);
+  assert.match(envSrc, /INVALID_APP_ENV/);
+});
+
+test("no EAS profile carries demo mode", () => {
+  for (const [name, p] of Object.entries(eas.build)) {
+    assert.doesNotMatch(name, /demo/i, name);
+    assert.doesNotMatch(p.channel ?? "", /demo/i, name);
+    assert.ok(!("EXPO_PUBLIC_SHOW_DEMO_LOGIN" in (p.env ?? {})), `${name}: SHOW_DEMO_LOGIN`);
+    if (p.env?.EXPO_PUBLIC_APP_ENV) assert.ok(["staging", "production"].includes(p.env.EXPO_PUBLIC_APP_ENV), name);
+  }
+  for (const name of ["development", "preview", "production", "production-apk"]) assert.ok(eas.build[name], name);
 });
