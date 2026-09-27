@@ -7,7 +7,7 @@
  */
 import React, { ReactNode, useState } from "react";
 import { WORDMARK } from "@/components/BrandMark";
-import { Image, LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Image, LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ArrowLeft, Bell, Check, ChevronRight, CircleHelp, LucideIcon } from "lucide-react-native";
@@ -76,15 +76,15 @@ export function BrandHeader({
   const [inner, setInner] = useState({ x: 0, w: 0 });
   const lockEnd = inner.w ? slotX + inner.x + inner.w : 0;
   // Gap between the lockup and the 44dp right control (8dp clearance each side).
-  const artW = rowW && lockEnd ? Math.min(140, rowW - lockEnd - 44 - 16) : 0;
+  const artW = rowW && lockEnd ? Math.min(140, rowW - lockEnd - 44 - 32) : 0;
   return (
     <View style={s.header}>
       <View style={s.topRow} onLayout={(e: LayoutChangeEvent) => setRowW(e.nativeEvent.layout.width)}>
         {/* Decorative art lives only in the free gap between the lockup and
             the right control, so it never sits behind text or buttons. */}
-        {artW >= 36 ? (
+        {artW >= 44 ? (
           <View
-            style={[s.artBox, { left: lockEnd + 8, width: artW }]}
+            style={[s.artBox, { left: lockEnd + 16, width: artW }]}
             pointerEvents="none"
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
@@ -134,7 +134,7 @@ export function HeaderIconButton({ icon: Icon, label, onPress, badge }: { icon: 
 // ---------------------------------------------------------------------------
 
 /** "1 Select Policy — 2 Incident — 3 Evidence — 4 Review" with checks for done steps. */
-export function StepIndicator({ steps, current, captions }: { steps: string[]; current: number; captions?: (string | null)[] }) {
+export function StepIndicator({ steps, current, captions, labelStyle }: { steps: string[]; current: number; captions?: (string | null)[]; labelStyle?: StyleProp<TextStyle> }) {
   const { t } = useTranslation();
   return (
     <View style={s.steps} accessibilityRole="progressbar" accessibilityLabel={t("stepOf", { current: current + 1, total: steps.length, label: steps[current] ?? "" })}>
@@ -151,7 +151,7 @@ export function StepIndicator({ steps, current, captions }: { steps: string[]; c
               </View>
               <View style={[s.stepLine, last && s.stepLineHidden, done && s.stepLineOn]} />
             </View>
-            <Text style={[s.stepLabel, active && s.stepLabelActive, done && s.stepLabelDone]} numberOfLines={2}>{label}</Text>
+            <Text style={[s.stepLabel, active && s.stepLabelActive, done && s.stepLabelDone, labelStyle]} numberOfLines={2}>{label}</Text>
             {captions?.[i] ? <Text style={s.stepCaption}>{captions[i]}</Text> : null}
           </View>
         );
@@ -179,6 +179,7 @@ export function HeroCard({
   metaColumns,
   children,
   style,
+  compact,
 }: {
   image?: number | { uri: string } | null;
   icon?: LucideIcon;
@@ -193,6 +194,8 @@ export function HeroCard({
   metaColumns?: 2 | 3;
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Smaller icon box and a chip that wraps under the title on narrow phones. */
+  compact?: boolean;
 }) {
   return (
     <View style={[s.card, style]}>
@@ -200,13 +203,13 @@ export function HeroCard({
         {image ? (
           <Image source={image} style={s.heroImage} resizeMode="cover" />
         ) : Icon ? (
-          <View style={s.heroIconBox}>
-            <Icon size={30} color={colors.navy900} />
+          <View style={[s.heroIconBox, compact && s.heroIconBoxCompact]}>
+            <Icon size={compact ? 26 : 30} color={colors.navy900} />
           </View>
         ) : null}
         <View style={s.flex}>
-          <View style={s.heroTitleRow}>
-            <Text style={[s.cardTitle, s.flex]} numberOfLines={2}>{title}</Text>
+          <View style={[s.heroTitleRow, compact && s.heroTitleRowWrap]}>
+            <Text style={[s.cardTitle, compact ? s.heroTitleGrow : s.flex]} numberOfLines={compact ? undefined : 2}>{title}</Text>
             {chip}
           </View>
           {provider ? (
@@ -301,20 +304,20 @@ export function TintedIcon({ icon: Icon, tint = "blue", size = 44 }: { icon: Luc
 }
 
 /** Label / value row with an optional leading icon (design: Renewal Overview, transaction detail). */
-export function DetailRow({ icon: Icon, label, value, valueNode, strong, tint }: { icon?: LucideIcon; label: string; value?: string | null; valueNode?: ReactNode; strong?: boolean; tint?: Tint }) {
+export function DetailRow({ icon: Icon, label, value, valueNode, strong, tint, compact }: { icon?: LucideIcon; label: string; value?: string | null; valueNode?: ReactNode; strong?: boolean; tint?: Tint; /** 14dp text for dense summary cards. */ compact?: boolean }) {
   return (
     <View style={s.detailRow}>
       {Icon ? (tint ? <TintedIcon icon={Icon} tint={tint} size={40} /> : <Icon size={20} color={colors.navy800} />) : null}
-      <Text style={[s.detailLabel, Icon && s.detailLabelIcon]} numberOfLines={2}>{label}</Text>
+      <Text style={[s.detailLabel, Icon && s.detailLabelIcon, compact && s.detailTextCompact]} numberOfLines={2}>{label}</Text>
       <View style={s.detailValueWrap}>
-        {valueNode ?? <Text style={[s.detailValue, strong && s.detailValueStrong]}>{value ?? "—"}</Text>}
+        {valueNode ?? <Text style={[s.detailValue, strong && s.detailValueStrong, compact && s.detailTextCompact]}>{value ?? "—"}</Text>}
       </View>
     </View>
   );
 }
 
 /** Row of check bullets (gold checks by default). */
-export function CheckList({ items, tint = "gold", columns = 1 }: { items: string[]; tint?: Tint; columns?: 1 | 2 }) {
+export function CheckList({ items, tint = "gold", columns = 1, compact }: { items: string[]; tint?: Tint; columns?: 1 | 2; /** 14dp text for dense cards. */ compact?: boolean }) {
   const c = tints[tint];
   return (
     <View style={[s.checkList, columns === 2 && s.checkListTwo]}>
@@ -323,7 +326,7 @@ export function CheckList({ items, tint = "gold", columns = 1 }: { items: string
           <View style={[s.checkDot, { backgroundColor: c.fg }]}>
             <Check size={11} color={colors.white} strokeWidth={3} />
           </View>
-          <Text style={s.checkText}>{it}</Text>
+          <Text style={[s.checkText, compact && s.checkTextCompact]}>{it}</Text>
         </View>
       ))}
     </View>
@@ -443,6 +446,9 @@ const s = StyleSheet.create({
   heroRow: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
   heroImage: { width: 104, height: 84, borderRadius: radius.card, backgroundColor: colors.neutral100 },
   heroIconBox: { width: 84, height: 84, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  heroIconBoxCompact: { width: 60, height: 60 },
+  heroTitleRowWrap: { flexWrap: "wrap", rowGap: 4 },
+  heroTitleGrow: { flexGrow: 1, flexShrink: 1, flexBasis: 120 },
   heroTitleRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   providerText: { ...type.body, color: colors.neutral600, flexShrink: 1 },
@@ -467,6 +473,7 @@ const s = StyleSheet.create({
   detailLabelIcon: { maxWidth: "45%" },
   detailValueWrap: { flex: 1, alignItems: "flex-end" },
   detailValue: { ...type.body, color: colors.navy950, textAlign: "right" },
+  detailTextCompact: { fontSize: 14, lineHeight: 20 },
   detailValueStrong: { fontFamily: "Inter_700Bold" },
   // checklist
   checkList: { gap: space.x2 },
@@ -474,6 +481,7 @@ const s = StyleSheet.create({
   checkItem: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   checkItemHalf: { width: "50%", paddingRight: space.x2, marginBottom: space.x2 },
   checkDot: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  checkTextCompact: { fontSize: 14, lineHeight: 20 },
   checkText: { ...type.body, color: colors.neutral700, flex: 1 },
   // banner
   banner: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x3, borderRadius: radius.card, overflow: "hidden" },

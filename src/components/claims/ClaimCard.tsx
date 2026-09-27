@@ -68,8 +68,8 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
               <Text style={[s.meta, s.shrink]} numberOfLines={2}>{mark.name}</Text>
             </View>
           ) : null}
-          <Text style={s.number} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{claim.claim_number}</Text>
-          <Text style={s.meta} numberOfLines={1}>
+          <Text style={s.number}>{claim.claim_number}</Text>
+          <Text style={s.meta}>
             {date(claim.incident_at)}
             {asset ? ` • ${asset}` : claim.incident_location ? ` • ${claim.incident_location}` : ""}
           </Text>

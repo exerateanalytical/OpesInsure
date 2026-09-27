@@ -128,7 +128,7 @@ export default function ClaimInformationRequest() {
           ];
           return (
             <>
-              <HeroCard
+              <HeroCard compact
                 icon={productIcon(title, policyLine(policy))}
                 title={title}
                 lines={[c.claim_number]}
@@ -157,10 +157,10 @@ export default function ClaimInformationRequest() {
             <View style={s.list}>
               {outstanding.map((r) => (
                 <View key={r.key} style={s.req}>
-                  <TintedIcon icon={FileText} tint={r.status === "REJECTED" ? "red" : "blue"} size={48} />
+                  <TintedIcon icon={FileText} tint={r.status === "REJECTED" ? "red" : "blue"} size={40} />
                   <View style={s.flex}>
                     <View style={s.reqHead}>
-                      <Text style={[s.reqTitle, s.flex]}>{r.label}</Text>
+                      <Text style={s.reqTitle}>{r.label}</Text>
                       <StatusChip label={r.status === "REJECTED" ? t("claimRequirementRejected") : r.required ? t("infoReqRequiredChip") : t("mdOptional")} tone={r.required || r.status === "REJECTED" ? "danger" : "neutral"} />
                     </View>
                     {r.guidance ? <Text style={s.meta}>{r.guidance}</Text> : null}
@@ -248,9 +248,9 @@ export default function ClaimInformationRequest() {
 const s = StyleSheet.create({
   flex: { flex: 1 },
   list: { gap: space.x3 },
-  req: { flexDirection: "row", gap: space.x3, padding: space.x4, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white },
-  reqHead: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
-  reqTitle: { ...type.label, color: colors.navy950 },
+  req: { flexDirection: "row", gap: space.x3, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white },
+  reqHead: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", columnGap: space.x2, rowGap: 4 },
+  reqTitle: { ...type.label, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 120 },
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600, marginBottom: space.x2 },
   input: { minHeight: 110, textAlignVertical: "top", paddingTop: 12 },

@@ -183,9 +183,10 @@ const styles = StyleSheet.create({
   wordmarkAccent: { color: authColors.azure500 },
   tagline: { ...type.eyebrow, fontSize: 10.5, color: authColors.navy900, letterSpacing: 2.2, textAlign: "center", paddingHorizontal: authSpace[2] },
 
-  row: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center", paddingHorizontal: authSpace[1] },
+  // Bleeds into the slide gutter so three captions keep two lines at 360dp.
+  row: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center", marginHorizontal: -authSpace[3] },
   rowDivider: { width: 1, backgroundColor: authColors.ice100, marginTop: 24, height: 44 },
-  rowItem: { flex: 1, alignItems: "center", gap: authSpace[1], paddingHorizontal: authSpace[1] },
+  rowItem: { flexBasis: 0, flexGrow: 1, alignItems: "center", gap: authSpace[1], paddingHorizontal: 2 },
   rowGold: { width: 64, height: 64, alignItems: "center", justifyContent: "center", marginBottom: authSpace[1] },
   rowBadge: {
     width: 84,
@@ -243,11 +244,13 @@ const styles = StyleSheet.create({
   footerTagline: {
     ...type.eyebrow,
     color: authColors.navy900,
+    fontSize: 10,
     textAlign: "center",
-    letterSpacing: 2.2,
+    // Fits "PEOPLE · PROTECTION · A BRIGHTER TOMORROW" on one line at 360dp; still wraps for longer FR copy.
+    letterSpacing: 1.2,
   },
   footerRule: { width: 96, height: 3, borderRadius: 2, backgroundColor: authColors.gold500 },
-  footerBand: { width: 96, borderRadius: 1, overflow: "hidden", opacity: 0.35, marginTop: -authSpace[1] },
+  footerBand: { width: 96, alignSelf: "center", borderRadius: 1, overflow: "hidden", opacity: 0.35, marginTop: -authSpace[1] },
 
   // Lives in the welcome action bar (left of Next), so no outer margin.
   dots: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48 },

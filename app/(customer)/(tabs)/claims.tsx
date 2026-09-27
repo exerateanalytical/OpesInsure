@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Siren } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle } from "@/components/ui";
@@ -124,6 +124,7 @@ export default function Claims() {
       </View>
     </Pressable>
   );
+  const narrow = useWindowDimensions().width < 400;
   const header = (
     <View style={styles.header}>
       <BrandHeader title={t("myClaims")} subtitle={t("myClaimsSubtitle")} back={false} />
@@ -138,7 +139,7 @@ export default function Claims() {
               accessibilityState={{ selected: on }}
               onPress={() => setSegment(key)}
               android_ripple={ripple(on)}
-              style={({ pressed }) => [styles.segment, on && styles.segmentOn, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.segment, narrow && styles.segmentStacked, on && styles.segmentOn, pressed && styles.pressed]}
             >
               <Icon size={16} color={on ? colors.white : colors.navy900} />
               <Text style={[styles.segmentText, on && styles.segmentTextOn]} numberOfLines={2} maxFontSizeMultiplier={1.4}>
@@ -229,13 +230,15 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   title: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
-  newClaim: { flexDirection: "row", alignItems: "center", gap: space.x4, minHeight: 96, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue700, overflow: "hidden" },
-  newClaimIcon: { width: 60, height: 60, borderRadius: radius.card, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
-  newClaimText: { ...type.cardTitle, fontSize: 20, lineHeight: 26, color: colors.white },
+  newClaim: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 96, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue700, overflow: "hidden" },
+  newClaimIcon: { width: 52, height: 52, borderRadius: radius.card, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
+  newClaimText: { ...type.cardTitle, fontSize: 19, lineHeight: 24, color: colors.white },
   newClaimBody: { ...type.meta, color: colors.blue50 },
-  newClaimArrow: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.6)", alignItems: "center", justifyContent: "center" },
+  newClaimArrow: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.6)", alignItems: "center", justifyContent: "center" },
   segments: { flexDirection: "row", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, padding: 4, gap: 4 },
   segment: { flex: 1, minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.control, paddingHorizontal: 6, overflow: "hidden" },
+  // Under 400dp the icon sits above the label so "In Progress (9)" keeps one line.
+  segmentStacked: { flexDirection: "column", gap: 2, paddingVertical: 6 },
   segmentOn: { backgroundColor: colors.navy900 },
   segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy900, flexShrink: 1, textAlign: "center" },
   segmentTextOn: { color: colors.white },

@@ -3,9 +3,9 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
-import { Calendar, Car, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
+import { Calendar, Car, Check, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
-import { BrandHeader, CheckList, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
+import { BrandHeader, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { LoadingState } from "@/components/StatePanel";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { ErrorCard, InfoRow, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -185,7 +185,7 @@ export function PolicyDetailView({ id }: { id: string }) {
   const gridDocs = walletDocs.filter((d) => !/CERT/i.test(`${d.type ?? ""} ${d.label ?? ""}`));
 
   const meta: HeroMeta[] = [
-    { icon: FileText, label: t("pdPolicyNumber"), value: p.policy_number },
+    { icon: FileText, label: t("pdPolicyNumber"), value: (p.policy_number ?? "—").replace(/-/g, "\u2011") },
     { icon: isMotor ? Car : Shield, label: labels.insured, value: insured ?? "—" },
     { icon: Calendar, label: t("pdStartDate"), value: f.date(p.coverage_starts_at) },
     { icon: Calendar, label: t("pdExpiryDate"), value: f.date(p.coverage_ends_at), tone: info.bucket === "expired" ? "danger" : undefined },
@@ -195,12 +195,12 @@ export function PolicyDetailView({ id }: { id: string }) {
 
   const docCard = (key: string, title: string, subtitle: string | undefined, onPress: () => void, busy = false) => (
     <Pressable key={key} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ busy }} disabled={busy} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [st.docCard, pressed && st.pressed]}>
-      <View style={st.docCardTop}>
-        <TintedIcon icon={FileText} tint={key === "certificate" ? "red" : "blue"} size={36} />
-        <Download size={20} color={colors.blue600} />
+      <TintedIcon icon={FileText} tint={key === "certificate" ? "red" : "blue"} size={32} />
+      <View style={st.docCardText}>
+        <Text style={st.docCardTitle}>{title}</Text>
+        {subtitle ? <Text style={st.docCardMeta}>{subtitle}</Text> : null}
       </View>
-      <Text style={st.docCardTitle} numberOfLines={2}>{title}</Text>
-      {subtitle ? <Text style={st.docCardMeta} numberOfLines={2}>{subtitle}</Text> : null}
+      <Download size={18} color={colors.blue600} />
     </Pressable>
   );
 
@@ -217,16 +217,22 @@ export function PolicyDetailView({ id }: { id: string }) {
           providerLogo={insurer?.logo_url ?? null}
           chip={<StatusChip label={info.label} tone={info.tone} />}
           lines={[`${labels.policy} · ${coverageType}`, info.note]}
-          meta={meta}
-          metaColumns={2}
         >
-          {p.certificate_number || p.issued_at || cover.excessMinor !== null ? (
-            <View style={st.extraRows}>
-              {p.certificate_number ? <InfoRow label={t("pdCertificate")} value={p.certificate_number} /> : null}
-              {p.issued_at ? <InfoRow label={t("pdIssued")} value={f.date(p.issued_at)} /> : null}
-              {cover.excessMinor !== null ? <InfoRow label={t("pdExcess")} value={f.xaf(cover.excessMinor)} /> : null}
-            </View>
-          ) : null}
+          <View style={st.metaGrid}>
+            {meta.map((m, i) => {
+              const Icon = m.icon;
+              const danger = m.tone === "danger";
+              return (
+                <View key={`${m.label}-${i}`} style={[st.metaCell, i % 2 === 0 ? st.metaCellLeft : st.metaCellRight, i >= 2 && st.metaCellTop]}>
+                  <Icon size={18} color={danger ? colors.danger : colors.navy800} />
+                  <View style={st.metaText}>
+                    <Text style={st.metaLabel}>{m.label}</Text>
+                    <Text style={[st.metaValue, danger && st.metaDanger]}>{m.value}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </HeroCard>
 
         {cover.coverages.length ? (
@@ -235,16 +241,16 @@ export function PolicyDetailView({ id }: { id: string }) {
               <TintedIcon icon={ShieldCheck} tint="gold" size={40} />
               <Text style={st.cardTitle}>{t("pdKeyBenefits")}</Text>
             </View>
-            <CheckList columns={2} items={cover.coverages.map((c) => `${c.name}${c.optional ? t("pdOptional") : ""}`)} />
-            {cover.coverages.some((c) => c.limitMinor !== null) ? (
-              <View style={st.limits}>
-                <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text>
-                {cover.coverages.filter((c) => c.limitMinor !== null).map((c) => (
-                  <InfoRow key={c.code} label={c.name} value={f.xaf(c.limitMinor as number)} />
-                ))}
-              </View>
-            ) : null}
-            {cover.exclusions.length ? <Text style={ps.meta}>{t("pdExcludes", { list: cover.exclusions.map((e) => e.name).join(", ") })}</Text> : null}
+            <View style={st.checkGrid}>
+              {cover.coverages.map((c, i) => (
+                <View key={`${c.code}-${i}`} style={st.checkItem}>
+                  <View style={st.checkDot}>
+                    <Check size={10} color={colors.white} strokeWidth={3} />
+                  </View>
+                  <Text style={st.checkText}>{`${c.name}${c.optional ? t("pdOptional") : ""}`}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         ) : null}
 
@@ -255,7 +261,8 @@ export function PolicyDetailView({ id }: { id: string }) {
             {term.months ? <Text style={st.termMonths}>{t("pdMonths", { count: term.months })}</Text> : null}
           </View>
           <View style={st.track} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(term.pct * 100) }}>
-            <View style={[st.trackFill, { width: `${Math.round(term.pct * 100)}%` }]} />
+            <View style={st.trackBase} />
+            <View style={[st.trackFill, { width: `${Math.max(2, Math.round(term.pct * 100))}%` }]} />
             <View style={[st.knob, st.knobStart]} />
             <View style={[st.knob, st.knobEnd, term.pct >= 1 && st.knobStart]} />
           </View>
@@ -309,7 +316,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         </View>
 
         <View style={st.twoUp}>
-          <Card style={st.flex} onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} accessibilityLabel={`${labels.insured}. ${insured ?? "—"}. ${t("pdChange")}`}>
+          <Card style={st.twoUpCard} onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} accessibilityLabel={`${labels.insured}. ${insured ?? "—"}. ${t("pdChange")}`}>
             <View style={st.rowTitle}>
               {isMotor ? <Car size={22} color={colors.navy900} /> : <Shield size={22} color={colors.navy900} />}
               <Text style={[st.smallTitle, st.flex]}>{labels.insured}</Text>
@@ -318,7 +325,7 @@ export function PolicyDetailView({ id }: { id: string }) {
             <Text style={st.smallBody}>{insured ?? "—"}</Text>
             <Text style={st.smallMeta}>{t("pdChange")}</Text>
           </Card>
-          <Card style={st.flex} onPress={() => scrollTo(paymentsY.current)} accessibilityLabel={`${t("pdPaymentStatus")}. ${paymentChip.label}`}>
+          <Card style={st.twoUpCard} onPress={() => scrollTo(paymentsY.current)} accessibilityLabel={`${t("pdPaymentStatus")}. ${paymentChip.label}`}>
             <View style={st.rowTitle}>
               <CreditCard size={22} color={colors.navy900} />
               <Text style={[st.smallTitle, st.flex]}>{t("pdPaymentStatus")}</Text>
@@ -341,6 +348,26 @@ export function PolicyDetailView({ id }: { id: string }) {
             <Text style={st.emergencyPillText}>{helpline ?? t("pdContact")}</Text>
           </View>
         </Pressable>
+
+        {p.certificate_number || p.issued_at || cover.excessMinor !== null || cover.coverages.some((c) => c.limitMinor !== null) || cover.exclusions.length ? (
+          <Card style={st.infoCard}>
+            {p.certificate_number ? <InfoRow label={t("pdCertificate")} value={p.certificate_number} /> : null}
+            {p.issued_at ? <InfoRow label={t("pdIssued")} value={f.date(p.issued_at)} /> : null}
+            {cover.excessMinor !== null ? <InfoRow label={t("pdExcess")} value={f.xaf(cover.excessMinor)} /> : null}
+            {cover.coverages.some((c) => c.limitMinor !== null) ? (
+              <View style={st.limits}>
+                <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text>
+                {cover.coverages.filter((c) => c.limitMinor !== null).map((c) => (
+                  <View key={c.code} style={st.limitRow}>
+                    <Text style={st.limitLabel}>{c.name}</Text>
+                    <Text style={st.limitValue}>{f.xaf(c.limitMinor as number)}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {cover.exclusions.length ? <Text style={ps.meta}>{t("pdExcludes", { list: cover.exclusions.map((e) => e.name).join(", ") })}</Text> : null}
+          </Card>
+        ) : null}
 
         <View onLayout={(e) => (allDocsY.current = e.nativeEvent.layout.y)}>
           <PolicyDocumentsSection policyId={id} />
@@ -392,29 +419,48 @@ const st = StyleSheet.create({
   alignEnd: { alignItems: "flex-end" },
   noPad: { paddingHorizontal: 0 },
   content: { paddingHorizontal: space.x5, gap: space.x5 },
-  extraRows: { gap: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
+  metaGrid: { flexDirection: "row", flexWrap: "wrap", borderTopWidth: 1, borderTopColor: colors.neutral200 },
+  metaCell: { flexBasis: 120, flexGrow: 1, flexDirection: "row", gap: space.x2, alignItems: "flex-start", paddingTop: space.x3, paddingRight: space.x2 },
+  metaCellLeft: { flexGrow: 1.35, paddingRight: 4 },
+  metaCellRight: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x3 },
+  metaCellTop: { borderTopWidth: 1, borderTopColor: colors.neutral200, marginTop: space.x3 },
+  metaText: { flex: 1, minWidth: 0 },
+  metaLabel: { fontSize: 12, lineHeight: 16, fontFamily: "Inter_500Medium", color: colors.neutral600 },
+  metaValue: { fontSize: 14, lineHeight: 19, fontFamily: "Inter_600SemiBold", color: colors.navy950 },
+  metaDanger: { color: colors.dangerText },
   rowTitle: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  cardTitle: { ...type.cardTitle, color: colors.navy950 },
-  limits: { gap: space.x2, borderTopWidth: 1, borderTopColor: colors.gold100, paddingTop: space.x3 },
+  cardTitle: { fontSize: 16, lineHeight: 22, fontFamily: "Inter_700Bold", color: colors.navy950 },
+  infoCard: { gap: space.x2 },
+  limits: { gap: space.x1, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
   limitsTitle: { ...type.label, color: colors.navy950 },
+  limitRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: space.x3, paddingVertical: 2 },
+  limitLabel: { ...type.meta, color: colors.neutral600, flexShrink: 1 },
+  limitValue: { ...type.meta, fontFamily: "Inter_600SemiBold", color: colors.navy950, textAlign: "right" },
   benefits: { backgroundColor: colors.gold50, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
+  checkGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: space.x2 },
+  checkItem: { flexBasis: 140, flexGrow: 1, flexDirection: "row", alignItems: "flex-start", gap: space.x2, paddingRight: space.x2 },
+  checkDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.gold600, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  checkText: { fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular", color: colors.neutral700, flex: 1 },
   termCard: { borderRadius: radius.feature },
   termMonths: { ...type.label, color: colors.neutral600 },
-  track: { height: 16, justifyContent: "center", marginHorizontal: 4 },
+  track: { height: 16, justifyContent: "center", marginHorizontal: 8 },
+  trackBase: { position: "absolute", left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.blue100 },
   trackFill: { position: "absolute", left: 0, height: 4, borderRadius: 2, backgroundColor: colors.blue600 },
   knob: { position: "absolute", width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.neutral300, backgroundColor: colors.white },
   knobStart: { left: -4, backgroundColor: colors.blue600, borderColor: colors.blue600 },
   knobEnd: { right: -4 },
   termRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  termDate: { ...type.label, fontSize: 15, color: colors.navy950 },
+  termDate: { ...type.label, color: colors.navy950 },
   termLabel: { ...type.meta, color: colors.neutral600 },
   tiles: { flexDirection: "row", gap: space.x2 },
   docGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  docCard: { flexBasis: 140, flexGrow: 1, gap: space.x2, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  docCard: { flexBasis: 220, flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 56, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  docCardText: { flex: 1, minWidth: 0 },
   docCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   docCardTitle: { ...type.label, color: colors.navy950 },
   docCardMeta: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.neutral600, marginTop: 2 },
-  twoUp: { flexDirection: "row", gap: space.x2 },
+  twoUpCard: { flexBasis: 150, flexGrow: 1 },
+  twoUp: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   smallTitle: { ...type.label, fontSize: 15, color: colors.navy950 },
   smallBody: { ...type.body, color: colors.neutral700 },
   smallMeta: { ...type.meta, color: colors.neutral600 },

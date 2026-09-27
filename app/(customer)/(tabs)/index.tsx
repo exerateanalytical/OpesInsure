@@ -496,16 +496,17 @@ function Row({
     >
       {Icon ? <Icon size={19} color={colors.navy800} /> : null}
       <View style={styles.flex}>
-        <Text style={styles.rowTitle} numberOfLines={1}>{title}</Text>
+        <Text style={styles.rowTitle} numberOfLines={2}>{title}</Text>
         {meta ? <Text style={styles.meta} numberOfLines={2}>{meta}</Text> : null}
+        {chip ? <View style={styles.rowChip}>{chip}</View> : null}
       </View>
-      {chip}
       <ChevronRight size={18} color={colors.neutral500} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  rowChip: { flexDirection: "row", marginTop: 4 },
   heroBlock: { gap: 2, marginTop: -space.x2 },
   greeting: { fontFamily: "Inter_400Regular", fontSize: 26, lineHeight: 32, color: colors.navy950 },
   greetingName: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, color: colors.navy950, letterSpacing: -0.5 },

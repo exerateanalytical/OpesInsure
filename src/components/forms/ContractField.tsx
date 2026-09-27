@@ -151,7 +151,7 @@ export function ContractField({ field, value, values, error, onChange, setAny, o
           placeholder={field.placeholder}
           maxLength={field.maxLength}
           multiline={field.multiline}
-          style={field.multiline ? { minHeight: 120, textAlignVertical: "top", paddingTop: 12 } : undefined}
+          {...(field.multiline ? { style: { minHeight: 120, textAlignVertical: "top" as const, paddingTop: 12 } } : {})}
           autoCapitalize={!reason || reason === "IDENTIFIER" ? "characters" : reason === "PERSON_NAME" ? "words" : "sentences"}
           keyboardType={field.pattern?.startsWith("^\\+") ? "phone-pad" : "default"}
           error={error}

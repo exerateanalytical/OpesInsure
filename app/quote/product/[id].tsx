@@ -128,7 +128,7 @@ export default function ProductDetail() {
       {coverages.length || exclusions.length ? (
         <View style={s.twoUp}>
           {coverages.length ? (
-            <View style={[s.card, s.flex]}>
+            <View style={[s.card, s.half]}>
               <View style={s.cardHead}>
                 <FileText size={22} color={colors.blue600} />
                 <Text style={s.cardTitle}>{t("pdWhatsCovered")}</Text>
@@ -137,7 +137,7 @@ export default function ProductDetail() {
             </View>
           ) : null}
           {exclusions.length ? (
-            <View style={[s.card, s.flex]}>
+            <View style={[s.card, s.half]}>
               <View style={s.cardHead}>
                 <HeartHandshake size={22} color={colors.blue600} />
                 <Text style={s.cardTitle}>{t("pdExclusions")}</Text>
@@ -191,7 +191,7 @@ const s = StyleSheet.create({
   meta: { ...type.meta, color: colors.neutral600 },
   hero: { backgroundColor: colors.blue50, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
   heroCopy: { paddingRight: 96, gap: space.x2 },
-  heroTitle: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 30, color: colors.navy950 },
+  heroTitle: { fontFamily: "Inter_700Bold", fontSize: 22, lineHeight: 28, color: colors.navy950 },
   heroBody: { ...type.body, color: colors.neutral700 },
   heroArt: { position: "absolute", right: 12, top: 12, width: 96, height: 96, borderRadius: 48, backgroundColor: colors.white, alignItems: "center", justifyContent: "center", opacity: 0.95 },
   heroLogos: { flexDirection: "row", borderTopWidth: 1, borderTopColor: colors.blue100, paddingTop: space.x3 },
@@ -202,9 +202,10 @@ const s = StyleSheet.create({
   trustText: { ...type.label, color: colors.navy950 },
   block: { gap: space.x3 },
   benefits: { gap: space.x2, paddingRight: space.x2 },
-  benefit: { width: 118, minWidth: 118, flexGrow: 0, flexShrink: 0, flexBasis: 118 },
-  twoUp: { flexDirection: "row", gap: space.x3 },
-  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
+  benefit: { width: 104, minWidth: 104, flexGrow: 0, flexShrink: 0, flexBasis: 104 },
+  twoUp: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
+  half: { flexGrow: 1, flexShrink: 1, flexBasis: 165 },
+  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, gap: space.x2 },
   cardHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   cardTitle: { ...type.label, fontSize: 16, lineHeight: 22, color: colors.navy950, flexShrink: 1 },
   strip: { gap: space.x3, paddingRight: space.x2 },

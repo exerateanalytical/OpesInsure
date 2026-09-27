@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { openDocumentUrl } from "@/components/documents/openDocument";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlertTriangle, Building2, CalendarDays, CheckCircle2, CreditCard, Download, FileText, Headset, Receipt as ReceiptIcon, Share2, ShieldCheck, User } from "lucide-react-native";
+import { AlertTriangle, Building2, CalendarDays, CheckCircle2, CreditCard, Download, FileText, Headset, LucideIcon, Receipt as ReceiptIcon, Share2, ShieldCheck, User } from "lucide-react-native";
 import { Card, Screen, StatusChip, ripple } from "@/components/ui";
-import { Banner, BrandHeader, DetailRow } from "@/components/design";
+import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -60,7 +60,7 @@ export default function Receipt() {
 
           <Card>
             <View style={st.amountRow}>
-              <View style={st.flex}>
+              <View style={st.amountMain}>
                 <Text style={st.amountLabel}>{t("pmAmountPaid")}</Text>
                 <Text style={st.amount} accessibilityLabel={f.xaf(r.amountMinor)}>{f.xaf(r.amountMinor)}</Text>
               </View>
@@ -74,9 +74,9 @@ export default function Receipt() {
           <Card>
             <View style={st.rows}>
               {d.carrierName ? (
-                <DetailRow
+                <ReceiptRow
                   icon={Building2}
-                  tint="blue"
+                 
                   label={t("pmProvider")}
                   valueNode={
                     <View style={st.providerCell}>
@@ -86,13 +86,13 @@ export default function Receipt() {
                   }
                 />
               ) : null}
-              {d.policyNumber ? <DetailRow icon={ShieldCheck} tint="blue" label={t("pdPolicyNumber")} value={d.policyNumber} /> : null}
-              {d.productName ? <DetailRow icon={FileText} tint="blue" label={t("rcPurpose")} value={d.productName} /> : null}
-              {d.reference ? <DetailRow icon={FileText} tint="blue" label={t("pmTransactionId")} value={d.reference} /> : null}
-              <DetailRow icon={ReceiptIcon} tint="blue" label={t("rcNumber")} value={r.number} />
-              {r.provider ? <DetailRow icon={CreditCard} tint="blue" label={t("pmMethod")} value={`${networkName(r.provider)}${r.payer ? ` · ${r.payer}` : ""}`} /> : null}
-              {d.payerName ? <DetailRow icon={User} tint="blue" label={t("rcPaidFrom")} value={d.payerName} /> : r.payer && !r.provider ? <DetailRow icon={User} tint="blue" label={t("rcPaidFrom")} value={r.payer} /> : null}
-              <DetailRow icon={CalendarDays} tint="blue" label={t("rcIssued")} value={r.issuedAt ? f.dateTime(r.issuedAt) : "—"} />
+              {d.policyNumber ? <ReceiptRow icon={ShieldCheck} label={t("pdPolicyNumber")} value={d.policyNumber} /> : null}
+              {d.productName ? <ReceiptRow icon={FileText} label={t("rcPurpose")} value={d.productName} /> : null}
+              {d.reference ? <ReceiptRow icon={FileText} label={t("pmTransactionId")} value={d.reference} /> : null}
+              <ReceiptRow icon={ReceiptIcon} label={t("rcNumber")} value={r.number} />
+              {r.provider ? <ReceiptRow icon={CreditCard} label={t("pmMethod")} value={`${networkName(r.provider)}${r.payer ? ` · ${r.payer}` : ""}`} /> : null}
+              {d.payerName ? <ReceiptRow icon={User} label={t("rcPaidFrom")} value={d.payerName} /> : r.payer && !r.provider ? <ReceiptRow icon={User} label={t("rcPaidFrom")} value={r.payer} /> : null}
+              <ReceiptRow icon={CalendarDays} label={t("rcIssued")} value={r.issuedAt ? f.dateTime(r.issuedAt) : "—"} />
             </View>
             <Text style={ps.meta}>{t("rcNotCover")}</Text>
           </Card>
@@ -120,17 +120,34 @@ export default function Receipt() {
   );
 }
 
+/** Receipt line: tinted icon, small label above a full-width value (so long IDs never squeeze the label). */
+function ReceiptRow({ icon: Icon, label, value, valueNode }: { icon: LucideIcon; label: string; value?: string | null; valueNode?: React.ReactNode }) {
+  return (
+    <View style={st.rRow}>
+      <TintedIcon icon={Icon} tint="blue" size={40} />
+      <View style={st.flex}>
+        <Text style={st.rLabel}>{label}</Text>
+        {valueNode ?? <Text style={st.rValue}>{value ?? "—"}</Text>}
+      </View>
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  rRow: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderBottomWidth: 1, borderBottomColor: colors.neutral100 },
+  rLabel: { ...type.meta, color: colors.neutral600 },
+  rValue: { ...type.label, color: colors.navy950 },
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.5 },
   amountRow: { flexDirection: "row", alignItems: "center", gap: space.x3, flexWrap: "wrap" },
   amountLabel: { ...type.body, color: colors.neutral600 },
   amount: { fontFamily: "Inter_700Bold", fontSize: 28, lineHeight: 34, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  amountMain: { flexGrow: 1, flexBasis: 180 },
   amountRight: { alignItems: "flex-end", gap: space.x1 },
-  rows: { gap: space.x2 },
-  providerCell: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "flex-end", flexShrink: 1 },
-  value: { ...type.body, color: colors.navy950, textAlign: "right", flexShrink: 1 },
+  rows: { gap: 0 },
+  providerCell: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
+  value: { ...type.label, color: colors.navy950, flexShrink: 1 },
   actions: { flexDirection: "row", gap: space.x2 },
   action: { flex: 1, minHeight: 56, borderRadius: radius.card, alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: space.x2, paddingVertical: space.x2, overflow: "hidden" },
   actionText: { ...type.label, fontSize: 13, lineHeight: 17, textAlign: "center" },

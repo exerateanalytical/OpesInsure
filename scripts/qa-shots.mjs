@@ -28,7 +28,8 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const screens = JSON.parse(fs.readFileSync(path.join(root, "scripts", "qa-screens.json"), "utf8"));
 const filter = process.argv[2] ?? "";
-const selected = screens.filter((s) => !filter || s.name.includes(filter));
+const exact = screens.some((s) => s.name === filter);
+const selected = screens.filter((s) => !filter || (exact ? s.name === filter : s.name.includes(filter)));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -129,22 +130,46 @@ try {
       await page.setViewport({ width: w, height: HEIGHT, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
       let target = s.route;
       if (s.signedOut) await page.goto(`${BASE}${s.route}`, { waitUntil: "networkidle2", timeout: 180000 }), await sleep(5000);
-      else target = await open(page, s.route);
+      else if (s.via) {
+        // Optional UI path: open `via.route`, click the element labelled `via.click`, capture where it lands.
+        await open(page, s.via.route);
+        // `via.clickPrefix` (optional) matches an aria-label that starts with the text, e.g. a RadioCard "Title. Subtitle".
+        await page.evaluate((label, prefix) => document.querySelector(prefix ? `[aria-label^="${prefix}"]` : `[aria-label="${label}"]`)?.click(), s.via.click, s.via.clickPrefix);
+        await sleep(s.via.wait ?? 5000);
+        target = await page.evaluate(() => location.pathname);
+      } else target = await open(page, s.route);
+      if (s.after) {
+        // Optional in-page step before the shot, e.g. advance a carousel: click `[aria-label=after.click]` `after.times` times.
+        for (let i = 0; i < (s.after.times ?? 1); i++) {
+          await page.evaluate((label) => document.querySelector(`[aria-label="${label}"]`)?.click(), s.after.click);
+          await sleep(s.after.wait ?? 1200);
+        }
+      }
       const file = path.join(outDir, `${s.name}@${w}.png`);
       await page.screenshot({ path: file });
-      const overflow = await page.evaluate(() => {
+      const overflow = await page.evaluate((process_debug) => {
         // Elements wider than the viewport or text clipped with an ellipsis.
         const vw = innerWidth;
         let wide = 0;
         let clipped = 0;
+        const dbg = [];
         for (const el of document.querySelectorAll("div,span")) {
           const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.right > vw + 1) wide++;
+          // Off-screen pages of a horizontal pager/strip are not visible overflow: skip when a clipping ancestor sits inside the viewport.
+          let hidden = false;
+          for (let a = el.parentElement; a && !hidden; a = a.parentElement) {
+            const ox = getComputedStyle(a).overflowX;
+            if ((ox === "auto" || ox === "scroll" || ox === "hidden") && a.getBoundingClientRect().right <= vw + 1) hidden = true;
+          }
+          if (!hidden && r.width > 0 && r.right > vw + 1) { wide++; if (process_debug) dbg.push("W " + el.getAttribute("aria-label") + " " + (el.textContent || "").slice(0, 40) + " r=" + Math.round(r.right)); }
           const cs = getComputedStyle(el);
-          if (cs.textOverflow === "ellipsis" && el.scrollWidth > el.clientWidth + 1) clipped++;
+          if (cs.textOverflow === "ellipsis" && el.scrollWidth > el.clientWidth + 1) { clipped++; if (process_debug) dbg.push("C " + (el.textContent || "").slice(0, 60)); }
         }
-        return { wide, clipped };
-      });
+        return { wide, clipped, dbg };
+      }, !!process.env.QA_DEBUG);
+      if (process.env.QA_DEBUG) for (const d of overflow.dbg.slice(0, 30)) process.stdout.write(`  ${d}
+`);
+      delete overflow.dbg;
       report.push({ name: s.name, width: w, route: target, path: new URL(page.url()).pathname, ...overflow });
       process.stdout.write(`${s.name}@${w} -> ${new URL(page.url()).pathname} overflow=${overflow.wide} clipped=${overflow.clipped}\n`);
     }

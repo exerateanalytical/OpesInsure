@@ -32,10 +32,10 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
   const status = (policy.status ?? "ACTIVE").toUpperCase();
   const body = (
     <View style={s.row}>
-      <TintedIcon icon={Icon} tint={tint} size={onPress ? 64 : 56} />
+      <TintedIcon icon={Icon} tint={tint} size={onPress ? 52 : 48} />
       <View style={s.flex}>
         <View style={s.titleRow}>
-          <Text style={[s.title, s.flex]}>{title}</Text>
+          <Text style={s.title}>{title}</Text>
           <StatusChip label={td(`policyStatus_${status}`, status)} tone={status === "ACTIVE" ? "success" : "neutral"} />
         </View>
         {provider ? (
@@ -76,9 +76,9 @@ const s = StyleSheet.create({
   card: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, overflow: "hidden" },
   cardOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   pressed: { opacity: 0.85 },
-  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
-  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
+  row: { flexDirection: "row", alignItems: "center", gap: 10 },
+  titleRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", columnGap: space.x2, rowGap: 4 },
+  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 120 },
   line: { flexDirection: "row", alignItems: "center", gap: 6 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.neutral300, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },

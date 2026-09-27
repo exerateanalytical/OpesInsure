@@ -60,7 +60,7 @@ export function RenewalHero({
 }) {
   const id = useRenewalIdentity(policy, offer, riskFacts);
   return (
-    <HeroCard icon={id.icon} title={title ?? id.title} provider={id.provider} providerLogo={id.logo} lines={lines ?? [id.productName && id.productName !== id.title ? id.productName : null, id.vehicle]} chip={chip} meta={meta}>
+    <HeroCard icon={id.icon} title={title ?? id.title} provider={id.provider} providerLogo={id.logo} lines={lines ?? [id.productName && id.productName !== id.title ? id.productName : null, id.vehicle]} chip={chip} meta={meta} compact>
       {children}
     </HeroCard>
   );
@@ -78,7 +78,7 @@ export function PriceRow({ label, value, strong, tone, icon: Icon, sub }: { labe
   return (
     <View style={s.priceRow}>
       {Icon ? <Icon size={20} color={colors.navy800} /> : null}
-      <Text style={[s.priceLabel, tone === "success" && { color }]} numberOfLines={2}>{label}</Text>
+      <Text style={[s.priceLabel, tone === "success" && { color }]}>{label}</Text>
       <View style={s.priceValueWrap}>
         <Text style={[s.priceValue, strong && s.priceValueStrong, { color }]}>{value}</Text>
         {sub ? <Text style={s.priceSub}>{sub}</Text> : null}
@@ -127,8 +127,8 @@ export function NetworkTiles({ value, onChange, disabled, readOnly }: { value: N
               <Text style={[s.networkBadgeText, { color: it.fg }]}>{it.badge}</Text>
             </View>
             <View style={s.flex}>
-              <Text style={s.networkLabel} numberOfLines={2}>{it.label}</Text>
-              <Text style={s.networkSub} numberOfLines={2}>{it.sub}</Text>
+              <Text style={s.networkLabel}>{it.label}</Text>
+              <Text style={s.networkSub}>{it.sub}</Text>
             </View>
             <View style={[s.radio, selected && s.radioOn]}>{selected ? <View style={s.radioInner} /> : null}</View>
           </>
@@ -162,18 +162,18 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   priceRow: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 36 },
-  priceLabel: { ...type.body, color: colors.neutral600, flex: 1 },
-  priceValueWrap: { alignItems: "flex-end" },
-  priceValue: { ...type.body, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  priceLabel: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral600, flexGrow: 1, flexShrink: 1, flexBasis: 80 },
+  priceValueWrap: { alignItems: "flex-end", flexShrink: 1 },
+  priceValue: { ...type.body, fontSize: 14, lineHeight: 20, textAlign: "right", color: colors.navy950, fontVariant: ["tabular-nums"] },
   priceValueStrong: { fontFamily: "Inter_700Bold" },
   priceSub: { ...type.meta, color: colors.neutral500 },
   totalBand: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x3, backgroundColor: colors.blue50, borderRadius: radius.card, paddingHorizontal: space.x3, paddingVertical: space.x3 },
-  totalLabel: { ...type.cardTitle, fontSize: 17, color: colors.navy950, flexShrink: 1 },
-  totalValue: { ...type.sectionTitle, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  totalLabel: { ...type.cardTitle, fontSize: 15, lineHeight: 20, color: colors.navy950, flexShrink: 1 },
+  totalValue: { ...type.sectionTitle, fontSize: 19, lineHeight: 24, flexShrink: 0, color: colors.navy950, fontVariant: ["tabular-nums"] },
   infoBox: { borderRadius: radius.card, padding: space.x3, gap: space.x2 },
   infoTitle: { ...type.cardTitle, fontSize: 16, lineHeight: 22, color: colors.navy950 },
   networks: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  network: { flexGrow: 1, flexBasis: 150, minHeight: 64, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.card, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x2, overflow: "hidden" },
+  network: { flexGrow: 1, flexBasis: 220, minHeight: 64, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.card, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x2, overflow: "hidden" },
   networkOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   networkBadge: { width: 40, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   networkBadgeText: { fontFamily: "Inter_700Bold", fontSize: 11 },

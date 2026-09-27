@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChevronRight, LucideIcon } from "lucide-react-native";
 import { CATEGORIES } from "@/components/customer/categories";
 import { CATEGORY_TINT } from "@/components/customer/CategoryTiles";
@@ -41,7 +41,6 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
   const Icon: LucideIcon | null = cat?.icon ?? null;
   const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
   const days = daysUntil(policy.coverage_ends_at);
-  const wide = useWindowDimensions().width >= 420;
   const dateLabel =
     info.bucket === "active"
       ? t("policyRenewsOn", { date: f.date(policy.coverage_ends_at) })
@@ -60,20 +59,18 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
     >
       <View style={[styles.thumb, { backgroundColor: tint.bg }]}>{Icon ? <Icon size={28} color={tint.fg} /> : null}</View>
       <View style={styles.flex}>
-        <Text style={styles.title} numberOfLines={2}>{w.product_name ?? t("insurancePolicy")}</Text>
+        <Text style={styles.title} >{w.product_name ?? t("insurancePolicy")}</Text>
         <View style={styles.providerRow}>
           <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={28} />
           <Text style={styles.provider} numberOfLines={2}>{provider}</Text>
         </View>
         <Text style={styles.number}>{policy.policy_number}</Text>
-      </View>
-      <View style={styles.right}>
-        <StatusChip label={info.label} tone={info.tone} />
-        <View style={styles.dateBlock}>
-          <Text style={[styles.date, days !== null && days <= 30 && info.bucket === "active" && styles.dateWarn]} numberOfLines={2}>{dateLabel}</Text>
+        <View style={styles.metaRow}>
+          <StatusChip label={info.label} tone={info.tone} />
+          <Text style={[styles.date, days !== null && days <= 30 && info.bucket === "active" && styles.dateWarn]}>{dateLabel}</Text>
         </View>
       </View>
-      {onPress && wide ? (
+      {onPress ? (
         <View style={styles.chevron}>
           <ChevronRight size={18} color={colors.navy900} />
         </View>
@@ -95,14 +92,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pressed: { opacity: 0.9 },
-  flex: { flex: 1, gap: 3, minWidth: 96 },
+  flex: { flex: 1, gap: 3, minWidth: 0 },
   thumb: { width: 56, height: 56, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
   title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   provider: { ...type.meta, color: colors.neutral600, flexShrink: 1 },
   number: { ...type.meta, fontSize: 12, color: colors.neutral600, fontVariant: ["tabular-nums"] },
-  right: { alignItems: "flex-end", gap: space.x2, maxWidth: 100, flexShrink: 0 },
-  dateBlock: { borderLeftWidth: 1, borderLeftColor: colors.neutral200, paddingLeft: space.x2 },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.x2, rowGap: 4, marginTop: 4 },
   date: { ...type.meta, fontSize: 12, lineHeight: 16, color: colors.neutral600, textAlign: "left" },
   dateWarn: { color: colors.gold600 },
   chevron: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },

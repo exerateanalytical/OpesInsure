@@ -129,7 +129,7 @@ export default function ClaimDetail() {
                 subtitle={`${t("claimNoLabel", { number: claim.claim_number })}  |  ${t("claimSubmittedOn", { date: date(submittedEvent?.occurred_at ?? claim.created_at ?? claim.incident_at) })}`}
                 right="help"
               />
-              <StepIndicator steps={stages} current={claimStage(claim.status)} />
+              <StepIndicator steps={stages} current={claimStage(claim.status)} labelStyle={styles.stepLabel} />
 
               <Card style={styles.infoCard}>
                 <View style={styles.statusRow}>
@@ -166,7 +166,7 @@ export default function ClaimDetail() {
 
               <Card>
                 <View style={styles.statusRow}>
-                  <TintedIcon icon={Clock3} tint={claimTone(claim.status) === "danger" ? "red" : claimTone(claim.status) === "success" ? "green" : "gold"} size={56} />
+                  <TintedIcon icon={Clock3} tint={claimTone(claim.status) === "danger" ? "red" : claimTone(claim.status) === "success" ? "green" : "gold"} size={48} />
                   <View style={[styles.flex, styles.gap]}>
                     <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimCurrentStatus")}</Text>
                     <View style={styles.chipStart}><StatusChip label={status} tone={claimTone(claim.status)} /></View>
@@ -188,7 +188,7 @@ export default function ClaimDetail() {
 
               <Card>
                 <View style={styles.statusRow}>
-                <TintedIcon icon={ClipboardPen} tint="neutral" size={56} />
+                <TintedIcon icon={ClipboardPen} tint="neutral" size={48} />
                 <View style={[styles.flex, styles.gap]}>
                 <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimNextSteps")}</Text>
                 <View accessibilityRole="list">
@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
     padding: space.x3,
   },
   infoCard: { gap: space.x2 },
+  stepLabel: { fontSize: 10.5, lineHeight: 13, paddingHorizontal: 0, letterSpacing: -0.2 },
   valueCol: { alignItems: "flex-end" },
   value: { ...type.body, color: colors.neutral700, textAlign: "right" },
   valueStrong: { ...type.label, color: colors.navy950, textAlign: "right" },

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import * as RN from "react-native";
 import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Building2, Calendar, Car, CheckCircle2, CircleCheck, Coins, Copy, CreditCard, Download, FileText, Headset, RefreshCcw, Share2, Shield, ShieldCheck, User, Wallet } from "lucide-react-native";
+import { type LucideIcon, ArrowRight, Building2, Calendar, Car, CheckCircle2, CircleCheck, Coins, Copy, CreditCard, Download, FileText, Headset, RefreshCcw, Share2, Shield, ShieldCheck, User, Wallet } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
-import { Banner, BrandHeader, DetailRow, IconTile, SectionHeading, TintedIcon } from "@/components/design";
+import { Banner, BrandHeader, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
@@ -118,9 +118,9 @@ export default function PaymentDetail() {
 
           <Card>
             <View style={st.idRow}>
-              <View style={st.flex}>
+              <View style={st.idMain}>
                 <Text style={st.idLabel}>{t("pmTransactionId")}</Text>
-                <Text selectable style={st.idValue} numberOfLines={2}>{reference}</Text>
+                <Text selectable style={st.idValue}>{reference}</Text>
               </View>
               <Pressable accessibilityRole="button" accessibilityLabel={t("pmCopy")} onPress={copy} android_ripple={ripple()} style={({ pressed }) => [st.copyBtn, pressed && st.pressed]}>
                 <Copy size={18} color={colors.blue600} />
@@ -129,9 +129,9 @@ export default function PaymentDetail() {
             </View>
             <View style={st.rows}>
               {providerName || policy ? (
-                <DetailRow
+                <TxRow
                   icon={Building2}
-                  tint="blue"
+                 
                   label={t("pmProvider")}
                   valueNode={
                     <View style={st.providerCell}>
@@ -141,18 +141,18 @@ export default function PaymentDetail() {
                   }
                 />
               ) : null}
-              {productName ? <DetailRow icon={Shield} tint="blue" label={t("pmProduct")} value={productName} /> : null}
-              {policy?.policy_number ? <DetailRow icon={FileText} tint="blue" label={t("pdPolicyNumber")} value={policy.policy_number} /> : null}
-              {customerName ? <DetailRow icon={User} tint="blue" label={t("pmCustomer")} value={customerName} /> : null}
-              {p.created_at ? <DetailRow icon={Calendar} tint="blue" label={t("pmDateTime")} value={f.dateTime(p.created_at)} /> : null}
-              <DetailRow icon={Coins} tint="blue" label={t("pmAmountPaid")} value={f.xaf(p.amount_minor)} strong />
+              {productName ? <TxRow icon={Shield} label={t("pmProduct")} value={productName} /> : null}
+              {policy?.policy_number ? <TxRow icon={FileText} label={t("pdPolicyNumber")} value={policy.policy_number} /> : null}
+              {customerName ? <TxRow icon={User} label={t("pmCustomer")} value={customerName} /> : null}
+              {p.created_at ? <TxRow icon={Calendar} label={t("pmDateTime")} value={f.dateTime(p.created_at)} /> : null}
+              <TxRow icon={Coins} label={t("pmAmountPaid")} value={f.xaf(p.amount_minor)} strong />
               {fee !== null ? (
-                <DetailRow icon={Coins} tint="blue" label={t("pmFee")} valueNode={fee ? <Text style={st.value}>{f.xaf(fee)}</Text> : <StatusChip label={t("pmNoFee")} tone="success" />} />
+                <TxRow icon={Coins} label={t("pmFee")} valueNode={fee ? <Text style={st.value}>{f.xaf(fee)}</Text> : <StatusChip label={t("pmNoFee")} tone="success" />} />
               ) : null}
-              <DetailRow icon={CreditCard} tint="blue" label={t("pmMethod")} value={`${networkName(p.provider)}${p.payer_phone_e164 ? ` · ${p.payer_phone_e164}` : ""}`} />
-              {p.provider_reference && p.provider_reference !== reference ? <DetailRow icon={FileText} tint="blue" label={t("pmOperatorRef")} value={p.provider_reference} /> : null}
-              {succeeded && p.updated_at ? <DetailRow icon={CircleCheck} tint="blue" label={t("pmConfirmed")} value={f.dateTime(p.updated_at)} /> : null}
-              <DetailRow icon={CircleCheck} tint="blue" label={t("pmStatus")} valueNode={<StatusChip label={info.label} tone={info.tone} />} />
+              <TxRow icon={CreditCard} label={t("pmMethod")} value={`${networkName(p.provider)}${p.payer_phone_e164 ? ` · ${p.payer_phone_e164}` : ""}`} />
+              {p.provider_reference && p.provider_reference !== reference ? <TxRow icon={FileText} label={t("pmOperatorRef")} value={p.provider_reference} /> : null}
+              {succeeded && p.updated_at ? <TxRow icon={CircleCheck} label={t("pmConfirmed")} value={f.dateTime(p.updated_at)} /> : null}
+              <TxRow icon={CircleCheck} label={t("pmStatus")} valueNode={<StatusChip label={info.label} tone={info.tone} />} />
             </View>
           </Card>
 
@@ -167,14 +167,14 @@ export default function PaymentDetail() {
                 <View style={st.policyRow}>
                   <TintedIcon icon={policy.risk_asset || /motor|auto/i.test(policy.product_name ?? "") ? Car : ShieldCheck} tint="blue" size={56} />
                   <View style={st.flex}>
-                    <Text style={st.policyTitle} numberOfLines={2}>{policy.product_name ?? policy.policy_number}</Text>
-                    {providerName ? <Text style={st.policyMeta} numberOfLines={1}>{providerName}</Text> : null}
-                    <Text style={st.policyMeta} numberOfLines={1}>{policy.policy_number}</Text>
+                    <Text style={st.policyTitle}>{policy.product_name ?? policy.policy_number}</Text>
+                    {providerName ? <Text style={st.policyMeta}>{providerName}</Text> : null}
+                    <Text style={st.policyMeta}>{policy.policy_number}</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t("viewPolicy")} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policy.id } })} android_ripple={ripple()} style={({ pressed }) => [st.viewBtn, pressed && st.pressed]}>
+                      <Text style={st.viewBtnText}>{t("viewPolicy")}</Text>
+                      <ArrowRight size={16} color={colors.blue600} />
+                    </Pressable>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={t("viewPolicy")} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policy.id } })} android_ripple={ripple()} style={({ pressed }) => [st.viewBtn, pressed && st.pressed]}>
-                    <Text style={st.viewBtnText}>{t("viewPolicy")}</Text>
-                    <ArrowRight size={16} color={colors.blue600} />
-                  </Pressable>
                 </View>
               </Card>
             </View>
@@ -205,22 +205,41 @@ export default function PaymentDetail() {
 }
 
 
+/** Transaction line: tinted icon, small label above a full-width value (long IDs never squeeze the label). */
+function TxRow({ icon: Icon, label, value, valueNode, strong }: { icon: LucideIcon; label: string; value?: string | null; valueNode?: React.ReactNode; strong?: boolean }) {
+  return (
+    <View style={st.txRow}>
+      <TintedIcon icon={Icon} tint="blue" size={40} />
+      <View style={st.txCopy}>
+        <Text style={st.txLabel}>{label}</Text>
+        {valueNode ?? <Text style={[st.txValue, strong && st.txStrong]}>{value ?? "—"}</Text>}
+      </View>
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  txRow: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderBottomWidth: 1, borderBottomColor: colors.neutral100 },
+  txCopy: { flex: 1, gap: 2, alignItems: "flex-start" },
+  txLabel: { ...type.meta, color: colors.neutral600 },
+  txValue: { ...type.label, color: colors.navy950 },
+  txStrong: { fontFamily: "Inter_700Bold", fontSize: 18, lineHeight: 24 },
+  idMain: { flexGrow: 1, flexShrink: 1, flexBasis: 170 },
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   section: { gap: space.x3 },
-  idRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  idRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x3 },
   idLabel: { ...type.body, color: colors.neutral600 },
-  idValue: { fontFamily: "Inter_700Bold", fontSize: 20, lineHeight: 26, color: colors.navy950, marginTop: 2 },
+  idValue: { fontFamily: "Inter_700Bold", fontSize: 18, lineHeight: 24, color: colors.navy950, marginTop: 2 },
   copyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.blue50, borderRadius: radius.control, paddingHorizontal: 14, minHeight: 44, overflow: "hidden" },
   copyText: { ...type.label, color: colors.blue600 },
-  rows: { gap: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x2 },
-  value: { ...type.body, color: colors.navy950, textAlign: "right", flexShrink: 1 },
-  providerCell: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "flex-end" },
+  rows: { gap: 0, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x2 },
+  value: { ...type.label, color: colors.navy950, flexShrink: 1 },
+  providerCell: { flexDirection: "row", alignItems: "center", gap: 6 },
   policyRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   policyTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   policyMeta: { ...type.meta, color: colors.neutral600, marginTop: 2 },
-  viewBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.blue50, borderRadius: radius.control, paddingHorizontal: 12, minHeight: 40, overflow: "hidden" },
+  viewBtn: { alignSelf: "flex-start", marginTop: space.x2, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.blue50, borderRadius: radius.control, paddingHorizontal: 12, minHeight: 40, overflow: "hidden" },
   viewBtnText: { ...type.label, color: colors.blue600 },
   tiles: { flexDirection: "row", gap: space.x2 },
 });

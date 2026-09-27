@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
   skipText: { ...authType.label, color: authColors.navy900 },
   slideContent: { paddingHorizontal: authSpace[5], paddingBottom: authSpace[4] },
   copyBlock: { alignItems: "center", gap: 0, marginTop: authSpace[5], marginBottom: authSpace[5] },
-  headingTop: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.navy950, textAlign: "center" },
-  headingBottom: { ...authType.h1, fontSize: 30, lineHeight: 36, color: authColors.blue500, textAlign: "center" },
+  headingTop: { ...authType.h1, fontSize: 32, lineHeight: 38, fontWeight: "800", color: authColors.navy950, textAlign: "center" },
+  headingBottom: { ...authType.h1, fontSize: 32, lineHeight: 38, fontWeight: "800", color: authColors.blue500, textAlign: "center" },
   subheading: {
     ...authType.body,
     fontSize: 17,

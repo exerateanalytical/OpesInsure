@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LayoutGrid, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
 import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
@@ -32,6 +32,7 @@ type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: s
 
 export default function QuoteHistory() {
   const { t, td } = useTranslation();
+  const narrow = useWindowDimensions().width < 400;
   const f = useFormatters();
   const list = usePagedList<CustomerQuoteSummary>((page) => QuotesApi.history(page));
   const [query, setQuery] = useState("");
@@ -108,7 +109,7 @@ export default function QuoteHistory() {
             <View style={s.card}>
               <View style={s.top}>
                 <View style={s.imageTile}>
-                  <Icon size={44} color={colors.navy800} strokeWidth={1.5} />
+                  <Icon size={34} color={colors.navy800} strokeWidth={1.5} />
                 </View>
                 <View style={s.flex}>
                   <View style={s.titleRow}>
@@ -120,7 +121,7 @@ export default function QuoteHistory() {
                           <InstitutionMark logoUrl={q.carrier_logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={20} />
                           <Text style={[s.meta, s.flex]} numberOfLines={1}>{provider}</Text>
                         </View>
-                      ) : q.quote_number ? <Text style={s.meta} numberOfLines={1}>{q.quote_number}</Text> : null}
+                      ) : q.quote_number ? <Text style={s.meta}>{q.quote_number}</Text> : null}
                     </View>
                   </View>
                   <View style={s.chipRow}>
@@ -171,8 +172,8 @@ export default function QuoteHistory() {
                   <ChevronRight size={20} color={colors.navy800} />
                 </Pressable>
               </View>
-              <View style={s.actions}>
-                <Pressable accessibilityRole="button" onPress={open} android_ripple={ripple()} style={({ pressed }) => [s.btn, s.gold_btn, pressed && s.pressed]}>
+              <View style={[s.actions, narrow && s.actionsWrap]}>
+                <Pressable accessibilityRole="button" onPress={open} android_ripple={ripple()} style={({ pressed }) => [s.btn, s.gold_btn, narrow && s.fullRow, pressed && s.pressed]}>
                   <ArrowRight size={18} color={colors.navy950} />
                   <Text style={s.btnText}>{t("quotesResume")}</Text>
                 </Pressable>
@@ -243,7 +244,7 @@ const s = StyleSheet.create({
   chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   top: { flexDirection: "row", gap: space.x3 },
-  imageTile: { width: 104, height: 104, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  imageTile: { width: 72, height: 72, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
   titleRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   line: { ...type.label, color: colors.navy950 },
   meta: { ...type.meta, color: colors.neutral600 },
@@ -260,6 +261,8 @@ const s = StyleSheet.create({
   metaStrong: { ...type.meta, color: colors.navy950 },
   gold: { color: colors.gold600, fontFamily: "Inter_700Bold" },
   actions: { flexDirection: "row", gap: space.x2 },
+  actionsWrap: { flexWrap: "wrap" },
+  fullRow: { flexBasis: "100%" },
   btn: { flex: 1, minHeight: 46, borderRadius: radius.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, overflow: "hidden", paddingHorizontal: space.x2 },
   gold_btn: { flex: 1.3, backgroundColor: colors.gold500 },
   soft_btn: { backgroundColor: colors.blue50 },

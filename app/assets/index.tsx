@@ -61,18 +61,23 @@ export default function Assets() {
                   <View style={s.row}>
                     <TintedIcon icon={x.type === "VEHICLE" ? CarFront : x.type === "PROPERTY" ? Building2 : Package} tint="blue" size={48} />
                     <View style={s.flex}>
-                      <Text style={s.title}>{title}</Text>
-                      {sub ? <Text style={s.sub} numberOfLines={1}>{sub}</Text> : null}
-                      {x.label && x.registration_number ? <Text style={s.meta} numberOfLines={1}>{x.registration_number}</Text> : null}
-                      {x.type ? (
-                        <View style={s.typeChip}>
-                          <Text style={s.typeText}>{td(`assetType_${x.type}`, x.type)}</Text>
+                      <View style={s.topRow}>
+                        <Text style={s.title}>{title}</Text>
+                        <StatusChip label={td(`status_${x.status}`, x.status)} tone={verified ? "success" : "warning"} />
+                      </View>
+                      {sub ? <Text style={s.sub}>{sub}</Text> : null}
+                      {x.label && x.registration_number ? <Text style={s.meta}>{x.registration_number}</Text> : null}
+                      <View style={s.bottomRow}>
+                        {x.type ? (
+                          <View style={s.typeChip}>
+                            <Text style={s.typeText}>{td(`assetType_${x.type}`, x.type)}</Text>
+                          </View>
+                        ) : <View />}
+                        <View style={s.view}>
+                          <Text style={s.viewText}>{t("docActionView")}</Text>
+                          <ChevronRight size={18} color={colors.blue700} />
                         </View>
-                      ) : null}
-                    </View>
-                    <View style={s.right}>
-                      <StatusChip label={td(`status_${x.status}`, x.status)} tone={verified ? "success" : "warning"} />
-                      <ChevronRight size={20} color={colors.neutral500} />
+                      </View>
                     </View>
                   </View>
                 </Card>
@@ -89,12 +94,15 @@ const s = StyleSheet.create({
   list: { flex: 1 },
   content: { paddingBottom: space.x16 },
   card: { borderRadius: radius.feature, marginBottom: space.x3 },
-  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  row: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
   footer: { gap: space.x4 },
-  typeChip: { alignSelf: "flex-start", marginTop: space.x2, paddingHorizontal: space.x2, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.blue50 },
+  typeChip: { alignSelf: "flex-start", paddingHorizontal: space.x2, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.blue50 },
   typeText: { ...type.meta, color: colors.blue700, fontWeight: "600" },
-  right: { alignItems: "flex-end", gap: space.x2 },
-  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.x2 },
+  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x2, marginTop: space.x2 },
+  view: { flexDirection: "row", alignItems: "center", gap: 2, minHeight: 32 },
+  viewText: { ...type.label, fontSize: 14, color: colors.blue700 },
+  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950, flexBasis: 120, flexGrow: 1, flexShrink: 1 },
   sub: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral700, marginTop: 2 },
   meta: { ...type.meta, color: colors.neutral500, marginTop: 2 },
 });

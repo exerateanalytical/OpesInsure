@@ -142,7 +142,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
         </View>
         <View style={styles.heroRow}>
           <View style={styles.logoTile}>
-            <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} size={76} />
+            <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} size={64} />
           </View>
           <View style={styles.flex}>
             <Text accessibilityRole="header" style={styles.title}>{insurer.name}</Text>
@@ -167,7 +167,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
             {actions.map((a) => (
               <Pressable key={a.label} accessibilityRole="button" accessibilityLabel={a.label} onPress={a.onPress} android_ripple={ripple()} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
                 <View style={styles.actionIcon}>
-                  <a.icon size={22} color={colors.blue600} />
+                  <a.icon size={20} color={colors.blue600} />
                 </View>
                 <Text style={styles.actionText} numberOfLines={2}>{a.label}</Text>
               </Pressable>
@@ -209,7 +209,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
                   android_ripple={ripple()}
                   style={({ pressed }) => [styles.cat, { backgroundColor: tint.bg }, pressed && styles.pressed]}
                 >
-                  <c.icon size={28} color={tint.fg} />
+                  <c.icon size={26} color={tint.fg} />
                   <Text style={styles.catText} numberOfLines={2}>{t(c.label)}</Text>
                 </Pressable>
               );
@@ -240,7 +240,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
               >
                 <View style={styles.productTop}>
                   <View style={[styles.productIcon, { backgroundColor: tint.bg }]}>
-                    <Icon size={30} color={tint.fg} />
+                    <Icon size={26} color={tint.fg} />
                   </View>
                   <View style={styles.chevron}>
                     <ChevronRight size={16} color={colors.navy900} />
@@ -420,15 +420,15 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
   heroArt: { position: "absolute", right: -30, top: -26, width: 110, height: 110, opacity: 0.22 },
   heroArtImg: { width: 110, height: 110 },
-  heroRow: { flexDirection: "row", alignItems: "center", gap: space.x4 },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   logoTile: { padding: 6, borderRadius: radius.feature, backgroundColor: colors.white, shadowColor: colors.navy950, shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  title: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 29, color: colors.navy950, letterSpacing: -0.3 },
+  title: { fontFamily: "Inter_700Bold", fontSize: 22, lineHeight: 27, color: colors.navy950, letterSpacing: -0.3 },
   verified: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", backgroundColor: colors.successSoft, borderRadius: radius.pill, paddingHorizontal: space.x3, paddingVertical: 5, marginTop: space.x2 },
   verifiedText: { ...type.label, color: colors.successText },
   badges: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
   actions: { flexDirection: "row", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: colors.neutral100, paddingTop: space.x3 },
   action: { alignItems: "center", gap: 6, width: 76, minHeight: 48, paddingVertical: 4, borderRadius: radius.card, overflow: "hidden" },
-  actionIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  actionIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
   actionText: { ...type.meta, color: colors.navy950, textAlign: "center" },
   stats: { flexDirection: "row", alignItems: "center", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, paddingVertical: space.x3, paddingHorizontal: space.x2 },
   stat: { flex: 1, alignItems: "center", gap: 4, paddingHorizontal: space.x2 },
@@ -437,12 +437,12 @@ const styles = StyleSheet.create({
   statValue: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, textAlign: "center" },
   statLabel: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.neutral600, textAlign: "center" },
   cats: { gap: space.x2, paddingVertical: 2 },
-  cat: { width: 96, minHeight: 96, borderRadius: radius.card, alignItems: "center", justifyContent: "center", gap: 6, padding: space.x2, overflow: "hidden" },
+  cat: { width: 88, minHeight: 84, borderRadius: radius.card, alignItems: "center", justifyContent: "center", gap: 6, padding: space.x2, overflow: "hidden" },
   catText: { ...type.caption, color: colors.navy950, textAlign: "center" },
   productGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
   product: { flexGrow: 1, flexBasis: 150, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, gap: space.x2, overflow: "hidden" },
   productTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  productIcon: { width: 64, height: 64, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  productIcon: { width: 52, height: 52, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
   productName: { ...type.label, fontSize: 15, lineHeight: 20, color: colors.navy950 },
   productCta: { ...type.label, color: colors.blue600 },
   chevron: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },

@@ -65,14 +65,16 @@ export default function PaymentMethods() {
           <View style={styles.row}>
             <TintedIcon icon={CreditCard} tint="blue" size={44} />
             <View style={styles.flex}>
-              <Text style={styles.title}>{networkName(m.provider)}</Text>
+              <View style={styles.topRow}>
+                <Text style={styles.title}>{networkName(m.provider)}</Text>
+                {i === 0 ? <StatusChip label={t("payMethodsLastUsed")} tone="success" /> : m.succeeded ? <StatusChip label={t("payMethodsVerified")} tone="info" /> : null}
+              </View>
               <Text style={styles.body}>{mask(m.phone)}</Text>
               <Text style={styles.meta}>
                 {t("payMethodsUsed", { n: m.count })}
                 {m.last ? ` · ${date(m.last)}` : ""}
               </Text>
             </View>
-            {i === 0 ? <StatusChip label={t("payMethodsLastUsed")} tone="success" /> : m.succeeded ? <StatusChip label={t("payMethodsVerified")} tone="info" /> : null}
           </View>
         </Card>
       ))}
@@ -83,8 +85,9 @@ export default function PaymentMethods() {
 const styles = StyleSheet.create({
   card: { borderRadius: radius.feature },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  flex: { flex: 1 },
-  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  flex: { flex: 1, gap: 2 },
+  topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.x2 },
+  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950, flexBasis: 100, flexGrow: 1, flexShrink: 1 },
   body: { ...type.body, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
 });

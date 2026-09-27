@@ -30,7 +30,8 @@ def load(path, crop_phone_height=None):
 
 
 for s in SCREENS:
-    if filt and filt not in s["name"]:
+    exact = any(x["name"] == filt for x in SCREENS)
+    if filt and (s["name"] != filt if exact else filt not in s["name"]):
         continue
     panels = []
     labels = []

@@ -179,14 +179,14 @@ export default function Applications() {
                   <StatusIcon size={14} color={statusText.color} />
                   <Text style={[s.statusLabel, statusText]} numberOfLines={1}>{info.label}</Text>
                 </View>
-                <Text style={s.title} numberOfLines={2}>{fam ? td(`lineFamily_${fam}`, name) : name}</Text>
+                <Text style={s.title}>{fam ? td(`lineFamily_${fam}`, name) : name}</Text>
                 {provider ? (
                   <View style={s.providerRow}>
                     <InstitutionMark logoUrl={p.carrier_logo_url} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-                    <Text style={s.body} numberOfLines={2}>{provider}</Text>
+                    <Text style={s.body}>{provider}</Text>
                   </View>
                 ) : null}
-                <Text style={s.meta} numberOfLines={2}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>
+                <Text style={s.meta}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>
               </View>
               <Pressable accessibilityRole="button" accessibilityLabel={t("draftsOpen")} onPress={() => openProposal(p)} hitSlop={8} style={s.chevron}>
                 <ChevronRight size={18} color={colors.navy800} />

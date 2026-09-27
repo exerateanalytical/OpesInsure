@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowRight, BadgeCheck, CalendarDays, ChevronDown, ChevronUp, Coins, ExternalLink, FileText, ShieldCheck, Star, Tag } from "lucide-react-native";
 import { BrandHeader, CheckList, CtaBar, MetaGrid } from "@/components/design";
-import { Button, Card, Chip, ChipRow, ripple, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard, InfoRow, Rule } from "@/components/purchase/PurchaseUi";
@@ -109,11 +109,21 @@ export default function RenewalOffers() {
           ) : null}
 
           {offers.length ? (
-            <ChipRow exclusive>
-              <Chip role="tab" label={t("roSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
-              <Chip role="tab" label={t("roSortSame")} selected={sort === "same_cover"} onPress={() => setSort("same_cover")} />
-              <Chip role="tab" label={t("roSortValue")} selected={sort === "best_value"} onPress={() => setSort("best_value")} />
-            </ChipRow>
+            <View accessibilityRole="tablist" style={st.segments}>
+              {([
+                ["price", t("roSortPrice"), Tag],
+                ["same_cover", t("roSortSame"), ShieldCheck],
+                ["best_value", t("roSortValue"), Star],
+              ] as const).map(([key, label, Icon]) => {
+                const on = sort === key;
+                return (
+                  <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={label} onPress={() => setSort(key)} android_ripple={ripple(on)} style={({ pressed }) => [st.segment, on && st.segmentOn, pressed && st.pressed]}>
+                    <Icon size={16} color={on ? colors.white : colors.navy900} />
+                    <Text style={[st.segmentText, on && st.segmentTextOn]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           ) : null}
 
           {visible.map((o) => (
@@ -178,9 +188,9 @@ function RenewalOfferCard({
     <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={name} onPress={onPick} android_ripple={ripple()} style={({ pressed }) => [st.offer, selected && st.offerOn, pressed && st.pressed]}>
       <View style={st.offerHead}>
         <InstitutionMark logoUrl={carrierLogo(offer)} initials={name.slice(0, 2).toUpperCase()} size={44} />
-        <View style={st.flex}>
+        <View style={st.headText}>
           <View style={st.nameRow}>
-            <Text style={st.name} numberOfLines={2}>{name}</Text>
+            <Text style={st.name}>{name}</Text>
             <BadgeCheck size={18} color={colors.blue600} />
           </View>
           <Text style={st.product} numberOfLines={2}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
@@ -202,12 +212,13 @@ function RenewalOfferCard({
         items={[
           { icon: ShieldCheck, label: t("ofCoverLevel"), value: level },
           { icon: Coins, label: t("sumExcess"), value: cover.excessMinor === null ? t("sumNotStated") : f.xaf(cover.excessMinor) },
-          { icon: CalendarDays, label: t("roPeriod"), value: period ? `${t("roMonths12")}\n${f.range(period.start, period.end)}` : t("roMonths12") },
+          { icon: CalendarDays, label: t("roPeriod"), value: t("roMonths12") },
         ]}
       />
+      {period ? <Text style={st.meta}>{`${t("roPeriod")}: ${f.range(period.start, period.end)}`}</Text> : null}
       {shown.length ? (
         <View style={st.covers}>
-          <CheckList items={shown} columns={2} />
+          <CheckList items={shown} columns={2} compact />
           {!expanded && names.length > shown.length ? <Text style={st.more}>{t("roMore", { count: names.length - shown.length })}</Text> : null}
         </View>
       ) : (
@@ -264,16 +275,22 @@ const st = StyleSheet.create({
   expiryChip: { flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.dangerSoft, borderRadius: radius.card, paddingHorizontal: space.x2, paddingVertical: 6 },
   expiryLabel: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.dangerText },
   expiryValue: { ...type.label, color: colors.dangerText },
+  headText: { flexBasis: 130, flexGrow: 1, flexShrink: 1, minWidth: 0 },
+  segments: { flexDirection: "row", gap: space.x2 },
+  segment: { flexBasis: 0, flexGrow: 1, minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 6, paddingVertical: 6, borderRadius: radius.control, borderWidth: 1.5, borderColor: colors.neutral200, backgroundColor: colors.white },
+  segmentOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
+  segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy950, textAlign: "center", flexShrink: 1 },
+  segmentTextOn: { color: colors.white },
   offer: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
   offerOn: { borderColor: colors.blue600 },
-  offerHead: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
+  offerHead: { flexDirection: "row", flexWrap: "wrap", gap: space.x3, alignItems: "flex-start" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  name: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexShrink: 1 },
+  name: { ...type.cardTitle, fontSize: 16, lineHeight: 21, color: colors.navy950, flexShrink: 1 },
   product: { ...type.meta, color: colors.neutral600 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   rating: { ...type.meta, color: colors.neutral700 },
-  priceCol: { alignItems: "flex-end", gap: 2, flexShrink: 0, maxWidth: 150 },
-  price: { ...type.sectionTitle, fontSize: 18, lineHeight: 24, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  priceCol: { alignItems: "flex-end", gap: 2, flexShrink: 0, marginLeft: "auto" },
+  price: { ...type.sectionTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, fontVariant: ["tabular-nums"] },
   perYear: { ...type.meta, color: colors.neutral600 },
   covers: { backgroundColor: colors.blue50, borderRadius: radius.card, padding: space.x3, gap: space.x1 },
   more: { ...type.meta, color: colors.blue700 },

@@ -12,6 +12,9 @@ import type { CopyKey } from "@/i18n/strings";
 import { matchesQuery } from "@/lib/customerLogic";
 import { colors, radius, space, type } from "@/theme/tokens";
 
+const TILE_BG: Record<Tint, string> = { blue: colors.blue50, gold: colors.gold50, red: colors.dangerSoft, green: colors.successSoft, neutral: colors.neutral50 };
+const TILE_FG: Record<Tint, string> = { blue: colors.blue700, gold: colors.navy900, red: colors.danger, green: colors.successText, neutral: colors.neutral700 };
+
 /** Curated help centre (static, bilingual). Topics group the questions. */
 const TOPICS: { title: CopyKey; body: CopyKey; icon: LucideIcon; tint: Tint; items: [CopyKey, CopyKey][] }[] = [
   { title: "faqTopicBuying", body: "faqTileBuying", icon: CarFront, tint: "gold", items: [["faqQ1", "faqA1"], ["faqQ2", "faqA2"], ["faqQ3", "faqA3"]] },
@@ -45,10 +48,13 @@ export default function Faq() {
               accessibilityLabel={t(x.title)}
               onPress={() => setTopic(on ? null : x.title)}
               android_ripple={ripple()}
-              style={({ pressed }) => [styles.tile, on && styles.tileOn, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.tile, { backgroundColor: TILE_BG[x.tint] }, on && styles.tileOn, pressed && styles.pressed]}
             >
-              <TintedIcon icon={x.icon} tint={x.tint} size={40} />
-              <Text style={styles.tileTitle}>{t(x.title)}</Text>
+              <View style={styles.tileHead}>
+                <x.icon size={24} color={TILE_FG[x.tint]} strokeWidth={2} />
+                <Text style={[styles.tileTitle, styles.flex]}>{t(x.title)}</Text>
+                <ChevronRight size={18} color={colors.navy800} />
+              </View>
               <Text style={styles.tileBody}>{t(x.body)}</Text>
             </Pressable>
           );
@@ -101,9 +107,10 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   flex: { flex: 1, gap: 2 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
-  tile: { flexGrow: 1, flexBasis: 140, minHeight: 48, padding: space.x4, gap: space.x2, borderRadius: radius.feature, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
-  tileOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
-  tileTitle: { ...type.label, color: colors.navy950 },
+  tile: { flexGrow: 1, flexBasis: 150, minHeight: 48, paddingVertical: space.x3, paddingHorizontal: space.x3, gap: space.x1, borderRadius: radius.feature, borderWidth: 1, borderColor: "transparent" },
+  tileHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  tileOn: { borderColor: colors.blue600 },
+  tileTitle: { ...type.label, fontSize: 15, lineHeight: 20, color: colors.navy950 },
   tileBody: { ...type.meta, color: colors.neutral600 },
   urgent: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.navy950 },
   urgentKicker: { ...type.caption, color: colors.gold500, letterSpacing: 1, textTransform: "uppercase" },

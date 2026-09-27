@@ -210,8 +210,8 @@ export function TextField({
         accessibilityHint={hint}
         accessibilityState={{ disabled: props.editable === false }}
         placeholderTextColor={colors.neutral500}
-        style={[styles.input, error && styles.inputError]}
         {...props}
+        style={[styles.input, error && styles.inputError, props.style]}
       />
       {error ? (
         <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text>

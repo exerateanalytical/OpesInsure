@@ -125,14 +125,16 @@ export default function SupportDetail() {
             <>
               <View style={styles.card}>
                 <View style={styles.headRow}>
-                  <TintedIcon icon={Ticket} tint="blue" size={56} />
+                  <TintedIcon icon={Ticket} tint="blue" size={48} />
                   <View style={styles.flex}>
-                    <Text style={styles.reference}>{c.reference}</Text>
+                    <View style={styles.refRow}>
+                      <Text style={styles.reference}>{c.reference}</Text>
+                      <View style={[styles.statusChip, statusTone]}>
+                        <View style={[styles.dot, { backgroundColor: closed ? colors.neutral500 : colors.success }]} />
+                        <Text style={[styles.statusText, { color: closed ? colors.neutral700 : colors.successText }]} numberOfLines={1}>{td(`supportStatus_${c.status}`, c.status)}</Text>
+                      </View>
+                    </View>
                     <Text style={styles.subject}>{c.subject}</Text>
-                  </View>
-                  <View style={[styles.statusChip, statusTone]}>
-                    <View style={[styles.dot, { backgroundColor: closed ? colors.neutral500 : colors.success }]} />
-                    <Text style={[styles.statusText, { color: closed ? colors.neutral700 : colors.successText }]} numberOfLines={1}>{td(`supportStatus_${c.status}`, c.status)}</Text>
                   </View>
                 </View>
                 <Text style={styles.body}>{c.description}</Text>
@@ -195,21 +197,21 @@ export default function SupportDetail() {
                 <SectionHeading title={t("supportSummary")} icon={FileText} />
                 <View style={styles.summaryGrid}>
                   <View style={styles.summaryCell}>
-                    <TintedIcon icon={Tag} tint="blue" size={40} />
+                    <TintedIcon icon={Tag} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportCategoryLabel")}</Text>
                       <Text style={styles.summaryValue} numberOfLines={2}>{td(`supportCategory_${c.category}`, c.category)}</Text>
                     </View>
                   </View>
                   <View style={[styles.summaryCell, styles.summaryBorder]}>
-                    <TintedIcon icon={Flag} tint="blue" size={40} />
+                    <TintedIcon icon={Flag} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
                       <Text style={styles.summaryValue} numberOfLines={2}>{td(`priority_${c.priority}`, c.priority)}</Text>
                     </View>
                   </View>
                   <View style={[styles.summaryCell, styles.summaryTop]}>
-                    <TintedIcon icon={MessageSquare} tint="blue" size={40} />
+                    <TintedIcon icon={MessageSquare} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportChannel")}</Text>
                       <Text style={styles.summaryValue} numberOfLines={2}>{t("supportChannelApp")}</Text>
@@ -222,10 +224,10 @@ export default function SupportDetail() {
                     onPress={() => void attach()}
                     style={({ pressed }) => [styles.summaryCell, styles.summaryBorder, styles.summaryTop, pressed && styles.pressed]}
                   >
-                    <TintedIcon icon={Paperclip} tint="blue" size={40} />
+                    <TintedIcon icon={Paperclip} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportAttachments")}</Text>
-                      <Text style={styles.summaryValue} numberOfLines={1}>{t("supportFilesCount", { count: attachments.length })}</Text>
+                      <Text style={styles.summaryValue}>{t("supportFilesCount", { count: attachments.length })}</Text>
                     </View>
                     {!closed ? <ChevronRight size={18} color={colors.navy800} /> : null}
                   </Pressable>
@@ -246,7 +248,7 @@ export default function SupportDetail() {
                     <TintedIcon icon={Clock3} tint="gold" size={44} />
                     <View style={styles.flex}>
                       <View style={styles.nextHead}>
-                        <Text style={[styles.summaryValue, styles.flex]}>{t("supportNextUpdate")}</Text>
+                        <Text style={[styles.summaryValue, styles.grow]}>{t("supportNextUpdate")}</Text>
                         <View style={styles.awaiting}>
                           <Text style={styles.awaitingText}>{c.status === "WAITING_CUSTOMER" ? td(`supportStatus_${c.status}`, c.status) : t("supportAwaitingResponse")}</Text>
                         </View>
@@ -283,7 +285,9 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
-  reference: { fontFamily: "Inter_700Bold", fontSize: 22, lineHeight: 28, color: colors.navy950 },
+  refRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: space.x2 },
+  grow: { flexBasis: 90, flexGrow: 1, flexShrink: 1 },
+  reference: { fontFamily: "Inter_700Bold", fontSize: 19, lineHeight: 25, color: colors.navy950, flexBasis: 150, flexGrow: 1, flexShrink: 1 },
   subject: { ...type.body, color: colors.neutral700, marginTop: 2 },
   statusChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 140 },
   statusOpen: { backgroundColor: colors.successSoft },
@@ -311,14 +315,14 @@ const styles = StyleSheet.create({
   mine: { backgroundColor: colors.blue50 },
   theirs: { backgroundColor: colors.neutral100 },
   summaryGrid: { flexDirection: "row", flexWrap: "wrap", borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card },
-  summaryCell: { flexBasis: 150, flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3 },
+  summaryCell: { flexBasis: 160, flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, paddingVertical: space.x3, paddingHorizontal: space.x2 },
   summaryBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
   summaryTop: { borderTopWidth: 1, borderTopColor: colors.neutral200 },
   summaryValue: { ...type.label, color: colors.navy950 },
   files: { gap: space.x1 },
   fileRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   nextUpdate: { flexDirection: "row", alignItems: "flex-start", gap: space.x3, backgroundColor: colors.gold50, borderRadius: radius.card, padding: space.x3 },
-  nextHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  nextHead: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x2 },
   awaiting: { backgroundColor: colors.gold100, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
   awaitingText: { ...type.caption, color: colors.gold600 },
   replyBar: { flexDirection: "row", alignItems: "flex-end", gap: space.x2 },

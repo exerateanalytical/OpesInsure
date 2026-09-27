@@ -250,8 +250,8 @@ export default function GlobalSearch() {
                       <View style={s.flex}>
                         <Text style={s.rowTitle} numberOfLines={2}>{h.title}</Text>
                         {h.subtitle ? <Text style={s.meta} numberOfLines={2}>{h.subtitle}</Text> : null}
+                        {h.status ? <View style={{ flexDirection: "row", marginTop: 4 }}><StatusChip label={td(`status_${h.status}`, h.status)} tone="info" /></View> : null}
                       </View>
-                      {h.status ? <StatusChip label={td(`status_${h.status}`, h.status)} tone="info" /> : null}
                       {href ? <ChevronRight size={20} color={colors.neutral500} /> : null}
                     </>
                   );

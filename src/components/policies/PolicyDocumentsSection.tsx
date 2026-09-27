@@ -81,7 +81,7 @@ export function PolicyDocumentsSection({ policyId }: { policyId: string }) {
   const action = (Icon: typeof Eye, label: string, onPress: () => void, last = false) => (
     <Pressable key={label} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [st.action, !last && st.actionDivider, pressed && st.pressed]}>
       <Icon size={18} color={colors.blue600} />
-      <Text style={st.actionText} numberOfLines={1}>{label}</Text>
+      <Text style={st.actionText}>{label}</Text>
     </Pressable>
   );
 
@@ -196,8 +196,8 @@ const st = StyleSheet.create({
   docMetaSmall: { ...type.meta, color: colors.neutral600, marginTop: 2 },
   chevron: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" },
   actions: { flexDirection: "row", borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x2 },
-  action: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 40, overflow: "hidden" },
+  action: { flexBasis: 0, flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 4, minHeight: 48, paddingHorizontal: 2 },
   actionDivider: { borderRightWidth: 1, borderRightColor: colors.neutral200 },
-  actionText: { ...type.label, color: colors.navy950, fontSize: 13 },
+  actionText: { ...type.label, color: colors.navy950, fontSize: 12, lineHeight: 16, textAlign: "center" },
   uploads: { marginTop: 8, gap: 4 },
 });

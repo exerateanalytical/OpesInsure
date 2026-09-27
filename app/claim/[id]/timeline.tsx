@@ -64,7 +64,7 @@ export default function ClaimTimeline() {
           const canAdd = claimActionAllowed("information", c.status);
           return (
             <>
-              <HeroCard
+              <HeroCard compact
                 icon={productIcon(title, policyLine(policy))}
                 title={title}
                 lines={[c.claim_number]}

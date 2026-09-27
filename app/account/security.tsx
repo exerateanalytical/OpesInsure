@@ -129,10 +129,12 @@ export default function Security() {
           <View style={styles.row}>
             <TintedIcon icon={Smartphone} tint={d.current ? "green" : "neutral"} size={44} />
             <View style={styles.flex}>
-              <Text style={styles.title}>{d.name}</Text>
+              <View style={styles.topRow}>
+                <Text style={[styles.title, styles.grow]}>{d.name}</Text>
+                {d.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
+              </View>
               <Text style={styles.body}>{t("devLastSeen", { platform: d.platform, date: f.dateTime(d.last_seen_at) })}</Text>
             </View>
-            {d.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
           </View>
         </Card>
       ))}
@@ -149,7 +151,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, paddingTop: space.x3, minHeight: 48 },
   title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
-  body: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral600 },
+  body: { ...type.body, fontSize: 13, lineHeight: 18, color: colors.neutral600 },
+  topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.x2 },
+  grow: { flexBasis: 100, flexGrow: 1, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
 });

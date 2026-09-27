@@ -1,6 +1,6 @@
 [
   { "name": "splash", "design": "opesinsure_light_theme_splash_screen.png", "route": "/", "signedOut": true },
-  { "name": "onboarding", "design": "01-onboarding-buy-renew-claim.png", "route": "/welcome", "signedOut": true },
+  { "name": "onboarding", "design": "01-onboarding-buy-renew-claim.png", "route": "/welcome", "signedOut": true, "after": { "click": "Next", "times": 1 } },
   { "name": "login", "design": "opesinsure_blue_gold_login_screen.png", "route": "/sign-in", "signedOut": true },
   { "name": "sign-up", "design": "opesinsure_account_creation_screen.png", "route": "/sign-up", "signedOut": true },
 
@@ -15,7 +15,7 @@
 
   { "name": "product-detail", "design": "motor_insurance_product_app_ui.png", "route": "/quote/product/motor" },
   { "name": "quote-product", "design": "12-get-a-quote-motor-step1.png", "route": "/quote/product" },
-  { "name": "quote-form", "design": "opesinsure_motor_insurance_quote_form.png", "route": "/quote/risk" },
+  { "name": "quote-form", "design": "opesinsure_motor_insurance_quote_form.png", "route": "/quote/risk", "via": { "route": "/quote/product", "clickPrefix": "Motor insurance.", "wait": 7000 } },
   { "name": "payment-history", "design": "opesinsure_payment_history_dashboard.png", "route": "/payments" },
   { "name": "transaction-detail", "design": "42-transaction-detail.png", "route": "/payments/{payment}" },
   { "name": "receipt", "design": "payment_successful_receipt_ui.png", "route": "/payments/{payment}/receipt" },
@@ -25,7 +25,7 @@
   { "name": "renew-policy", "design": "opesinsure_policy_renewal_screen.png", "route": "/policy/{policy}/renew" },
   { "name": "renewal-quote", "design": "opesinsure_renewal_quote_screen.png", "route": "/policy/{policy}/renewal-quote" },
   { "name": "renewal-offers", "design": "insurance_offer_comparison_app_ui.png", "route": "/policy/{policy}/renewal-offers" },
-  { "name": "renewal-review", "design": "insurance_renewal_review_and_payment.png", "route": "/policy/{policy}/renewal-review" },
+  { "name": "renewal-review", "design": "insurance_renewal_review_and_payment.png", "route": "/policy/{policy}/renewal-review", "via": { "route": "/policy/{policy}/renewal-offers", "click": "Select Offer" } },
   { "name": "saved-quotes", "design": "opesinsure_saved_quotes_dashboard.png", "route": "/quotes" },
   { "name": "draft-applications", "design": "opesinsure_draft_applications_dashboard.png", "route": "/proposals" },
 

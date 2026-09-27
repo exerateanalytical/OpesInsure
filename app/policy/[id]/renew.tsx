@@ -94,9 +94,9 @@ export default function Renew() {
 
           <Card>
             <SectionHeading title={t("rnOverview")} />
-            <DetailRow icon={ShieldCheck} label={t("rnCoverType")} value={identity.productName ?? identity.title} />
-            <DetailRow icon={identity.icon} label={identity.isMotor ? t("rnVehicle") : t("rnInsuredObject")} value={identity.vehicle ?? "—"} />
-            <DetailRow
+            <DetailRow compact icon={ShieldCheck} label={t("rnCoverType")} value={identity.productName ?? identity.title} />
+            <DetailRow compact icon={identity.icon} label={identity.isMotor ? t("rnVehicle") : t("rnInsuredObject")} value={identity.vehicle ?? "—"} />
+            <DetailRow compact
               icon={CalendarDays}
               label={t("rnNewPeriod")}
               valueNode={
@@ -106,13 +106,13 @@ export default function Renew() {
                 </View>
               }
             />
-            <DetailRow
+            <DetailRow compact
               icon={Coins}
               label={t("rnEstimatedPremium")}
               valueNode={<Text style={[st.valueStrong, st.premium]}>{offer ? f.xaf(offer.total_minor) : busy ? t("rnPremiumPending") : t("rnPremiumUnavailable")}</Text>}
             />
             {discount && discountLabel ? (
-              <DetailRow
+              <DetailRow compact
                 icon={Gift}
                 label={t("rnNoClaimBonus")}
                 valueNode={
@@ -161,8 +161,8 @@ const st = StyleSheet.create({
   body: { ...type.body, color: colors.neutral600 },
   meta: { ...type.meta, color: colors.neutral500 },
   alignEnd: { alignItems: "flex-end" },
-  valueStrong: { ...type.body, fontFamily: "Inter_700Bold", color: colors.navy950, textAlign: "right" },
-  premium: { fontSize: 18 },
+  valueStrong: { ...type.label, fontFamily: "Inter_700Bold", color: colors.navy950, textAlign: "right" },
+  premium: { fontSize: 16, lineHeight: 22 },
   bonus: { flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.successSoft, borderRadius: 10, paddingHorizontal: space.x2, paddingVertical: 6, maxWidth: "100%" },
   bonusText: { ...type.meta, color: colors.successText, flexShrink: 1 },
 });

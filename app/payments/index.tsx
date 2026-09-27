@@ -120,7 +120,7 @@ export default function Payments() {
               onPress={() => router.push({ pathname: "/payments/[id]", params: { id: p.id } })}
             >
               <View style={s.row}>
-                <TintedIcon icon={Icon} tint={policy ? "blue" : toneTint(status.tone)} size={52} />
+                <TintedIcon icon={Icon} tint={policy ? "blue" : toneTint(status.tone)} size={48} />
                 <View style={s.flex}>
                   <Text style={s.title}>{policy?.product_name ?? t("phPremiumPayment")}</Text>
                   {insurer ? (
@@ -129,6 +129,10 @@ export default function Payments() {
                       <Text style={s.sub}>{insurer}</Text>
                     </View>
                   ) : null}
+                  <View style={s.right}>
+                    <Text style={s.amount}>{f.xaf(p.amount_minor)}</Text>
+                    <StatusChip label={status.label} tone={status.tone} />
+                  </View>
                   {policy?.policy_number ? <Text style={s.meta}>{policy.policy_number}</Text> : null}
                   <View style={s.metaRow}>
                     {when ? (
@@ -139,10 +143,6 @@ export default function Payments() {
                     ) : null}
                     {network ? <Text style={s.meta}>{when ? " · " : ""}{network}</Text> : null}
                   </View>
-                </View>
-                <View style={s.right}>
-                  <Text style={s.amount}>{f.xaf(p.amount_minor)}</Text>
-                  <StatusChip label={status.label} tone={status.tone} />
                 </View>
                 <ChevronRight size={20} color={colors.neutral500} />
               </View>
@@ -177,11 +177,11 @@ const s = StyleSheet.create({
   summaryValue: { fontFamily: "Inter_700Bold", fontSize: 22, lineHeight: 28, color: colors.navy950, fontVariant: ["tabular-nums"] },
   card: { borderRadius: radius.feature, marginBottom: space.x3 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  right: { alignItems: "flex-end", gap: space.x2, maxWidth: "42%" },
+  right: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space.x2, marginVertical: 4 },
   title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
   insurerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4, flexWrap: "wrap" },
-  amount: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 22, color: colors.navy950, fontVariant: ["tabular-nums"], textAlign: "right" },
+  amount: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 22, color: colors.navy950, fontVariant: ["tabular-nums"], },
   sub: { ...type.body, fontSize: 14, lineHeight: 20, color: colors.neutral700, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
 });
