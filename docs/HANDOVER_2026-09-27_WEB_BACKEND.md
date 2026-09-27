@@ -3,6 +3,62 @@
 Live: https://insurance.opesdatacenter.tech, release **r20260927-174612** (commit bcde791, deployed 17:46; full suite 2,070 passed; role grants synced in production). Section 3 below is now LIVE. Demo mode is **ON**, as the owner instructed; only the owner can turn it off.
 Earlier handover: `docs/WEB_APP_HANDOVER_2026-09-26.md`.
 
+## 0. LATEST STATUS (read first), 2026-09-27 late evening
+**Live:** r20260927-174612 (bcde791).
+
+**Committed on master, NOT yet deployed** (bcde791..7663a6a). The next step is the full suite on the latest commit in `opesinsure-test` on a fresh database, then backup, a migration rehearsal on a production copy, and deploy.
+
+**Coverage wave 1:** desktop coverage rose from 27.5% to 39.3% (350 of 890 write actions). Measured by `php artisan ui:coverage`; `tests/Architecture/UiCoverageRatchetTest.php` fails if it drops. Batches and commits:
+- 1–2 claims: 1effecc
+- 3 policies: cd58f26
+- 4 payments + quotes: 138c720
+- 5 proposals + issuance maker-checker: d090b8e
+
+The full plan (batches 6–33) is in `docs/UI_COVERAGE_2026-09-27.md`.
+
+**Mobile backend needs** (`mobile app/docs/BACKEND_NEEDS_MOBILE_AUDIT_2026-09-27.md`), done in 735bab2 and 2e7ce3c:
+- E9: carrier finance and claims officer grants, scoped to their carrier.
+- A1: `GET /mobile/capabilities`, and `allowed_actions` on detail resources.
+- B1–B6:
+  - device and login-activity fields
+  - security alerts
+  - staff security suspend and force re-authentication
+  - step-up purposes
+  - Play Integrity: real verification once configured, `CONFIG_REQUIRED` until then
+- Top-level `latitude`/`longitude` on the profile and on the quote risk.
+
+**Security review** (a4454a6), written up in `docs/SECURITY_REVIEW_MOBILE_2026-09-27.md`:
+- Withdrawals are locked to the registered MoMo number, with a 24h cooling-off after a change.
+- Uploads are checked against their real bytes.
+- Per-IP limits on OTP and password attempts.
+- MoMo and Orange credit only if the amount, currency and order match.
+- An IDOR test sweep and a route-authorization architecture test.
+
+**Step-up rollout hold** (7663a6a): `config/mobile_runtime.php` `step_up.not_enforced_yet` holds SIGN_OUT_EVERYWHERE, PAYOUT_DESTINATION_CHANGE and PROFILE_SECURITY_CHANGE. Requests without a grant pass for these three; a grant that is presented is still checked. **Empty that list and deploy only after the mobile session confirms its step-up-aware app update is published.**
+
+**Migrations pending deploy:**
+- `2026_10_31_100003`: E9 grant sync
+- `2026_11_01_100001`: issuance maker-checker stages
+- `2026_11_02_100001`: login-activity columns
+- `2026_11_02_100002`: staff-security grant sync
+
+**Next waves** (after the deploy):
+- Coverage batches 6+: KYC/compliance; commissions, which include mobile D8 (commission fields, 100-row cap, per_page, outstanding definition, statements.read for brokers); settlements and bordereaux; support; finance; provider portal; and so on.
+- Mobile A7: one shared list filter (status, q, period_from/to in Africa/Douala, sort, carrier_id, line_code) across all the listed endpoints, plus the missing row fields.
+- Mobile C, D and E items not yet done.
+
+**Owner blockers:**
+- **No OTP provider configured:** every Etech and Twilio driver reports not configured. Demo mode cannot be turned off until one is configured and tested with the owner's phone. The owner has said to turn demo off, so do it as soon as OTP works.
+- **MoMo authentication fails** every 5 minutes.
+- **No ClamAV scanner** (`CLAMAV_HOST` is unset), so mobile uploads fail closed as FAILED. Installing it on the server needs owner approval.
+- **Play Integrity credentials:** `PLAY_INTEGRITY_ENABLED`, `PLAY_INTEGRITY_ACCESS_TOKEN` and `PLAY_INTEGRITY_CERT_SHA256`.
+- **`SECURITY_GEO_CITY_HEADER`** is not set.
+- **This session cannot read or write the production `.env` or secrets** (the permission classifier blocks it). The owner, or the mobile session at the owner's request, makes those edits.
+
+**Lessons:**
+- Agents sharing one working tree repeatedly swept each other's staged files into commits, and partial-hunk staging once reordered code (fixed in 7663a6a). Always check `git status` and `git diff --cached` before committing.
+- Run the release suite only when no agents are running; it takes about 80 minutes when the machine is quiet.
+
 ## 1. Session ownership (owner decision, 2026-09-27)
 - **Mobile app session:** owns everything in `mobile app/`, including code, EAS builds and APK publishing.
 - **This session (web/backend):** owns Laravel, the Filament panels, `/account`, the public site and server deploys.
