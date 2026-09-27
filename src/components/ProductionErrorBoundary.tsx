@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Button, Card } from "@/components/ui";
 import { Telemetry } from "@/security/telemetry";
+import { CrashReporting } from "@/security/crashReporting";
 import { colors, space, type } from "@/theme/tokens";
 import { translateNow } from "@/i18n";
 
@@ -15,6 +16,7 @@ export class ProductionErrorBoundary extends Component<{ children: ReactNode }, 
     void Telemetry.capture("APP_CRASHED", {
       reason: `render:${error.name}${info.componentStack ? "" : ":nostack"}`,
     });
+    CrashReporting.captureException(error);
   }
   private goHome = () => {
     this.setState({ failed: false });

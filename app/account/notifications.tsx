@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
-import * as Notifications from "expo-notifications";
 import { Bell, BellRing, Mail, MessageSquare, type LucideIcon } from "lucide-react-native";
 import { AccountApi, NotificationPreferences } from "@/api/client";
 import { Button, Card, Screen } from "@/components/ui";
@@ -9,6 +8,7 @@ import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { errorMessage } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
+import { openNotificationSettings, registerForPush } from "@/notifications/push";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const channelIcon = (key: string): LucideIcon => (key === "push" ? BellRing : key === "email" ? Mail : key === "sms" ? MessageSquare : Bell);
@@ -24,13 +24,16 @@ export default function Preferences() {
     setError(null);
     try {
       if (key === "push" && next) {
-        const permission = await Notifications.requestPermissionsAsync();
-        if (!permission.granted) {
+        const result = await registerForPush();
+        if (result.status === "denied") {
           setError(t("notifPushDenied"));
+          if (!result.canAskAgain) openNotificationSettings();
           return;
         }
-        const token = await Notifications.getDevicePushTokenAsync();
-        await AccountApi.registerPush(String(token.data));
+        if (result.status !== "registered") {
+          setError(t("errGeneric"));
+          return;
+        }
       }
       setValue({ ...current, [key]: next });
     } catch (e) {

@@ -12,7 +12,6 @@ credentials/
 *.p8
 *.p12
 *.mobileprovision
-google-services.json
 GoogleService-Info.plist
 .env*.local
 
@@ -29,3 +28,8 @@ app screens/
 docs/
 *.zip
 .git/
+
+# OTA code-signing private key (kept outside repo in ~/.opesinsure-keys; certs/certificate.pem is public and committed)
+keys/
+*.pem
+!certs/certificate.pem
