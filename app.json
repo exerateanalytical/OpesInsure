@@ -110,7 +110,8 @@
                         ],
                         "enableProguardInReleaseBuilds": true,
                         "enableShrinkResourcesInReleaseBuilds": true,
-                        "useLegacyPackaging": false
+                        "useLegacyPackaging": false,
+                        "extraProguardRules": "-keep class com.shockwave.** { *; }\n-keep class com.github.barteksc.** { *; }\n-keep class com.ReactNativeBlobUtil.** { *; }"
                     }
                 }
             ]
