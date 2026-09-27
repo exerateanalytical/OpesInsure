@@ -4,7 +4,7 @@ import { UserPlus } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { PortalScreen } from "@/components/portal/PortalShell";
 import { brokerTabs } from "@/components/portal/tabs";
-import { ChoiceChips } from "@/components/portal/Workspace";
+import { FiltersSheet } from "@/components/filters";
 import { StatePanel } from "@/components/StatePanel";
 import { SearchBar } from "@/components/SearchBar";
 import { AppHeader, Button } from "@/components/ui";
@@ -22,18 +22,16 @@ export default function BrokerLeads() {
   const [filter, setFilter] = useState<Filter>("ALL");
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
+  const [sheet, setSheet] = useState(false);
+  // Stage was an inline chip row; it is the filter sheet's only section now (server-side filter).
+  const sections = [{ key: "status", single: true, title: t("agFilterLeads"), options: [{ value: "ALL", label: t("searchAll") }, ...LEAD_STAGES.map((s) => ({ value: s as string, label: td(`leadStatus_${s}`, s) }))] }];
   const q = useLoad(() => LeadDirectoryApi.list({ status: filter === "ALL" ? undefined : filter, q: query || undefined }), [filter, query]);
   return (
     <PortalScreen tabs={brokerTabs}>
       <AppHeader title={t("brLeads")} subtitle={t("brLeadsSubtitle")} back />
       <Button label={t("leadNewTitle")} icon={UserPlus} onPress={() => router.push("/broker/leads/new")} />
-      <SearchBar value={text} onChangeText={setText} onSubmit={() => setQuery(text.trim())} placeholder={t("brSearchLeads")} label={t("brSearchLeads")} clearLabel={t("clearSearch")} />
-      <ChoiceChips<Filter>
-        label={t("agFilterLeads")}
-        value={filter}
-        onChange={setFilter}
-        options={[{ value: "ALL" as Filter, label: t("searchAll") }, ...LEAD_STAGES.map((s) => ({ value: s as Filter, label: td(`leadStatus_${s}`, s) }))]}
-      />
+      <SearchBar value={text} onChangeText={setText} onSubmit={() => setQuery(text.trim())} placeholder={t("brSearchLeads")} label={t("brSearchLeads")} clearLabel={t("clearSearch")} onFilter={() => setSheet(true)} filterLabel={t("filtersTitle")} filterCount={filter === "ALL" ? 0 : 1} />
+      <FiltersSheet visible={sheet} onClose={() => setSheet(false)} sections={sections} value={{ status: [filter] }} onApply={(v) => setFilter((v.status?.[0] ?? "ALL") as Filter)} count={() => q.data?.length ?? 0} />
       <StatePanel {...q} onRetry={q.reload} loadingLabel={t("agLoadingLeads")} emptyTitle={t("agNoLeads")} emptyMessage={t("agNoLeadsBody")}>
         {(rows) => (
           <OperationsList

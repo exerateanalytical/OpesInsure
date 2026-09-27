@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LayoutGrid, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
-import { Button, Chip, Screen, StatusChip } from "@/components/ui";
+import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
+import { Button, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { byDate, byNumber, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { InstitutionMark } from "@/components/InstitutionMark";
@@ -19,14 +19,6 @@ import { quoteOutcome, quoteTone } from "@/lib/quoteWorkflow";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: Car, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
-/** Filter chips from the design; the rest of the families stay reachable through "All". */
-const FILTERS: { value: "all" | LineFamily; icon: LucideIcon; label: "filterAll" | "catMotor" | "catHealth" | "catLife" | "catTravel" }[] = [
-  { value: "all", icon: LayoutGrid, label: "filterAll" },
-  { value: "motor", icon: Car, label: "catMotor" },
-  { value: "health", icon: HeartPulse, label: "catHealth" },
-  { value: "life", icon: ShieldPlus, label: "catLife" },
-  { value: "travel", icon: Plane, label: "catTravel" },
-];
 
 type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null; carrier_logo_url?: string | null };
 
@@ -44,7 +36,7 @@ export default function QuoteHistory() {
   const rows = list.items as Row[];
   const sections = useMemo<FilterSection[]>(
     () => [
-      { key: "family", title: t("filterCategory"), options: optionsFrom(rows, (q) => { const fam = lineFamily(q.line_code); return fam ? { value: fam, label: td(`lineFamily_${fam}`, fam) } : null; }) },
+      { key: "family", title: t("filterCategory"), options: optionsFrom(rows, (q) => { const fam = lineFamily(q.line_code); return fam ? { value: fam, label: td(`lineFamily_${fam}`, fam), icon: LINE_ICONS[fam] } : null; }) },
       { key: "status", title: t("filterStatus"), options: optionsFrom(rows, (q) => { const k = quoteOutcome(q) ?? q.status; return { value: k, label: td(`quoteStatus_${k}`, k) }; }) },
       periodSection(t, "period", t("fltCreated")),
       sortSection(t, [
@@ -65,9 +57,6 @@ export default function QuoteHistory() {
   const haystack = (q: Row) => [q.product_name, q.quote_number, q.vehicle_label, q.line_code, q.carrier_name, q.provider_name, td(`quoteStatus_${q.status}`, q.status)];
   const run = (v: FilterValues) => runList(rows, { values: v, text: flt.query, matchers, haystack, sorters });
   const shown = run(flt.values);
-  const famSel = flt.values.family ?? [];
-  const family = famSel.length === 1 ? famSel[0] : famSel.length ? null : "all";
-  const setFamily = (v: string) => flt.setValues({ ...flt.values, family: v === "all" ? [] : [v] });
   // No server-side filters on /mobile/quotes: while filtering, fetch every page so no match is hidden on a later page.
   const { hasMore, loadAll } = list;
   useEffect(() => {
@@ -118,13 +107,6 @@ export default function QuoteHistory() {
               placeholder={t("quotesSearchPlaceholder")}
               count={(v) => run(v).length}
               resultCount={flt.active ? shown.length : undefined}
-              quick={
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
-                  {FILTERS.map((o) => (
-                    <Chip key={o.value} role="tab" label={t(o.label)} selected={family === o.value} onPress={() => setFamily(o.value)} />
-                  ))}
-                </ScrollView>
-              }
             />
             {list.fetchingAll ? <Text style={s.meta}>{t("fltLoadingAll")}</Text> : null}
             {list.loading && !list.items.length ? <LoadingState label={t("quotesLoading")} /> : null}
@@ -277,7 +259,6 @@ const s = StyleSheet.create({
   disabled: { opacity: 0.5 },
   content: { paddingBottom: space.x16, gap: space.x4 },
   header: { gap: space.x4 },
-  chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   top: { flexDirection: "row", gap: space.x3 },
   imageTile: { width: 72, height: 72, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },

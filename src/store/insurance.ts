@@ -14,7 +14,7 @@ import {
   TokenVault,
 } from "@/api/client";
 import * as Crypto from "expo-crypto";
-import { paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
+import { forgetProposalSlots, paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
 import { SecureJson } from "@/security/secureJson";
 
 type Network = "mtn_momo" | "orange_money";
@@ -43,7 +43,8 @@ export const RecentProposals = {
     } catch {
       // Best effort only; the server remains the source of truth.
     }
-  },
+  },  /** Signed-out devices keep no trace of which proposals were opened here. */
+  clear: () => AsyncStorage.removeItem(RECENT_PROPOSALS).catch(() => undefined),
 };
 
 /** Random, persisted Idempotency-Key per payment attempt (no phone in it). */
@@ -56,6 +57,14 @@ export const PaymentAttemptKeys = {
     const uuid = Crypto.randomUUID();
     await SecureJson.write(PAYMENT_KEYS, rememberAttemptKey(map, slot, uuid)).catch(() => undefined);
     return paymentIdempotencyKey(uuid);
+  },
+  /** Once a payment is final its keys are no longer needed (OPS-07). */
+  async forgetProposal(proposalId: string) {
+    const map = await SecureJson.read<Record<string, string>>(PAYMENT_KEYS, {});
+    const next = forgetProposalSlots(map, proposalId);
+    if (Object.keys(next).length === Object.keys(map).length) return;
+    if (Object.keys(next).length === 0) await SecureJson.remove(PAYMENT_KEYS);
+    else await SecureJson.write(PAYMENT_KEYS, next);
   },
   clear: () => SecureJson.remove(PAYMENT_KEYS),
 };
@@ -285,6 +294,8 @@ export const useInsurance = create<State>((set, get) => ({
     try {
       const purchase = await InsuranceApi.purchaseStatus(proposalId);
       set({ purchase });
+      if (purchase?.status === "ISSUANCE_PENDING" || purchase?.status === "POLICY_ISSUED")
+        await PaymentAttemptKeys.forgetProposal(proposalId).catch(() => undefined);
       return purchase;
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) return null;

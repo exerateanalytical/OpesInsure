@@ -52,6 +52,8 @@ type Options = RequestInit & {
   anonymous?: boolean;
   retryAuth?: boolean;
   stepUpPurpose?: string;
+  /** Attach a stored grant for this purpose when one exists; never blocks the call. */
+  stepUpIfGranted?: string;
   /** Reuse a caller-owned key (e.g. one per payment attempt). */
   idempotencyKey?: string;
   /** Return the whole JSON body instead of `data` (for list meta). */
@@ -189,6 +191,35 @@ async function rotate() {
   })();
   return refreshPromise;
 }
+/**
+ * X-Device-Model / X-OS-Version / X-App-Version (SEC-ACC-003): coarse device
+ * detail for the user's own device list. Native only (web is not a device and
+ * extra headers there would only add CORS preflights). No user-chosen device
+ * name is ever sent. Printable ASCII only, trimmed to the server's limits.
+ */
+let cachedDeviceHeaders: Record<string, string> | null = null;
+export function deviceHeaders(): Record<string, string> {
+  if (cachedDeviceHeaders) return cachedDeviceHeaders;
+  const out: Record<string, string> = {};
+  if (Platform.OS === "android" || Platform.OS === "ios") {
+    const c = (Platform.constants ?? {}) as Record<string, unknown>;
+    const ascii = (v: unknown, max: number) =>
+      typeof v === "string" || typeof v === "number"
+        ? String(v).replace(/[^ -~]/g, "").trim().slice(0, max)
+        : "";
+    const model =
+      Platform.OS === "android"
+        ? [ascii(c.Manufacturer, 40), ascii(c.Model, 80)].filter(Boolean).join(" ")
+        : ascii(c.interfaceIdiom === "pad" ? "iPad" : "iPhone", 20);
+    const os = ascii(Platform.OS === "android" ? c.Release ?? Platform.Version : Platform.Version, 40);
+    if (model) out["X-Device-Model"] = model.slice(0, 120);
+    if (os) out["X-OS-Version"] = `${Platform.OS} ${os}`.slice(0, 40);
+    const app = ascii(environmentConfig.appVersion, 40);
+    if (app) out["X-App-Version"] = app;
+  }
+  cachedDeviceHeaders = out;
+  return out;
+}
 /** Transient failures worth one automatic, same-key retry. */
 const RETRYABLE_STATUS = new Set([0, 408, 502, 504]);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -242,6 +273,10 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
     const stepUp = options.stepUpPurpose
       ? await StepUpVault.valid(options.stepUpPurpose)
       : null;
+    const optionalStepUp =
+      !stepUp && options.stepUpIfGranted
+        ? await StepUpVault.valid(options.stepUpIfGranted)
+        : null;
     if (options.stepUpPurpose && !stepUp)
       throw new ApiError(
         401,
@@ -259,6 +294,7 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
       anonymous: _anonymous,
       retryAuth: _retryAuth,
       stepUpPurpose: _stepUpPurpose,
+      stepUpIfGranted: _stepUpIfGranted,
       raw: _raw,
       ...init
     } = options;
@@ -274,10 +310,26 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
           ? { Authorization: `Bearer ${token}` }
           : {}),
         ...(!options.anonymous && tenant ? { "X-Tenant-Id": tenant } : {}),
-        ...(stepUp ? { "X-Step-Up-Grant": stepUp.grant_token } : {}),
+        ...(stepUp ?? optionalStepUp
+          ? { "X-Step-Up-Grant": (stepUp ?? optionalStepUp)!.grant_token }
+          : {}),
+        ...deviceHeaders(),
         ...options.headers,
       },
     });
+    // A 401 STEP_UP_REQUIRED is "verify first", not an expired session:
+    // never rotate tokens or sign the user out for it.
+    if (response.status === 401 && !options.anonymous) {
+      const peek = await response
+        .clone()
+        .json()
+        .catch(() => null);
+      if (
+        peek?.code === "STEP_UP_REQUIRED" ||
+        peek?.errors?.[0]?.code === "STEP_UP_REQUIRED"
+      )
+        throw toError(401, peek, response);
+    }
     if (response.status === 401 && !options.anonymous) {
       if ((options.retryAuth ?? true) && (await rotate()))
         // Same options object -> same Idempotency-Key on the replay.
@@ -392,6 +444,8 @@ export const AccountApi = {
   updateProfile: (payload: { full_name: string; email: string | null }) =>
     api<SessionBootstrap["user"]>("/mobile/account/profile", {
       method: "PATCH",
+      // An e-mail change needs PROFILE_SECURITY_CHANGE; the grant rides along when present.
+      stepUpIfGranted: "PROFILE_SECURITY_CHANGE",
       body: JSON.stringify(payload),
       idempotent: true,
     }),
@@ -415,12 +469,6 @@ export const AccountApi = {
     api<NotificationPreferences>("/mobile/account/notification-preferences", {
       method: "PUT",
       body: JSON.stringify(payload),
-      idempotent: true,
-    }),
-  registerPush: (token: string) =>
-    api<void>("/mobile/account/push-tokens", {
-      method: "POST",
-      body: JSON.stringify({ token, platform: Platform.OS }),
       idempotent: true,
     }),
 };
@@ -1178,6 +1226,8 @@ export const AgentApi = {
   submitProfile: (payload: Partial<AgentProfile>) =>
     api<AgentProfile>("/mobile/agent/profile", {
       method: "PATCH",
+      // A momo payout number change needs PAYOUT_DESTINATION_CHANGE.
+      stepUpIfGranted: "PAYOUT_DESTINATION_CHANGE",
       body: JSON.stringify(payload),
       idempotent: true,
     }),

@@ -11,7 +11,9 @@
  *
  * Runs `npm run verify` and the release doctor first; refuses on failure.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const [profileName, ...rest] = process.argv.slice(2);
@@ -40,10 +42,27 @@ const run = (cmd, args, extraEnv = {}) => {
 };
 run("npm", ["run", "verify"]);
 run("node", ["scripts/release-doctor.mjs", ...(env.EXPO_PUBLIC_APP_ENV === "production" ? ["--production"] : []), ...(profileName === "production" ? ["--store"] : [])], env);
-const args = ["eas", "update", "--channel", channel, "--non-interactive", ...passThrough];
+// OPS-03: once app.json carries a code-signing certificate, every update must be signed.
+// The private key lives outside the repo (override with OPES_UPDATE_PRIVATE_KEY).
+const signingCert = JSON.parse(readFileSync("app.json", "utf8")).expo.updates?.codeSigningCertificate;
+const privateKeyPath = process.env.OPES_UPDATE_PRIVATE_KEY || join(homedir(), ".opesinsure-keys", "codesigning", "private-key.pem");
+if (signingCert && !existsSync(privateKeyPath)) {
+  process.stderr.write(`OTA_SIGNING_KEY_MISSING: ${privateKeyPath} not found. Restore it from the vault or set OPES_UPDATE_PRIVATE_KEY.
+`);
+  process.exit(1);
+}
+const signArgs = signingCert ? ["--private-key-path", JSON.stringify(privateKeyPath)] : [];
+const args = ["eas", "update", "--channel", channel, "--non-interactive", ...signArgs, ...passThrough];
 process.stdout.write(`Publishing to channel "${channel}" with ${JSON.stringify(env)}\n`);
 if (dryRun) {
   process.stdout.write(`[dry-run] npx ${args.join(" ")}\n`);
   process.exit(0);
 }
+// OPS-05: EXPO_PUBLIC_SENTRY_DSN is baked into the bundle — an update published
+// without it turns crash reporting off on devices until the next update.
+if (!process.env.EXPO_PUBLIC_SENTRY_DSN) process.stdout.write("WARNING: EXPO_PUBLIC_SENTRY_DSN is not set; this update ships with crash reporting disabled.\n");
 run("npx", args, env);
+// Source maps for the update (dist/ is what eas update exported). Optional.
+if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT) {
+  run("npx", ["sentry-expo-upload-sourcemaps", "dist"], env);
+}

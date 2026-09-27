@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { AlertTriangle, Bell, CheckCircle2, ChevronRight, CreditCard, FileText, Info, LucideIcon, Search, ShieldCheck } from "lucide-react-native";
-import { Button, Chip, ChipRow, ripple, Screen } from "@/components/ui";
-import { BrandHeader, HeaderIconButton, TintedIcon, type Tint } from "@/components/design";
+import { AlertTriangle, Bell, CheckCircle2, ChevronRight, CreditCard, FileText, Info, LucideIcon, ShieldCheck } from "lucide-react-native";
+import { Button, ripple, Screen } from "@/components/ui";
+import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
 import { applyFilters, FilterToolbar, periodMatcher, periodSection, useListFilters, type FilterSection, type FilterValues, type Matchers } from "@/components/filters";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -41,7 +41,6 @@ export default function Notifications() {
   const q = useLoad(() => CustomerApi.notifications());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
   const reload = q.reload;
   useFocusEffect(
     useCallback(() => {
@@ -67,16 +66,6 @@ export default function Notifications() {
   };
   const run = (v: FilterValues) => applyFilters(items, v, matchers, flt.query, (n) => [n.title, n.body]);
   const shown = run(flt.values);
-  // Tab badges follow search + the other filters.
-  const base = run({ ...flt.values, kind: [], read: [] });
-  const kindCount = (k: Kind) => base.filter((n) => kindOf(n) === k).length;
-  const baseUnread = base.filter((n) => !n.read).length;
-  const kindSel = flt.values.kind ?? [];
-  const readSel = flt.values.read ?? [];
-  const filter: "all" | "unread" | Kind | null =
-    !kindSel.length && !readSel.length ? "all" : !kindSel.length && readSel.length === 1 && readSel[0] === "unread" ? "unread" : kindSel.length === 1 && !readSel.length ? (kindSel[0] as Kind) : null;
-  const setFilter = (v: "all" | "unread" | Kind) =>
-    flt.setValues({ ...flt.values, kind: v === "all" || v === "unread" ? [] : [v], read: v === "unread" ? ["unread"] : [] });
   /** "Just now / 5 min ago / 3 h ago / 2 d ago", then the formatted date after a week. */
   const relative = (iso: string) => {
     const ms = Date.now() - new Date(iso).getTime();
@@ -118,18 +107,6 @@ export default function Notifications() {
       subtitle={q.data ? `${t("notifSubtitle")} ${t("unreadCount", { count: unread })}` : t("notifSubtitle")}
       back
       right={null}
-      titleRow={
-        items.length ? (
-          <HeaderIconButton
-            icon={Search}
-            label={t("notifSearch")}
-            onPress={() => {
-              setSearching((v) => !v);
-              flt.setText("");
-            }}
-          />
-        ) : undefined
-      }
     />
   );
   const settings = (
@@ -161,24 +138,14 @@ export default function Notifications() {
         ListHeaderComponent={
           <View style={styles.header}>
             {header}
-            {searching || flt.active ? (
-              <FilterToolbar
+            {/* One filtering control: search + filter icon (category, unread, period in the sheet). */}
+            <FilterToolbar
                 filters={flt}
                 sections={sections}
                 placeholder={t("notifSearchPlaceholder")}
                 count={(v) => run(v).length}
                 resultCount={flt.active ? shown.length : undefined}
               />
-            ) : null}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <ChipRow exclusive style={styles.chipScroll}>
-              <Chip role="tab" label={`${t("filterAll")} (${base.length})`} selected={filter === "all"} onPress={() => setFilter("all")} />
-              {(Object.keys(KIND) as Kind[]).filter((k) => kindCount(k)).map((k) => (
-                <Chip key={k} role="tab" label={`${t(KIND[k].label)} (${kindCount(k)})`} selected={filter === k} onPress={() => setFilter(k)} />
-              ))}
-              <Chip role="tab" label={`${t("filterUnread")} (${baseUnread})`} selected={filter === "unread"} onPress={() => setFilter("unread")} />
-            </ChipRow>
-            </ScrollView>
             {unread ? <Button label={t("markAllRead")} variant="tertiary" loading={busy} onPress={() => void markAll()} /> : null}
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
           </View>
@@ -229,7 +196,6 @@ export default function Notifications() {
   );
 }
 const styles = StyleSheet.create({
-  chipScroll: { flexWrap: "nowrap" },
   content: { paddingBottom: space.x16 },
   header: { gap: space.x4, marginBottom: space.x4 },
   footer: { marginTop: space.x4 },

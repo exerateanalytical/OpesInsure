@@ -11,6 +11,8 @@ import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { profileToValues } from "@/lib/inputForms";
 import { useTranslation } from "@/i18n";
+import { accountProfileStepUpPurpose } from "@/lib/stepUpFlow";
+import { STEP_UP_CANCELLED, withStepUp } from "@/security/step-up";
 import { colors, type } from "@/theme/tokens";
 
 /**
@@ -58,7 +60,11 @@ export default function Profile() {
     setError(null);
     setNotice(null);
     try {
-      await AccountApi.updateProfile({ full_name: name.trim(), email: email.trim() || null });
+      const nextEmail = email.trim() || null;
+      const done = await withStepUp(accountProfileStepUpPurpose(user?.email ?? null, nextEmail), () =>
+        AccountApi.updateProfile({ full_name: name.trim(), email: nextEmail }),
+      );
+      if (done === STEP_UP_CANCELLED) return;
       await hydrate();
       setNotice(t("profileSaved"));
     } catch (e) {

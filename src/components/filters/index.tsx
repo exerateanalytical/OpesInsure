@@ -13,7 +13,7 @@
  * can never widen access.
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Bookmark, CalendarRange, History, X } from "lucide-react-native";
 import {
@@ -24,7 +24,7 @@ import {
   type FilterSection,
   type FilterValues,
 } from "@/components/customer/FiltersSheet";
-import { SearchBar } from "@/components/SearchBar";
+import { FilterButton, SearchBar } from "@/components/SearchBar";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -227,7 +227,6 @@ export function FilterToolbar({
   subtitle,
   resultCount,
   filled,
-  quick,
 }: {
   filters: ListFilters;
   sections: FilterSection[];
@@ -238,8 +237,6 @@ export function FilterToolbar({
   resultCount?: number;
   /** Soft grey search field (customer screens). */
   filled?: boolean;
-  /** Quick-filter chip row (status tabs) rendered between the search and the active pills. */
-  quick?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const f = filters;
@@ -255,6 +252,19 @@ export function FilterToolbar({
   const current: SavedFilter = { name: "", text: f.text, values: f.values };
   const canSave = !isEmpty(current, sections) && !f.saved.some((s) => same(s, current));
   const recent = f.recent.filter((r) => !f.saved.some((s) => same(s, r)) && !same(r, current)).slice(0, 3);
+  // Saved + recent filters live inside the sheet (no extra buttons on the page).
+  const memory =
+    f.saved.length || recent.length || canSave ? (
+      <View style={st.memory}>
+        {f.saved.map((s) => (
+          <Pill key={`s:${summary(s, sections)}`} icon={Bookmark} label={s.name || summary(s, sections)} onPress={() => { f.reapply(s); f.setOpen(false); }} onRemove={() => f.unsave(s)} removeLabel={t("fltUnsave", { name: s.name || summary(s, sections) })} />
+        ))}
+        {recent.map((r) => (
+          <Pill key={`r:${summary(r, sections)}`} icon={History} label={summary(r, sections)} onPress={() => { f.reapply(r); f.setOpen(false); }} />
+        ))}
+        {canSave ? <Pill icon={Bookmark} label={t("fltSave")} onPress={() => f.save(summary(current, sections))} /> : null}
+      </View>
+    ) : null;
   return (
     <View style={st.wrap}>
       <SearchBar
@@ -269,9 +279,9 @@ export function FilterToolbar({
         filterCount={f.count}
         filled={filled}
       />
-      {quick}
+      {/* One filtering type per page: only the removable active pills (one scroll line) sit under the search. */}
       {active.length ? (
-        <View style={st.row} accessibilityLabel={t("fltActive")}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.row} accessibilityLabel={t("fltActive")}>
           {active.map((a) => (
             <Pill
               key={`${a.section.key}:${a.value}`}
@@ -282,32 +292,42 @@ export function FilterToolbar({
             />
           ))}
           <Pill label={t("fltClearAll")} onPress={f.clear} />
-        </View>
-      ) : null}
-      {f.saved.length || recent.length || canSave ? (
-        <View style={st.row}>
-          {f.saved.map((s) => (
-            <Pill key={`s:${summary(s, sections)}`} icon={Bookmark} label={s.name || summary(s, sections)} onPress={() => f.reapply(s)} onRemove={() => f.unsave(s)} removeLabel={t("fltUnsave", { name: s.name || summary(s, sections) })} />
-          ))}
-          {recent.map((r) => (
-            <Pill key={`r:${summary(r, sections)}`} icon={History} label={summary(r, sections)} onPress={() => f.reapply(r)} />
-          ))}
-          {canSave ? <Pill icon={Bookmark} label={t("fltSave")} onPress={() => f.save(summary(current, sections))} /> : null}
-        </View>
+        </ScrollView>
       ) : null}
       {resultCount !== undefined ? (
         <Text accessibilityLiveRegion="polite" style={st.results}>
           {t(resultCount === 1 ? "fltResultsOne" : "fltResults", { count: resultCount })}
         </Text>
       ) : null}
-      <FiltersSheet visible={f.open} onClose={() => f.setOpen(false)} sections={sections} value={f.values} onApply={f.setValues} count={count} subtitle={subtitle ?? t("fltSheetSubtitle")} />
+      <FiltersSheet visible={f.open} onClose={() => f.setOpen(false)} sections={sections} value={f.values} onApply={f.setValues} count={count} subtitle={subtitle ?? t("fltSheetSubtitle")} header={memory} />
+    </View>
+  );
+}
+
+/**
+ * Pages whose only refinement is an order (offer comparisons, renewal offers):
+ * "Sort: Price" plus the single filter icon; the options live in the sheet.
+ */
+export function SortFilter<K extends string>({ value, options, onChange, count }: { value: K; options: { value: K; label: string; icon?: FilterOption["icon"] }[]; onChange: (v: K) => void; count: number }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const sections = useMemo(() => [sortSection(t, options)], [options, t]);
+  const current = options.find((o) => o.value === value)?.label ?? "";
+  return (
+    <View style={st.sortRow}>
+      <Text style={st.sortText}>{`${t("filterSort")}: ${current}`}</Text>
+      <FilterButton onPress={() => setOpen(true)} label={t("filtersTitle")} count={value === options[0]?.value ? 0 : 1} />
+      <FiltersSheet visible={open} onClose={() => setOpen(false)} sections={sections} value={{ sort: [value] }} onApply={(v) => onChange((v.sort?.[0] ?? options[0]?.value) as K)} count={() => count} />
     </View>
   );
 }
 
 const st = StyleSheet.create({
+  sortRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  sortText: { ...type.label, color: colors.navy950, flex: 1 },
   wrap: { gap: space.x2 },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
+  row: { flexDirection: "row", gap: space.x2 },
+  memory: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   pill: { flexDirection: "row", alignItems: "center", minHeight: 36, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, maxWidth: "100%" },
   pillOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   pillMain: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: space.x3, paddingRight: space.x2, minHeight: 36, flexShrink: 1 },

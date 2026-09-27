@@ -15,6 +15,7 @@ import { carrierShellAllowed } from "@/lib/carrierAccess";
 import { AppRuntime } from "@/components/AppRuntime";
 import { ProductionErrorBoundary } from "@/components/ProductionErrorBoundary";
 import { Telemetry } from "@/security/telemetry";
+import { CrashReporting } from "@/security/crashReporting";
 import { Platform } from "react-native";
 import { rememberColdStartPath } from "@/lib/navigationContinuity";
 
@@ -26,6 +27,7 @@ if (Platform.OS === "web" && typeof window !== "undefined") {
 
 SplashScreen.preventAutoHideAsync();
 Telemetry.installGlobalHandlers();
+CrashReporting.init();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -40,6 +42,9 @@ export default function RootLayout() {
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+  useEffect(() => {
+    CrashReporting.setRole(status === "authenticated" ? workspace?.role_code : null);
+  }, [status, workspace?.role_code]);
   const pathname = usePathname();
   useEffect(() => {
     Telemetry.setScreen(pathname);

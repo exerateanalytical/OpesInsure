@@ -1,4 +1,6 @@
 import React from "react";
+import { Text } from "react-native";
+import { colors } from "@/theme/tokens";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import {
@@ -12,11 +14,19 @@ import {
 import { AgentApi } from "@/api/client";
 import { Step } from "@/components/FlowPrimitives";
 import { useTranslation } from "@/i18n";
+import { agentProfileStepUpPurpose } from "@/lib/stepUpFlow";
+import { STEP_UP_CANCELLED, withStepUp } from "@/security/step-up";
 export default function AgentOnboarding() {
   const { t } = useTranslation();
   const q = useLoad(() => AgentApi.profile(), []);
   const x = q.data;
   const setX = q.setData;
+  // Last saved payout number: a change to it needs a PAYOUT_DESTINATION_CHANGE step-up.
+  const [savedMomo, setSavedMomo] = React.useState<string | null | undefined>(undefined);
+  React.useEffect(() => {
+    if (x && savedMomo === undefined) setSavedMomo(x.momo_phone_e164 ?? null);
+  }, [x, savedMomo]);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   if (!x)
     return (
       <Screen>
@@ -60,8 +70,20 @@ export default function AgentOnboarding() {
         ))}
         <Button
           label={t("agSaveVerification")}
-          onPress={async () => setX(await AgentApi.submitProfile(x))}
+          onPress={async () => {
+            setSaveError(null);
+            try {
+              const purpose = agentProfileStepUpPurpose({ momo_phone_e164: savedMomo }, x);
+              const next = await withStepUp(purpose, () => AgentApi.submitProfile(x));
+              if (next === STEP_UP_CANCELLED) return;
+              setX(next);
+              setSavedMomo(next.momo_phone_e164 ?? null);
+            } catch (e) {
+              setSaveError(e instanceof Error ? e.message : t("profileSaveFailed"));
+            }
+          }}
         />
+        {saveError ? <Text accessibilityRole="alert" style={{ color: colors.dangerText }}>{saveError}</Text> : null}
       </Card>
     </Screen>
   );

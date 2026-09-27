@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { CalendarDays, Car, ChevronRight, CreditCard, HeartPulse, Home, Plane, ShieldCheck, Wallet } from "lucide-react-native";
-import { Card, Chip, ChipRow, Screen, StatusChip } from "@/components/ui";
+import { Card, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
@@ -93,8 +93,6 @@ export default function Payments() {
   };
   const run = (v: FilterValues) => runList(list.items, { values: v, text: flt.query, matchers, haystack, sorters });
   const visible = run(flt.values);
-  const filter: Filter = flt.values.status?.length === 1 ? (flt.values.status[0] as Filter) : flt.values.status?.length ? ("none" as Filter) : "all";
-  const setFilter = (key: Filter) => flt.setValues({ ...flt.values, status: key === "all" ? [] : [key] });
   // The endpoint has no server filters: while a filter is on, fetch every page so results and totals cover the whole history.
   const { hasMore, loadAll } = list;
   useEffect(() => {
@@ -130,13 +128,6 @@ export default function Payments() {
               placeholder={t("fltSearchPayments")}
               count={(v) => run(v).length}
               resultCount={flt.active ? visible.length : undefined}
-              quick={
-                <ChipRow exclusive>
-                  {(["all", "succeeded", "pending", "failed", "refunded"] as const).map((key) => (
-                    <Chip key={key} role="tab" label={t(`phFilter_${key}`)} selected={filter === key} onPress={() => setFilter(key)} />
-                  ))}
-                </ChipRow>
-              }
             />
             {list.fetchingAll ? <Text style={s.meta}>{t("fltLoadingAll")}</Text> : null}
             {flt.active && !list.hasMore && visible.length ? (

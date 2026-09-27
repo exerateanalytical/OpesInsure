@@ -49,6 +49,8 @@ export function FiltersSheet({
   onApply,
   count,
   subtitle,
+  header,
+  footer,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -57,6 +59,10 @@ export function FiltersSheet({
   onApply: (v: FilterValues) => void;
   count: (v: FilterValues) => number;
   subtitle?: string;
+  /** Rendered under the title (saved / recent filters). */
+  header?: React.ReactNode;
+  /** Rendered after the sections (inputs the option tiles cannot express, e.g. amount ranges). */
+  footer?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<FilterValues>(value);
@@ -89,13 +95,14 @@ export function FiltersSheet({
             <Text accessibilityRole="header" style={st.title}>{t("filtersTitle")}</Text>
             <Text style={st.subtitle}>{subtitle ?? t("filtersSubtitle")}</Text>
           </View>
+          {header}
           {visibleSections.map((s) => (
             <View key={s.key} style={st.card}>
               <Text accessibilityRole="header" style={st.cardTitle}>{s.title}</Text>
               {s.subtitle ? <Text style={st.cardSub}>{s.subtitle}</Text> : null}
               <View style={st.options} accessibilityRole={s.single ? "radiogroup" : undefined}>
                 {s.options.map((o) => {
-                  const on = (draft[s.key] ?? []).includes(o.value) || (o.value === "custom" && (draft[s.key]?.[0] ?? "").startsWith("custom:"));
+                  const on = (draft[s.key] ?? []).includes(o.value) || (o.value === "custom" && (draft[s.key]?.[0] ?? "").startsWith("custom:") && !s.options.some((x) => x.value === draft[s.key]?.[0]));
                   const Icon = o.icon;
                   const provider = o.logoUrl !== undefined || o.initials;
                   return (
@@ -126,6 +133,7 @@ export function FiltersSheet({
               {s.kind === "period" ? <CustomRange value={draft[s.key]?.[0]} onChange={(v) => setDraft((d) => ({ ...d, [s.key]: [v] }))} /> : null}
             </View>
           ))}
+          {footer}
         </ScrollView>
         <View style={st.bar}>
           <View style={st.countRow} accessibilityLiveRegion="polite">

@@ -60,6 +60,28 @@
             "permissions": [
                 "android.permission.RECORD_AUDIO",
                 "android.permission.USE_BIOMETRIC"
+            ],
+            "blockedPermissions": [
+                "android.permission.SYSTEM_ALERT_WINDOW",
+                "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.RECEIVE_BOOT_COMPLETED",
+                "android.permission.READ_APP_BADGE",
+                "com.anddoes.launcher.permission.UPDATE_COUNT",
+                "com.htc.launcher.permission.READ_SETTINGS",
+                "com.htc.launcher.permission.UPDATE_SHORTCUT",
+                "com.huawei.android.launcher.permission.CHANGE_BADGE",
+                "com.huawei.android.launcher.permission.READ_SETTINGS",
+                "com.huawei.android.launcher.permission.WRITE_SETTINGS",
+                "com.majeur.launcher.permission.UPDATE_BADGE",
+                "com.oppo.launcher.permission.READ_SETTINGS",
+                "com.oppo.launcher.permission.WRITE_SETTINGS",
+                "com.sec.android.provider.badge.permission.READ",
+                "com.sec.android.provider.badge.permission.WRITE",
+                "com.sonyericsson.home.permission.BROADCAST_BADGE",
+                "com.sonymobile.home.permission.PROVIDER_INSERT_BADGE",
+                "me.everything.badger.permission.BADGE_COUNT_READ",
+                "me.everything.badger.permission.BADGE_COUNT_WRITE"
             ]
         },
         "plugins": [
@@ -85,9 +107,9 @@
             [
                 "expo-image-picker",
                 {
-                    "cameraPermission": "Allow OpesInsure to capture claim evidence.",
-                    "microphonePermission": "Allow OpesInsure to record audio with claim videos.",
-                    "photosPermission": "Allow OpesInsure to attach photos and videos to your claims and KYC."
+                    "cameraPermission": "Allow OpesInsure to capture claim evidence and KYC photos. / Autorisez OpesInsure à prendre des photos pour vos sinistres et votre KYC.",
+                    "microphonePermission": "Allow OpesInsure to record audio with claim videos. / Autorisez OpesInsure à enregistrer le son des vidéos de sinistre.",
+                    "photosPermission": "Allow OpesInsure to attach photos and videos to your claims and KYC. / Autorisez OpesInsure à joindre des photos et vidéos à vos sinistres et à votre KYC."
                 }
             ],
             [
@@ -120,7 +142,6 @@
             "typedRoutes": true
         },
         "extra": {
-            "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
             "eas": {
                 "projectId": "257a3907-e58d-442b-914f-984d74c96767"
             }
@@ -133,7 +154,12 @@
         "updates": {
             "url": "https://u.expo.dev/257a3907-e58d-442b-914f-984d74c96767",
             "fallbackToCacheTimeout": 0,
-            "checkAutomatically": "ON_LOAD"
+            "checkAutomatically": "ON_LOAD",
+            "codeSigningCertificate": "./certs/certificate.pem",
+            "codeSigningMetadata": {
+                "keyid": "main",
+                "alg": "rsa-v1_5-sha256"
+            }
         },
         "platforms": [
             "ios",

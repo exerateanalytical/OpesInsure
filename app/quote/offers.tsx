@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Building2, Car, ChevronRight, Columns3, Info, Pencil, RefreshCcw, ShieldCheck, SlidersHorizontal } from "lucide-react-native";
+import { Building2, Car, ChevronRight, Columns3, Info, Pencil, RefreshCcw, ShieldCheck } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
-import { Button, Card, Chip, ChipRow, ripple, Screen, TextField } from "@/components/ui";
+import { Button, Card, ripple, Screen, TextField } from "@/components/ui";
+import { FilterButton } from "@/components/SearchBar";
+import { activeFilterCount, FiltersSheet, sortSection, type FilterSection, type FilterValues } from "@/components/filters";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState } from "@/components/StatePanel";
 import { ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -62,7 +64,7 @@ export default function Offers() {
   const [maxExcess, setMaxExcess] = useState("");
   const [levels, setLevels] = useState<CoverLevel[]>([]);
   const [methods, setMethods] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [compare, setCompare] = useState<string[]>([]);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [selectError, setSelectError] = useState<unknown>(null);
@@ -84,8 +86,6 @@ export default function Offers() {
       ),
     [offers, providers, minPremium, maxPremium, maxExcess, levels, methods, sort],
   );
-  const filtersActive =
-    providers.length > 0 || !!minPremium || !!maxPremium || !!maxExcess || levels.length > 0 || methods.length > 0;
   const clearFilters = () => {
     setProviders([]);
     setMinPremium("");
@@ -94,6 +94,32 @@ export default function Offers() {
     setLevels([]);
     setMethods([]);
   };
+  // One filtering control: sort, insurer, cover level and payment option are sheet sections; amounts sit in the sheet footer.
+  const sections = useMemo<FilterSection[]>(
+    () => [
+      sortSection(t, [
+        { value: "price", label: t("ofSortPrice") },
+        { value: "cover", label: t("ofSortCover") },
+        { value: "insurer", label: t("ofSortInsurer") },
+        { value: "excess", label: t("ofSortExcess") },
+      ]),
+      { key: "prov", title: t("ofInsurer"), options: insurers.map((i) => ({ value: i.carrierId, label: i.name })) },
+      { key: "level", title: t("ofCoverLevel"), options: LEVELS.map((l) => ({ value: l.key, label: t(l.label) })) },
+      { key: "method", title: t("ofPaymentOptions"), options: paymentMethods.map((m) => ({ value: m, label: m.replace(/_/g, " ") })) },
+    ],
+    [insurers, paymentMethods, t],
+  );
+  const sheetValue: FilterValues = { sort: [sort], prov: providers, level: levels, method: methods };
+  const draftCount = (v: FilterValues) =>
+    filterOffers(offers, {
+      providers: v.prov ?? [],
+      minPremiumMinor: toMinor(minPremium),
+      maxPremiumMinor: toMinor(maxPremium),
+      maxExcessMinor: toMinor(maxExcess),
+      coverLevels: (v.level ?? []) as CoverLevel[],
+      paymentMethods: v.method ?? [],
+    }).length;
+  const filterCount = activeFilterCount(sheetValue, sections) + [minPremium, maxPremium, maxExcess].filter(Boolean).length;
   const cheapest = useMemo(() => (offers.length ? Math.min(...offers.map((o) => o.total_minor)) : null), [offers]);
   const best = useMemo(() => bestValueOfferId(offers), [offers]);
   const quoteExpired =
@@ -208,57 +234,40 @@ export default function Offers() {
       {offers.length > 1 ? (
         <>
           <View style={st.sortBlock}>
-            <Text style={st.sortLabel}>{t("ofSort")}</Text>
-            <ChipRow exclusive>
-              <Chip role="tab" label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
-              <Chip role="tab" label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
-              <Chip role="tab" label={t("ofSortInsurer")} selected={sort === "insurer"} onPress={() => setSort("insurer")} />
-              <Chip role="tab" label={t("ofSortExcess")} selected={sort === "excess"} onPress={() => setSort("excess")} />
-            </ChipRow>
-            <ChipRow>
-              <Chip label={showFilters ? t("ofHideFilters") : t("ofFilters")} selected={showFilters || filtersActive} onPress={() => setShowFilters(!showFilters)} />
-              {visible.length > 1 ? (
-                <Chip label={t("ofCompareAll", { count: visible.length })} selected={false} onPress={() => router.push({ pathname: "/quote/compare", params: { ids: visible.map((o) => o.id).join(",") } })} />
-              ) : null}
-            </ChipRow>
+            <Text style={[st.sortLabel, st.flex]}>{`${t("ofSort")}: ${t(sort === "price" ? "ofSortPrice" : sort === "cover" ? "ofSortCover" : sort === "insurer" ? "ofSortInsurer" : "ofSortExcess")}`}</Text>
+            <FilterButton onPress={() => setSheet(true)} label={t("ofFilters")} count={filterCount} />
           </View>
-          {showFilters ? (
-            <Card>
-              <SectionHeading icon={SlidersHorizontal} title={t("ofFilterTitle")} />
-              <Text style={st.filterLabel}>{t("ofInsurer")}</Text>
-              <ChipRow>
-                {insurers.map((i) => (
-                  <Chip key={i.carrierId} label={i.name} selected={providers.includes(i.carrierId)} onPress={() => setProviders((p) => toggle(p, i.carrierId))} />
-                ))}
-              </ChipRow>
-              <Text style={st.filterLabel}>{t("ofCoverLevel")}</Text>
-              <ChipRow>
-                {LEVELS.map((l) => (
-                  <Chip key={l.key} label={t(l.label)} selected={levels.includes(l.key)} onPress={() => setLevels((x) => toggle(x, l.key))} />
-                ))}
-              </ChipRow>
-              {paymentMethods.length ? (
-                <>
-                  <Text style={st.filterLabel}>{t("ofPaymentOptions")}</Text>
-                  <ChipRow>
-                    {paymentMethods.map((m) => (
-                      <Chip key={m} label={m.replace(/_/g, " ")} selected={methods.includes(m)} onPress={() => setMethods((x) => toggle(x, m))} />
-                    ))}
-                  </ChipRow>
-                </>
-              ) : null}
-              <View style={st.range}>
-                <View style={st.flex}>
-                  <TextField label={t("ofMinPremium")} value={minPremium} onChangeText={setMinPremium} keyboardType="numeric" placeholder="0" />
-                </View>
-                <View style={st.flex}>
-                  <TextField label={t("ofMaxPremium")} value={maxPremium} onChangeText={setMaxPremium} keyboardType="numeric" placeholder={t("ofNoLimit")} />
-                </View>
-              </View>
-              <TextField label={t("ofMaxExcess")} value={maxExcess} onChangeText={setMaxExcess} keyboardType="numeric" placeholder={t("ofNoLimit")} />
-              <Button label={t("ofClearFilters")} variant="tertiary" onPress={clearFilters} />
-            </Card>
+          {visible.length > 1 ? (
+            <Button label={t("ofCompareAll", { count: visible.length })} icon={Columns3} variant="tertiary" onPress={() => router.push({ pathname: "/quote/compare", params: { ids: visible.map((o) => o.id).join(",") } })} />
           ) : null}
+          <FiltersSheet
+            visible={sheet}
+            onClose={() => setSheet(false)}
+            sections={sections}
+            value={sheetValue}
+            onApply={(v) => {
+              setSort((v.sort?.[0] ?? "price") as OfferSort);
+              setProviders(v.prov ?? []);
+              setLevels((v.level ?? []) as CoverLevel[]);
+              setMethods(v.method ?? []);
+            }}
+            count={draftCount}
+            subtitle={t("ofFilterTitle")}
+            footer={
+              <Card>
+                <View style={st.range}>
+                  <View style={st.flex}>
+                    <TextField label={t("ofMinPremium")} value={minPremium} onChangeText={setMinPremium} keyboardType="numeric" placeholder="0" />
+                  </View>
+                  <View style={st.flex}>
+                    <TextField label={t("ofMaxPremium")} value={maxPremium} onChangeText={setMaxPremium} keyboardType="numeric" placeholder={t("ofNoLimit")} />
+                  </View>
+                </View>
+                <TextField label={t("ofMaxExcess")} value={maxExcess} onChangeText={setMaxExcess} keyboardType="numeric" placeholder={t("ofNoLimit")} />
+                <Button label={t("ofClearFilters")} variant="tertiary" onPress={clearFilters} />
+              </Card>
+            }
+          />
         </>
       ) : null}
 
@@ -303,9 +312,8 @@ const st = StyleSheet.create({
   quoteTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   editBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue50, overflow: "hidden" },
   editText: { ...type.label, color: colors.blue600 },
-  sortBlock: { gap: space.x2 },
+  sortBlock: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   sortLabel: { ...type.label, color: colors.navy950 },
-  filterLabel: { ...type.label, color: colors.neutral800 },
   insurerRow: {
     flexDirection: "row",
     alignItems: "center",

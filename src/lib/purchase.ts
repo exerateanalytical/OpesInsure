@@ -599,6 +599,11 @@ export function rememberAttemptKey(map: Record<string, string>, slot: string, uu
   return Object.fromEntries(entries.slice(-max));
 }
 
+/** Drop every attempt slot of a proposal once its payment is final (OPS-07). */
+export function forgetProposalSlots(map: Record<string, string>, proposalId: string) {
+  return Object.fromEntries(Object.entries(map).filter(([k]) => !k.startsWith(`${proposalId}:`)));
+}
+
 // --- Refunds ---------------------------------------------------------------
 
 export const REFUND_REASONS = [

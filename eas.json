@@ -47,6 +47,16 @@
                 "buildType": "apk"
             },
             "channel": "production-apk"
+        },
+        "production-apk-arm64": {
+            "extends": "production-apk",
+            "env": {
+                "EXPO_PUBLIC_APP_ENV": "production",
+                "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
+                "EXPO_PUBLIC_API_BASE_URL": "https://insurance.opesdatacenter.tech/api/v1",
+                "EXPO_ANDROID_BUILD_ARCHS": "arm64-v8a"
+            },
+            "channel": "production-apk"
         }
     },
     "submit": {

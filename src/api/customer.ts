@@ -70,6 +70,8 @@ export const CustomerApi = {
   logoutAll: () =>
     api<{ revoked?: number }>("/auth/mobile/logout-all", {
       method: "POST",
+      // SIGN_OUT_EVERYWHERE grant when the user just stepped up (mobile audit B5).
+      stepUpIfGranted: "SIGN_OUT_EVERYWHERE",
       idempotent: true,
     }),
   registerPushToken: (token: string) =>

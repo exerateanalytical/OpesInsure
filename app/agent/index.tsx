@@ -22,6 +22,7 @@ import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { AgentApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
+import { OfflineQueueNudge } from "@/components/OfflineQueueNudge";
 /** DASH-002: each KPI opens its work queue (server still authorizes it). */
 const KPI_ROUTES: Record<string, KpiRoute> = {
   Clients: { label: "kpiClients", href: "/agent/clients" },
@@ -40,6 +41,7 @@ export default function AgentHome() {
         title={t("agFieldDesk")}
         subtitle={t("agFieldDeskSubtitle")}
       />
+      <OfflineQueueNudge />
       <StatePanel
         {...q}
         onRetry={q.reload}

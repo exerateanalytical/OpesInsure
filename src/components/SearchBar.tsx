@@ -3,6 +3,29 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Search, SlidersHorizontal, X } from "lucide-react-native";
 import { colors, radius, space, type } from "@/theme/tokens";
 
+/**
+ * The one filter control of a page: square SlidersHorizontal button with the
+ * active-count badge. Opens the page's FiltersSheet. Used beside the search
+ * field, or alone on pages without a search (offers, comparisons).
+ */
+export function FilterButton({ onPress, label, count = 0, inset }: { onPress: () => void; label?: string; count?: number; inset?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={count ? `${label ?? ""} (${count})` : label}
+      onPress={onPress}
+      style={({ pressed }) => [inset ? styles.filterInset : styles.filter, count > 0 && styles.filterOn, pressed && styles.pressed]}
+    >
+      <SlidersHorizontal size={22} color={colors.navy900} />
+      {count ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
 /** Search input used on Home and Explore. Tapping it when `onPress` is set
  * acts as a link (Home hands the query to Explore). */
 export function SearchBar({
@@ -36,21 +59,7 @@ export function SearchBar({
   /** Soft grey fill without a border (Explore design). */
   filled?: boolean;
 }) {
-  const filterButton = onFilter ? (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={filterCount ? `${filterLabel ?? ""} (${filterCount})` : filterLabel}
-      onPress={onFilter}
-      style={({ pressed }) => [inset ? styles.filterInset : styles.filter, filterCount > 0 && styles.filterOn, pressed && styles.pressed]}
-    >
-      <SlidersHorizontal size={22} color={colors.navy900} />
-      {filterCount ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{filterCount > 9 ? "9+" : filterCount}</Text>
-        </View>
-      ) : null}
-    </Pressable>
-  ) : null;
+  const filterButton = onFilter ? <FilterButton onPress={onFilter} label={filterLabel} count={filterCount} inset={inset} /> : null;
   const bar = (
     <View style={[styles.bar, filled && styles.filled, onFilter ? styles.flex : null]}>
       <Search size={20} color={colors.neutral600} style={{ flexShrink: 0 }} />

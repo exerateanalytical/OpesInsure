@@ -5,7 +5,8 @@ import { CompareTable, compareTableStyles } from "@/components/offers/CompareTab
 import { OfferCard, useNow } from "@/components/offers/OfferCard";
 import { router, useLocalSearchParams } from "expo-router";
 import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
-import { Button, Card, Chip, ChipRow, ripple, Screen } from "@/components/ui";
+import { Button, Card, ripple, Screen } from "@/components/ui";
+import { SortFilter } from "@/components/filters";
 import { EmptyState } from "@/components/StatePanel";
 import { ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { useInsurance } from "@/store/insurance";
@@ -93,12 +94,17 @@ export default function CompareOffers() {
           </View>
         </Card>
       ) : null}
-      <ChipRow>
-        <Chip role="tab" label={t("ofSortPrice")} selected={sort === "price"} onPress={() => setSort("price")} />
-        <Chip role="tab" label={t("ofSortCover")} selected={sort === "cover"} onPress={() => setSort("cover")} />
-        <Chip role="tab" label={t("ofSortInsurer")} selected={sort === "insurer"} onPress={() => setSort("insurer")} />
-        <Chip role="tab" label={t("ofSortExcess")} selected={sort === "excess"} onPress={() => setSort("excess")} />
-      </ChipRow>
+      <SortFilter
+        value={sort}
+        onChange={setSort}
+        count={offers.length}
+        options={[
+          { value: "price", label: t("ofSortPrice") },
+          { value: "cover", label: t("ofSortCover") },
+          { value: "insurer", label: t("ofSortInsurer") },
+          { value: "excess", label: t("ofSortExcess") },
+        ]}
+      />
       {error ? <ErrorCard error={error} fallback={t("ofSelectFailed")} /> : null}
       {sorted.map((o) => (
         <OfferCard key={o.id} offer={o} all={offers} best={best === o.id} onSelect={() => void choose(o.id)} selecting={choosing === o.id} disabled={!!choosing} now={now} />

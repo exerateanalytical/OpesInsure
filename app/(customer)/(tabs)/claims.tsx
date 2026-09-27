@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Siren } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle } from "@/components/ui";
@@ -7,7 +7,7 @@ import { BrandHeader } from "@/components/design";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { claimPolicy, insuredLabel, policyLine, policyTitle, productCategory, providerName } from "@/components/claims/claimProduct";
-import { byDate, countBy, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
+import { byDate, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useLoad } from "@/hooks/useLoad";
@@ -25,7 +25,7 @@ const SEGMENTS: { key: ClaimSegment; label: CopyKey; icon: LucideIcon }[] = [
   { key: "completed", label: "claimsCompleted", icon: CheckCircle2 },
 ];
 
-/** My Claims (design 29 / 11): header with New Claim, segmented filter, search, claim cards with the progress rail. */
+/** My Claims (design 29 / 11): header with New Claim, search + filter sheet (status, line, insurer, period, sort), claim cards with the progress rail. */
 export default function Claims() {
   const { t, td } = useTranslation();
   const q = useLoad(() => CustomerApi.claims());
@@ -44,6 +44,8 @@ export default function Claims() {
     const provs = new Map<string, (typeof rows)[number]["provider"]>();
     rows.forEach((r) => r.provider.id && !provs.has(r.provider.id) && provs.set(r.provider.id, r.provider));
     return [
+      // Former inline segmented tabs (All / In progress / Completed): now the status section of the sheet.
+      { key: "segment", title: t("filterStatus"), options: SEGMENTS.filter((g) => g.key !== "all").map((g) => ({ value: g.key, label: t(g.label, { count: claims.filter((c) => claimSegment(c.status) === g.key).length }), icon: g.icon })) },
       { key: "line", title: t("filterCategory"), subtitle: t("filterCategoryBody"), options: CATEGORIES.filter((c) => rows.some((r) => r.line === c.id)).map((c) => ({ value: c.id, label: t(c.label), icon: c.icon })) },
       { key: "provider", title: t("filterProvider"), subtitle: t("filterProviderBody"), options: [...provs.values()].map((m) => ({ value: m.id, label: m.name ?? t("licensedCarrier"), logoUrl: m.logoUrl, initials: m.initials })) },
       periodSection(t, "incident", t("fltIncidentDate")),
@@ -55,8 +57,8 @@ export default function Claims() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claims, byPolicy, carriers, t]);
   const f = useListFilters("customer.claims", filterSections);
-  const segment = (f.values.segment?.[0] ?? "all") as ClaimSegment;
-  const setSegment = (key: ClaimSegment) => f.setValues({ ...f.values, segment: key === "all" ? [] : [key] });
+  const segSel = f.values.segment ?? [];
+  const segment: ClaimSegment = segSel.length === 1 ? (segSel[0] as ClaimSegment) : "all";
   const matchers: Matchers<Claim> = {
     segment: (c, v) => claimSegment(c.status) === v,
     line: (c, v) => meta(c).line === v,
@@ -70,9 +72,6 @@ export default function Claims() {
   };
   const run = (v: FilterValues) => runList(claims, { values: v, text: f.query, matchers, haystack, sorters });
   const visible = run(f.values);
-  // Segment badges follow the other filters and the search.
-  const bySegment = countBy(run({ ...f.values, segment: [] }), (c) => claimSegment(c.status));
-  const counts = { all: Object.values(bySegment).reduce((n, v) => n + v, 0), progress: bySegment.progress ?? 0, completed: bySegment.completed ?? 0 };
   const open = visible.filter((c) => isActiveClaim(c.status));
   const past = visible.filter((c) => !isActiveClaim(c.status));
 
@@ -115,31 +114,10 @@ export default function Claims() {
       </View>
     </Pressable>
   );
-  const narrow = useWindowDimensions().width < 400;
   const header = (
     <View style={styles.header}>
       <BrandHeader title={t("myClaims")} subtitle={t("myClaimsSubtitle")} back={false} />
       {newClaim}
-      <View style={styles.segments} accessibilityRole="tablist">
-        {SEGMENTS.map(({ key, label, icon: Icon }) => {
-          const on = segment === key;
-          return (
-            <Pressable
-              key={key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              onPress={() => setSegment(key)}
-              android_ripple={ripple(on)}
-              style={({ pressed }) => [styles.segment, narrow && styles.segmentStacked, on && styles.segmentOn, pressed && styles.pressed]}
-            >
-              <Icon size={16} color={on ? colors.white : colors.navy900} />
-              <Text style={[styles.segmentText, on && styles.segmentTextOn]} numberOfLines={2} maxFontSizeMultiplier={1.4}>
-                {t(label, { count: counts[key] })}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
       <FilterToolbar
         filters={f}
         sections={filterSections}
@@ -212,11 +190,4 @@ const styles = StyleSheet.create({
   newClaimText: { ...type.cardTitle, fontSize: 19, lineHeight: 24, color: colors.white },
   newClaimBody: { ...type.meta, color: colors.blue50 },
   newClaimArrow: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.6)", alignItems: "center", justifyContent: "center" },
-  segments: { flexDirection: "row", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, padding: 4, gap: 4 },
-  segment: { flex: 1, minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.control, paddingHorizontal: 6, overflow: "hidden" },
-  // Under 400dp the icon sits above the label so "In Progress (9)" keeps one line.
-  segmentStacked: { flexDirection: "column", gap: 2, paddingVertical: 6 },
-  segmentOn: { backgroundColor: colors.navy900 },
-  segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy900, flexShrink: 1, textAlign: "center" },
-  segmentTextOn: { color: colors.white },
 });

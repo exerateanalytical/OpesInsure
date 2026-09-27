@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, Briefcase, CalendarDays, Car, CheckCircle2, ChevronRight, Clock3, FileText, HardHat, HeartPulse, Home, Info, LoaderCircle, LucideIcon, Plane, ShieldPlus } from "lucide-react-native";
-import { Button, Chip, Screen, ripple } from "@/components/ui";
+import { Button, Screen, ripple } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
@@ -13,7 +13,7 @@ import { RecentProposals } from "@/store/insurance";
 import { localized, mergePages, proposalStatusInfo } from "@/lib/purchase";
 import { checklistProgress, draftBucket, DraftBucket, lineFamily, LineFamily } from "@/lib/crm";
 import { useFormatters } from "@/hooks/useFormatters";
-import { byDate, countBy, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
+import { byDate, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -109,6 +109,8 @@ export default function Applications() {
   const lineOf = (p: Row) => lineFamily(p.line_code ?? p.offer?.quote?.line_code ?? null);
   const sections = useMemo<FilterSection[]>(
     () => [
+      // Former inline status tabs (In progress / Awaiting / Ready): now the first sheet section.
+      { key: "bucket", title: t("filterStatus"), options: FILTERS.filter((o) => o.value !== "all" && rows.some((p) => draftBucket(p.status) === o.value)).map((o) => ({ value: o.value, label: t(o.label, { count: rows.filter((p) => draftBucket(p.status) === o.value).length }) })) },
       { key: "family", title: t("filterCategory"), options: optionsFrom(rows, (p) => { const fam = lineOf(p); return fam ? { value: fam, label: td(`lineFamily_${fam}`, fam) } : null; }) },
       { key: "provider", title: t("filterProvider"), options: optionsFrom(rows, (p) => (p.carrier_name ? { value: p.carrier_name, label: p.carrier_name } : null)) },
       periodSection(t, "period", t("fltCreated")),
@@ -131,10 +133,6 @@ export default function Applications() {
   const haystack = (p: Row) => [p.product_name, localized(p.offer?.product?.name, f.language), p.carrier_name, p.proposal_number, p.vehicle_label, p.risk_summary, proposalStatusInfo(p.status, f.language).label];
   const run = (v: FilterValues) => runList(rows, { values: v, text: flt.query, matchers, haystack, sorters });
   const shown = run(flt.values);
-  const byBucket = countBy(run({ ...flt.values, bucket: [] }), (p) => draftBucket(p.status));
-  const counts: Record<Filter, number> = { all: Object.values(byBucket).reduce((a, b) => a + b, 0), progress: byBucket.progress ?? 0, awaiting: byBucket.awaiting ?? 0, ready: byBucket.ready ?? 0 };
-  const filter = (flt.values.bucket?.[0] ?? "all") as Filter;
-  const setFilter = (v: Filter) => flt.setValues({ ...flt.values, bucket: v === "all" ? [] : [v] });
   // No server-side filters on /mobile/proposals: while filtering, keep fetching pages so no match is hidden.
   useEffect(() => {
     if (flt.active && hasMore && !more && !loading && !error) void loadMore();
@@ -156,13 +154,6 @@ export default function Applications() {
         placeholder={t("fltSearchProposals")}
         count={(v) => run(v).length}
         resultCount={flt.active ? shown.length : undefined}
-        quick={
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
-            {FILTERS.map((o) => (
-              <Chip key={o.value} role="tab" label={t(o.label, { count: counts[o.value] })} selected={filter === o.value} onPress={() => setFilter(o.value)} />
-            ))}
-          </ScrollView>
-        }
       />
       <Banner icon={Info} tint="blue" title={t("draftsAutoSaveTitle")} body={t("draftsAutoSaveBody")} right={<FileText size={40} color={colors.blue100} />} />
       {loading && !items.length ? <LoadingState label={t("propLoading")} /> : null}
@@ -257,7 +248,6 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   issued: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 48, paddingHorizontal: space.x4, borderRadius: radius.card, backgroundColor: colors.successSoft, overflow: "hidden" },
-  chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x4 },
   top: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
   iconTile: { width: 60, height: 60, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },

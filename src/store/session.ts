@@ -8,7 +8,7 @@ import { Preferences } from "@/store/preferences";
 import { Language } from "@/i18n/strings";
 import { OfflineVault } from "@/offline/vault";
 import { SecureJson } from "@/security/secureJson";
-import { PaymentAttemptKeys } from "@/store/insurance";
+import { PaymentAttemptKeys, RecentProposals } from "@/store/insurance";
 import { LANGUAGE_CHOICE_KEY, normalizeLanguage, resolveLanguage } from "@/lib/languageChoice";
 import { hydrateStartStatus, statusAfterNetworkFailure } from "@/lib/navigationContinuity";
 
@@ -225,6 +225,7 @@ export const useSession = create<SessionState>((set, get) => ({
     } finally {
       await OfflineVault.clearSensitiveData();
       await PaymentAttemptKeys.clear().catch(() => undefined);
+      await RecentProposals.clear();
       await cacheBootstrap(null);
       await Preferences.clearPersonal();
       set({ ...anonymousState, error: null });
@@ -237,6 +238,7 @@ export const useSession = create<SessionState>((set, get) => ({
     await TokenVault.clear();
     await OfflineVault.clearSensitiveData();
     await PaymentAttemptKeys.clear().catch(() => undefined);
+    await RecentProposals.clear();
     await cacheBootstrap(null);
     await Preferences.clearPersonal();
     set({ ...anonymousState, error: null });

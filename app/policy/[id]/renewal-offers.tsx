@@ -11,6 +11,7 @@ import { openDocumentUrl } from "@/components/documents/openDocument";
 import { RenewalHero, RenewalSteps } from "@/components/policies/RenewalUi";
 import { useRenewal } from "@/hooks/useRenewal";
 import { useInsurance } from "@/store/insurance";
+import { SortFilter } from "@/components/filters";
 import { QuoteOffer } from "@/api/client";
 import { bestValueOfferId, carrierLogo, daysUntil, insuredObjectLabel, RenewalFlow, RenewalSort, renewalPeriod, sortRenewalOffers } from "@/lib/renewal";
 import { carrierKey, carrierRating, coverLevel, localized, normalizeCoverage, providerName, validityLeft } from "@/lib/purchase";
@@ -109,21 +110,16 @@ export default function RenewalOffers() {
           ) : null}
 
           {offers.length ? (
-            <View accessibilityRole="tablist" style={st.segments}>
-              {([
-                ["price", t("roSortPrice"), Tag],
-                ["same_cover", t("roSortSame"), ShieldCheck],
-                ["best_value", t("roSortValue"), Star],
-              ] as const).map(([key, label, Icon]) => {
-                const on = sort === key;
-                return (
-                  <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={label} onPress={() => setSort(key)} android_ripple={ripple(on)} style={({ pressed }) => [st.segment, on && st.segmentOn, pressed && st.pressed]}>
-                    <Icon size={16} color={on ? colors.white : colors.navy900} />
-                    <Text style={[st.segmentText, on && st.segmentTextOn]}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <SortFilter
+              value={sort}
+              onChange={setSort}
+              count={offers.length}
+              options={[
+                { value: "price", label: t("roSortPrice"), icon: Tag },
+                { value: "same_cover", label: t("roSortSame"), icon: ShieldCheck },
+                { value: "best_value", label: t("roSortValue"), icon: Star },
+              ]}
+            />
           ) : null}
 
           {visible.map((o) => (
@@ -276,11 +272,6 @@ const st = StyleSheet.create({
   expiryLabel: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.dangerText },
   expiryValue: { ...type.label, color: colors.dangerText },
   headText: { flexBasis: 130, flexGrow: 1, flexShrink: 1, minWidth: 0 },
-  segments: { flexDirection: "row", gap: space.x2 },
-  segment: { flexBasis: "auto", flexGrow: 1, flexShrink: 1, minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4, paddingVertical: 6, borderRadius: radius.control, borderWidth: 1.5, borderColor: colors.neutral200, backgroundColor: colors.white },
-  segmentOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
-  segmentText: { ...type.label, fontSize: 12, lineHeight: 15, color: colors.navy950, textAlign: "center", flexShrink: 1 },
-  segmentTextOn: { color: colors.white },
   offer: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
   offerOn: { borderColor: colors.blue600 },
   offerHead: { flexDirection: "row", flexWrap: "wrap", gap: space.x3, alignItems: "flex-start" },

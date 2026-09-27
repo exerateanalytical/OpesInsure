@@ -12,10 +12,9 @@ import {
   Search as SearchIcon,
   ShieldCheck,
   Tag,
-  ArrowUpDown,
   Users,
 } from "lucide-react-native";
-import { Button, Chip, Screen, StatusChip, ripple } from "@/components/ui";
+import { Button, Screen, StatusChip, ripple } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
@@ -186,34 +185,6 @@ export default function GlobalSearch() {
         count={(f) => scopeCount((f.type?.[0] ?? "all") as Scope, f)}
         subtitle={customer ? t("filtersSubtitle") : t("filtersSearchSubtitle")}
       />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
-        {scopes.map((o) => (
-          <Chip
-            key={o.value}
-            role="tab"
-            label={o.label}
-            selected={o.value === only}
-            onPress={() => {
-              setOnly(o.value);
-              if (text.trim().length >= 2) void run(o.value);
-            }}
-          />
-        ))}
-      </ScrollView>
-      {searched && customer ? (
-        <View style={s.sortRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${t("ofSort")}: ${t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}`}
-            onPress={() => setExtra((e) => ({ ...e, sort: [sortBy === "name" ? "best" : "name"] }))}
-            android_ripple={ripple()}
-            style={({ pressed }) => [s.sortBtn, pressed && s.pressed]}
-          >
-            <ArrowUpDown size={16} color={colors.navy900} />
-            <Text style={s.sortText}>{`${t("ofSort")}: ${t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}`}</Text>
-          </Pressable>
-        </View>
-      ) : null}
       {tooShort ? <Text style={s.meta}>{t("searchMinChars")}</Text> : null}
       {state.loading ? <LoadingState /> : null}
       {state.error ? <ErrorState error={state.error} onRetry={() => void run()} /> : null}
@@ -404,7 +375,6 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.85 },
   meta: { ...type.meta, color: colors.neutral600 },
   body: { ...type.body, color: colors.neutral600 },
-  chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   section: { gap: space.x3 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   productRow: { flexDirection: "row", gap: space.x3 },
@@ -419,9 +389,6 @@ const s = StyleSheet.create({
   linkText: { ...type.label, color: colors.blue600 },
   primaryBtn: { flex: 1, minHeight: 46, borderRadius: radius.control, backgroundColor: colors.blue600, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
   primaryText: { ...type.label, color: colors.white },
-  sortRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-start" },
-  sortBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
-  sortText: { ...type.label, color: colors.navy900, fontSize: 13 },
   offerTile: { width: 72, height: 72, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
   tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: space.x2 },
   tag: { ...type.caption, color: colors.navy800, backgroundColor: colors.blue50, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, overflow: "hidden" },

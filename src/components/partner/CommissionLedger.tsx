@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CircleDollarSign, TrendingDown, TrendingUp } from "lucide-react-native";
-import { Card, Chip, ChipRow } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { EmptyState } from "@/components/StatePanel";
 import { useColumns } from "@/components/responsive";
@@ -28,14 +28,13 @@ import {
   stageOf,
 } from "./commissionFilters";
 
-const QUICK_PERIODS = ["any", "this_month", "last_month", "quarter", "this_year"] as const;
 
 /**
  * Filterable commission ledger shared by the agent wallet and the broker
  * earnings screen, on the shared list framework (search, sheet, active pills,
  * clear all, saved + recent filters, state kept on back). KPI cards sum the
  * current selection minus the lifecycle and drill into exactly those rows
- * (COM-006); lifecycle + period quick chips (COM-004/005); insurer / product /
+ * (COM-006); lifecycle + period in the filter sheet (COM-004/005); insurer / product /
  * producer / status / date basis / sort in the sheet (COM-001/002/003).
  * `producers` only for a broker admin; rows arrive already scoped by the server.
  */
@@ -69,7 +68,13 @@ export function CommissionLedger({
           title: t("pcLifecycle"),
           options: LIFECYCLES.map((l) => ({ value: l, label: t(`pcLife_${l}` as const) })),
         },
-        periodSection(t),
+        // Former inline period chips (incl. "This quarter") now live in the sheet only.
+        (() => {
+          const p = periodSection(t);
+          const i = p.options.findIndex((o) => o.value === "custom");
+          p.options.splice(i, 0, { value: quarterValue(), label: t("pcPeriod_quarter") });
+          return p;
+        })(),
         {
           key: "basis",
           title: t("pcDateBasis"),
@@ -106,7 +111,6 @@ export function CommissionLedger({
   const compare = periodComparison(rows, f.values, f.query);
   const basis = basisOf(f.values, rows);
   const lifecycle = (f.pick("lifecycle") ?? "all") as Lifecycle;
-  const period = f.pick("period") ?? "any";
   const setValue = (key: string, v: string) => f.setValues({ ...f.values, [key]: [v] });
 
   /** KPI -> the exact lifecycle rows it sums (COM-006). */
@@ -116,42 +120,6 @@ export function CommissionLedger({
     [t("pcLife_payable"), totals.available, "payable"],
     [t("pcPaid"), totals.paid, "paid"],
   ];
-  const quick = (
-    <>
-      <ChipRow exclusive>
-        {LIFECYCLES.map((l) => (
-          <Chip
-            key={l}
-            role="tab"
-            label={t(`pcLife_${l}` as const)}
-            selected={lifecycle === l}
-            count={runCommissions(rows, { ...f.values, lifecycle: [l] }, f.query).length}
-            onPress={() => setValue("lifecycle", l)}
-          />
-        ))}
-      </ChipRow>
-      <ChipRow exclusive>
-        {QUICK_PERIODS.map((p) => {
-          const value = p === "quarter" ? quarterValue() : p;
-          return (
-            <Chip
-              key={p}
-              role="tab"
-              label={p === "quarter" ? t("pcPeriod_quarter") : t(`fltPeriod_${p}` as const)}
-              selected={period === value}
-              onPress={() => setValue("period", value)}
-            />
-          );
-        })}
-        <Chip
-          role="tab"
-          label={t("pcPeriod_custom")}
-          selected={period.startsWith("custom:") && period !== quarterValue()}
-          onPress={() => f.setOpen(true)}
-        />
-      </ChipRow>
-    </>
-  );
 
   return (
     <View style={s.wrap}>
@@ -183,7 +151,6 @@ export function CommissionLedger({
         count={(v) => runCommissions(rows, v, f.query).length}
         placeholder={t("pcSearch")}
         subtitle={t("pcFiltersSubtitle")}
-        quick={quick}
       />
       <Text style={s.meta} accessibilityLiveRegion="polite">
         {t("pcShowing", { n: shown.length, total: rows.length, basis: t(`pcBasis_${basis}` as const) })}

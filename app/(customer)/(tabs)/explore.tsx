@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronRight, Scale, ShieldCheck } from "lucide-react-native";
-import { Chip, ChipRow, ripple, Screen, StatusChip } from "@/components/ui";
+import { ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading } from "@/components/design";
 import { CategoryStrip, CATEGORY_TINT } from "@/components/customer/CategoryTiles";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
@@ -27,7 +27,6 @@ export default function Explore() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ q?: string; cat?: string; prov?: string; sort?: string }>();
   const [query, setQuery] = useState(typeof params.q === "string" ? params.q : "");
-  const [filter, setFilter] = useState<Filter>("all");
   const [sheet, setSheet] = useState(false);
   const [extra, setExtra] = useState<FilterValues>({ cat: listParam(params.cat), prov: listParam(params.prov), sort: [params.sort === "name" ? "name" : "best"] });
   const providers = useLoad(() => CustomerApi.institutions());
@@ -40,7 +39,12 @@ export default function Explore() {
     if (params.cat !== undefined || params.prov !== undefined || params.sort !== undefined)
       setExtra({ cat: listParam(params.cat), prov: listParam(params.prov), sort: [params.sort === "name" ? "name" : "best"] });
   }, [params.cat, params.prov, params.sort]);
-  const sections = useMemo(() => exploreSections(providers.data ?? [], t), [providers.data, t]);
+  // Provider type (All / Insurers / Brokers) was an inline chip row; it is a sheet section now.
+  const sections = useMemo(() => [
+    ...exploreSections(providers.data ?? [], t),
+    { key: "kind", single: true, title: t("exploreProviders"), options: (["all", "insurer", "broker"] as Filter[]).map((k) => ({ value: k, label: t(k === "all" ? "filterAll" : k === "insurer" ? "insurers" : "brokers") })) },
+  ], [providers.data, t]);
+  const filter = (extra.kind?.[0] ?? "all") as Filter;
   const filtered = useMemo(() => applyExploreFilters(providers.data ?? [], extra), [providers.data, extra]);
 
   const categories = CATEGORIES.filter(
@@ -169,17 +173,6 @@ export default function Explore() {
         </Pressable>
       ) : null}
       <Text accessibilityRole="header" style={styles.section}>{t("exploreProviders")}</Text>
-      <ChipRow exclusive>
-        {(["all", "insurer", "broker"] as Filter[]).map((f) => (
-          <Chip
-            key={f}
-            role="tab"
-            label={t(f === "all" ? "filterAll" : f === "insurer" ? "insurers" : "brokers")}
-            selected={filter === f}
-            onPress={() => setFilter(f)}
-          />
-        ))}
-      </ChipRow>
       {providers.loading && !providers.data ? (
         <LoadingState label={t("exploreLoadingProviders")} />
       ) : providers.error && !providers.data ? (
@@ -192,7 +185,7 @@ export default function Explore() {
           onPress={() => {
             if (query || activeFilterCount(extra, sections)) {
               setQuery("");
-              setExtra({ cat: [], prov: [], sort: ["best"] });
+              setExtra({ cat: [], prov: [], sort: ["best"], kind: ["all"] });
             } else void providers.reload();
           }}
         />
@@ -229,7 +222,7 @@ export default function Explore() {
         sections={sections}
         value={extra}
         onApply={setExtra}
-        count={(f) => applyExploreFilters(providers.data ?? [], f).filter((p) => filter === "all" || p.type === filter).length}
+        count={(f) => applyExploreFilters(providers.data ?? [], f).filter((p) => (f.kind?.[0] ?? "all") === "all" || p.type === f.kind?.[0]).length}
       />
     </Screen>
   );

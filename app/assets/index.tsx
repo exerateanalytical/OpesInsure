@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Building2, CarFront, ChevronRight, Info, Package, Plus } from "lucide-react-native";
-import { Button, Card, Chip, ChipRow, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { EmptyState, StatePanel } from "@/components/StatePanel";
 import { AssetsApi } from "@/api/client";
@@ -17,7 +17,6 @@ export default function Assets() {
   const { data, loading, error, reload } = useLoad(async () => normalizeAssetList(await AssetsApi.list()), []);
   const all = useMemo(() => data ?? [], [data]);
   type Asset = (typeof all)[number];
-  const types = [...new Set(all.map((x) => x.type).filter(Boolean))];
   // Shared list standard (FLT-001..006): type tabs + sheet (type, status) + search on plate / make / model.
   const sections = useMemo<FilterSection[]>(
     () => [
@@ -30,9 +29,6 @@ export default function Assets() {
   const matchers: Matchers<Asset> = { type: (x, v) => x.type === v, status: (x, v) => x.status === v };
   const haystack = (x: Asset) => [x.label, x.registration_number, x.make, x.model, x.year ? String(x.year) : null];
   const run = (v: FilterValues) => applyFilters(all, v, matchers, flt.query, haystack);
-  const sel = flt.values.type ?? [];
-  const filter = sel.length === 1 ? sel[0] : null;
-  const setFilter = (v: string | null) => flt.setValues({ ...flt.values, type: v ? [v] : [] });
   return (
     <Screen scroll={false}>
       <BrandHeader title={t("assetsTitle")} subtitle={t("assetsSubtitle")} back right={null} />
@@ -43,16 +39,6 @@ export default function Assets() {
           placeholder={t("fltSearchAssets")}
           count={(v) => run(v).length}
           resultCount={flt.active ? run(flt.values).length : undefined}
-          quick={
-            types.length ? (
-              <ChipRow exclusive>
-                <Chip role="tab" label={t("assetsFilterAll")} selected={!sel.length} onPress={() => setFilter(null)} />
-                {types.map((ty) => (
-                  <Chip key={ty} role="tab" label={td(`assetType_${ty}`, ty)} selected={filter === ty} onPress={() => setFilter(ty)} />
-                ))}
-              </ChipRow>
-            ) : null
-          }
         />
       ) : null}
       <StatePanel

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
-import { StepUpApi } from "@/api/client";
+import { ApiError, StepUpApi } from "@/api/client";
+import { hasPendingStepUp, settleStepUp } from "@/security/step-up";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandHeader, TintedIcon } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
@@ -10,16 +11,30 @@ import { colors, radius, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
 export default function StepUp() {
-  const { purpose = "SENSITIVE_ACTION", returnTo = "/" } = useLocalSearchParams<{ purpose: string; returnTo: string }>();
+  const { purpose = "SENSITIVE_ACTION", returnTo = "/", mode } = useLocalSearchParams<{ purpose: string; returnTo: string; mode?: string }>();
+  // mode=await: a caller is waiting (withStepUp) and retries its call once we settle.
+  const awaiting = mode === "await";
   const { t } = useTranslation();
   const [challenge, setChallenge] = useState<{ challenge_id: string; delivery_hint: string }>();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    StepUpApi.request(purpose).then(setChallenge).catch((reason) => setError(reason instanceof Error ? reason.message : t("suStartFailed")));
+    StepUpApi.request(purpose).then(setChallenge).catch((reason) => {
+      // The server does not know this purpose yet (older backend): let the caller go ahead without a grant.
+      if (awaiting && hasPendingStepUp(purpose) && reason instanceof ApiError && (reason.status === 422 || reason.status === 400)) {
+        settleStepUp("unsupported");
+        router.back();
+        return;
+      }
+      setError(reason instanceof Error ? reason.message : t("suStartFailed"));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [purpose]);
+  // Leaving without verifying cancels the waiting action.
+  useEffect(() => () => {
+    if (awaiting && hasPendingStepUp(purpose)) settleStepUp("cancelled");
+  }, [awaiting, purpose]);
   return (
     <Screen>
       <BrandHeader title={t("suTitle")} subtitle={t("suSubtitle")} back right="help" />
@@ -43,7 +58,10 @@ export default function StepUp() {
             setError(undefined);
             try {
               await StepUpApi.verify(challenge.challenge_id, purpose, code);
-              router.replace(returnTo as never);
+              if (awaiting && hasPendingStepUp(purpose)) {
+                settleStepUp("granted");
+                router.back();
+              } else router.replace(returnTo as never);
             } catch (reason) {
               setError(reason instanceof Error ? reason.message : t("suFailed"));
             } finally {

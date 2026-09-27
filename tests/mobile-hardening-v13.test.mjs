@@ -154,7 +154,8 @@ test("secure chunking round-trips values larger than one SecureStore item", () =
   assert.equal(countKey("k"), "k.n");
   const vault = read("src/offline/vault.ts");
   assert.match(vault, /SecureJson\.write\(queueKey, queue\)/);
-  assert.match(vault, /MAX_QUEUE_OPERATIONS = 50/);
+  // OPS-08: queue moved to an encrypted file; cap raised to cover a field day.
+  assert.match(vault, /MAX_QUEUE_OPERATIONS = 300/);
   assert.match(vault, /OfflineQueueFullError/);
   assert.doesNotMatch(vault, /maxSecurePayloadBytes = 6000/);
 });

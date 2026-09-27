@@ -15,6 +15,8 @@ import { BiometricLock } from "@/security/biometric";
 import { useRuntime } from "@/store/runtime";
 import { environmentConfig } from "@/config/environment";
 import { resolveLockPolicy } from "@/lib/appLock";
+import { STEP_UP_PURPOSES } from "@/lib/stepUpFlow";
+import { STEP_UP_CANCELLED, withStepUp } from "@/security/step-up";
 
 export default function Security() {
   const { t } = useTranslation();
@@ -65,7 +67,9 @@ export default function Security() {
           setBusy("all");
           setMessage(null);
           try {
-            await signOutEverywhere();
+            // SIGN_OUT_EVERYWHERE step-up first; retried once if the server still asks.
+            const done = await withStepUp(STEP_UP_PURPOSES.signOutEverywhere, () => signOutEverywhere());
+            if (done === STEP_UP_CANCELLED) return;
             router.replace("/(auth)/sign-in");
           } catch (e) {
             // Nothing was cleared locally: the user stays signed in and can retry.

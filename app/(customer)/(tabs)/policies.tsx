@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
-import { Button, Screen, SectionTitle, Chip } from "@/components/ui";
+import { Button, Screen, SectionTitle } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
 import { PolicyListCard, policyCategory } from "@/components/policies/PolicyListCard";
-import { byDate, byText, countBy, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
+import { byDate, byText, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import type { WalletPolicy } from "@/api/client";
@@ -14,7 +14,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { PolicyBucket, policyStatusInfo } from "@/lib/purchase";
 import { useListState } from "@/hooks/useListState";
 import { useTranslation } from "@/i18n";
-import { colors, space } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 
 const FILTERS: (PolicyBucket | "all")[] = ["all", "active", "pending", "expired", "cancelled", "suspended"];
 
@@ -64,12 +64,6 @@ export default function Policies() {
   const haystack = (p: WalletPolicy) => [p.policy_number, p.product_name, providerOf(p).name, td(`policyFilter_${bucketOf(p)}`, bucketOf(p))];
   const run = (v: FilterValues) => runList(policies, { values: v, text: f.query, matchers, haystack, sorters });
   const visible = run(f.values);
-  // Tab badges count what each tab would show with the other filters and search applied.
-  const counts = countBy(run({ ...f.values, status: [] }), bucketOf);
-  counts.all = Object.values(counts).reduce((a, b) => a + b, 0);
-  const selected = f.values.status ?? [];
-  const tab = selected.length === 1 ? selected[0] : selected.length ? null : "all";
-  const setTab = (key: string) => f.setValues({ ...f.values, status: key === "all" ? [] : [key] });
   const listState = useListState("customer.policies");
   const header = (
     <>
@@ -112,14 +106,6 @@ export default function Policies() {
               subtitle={t("filtersPoliciesSubtitle")}
               count={(v) => run(v).length}
               resultCount={f.active ? visible.length : undefined}
-              quick={
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
-                  {FILTERS.filter((key) => key === "all" || counts[key] || selected.includes(key)).map((key) => {
-                    const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
-                    return <Chip key={key} label={label} count={counts[key] || undefined} countTone={key === "active" ? colors.success : key === "expired" ? colors.danger : key === "pending" ? colors.neutral500 : undefined} selected={tab === key} onPress={() => setTab(key)} />;
-                  })}
-                </ScrollView>
-              }
             />
             <SectionTitle title={t("policiesYours")} />
           </View>
