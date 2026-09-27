@@ -60,6 +60,7 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
           <Icon size={30} color={tile.fg} />
         </View>
         <View style={s.flex}>
+          <View style={s.chipRow}><StatusChip label={needsAction ? t("claimActionNeeded") : status} tone={claimTone(claim.status)} /></View>
           <Text style={s.title} numberOfLines={2}>{title}</Text>
           {mark.name ? (
             <View style={s.providerRow}>
@@ -67,14 +68,13 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
               <Text style={[s.meta, s.shrink]} numberOfLines={2}>{mark.name}</Text>
             </View>
           ) : null}
-          <Text style={s.number}>{claim.claim_number}</Text>
+          <Text style={s.number} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{claim.claim_number}</Text>
           <Text style={s.meta} numberOfLines={1}>
             {date(claim.incident_at)}
             {asset ? ` • ${asset}` : claim.incident_location ? ` • ${claim.incident_location}` : ""}
           </Text>
         </View>
         <View style={s.right}>
-          <StatusChip label={needsAction ? t("claimActionNeeded") : status} tone={claimTone(claim.status)} />
           <ChevronRight size={20} color={colors.neutral500} />
         </View>
       </View>
@@ -93,6 +93,7 @@ const s = StyleSheet.create({
   title: { ...type.cardTitle, color: colors.navy950 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginVertical: 2 },
   shrink: { flexShrink: 1 },
-  number: { ...type.body, color: colors.neutral700 },
+  chipRow: { flexDirection: "row", marginBottom: 4 },
+  number: { ...type.body, fontSize: 15, color: colors.neutral700 },
   meta: { ...type.meta, color: colors.neutral600 },
 });

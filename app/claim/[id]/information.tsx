@@ -255,7 +255,7 @@ const s = StyleSheet.create({
   meta: { ...type.meta, color: colors.neutral600, marginBottom: space.x2 },
   input: { minHeight: 110, textAlignVertical: "top", paddingTop: 12 },
   files: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  file: { flexBasis: "45%", flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white },
+  file: { flexBasis: 150, flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white },
   fileName: { ...type.label, color: colors.navy950 },
   declaration: { flexDirection: "row", gap: space.x3, alignItems: "flex-start", padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: "transparent", minHeight: 48 },
   declarationError: { borderColor: colors.danger },

@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   mine: { backgroundColor: colors.blue50 },
   theirs: { backgroundColor: colors.neutral100 },
   summaryGrid: { flexDirection: "row", flexWrap: "wrap", borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card },
-  summaryCell: { width: "50%", flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3 },
+  summaryCell: { flexBasis: 150, flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3 },
   summaryBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
   summaryTop: { borderTopWidth: 1, borderTopColor: colors.neutral200 },
   summaryValue: { ...type.label, color: colors.navy950 },

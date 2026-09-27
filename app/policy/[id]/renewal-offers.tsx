@@ -177,13 +177,13 @@ function RenewalOfferCard({
   return (
     <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={name} onPress={onPick} android_ripple={ripple()} style={({ pressed }) => [st.offer, selected && st.offerOn, pressed && st.pressed]}>
       <View style={st.offerHead}>
-        <InstitutionMark logoUrl={carrierLogo(offer)} initials={name.slice(0, 2).toUpperCase()} size={56} />
+        <InstitutionMark logoUrl={carrierLogo(offer)} initials={name.slice(0, 2).toUpperCase()} size={44} />
         <View style={st.flex}>
           <View style={st.nameRow}>
-            <Text style={st.name} numberOfLines={1}>{name}</Text>
+            <Text style={st.name} numberOfLines={2}>{name}</Text>
             <BadgeCheck size={18} color={colors.blue600} />
           </View>
-          <Text style={st.product} numberOfLines={1}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
+          <Text style={st.product} numberOfLines={2}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
           {rating ? (
             <View style={st.ratingRow}>
               <Star size={14} color={colors.gold500} fill={colors.gold500} />
@@ -269,11 +269,11 @@ const st = StyleSheet.create({
   offerHead: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   name: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexShrink: 1 },
-  product: { ...type.body, color: colors.neutral600 },
+  product: { ...type.meta, color: colors.neutral600 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   rating: { ...type.meta, color: colors.neutral700 },
-  priceCol: { alignItems: "flex-end", gap: 2 },
-  price: { ...type.sectionTitle, fontSize: 20, lineHeight: 26, color: colors.navy950, fontVariant: ["tabular-nums"] },
+  priceCol: { alignItems: "flex-end", gap: 2, flexShrink: 0, maxWidth: 150 },
+  price: { ...type.sectionTitle, fontSize: 18, lineHeight: 24, color: colors.navy950, fontVariant: ["tabular-nums"] },
   perYear: { ...type.meta, color: colors.neutral600 },
   covers: { backgroundColor: colors.blue50, borderRadius: radius.card, padding: space.x3, gap: space.x1 },
   more: { ...type.meta, color: colors.blue700 },

@@ -172,30 +172,28 @@ export default function Applications() {
           <View key={p.id} style={s.card}>
             <View style={s.top}>
               <View style={[s.iconTile, { backgroundColor: fam ? TINT_BG[LINE_TINT[fam]] : colors.neutral100 }]}>
-                <Icon size={40} color={fam ? TINT_FG[LINE_TINT[fam]] : colors.navy800} strokeWidth={1.6} />
+                <Icon size={30} color={fam ? TINT_FG[LINE_TINT[fam]] : colors.navy800} strokeWidth={1.6} />
               </View>
               <View style={s.flex}>
-                <Text style={s.title} numberOfLines={2}>{fam ? td(`lineFamily_${fam}`, name) : name}</Text>
-                {provider ? (
-                  <View style={s.providerRow}>
-                    <InstitutionMark logoUrl={p.carrier_logo_url} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-                    <Text style={s.body} numberOfLines={1}>{provider}</Text>
-                  </View>
-                ) : null}
-                <Text style={s.meta} numberOfLines={2}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>
-              </View>
-              <View style={s.right}>
                 <View style={[s.status, statusStyle]}>
                   <StatusIcon size={14} color={statusText.color} />
                   <Text style={[s.statusLabel, statusText]} numberOfLines={1}>{info.label}</Text>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={t("draftsOpen")} onPress={() => openProposal(p)} hitSlop={8} style={s.chevron}>
-                  <ChevronRight size={18} color={colors.navy800} />
-                </Pressable>
+                <Text style={s.title} numberOfLines={2}>{fam ? td(`lineFamily_${fam}`, name) : name}</Text>
+                {provider ? (
+                  <View style={s.providerRow}>
+                    <InstitutionMark logoUrl={p.carrier_logo_url} initials={provider.slice(0, 2).toUpperCase()} size={22} />
+                    <Text style={s.body} numberOfLines={2}>{provider}</Text>
+                  </View>
+                ) : null}
+                <Text style={s.meta} numberOfLines={2}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>
               </View>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("draftsOpen")} onPress={() => openProposal(p)} hitSlop={8} style={s.chevron}>
+                <ChevronRight size={18} color={colors.navy800} />
+              </Pressable>
             </View>
             <View style={s.bottom}>
-              <View style={s.flex}>
+              <View style={s.bottomInfo}>
                 {pct !== null ? (
                   <View style={s.progressWrap} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(pct * 100) }}>
                     <Text style={s.progressLabel}>{t("draftsComplete", { percent: Math.round(pct * 100) })}</Text>
@@ -207,7 +205,7 @@ export default function Applications() {
                 {updated ? (
                   <View style={s.updatedRow}>
                     <TintedIcon icon={CalendarDays} tint="blue" size={28} />
-                    <Text style={s.meta}>{t("draftsLastUpdated", { date: f.date(updated) })}</Text>
+                    <Text style={[s.meta, s.flex]}>{t("draftsLastUpdated", { date: f.date(updated) })}</Text>
                   </View>
                 ) : null}
               </View>
@@ -234,13 +232,12 @@ const s = StyleSheet.create({
   chips: { flexDirection: "row", gap: space.x2, paddingRight: space.x2 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x4 },
   top: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
-  iconTile: { width: 84, height: 84, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  iconTile: { width: 60, height: 60, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
   title: { ...type.cardTitle, color: colors.navy950 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600, marginTop: 2 },
-  right: { alignItems: "flex-end", gap: space.x2 },
-  status: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 170 },
+  status: { flexDirection: "row", alignSelf: "flex-start", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 6, maxWidth: "100%" },
   statusLabel: { ...type.caption },
   statusBlue: { backgroundColor: colors.blue50 },
   statusBlueText: { color: colors.blue700 },
@@ -251,13 +248,14 @@ const s = StyleSheet.create({
   statusRed: { backgroundColor: colors.dangerSoft },
   statusRedText: { color: colors.dangerText },
   chevron: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
-  bottom: { flexDirection: "row", alignItems: "flex-end", gap: space.x3 },
+  bottom: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end", gap: space.x3 },
+  bottomInfo: { flexGrow: 1, flexBasis: 150 },
   progressWrap: { gap: 6 },
   progressLabel: { ...type.label, color: colors.navy950 },
   track: { height: 8, borderRadius: 4, backgroundColor: colors.neutral200, overflow: "hidden" },
   fill: { height: 8, borderRadius: 4, backgroundColor: colors.blue600 },
   updatedRow: { flexDirection: "row", alignItems: "center", gap: space.x2, marginTop: space.x2 },
-  btn: { minHeight: 48, borderRadius: radius.card, paddingHorizontal: space.x4, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
+  btn: { flexGrow: 1, minHeight: 48, borderRadius: radius.card, paddingHorizontal: space.x4, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
   btnNavy: { backgroundColor: colors.navy900 },
   btnGold: { backgroundColor: colors.gold500 },
   btnText: { ...type.label },

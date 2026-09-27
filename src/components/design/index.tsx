@@ -235,11 +235,11 @@ export function MetaGrid({ items, columns }: { items: HeroMeta[]; columns?: 2 | 
         const Icon = m.icon;
         const tone = m.tone === "danger" ? colors.dangerText : m.tone === "warning" ? colors.gold600 : colors.navy950;
         return (
-          <View key={`${m.label}-${i}`} style={[s.metaCell, { width: `${100 / cols}%` }, i % cols !== 0 && s.metaCellBorder, i >= cols && s.metaCellTop]}>
-            <Icon size={20} color={m.tone === "danger" ? colors.danger : colors.navy800} />
-            <View style={s.flex}>
-              <Text style={s.metaLabel} numberOfLines={2}>{m.label}</Text>
-              <Text style={[s.metaValue, { color: tone }]} numberOfLines={2}>{m.value}</Text>
+          <View key={`${m.label}-${i}`} style={[s.metaCell, cols === 3 && s.metaCellStacked, { width: `${100 / cols}%` }, i % cols !== 0 && s.metaCellBorder, i >= cols && s.metaCellTop]}>
+            <Icon size={cols === 3 ? 18 : 20} color={m.tone === "danger" ? colors.danger : colors.navy800} />
+            <View style={cols === 3 ? undefined : s.flex}>
+              <Text style={[s.metaLabel, cols === 3 && s.metaLabelSmall]} numberOfLines={2}>{m.label}</Text>
+              <Text style={[s.metaValue, cols === 3 && s.metaValueSmall, { color: tone }]} numberOfLines={3}>{m.value}</Text>
             </View>
           </View>
         );
@@ -451,7 +451,10 @@ const s = StyleSheet.create({
   metaCell: { flexDirection: "row", gap: space.x2, alignItems: "flex-start", paddingHorizontal: space.x2, paddingVertical: space.x1 },
   metaCellBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
   metaCellTop: { borderTopWidth: 1, borderTopColor: colors.neutral200, marginTop: space.x2, paddingTop: space.x3 },
+  metaCellStacked: { flexDirection: "column", gap: 4 },
   metaLabel: { ...type.meta, color: colors.neutral600 },
+  metaLabelSmall: { fontSize: 12, lineHeight: 16 },
+  metaValueSmall: { fontSize: 14, lineHeight: 19 },
   metaValue: { ...type.label, fontSize: 15, lineHeight: 20, color: colors.navy950 },
   // tiles
   tile: { flex: 1, minHeight: 104, borderRadius: radius.feature, alignItems: "center", justifyContent: "center", gap: space.x2, paddingVertical: space.x3, paddingHorizontal: 2, overflow: "hidden" },
@@ -460,8 +463,8 @@ const s = StyleSheet.create({
   actionTileLabel: { ...type.label, color: colors.navy950, flexShrink: 1, textAlign: "center", fontSize: 13, lineHeight: 17 },
   // detail row
   detailRow: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 36 },
-  detailLabel: { ...type.body, color: colors.neutral600, width: "42%" },
-  detailLabelIcon: { width: "38%" },
+  detailLabel: { ...type.body, color: colors.neutral600, flexShrink: 1, maxWidth: "50%" },
+  detailLabelIcon: { maxWidth: "45%" },
   detailValueWrap: { flex: 1, alignItems: "flex-end" },
   detailValue: { ...type.body, color: colors.navy950, textAlign: "right" },
   detailValueStrong: { fontFamily: "Inter_700Bold" },

@@ -138,5 +138,5 @@ const s = StyleSheet.create({
   nextLabel: { ...type.label, color: colors.gold600 },
   nextBody: { ...type.body, color: colors.navy950 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
-  tile: { flexBasis: "45%", flexGrow: 1 },
+  tile: { flexBasis: 140, flexGrow: 1 },
 });

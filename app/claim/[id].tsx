@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   nextLine: { flex: 1, width: 2, backgroundColor: colors.neutral200, marginVertical: 2 },
   nextText: { paddingBottom: space.x3, color: colors.navy950 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  tile: { flexBasis: "30%", flexGrow: 1 },
+  tile: { flexBasis: 96, flexGrow: 1 },
   title: { ...type.cardTitle, color: colors.navy950 },
   cardTitle: { ...type.cardTitle, color: colors.navy900 },
   event: { ...type.label, color: colors.navy950 },

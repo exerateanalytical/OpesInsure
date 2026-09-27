@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   flex: { flex: 1, gap: 2 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
-  tile: { flexGrow: 1, flexBasis: "45%", minHeight: 48, padding: space.x4, gap: space.x2, borderRadius: radius.feature, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
+  tile: { flexGrow: 1, flexBasis: 140, minHeight: 48, padding: space.x4, gap: space.x2, borderRadius: radius.feature, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200 },
   tileOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   tileTitle: { ...type.label, color: colors.navy950 },
   tileBody: { ...type.meta, color: colors.neutral600 },

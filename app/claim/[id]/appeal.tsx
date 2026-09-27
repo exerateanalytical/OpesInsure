@@ -159,7 +159,7 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   eligible: { backgroundColor: colors.blue50, borderRadius: radius.feature, padding: space.x4, gap: space.x3, borderWidth: 1, borderColor: colors.blue100 },
   facts: { flexDirection: "row", flexWrap: "wrap", gap: space.x3, paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.blue100 },
-  fact: { flexBasis: "30%", flexGrow: 1, gap: 2 },
+  fact: { flexBasis: 96, flexGrow: 1, gap: 2 },
   title: { ...type.cardTitle, color: colors.navy950 },
   label: { ...type.label, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },

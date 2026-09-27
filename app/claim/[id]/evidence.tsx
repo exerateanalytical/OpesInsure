@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   chooseText: { ...type.label, color: colors.blue700 },
   dropMeta: { ...type.meta, color: colors.neutral600 },
   pickers: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  picker: { width: "48%", flexGrow: 1, minHeight: 60, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  picker: { flexBasis: 150, flexGrow: 1, minHeight: 60, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
   pickerText: { ...type.label, fontSize: 13, lineHeight: 17, color: colors.navy950, flexShrink: 1 },
   progress: { gap: space.x1 },
   track: { height: 8, borderRadius: 4, backgroundColor: colors.neutral100, overflow: "hidden" },
