@@ -28,3 +28,4 @@ docs/qa/report.json
 app screens/
 docs/
 *.zip
+.git/
