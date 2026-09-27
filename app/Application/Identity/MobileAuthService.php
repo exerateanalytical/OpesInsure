@@ -59,6 +59,12 @@ final class MobileAuthService
 
     private const IP_REQUESTS_PER_HOUR = 300;
 
+    // Security review 2026-09-27 item 5: tighter per-IP ceilings for the two abusable actions (SMS pumping via code
+    // sends; credential stuffing via password attempts across many phones). Still loose enough for carrier-grade NAT.
+    private const IP_CODE_SENDS_PER_HOUR = 60;
+
+    private const IP_PASSWORD_ATTEMPTS_PER_15_MIN = 60;
+
     public function __construct(
         private AuditWriter $audit,
         private PartyResolver $parties,
@@ -88,6 +94,7 @@ final class MobileAuthService
     {
         $demo = self::isDemoPersonaPhone($phoneE164);
         $this->guardIp($ip, $demo);
+        $this->guardIpBucket('send', $ip, self::IP_CODE_SENDS_PER_HOUR, 3600, $demo);
         $this->guardCodeSends($phoneE164, $demo);
 
         $user = User::where('phone_e164', $phoneE164)->first();
@@ -108,6 +115,7 @@ final class MobileAuthService
     {
         $demo = self::isDemoPersonaPhone($phoneE164);
         $this->guardIp($ip, $demo);
+        $this->guardIpBucket('pw', $ip, self::IP_PASSWORD_ATTEMPTS_PER_15_MIN, 900, $demo);
 
         $failKey = 'mobile-auth:pwfail:'.hash('sha256', $phoneE164);
         if (! $demo && RateLimiter::tooManyAttempts($failKey, self::PASSWORD_FAILS_PER_15_MIN)) {
@@ -218,6 +226,7 @@ final class MobileAuthService
             return ['verification_required' => false, ...$this->issueSession($user, $deviceFingerprint, $ip, $deviceName, $platform, 'registration')];
         }
 
+        $this->guardIpBucket('send', $ip, self::IP_CODE_SENDS_PER_HOUR, 3600, false);
         $this->guardCodeSends($data['phone_e164'], false);
         $channel = $data['verification_channel'] ?? null;
 
@@ -571,6 +580,22 @@ final class MobileAuthService
         }
 
         RateLimiter::hit($key, 3600);
+    }
+
+    /** A named per-IP bucket (code sends, password attempts) on top of the generic per-IP ceiling. */
+    private function guardIpBucket(string $bucket, string $ip, int $max, int $decaySeconds, bool $exempt): void
+    {
+        if ($exempt) {
+            return;
+        }
+
+        $key = 'mobile-auth:ip-'.$bucket.':'.hash('sha256', $ip);
+
+        if (RateLimiter::tooManyAttempts($key, $max)) {
+            throw $this->tooMany(RateLimiter::availableIn($key));
+        }
+
+        RateLimiter::hit($key, $decaySeconds);
     }
 
     /** Per-phone ceiling on code sends (login, reset, registration, verify). */

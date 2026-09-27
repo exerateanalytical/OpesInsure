@@ -135,9 +135,9 @@ it('registers a completed resumable-upload session as evidence, without re-uploa
     $claim = makeMobileTestClaim($fixture['tenant'], $policy, $fixture['party']);
 
     $storageKey = 'upload-sessions/'.Str::uuid().'/assembled';
-    Storage::disk('local')->put($storageKey, 'fake jpeg bytes');
+    Storage::disk('local')->put($storageKey, "\xFF\xD8\xFF fake jpeg bytes");
     $session = makeMobileTestUploadSession($fixture['tenant'], $fixture['user'], [
-        'status' => 'COMPLETED', 'storage_key' => $storageKey, 'total_size_bytes' => strlen('fake jpeg bytes'),
+        'status' => 'COMPLETED', 'storage_key' => $storageKey, 'total_size_bytes' => strlen("\xFF\xD8\xFF fake jpeg bytes"),
     ]);
 
     Passport::actingAs($fixture['user']);

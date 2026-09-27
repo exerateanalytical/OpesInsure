@@ -75,7 +75,7 @@ Route::post('proposals/{proposal}/terms', [MobileDisclosureController::class, 't
 // agent/* (app-shaped; replaces the wave12 agent-mode list routes)
 Route::get('mobile/agent/dashboard', [MobileAgentPortalController::class, 'dashboard'])->middleware('permission:agent.clients.read');
 Route::get('mobile/agent/profile', [MobileAgentPortalController::class, 'profile'])->middleware('permission:agent.clients.read');
-Route::patch('mobile/agent/profile', [MobileAgentPortalController::class, 'updateProfile'])->middleware('permission:agent.clients.read');
+Route::patch('mobile/agent/profile', [MobileAgentPortalController::class, 'updateProfile'])->middleware(['permission:agent.clients.read', 'throttle:10,1']);
 Route::get('mobile/agent/renewals', [MobileAgentPortalController::class, 'renewals'])->middleware('permission:agent.clients.read');
 Route::post('mobile/agent/sales', [MobileAgentPortalController::class, 'createSale'])->middleware(['permission:agent.clients.manage', 'throttle:20,1']);
 Route::get('mobile/agent/sales/{id}', [MobileAgentPortalController::class, 'sale'])->middleware('permission:agent.clients.read');

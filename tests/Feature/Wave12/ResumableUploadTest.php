@@ -72,13 +72,13 @@ it('overwrites rather than duplicates when the same chunk index is re-sent (resu
     $uploadId = $start->json('data.id');
 
     $this->putJson("/api/v1/mobile/uploads/{$uploadId}/chunks/0", ['data' => base64_encode('AAAAA')], tenantHeaderFor($fixture['tenant']))->assertStatus(200);
-    $this->putJson("/api/v1/mobile/uploads/{$uploadId}/chunks/0", ['data' => base64_encode('ZZZZZ')], tenantHeaderFor($fixture['tenant']))->assertStatus(200);
+    $this->putJson("/api/v1/mobile/uploads/{$uploadId}/chunks/0", ['data' => base64_encode("\xFF\xD8\xFFZZ")], tenantHeaderFor($fixture['tenant']))->assertStatus(200);
 
     expect(DB::table('upload_chunks')->where('upload_session_id', $uploadId)->count())->toBe(1);
 
     $finalize = $this->postJson("/api/v1/mobile/uploads/{$uploadId}/finalize", [], tenantHeaderFor($fixture['tenant']));
     $finalize->assertStatus(200);
-    expect(Storage::disk('local')->get($finalize->json('data.storage_key')))->toBe('ZZZZZ');
+    expect(Storage::disk('local')->get($finalize->json('data.storage_key')))->toBe("\xFF\xD8\xFFZZ");
 });
 
 it('rejects a chunk index outside the declared total', function () {
@@ -98,7 +98,7 @@ it('assembles the exact original bytes once every chunk has arrived, and sets a 
     $fixture = makeMobileCustomerFixture();
     Passport::actingAs($fixture['user']);
 
-    $content = 'Hello, resumable world!';
+    $content = "\xFF\xD8\xFF".'Hello, resumable world!'; // JPEG magic bytes: finalize() sniffs the declared type
     $chunkA = substr($content, 0, 10);
     $chunkB = substr($content, 10);
 
@@ -166,7 +166,7 @@ it('is idempotent on finalize: calling it again after completion returns the sam
     ], $headers);
     $uploadId = $start->json('data.id');
 
-    $this->putJson("/api/v1/mobile/uploads/{$uploadId}/chunks/0", ['data' => base64_encode('AAAAA')], tenantHeaderFor($fixture['tenant']))->assertStatus(200);
+    $this->putJson("/api/v1/mobile/uploads/{$uploadId}/chunks/0", ['data' => base64_encode("\xFF\xD8\xFFAA")], tenantHeaderFor($fixture['tenant']))->assertStatus(200);
 
     $first = $this->postJson("/api/v1/mobile/uploads/{$uploadId}/finalize", [], tenantHeaderFor($fixture['tenant']));
     $second = $this->postJson("/api/v1/mobile/uploads/{$uploadId}/finalize", [], tenantHeaderFor($fixture['tenant']));

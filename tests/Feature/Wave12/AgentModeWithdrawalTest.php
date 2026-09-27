@@ -19,7 +19,7 @@ require_once __DIR__.'/Concerns/mobile_customer_helpers.php';
 
 function agentWithdrawalPayload(array $overrides = []): array
 {
-    return array_merge(['provider' => 'mtn_momo', 'amount_minor' => 20000, 'destination_phone' => '+237670000099'], $overrides);
+    return array_merge(['provider' => 'mtn_momo', 'amount_minor' => 20000, 'destination_phone' => '+237680000000'], $overrides); // the default fixture agent's own phone = registered payout number (no MoMo number set on the profile)
 }
 
 function withdrawalHeaders(array $fixture): array
@@ -36,13 +36,13 @@ it('requests a withdrawal against the agent\'s own latest published statement, w
 
     $response->assertStatus(201);
     expect($response->json('data.status'))->toBe('REQUESTED')
-        ->and($response->json('data.destination_phone'))->not->toContain('0000099'); // masked
+        ->and($response->json('data.destination_phone'))->not->toContain('0000000'); // masked
 
     $payout = PartnerPayoutRequest::findOrFail($response->json('data.id'));
     expect($payout->partner_id)->toBe($fixture['partner']->id)
         ->and($payout->partner_statement_id)->toBe($statement->id)
         ->and($payout->amount_minor)->toBe(20000)
-        ->and(\Illuminate\Support\Facades\Crypt::decryptString($payout->getRawOriginal('destination_encrypted')))->toBe('mtn_momo:+237670000099');
+        ->and(\Illuminate\Support\Facades\Crypt::decryptString($payout->getRawOriginal('destination_encrypted')))->toBe('mtn_momo:+237680000000');
 });
 
 it('requires a step-up grant before any withdrawal', function () {

@@ -71,6 +71,8 @@ final class MobileAgentPortalController
         if ($partner->status === 'DRAFT') {
             $partner->status = 'PENDING_REVIEW';
         }
+        // Security review 2026-09-27 item 4: a new payout number starts the withdrawal cooling-off period.
+        $compliance = app(\App\Application\Agents\PayoutDestinationGuard::class)->stampIfChanged($partner->compliance ?? [], $compliance);
         $partner->compliance = $compliance;
         $partner->save();
         if (isset($data['full_name'])) {
@@ -161,6 +163,8 @@ final class MobileAgentPortalController
         abort_unless($statement, 422, 'No published statement is available to withdraw against yet.');
         abort_if($data['amount_minor'] > max($available, (int) $statement->closing_balance_minor), 422, 'Amount exceeds your available balance.');
         abort_if(DB::table('partner_payout_requests')->where('tenant_id', $t)->where('partner_id', $partner->id)->whereIn('status', ['REQUESTED', 'APPROVED', 'PROCESSING'])->exists(), 422, 'A withdrawal is already in progress.');
+        // Security review 2026-09-27 item 4: only the registered payout number, and not while it is cooling off.
+        app(\App\Application\Agents\PayoutDestinationGuard::class)->assertWithdrawable($partner->compliance ?? [], $data['destination_phone'], $request->user()->phone_e164);
         $id = (string) Str::uuid();
         DB::table('partner_payout_requests')->insert([
             'id' => $id, 'tenant_id' => $t, 'partner_id' => $partner->id, 'partner_statement_id' => $statement->id, 'payout_number' => 'PAY-'.strtoupper(Str::random(10)), 'amount_minor' => $data['amount_minor'], 'currency' => 'XAF', 'status' => 'REQUESTED',

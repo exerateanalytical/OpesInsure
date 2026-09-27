@@ -66,4 +66,6 @@ return [
     'agent_withdrawal_mfa_required' => 'Enable two-factor authentication before requesting a withdrawal.',
     'agent_withdrawal_mfa_invalid' => 'That verification code is invalid or has expired.',
     'sync_operation_not_allowlisted' => 'This offline action is not supported for replay.',
+    'payout_destination_not_registered' => 'Withdrawals can only be paid to the mobile money number registered on your profile.',
+    'payout_destination_cooling_off' => 'Your payout number was changed recently. For your security, withdrawals to it are available from :until.',
 ];

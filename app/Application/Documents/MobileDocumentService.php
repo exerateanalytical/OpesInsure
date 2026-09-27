@@ -177,7 +177,7 @@ final class MobileDocumentService
             throw ValidationException::withMessages(['file_base64' => __('wave12.document_too_large')]);
         }
 
-        if (! $this->matchesSignature($bytes, $mimeType)) {
+        if (! \App\Application\Uploads\FileSignature::matches(substr($bytes, 0, 16), $mimeType)) {
             throw ValidationException::withMessages(['file_base64' => __('wave12.document_signature_mismatch')]);
         }
 
@@ -249,16 +249,6 @@ final class MobileDocumentService
         } finally {
             @unlink($tempPath);
         }
-    }
-
-    private function matchesSignature(string $bytes, string $mimeType): bool
-    {
-        return match ($mimeType) {
-            'application/pdf' => str_starts_with($bytes, '%PDF-'),
-            'image/jpeg' => str_starts_with($bytes, "\xFF\xD8\xFF"),
-            'image/png' => str_starts_with($bytes, "\x89PNG\x0D\x0A\x1A\x0A"),
-            default => false,
-        };
     }
 
     private function owned(string $documentId, User $user, string $tenantId): Document

@@ -41,7 +41,7 @@ use Illuminate\Validation\ValidationException;
 final class MobileClaimEvidenceService
 {
     /** Mirrors ResumableUploadService::ALLOWED_MIME — evidence registered from a session can only ever be one of those types anyway. */
-    private const ALLOWED_UPLOAD_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'video/mp4'];
+    private const ALLOWED_UPLOAD_MIME = \App\Application\Uploads\FileSignature::ALLOWED;
 
     public function __construct(
         private PartyResolver $parties,
@@ -128,6 +128,9 @@ final class MobileClaimEvidenceService
         }
 
         $bytes = $disk->get($session->storage_key);
+        if (! \App\Application\Uploads\FileSignature::matches(substr($bytes, 0, 16), $session->mime_type)) {
+            throw ValidationException::withMessages(['upload_session_id' => __('wave12.document_signature_mismatch')]);
+        }
         $sha256 = hash('sha256', $bytes);
 
         $duplicate = Document::where('tenant_id', $tenantId)->where('party_id', $party->id)->where('sha256', $sha256)->exists();

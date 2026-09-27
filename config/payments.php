@@ -1,6 +1,8 @@
 <?php
 return [
 'webhook_tolerance_seconds'=>(int)env('PAYMENT_WEBHOOK_TOLERANCE_SECONDS',300),
+// Security review 2026-09-27 item 4: after an agent changes the commission MoMo number, withdrawals to that new number are blocked for this many hours.
+'payout_destination_cooling_off_hours'=>(int)env('PAYOUT_DESTINATION_COOLING_OFF_HOURS',24),
 'providers'=>[
 // REQ-PAY-003 bank transfer: reference-based instruction; a signed bank-statement feed (webhook) or reconciliation settles it.
 'bank_transfer'=>['webhook_secret'=>env('BANK_TRANSFER_WEBHOOK_SECRET'),'bank_name'=>env('BANK_TRANSFER_BANK_NAME'),'account_name'=>env('BANK_TRANSFER_ACCOUNT_NAME'),'account_number'=>env('BANK_TRANSFER_ACCOUNT_NUMBER'),'swift'=>env('BANK_TRANSFER_SWIFT'),'validity_days'=>(int)env('BANK_TRANSFER_VALIDITY_DAYS',7)],

@@ -66,4 +66,6 @@ return [
     'agent_withdrawal_mfa_required' => 'Activez l\'authentification à deux facteurs avant de demander un retrait.',
     'agent_withdrawal_mfa_invalid' => 'Ce code de vérification est invalide ou a expiré.',
     'sync_operation_not_allowlisted' => 'Cette action hors ligne n\'est pas prise en charge pour la relecture.',
+    'payout_destination_not_registered' => 'Les retraits ne peuvent être versés que sur le numéro mobile money enregistré dans votre profil.',
+    'payout_destination_cooling_off' => 'Votre numéro de paiement a été modifié récemment. Par sécurité, les retraits vers ce numéro seront possibles à partir du :until.',
 ];

@@ -45,7 +45,7 @@ final class ResumableUploadService
     private const MAX_CHUNKS = 2000;
     private const MAX_CHUNK_BYTES = 10_485_760; // 10 MiB per chunk.
     private const SESSION_TTL_HOURS = 48;
-    private const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'video/mp4'];
+    private const ALLOWED_MIME = FileSignature::ALLOWED;
 
     public function start(array $data, User $user, string $tenantId): UploadSession
     {
@@ -142,6 +142,17 @@ final class ResumableUploadService
             @unlink($finalAbsolutePath);
 
             throw ValidationException::withMessages(['upload' => [__('wave12.upload_checksum_mismatch')]]);
+        }
+        // Security review 2026-09-27 item 6: the declared MIME type must match the file's magic bytes. A mismatch is
+        // discarded and the session FAILED, so nothing downstream (claim evidence, KYC) can ever pick the bytes up.
+        if (! FileSignature::fileMatches($finalAbsolutePath, $session->mime_type)) {
+            @unlink($finalAbsolutePath);
+            for ($i = 0; $i < $session->total_chunks; $i++) {
+                $disk->delete(self::chunkPath($uploadId, $i));
+            }
+            $session->update(['status' => 'FAILED']);
+
+            throw ValidationException::withMessages(['upload' => [__('wave12.document_signature_mismatch')]]);
         }
 
         for ($i = 0; $i < $session->total_chunks; $i++) {

@@ -27,11 +27,21 @@ final class MobileMoneyStatusReconciler
 
     public function reconcileMtn(PaymentIntentRecord $intent, array $rawStatus): ?string
     {
+        // Security review 2026-09-27 item 3: the re-queried MTN record must be for this intent, at this amount and
+        // currency (when MTN reports them), before it can move money state.
+        if (! $this->sameTransaction($intent, $rawStatus['externalId'] ?? null, $rawStatus['amount'] ?? null, $rawStatus['currency'] ?? null)) {
+            return null;
+        }
+
         return $this->reconcile($intent, 'mtn_momo', $this->mapMtnStatus((string) ($rawStatus['status'] ?? '')));
     }
 
     public function reconcileOrange(PaymentIntentRecord $intent, array $rawStatus): ?string
     {
+        if (! $this->sameTransaction($intent, $rawStatus['order_id'] ?? null, $rawStatus['amount'] ?? null, $rawStatus['currency'] ?? null)) {
+            return null;
+        }
+
         return $this->reconcile($intent, 'orange_money', $this->mapOrangeStatus((string) ($rawStatus['status'] ?? '')));
     }
 
@@ -51,6 +61,19 @@ final class MobileMoneyStatusReconciler
         ], 'reconciled');
 
         return $genericStatus;
+    }
+
+    /** Fields the provider did not report are not held against the intent; a reported mismatch always is. */
+    private function sameTransaction(PaymentIntentRecord $intent, mixed $reference, mixed $amount, mixed $currency): bool
+    {
+        $ok = ($reference === null || (string) $reference === (string) $intent->id)
+            && ($amount === null || (string) (int) $amount === (string) $intent->amount_minor)
+            && ($currency === null || strtoupper((string) $currency) === strtoupper((string) $intent->currency));
+        if (! $ok) {
+            \Illuminate\Support\Facades\Log::warning('mobile_money.reconcile.mismatch', ['payment_intent_id' => $intent->id, 'provider' => $intent->provider]);
+        }
+
+        return $ok;
     }
 
     private function mapMtnStatus(string $status): ?string
