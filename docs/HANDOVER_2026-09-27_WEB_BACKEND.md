@@ -1,6 +1,6 @@
 # Handover: web app and backend (2026-09-27, evening)
 
-Live: https://insurance.opesdatacenter.tech, release **r20260927-091032** (commit bbd29f7). Demo mode is **ON**, as the owner instructed; only the owner can turn it off.
+Live: https://insurance.opesdatacenter.tech, release **r20260927-174612** (commit bcde791, deployed 17:46; full suite 2,070 passed; role grants synced in production). Section 3 below is now LIVE. Demo mode is **ON**, as the owner instructed; only the owner can turn it off.
 Earlier handover: `docs/WEB_APP_HANDOVER_2026-09-26.md`.
 
 ## 1. Session ownership (owner decision, 2026-09-27)
@@ -15,7 +15,7 @@ Earlier handover: `docs/WEB_APP_HANDOVER_2026-09-26.md`.
 | r20260927-023336 | **UI build-out:** core detail pages with tabs, shared workflow actions, view pages for all 109 resources, configuration screens (letterhead, templates, seal, organisation settings), provider portal forms, dashboards and reports, `carrier_logo_url` on mobile payloads. |
 | r20260927-091032 | **Hotfix:** claim and policy header actions were failing on Livewire round-trips (tenant lost), now fixed. Also adds claim payments, disputes and recoveries, the claim evidence download and dashboard auto-refresh. |
 
-## 3. Built and committed, NOT yet live (master `ed3476e` and earlier; 21 commits after bbd29f7)
+## 3. Deployed in r20260927-174612 (previously pending) (master `ed3476e` and earlier; 21 commits after bbd29f7)
 **Status:** web, RBAC, partner and underwriting suites are green (374 tests). The full suite is running on `ed3476e` in `C:\laragon\www\opesinsure-test`, database `opesinsure_test_rel4`.
 
 **Next steps:** backup, then rehearse the migrations on a copy of production, then deploy.
@@ -104,7 +104,7 @@ Earlier handover: `docs/WEB_APP_HANDOVER_2026-09-26.md`.
    - Payment-rail status screens.
 
 ## 5. Waiting on the owner
-1. **APK 1.5.0 download page.** The file is uploaded and verified (md5 `a50736ae…`). In `/srv/opesinsure/shared/.env` set:
+1. **APK 1.5.0 download page:** DONE by the mobile session at the owner's request. The file is uploaded and verified (md5 `a50736ae…`). In `/srv/opesinsure/shared/.env` set:
    - `MOBILE_APP_VERSION=1.5.0`
    - `MOBILE_APP_ANDROID_SIZE="65 MB"`
    - `MOBILE_LATEST_VERSION=1.5.0`
@@ -119,7 +119,7 @@ Earlier handover: `docs/WEB_APP_HANDOVER_2026-09-26.md`.
    - Should only clinical staff raise pre-authorizations?
    - Which role may request endorsements (the route is currently ungated)?
    - Approval inbox now requires `approvals.decide`.
-   - Demo mode: turn it off? It stays on until the owner says so.
+   - Demo mode: the owner has said to turn it off. That is BLOCKED until an OTP provider is configured (all Etech/Twilio drivers report not configured) and MoMo is fixed. Otherwise nobody can sign in.
 7. **Open questions.** See `docs/spec/OWNER_OPEN_QUESTIONS.md`.
 
 ## 6. Operations
