@@ -22,7 +22,15 @@ use Illuminate\Database\Eloquent\Model;
  *   documentViewer()    SSR §27 documents (security-level filtered)
  *   financialPanel()    SSR §28 payments / reconciliation / journal
  *   authorityWidget()   SSR §29 within-authority / referral
+ *   relatedRecords()    REQ-UI-002 related records (RelatedRecordsQuery)
  *   detailTabs()        header + failures + tabs of the above
+ *
+ * Core-record detail pages (policy, claim, quote, proposal, document, party,
+ * customer, partner) use detailTabs() with an Overview schema, the Related
+ * tab and `without` to drop tabs that do not apply, e.g.
+ *   RecordShell::detailTabs('proposal', [Section::make(...)], related: true, without: ['documents'])
+ * Overview sections should be built with CoreRecordOverview (same folder).
+ * Configuration / reference-data resources use RecordInfolist instead.
  */
 final class RecordShell
 {
@@ -92,6 +100,13 @@ final class RecordShell
             ->columnSpanFull();
     }
 
+    public static function relatedRecords(): View
+    {
+        return View::make('filament.shared.related-records')
+            ->viewData(fn (?Model $record) => ['groups' => $record ? app(\App\Application\WebExperiences\RelatedRecordsQuery::class)->for($record) : []])
+            ->columnSpanFull();
+    }
+
     /** @param  Closure(Model): ?int  $amountMinor */
     public static function authorityWidget(string $action, Closure $amountMinor, ?Closure $currency = null): View
     {
@@ -107,15 +122,22 @@ final class RecordShell
      *
      * @param  array<int, \Filament\Schemas\Components\Component>  $overview
      */
-    public static function detailTabs(string $subjectType, array $overview = [], ?array $authority = null): array
+    public static function detailTabs(string $subjectType, array $overview = [], ?array $authority = null, bool $related = false, array $without = []): array
     {
         $tabs = [];
         if ($overview !== []) {
             $tabs[] = Tabs\Tab::make(__('web_experience.tabs.overview'))->schema($overview);
         }
         $tabs[] = Tabs\Tab::make(__('web_experience.tabs.timeline'))->schema([self::timeline($subjectType)]);
-        $tabs[] = Tabs\Tab::make(__('web_experience.tabs.documents'))->schema([self::documentViewer()]);
-        $tabs[] = Tabs\Tab::make(__('web_experience.tabs.financial'))->schema([self::financialBreakdown(), self::financialPanel()]);
+        if (! in_array('documents', $without, true)) {
+            $tabs[] = Tabs\Tab::make(__('web_experience.tabs.documents'))->schema([self::documentViewer()]);
+        }
+        if (! in_array('financial', $without, true)) {
+            $tabs[] = Tabs\Tab::make(__('web_experience.tabs.financial'))->schema([self::financialBreakdown(), self::financialPanel()]);
+        }
+        if ($related) {
+            $tabs[] = Tabs\Tab::make(__('web_experience.tabs.related'))->schema([self::relatedRecords()]);
+        }
         if ($authority !== null) {
             $tabs[] = Tabs\Tab::make(__('web_experience.tabs.authority'))->schema([self::authorityWidget(...$authority)]);
         }

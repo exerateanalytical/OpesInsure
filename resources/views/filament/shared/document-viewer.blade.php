@@ -31,7 +31,8 @@
                     <td data-label="{{ __('web_experience.documents.issued') }}" class="oi-num">{{ $d['issued_at'] ?? '—' }}</td>
                     <td data-label="{{ __('web_experience.documents.expires') }}" class="oi-num">{{ $d['expires_at'] ?? '—' }}</td>
                     <td data-label="{{ __('web_experience.documents.replaces') }}" class="oi-num">{{ $d['replaces'] ? \Illuminate\Support\Str::limit($d['replaces'], 8, '…') : '—' }}</td>
-                    <td data-label="">@if ($d['verify_url'])<a href="{{ $d['verify_url'] }}" target="_blank" rel="noopener" class="fi-link" style="color:var(--oi-blue-600);font-weight:600">{{ __('web_experience.documents.verify') }}</a>@endif</td>
+                    <td data-label="">@if ($d['verify_url'])<a href="{{ $d['verify_url'] }}" target="_blank" rel="noopener" class="fi-link" style="color:var(--oi-blue-600);font-weight:600">{{ __('web_experience.documents.verify') }}</a>@endif
+                        @if (! empty($d['download_url']))<a href="{{ $d['download_url'] }}" target="_blank" rel="noopener" class="fi-link" style="color:var(--oi-blue-600);font-weight:600;margin-left:.75rem" data-testid="document-download">{{ __('web_experience.documents.download') }}</a>@endif</td>
                 </tr>
             @endforeach
             </tbody>

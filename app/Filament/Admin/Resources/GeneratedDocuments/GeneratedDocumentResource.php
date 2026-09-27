@@ -48,6 +48,45 @@ final class GeneratedDocumentResource extends Resource
         return $schema->components([]);
     }
 
+    /** Revoke / replace / cancel through DocumentStatusService (shared by the registry table and the detail page). */
+    public static function statusChangeAction(): Actions\Action
+    {
+        return Actions\Action::make('statusChange')->label('Revoke / replace')->icon(Heroicon::OutlinedNoSymbol)->color('danger')
+            ->visible(fn ($record) => in_array($record->status, DocumentRegister::CURRENT_STATUSES, true))
+            ->schema([
+                Forms\Components\Select::make('action')->options(['REVOKE' => 'Revoke', 'REPLACE' => 'Replace', 'CANCEL' => 'Cancel'])->required()->live(),
+                Forms\Components\Select::make('replacement_document_id')->label('Replacement document')->visible(fn ($get) => $get('action') === 'REPLACE')
+                    ->options(fn ($record) => \App\Models\Document::where('policy_id', $record->policy_id)->whereKeyNot($record->id)->whereIn('status', DocumentRegister::CURRENT_STATUSES)->get()->mapWithKeys(fn ($d) => [$d->id => ($d->document_number ?? $d->verification_code).' · '.$d->document_type_code])->all()),
+                Forms\Components\Textarea::make('reason')->required()->minLength(5),
+            ])
+            ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(\App\Application\Documents\Engine\DocumentStatusService::class)->request($record, $data['action'], $data['reason'], auth()->user(), $data['replacement_document_id'] ?? null)));
+    }
+
+    public static function canView($record): bool
+    {
+        return static::canAccessDocumentEngine() && DocumentAccessPolicy::staffMay(auth()->user(), $record);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        $o = \App\Filament\Shared\Components\CoreRecordOverview::class;
+
+        return $schema->components(\App\Filament\Shared\Components\RecordShell::detailTabs('document', [
+            $o::section('document', [
+                $o::text('document_number', 'number')->copyable()->fontFamily('mono'), $o::status(), $o::text('document_type_code', 'type'),
+                $o::text('title', 'subject'), $o::text('policy.policy_number', 'policy'), $o::text('party.display_name', 'customer'),
+                $o::text('issuer_type', 'issuer')->badge(), $o::text('document_origin', 'origin'), $o::text('document_stage', 'stage'),
+                $o::text('language'), $o::text('template_version'), $o::text('status_reason'),
+            ]),
+            $o::section('integrity', [
+                $o::text('security_level')->badge(), $o::text('verification_code')->copyable()->fontFamily('mono'), $o::text('verification_status', 'status'),
+                $o::date('issued_at', 'issued', true), $o::date('valid_from', 'valid_from'), $o::date('valid_until', 'valid_until'),
+                \Filament\Infolists\Components\IconEntry::make('is_carrier_original')->label(__('web_experience.fields.carrier_original'))->boolean(),
+                $o::text('sha256')->fontFamily('mono')->columnSpanFull(),
+            ]),
+        ], null, true, ['financial']));
+    }
+
     public static function table(Table $table): Table
     {
         return $table->defaultSort('created_at', 'desc')
@@ -71,15 +110,8 @@ final class GeneratedDocumentResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_carrier_original')->label('Carrier originals'),
             ])
             ->recordActions([
-                Actions\Action::make('statusChange')->label('Revoke / replace')->icon(Heroicon::OutlinedNoSymbol)->color('danger')
-                    ->visible(fn ($record) => in_array($record->status, DocumentRegister::CURRENT_STATUSES, true))
-                    ->schema([
-                        Forms\Components\Select::make('action')->options(['REVOKE' => 'Revoke', 'REPLACE' => 'Replace', 'CANCEL' => 'Cancel'])->required()->live(),
-                        Forms\Components\Select::make('replacement_document_id')->label('Replacement document')->visible(fn ($get) => $get('action') === 'REPLACE')
-                            ->options(fn ($record) => \App\Models\Document::where('policy_id', $record->policy_id)->whereKeyNot($record->id)->whereIn('status', DocumentRegister::CURRENT_STATUSES)->get()->mapWithKeys(fn ($d) => [$d->id => ($d->document_number ?? $d->verification_code).' · '.$d->document_type_code])->all()),
-                        Forms\Components\Textarea::make('reason')->required()->minLength(5),
-                    ])
-                    ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(\App\Application\Documents\Engine\DocumentStatusService::class)->request($record, $data['action'], $data['reason'], auth()->user(), $data['replacement_document_id'] ?? null))),
+                Actions\ViewAction::make(),
+                self::statusChangeAction(),
             ])
             ->headerActions([
                 Actions\Action::make('carrierUpload')->label('Upload carrier document')->icon(Heroicon::OutlinedArrowUpTray)
@@ -115,6 +147,7 @@ final class GeneratedDocumentResource extends Resource
     {
         return [
             'index' => Pages\ListGeneratedDocuments::route('/'),
+            'view' => Pages\ViewGeneratedDocument::route('/{record}'),
         ];
     }
 }

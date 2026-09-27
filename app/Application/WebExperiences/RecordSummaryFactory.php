@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\WebExperiences;
 
-use App\Models\{Claim, Policy, Quote};
+use App\Models\{Claim, Document, Partner, Party, Policy, Proposal, Quote, TenantCustomer};
 use Illuminate\Database\Eloquent\Model;
 
 /** Builds RecordSummary for the canonical records (policy, claim, quote); falls back to generic columns. */
@@ -16,6 +16,11 @@ final class RecordSummaryFactory
             $record instanceof Policy => $this->policy($record),
             $record instanceof Claim => $this->claim($record),
             $record instanceof Quote => $this->quote($record),
+            $record instanceof Proposal => $this->proposal($record),
+            $record instanceof Document => $this->document($record),
+            $record instanceof Party => $this->party($record),
+            $record instanceof TenantCustomer => $this->customer($record),
+            $record instanceof Partner => $this->partner($record),
             default => $this->generic($record),
         };
     }
@@ -48,7 +53,7 @@ final class RecordSummaryFactory
     {
         $status = (string) $q->status;
 
-        return new RecordSummary('quote', (string) $q->getKey(), (string) ($q->party?->display_name ?? __('web_experience.unknown')), $status, RecordSummary::toneFor($status), [
+        return new RecordSummary('quote', (string) ($q->quote_number ?: $q->getKey()), (string) ($q->party?->display_name ?? __('web_experience.unknown')), $status, RecordSummary::toneFor($status), [
             __('web_experience.meta.line') => $q->line_code,
             __('web_experience.meta.created') => optional($q->created_at)->toDateTimeString(),
         ], ['overview', 'timeline']);
@@ -59,5 +64,60 @@ final class RecordSummaryFactory
         $status = (string) ($m->getAttribute('status') ?? 'UNKNOWN');
 
         return new RecordSummary(class_basename($m), (string) $m->getKey(), class_basename($m), $status, RecordSummary::toneFor($status));
+    }
+
+    private function proposal(Proposal $p): RecordSummary
+    {
+        $status = (string) $p->status;
+        $total = data_get($p->terms_snapshot, 'total_minor');
+
+        return new RecordSummary('proposal', (string) ($p->proposal_number ?: $p->getKey()), (string) ($p->party?->display_name ?? __('web_experience.unknown')), $status, RecordSummary::toneFor($status), [
+            __('web_experience.meta.product') => $p->offer?->product?->name,
+            __('web_experience.meta.carrier') => $p->offer?->carrier?->cima_code,
+            __('web_experience.meta.total') => $total !== null ? Money::format((int) $total, (string) (data_get($p->terms_snapshot, 'currency') ?: 'XAF')) : null,
+            __('web_experience.meta.submitted') => optional($p->submitted_at)->toDateTimeString(),
+        ], ['overview', 'timeline', 'documents', 'financial', 'related']);
+    }
+
+    private function document(Document $d): RecordSummary
+    {
+        $status = (string) $d->status;
+
+        return new RecordSummary('document', (string) ($d->document_number ?: $d->verification_code ?: $d->getKey()), (string) ($d->title ?: $d->document_type_code ?: $d->category), $status, RecordSummary::toneFor($status), [
+            __('web_experience.meta.type') => $d->document_type_code,
+            __('web_experience.meta.security') => $d->security_level,
+            __('web_experience.meta.issued') => optional($d->issued_at)->toDateTimeString(),
+            __('web_experience.meta.valid_until') => optional($d->valid_until)->toDateString(),
+        ], ['overview', 'timeline', 'documents', 'related']);
+    }
+
+    private function party(Party $p): RecordSummary
+    {
+        $status = (string) $p->status;
+
+        return new RecordSummary('party', (string) $p->display_name, (string) $p->type, $status, RecordSummary::toneFor($status), [
+            __('web_experience.meta.created') => optional($p->created_at)->toDateString(),
+        ], ['overview', 'timeline', 'documents', 'related']);
+    }
+
+    private function customer(TenantCustomer $c): RecordSummary
+    {
+        $status = (string) $c->status;
+
+        return new RecordSummary('customer', (string) $c->customer_number, (string) ($c->party?->display_name ?? __('web_experience.unknown')), $status, RecordSummary::toneFor($status), [
+            __('web_experience.meta.organization') => $c->tenant?->legal_name,
+            __('web_experience.meta.created') => optional($c->created_at)->toDateString(),
+        ], ['overview', 'timeline', 'documents', 'related']);
+    }
+
+    private function partner(Partner $p): RecordSummary
+    {
+        $status = (string) $p->status;
+
+        return new RecordSummary('partner', (string) ($p->party?->display_name ?? $p->legal_name ?? $p->getKey()), (string) $p->type, $status, RecordSummary::toneFor($status), [
+            __('web_experience.meta.licence') => $p->licence_number,
+            __('web_experience.meta.licence_expires') => optional($p->licence_expires_on)->toDateString(),
+            __('web_experience.meta.organization') => $p->tenant?->legal_name,
+        ], ['overview', 'timeline', 'documents', 'related']);
     }
 }

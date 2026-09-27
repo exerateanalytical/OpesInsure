@@ -1,2 +1,2 @@
 <?php
-namespace App\Filament\Admin\Resources\Customers\Pages;use App\Filament\Admin\Resources\Customers\CustomerResource;use Filament\Resources\Pages\ViewRecord;final class ViewCustomer extends ViewRecord{protected static string$resource=CustomerResource::class;}
+namespace App\Filament\Admin\Resources\Customers\Pages;use App\Filament\Admin\Resources\Customers\CustomerResource;use Filament\Resources\Pages\ViewRecord;final class ViewCustomer extends ViewRecord{protected static string$resource=CustomerResource::class;protected function getHeaderActions():array{return[CustomerResource::statusAction()->record($this->record)->after(fn()=>$this->record->refresh())];}}

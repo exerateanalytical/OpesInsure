@@ -36,6 +36,21 @@ final class FinancialPanelQuery
                 ])->all();
         }
 
+        if ($record instanceof \App\Models\Proposal) {
+            return DB::table('payment_intents')->where(['tenant_id' => $record->tenant_id, 'proposal_id' => $record->id])
+                ->orderBy('created_at')->get()->map(fn ($p) => [
+                    'label' => __('web_experience.financial.premium_payment'),
+                    'amount' => Money::format((int) $p->amount_minor, $p->currency),
+                    'status' => $p->status,
+                    'source' => $p->provider,
+                    'payer' => $p->payer_phone_e164 ? substr((string) $p->payer_phone_e164, 0, 7).'•••' : null,
+                    'payee' => $record->offer?->carrier?->cima_code,
+                    'reference' => $p->provider_reference,
+                    'reconciliation' => DB::table('reconciliation_items')->where('matched_type', 'payment_intent')->where('matched_id', $p->id)->value('status'),
+                    'journal' => DB::table('journals')->where('reference_id', $p->id)->value('id'),
+                ])->all();
+        }
+
         if ($record instanceof Claim) {
             return $record->payments()->orderBy('created_at')->get()->map(fn ($p) => [
                 'label' => __('web_experience.financial.claim_payment'),

@@ -3,8 +3,8 @@
 return [
     'unknown' => 'Inconnu',
     'portals' => ['insurer' => 'Portail assureur', 'broker' => 'Portail courtier'],
-    'meta' => ['carrier' => 'Assureur', 'premium' => 'Prime', 'cover' => 'Couverture', 'version' => 'Version', 'priority' => 'Priorité', 'reserve' => 'Provision', 'assignee' => 'Gestionnaire', 'loss_at' => 'Date du sinistre', 'line' => 'Branche', 'created' => 'Créé le'],
-    'tabs' => ['overview' => 'Aperçu', 'timeline' => 'Historique', 'documents' => 'Documents', 'financial' => 'Finances', 'authority' => 'Pouvoirs'],
+    'meta' => ['carrier' => 'Assureur', 'premium' => 'Prime', 'cover' => 'Couverture', 'version' => 'Version', 'priority' => 'Priorité', 'reserve' => 'Provision', 'assignee' => 'Gestionnaire', 'loss_at' => 'Date du sinistre', 'line' => 'Branche', 'created' => 'Créé le', 'product' => 'Produit', 'total' => 'Total', 'submitted' => 'Soumis le', 'type' => 'Type', 'security' => 'Niveau de sécurité', 'issued' => 'Émis le', 'valid_until' => "Valide jusqu'au", 'organization' => 'Organisation', 'licence' => 'Agrément', 'licence_expires' => "Fin d'agrément"],
+    'tabs' => ['overview' => 'Aperçu', 'timeline' => 'Historique', 'documents' => 'Documents', 'financial' => 'Finances', 'authority' => 'Pouvoirs', 'related' => 'Dossiers liés'],
     'list' => [
         'empty_heading' => 'Aucun élément pour le moment',
         'empty_description' => 'Les enregistrements apparaîtront ici dès leur création.',
@@ -13,7 +13,7 @@ return [
         'export' => 'Exporter la sélection (CSV)',
     ],
     'timeline' => ['heading' => 'Historique', 'empty' => 'Aucun événement enregistré.', 'system' => 'Système', 'actor' => 'Acteur', 'role' => 'Rôle', 'event' => 'Événement', 'result' => 'Résultat', 'reason' => 'Motif', 'channel' => 'Canal', 'document' => 'Document'],
-    'documents' => ['heading' => 'Documents', 'empty' => 'Aucun document émis pour cet enregistrement.', 'withheld' => ':count document(s) masqué(s) : votre rôle ne permet pas ce niveau de sécurité.', 'certificate' => "Attestation d'assurance", 'number' => 'Numéro', 'version' => 'Version', 'status' => 'Statut', 'verification' => 'Vérification', 'issuer' => 'Émetteur', 'issued' => 'Émis le', 'expires' => 'Expire le', 'replaces' => 'Remplace', 'verify' => 'Vérifier (QR)'],
+    'documents' => ['heading' => 'Documents', 'empty' => 'Aucun document émis pour cet enregistrement.', 'withheld' => ':count document(s) masqué(s) : votre rôle ne permet pas ce niveau de sécurité.', 'certificate' => "Attestation d'assurance", 'number' => 'Numéro', 'version' => 'Version', 'status' => 'Statut', 'verification' => 'Vérification', 'issuer' => 'Émetteur', 'issued' => 'Émis le', 'expires' => 'Expire le', 'replaces' => 'Remplace', 'verify' => 'Vérifier (QR)', 'download' => 'Télécharger'],
     'financial' => ['heading' => 'Finances', 'empty' => 'Aucun mouvement financier enregistré.', 'premium_payment' => 'Paiement de prime', 'claim_payment' => 'Règlement de sinistre', 'amount' => 'Montant', 'status' => 'Statut', 'source' => 'Source', 'payer' => 'Payeur', 'payee' => 'Bénéficiaire', 'reference' => 'Référence', 'reconciliation' => 'Rapprochement', 'journal' => 'Écriture'],
     'authority' => ['heading' => 'Pouvoirs', 'amount' => 'Montant de la transaction', 'yours' => 'Vos pouvoirs', 'required' => 'Pouvoirs requis', 'within' => 'Dans vos pouvoirs', 'referral' => 'Renvoi requis', 'yes' => 'Oui', 'no' => 'Non', 'no_rule' => "Aucune règle d'approbation active : le double contrôle par défaut s'applique.", 'restricted' => "Le détail des règles est réservé aux lecteurs de la matrice d'approbation."],
     'metrics' => [
@@ -89,5 +89,30 @@ return [
         'group_distribution' => 'Distribution', 'agreements' => 'Conventions et délégations', 'agreement' => 'Convention assureur-courtier', 'number' => 'Numéro', 'broker' => 'Courtier',
         'effective_from' => 'En vigueur du', 'effective_until' => 'En vigueur jusqu’au', 'approved_at' => 'Approuvée le', 'products' => 'Produits autorisés', 'can_quote' => 'Peut coter', 'can_bind' => 'Peut souscrire', 'commission_bp' => 'Commission (points de base)',
         'bordereaux' => 'Bordereaux', 'settlements' => 'Règlements', 'receivables' => 'Commissions à recevoir', 'staff' => 'Personnel',
+    ],
+    // Pages de détail des dossiers principaux (onglet lié RecordShell + CoreRecordOverview).
+    'related' => [
+        'empty' => 'Aucun dossier lié.', 'record' => 'Dossier', 'detail' => 'Détail', 'open' => 'Ouvrir', 'replaces' => 'Version antérieure', 'replaced_by' => 'Remplacement',
+        'groups' => [
+            'customer' => 'Client', 'claimant' => 'Déclarant', 'identity' => 'Identité', 'proposal' => 'Proposition', 'proposals' => 'Propositions', 'quote' => 'Devis', 'quotes' => 'Devis', 'offers' => 'Offres des assureurs',
+            'policy' => 'Police', 'policies' => 'Polices', 'claim' => 'Sinistre', 'claims' => 'Sinistres', 'claim_payments' => 'Règlements de sinistre', 'transactions' => 'Avenants et résiliations', 'renewals' => 'Renouvellements',
+            'commissions' => 'Commissions', 'statements' => 'Relevés partenaire', 'licences' => 'Agréments', 'attributions' => 'Rattachements clients', 'customer_relationships' => 'Relations clients',
+            'underwriting' => 'Souscription', 'versions' => 'Autres versions',
+        ],
+    ],
+    'sections' => [
+        'policy' => 'Police', 'cover' => 'Couverture et prime', 'claim' => 'Sinistre', 'loss' => 'Survenance', 'amounts' => 'Montants', 'quote' => 'Devis', 'proposal' => 'Proposition', 'document' => 'Document',
+        'integrity' => 'Intégrité et vérification', 'party' => 'Identité', 'customer' => 'Relation client', 'partner' => 'Profil partenaire', 'lifecycle' => 'Cycle de vie',
+    ],
+    'fields' => [
+        'number' => 'Numéro', 'status' => 'Statut', 'customer' => 'Client', 'carrier' => 'Assureur', 'product' => 'Produit', 'premium' => 'Prime', 'cover_start' => 'Début de garantie', 'cover_end' => 'Fin de garantie',
+        'issued' => 'Émis le', 'version' => 'Version', 'certificate_number' => "Numéro d'attestation", 'issuance_reference' => "Référence d'émission", 'policy' => 'Police', 'loss_date' => 'Date du sinistre', 'loss_location' => 'Lieu du sinistre',
+        'estimated_loss' => 'Perte estimée', 'reserve' => 'Provision actuelle', 'approved_amount' => 'Montant approuvé', 'priority' => 'Priorité', 'assignee' => 'Gestionnaire', 'submitted' => 'Soumis le', 'acknowledged' => 'Accusé le',
+        'closed' => 'Clôturé le', 'carrier_reference' => "Référence de l'assureur", 'closure_summary' => 'Résumé de clôture', 'line' => 'Branche', 'channel' => 'Canal', 'rated' => 'Tarifé le', 'expires' => 'Expire le', 'accepted' => 'Accepté le',
+        'declined' => 'Refusé le', 'decline_reason' => 'Motif de refus', 'decided' => 'Décidé le', 'total' => 'Total', 'submission_count' => 'Soumissions', 'withdrawn' => 'Retiré le', 'type' => 'Type', 'group' => 'Groupe',
+        'security_level' => 'Niveau de sécurité', 'language' => 'Langue', 'issuer' => 'Émetteur', 'origin' => 'Origine', 'stage' => 'Étape', 'verification_code' => 'Code de vérification', 'template_version' => 'Version du modèle',
+        'valid_from' => 'Valide à partir du', 'valid_until' => "Valide jusqu'au", 'sha256' => 'SHA-256', 'status_reason' => 'Motif du statut', 'carrier_original' => "Original de l'assureur", 'subject' => 'Objet', 'display_name' => 'Nom',
+        'created' => 'Créé le', 'organization' => 'Organisation', 'segment' => 'Segment', 'external_reference' => 'Référence externe', 'licence' => 'Agrément', 'licence_expires' => "Fin d'agrément",
+        'regulatory_status' => 'Statut réglementaire', 'legal_name' => 'Raison sociale', 'trade_name' => 'Nom commercial', 'claimant' => 'Déclarant', 'partner' => 'Partenaire',
     ],
 ];

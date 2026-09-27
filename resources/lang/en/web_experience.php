@@ -3,8 +3,8 @@
 return [
     'unknown' => 'Unknown',
     'portals' => ['insurer' => 'Insurer portal', 'broker' => 'Broker portal'],
-    'meta' => ['carrier' => 'Carrier', 'premium' => 'Premium', 'cover' => 'Cover', 'version' => 'Version', 'priority' => 'Priority', 'reserve' => 'Reserve', 'assignee' => 'Assignee', 'loss_at' => 'Loss date', 'line' => 'Line', 'created' => 'Created'],
-    'tabs' => ['overview' => 'Overview', 'timeline' => 'Timeline', 'documents' => 'Documents', 'financial' => 'Financial', 'authority' => 'Authority'],
+    'meta' => ['carrier' => 'Carrier', 'premium' => 'Premium', 'cover' => 'Cover', 'version' => 'Version', 'priority' => 'Priority', 'reserve' => 'Reserve', 'assignee' => 'Assignee', 'loss_at' => 'Loss date', 'line' => 'Line', 'created' => 'Created', 'product' => 'Product', 'total' => 'Total', 'submitted' => 'Submitted', 'type' => 'Type', 'security' => 'Security level', 'issued' => 'Issued', 'valid_until' => 'Valid until', 'organization' => 'Organization', 'licence' => 'Licence', 'licence_expires' => 'Licence expires'],
+    'tabs' => ['overview' => 'Overview', 'timeline' => 'Timeline', 'documents' => 'Documents', 'financial' => 'Financial', 'authority' => 'Authority', 'related' => 'Related records'],
     'list' => [
         'empty_heading' => 'Nothing here yet',
         'empty_description' => 'Records appear here as soon as they are created.',
@@ -13,7 +13,7 @@ return [
         'export' => 'Export selected (CSV)',
     ],
     'timeline' => ['heading' => 'Timeline', 'empty' => 'No recorded events yet.', 'system' => 'System', 'actor' => 'Actor', 'role' => 'Role', 'event' => 'Event', 'result' => 'Result', 'reason' => 'Reason', 'channel' => 'Channel', 'document' => 'Document'],
-    'documents' => ['heading' => 'Documents', 'empty' => 'No documents issued for this record.', 'withheld' => ':count document(s) hidden: your role cannot view their security level.', 'certificate' => 'Insurance certificate', 'number' => 'Number', 'version' => 'Version', 'status' => 'Status', 'verification' => 'Verification', 'issuer' => 'Issuer', 'issued' => 'Issued', 'expires' => 'Expires', 'replaces' => 'Replaces', 'verify' => 'Verify (QR)'],
+    'documents' => ['heading' => 'Documents', 'empty' => 'No documents issued for this record.', 'withheld' => ':count document(s) hidden: your role cannot view their security level.', 'certificate' => 'Insurance certificate', 'number' => 'Number', 'version' => 'Version', 'status' => 'Status', 'verification' => 'Verification', 'issuer' => 'Issuer', 'issued' => 'Issued', 'expires' => 'Expires', 'replaces' => 'Replaces', 'verify' => 'Verify (QR)', 'download' => 'Download'],
     'financial' => ['heading' => 'Financial', 'empty' => 'No financial movements recorded.', 'premium_payment' => 'Premium payment', 'claim_payment' => 'Claim payment', 'amount' => 'Amount', 'status' => 'Status', 'source' => 'Source', 'payer' => 'Payer', 'payee' => 'Payee', 'reference' => 'Reference', 'reconciliation' => 'Reconciliation', 'journal' => 'Journal'],
     'authority' => ['heading' => 'Authority', 'amount' => 'Transaction amount', 'yours' => 'Your authority', 'required' => 'Required authority', 'within' => 'Within your authority', 'referral' => 'Referral required', 'yes' => 'Yes', 'no' => 'No', 'no_rule' => 'No active approval rule: the default maker-checker applies.', 'restricted' => 'Rule details are visible to approval-matrix viewers only.'],
     'metrics' => [
@@ -89,5 +89,30 @@ return [
         'group_distribution' => 'Distribution', 'agreements' => 'Contracts & delegated authority', 'agreement' => 'Carrier-broker agreement', 'number' => 'Number', 'broker' => 'Broker',
         'effective_from' => 'Effective from', 'effective_until' => 'Effective until', 'approved_at' => 'Approved', 'products' => 'Authorised products', 'can_quote' => 'May quote', 'can_bind' => 'May bind', 'commission_bp' => 'Commission (basis points)',
         'bordereaux' => 'Bordereaux', 'settlements' => 'Settlements', 'receivables' => 'Commission receivables', 'staff' => 'Staff',
+    ],
+    // Core-record detail pages (RecordShell related tab + CoreRecordOverview).
+    'related' => [
+        'empty' => 'No related records.', 'record' => 'Record', 'detail' => 'Detail', 'open' => 'Open', 'replaces' => 'Earlier version', 'replaced_by' => 'Replacement',
+        'groups' => [
+            'customer' => 'Customer', 'claimant' => 'Claimant', 'identity' => 'Identity', 'proposal' => 'Proposal', 'proposals' => 'Proposals', 'quote' => 'Quote', 'quotes' => 'Quotes', 'offers' => 'Carrier offers',
+            'policy' => 'Policy', 'policies' => 'Policies', 'claim' => 'Claim', 'claims' => 'Claims', 'claim_payments' => 'Claim payments', 'transactions' => 'Endorsements & cancellations', 'renewals' => 'Renewals',
+            'commissions' => 'Commissions', 'statements' => 'Partner statements', 'licences' => 'Licences', 'attributions' => 'Customer attributions', 'customer_relationships' => 'Customer relationships',
+            'underwriting' => 'Underwriting', 'versions' => 'Other versions',
+        ],
+    ],
+    'sections' => [
+        'policy' => 'Policy', 'cover' => 'Cover & premium', 'claim' => 'Claim', 'loss' => 'Loss', 'amounts' => 'Amounts', 'quote' => 'Quote', 'proposal' => 'Proposal', 'document' => 'Document',
+        'integrity' => 'Integrity & verification', 'party' => 'Identity', 'customer' => 'Customer relationship', 'partner' => 'Partner profile', 'lifecycle' => 'Lifecycle',
+    ],
+    'fields' => [
+        'number' => 'Number', 'status' => 'Status', 'customer' => 'Customer', 'carrier' => 'Carrier', 'product' => 'Product', 'premium' => 'Premium', 'cover_start' => 'Cover starts', 'cover_end' => 'Cover ends',
+        'issued' => 'Issued', 'version' => 'Version', 'certificate_number' => 'Certificate number', 'issuance_reference' => 'Issuance reference', 'policy' => 'Policy', 'loss_date' => 'Loss date', 'loss_location' => 'Loss location',
+        'estimated_loss' => 'Estimated loss', 'reserve' => 'Current reserve', 'approved_amount' => 'Approved amount', 'priority' => 'Priority', 'assignee' => 'Assignee', 'submitted' => 'Submitted', 'acknowledged' => 'Acknowledged',
+        'closed' => 'Closed', 'carrier_reference' => 'Carrier reference', 'closure_summary' => 'Closure summary', 'line' => 'Line', 'channel' => 'Channel', 'rated' => 'Rated', 'expires' => 'Expires', 'accepted' => 'Accepted',
+        'declined' => 'Declined', 'decline_reason' => 'Decline reason', 'decided' => 'Decided', 'total' => 'Total', 'submission_count' => 'Submissions', 'withdrawn' => 'Withdrawn', 'type' => 'Type', 'group' => 'Group',
+        'security_level' => 'Security level', 'language' => 'Language', 'issuer' => 'Issuer', 'origin' => 'Origin', 'stage' => 'Stage', 'verification_code' => 'Verification code', 'template_version' => 'Template version',
+        'valid_from' => 'Valid from', 'valid_until' => 'Valid until', 'sha256' => 'SHA-256', 'status_reason' => 'Status reason', 'carrier_original' => 'Carrier original', 'subject' => 'Subject', 'display_name' => 'Name',
+        'created' => 'Created', 'organization' => 'Organization', 'segment' => 'Segment', 'external_reference' => 'External reference', 'licence' => 'Licence', 'licence_expires' => 'Licence expires',
+        'regulatory_status' => 'Regulatory status', 'legal_name' => 'Legal name', 'trade_name' => 'Trade name', 'claimant' => 'Claimant', 'partner' => 'Partner',
     ],
 ];

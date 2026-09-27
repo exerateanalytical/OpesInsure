@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Application\WebExperiences;
 
 use App\Application\Documents\Engine\DocumentAccessPolicy;
-use App\Models\{Claim, Document, Policy, User};
+use App\Domain\Tenancy\TenantContext;
+use App\Models\{Claim, Document, Partner, Party, Policy, Proposal, TenantCustomer, User};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -20,11 +21,18 @@ final class DocumentPanelQuery
     /** @return array{rows: list<array<string, mixed>>, withheld: int} */
     public function for(Model $record, User $viewer): array
     {
-        $query = Document::query()->where('tenant_id', $record->getAttribute('tenant_id'));
+        $tenantId = $record->getAttribute('tenant_id') ?: app(TenantContext::class)->id();
+        $query = Document::query()->where('tenant_id', $tenantId);
         if ($record instanceof Policy) {
             $query->where('policy_id', $record->getKey());
         } elseif ($record instanceof Claim) {
             $query->where('claim_id', $record->getKey());
+        } elseif ($record instanceof Proposal) {
+            $query->whereIn('policy_id', Policy::where(['tenant_id' => $tenantId, 'proposal_id' => $record->getKey()])->select('id'));
+        } elseif ($record instanceof Party || $record instanceof TenantCustomer || $record instanceof Partner) {
+            $query->where('party_id', $record instanceof Party ? $record->getKey() : $record->getAttribute('party_id'));
+        } elseif ($record instanceof Document) {
+            $query->whereKey($record->getKey());
         } else {
             return ['rows' => [], 'withheld' => 0];
         }
@@ -50,6 +58,7 @@ final class DocumentPanelQuery
                 'replaces' => $d->supersedes_document_id,
                 'replaced_by' => $d->superseded_by_document_id,
                 'verify_url' => $d->verification_code ? route('public.verify', ['code' => $d->verification_code]) : null,
+                'download_url' => self::downloadUrl($d),
             ];
         }
 
@@ -59,11 +68,26 @@ final class DocumentPanelQuery
                     'id' => $c->id, 'title' => __('web_experience.documents.certificate'), 'number' => $c->serial_number, 'version' => null,
                     'status' => $c->status, 'verification' => $c->status === 'VALID' ? 'VERIFIED' : $c->status, 'issuer' => 'CARRIER',
                     'issued_at' => substr((string) $c->issued_at, 0, 10), 'expires_at' => optional($record->coverage_ends_at)->toDateString(),
-                    'replaces' => null, 'replaced_by' => null, 'verify_url' => null,
+                    'replaces' => null, 'replaced_by' => null, 'verify_url' => null, 'download_url' => null,
                 ];
             }
         }
 
         return ['rows' => $rows, 'withheld' => $withheld];
+    }
+
+    /**
+     * Short-lived signed download link (the existing PolicyDocumentService /
+     * mobile.policy-documents.download route, which logs every access) for a
+     * stored, clean policy document; null otherwise. Callers only reach this
+     * for rows that already passed DocumentAccessPolicy::staffMay().
+     */
+    public static function downloadUrl(Document $d): ?string
+    {
+        if (! $d->policy_id || ! $d->storage_key || $d->scan_status !== 'CLEAN') {
+            return null;
+        }
+
+        return app(\App\Application\Policies\PolicyDocumentService::class)->downloadUrl($d);
     }
 }
