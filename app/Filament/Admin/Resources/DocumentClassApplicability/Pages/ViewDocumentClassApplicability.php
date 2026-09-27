@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\DocumentClassApplicability\Pages;
 
 use App\Filament\Admin\Resources\DocumentClassApplicability\DocumentClassApplicabilityResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListDocumentClassApplicability extends ListRecords
+final class ViewDocumentClassApplicability extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = DocumentClassApplicabilityResource::class;
 }

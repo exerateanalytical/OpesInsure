@@ -62,6 +62,6 @@ final class InstitutionVerificationLabelResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListInstitutionVerificationLabels::route('/')];
+        return ['index' => Pages\ListInstitutionVerificationLabels::route('/'), 'view' => Pages\ViewInstitutionVerificationLabel::route('/{record}')];
     }
 }

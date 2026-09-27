@@ -77,7 +77,6 @@ final class CimaMicroBranchResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCimaMicroBranches::route('/'),
-        ];
+            'index' => Pages\ListCimaMicroBranches::route('/'), 'view' => Pages\ViewCimaMicroBranch::route('/{record}')];
     }
 }

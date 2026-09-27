@@ -125,7 +125,6 @@ final class MasterDataImportResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMasterDataImports::route('/'),
-        ];
+            'index' => Pages\ListMasterDataImports::route('/'), 'view' => Pages\ViewMasterDataImport::route('/{record}')];
     }
 }

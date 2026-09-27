@@ -80,6 +80,6 @@ final class CimaReportingMappingResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCimaReportingMappings::route('/')];
+        return ['index' => Pages\ListCimaReportingMappings::route('/'), 'view' => Pages\ViewCimaReportingMapping::route('/{record}')];
     }
 }

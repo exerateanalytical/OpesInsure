@@ -75,7 +75,6 @@ final class DocumentNumberingFamilyResource extends Resource
         return [
             'index' => Pages\ListDocumentNumberingFamilies::route('/'),
             'create' => Pages\CreateDocumentNumberingFamily::route('/create'),
-            'edit' => Pages\EditDocumentNumberingFamily::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditDocumentNumberingFamily::route('/{record}/edit'), 'view' => Pages\ViewDocumentNumberingFamily::route('/{record}')];
     }
 }

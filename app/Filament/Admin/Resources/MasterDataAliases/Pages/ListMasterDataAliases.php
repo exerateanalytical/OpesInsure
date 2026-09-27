@@ -9,6 +9,8 @@ use Filament\Resources\Pages\ListRecords;
 
 final class ListMasterDataAliases extends ListRecords
 {
+    use \App\Filament\Shared\Concerns\OpensViewPage;
+
     protected static string $resource = MasterDataAliasResource::class;
 
     protected function getHeaderActions(): array

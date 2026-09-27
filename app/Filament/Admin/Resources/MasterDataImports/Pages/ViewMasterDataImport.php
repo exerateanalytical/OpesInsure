@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\MasterDataImports\Pages;
 
 use App\Filament\Admin\Resources\MasterDataImports\MasterDataImportResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListMasterDataImports extends ListRecords
+final class ViewMasterDataImport extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = MasterDataImportResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

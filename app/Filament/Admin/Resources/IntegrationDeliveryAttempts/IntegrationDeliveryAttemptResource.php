@@ -86,6 +86,6 @@ final class IntegrationDeliveryAttemptResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListIntegrationDeliveryAttempts::route('/')];
+        return ['index' => Pages\ListIntegrationDeliveryAttempts::route('/'), 'view' => Pages\ViewIntegrationDeliveryAttempt::route('/{record}')];
     }
 }

@@ -112,6 +112,6 @@ final class InstitutionProfileResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListInstitutionProfiles::route('/')];
+        return ['index' => Pages\ListInstitutionProfiles::route('/'), 'view' => Pages\ViewInstitutionProfile::route('/{record}')];
     }
 }

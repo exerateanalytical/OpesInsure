@@ -66,7 +66,6 @@ final class MasterDataDomainResource extends Resource
     {
         return [
             'index' => Pages\ListMasterDataDomains::route('/'),
-            'edit' => Pages\EditMasterDataDomain::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditMasterDataDomain::route('/{record}/edit'), 'view' => Pages\ViewMasterDataDomain::route('/{record}')];
     }
 }

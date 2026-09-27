@@ -51,6 +51,6 @@ final class DocumentPackItemResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListDocumentPackItems::route('/')];
+        return ['index' => Pages\ListDocumentPackItems::route('/'), 'view' => Pages\ViewDocumentPackItem::route('/{record}')];
     }
 }

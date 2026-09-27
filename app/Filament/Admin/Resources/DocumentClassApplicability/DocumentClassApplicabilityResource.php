@@ -48,6 +48,6 @@ final class DocumentClassApplicabilityResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListDocumentClassApplicability::route('/')];
+        return ['index' => Pages\ListDocumentClassApplicability::route('/'), 'view' => Pages\ViewDocumentClassApplicability::route('/{record}')];
     }
 }

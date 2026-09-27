@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\MasterDataDomains\Pages;
 
 use App\Filament\Admin\Resources\MasterDataDomains\MasterDataDomainResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListMasterDataDomains extends ListRecords
+final class ViewMasterDataDomain extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = MasterDataDomainResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

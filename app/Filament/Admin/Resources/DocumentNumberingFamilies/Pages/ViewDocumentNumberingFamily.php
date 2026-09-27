@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\DocumentNumberingFamilies\Pages;
 
 use App\Filament\Admin\Resources\DocumentNumberingFamilies\DocumentNumberingFamilyResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListDocumentNumberingFamilies extends ListRecords
+final class ViewDocumentNumberingFamily extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = DocumentNumberingFamilyResource::class;
 }

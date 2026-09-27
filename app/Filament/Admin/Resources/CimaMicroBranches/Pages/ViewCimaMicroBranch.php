@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CimaMicroBranches\Pages;
 
 use App\Filament\Admin\Resources\CimaMicroBranches\CimaMicroBranchResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCimaMicroBranches extends ListRecords
+final class ViewCimaMicroBranch extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CimaMicroBranchResource::class;
 }

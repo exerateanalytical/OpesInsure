@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\DocumentIssuanceProfiles\Pages;
 
 use App\Filament\Admin\Resources\DocumentIssuanceProfiles\DocumentIssuanceProfileResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListDocumentIssuanceProfiles extends ListRecords
+final class ViewDocumentIssuanceProfile extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = DocumentIssuanceProfileResource::class;
 }

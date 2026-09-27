@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\InstitutionDirectory\Pages;
 
 use App\Filament\Admin\Resources\InstitutionDirectory\InstitutionVerificationLabelResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListInstitutionVerificationLabels extends ListRecords
+final class ViewInstitutionVerificationLabel extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = InstitutionVerificationLabelResource::class;
 }

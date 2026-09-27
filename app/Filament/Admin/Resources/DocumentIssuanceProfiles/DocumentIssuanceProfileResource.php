@@ -83,7 +83,6 @@ final class DocumentIssuanceProfileResource extends Resource
         return [
             'index' => Pages\ListDocumentIssuanceProfiles::route('/'),
             'create' => Pages\CreateDocumentIssuanceProfile::route('/create'),
-            'edit' => Pages\EditDocumentIssuanceProfile::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditDocumentIssuanceProfile::route('/{record}/edit'), 'view' => Pages\ViewDocumentIssuanceProfile::route('/{record}')];
     }
 }

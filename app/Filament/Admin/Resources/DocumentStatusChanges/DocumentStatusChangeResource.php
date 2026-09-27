@@ -70,7 +70,6 @@ final class DocumentStatusChangeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDocumentStatusChanges::route('/'),
-        ];
+            'index' => Pages\ListDocumentStatusChanges::route('/'), 'view' => Pages\ViewDocumentStatusChange::route('/{record}')];
     }
 }

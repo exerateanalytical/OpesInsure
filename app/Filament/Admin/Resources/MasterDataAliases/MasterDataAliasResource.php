@@ -56,7 +56,6 @@ final class MasterDataAliasResource extends Resource
         return [
             'index' => Pages\ListMasterDataAliases::route('/'),
             'create' => Pages\CreateMasterDataAlias::route('/create'),
-            'edit' => Pages\EditMasterDataAlias::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditMasterDataAlias::route('/{record}/edit'), 'view' => Pages\ViewMasterDataAlias::route('/{record}')];
     }
 }

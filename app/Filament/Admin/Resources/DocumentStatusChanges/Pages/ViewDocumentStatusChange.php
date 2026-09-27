@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\DocumentStatusChanges\Pages;
 
 use App\Filament\Admin\Resources\DocumentStatusChanges\DocumentStatusChangeResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListDocumentStatusChanges extends ListRecords
+final class ViewDocumentStatusChange extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = DocumentStatusChangeResource::class;
 }

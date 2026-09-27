@@ -56,7 +56,6 @@ final class MasterDataChangeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMasterDataChanges::route('/'),
-        ];
+            'index' => Pages\ListMasterDataChanges::route('/'), 'view' => Pages\ViewMasterDataChange::route('/{record}')];
     }
 }
