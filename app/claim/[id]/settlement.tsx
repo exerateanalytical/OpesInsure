@@ -174,6 +174,6 @@ const s = StyleSheet.create({
   dotDone: { backgroundColor: colors.success, borderColor: colors.success },
   line: { flex: 1, width: 2, backgroundColor: colors.neutral200, marginVertical: 2 },
   lineDone: { backgroundColor: colors.blue600 },
-  stepTitle: { ...type.label, color: colors.navy950 },
+  stepTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   muted: { color: colors.neutral600 },
 });

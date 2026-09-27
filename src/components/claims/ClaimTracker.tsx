@@ -55,7 +55,7 @@ export function ClaimTracker({ status, dates, describe = false }: { status: stri
                   <Check size={14} color={colors.white} strokeWidth={3} />
                 ) : state === "attention" ? (
                   <AlertCircle size={14} color={colors.white} />
-                ) : (
+                ) : state === "upcoming" ? null : (
                   <Circle size={8} color={state === "current" ? colors.white : colors.neutral400} fill={state === "current" ? colors.white : colors.neutral400} />
                 )}
               </View>
@@ -76,14 +76,14 @@ export function ClaimTracker({ status, dates, describe = false }: { status: stri
 
 const styles = StyleSheet.create({
   step: { flexDirection: "row", gap: space.x3, minHeight: 44 },
-  rail: { alignItems: "center", width: 24 },
+  rail: { alignItems: "center", width: 28 },
   dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.neutral100,
-    borderWidth: 1,
-    borderColor: colors.neutral300,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.neutral400,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -93,8 +93,8 @@ const styles = StyleSheet.create({
   line: { flex: 1, width: 2, backgroundColor: colors.neutral200, marginVertical: 2 },
   lineDone: { backgroundColor: colors.success },
   copy: { flex: 1, paddingBottom: space.x3 },
-  label: { ...type.label, color: colors.navy950, paddingTop: 2 },
-  muted: { color: colors.neutral600, fontFamily: "Inter_500Medium" },
+  label: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, paddingTop: 2 },
+  muted: { color: colors.navy950 },
   state: { ...type.meta, color: colors.blue700 },
   attention: { color: colors.warningText },
   stepCurrent: { backgroundColor: colors.blue50, borderRadius: 12, marginHorizontal: -space.x2, paddingHorizontal: space.x2, paddingTop: space.x2 },

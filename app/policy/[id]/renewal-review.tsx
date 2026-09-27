@@ -158,7 +158,7 @@ export default function RenewalReview() {
               right={
                 <View style={st.secure}>
                   <Lock size={14} color={colors.neutral600} />
-                  <Text style={st.meta}>{t("rrSecure")}</Text>
+                  <Text style={[st.meta, { flexShrink: 1 }]}>{t("rrSecure")}</Text>
                 </View>
               }
             />
@@ -222,7 +222,7 @@ const st = StyleSheet.create({
   periodBox: { flexDirection: "row", alignItems: "center", gap: space.x3, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, padding: space.x3 },
   periodValue: { ...type.body, fontFamily: "Inter_700Bold", color: colors.navy950 },
   addons: { gap: 4 },
-  secure: { flexDirection: "row", alignItems: "center", gap: 4 },
+  secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   consentRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   checkbox: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },

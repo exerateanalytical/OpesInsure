@@ -42,7 +42,9 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
   const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
   const days = daysUntil(policy.coverage_ends_at);
   const dateLabel =
-    info.bucket === "active"
+    info.bucket === "active" && days != null && days >= 0
+      ? days === 1 ? t("policyRenewsInOne") : t("policyRenewsInDays", { days })
+      : info.bucket === "active"
       ? t("policyRenewsOn", { date: f.date(policy.coverage_ends_at) })
       : info.bucket === "pending"
         ? t("policyStartsOn", { date: f.date(policy.coverage_starts_at) })

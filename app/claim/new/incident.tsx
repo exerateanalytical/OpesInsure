@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { ArrowRight } from "lucide-react-native";
 import { Screen } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
 import { SchemaForm } from "@/components/forms/SchemaForm";
@@ -44,6 +45,8 @@ export default function NewClaimIncident() {
         // Without a policy from step 1 the server picker is shown so the form stays complete.
         hide={id ? ["policy_id"] : []}
         submitLabel={t("continue")}
+        submitIcon={ArrowRight}
+        flat
         footer={<Text style={styles.note}>{t("claimNewNote")}</Text>}
         onSubmit={async (payload) => {
           // Form data is kept on failure so the customer can retry.

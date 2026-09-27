@@ -14,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { portalRoute, roleToPortal, useSession } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -74,6 +75,7 @@ export default function RoleSelect() {
         title={t("roleChoose")}
         subtitle={t("roleChooseSubtitle")}
       />
+      <BrandArt name="umbrella_icon" width={56} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {workspaces.length === 0 ? (
         <Card>
@@ -122,6 +124,7 @@ export default function RoleSelect() {
           router.replace("/(auth)/sign-in");
         }}
       />
+      <BrandArt name="mist_wave" width={320} opacity={0.45} />
     </Screen>
   );
 }

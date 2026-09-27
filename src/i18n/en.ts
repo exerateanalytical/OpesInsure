@@ -2921,4 +2921,6 @@ export const en = {
   ptClientDocuments: "Client documents",
   ptNoClientDocuments: "No issued documents for this client yet.",
   ptDocNotCurrent: "Not current",
+  policyRenewsInOne: "Renews in 1 day",
+  policyRenewsInDays: "Renews in {days} days",
 };

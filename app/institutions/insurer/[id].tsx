@@ -20,6 +20,7 @@ import {
 } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle, StatusChip } from "@/components/ui";
 import { BrandHeader, CtaBar, HeaderIconButton, SectionHeading } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { CATEGORY_TINT } from "@/components/customer/CategoryTiles";
@@ -334,6 +335,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
               {d.hq.address ? <Text style={styles.body}>{[d.hq.address, d.hq.city && !d.hq.address.includes(d.hq.city) ? d.hq.city : null].filter(Boolean).join(", ")}</Text> : d.hq.city ? <Text style={styles.body}>{d.hq.city}</Text> : null}
               {d.hq.po_box ? <Text style={styles.body}>{t("poBox", { box: d.hq.po_box })}</Text> : null}
             </View>
+            <BrandArt name="cameroon_pin" width={40} style={{ alignSelf: "flex-start" }} />
           </View>
           {address ? (
             <Pressable accessibilityRole="button" accessibilityLabel={t("insurerDirections")} onPress={() => open(mapsUrl(address))} android_ripple={ripple()} style={({ pressed }) => [styles.directions, pressed && styles.pressed]}>

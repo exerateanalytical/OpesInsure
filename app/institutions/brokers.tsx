@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { AppHeader, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi, type Institution } from "@/api/extra";
@@ -53,6 +54,7 @@ export default function Brokers() {
           )
         }
       </StatePanel>
+      <BrandArt name="africa_dots_blue" width={88} opacity={0.8} />
       <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text>
     </Screen>
   );

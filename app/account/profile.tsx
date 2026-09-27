@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CreditCard, IdCard, ShieldCheck, UserRound, UsersRound } from "lucide-react-native";
+import { CreditCard, IdCard, ShieldCheck, UsersRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
-import { Button, Card, Screen, TextField } from "@/components/ui";
-import { Banner, BrandHeader, SectionHeading } from "@/components/design";
+import { Button, Screen, TextField } from "@/components/ui";
+import { Banner, BrandHeader } from "@/components/design";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { TimezonePicker } from "@/components/TimezonePicker";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { profileToValues } from "@/lib/inputForms";
 import { useTranslation } from "@/i18n";
-import { colors, radius, type } from "@/theme/tokens";
+import { colors, type } from "@/theme/tokens";
 
 /**
  * Personal information. Name and email: PATCH /mobile/account/profile.
@@ -72,8 +72,7 @@ export default function Profile() {
   return (
     <Screen>
       <BrandHeader title={t("personalDetailsTitle")} subtitle={t("personalDetailsSubtitle")} back right={null} />
-      <Card style={styles.card}>
-        <SectionHeading title={t("contactDetails")} icon={UserRound} />
+      <View style={styles.flat} accessibilityLabel={t("contactDetails")}>
         <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
         <TextField
           label={t("email")}
@@ -89,13 +88,14 @@ export default function Profile() {
         {identityChanged ? (
           <Button label={t("saveChanges")} loading={busy} disabled={name.trim().length < 3 || !emailOk} onPress={() => void saveIdentity()} />
         ) : null}
-      </Card>
+      </View>
 
       <Text style={styles.body}>{t("profileServerNote")}</Text>
       <SchemaForm
         form="customer_profile"
         initialValues={seed}
         submitLabel={t("profileSaveForm")}
+        flat
         onSubmit={async (payload) => {
           setNotice(null);
           // An empty beneficiaries list clears them; other empties are left untouched.
@@ -117,7 +117,7 @@ export default function Profile() {
   );
 }
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.feature },
+  flat: { gap: 16 },
   body: { ...type.body, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },

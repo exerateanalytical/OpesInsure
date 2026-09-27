@@ -35,6 +35,7 @@ import {
 } from "lucide-react-native";
 import { Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { useSession } from "@/store/session";
 import { AuthApi, KycApi, SupportContactsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
@@ -263,6 +264,8 @@ export default function Profile() {
           ) : null}
         </View>
       </View>
+      <BrandArt name="border_band" width={240} opacity={0.6} />
+      <BrandArt name="logo_africa_lockup" width={200} />
       <BuildStamp />
     </Screen>
   );

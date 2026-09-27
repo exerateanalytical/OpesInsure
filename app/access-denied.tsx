@@ -3,6 +3,7 @@ import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
 import { LockKeyhole, LogOut } from "lucide-react-native";
 import { Button, Card, Screen } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { useSession } from "@/store/session";
 import { SupportContactList } from "@/components/auth/SupportContacts";
 import { useTranslation } from "@/i18n";
@@ -19,6 +20,7 @@ export default function AccessDenied() {
   const signOut = useSession((s) => s.signOut);
   return (
     <Screen>
+      <BrandArt name="logo_wide_alt" width={180} />
       <Card feature>
         <LockKeyhole size={32} color={colors.danger} />
         <Text accessibilityRole="header" style={styles.title}>{t("adTitle")}</Text>
@@ -45,6 +47,8 @@ export default function AccessDenied() {
           <Button label={t("adGoSignIn")} onPress={() => router.replace("/(auth)/sign-in")} />
         )}
       </Card>
+      <BrandArt name="network_arcs" width={200} opacity={0.5} />
+      <BrandArt name="corner_ornament" width={36} opacity={0.6} style={{ alignSelf: "flex-end" }} />
     </Screen>
   );
 }

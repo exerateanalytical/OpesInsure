@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react-native";
 import { StepUpApi } from "@/api/client";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandHeader, TintedIcon } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
@@ -51,6 +52,8 @@ export default function StepUp() {
           }}
         />
       </Card>
+      <BrandArt name="logo_wide" width={160} />
+      <BrandArt name="wave_lines_icy" width={320} opacity={0.6} />
     </Screen>
   );
 }

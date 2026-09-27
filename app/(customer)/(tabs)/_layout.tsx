@@ -37,14 +37,14 @@ export default function CustomerTabs() {
         tabBarActiveTintColor: colors.gold600,
         tabBarInactiveTintColor: colors.navy800,
         tabBarStyle: {
-          height: 64 + insets.bottom,
+          height: 72 + insets.bottom,
           paddingTop: 9,
           paddingBottom: 8 + insets.bottom,
           borderTopColor: colors.neutral200,
           borderTopWidth: 1,
           backgroundColor: colors.white,
         },
-        tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2 },
+        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 12, lineHeight: 16, marginTop: 2 },
         tabBarAllowFontScaling: false,
       }}
     >

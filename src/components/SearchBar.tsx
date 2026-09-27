@@ -16,6 +16,7 @@ export function SearchBar({
   onFilter,
   filterLabel,
   filterCount = 0,
+  inset,
 }: {
   value: string;
   onChangeText: (v: string) => void;
@@ -29,7 +30,24 @@ export function SearchBar({
   filterLabel?: string;
   /** Active filter count shown as a badge on the filter button. */
   filterCount?: number;
+  /** Renders the filter button inside the field (Home design) instead of beside it. */
+  inset?: boolean;
 }) {
+  const filterButton = onFilter ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={filterCount ? `${filterLabel ?? ""} (${filterCount})` : filterLabel}
+      onPress={onFilter}
+      style={({ pressed }) => [inset ? styles.filterInset : styles.filter, filterCount > 0 && styles.filterOn, pressed && styles.pressed]}
+    >
+      <SlidersHorizontal size={22} color={colors.navy900} />
+      {filterCount ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{filterCount > 9 ? "9+" : filterCount}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  ) : null;
   const bar = (
     <View style={[styles.bar, onFilter ? styles.flex : null]}>
       <Search size={20} color={colors.neutral600} />
@@ -56,25 +74,14 @@ export function SearchBar({
           <X size={18} color={colors.neutral600} />
         </Pressable>
       ) : null}
+      {inset ? filterButton : null}
     </View>
   );
-  if (!onFilter) return bar;
+  if (!onFilter || inset) return bar;
   return (
     <View style={styles.row}>
       {bar}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={filterCount ? `${filterLabel ?? ""} (${filterCount})` : filterLabel}
-        onPress={onFilter}
-        style={({ pressed }) => [styles.filter, filterCount > 0 && styles.filterOn, pressed && styles.pressed]}
-      >
-        <SlidersHorizontal size={22} color={colors.navy900} />
-        {filterCount ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{filterCount > 9 ? "9+" : filterCount}</Text>
-          </View>
-        ) : null}
-      </Pressable>
+      {filterButton}
     </View>
   );
 }
@@ -101,6 +108,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral300,
     backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterInset: {
+    width: 44,
+    height: 44,
+    marginRight: -space.x2,
+    borderRadius: radius.control,
+    backgroundColor: colors.neutral100,
     alignItems: "center",
     justifyContent: "center",
   },

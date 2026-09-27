@@ -85,7 +85,7 @@ export default function NewClaimReview() {
           const incidentType = claimExtra(c, "incident_type");
           const files = evidence.data ?? [];
           return (
-            <>
+            <View style={s.stack}>
               <ReviewCard icon={productIcon(title, line)} tint={productTint(title, line)} title={t("claimPolicyInformation")} onEdit={() => router.replace({ pathname: "/claim/new", params: { policyId: c.policy_id } })} editLabel={t("claimStepSelectPolicy")}>
                 <Text style={s.value}>{title}</Text>
                 {provider ? (
@@ -141,7 +141,7 @@ export default function NewClaimReview() {
               </Pressable>
               {touched && !agreed ? <Text accessibilityRole="alert" style={s.error}>{t("claimDeclarationRequired")}</Text> : null}
               {error ? <ErrorCard error={error} fallback={t("actionFailed")} onRetry={() => void submit()} /> : null}
-            </>
+            </View>
           );
         }}
       </StatePanel>
@@ -178,6 +178,7 @@ function Line({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
 }
 
 const s = StyleSheet.create({
+  stack: { gap: space.x3 },
   flex: { flex: 1 },
   card: { flexDirection: "row", gap: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4 },
   cardHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },

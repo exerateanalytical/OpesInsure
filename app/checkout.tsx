@@ -161,7 +161,7 @@ export default function Checkout() {
               right={
                 <View style={st.secure}>
                   <Lock size={14} color={colors.neutral600} />
-                  <Text style={ps.meta}>{t("rrSecure")}</Text>
+                  <Text style={[ps.meta, { flexShrink: 1 }]}>{t("rrSecure")}</Text>
                 </View>
               }
             />
@@ -212,7 +212,7 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   label: { ...type.label, color: colors.navy950 },
   link: { ...type.body, color: colors.blue600, textDecorationLine: "underline" },
-  secure: { flexDirection: "row", alignItems: "center", gap: 4 },
+  secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   consentText: { ...type.body, color: colors.neutral700 },
   edit: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x2, overflow: "hidden" },

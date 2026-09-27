@@ -3,6 +3,7 @@ import { ActivityIndicator, AppState, StyleSheet, Text, View } from "react-nativ
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowRight, CalendarDays, Car, Coins, Headset, Lock, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, HeroCard, HeroMeta, SectionHeading, StepIndicator, TintedIcon } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { ErrorCard, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
@@ -141,7 +142,7 @@ export default function Payment() {
             right={
               <View style={st.secure}>
                 <Lock size={14} color={colors.neutral600} />
-                <Text style={ps.meta}>{t("rrSecure")}</Text>
+                <Text style={[ps.meta, { flexShrink: 1 }]}>{t("rrSecure")}</Text>
               </View>
             }
           />
@@ -192,13 +193,14 @@ export default function Payment() {
       ) : null}
       {!step.failed ? <Banner icon={ShieldAlert} tint="gold" body={t("ppActivationNote", { provider: provider ?? t("coNetwork") })} /> : null}
       <Banner icon={Headset} tint="blue" title={t("ppNeedHelp")} body={t("ppNeedHelpBody")} onPress={() => router.push("/support/new")} />
+      <BrandArt name="wave_ribbon_blue" width={320} opacity={0.7} style={st.bottomArt} />
     </Screen>
   );
 }
 
 const st = StyleSheet.create({
   flex: { flex: 1, gap: 4 },
-  secure: { flexDirection: "row", alignItems: "center", gap: 4 },
+  secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   fieldLabel: { ...type.label, color: colors.navy950 },
   numberBox: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 52, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.control, paddingHorizontal: space.x3, backgroundColor: colors.neutral50 },
   number: { ...type.body, color: colors.navy950, fontVariant: ["tabular-nums"] },
@@ -206,6 +208,7 @@ const st = StyleSheet.create({
   statusWaiting: { backgroundColor: colors.blue50 },
   statusFailed: { backgroundColor: colors.dangerSoft },
   spinner: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },
+  bottomArt: { alignSelf: "center" },
   statusTitle: { ...type.cardTitle, color: colors.navy950 },
   italic: { ...type.meta, fontStyle: "italic", color: colors.neutral500 },
 });

@@ -7,7 +7,6 @@ import {
   Banner,
   BrandHeader,
   CtaBar,
-  SectionHeading,
 } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
@@ -81,13 +80,6 @@ export default function NewClaim() {
         right="help"
       />
       <ClaimWizardSteps current={0} />
-      <Banner
-        icon={Siren}
-        tint="red"
-        title={t("emergencyTitle")}
-        body={t("emergencyAssistance")}
-        onPress={() => router.push("/claim/emergency")}
-      />
       <SearchBar
         value={query}
         onChangeText={setQuery}
@@ -106,14 +98,6 @@ export default function NewClaim() {
         />
       ) : (
         <>
-          <SectionHeading
-            title={t("homeActivePolicies")}
-            right={
-              <Text style={s.note}>
-                {t("claimPoliciesCount", { count: shown.length })}
-              </Text>
-            }
-          />
           <View style={s.list} accessibilityRole="radiogroup">
             {shown.map((p) => (
               <PolicyChoiceCard
@@ -128,6 +112,9 @@ export default function NewClaim() {
               <Text style={s.note}>{t("claimNoPolicyMatch")}</Text>
             ) : null}
           </View>
+          <Text style={s.note} accessibilityLabel={t("homeActivePolicies")}>
+            {t("claimPoliciesCount", { count: shown.length })}
+          </Text>
         </>
       )}
       <Banner
@@ -135,6 +122,13 @@ export default function NewClaim() {
         tint="blue"
         title={t("claimOnlyActiveTitle")}
         body={t("claimOnlyActiveBody")}
+      />
+      <Banner
+        icon={Siren}
+        tint="red"
+        title={t("emergencyTitle")}
+        body={t("emergencyAssistance")}
+        onPress={() => router.push("/claim/emergency")}
       />
     </Screen>
   );

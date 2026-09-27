@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button, Card, SectionTitle } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
@@ -74,6 +74,8 @@ export function SchemaForm({
   disabled,
   resetOnSuccess,
   footer,
+  flat = false,
+  submitIcon,
 }: {
   form: FormName;
   initialValues?: Record<string, string> | null;
@@ -85,6 +87,9 @@ export function SchemaForm({
   disabled?: boolean;
   resetOnSuccess?: boolean;
   footer?: React.ReactNode;
+  /** Fields straight on the page canvas (no section cards/titles), as the claim wizard design shows. */
+  flat?: boolean;
+  submitIcon?: React.ComponentProps<typeof Button>["icon"];
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -103,6 +108,7 @@ export function SchemaForm({
   if (loading && !schema) return <LoadingState label={t("loading")} />;
   if (!schema) return <ErrorCard error={loadError} fallback={t("formLoadFailed")} onRetry={() => void reload()} />;
 
+  const Wrap = (flat ? View : Card) as React.ComponentType<{ style?: object; children?: React.ReactNode }>;
   const fields = allFields(schema);
   const setValue = (key: string, v: string) => {
     setValues((x) => ({ ...x, [key]: v, ...(x[key] !== v ? clearedDependents(fields, key) : {}) }));
@@ -134,9 +140,9 @@ export function SchemaForm({
         if (!visible.length) return null;
         return (
           <React.Fragment key={step.key}>
-            {schema.steps.length > 1 ? <SectionTitle title={lang === "fr" && step.titleFr ? step.titleFr : step.title} /> : null}
-            <Card>
-              {visible.map((f) => (
+            {schema.steps.length > 1 && !flat ? <SectionTitle title={lang === "fr" && step.titleFr ? step.titleFr : step.title} /> : null}
+            <Wrap {...(flat ? { style: s.flat } : {})}>{
+              visible.map((f) => (
                 <ContractField
                   key={f.key}
                   field={f}
@@ -149,19 +155,19 @@ export function SchemaForm({
                   screen={`form.${form}`}
                   endpointFilter={endpointFilter?.[f.key]}
                 />
-              ))}
-            </Card>
+              ))}</Wrap>
           </React.Fragment>
         );
       })}
       {submitError ? <ErrorCard error={submitError} fallback={t("actionFailed")} onRetry={() => void submit()} /> : null}
       {Object.values(errors).some(Boolean) ? <Text accessibilityRole="alert" style={s.error}>{t("formFixErrors")}</Text> : null}
       {footer}
-      <Button label={submitLabel} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
+      <Button label={submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
     </>
   );
 }
 
 const s = StyleSheet.create({
+  flat: { gap: 16 },
   error: { ...type.meta, color: colors.dangerText },
 });

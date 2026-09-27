@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { ActionTile, Banner, BrandHeader, CtaBar, HeroCard, HeroMeta } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { ErrorCard, InfoRow, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { InsuranceApi, Payment, PaymentsApi, PolicyApi, PurchaseStatus, TokenVault } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
@@ -138,6 +139,7 @@ export default function Confirmation() {
         </View>
         <View style={st.flex}>
           <Text accessibilityRole="header" style={st.title} maxFontSizeMultiplier={1.6}>{issued ? t("cfCoveredTitle") : issuanceFailed ? t("cfIssuanceFailedTitle") : t("cfInProgress")}</Text>
+          {issued ? <BrandArt name="gold_swoosh" width={150} style={st.swoosh} /> : null}
           <Text style={st.subtitle}>{issued ? t("cfCoveredSubtitle") : issuanceFailed ? t("errPaymentOkIssuanceFailed") : t("cfInProgressBody")}</Text>
         </View>
       </View>
@@ -207,11 +209,13 @@ export default function Confirmation() {
           </Card>
 
           <Banner icon={Headset} tint="blue" title={t("cfHelpTitle")} body={t("cfHelpBody")} onPress={() => router.push("/support/new")} />
+          <BrandArt name="wave_ribbons_lux" width={320} opacity={0.9} style={st.bottomArt} />
         </>
       ) : (
         <Card>
           <StatusChip label={result?.status ? td(`status_${result.status}`, result.status) : t("cfVerifying")} tone={result?.status === "PAYMENT_FAILED" ? "danger" : "warning"} />
           {result?.product_name ? <Text style={ps.body}>{result.product_name}{result.carrier_name ? ` · ${result.carrier_name}` : ""}</Text> : null}
+          <BrandArt name="light_node" width={64} opacity={0.8} style={st.bottomArt} />
           <Text style={ps.meta}>{t("cfIssuedNote")}</Text>
           {issuanceFailed ? <Button label={t("contactSupport")} variant="secondary" onPress={() => router.push("/support/new")} /> : null}
         </Card>
@@ -225,6 +229,8 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   hero: { flexDirection: "row", alignItems: "center", gap: space.x4 },
+  swoosh: { marginTop: 2, marginBottom: 2 },
+  bottomArt: { alignSelf: "center" },
   heroIcon: { width: 84, height: 84, borderRadius: 42, alignItems: "center", justifyContent: "center", borderWidth: 8 },
   heroIconOk: { backgroundColor: colors.success, borderColor: colors.successSoft },
   heroIconWait: { backgroundColor: colors.white, borderColor: colors.blue50 },

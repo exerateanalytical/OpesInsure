@@ -7,6 +7,7 @@ import { PrivacyApi } from "@/api/account";
 import type { Purpose } from "@/api/account";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import type { Tint } from "@/components/design";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
 import { Preferences } from "@/store/preferences";
@@ -148,6 +149,7 @@ export default function Privacy() {
         ))}
       </Card>
       <Banner icon={ShieldCheck} tint="blue" title={t("privacyImportant")} body={t("privacyRetentionNote")} />
+      <BrandArt name="logo_protection_together" width={120} />
     </Screen>
   );
 }

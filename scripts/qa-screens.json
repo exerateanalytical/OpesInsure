@@ -482,17 +482,17 @@
  {
   "name": "claim-incident",
   "design": "opesinsure_incident_details_screen.png",
-  "route": "/claim/{claim}/incident"
+  "route": "/claim/new/incident?policyId={policy}"
  },
  {
   "name": "claim-incident-31",
   "design": "31-claim-incident-details.png",
-  "route": "/claim/{claim}/incident"
+  "route": "/claim/new/incident?policyId={policy}"
  },
  {
   "name": "claim-incident-37",
   "design": "37-claim-incident-details-narrow.png",
-  "route": "/claim/{claim}/incident"
+  "route": "/claim/new/incident?policyId={policy}"
  },
  {
   "name": "claim-review-submit",
@@ -589,5 +589,49 @@
   "name": "covered-56",
   "design": "56-youre-covered.png",
   "route": "/confirmation?proposalId={proposal}"
+ },
+ {
+  "name": "home-set-a",
+  "design": "06-home-explore-policies-claims-set-a.png",
+  "route": "/"
+ },
+ {
+  "name": "home-set-b",
+  "design": "07-home-explore-policies-claims-set-b.png",
+  "route": "/"
+ },
+ {
+  "name": "claim-evidence-38",
+  "design": "38-claim-upload-evidence-narrow-dup.png",
+  "route": "/claim/{claim}/evidence?wizard=1"
+ },
+ {
+  "name": "filters-imagegen",
+  "design": "imagegen.png",
+  "route": "/search?q=motor",
+  "after": {
+   "click": "Filters",
+   "times": 1
+  }
+ },
+ {
+  "name": "onboarding-brighter-africa",
+  "design": "opesinsure_a_brighter_africa.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 1
+  }
+ },
+ {
+  "name": "onboarding-brighter-tomorrow",
+  "design": "opesinsure_a_brighter_tomorrow.png",
+  "route": "/welcome",
+  "signedOut": true,
+  "after": {
+   "click": "Next",
+   "times": 0
+  }
  }
 ]

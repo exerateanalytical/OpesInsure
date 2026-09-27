@@ -137,8 +137,13 @@ export default function ClaimDecision() {
 
               {offer?.terms ? (
                 <Card>
-                  <Text accessibilityRole="header" style={s.cardTitle}>{t("decisionTerms")}</Text>
-                  <Text style={s.body}>{offer.terms}</Text>
+                  <View style={s.summaryRow}>
+                    <FileText size={26} color={colors.navy900} />
+                    <View style={s.flex}>
+                      <Text accessibilityRole="header" style={s.cardTitle}>{t("decisionTerms")}</Text>
+                      <Text style={s.body}>{offer.terms}</Text>
+                    </View>
+                  </View>
                 </Card>
               ) : null}
 
@@ -180,12 +185,13 @@ const s = StyleSheet.create({
   meta: { ...type.meta, color: colors.neutral600 },
   label: { ...type.meta, color: colors.neutral600 },
   summary: { flexDirection: "row", alignItems: "flex-start", gap: space.x3, paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.neutral100 },
+  summaryRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
   insurer: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   headRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   cardTitle: { ...type.cardTitle, color: colors.navy900 },
   table: { backgroundColor: colors.blue50, borderRadius: radius.card, padding: space.x4, gap: space.x2 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x2 },
-  value: { ...type.label, color: colors.navy950 },
+  value: { ...type.body, color: colors.navy950 },
   net: { flexDirection: "row", alignItems: "center", paddingTop: space.x3, borderTopWidth: 1, borderTopColor: colors.neutral200 },
   netLabel: { ...type.cardTitle, color: colors.blue700, flex: 1 },
   netValue: { ...type.cardTitle, color: colors.blue700 },

@@ -78,7 +78,7 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.85 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   titleRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", columnGap: space.x2, rowGap: 4 },
-  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 150 },
+  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 110 },
   line: { flexDirection: "row", alignItems: "center", gap: 6 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.neutral300, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },

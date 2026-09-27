@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { BadgeCheck, Camera, CheckCircle2, CircleAlert, ClipboardList, Fingerprint, IdCard, Images, ShieldAlert, ShieldCheck, UserRound } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
@@ -94,6 +95,7 @@ export default function Kyc() {
         back={!onboarding}
         right="help"
       />
+      <BrandArt name="glass_shield" width={64} />
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(k) => {
           const sub = k.submission;
@@ -145,12 +147,12 @@ export default function Kyc() {
               </Card>
 
               {requirements.length ? (
-                <Card style={styles.card}>
+                <View style={styles.reqList}>
                   <SectionHeading title={t("kycRequirementsTitle")} icon={ClipboardList} />
                   {requirements.map((r) => {
                     const target = REQUIREMENT_PURPOSES[r.requirement_code]?.[0];
                     return (
-                      <View key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={styles.reqRow}>
+                      <Card key={`${r.requirement_code}-${r.applies_to ?? ""}`} style={[styles.card, styles.reqRow]}>
                         <TintedIcon icon={r.satisfied ? CheckCircle2 : IdCard} tint={r.satisfied ? "green" : r.mandatory ? "gold" : "neutral"} size={44} />
                         <View style={styles.flexTight}>
                           <Text style={styles.reqTitle}>{td(`kycReq_${r.requirement_code}`, r.requirement_code)}</Text>
@@ -161,10 +163,10 @@ export default function Kyc() {
                         {!r.satisfied && editable && target ? (
                           <Button label={t("kycComplete")} variant="secondary" onPress={() => setPurpose(target)} />
                         ) : null}
-                      </View>
+                      </Card>
                     );
                   })}
-                </Card>
+                </View>
               ) : null}
 
               <Banner icon={ShieldCheck} tint="blue" title={t("kycWhyTitle")} body={t("kycWhyBody")} />
@@ -251,6 +253,7 @@ export default function Kyc() {
           <Text style={styles.meta}>{t("kycLaterNote")}</Text>
         </>
       ) : null}
+      <BrandArt name="tribal_divider" width={240} opacity={0.5} />
     </Screen>
   );
 }
@@ -262,7 +265,8 @@ const styles = StyleSheet.create({
   progressTitle: { ...type.label, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   track: { height: 8, borderRadius: 4, backgroundColor: colors.neutral200, overflow: "hidden" },
   fill: { height: 8, borderRadius: 4, backgroundColor: colors.blue600 },
-  reqRow: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200 },
+  reqList: { gap: space.x3 },
+  reqRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   reqTitle: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
   ok: { ...type.meta, color: colors.successText, fontWeight: "600" },
   card: { borderRadius: radius.feature },

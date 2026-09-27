@@ -317,15 +317,21 @@ export function DetailRow({ icon: Icon, label, value, valueNode, strong, tint, c
 }
 
 /** Row of check bullets (gold checks by default). */
-export function CheckList({ items, tint = "gold", columns = 1, compact }: { items: string[]; tint?: Tint; columns?: 1 | 2; /** 14dp text for dense cards. */ compact?: boolean }) {
+export function CheckList({ items, tint = "gold", columns = 1, compact, plain }: { items: string[]; tint?: Tint; columns?: 1 | 2; /** 14dp text for dense cards. */ compact?: boolean; /** Bare tinted tick without the filled dot. */ plain?: boolean }) {
   const c = tints[tint];
   return (
     <View style={[s.checkList, columns === 2 && s.checkListTwo]}>
       {items.map((it, i) => (
         <View key={i} style={[s.checkItem, columns === 2 && s.checkItemHalf]}>
-          <View style={[s.checkDot, { backgroundColor: c.fg }]}>
-            <Check size={11} color={colors.white} strokeWidth={3} />
-          </View>
+          {plain ? (
+            <View style={s.checkDot}>
+              <Check size={16} color={tint === "gold" ? colors.gold500 : c.fg} strokeWidth={3} />
+            </View>
+          ) : (
+            <View style={[s.checkDot, { backgroundColor: c.fg }]}>
+              <Check size={11} color={colors.white} strokeWidth={3} />
+            </View>
+          )}
           <Text style={[s.checkText, compact && s.checkTextCompact]}>{it}</Text>
         </View>
       ))}

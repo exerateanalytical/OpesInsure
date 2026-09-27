@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { AppHeader, Button, Card, Chip, ChipRow, Screen, StatusChip, TextField } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -105,6 +106,7 @@ export default function Insurers() {
           )
         }
       </StatePanel>
+      <BrandArt name="africa_dots_gold" width={88} opacity={0.8} />
       <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text>
     </Screen>
   );

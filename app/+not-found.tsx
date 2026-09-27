@@ -3,6 +3,7 @@ import { StyleSheet, Text } from "react-native";
 import { router, Stack } from "expo-router";
 import { Compass, Home } from "lucide-react-native";
 import { Button, Card, Screen } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
 
@@ -11,12 +12,14 @@ export default function NotFound() {
   return (
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
+      <BrandArt name="map_gold_network" width={140} opacity={0.9} />
       <Card feature>
         <Compass size={32} color={colors.navy800} />
         <Text accessibilityRole="header" style={styles.title}>{t("nfTitle")}</Text>
         <Text style={styles.body}>{t("nfBody")}</Text>
         <Button label={t("goHome")} icon={Home} onPress={() => router.replace("/")} />
       </Card>
+      <BrandArt name="tribal_wallpaper" width={320} opacity={0.35} />
     </Screen>
   );
 }

@@ -25,12 +25,12 @@ import {
   Phone,
   RefreshCw,
   ShieldAlert,
-  ShieldCheck,
   WifiOff,
 } from "lucide-react-native";
 import { SearchBar } from "@/components/SearchBar";
 import { CONTENT_MAX_WIDTH, ripple, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, IconTile, SectionHeading } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { CategoryStrip } from "@/components/customer/CategoryTiles";
 import { PolicyListCard } from "@/components/policies/PolicyListCard";
 import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
@@ -139,6 +139,7 @@ export default function CustomerHome() {
         ) : null}
 
         <View style={styles.heroBlock}>
+          <BrandArt name="map_gold_network" width={150} opacity={0.55} style={styles.heroArt} />
           <Text style={styles.greeting}>{t("homeGreetingTime", { part: t(greetingKey()) })}</Text>
           <Text style={styles.greetingName}>{firstName ? `${firstName} \u{1F44B}` : t("homeGreeting")}</Text>
           <Text style={styles.heroTagline}>{t("homeTagline")}</Text>
@@ -153,6 +154,7 @@ export default function CustomerHome() {
           clearLabel={t("clearSearch")}
           onFilter={() => setSheet(true)}
           filterLabel={t("filtersTitle")}
+          inset
         />
         <FiltersSheet
           visible={sheet}
@@ -190,7 +192,7 @@ export default function CustomerHome() {
             </View>
           </View>
           <View style={styles.ctaShield}>
-            <ShieldCheck size={72} color={colors.gold500} strokeWidth={1.6} />
+            <BrandArt name="glass_shield" width={104} />
           </View>
         </Pressable>
 
@@ -507,7 +509,8 @@ function Row({
 
 const styles = StyleSheet.create({
   rowChip: { flexDirection: "row", marginTop: 4 },
-  heroBlock: { gap: 2, marginTop: -space.x2 },
+  heroBlock: { gap: 2, marginTop: -space.x2, minHeight: 130, justifyContent: "center" },
+  heroArt: { position: "absolute", right: -space.x3, top: -space.x2 },
   greeting: { fontFamily: "Inter_400Regular", fontSize: 26, lineHeight: 32, color: colors.navy950 },
   greetingName: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, color: colors.navy950, letterSpacing: -0.5 },
   heroTagline: { ...type.bodyLarge, color: colors.navy800, marginTop: 4 },
@@ -525,7 +528,7 @@ const styles = StyleSheet.create({
   ctaBody: { ...type.body, color: colors.blue100 },
   ctaButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.gold500, borderRadius: radius.control, paddingHorizontal: space.x4, minHeight: 46, marginTop: space.x2 },
   ctaButtonText: { ...type.label, fontSize: 16, color: colors.navy950 },
-  ctaShield: { width: 96, alignItems: "center", justifyContent: "center" },
+  ctaShield: { width: 104, alignItems: "center", justifyContent: "center" },
   quickRow: { flexDirection: "row", gap: space.x3 },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {

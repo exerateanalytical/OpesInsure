@@ -2910,4 +2910,6 @@ export const fr: Record<keyof typeof en, string> = {
   ptClientDocuments: "Documents du client",
   ptNoClientDocuments: "Aucun document émis pour ce client.",
   ptDocNotCurrent: "Non valide",
+  policyRenewsInOne: "Renouvellement dans 1 jour",
+  policyRenewsInDays: "Renouvellement dans {days} jours",
 };

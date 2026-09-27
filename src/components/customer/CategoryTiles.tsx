@@ -34,7 +34,7 @@ export function CategoryTile({ category, onPress, size = 64 }: { category: Categ
       <View style={[styles.tile, { width: size, height: size, backgroundColor: tint.bg }]}>
         <Icon size={Math.round(size * 0.44)} color={tint.fg} strokeWidth={2} />
       </View>
-      <Text style={styles.label} numberOfLines={1}>{t(category.label)}</Text>
+      <Text style={styles.label} numberOfLines={2}>{t(category.label)}</Text>
     </Pressable>
   );
 }
@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
   strip: { gap: space.x3, paddingVertical: 2 },
   row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 2 },
   cell: { flexBasis: 0, flexGrow: 1, alignItems: "center" },
-  tileWrap: { alignItems: "center", gap: 6, minWidth: 48, borderRadius: radius.card, overflow: "hidden" },
+  tileWrap: { alignItems: "center", gap: 6, minWidth: 48, alignSelf: "stretch", borderRadius: radius.card, overflow: "hidden" },
   tile: { borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
-  label: { ...type.label, color: colors.navy950 },
+  label: { ...type.label, fontSize: 11, lineHeight: 15, letterSpacing: -0.2, fontWeight: "500", textAlign: "center", color: colors.navy950, alignSelf: "stretch" },
   pressed: { opacity: 0.85 },
 });

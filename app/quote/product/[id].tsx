@@ -133,7 +133,7 @@ export default function ProductDetail() {
                 <FileText size={22} color={colors.blue600} />
                 <Text style={s.cardTitle}>{t("pdWhatsCovered")}</Text>
               </View>
-              <CheckList items={coverages.slice(0, 6)} tint="gold" />
+              <CheckList items={coverages.slice(0, 6)} tint="gold" compact plain />
             </View>
           ) : null}
           {exclusions.length ? (
@@ -142,7 +142,7 @@ export default function ProductDetail() {
                 <HeartHandshake size={22} color={colors.blue600} />
                 <Text style={s.cardTitle}>{t("pdExclusions")}</Text>
               </View>
-              <CheckList items={exclusions.slice(0, 6)} tint="neutral" />
+              <CheckList items={exclusions.slice(0, 6)} tint="gold" compact plain />
             </View>
           ) : null}
         </View>

@@ -3,6 +3,7 @@ import { Linking, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Phone } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi } from "@/api/extra";
@@ -49,6 +50,7 @@ export default function BrokerDetail() {
                 />
               ) : null}
             </Card>
+            <BrandArt name="map_neon" width={88} opacity={0.85} />
             <Text style={styles.source}>{t("brokerVerifyNote")}</Text>
             {broker.is_official_register ? (
               <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text>

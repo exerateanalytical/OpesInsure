@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Calendar, Car, ChevronRight, FileText, Shield } from "lucide-react-native";
 import { Screen, StatusChip, ripple } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
+import { BrandArt } from "@/components/design/BrandArt";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
@@ -106,6 +107,7 @@ export default function PolicyDocuments() {
         </Pressable>
       ) : null}
       <PolicyDocumentsSection policyId={id} />
+      <BrandArt name="tribal_border_gold" width={240} opacity={0.6} />
     </Screen>
   );
 }
