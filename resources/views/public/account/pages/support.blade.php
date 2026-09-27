@@ -62,6 +62,18 @@ Opes.page(function (ctx) {
         var body = ta.value.trim(); if (!body) return; Opes.busy(b, true);
         Opes.api('/mobile/support/cases/' + c.id + '/messages', { body: { body: body } }).then(function () { thread(c, holder); }).catch(function (e) { Opes.busy(b, false); Opes.alert(e.message); });
       } }, Opes.icon('send'), U.reply_send);
+      // Attachments: POST /mobile/support/cases/{id}/attachments (multipart "file", PDF/JPG/PNG up to 10 MB).
+      var AT = window.OPES_CUST.attach;
+      if (!/CLOSED|RESOLVED|CANCELLED/.test(String(full.status).toUpperCase())) {
+        var fi = h('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png', 'aria-label': AT.label, 'data-attach-file': '' });
+        var ab = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-attach': c.id, onclick: function () {
+          var f = fi.files[0];
+          if (!f || f.size > 10485760 || ['application/pdf', 'image/jpeg', 'image/png'].indexOf(f.type) < 0) { Opes.alert(AT.bad); return; }
+          var fd = new FormData(); fd.append('file', f); Opes.busy(ab, true);
+          Opes.api('/mobile/support/cases/' + c.id + '/attachments', { method: 'POST', body: fd }).then(function () { Opes.alert(AT.done, 'ok'); thread(c, holder); }).catch(function (e) { Opes.busy(ab, false); Opes.alert(e.message); });
+        } }, Opes.icon('doc'), AT.send);
+        holder.appendChild(h('div', { class: 'afield-s', style: 'margin-top:10px' }, h('span', null, AT.label), fi, h('div', { class: 'btnbar', style: 'margin-top:6px' }, ab)));
+      }
       if (!/CLOSED|RESOLVED/.test(String(full.status).toUpperCase())) holder.appendChild(h('div', { class: 'afield-s', style: 'margin-top:10px' }, h('span', null, U.reply), ta, h('div', { class: 'btnbar', style: 'margin-top:6px' }, b)));
     }).catch(function (e) { Opes.fail(holder, e); });
   }

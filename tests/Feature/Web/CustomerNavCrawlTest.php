@@ -157,3 +157,97 @@ it('keeps the customer self-service copy in sync between EN and FR', function ()
     $this->get('/account/privacy?lang=fr')->assertOk()->assertSee('Confidentialité et sécurité')->assertSee('Vérification d’identité', false)->assertDontSee('Privacy &amp; security', false);
     $this->get('/account/requests?lang=en')->assertOk()->assertSee('Policy requests')->assertSee('"CANCELLATION_REVIEW":"Cancel my policy"', false);
 });
+
+it('wires the one-time-code and claim/delivery/support actions into the customer pages', function () {
+    $id = CUST_UUID;
+    $checks = [
+        '/account/payments' => ['data-refund', "Opes.stepUp('PAYMENT_REFUND_REQUEST'", '/refunds'],
+        "/account/claims/$id" => ["Opes.stepUp('CLAIM_SETTLEMENT_DECISION'", 'data-settle-accept', 'data-reschedule', '/inspection/reschedule', 'data-incident-edit', "'/incident'", 'data-party-add', "'/parties'"],
+        "/account/policies/$id" => ['/mobile/deliveries/', 'data-delivery-address', 'data-delivery-confirm'],
+        '/account/support' => ['/attachments', 'data-attach'],
+    ];
+    foreach ($checks as $page => $markers) {
+        foreach (['en', 'fr'] as $lang) {
+            $html = $this->get($page.'?lang='.$lang)->assertOk()->getContent();
+            foreach ($markers as $m) {
+                expect(str_contains($html, $m))->toBeTrue("$page lacks $m");
+            }
+        }
+    }
+    $js = file_get_contents(public_path('landing/portal/portal.js'));
+    expect($js)->toContain('/mobile/security/step-up/request', '/mobile/security/step-up/verify', "'X-Step-Up-Grant'", '!o.stepUp');
+    $this->get('/account/payments?lang=fr')->assertSee('"stepup":{"title":"Confirmer avec un code"', false);
+});
+
+/** Demo-mode step-up exactly as the web dialog does it: request, verify with the demo code, return the grant. */
+function webStepUpGrant($test, array $f, string $purpose): string
+{
+    $ch = $test->postJson('/api/v1/mobile/security/step-up/request', ['purpose' => $purpose], agentHeaders($f))->assertOk();
+    $v = $test->postJson('/api/v1/mobile/security/step-up/verify', ['challenge_id' => $ch->json('data.challenge_id'), 'purpose' => $purpose, 'code' => (string) config('demo.otp')], agentHeaders($f))->assertCreated();
+
+    return (string) $v->json('data.grant_token');
+}
+
+it('requests a refund and decides a settlement behind the demo one-time code (123456)', function () {
+    Http::fake(['*' => Http::response(['sid' => 'SM1'], 201)]);
+    config(['demo.enabled' => true]);
+    $f = makeMobileCustomerFixture('+237672990003');
+    $f['user']->forceFill(['phone_e164' => \Database\Seeders\DemoMobileAccountSeeder::otpPhones()[0]])->save();
+    $policy = makeMobileTestPolicy($f['proposal'], $f['tenant'], $f['carrier']->id, $f['party']->id);
+    $payment = makeMobileTestPayment($f['proposal'], $f['tenant']);
+    Passport::actingAs($f['user']);
+    expect(config('demo.otp'))->toBe('123456');
+
+    // Without a grant the write is refused (401 STEP_UP_REQUIRED, which the web client does not treat as a lost session).
+    $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", ['reason' => 'Double charge'], agentHeaders($f))->assertStatus(401)->assertJsonPath('code', 'STEP_UP_REQUIRED');
+    $grant = webStepUpGrant($this, $f, 'PAYMENT_REFUND_REQUEST');
+    $this->postJson("/api/v1/mobile/payments/{$payment->id}/refunds", ['reason' => 'Double charge', 'reason_code' => 'CUSTOMER_REQUEST'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])
+        ->assertCreated()->assertJsonPath('data.status', 'REQUESTED');
+
+    $claim = makeMobileTestClaim($f['tenant'], $policy, $f['party'], ['status' => 'APPROVED', 'approved_amount_minor' => 500000]);
+    [$staff, $checker] = [\App\Models\User::factory()->create(), \App\Models\User::factory()->create()];
+    DB::table('claim_decisions')->insert(['id' => (string) Str::uuid(), 'claim_id' => $claim->id, 'decision' => 'APPROVE', 'approved_amount_minor' => 500000, 'currency' => 'XAF',
+        'reason_code' => 'OK', 'rationale' => 'Covered.', 'status' => 'APPROVED', 'proposed_by' => $staff->id, 'approved_by' => $checker->id, 'approved_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    $this->getJson("/api/v1/mobile/claims/{$claim->id}/settlement", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.status', 'APPROVED')->assertJsonPath('data.offered_minor', 500000);
+    $grant = webStepUpGrant($this, $f, 'CLAIM_SETTLEMENT_DECISION');
+    $this->postJson("/api/v1/mobile/claims/{$claim->id}/settlement/decision", ['decision' => 'ACCEPT'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])
+        ->assertOk()->assertJsonPath('data.status', 'CUSTOMER_ACCEPTED');
+    // A grant is single use.
+    $this->postJson("/api/v1/mobile/claims/{$claim->id}/settlement/decision", ['decision' => 'REJECT'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])->assertStatus(401);
+});
+
+it('reschedules an inspection, edits the incident and adds a person on the customer claim', function () {
+    Http::preventStrayRequests();
+    $f = makeMobileCustomerFixture('+237672990004');
+    $policy = makeMobileTestPolicy($f['proposal'], $f['tenant'], $f['carrier']->id, $f['party']->id);
+    $claim = makeMobileTestClaim($f['tenant'], $policy, $f['party'], ['loss_details' => ['description' => 'Hit.', 'inspection' => ['appointment_at' => now()->addDay()->toIso8601String(), 'surveyor_name' => 'A. Ngono']]]);
+    Passport::actingAs($f['user']);
+    $base = "/api/v1/mobile/claims/{$claim->id}";
+
+    $this->postJson("$base/inspection/reschedule", ['appointment_at' => now()->addDays(4)->setTime(9, 30)->toIso8601String()], agentHeaders($f))->assertOk();
+    $this->getJson("$base/inspection", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.status', 'RESCHEDULED');
+    $this->postJson("$base/inspection/reschedule", ['appointment_at' => now()->subDay()->toIso8601String()], agentHeaders($f))->assertStatus(422);
+
+    $this->putJson("$base/incident", ['incident_type' => 'COLLISION', 'police_report_number' => 'PV-2026-118', 'injuries_reported' => false, 'vehicle_drivable' => false, 'towing_required' => true, 'declaration_confirmed' => true], agentHeaders($f))
+        ->assertOk()->assertJsonPath('data.incident_type', 'COLLISION')->assertJsonPath('data.towing_required', true);
+
+    $this->postJson("$base/parties", ['role' => 'THIRD_PARTY', 'display_name' => 'Paul Mbarga', 'contact_phone' => '+237699000111', 'consent_given' => true], agentHeaders($f))->assertCreated();
+    expect($this->getJson("$base/parties", tenantHeaderFor($f['tenant']))->assertOk()->json('data.data.0.display_name'))->toBe('Paul Mbarga');
+});
+
+it('attaches a file to a support case and updates a certificate delivery address', function () {
+    Http::preventStrayRequests();
+    \Illuminate\Support\Facades\Storage::fake('local');
+    $f = makeMobileCustomerFixture('+237672990005');
+    $policy = makeMobileTestPolicy($f['proposal'], $f['tenant'], $f['carrier']->id, $f['party']->id);
+    Passport::actingAs($f['user']);
+
+    $case = $this->postJson('/api/v1/mobile/support/cases', ['category' => 'DOCUMENT', 'subject' => 'Certificate copy', 'description' => 'Please see the attached scan.'], agentHeaders($f))->assertSuccessful();
+    $file = \Illuminate\Http\UploadedFile::fake()->create('scan.pdf', 120, 'application/pdf');
+    $this->post('/api/v1/mobile/support/cases/'.$case->json('data.id').'/attachments', ['file' => $file], agentHeaders($f) + ['Accept' => 'application/json'])->assertSuccessful();
+
+    $order = \App\Models\FulfilmentOrder::create(['tenant_id' => $f['tenant']->id, 'policy_id' => $policy->id, 'status' => 'CREATED', 'delivery_address' => ['city' => 'Douala']]);
+    $this->getJson("/api/v1/mobile/wallet/policies/{$policy->id}", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.delivery.id', $order->id);
+    $this->putJson("/api/v1/mobile/deliveries/{$order->id}/address", ['address' => ['recipient_name' => 'Awa N.', 'phone_e164' => '+237672990005', 'address_line' => 'Rue 1.234 Bonapriso', 'city' => 'Douala']], agentHeaders($f))
+        ->assertOk()->assertJsonPath('data.delivery_address.city', 'Douala');
+});

@@ -99,6 +99,36 @@ Opes.page(function (ctx) {
         OP.btn(S.qa_help, '/account/support?policy=' + id, 'dbtn-outline', 'headset')));
       return c;
     }
+    /** Physical certificate delivery: status, address change while not yet dispatched (PUT /mobile/deliveries/{id}/address),
+        receipt confirmation with the courier's code (POST /mobile/deliveries/{id}/confirm). */
+    function deliveryCard(dv) {
+      var DV = window.OPES_CUST.delivery, st = String(dv.status || '').toUpperCase(), a = dv.delivery_address || {};
+      var c = OP.card(DV.title, null, OP.chip(st));
+      c.setAttribute('data-delivery', dv.id);
+      c.appendChild(h('dl', { class: 'kv' }, dv.sla_due_at ? [h('dt', null, DV.due), h('dd', null, Opes.date(dv.sla_due_at))] : null,
+        h('dt', null, DV.address), h('dd', null, [a.recipient_name, a.address_line, a.city, a.phone_e164].filter(Boolean).join(', ') || '—')));
+      function field(n, l, v, t) { return h('label', { class: 'afield-s' }, h('span', null, l), h('input', { name: n, value: v || '', type: t || 'text', maxlength: 190 })); }
+      if (/^(CREATED|READY_FOR_PICKUP)$/.test(st)) {
+        var sv = h('button', { type: 'submit', class: 'dbtn dbtn-outline sm' }, Opes.icon('pin'), DV.save);
+        var af = h('form', { style: 'display:grid;gap:8px', 'data-delivery-address': '', onsubmit: function (e) {
+          e.preventDefault(); var el = af.elements; Opes.busy(sv, true);
+          Opes.api('/mobile/deliveries/' + encodeURIComponent(dv.id) + '/address', { method: 'PUT', body: { address: { recipient_name: el.recipient_name.value.trim(), phone_e164: el.phone_e164.value.trim(), address_line: el.address_line.value.trim(), city: el.city.value.trim() } } })
+            .then(function () { Opes.alert(DV.saved, 'ok'); }).catch(function (err) { Opes.alert(err.message); }).finally(function () { Opes.busy(sv, false); });
+        } }, field('recipient_name', DV.recipient, a.recipient_name), field('phone_e164', DV.phone, a.phone_e164, 'tel'), field('address_line', DV.line, a.address_line), field('city', DV.city, a.city), h('div', { class: 'btnbar' }, sv));
+        c.appendChild(af);
+      } else if (!/DELIVERED|CANCEL/.test(st)) c.appendChild(h('p', { class: 'op-muted' }, DV.locked));
+      if (/OUT_FOR_DELIVERY|IN_TRANSIT|DISPATCHED|ASSIGNED|PICKED_UP/.test(st)) {
+        var cb = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm' }, Opes.icon('check'), DV.confirm);
+        var cf = h('form', { style: 'display:grid;gap:8px', 'data-delivery-confirm': '', onsubmit: function (e) {
+          e.preventDefault(); Opes.busy(cb, true);
+          Opes.api('/mobile/deliveries/' + encodeURIComponent(dv.id) + '/confirm', { body: { otp: cf.elements.otp.value.trim() } })
+            .then(function () { Opes.alert(DV.confirmed, 'ok'); location.reload(); }).catch(function (err) { Opes.busy(cb, false); Opes.alert(err.message); });
+        } }, h('b', null, DV.confirm_t), h('small', { class: 'op-muted' }, DV.confirm_d),
+          h('label', { class: 'afield-s' }, h('span', null, DV.otp), h('input', { name: 'otp', inputmode: 'numeric', pattern: '[0-9]{6}', minlength: 6, maxlength: 6, required: true })), h('div', { class: 'btnbar' }, cb));
+        c.appendChild(cf);
+      }
+      return c;
+    }
     function docTitle(d) { return (fr ? d.title_fr : null) || d.title || (T.docs.cat[d.category] || Opes.label(d.category || d.document_type_code)); }
     function docsCard(all) {
       var c = OP.card(S.docs_t, S.docs_d, all ? null : h('button', { type: 'button', class: 'rowlink op-more', style: 'width:auto;margin:0;border:0', onclick: function () { show('documents'); } }, T.view_all));
@@ -153,7 +183,7 @@ Opes.page(function (ctx) {
 
     // ---- tabs
     var panels = {
-      overview: h('div', { class: 'op-ov' }, h('div', { class: 'col' }, coverageCard(false), docsCard(false)), h('div', { class: 'col' }, timelineCard(), paysCard(false)), h('div', { class: 'col' }, qaCard())),
+      overview: h('div', { class: 'op-ov' }, h('div', { class: 'col' }, coverageCard(false), docsCard(false)), h('div', { class: 'col' }, timelineCard(), paysCard(false)), h('div', { class: 'col' }, qaCard(), p.delivery ? deliveryCard(p.delivery) : null)),
       coverage: h('div', { class: 'agrid main-side' }, coverageCard(true), breakdownCard()),
       documents: docsCard(true),
       payments: paysCard(true),

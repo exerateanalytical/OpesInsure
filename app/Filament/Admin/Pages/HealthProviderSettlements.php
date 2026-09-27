@@ -25,6 +25,8 @@ final class HealthProviderSettlements extends HealthQueuePage
 
     protected const STATUSES = ['OPEN', 'PAID', 'CANCELLED'];
 
+    protected const TABLE = 'health_provider_settlement_batches';
+
     protected function fetch(string $tenantId, ?string $status): array
     {
         return app(ProviderSettlementService::class)->list($tenantId, ['status' => $status]);
@@ -51,7 +53,7 @@ final class HealthProviderSettlements extends HealthQueuePage
 
         return [
             'cards' => array_intersect_key($b, array_flip(['batch_number', 'status', 'claim_count', 'total_minor', 'currency', 'payment_reference', 'paid_at', 'created_at'])),
-            'lines' => self::flat(array_map(fn ($c) => array_intersect_key((array) $c, array_flip(['claim_number', 'invoice_reference', 'status', 'insurer_share_minor'])), $b['claims'] ?? [])),
+            'lines' => self::flat(array_map(fn ($c) => array_intersect_key((array) $c, array_flip(['claim_number', 'invoice_reference', 'status', 'insurer_share_minor'])), array_values(array_filter($b['claims'] ?? [], fn ($c) => \App\Application\WebExperiences\PortalScope::visibleOf('health_provider_claims', [(string) $c->id]) !== [])))),
             'history' => [],
         ];
     }

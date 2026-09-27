@@ -14,6 +14,7 @@ return [
     ],
     'help_t' => 'Need Help?', 'help_d' => 'Talk to our insurance experts.', 'help_btn' => 'Call Us',
     'js' => [
+        'stepup' => ['title' => 'Confirm with a code', 'text' => 'We sent a 6-digit code by SMS to your phone. Enter it to confirm.', 'code' => 'Security code', 'confirm' => 'Confirm', 'cancel' => 'Cancel', 'bad' => 'Enter the 6-digit code.'],
         'loading' => 'Loading…', 'empty' => 'Nothing here yet.', 'error' => 'Something went wrong. Please try again.', 'retry' => 'Try again',
         'wait' => 'Please wait…', 'forbidden' => 'Your account does not have access to this.', 'signed_out' => 'Your session has ended. Please sign in again.',
         'roles' => ['customer' => 'Individual Customer', 'agent' => 'Agent / Broker', 'officer' => 'Claims Officer'],

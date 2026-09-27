@@ -41,7 +41,8 @@ Route::get('mobile/support/cases', [MobileSupportController::class, 'index']);
 Route::post('mobile/support/cases', [MobileSupportController::class, 'store'])->middleware('throttle:10,1');
 Route::get('mobile/support/cases/{case}', [MobileSupportController::class, 'show']);
 Route::post('mobile/support/cases/{case}/messages', [MobileSupportController::class, 'message'])->middleware('throttle:30,1');
-Route::post('mobile/support/cases/{case}/attachments', [MobileSupportController::class, 'attachment'])->middleware('throttle:10,1');
+// Multipart upload (field "file"), so it is exempt from the JSON-only guard; the app (client.ts SupportApi.upload) and the web send FormData.
+Route::post('mobile/support/cases/{case}/attachments', [MobileSupportController::class, 'attachment'])->middleware('throttle:10,1')->withoutMiddleware('json.api');
 
 // services/* and the policy detail actions
 Route::get('mobile/policy-service-requests', [MobilePolicyServiceController::class, 'index']);

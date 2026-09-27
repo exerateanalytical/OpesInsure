@@ -60,13 +60,16 @@ final class HealthProviderActions
         return WorkflowAction::make('preauthProposeExtension', $p)->icon('heroicon-o-calendar-days')
             ->visible(fn ($record) => self::extensions($record, ['REQUESTED']) !== [])
             ->schema(fn ($record) => [
-                Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['REQUESTED']))->required(),
+                Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['REQUESTED']))->required()->live()
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('lines', self::lineRows(DB::table('health_preauthorization_lines')->where('extension_id', $state)))),
                 Select::make('decision')->label(__('workflow_actions.fields.decision'))->options(WorkflowAction::options(PreauthLifecycle::DECISIONS, 'preauth'))->required()->live(),
                 DatePicker::make('approved_until')->label(__('workflow_actions.fields.valid_until')),
                 TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->maxLength(64)->required(fn (callable $get) => $get('decision') === 'DECLINED'),
+                // Line-by-line PARTIAL extension decision (PreauthorizationService::proposeExtension → decideLines, same rules as the initial request).
+                self::linesRepeater(),
             ])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(PreauthorizationService::class)->proposeExtension(
-                self::tenant(), WorkflowAction::id($record), $data['extension_id'], array_filter(array_diff_key($data, ['extension_id' => 1]), fn ($v) => filled($v)), auth()->user())));
+                self::tenant(), WorkflowAction::id($record), $data['extension_id'], self::proposal(array_diff_key($data, ['extension_id' => 1])), auth()->user())));
     }
 
     public static function preauthDecideExtension(): Action
@@ -121,19 +124,9 @@ final class HealthProviderActions
                 DatePicker::make('valid_until')->label(__('workflow_actions.fields.valid_until'))->afterOrEqual('valid_from'),
                 Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(5000),
                 // Line-by-line decision (PARTIAL): a line left untouched is approved in full; reduce or decline it with a reason.
-                Repeater::make('lines')->label(__('workflow_actions.fields.lines'))->visible(fn (callable $get) => $get('decision') === 'PARTIAL')
-                    ->addable(false)->deletable(false)->reorderable(false)->columns(4)
-                    ->itemLabel(fn (array $state) => $state['summary'] ?? null)
-                    ->schema([
-                        Hidden::make('line_id'), Hidden::make('summary'),
-                        TextInput::make('approved_quantity')->label(__('workflow_actions.fields.approved_quantity'))->numeric()->minValue(0),
-                        TextInput::make('approved_amount_minor')->label(__('workflow_actions.fields.approved_amount_minor'))->integer()->minValue(0),
-                        TextInput::make('decline_reason')->label(__('workflow_actions.fields.decline_reason'))->maxLength(200)->columnSpan(2),
-                    ]),
+                self::linesRepeater(),
             ])
-            ->fillForm(fn ($record) => ['lines' => DB::table('health_preauthorization_lines')->where('health_preauthorization_id', WorkflowAction::id($record))->whereNull('extension_id')
-                ->orderBy('line_no')->get()->map(fn ($l) => ['line_id' => $l->id, 'approved_quantity' => $l->quantity, 'approved_amount_minor' => (int) $l->insurer_amount_minor,
-                    'summary' => '#'.$l->line_no.' '.$l->service_code.' x '.$l->quantity.' = '.number_format((int) $l->insurer_amount_minor)])->all()])
+            ->fillForm(fn ($record) => ['lines' => self::lineRows(DB::table('health_preauthorization_lines')->where('health_preauthorization_id', WorkflowAction::id($record))->whereNull('extension_id'))])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(PreauthorizationService::class)->propose(
                 self::tenant(), WorkflowAction::id($record), self::proposal($data), auth()->user())));
     }
@@ -247,11 +240,30 @@ final class HealthProviderActions
                 Select::make('provider_id')->label(__('workflow_actions.fields.provider'))->required()->searchable()
                     ->options(fn () => DB::table('health_provider_claims')->join('provider_profiles', 'provider_profiles.id', '=', 'health_provider_claims.provider_profile_id')
                         ->where('health_provider_claims.tenant_id', self::tenant())->where('health_provider_claims.status', 'PAYABLE')->whereNull('settlement_batch_id')
-                        ->join('parties', 'parties.id', '=', 'provider_profiles.party_id')->distinct()->pluck('parties.display_name', 'provider_profiles.id')->all()),
+                        ->join('parties', 'parties.id', '=', 'provider_profiles.party_id')->whereIn('health_provider_claims.id', self::carrierClaimIds())->distinct()->pluck('parties.display_name', 'provider_profiles.id')->all()),
                 TextInput::make('currency')->label(__('workflow_actions.fields.currency'))->required()->length(3)->default('XAF'),
             ])
             ->action(fn (Action $action, array $data) => WorkflowAction::run($action, $p,
-                fn () => app(ProviderSettlementService::class)->createBatch(self::tenant(), $data['provider_id'], $data['currency'], null, auth()->id())));
+                fn () => app(ProviderSettlementService::class)->createBatch(self::tenant(), $data['provider_id'], $data['currency'], self::carrierBatchClaims($data['provider_id'], $data['currency']), auth()->id())));
+    }
+
+    /** Unbatched PAYABLE provider claims of the tenant the caller may settle (insurer panel: its carrier's only). @return list<string> */
+    private static function carrierClaimIds(): array
+    {
+        $ids = DB::table('health_provider_claims')->where('tenant_id', self::tenant())->where('status', 'PAYABLE')->whereNull('settlement_batch_id')->pluck('id')->map(fn ($v) => (string) $v)->all();
+
+        return \App\Application\WebExperiences\PortalScope::visibleOf('health_provider_claims', $ids);
+    }
+
+    /** Claim ids for createBatch: null (every eligible claim) at tenant-wide scope; the carrier's own claims otherwise, so a batch never mixes carriers. @return list<string>|null */
+    private static function carrierBatchClaims(string $providerId, string $currency): ?array
+    {
+        if (\App\Application\WebExperiences\PortalScope::carrierId() === null) {
+            return null;
+        }
+        $ids = DB::table('health_provider_claims')->whereIn('id', self::carrierClaimIds())->where('provider_profile_id', $providerId)->where('currency', strtoupper($currency))->pluck('id')->map(fn ($v) => (string) $v)->all();
+
+        return $ids === [] ? ['00000000-0000-0000-0000-000000000000'] : $ids;
     }
 
     public static function settlementPay(): Action
@@ -263,6 +275,27 @@ final class HealthProviderActions
             ->schema([TextInput::make('payment_reference')->label(__('workflow_actions.fields.payment_reference'))->required()->maxLength(120)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(ProviderSettlementService::class)->payBatch(self::tenant(), WorkflowAction::id($record), $data['payment_reference'], auth()->id())));
+    }
+
+    /** PARTIAL line editor shared by the initial proposal and the stay-extension proposal. */
+    private static function linesRepeater(): Repeater
+    {
+        return Repeater::make('lines')->label(__('workflow_actions.fields.lines'))->visible(fn (callable $get) => $get('decision') === 'PARTIAL')
+            ->addable(false)->deletable(false)->reorderable(false)->columns(4)
+            ->itemLabel(fn (array $state) => $state['summary'] ?? null)
+            ->schema([
+                Hidden::make('line_id'), Hidden::make('summary'),
+                TextInput::make('approved_quantity')->label(__('workflow_actions.fields.approved_quantity'))->numeric()->minValue(0),
+                TextInput::make('approved_amount_minor')->label(__('workflow_actions.fields.approved_amount_minor'))->integer()->minValue(0),
+                TextInput::make('decline_reason')->label(__('workflow_actions.fields.decline_reason'))->maxLength(200)->columnSpan(2),
+            ]);
+    }
+
+    /** Repeater rows (prefilled at the full requested line) for a health_preauthorization_lines query. @return list<array<string, mixed>> */
+    private static function lineRows(\Illuminate\Database\Query\Builder $q): array
+    {
+        return $q->orderBy('line_no')->get()->map(fn ($l) => ['line_id' => $l->id, 'approved_quantity' => $l->quantity, 'approved_amount_minor' => (int) $l->insurer_amount_minor,
+            'summary' => '#'.$l->line_no.' '.$l->service_code.' x '.$l->quantity.' = '.number_format((int) $l->insurer_amount_minor)])->values()->all();
     }
 
     /** Preauth proposal payload: line rows only for a PARTIAL decision, each with its non-empty fields. */

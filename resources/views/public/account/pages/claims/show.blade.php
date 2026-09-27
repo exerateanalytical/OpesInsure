@@ -2,6 +2,8 @@
      Data: GET /mobile/claims/{id}, /timeline, /evidence, /evidence-requirements, /settlement; uploads via
      POST /mobile/documents + /mobile/claims/{id}/evidence; files open via POST /mobile/documents/{doc}/access.
      Withdraw: POST /mobile/claims/{id}/withdraw {reason}, offered only while the API says can_withdraw (before assessment).
+     Settlement accept/reject: POST .../settlement/decision behind a one-time code (Opes.stepUp, CLAIM_SETTLEMENT_DECISION).
+     Inspection: POST .../inspection/reschedule {appointment_at}. Incident: PUT .../incident. People involved: GET/POST .../parties.
      Appeal: POST /mobile/claims/{id}/appeals {reason}, offered once the claim is decided (DECLINED, PARTIALLY_APPROVED, PAID, CLOSED).
      The customer API has no summary PDF, so the page offers print-to-PDF instead. --}}
 @php $L = __('account_claims.js'); $D = $L['d']; @endphp
@@ -40,7 +42,8 @@ Opes.page(function (ctx) {
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/evidence')),
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/evidence-requirements')),
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/settlement')),
-    ]).then(function (r) { render(r[0], rows(r[1]), rows(r[2]), rows(r[3]), r[4]); });
+      soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/parties')),
+    ]).then(function (r) { render(r[0], rows(r[1]), rows(r[2]), rows(r[3]), r[4], rows(r[5])); });
   }
 
   function stepper(c, events) {
@@ -126,7 +129,77 @@ Opes.page(function (ctx) {
     document.body.appendChild(dlg); dlg.showModal(); ta.focus();
   }
 
-  function render(c, events, evidence, reqs, settle) {
+  var X = window.OPES_CUST;
+  function dialog(title, fields, sendLabel, onSend) {
+    var err = h('p', { class: 'err', role: 'alert', hidden: true });
+    var ok = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok' }, sendLabel);
+    var form = h('form', { method: 'dialog' }, h('h2', null, title), fields, err,
+      h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, X.insp.cancel), ok));
+    var dlg = h('dialog', { class: 'cl-dlg' }, form);
+    form.addEventListener('submit', function (e) {
+      if (e.submitter && e.submitter.value === 'cancel') return;
+      e.preventDefault(); Opes.busy(ok, true);
+      onSend(form).then(function () { dlg.close(); return load(); })
+        .catch(function (e2) { Opes.busy(ok, false); err.textContent = (e2 && e2.message) || Opes.t.error; err.hidden = false; });
+    });
+    dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); });
+    document.body.appendChild(dlg); dlg.showModal();
+  }
+  /** Inspection: POST /inspection/reschedule {appointment_at} (must be in the future). */
+  function reschedule(c) {
+    var min = new Date(Date.now() + 3600000); var pad = function (n) { return String(n).padStart(2, '0'); };
+    var minStr = min.getFullYear() + '-' + pad(min.getMonth() + 1) + '-' + pad(min.getDate()) + 'T' + pad(min.getHours()) + ':' + pad(min.getMinutes());
+    dialog(X.insp.title, h('label', { class: 'afield-s' }, h('span', null, X.insp.when), h('input', { type: 'datetime-local', name: 'appointment_at', required: true, min: minStr, 'data-reschedule-at': '' })), X.insp.save, function (f) {
+      var v = f.elements.appointment_at.value; if (!v) return Promise.reject({ message: X.insp.when });
+      return Opes.api('/mobile/claims/' + encodeURIComponent(c.id) + '/inspection/reschedule', { method: 'POST', body: { appointment_at: new Date(v).toISOString() } }).then(function () { Opes.alert(X.insp.done, 'ok'); });
+    });
+  }
+  function checkbox(name, label, on) { return h('label', { style: 'display:flex;gap:8px;align-items:center;font-size:14px' }, h('input', { type: 'checkbox', name: name, checked: !!on }), label); }
+  /** Incident details: read-only list, editable while the claim is open (PUT /incident). */
+  function incidentCard(c, inc, open) {
+    var I = X.inc, el = card(I.title), yes = Opes.locale === 'fr' ? 'Oui' : 'Yes', no = Opes.locale === 'fr' ? 'Non' : 'No';
+    el.appendChild(dl([['accident', I.type, inc.incident_type ? (I.types[K.up(inc.incident_type)] || Opes.label(inc.incident_type)) : null], ['doc', I.police, inc.police_report_number],
+      ['help', I.injuries, inc.injuries_reported === undefined ? null : (inc.injuries_reported ? yes : no)], ['motor', I.drivable, inc.vehicle_drivable === undefined ? null : (inc.vehicle_drivable ? yes : no)],
+      ['motor', I.towing, inc.towing_required === undefined ? null : (inc.towing_required ? yes : no)]]));
+    if (!open) return el;
+    el.appendChild(h('div', { class: 'btnbar' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-incident-edit': '', onclick: function () {
+      dialog(I.title, h('div', { style: 'display:grid;gap:10px' },
+        h('label', { class: 'afield-s' }, h('span', null, I.type), h('select', { name: 'incident_type' }, Object.keys(I.types).map(function (k) { return h('option', { value: k, selected: K.up(inc.incident_type) === k }, I.types[k]); }))),
+        h('label', { class: 'afield-s' }, h('span', null, I.police), h('input', { name: 'police_report_number', maxlength: 120, value: inc.police_report_number || '' })),
+        checkbox('injuries_reported', I.injuries, inc.injuries_reported), checkbox('vehicle_drivable', I.drivable, inc.vehicle_drivable !== false), checkbox('towing_required', I.towing, inc.towing_required),
+        checkbox('declaration_confirmed', I.declare, inc.declaration_confirmed)), I.save, function (f) {
+        var e = f.elements;
+        return Opes.api('/mobile/claims/' + encodeURIComponent(c.id) + '/incident', { method: 'PUT', body: { incident_type: e.incident_type.value, police_report_number: e.police_report_number.value.trim() || null,
+          injuries_reported: e.injuries_reported.checked, vehicle_drivable: e.vehicle_drivable.checked, towing_required: e.towing_required.checked, declaration_confirmed: e.declaration_confirmed.checked } }).then(function () { Opes.alert(I.saved, 'ok'); });
+      });
+    } }, Opes.icon('edit'), I.edit)));
+    return el;
+  }
+  /** People involved: GET/POST /parties. */
+  function partiesCard(c, parties, open) {
+    var P = X.parties, el = card(P.title);
+    el.appendChild(parties.length ? h('ul', { class: 'op-nlist', style: 'list-style:none;margin:0;padding:0' }, parties.map(function (x) {
+      return h('li', { style: 'padding:8px 0;border-bottom:1px solid #EEF2F8' }, h('b', null, x.display_name), ' · ', P.roles[K.up(x.role)] || Opes.label(x.role),
+        x.contact_phone ? h('small', { style: 'display:block' }, x.contact_phone) : null);
+    })) : h('p', { class: 'sub' }, P.none));
+    if (!open) return el;
+    el.appendChild(h('div', { class: 'btnbar' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-party-add': '', onclick: function () {
+      dialog(P.add, h('div', { style: 'display:grid;gap:10px' },
+        h('label', { class: 'afield-s' }, h('span', null, P.role), h('select', { name: 'role' }, Object.keys(P.roles).map(function (k) { return h('option', { value: k, selected: k === 'THIRD_PARTY' }, P.roles[k]); }))),
+        h('label', { class: 'afield-s' }, h('span', null, P.name, h('i', null, ' *')), h('input', { name: 'display_name', required: true, maxlength: 255 })),
+        h('label', { class: 'afield-s' }, h('span', null, P.phone), h('input', { name: 'contact_phone', type: 'tel', maxlength: 32 })),
+        h('label', { class: 'afield-s' }, h('span', null, P.email), h('input', { name: 'contact_email', type: 'email', maxlength: 255 })),
+        h('label', { class: 'afield-s' }, h('span', null, P.notes), h('textarea', { name: 'notes', rows: 2, maxlength: 1000 })),
+        checkbox('consent_given', P.consent, false)), P.save, function (f) {
+        var e = f.elements;
+        return Opes.api('/mobile/claims/' + encodeURIComponent(c.id) + '/parties', { method: 'POST', body: { role: e.role.value, display_name: e.display_name.value.trim(), contact_phone: e.contact_phone.value.trim() || null,
+          contact_email: e.contact_email.value.trim() || null, notes: e.notes.value.trim() || null, consent_given: e.consent_given.checked } }).then(function () { Opes.alert(P.added, 'ok'); });
+      });
+    } }, Opes.icon('users'), P.add)));
+    return el;
+  }
+
+  function render(c, events, evidence, reqs, settle, parties) {
     var p = c.policy || {}, r = K.risk(p), inc = (c.loss_details && c.loss_details.incident) || {}, s = K.shown(c);
     var inspection = c.loss_details && c.loss_details.inspection, repair = c.loss_details && c.loss_details.repair;
     var at = c.incident_at || c.loss_occurred_at;
@@ -217,11 +290,13 @@ Opes.page(function (ctx) {
     if (s !== 'DECLINED') K.STAGES.slice(cur + 1).forEach(function (k) { tl.appendChild(h('li', null, h('span', { class: 'dotc' }), h('b', null, T.groups[k]), h('small', null, D.pending))); });
     prog.appendChild(tl);
 
+    var open = !/^(CLOSED|SETTLED|PAID|DECLINED|REJECTED|WITHDRAWN|CANCELLED)$/.test(K.up(c.status));
     var side = [prog];
     if (inspection && (inspection.surveyor_name || inspection.appointment_at)) {
       var o = card(D.officer);
       o.appendChild(dl([['user', D.surveyor, inspection.surveyor_name], ['clock', D.appointment, inspection.appointment_at ? Opes.date(inspection.appointment_at, true) : null], ['pin', D.location, inspection.location],
         ['phone', D.phone, inspection.contact_phone ? h('a', { href: 'tel:' + inspection.contact_phone }, inspection.contact_phone) : null], ['help', '', inspection.notes]]));
+      if (open) o.appendChild(h('div', { class: 'btnbar' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-reschedule': '', onclick: function () { reschedule(c); } }, Opes.icon('clock'), X.insp.btn)));
       side.push(o);
     }
     if (settle && settle.status && (settle.offered_minor > 0 || K.up(settle.status) !== 'PENDING_DECISION')) {
@@ -229,6 +304,20 @@ Opes.page(function (ctx) {
       st2.appendChild(dl([['card', D.offered, K.amount(settle.offered_minor)], ['card', D.deductible, K.amount(settle.deductible_minor)], ['check', D.net, K.amount(settle.net_minor)],
         ['refresh', D.payment, settle.payment_status ? Opes.chip(settle.payment_status) : null], ['doc', D.pay_ref, settle.payment_reference]]));
       if (settle.terms) st2.appendChild(h('p', { class: 'sub', style: 'margin:10px 0 0' }, settle.terms));
+      var ss = K.up(settle.status);
+      if (ss !== 'PENDING_DECISION' && ss.indexOf('CUSTOMER_') !== 0 && settle.offered_minor > 0) {
+        var decide = function (d, btn) {
+          if (d === 'REJECT' && !window.confirm(X.settle.reject_q)) return;
+          Opes.busy(btn, true);
+          Opes.stepUp('CLAIM_SETTLEMENT_DECISION', '/mobile/claims/' + encodeURIComponent(c.id) + '/settlement/decision', { method: 'POST', body: { decision: d } })
+            .then(function () { Opes.alert(d === 'ACCEPT' ? X.settle.accepted : X.settle.rejected, 'ok'); return load(); })
+            .catch(function (e) { Opes.busy(btn, false); if (e && !e.cancelled) Opes.alert(e.message); });
+        };
+        var ya = h('button', { type: 'button', class: 'dbtn dbtn-primary sm', 'data-settle-accept': '', onclick: function () { decide('ACCEPT', ya); } }, Opes.icon('check'), X.settle.accept);
+        var no = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-settle-reject': '', onclick: function () { decide('REJECT', no); } }, Opes.icon('x'), X.settle.reject);
+        if (settle.decision_deadline) st2.appendChild(h('small', { class: 'sub', style: 'display:block;margin-top:8px' }, K.fmt(X.settle.deadline, { date: Opes.date(settle.decision_deadline) })));
+        st2.appendChild(h('div', { class: 'btnbar' }, no, ya));
+      }
       side.push(st2);
     }
     if (repair && (repair.garage_name || repair.estimate_minor)) {
@@ -244,6 +333,7 @@ Opes.page(function (ctx) {
       h('div', { class: 'cl-stack' }, h('div', { class: 'agrid c2' }, info, veh), desc, docs),
       h('div', { class: 'cl-stack side' }, side));
     body.appendChild(grid);
+    body.appendChild(h('div', { class: 'agrid c2', style: 'margin-top:16px' }, incidentCard(c, inc, open), partiesCard(c, parties || [], open)));
     body.appendChild(h('div', { class: 'cl-bar' }, h('div', { class: 'note' }, Opes.icon('help'), h('div', null, h('b', null, D.important), D.important_d)),
       h('a', { class: 'dbtn dbtn-outline', href: '/account/claims' }, Opes.icon('chev-left'), T.stats.all_claims)));
   }

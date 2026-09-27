@@ -49,8 +49,10 @@
     if (s && s.access_token) headers.Authorization = 'Bearer ' + s.access_token;
     if (s && s.tenant_id) headers['X-Tenant-Id'] = s.tenant_id;
     if (method !== 'GET') headers['Idempotency-Key'] = o.idemKey || (o.idemKey = uuid());
+    if (o.headers) Object.keys(o.headers).forEach(function (k) { headers[k] = o.headers[k]; });
     return fetch(url, { method: method, headers: headers, body: body }).then(function (r) {
-      if (r.status === 401 && !retried) return refresh().then(function (ok) { if (ok) return api(path, o, true); write(null); toLogin(); throw { status: 401, message: T.signed_out }; });
+      // A step-up-protected write answers 401 STEP_UP_REQUIRED for a bad grant: that is not a lost session.
+      if (r.status === 401 && !retried && !o.stepUp)return refresh().then(function (ok) { if (ok) return api(path, o, true); write(null); toLogin(); throw { status: 401, message: T.signed_out }; });
       if (r.status === 204) return null;
       var ct = r.headers.get('content-type') || '';
       if (o.blob) return r.ok ? r.blob() : Promise.reject({ status: r.status, message: T.error });
@@ -213,7 +215,41 @@
     return false;
   }
 
-  window.Opes = { api: api, list: list, h: h, icon: icon, $: $, $$: $$, clear: clear, money: money, date: date, label: label, chip: chip,
+  /**
+   * One-time-code confirmation (same flow as the app): POST /mobile/security/step-up/request {purpose},
+   * ask for the 6-digit SMS code, POST /mobile/security/step-up/verify, then run the protected write with
+   * the X-Step-Up-Grant header. Resolves with the write's result; rejects {cancelled:true} if dismissed.
+   */
+  function stepUp(purpose, path, o) {
+    var S = T.stepup || {};
+    return api('/mobile/security/step-up/request', { body: { purpose: purpose } }).then(function (ch) {
+      return new Promise(function (resolve, reject) {
+        var inp = h('input', { name: 'code', inputmode: 'numeric', autocomplete: 'one-time-code', pattern: '[0-9]{6}', maxlength: 6, minlength: 6, required: true, 'aria-label': S.code || 'Code', 'data-stepup-code': '' });
+        var err = h('p', { class: 'err', role: 'alert', hidden: true, style: 'color:#B42318;font-size:13px' });
+        var ok = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok', 'data-stepup-confirm': '' }, S.confirm || 'Confirm');
+        var dlg = h('dialog', { class: 'cl-dlg', 'aria-labelledby': 'su-t' }, h('form', { method: 'dialog' },
+          h('h2', { id: 'su-t' }, S.title || 'Confirm with a code'), h('p', null, S.text || ''), h('label', { class: 'afield-s' }, h('span', null, S.code || 'Code'), inp), err,
+          h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, S.cancel || 'Cancel'), ok)));
+        var done = false;
+        dlg.querySelector('form').addEventListener('submit', function (e) {
+          if (e.submitter && e.submitter.value === 'cancel') return;
+          e.preventDefault();
+          var code = String(inp.value || '').trim();
+          if (!/^\d{6}$/.test(code)) { err.textContent = S.bad || T.error; err.hidden = false; inp.focus(); return; }
+          busy(ok, true);
+          api('/mobile/security/step-up/verify', { body: { challenge_id: ch.challenge_id, purpose: purpose, code: code } }).then(function (g) {
+            var o2 = Object.assign({}, o || {}); o2.stepUp = true; o2.headers = Object.assign({}, (o && o.headers) || {}, { 'X-Step-Up-Grant': g.grant_token });
+            return api(path, o2);
+          }).then(function (res) { done = true; dlg.close(); resolve(res); })
+            .catch(function (e2) { busy(ok, false); err.textContent = (e2 && e2.message) || T.error; err.hidden = false; });
+        });
+        dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); if (!done) reject({ cancelled: true, message: '' }); });
+        document.body.appendChild(dlg); dlg.showModal(); inp.focus();
+      });
+    });
+  }
+
+  window.Opes = { api: api, stepUp: stepUp, list: list, h: h, icon: icon, $: $, $$: $$, clear: clear, money: money, date: date, label: label, chip: chip,
     loading: loading, empty: empty, fail: fail, alert: alert, stepper: stepper, busy: busy, page: page, session: read, saveSession: write,
     can: can, uuid: uuid, fileBase64: fileBase64, openDoc: openDoc, signOut: signOut, t: T, ids: C.ids || [], locale: C.locale };
 })();

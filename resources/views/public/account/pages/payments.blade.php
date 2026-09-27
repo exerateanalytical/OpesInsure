@@ -1,7 +1,8 @@
-{{-- /account/payments — payments list with receipts (GET /mobile/payments, /mobile/payments/{id}/receipt, retry). --}}
+{{-- /account/payments — payments list with receipts (GET /mobile/payments, /mobile/payments/{id}/receipt, retry) and refund requests
+     (POST /mobile/payments/{id}/refunds behind a one-time code: Opes.stepUp PAYMENT_REFUND_REQUEST). --}}
 @extends('public.account.layout', ['title' => __('account_policies.pays.title'), 'lede' => __('account_policies.pays.lede'), 'crumbs' => [[__('account_policies.pays.title'), null]], 'active' => 'payments'])
 @section('content')
-@include('public.account.partials.policies-assets')
+@include('public.account.partials.customer-assets')
 <div class="stats" data-stats></div>
 <section class="acard" data-page-body></section>
 @endsection
@@ -9,6 +10,28 @@
 <script>
 Opes.page(function () {
   var h = Opes.h, T = OP.T, Y = T.pays, $ = Opes.$, box = $('[data-page-body]'), stats = $('[data-stats]');
+  var RF = window.OPES_CUST.refund;
+  /** Ask the reason (and optional partial amount), then confirm with a one-time code and POST /refunds. */
+  function refund(x) {
+    var err = h('p', { class: 'err', role: 'alert', hidden: true, style: 'color:#B42318;font-size:13px' });
+    var ok = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok', 'data-refund-send': '' }, RF.send);
+    var form = h('form', { method: 'dialog' }, h('h2', null, RF.title),
+      h('label', { class: 'afield-s' }, h('span', null, RF.reason, h('i', null, ' *')), h('textarea', { name: 'reason', required: true, minlength: 5, maxlength: 2000, rows: 4 })),
+      h('label', { class: 'afield-s' }, h('span', null, RF.amount), h('input', { name: 'amount', type: 'number', min: 1, max: Math.floor((x.amount_minor || 0) / 100), step: 1 })), err,
+      h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, RF.cancel), ok));
+    var dlg = h('dialog', { class: 'cl-dlg' }, form);
+    form.addEventListener('submit', function (e) {
+      if (e.submitter && e.submitter.value === 'cancel') return;
+      e.preventDefault();
+      var body = { reason: form.elements.reason.value.trim(), reason_code: 'CUSTOMER_REQUEST' };
+      var amt = Number(form.elements.amount.value); if (amt > 0) body.amount_minor = Math.round(amt * 100);
+      dlg.close();
+      Opes.stepUp('PAYMENT_REFUND_REQUEST', '/mobile/payments/' + encodeURIComponent(x.id) + '/refunds', { method: 'POST', body: body })
+        .then(function () { Opes.alert(RF.done, 'ok'); }).catch(function (e2) { if (e2 && !e2.cancelled) Opes.alert(e2.message); });
+    });
+    dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); });
+    document.body.appendChild(dlg); dlg.showModal();
+  }
   Opes.loading(box);
   return Promise.all([OP.payments(), OP.policies().catch(function () { return []; }), OP.proposals().catch(function () { return []; })]).then(function (r) {
     var list = r[0], byProp = {};
@@ -30,7 +53,8 @@ Opes.page(function () {
       [Y.amount, function (x) { return h('b', null, OP.mm(x.amount_minor)); }],
       [Y.status, function (x) { return OP.chip(x.status); }],
       [T.receipt, function (x) {
-        if (OP.ok(x)) return h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { OP.openReceipt(x.id); } }, Opes.icon('download'), T.receipt);
+        if (OP.ok(x)) return h('div', { class: 'op-acts' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { OP.openReceipt(x.id); } }, Opes.icon('download'), T.receipt),
+          h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-refund': x.id, onclick: function () { refund(x); } }, Opes.icon('refresh'), RF.btn));
         var p = byProp[x.proposal_id];
         if (p && String(p.status).toUpperCase() === 'PAYMENT_PENDING') return OP.btn(T.pay.retry, '/account/payments/new?proposal=' + x.proposal_id, 'dbtn-outline sm', 'refresh');
         return h('small', { class: 'op-muted' }, '—');

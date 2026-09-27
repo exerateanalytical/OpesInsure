@@ -44,10 +44,22 @@ Test: `tests/Feature/Web/CustomerNavCrawlTest.php`.
 - **Dates:** `Opes.date` formats in the Africa/Douala zone with the page locale; the new pages use it for every date (consents, devices, data-request due dates, request timeline).
 - **Mobile width:** new pages use the existing `agrid c2` / `main-side` / `op-form` layouts, which collapse to one column under 760 px; action rows use wrapping `btnbar` / `op-case` flex rows; no fixed widths.
 
+## Follow-up batch (same day)
+
+| Feature | API | Web |
+|---|---|---|
+| One-time code (step-up) | mobile/security/step-up/request + verify, then `X-Step-Up-Grant` | `Opes.stepUp(purpose, path, opts)` in portal.js: SMS-code dialog (demo code 123456 for demo phones in demo mode), then the protected write. A 401 `STEP_UP_REQUIRED` no longer triggers the session refresh / sign-out path. |
+| Settlement accept / reject | claims/{id}/settlement/decision (CLAIM_SETTLEMENT_DECISION) | claim page settlement card: Accept / Reject (with confirm) once an offer exists and the customer has not answered |
+| Refund request | payments/{id}/refunds (PAYMENT_REFUND_REQUEST) | payments list: "Request a refund" on completed payments (reason, optional partial amount) |
+| Inspection reschedule | claims/{id}/inspection/reschedule | claim page, inspection card (future date-time only) |
+| Incident details | GET/PUT claims/{id}/incident | claim page "Incident details" card, editable while the claim is open |
+| People involved | GET/POST claims/{id}/parties | claim page "People involved" card with add dialog |
+| Certificate delivery | mobile/deliveries/{id}, /address, /confirm (delivery comes with the policy as `delivery`) | policy page delivery card: status, address change while CREATED / READY_FOR_PICKUP, receipt confirmation with the courier code while in transit. The API has no "request a delivery" endpoint: orders are created at issuance. |
+| Support attachments | support/cases/{id}/attachments (multipart) | support case thread: attach PDF/JPG/PNG ≤ 10 MB |
+
+**Defect fixed:** `POST mobile/support/cases/{id}/attachments` sat behind the JSON-only guard (`json.api`), so every multipart upload got **415**. That affected the mobile app (`SupportApi.upload` sends FormData) as well as the web. The route is now exempt from that guard only (routes/wave14_mobile.php); it still requires auth, tenant and file validation.
+
 ## Remaining gaps (not built, by design or out of scope)
 
-- **Settlement accept/reject** (`claims/{id}/settlement/decision`) and **refund request** (`payments/{id}/refunds`) need `step-up` (OTP challenge through `mobile/security/step-up/*`); the web shell has no step-up dialog yet. The claim page shows the settlement read-only. Next step: a shared step-up modal in portal.js.
-- **Inspection reschedule**, **incident edit** and **third-party parties** on a claim (`claims/{id}/inspection/reschedule`, `incident`, `parties`) are shown read-only on the claim page.
-- **Deliveries** (`mobile/deliveries/*`, physical certificate delivery) and **support attachments** (`support/cases/{id}/attachments`, multipart) have no web UI.
 - Push tokens, device attestation, sync/offline queue and runtime telemetry are app-only by nature.
 - The pages load data in the browser. The crawl checks rendering and the API contract (every read the pages make returns 200 for a customer; the new writes succeed), but no browser was driven for this audit because no local web server was running.

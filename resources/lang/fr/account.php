@@ -13,6 +13,7 @@ return [
     ],
     'help_t' => 'Besoin d’aide ?', 'help_d' => 'Parlez à nos experts en assurance.', 'help_btn' => 'Nous appeler',
     'js' => [
+        'stepup' => ['title' => 'Confirmer avec un code', 'text' => 'Nous avons envoyé un code à 6 chiffres par SMS sur votre téléphone. Saisissez-le pour confirmer.', 'code' => 'Code de sécurité', 'confirm' => 'Confirmer', 'cancel' => 'Annuler', 'bad' => 'Saisissez le code à 6 chiffres.'],
         'loading' => 'Chargement…', 'empty' => 'Rien pour le moment.', 'error' => 'Une erreur est survenue. Veuillez réessayer.', 'retry' => 'Réessayer',
         'wait' => 'Veuillez patienter…', 'forbidden' => 'Votre compte n’a pas accès à cette page.', 'signed_out' => 'Votre session a expiré. Veuillez vous reconnecter.',
         'roles' => ['customer' => 'Client particulier', 'agent' => 'Agent / Courtier', 'officer' => 'Gestionnaire sinistres'],

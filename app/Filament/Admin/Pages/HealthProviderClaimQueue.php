@@ -25,6 +25,8 @@ final class HealthProviderClaimQueue extends HealthQueuePage
 
     protected const STATUSES = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'PARTIALLY_APPROVED', 'REJECTED', 'PAYABLE', 'PAID', 'DISPUTED'];
 
+    protected const TABLE = 'health_provider_claims';
+
     protected function fetch(string $tenantId, ?string $status): array
     {
         return app(ProviderClaimService::class)->list($tenantId, ['status' => $status]);

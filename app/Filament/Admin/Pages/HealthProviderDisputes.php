@@ -26,6 +26,8 @@ final class HealthProviderDisputes extends HealthQueuePage
 
     protected const STATUSES = ['SUBMITTED', 'ACKNOWLEDGED', 'UNDER_REVIEW', 'MORE_INFORMATION_REQUIRED', 'ESCALATED', 'RESOLVED_PROVIDER', 'RESOLVED_INSURER', 'PARTIALLY_RESOLVED', 'CLOSED'];
 
+    protected const TABLE = 'provider_disputes';
+
     protected function fetch(string $tenantId, ?string $status): array
     {
         return app(ProviderOperationsService::class)->insurerDisputes($tenantId, $status);

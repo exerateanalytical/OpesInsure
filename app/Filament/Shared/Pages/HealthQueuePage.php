@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Shared\Pages;
 
+use App\Application\WebExperiences\PortalScope;
 use App\Domain\Tenancy\TenantContext;
 use App\Filament\Shared\Actions\WorkflowAction;
 use BackedEnum;
@@ -40,6 +41,9 @@ abstract class HealthQueuePage extends Page implements HasTable
 
     /** @var list<string> */
     protected const STATUSES = [];
+
+    /** Table the rows come from; the insurer panel narrows it to the caller's carrier (PortalScope::visibleOf). */
+    protected const TABLE = 'health_preauthorizations';
 
     #[Locked]
     public ?string $tenantId = null;
@@ -104,6 +108,9 @@ abstract class HealthQueuePage extends Page implements HasTable
                     return [];
                 }
                 $rows = array_map(fn ($r) => (array) $r, $this->fetch($this->tenantId, $filters['status']['value'] ?? null));
+                // Insurer panel: only the caller's carrier's rows (owner decision 2026-09-27, PortalScope).
+                $visible = array_flip(PortalScope::visibleOf(static::TABLE, array_map('strval', array_column($rows, 'id'))));
+                $rows = array_values(array_filter($rows, fn ($r) => isset($visible[(string) $r['id']])));
                 $names = $this->providerNames(array_column($rows, 'provider_profile_id'));
 
                 return collect($rows)->mapWithKeys(fn ($r) => [$r['id'] => ['__key' => $r['id'], 'provider' => $names[$r['provider_profile_id'] ?? ''] ?? null] + $r])->all();
@@ -115,10 +122,18 @@ abstract class HealthQueuePage extends Page implements HasTable
                 Action::make('viewDetail')->label(__('workflow_actions.viewDetail.label'))->icon('heroicon-o-eye')->slideOver()
                     ->modalHeading(fn (array $record) => __('workflow_actions.screens.'.static::$screen).' — '.($record[$this->columns()[0]] ?? ''))
                     ->modalSubmitAction(false)
-                    ->modalContent(fn (array $record) => view('filament.shared.pages.health-detail', $this->detail((string) $this->tenantId, $record['id']))),
+                    ->modalContent(fn (array $record) => view('filament.shared.pages.health-detail', $this->detail((string) $this->tenantId, static::assertVisible((string) $record['id'])))),
                 ...$this->workflowActions(),
             ])
             ->emptyStateHeading(__('web_experience.list.empty_heading'));
+    }
+
+    /** An id outside the caller's carrier scope is a 404, never a detail or a decision. */
+    public static function assertVisible(string $id): string
+    {
+        abort_if(PortalScope::visibleOf(static::TABLE, [$id]) === [], 404);
+
+        return $id;
     }
 
     /** @param list<?string> $ids @return array<string, string> provider_profile_id => party display name */
