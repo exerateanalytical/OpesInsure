@@ -19,7 +19,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(web: __DIR__.'/../routes/web.php', api: __DIR__.'/../routes/api.php', commands: __DIR__.'/../routes/console.php', health: '/up')
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'json.api' => EnforceJsonApi::class, 'integration.client' => AuthenticateIntegrationClient::class, 'idempotency' => IdempotencyGuard::class, 'step-up' => RequireStepUpGrant::class, 'if-match' => OptimisticConcurrency::class]);
+        $middleware->alias(['tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'json.api' => EnforceJsonApi::class, 'integration.client' => AuthenticateIntegrationClient::class, 'idempotency' => IdempotencyGuard::class, 'step-up' => RequireStepUpGrant::class, 'if-match' => OptimisticConcurrency::class, 'health.carrier_scope' => \App\Interfaces\Http\Middleware\EnsureHealthCarrierScope::class]);
         $middleware->prepend(\App\Interfaces\Http\Middleware\RedirectLegacyBordereauxUrls::class); // old bordereaux/bordereaus panel URLs → 301
         // Correlation id first so every later layer (logs, audit, jobs,
         // error bodies) sees it; StandardApiEnvelope wraps everything below

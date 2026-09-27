@@ -85,5 +85,5 @@ Route::prefix('api/v1/health')->middleware(['api', 'auth:api', 'tenant', 'json.a
     // D4: provider documents for the insurer (documents.read + the security level permission, enforced in the service).
     Route::get('provider-documents', [PD::class, 'insurerIndex'])->middleware('permission:documents.read');
     Route::get('provider-documents/{id}/download', [PD::class, 'insurerDownload'])->middleware('permission:documents.read')->whereUuid('id');
-    Route::post('provider-disputes/{id}/resolve', [W::class, 'resolveDispute'])->middleware(['permission:health.provider_claims.adjudicate', 'idempotency:health.provider_dispute.resolve'])->whereUuid('id');
+    Route::post('provider-disputes/{id}/resolve', [W::class, 'resolveDispute'])->middleware(['permission:health.provider_claims.adjudicate', 'health.carrier_scope', 'idempotency:health.provider_dispute.resolve'])->whereUuid('id');
 });

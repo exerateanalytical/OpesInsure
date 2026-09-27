@@ -80,15 +80,56 @@ final class PortalScope
         return $ids === null ? $q : $q->whereIn($table.'.id', $ids);
     }
 
+    /**
+     * Keep only the ids of $table the caller may see in the current portal (no-op outside a portal or at tenant-wide
+     * scope). For screens fed by service lists (health queues) rather than an Eloquent query.
+     *
+     * @param  list<string>  $ids
+     * @return list<string>
+     */
+    public static function visibleOf(string $table, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $sub = self::visibleIds($table);
+        if ($sub === null || $ids === []) {
+            return array_values($ids);
+        }
+        $keep = DB::table($table)->whereIn('id', $ids)->whereIn('id', $sub)->pluck('id')->map(fn ($v) => (string) $v)->all();
+
+        return array_values(array_filter($ids, fn ($id) => in_array((string) $id, $keep, true)));
+    }
+
+    /** Carrier forced by visibleOfCarrier() (API callers, outside any panel). */
+    private static ?string $forcedCarrier = null;
+
+    /**
+     * visibleOf() for an explicit carrier, outside the insurer panel (the health API guard, EnsureHealthCarrierScope).
+     *
+     * @param  list<string>  $ids
+     * @return list<string>
+     */
+    public static function visibleOfCarrier(string $table, array $ids, string $carrierId): array
+    {
+        $previous = self::$forcedCarrier;
+        self::$forcedCarrier = $carrierId;
+        try {
+            return self::visibleOf($table, $ids);
+        } finally {
+            self::$forcedCarrier = $previous;
+        }
+    }
+
     /** Sub-select of the visible ids of $table, or null when nothing narrows it (not in a portal, tenant-wide scope). */
     private static function visibleIds(string $table): ?QueryBuilder
     {
-        $panel = self::panel();
+        $panel = self::$forcedCarrier !== null ? 'insurer' : self::panel();
         $user = auth()->user();
         if ($panel === null || ! $user instanceof User) {
             return null;
         }
-        $carrier = $panel === 'insurer' ? self::carrierId() : null;
+        $carrier = $panel === 'insurer' ? (self::$forcedCarrier ?? self::carrierId()) : null;
         $parties = $panel === 'broker' ? app(BookScope::class)->parties($user) : null;
         if ($carrier === null && $parties === null) {
             return null;
@@ -105,6 +146,19 @@ final class PortalScope
             'claim_payments' => $in('claim_payments', 'claim_id', self::visibleIds('claims')),
             'payment_intents' => $in('payment_intents', 'proposal_id', self::visibleIds('proposals')),
             'underwriting_cases' => $carrier ? DB::table('underwriting_cases')->where('carrier_id', $carrier)->select('id') : $in('underwriting_cases', 'proposal_id', self::visibleIds('proposals')),
+            // Health (insurer panel): a pre-authorization belongs to its carrier_id (falling back to the policy's carrier when
+            // unset); a provider claim to its policy or verified pre-authorization; a settlement batch and a dispute follow
+            // the provider claims they carry.
+            'health_preauthorizations' => $carrier
+                ? DB::table('health_preauthorizations')->where(fn ($w) => $w->where('carrier_id', $carrier)
+                    ->orWhere(fn ($x) => $x->whereNull('carrier_id')->whereIn('policy_id', self::visibleIds('policies'))))->select('id')
+                : $in('health_preauthorizations', 'policy_id', self::visibleIds('policies')),
+            'health_provider_claims' => DB::table('health_provider_claims')->where(fn ($w) => $w->whereIn('policy_id', self::visibleIds('policies'))
+                ->orWhereIn('preauth_id', self::visibleIds('health_preauthorizations')))->select('id'),
+            'health_provider_settlement_batches' => DB::table('health_provider_claims')->whereNotNull('settlement_batch_id')
+                ->whereIn('id', self::visibleIds('health_provider_claims'))->select('settlement_batch_id as id'),
+            'provider_disputes' => DB::table('provider_disputes')->where(fn ($w) => $w->whereIn('health_provider_claim_id', self::visibleIds('health_provider_claims'))
+                ->orWhereIn('settlement_batch_id', self::visibleIds('health_provider_settlement_batches')))->select('id'),
             default => $none,
         };
     }

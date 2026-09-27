@@ -60,17 +60,24 @@ Why the generic strings are not granted to broker roles: `policies.read`, `claim
 | Cashier sessions | cashier.sessions.view | y | - | - | - | - | - | - | - |
 | FX rates | fx.rates.view | y | y | - | - | - | y | - | - |
 | Reports | finance.reports.view, reporting.kpis.view, reports.insurance.read | y | y | - | - | - | y | - | - |
-| Health queues | health.preauth.view, health.provider_claims.view | - | - | - | - | - | - | - | - |
+| Health: pre-authorizations (read, review, cancel, extension proposal incl. line-level PARTIAL) | health.preauth.view / .review | y | y | y | - | - | - | - | - |
+| Health: pre-authorization decide / return, extension decide | health.preauth.approve (+ .supervise for REFERRED) | y | y | - | - | - | - | - | - |
+| Health: provider claims (read, review, adjudicate, disputes) | health.provider_claims.view / .adjudicate | y | y | y | - | - | - | - | - |
+| Health: provider claim payable | health.provider_claims.approve_payment | y | y | - | - | - | - | - | - |
+| Health: provider settlements (create batch, pay) | health.provider_settlements.manage / .pay | y | y | - | - | - | - | - | - |
 | Claim actions (ClaimActions) | claims.* workflow permission per action | per grant | | | | | | | |
 
 CSA = CARRIER_SUPER_ADMIN, CA = CARRIER_ADMIN, CS = CARRIER_STAFF, UW/SUW = (senior) underwriter, RO = REINSURANCE_OFFICER, CUS = CUSTOMER_SERVICE, ADJ = ADJUSTER. Rows pinned by the test: dashboard, policies, claims, agreements, bordereaux, settlements, reports, quotes, KYC.
 
-Open: health queues are tenant-scoped, not carrier-scoped, so health permissions are not granted to carrier roles yet.
+Health (owner decision: insurance company admins see everything about their own company). Rows are narrowed to the caller's carrier: a pre-authorization by `health_preauthorizations.carrier_id` (else its policy's carrier), a provider claim by its policy or verified pre-authorization, a settlement batch and a dispute by the provider claims they carry (`PortalScope::visibleOf`). The /insurer queues filter rows and 404 an out-of-scope detail; the health API (`EnsureHealthCarrierScope` middleware, alias `health.carrier_scope`, on `/api/v1/health/*` and `provider-disputes/{id}/resolve`) filters the preauthorization and provider-claim lists, 404s an out-of-scope `{preauth}` / `{claim}` / `{batch}` / dispute id, requires `claim_ids` of the own carrier to create a settlement batch (so a batch never mixes carriers; the panel action passes them), and refuses the cross-carrier provider statement. An unlinked carrier role in a shared tenant is refused (CarrierScopeResolver). CLAIMS_OFFICER (tenant staff, not in /insurer) gets the two health reads only (its explicit maker set carries no `.review`); CLAIMS_MANAGER keeps `*`. ADJUSTER, underwriting, reinsurance and customer-service roles get no health grant. Enforced by `tests/Feature/Rbac/CarrierHealthIsolationTest.php`.
+
+Known limits: a settlement batch created before this change can mix carriers; a carrier then sees the batch but only its own claims in the detail, and paying it pays every claim of the batch. The provider statement API stays platform-only.
 
 ## 4. Permissions changed
 - BROKER_ADMIN: + distribution.agreements.view.
 - CARRIER_ADMIN (and CARRIER_SUPER_ADMIN): + distribution.agreements.view, + kyc.view.
 - `claims.read` retired; `claims.view` is the only claim-read permission (widget, closure routes, mobile workspace card, CLAIMS_OFFICER).
+- CARRIER_STAFF: + health.preauth.view, health.preauth.review, health.provider_claims.view, health.provider_claims.adjudicate (RoleCatalogue::CARRIER_HEALTH_MAKER). CARRIER_ADMIN / CARRIER_SUPER_ADMIN: + those and health.preauth.approve, health.preauth.supervise, health.provider_claims.approve_payment, health.provider_settlements.manage, health.provider_settlements.pay (CARRIER_HEALTH_CHECKER). CLAIMS_OFFICER: + health.preauth.view, health.provider_claims.view. Migration `2026_10_31_100002_rbac_carrier_health_grants` runs `rbac:sync-role-permissions`.
 - Production roles: migration `2026_10_31_100001_rbac_broker_carrier_owner_decision_grants` runs `rbac:sync-role-permissions`. It is additive (never removes a custom grant, skips `*` roles) and renames retired codes.
 
 ## Acting follows visibility (2026-09-27)

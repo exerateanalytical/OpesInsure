@@ -889,7 +889,7 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
 });
 // End Agent E2
 // Agent E4 — REQ-HLT-003 provider claims (cashless billing), EOB, disputes, settlement batches, statements (App\Application\Health\ProviderClaims).
-Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api', 'health.carrier_scope'])->group(function (): void {
     $hpc = \App\Application\Health\ProviderClaims\Http\ProviderClaimController::class;
     Route::get('health/provider-claims', [$hpc, 'index'])->middleware('permission:health.provider_claims.view');
     Route::post('health/provider-claims', [$hpc, 'store'])->middleware('permission:health.provider_claims.capture');
@@ -1010,7 +1010,7 @@ Route::prefix('v1/aml/screening')->middleware(['auth:api', 'tenant', 'json.api']
 });
 // End Agent E8
 // Agent E3 — REQ-HLT-002 health preauthorization / guarantee of payment (App\Application\Health\Preauth).
-Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
+Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api', 'health.carrier_scope'])->group(function (): void {
     $pa = \App\Application\Health\Preauth\Http\PreauthorizationController::class;
     Route::get('health/preauthorizations', [$pa, 'index'])->middleware('permission:health.preauth.view');
     Route::post('health/preauthorizations', [$pa, 'store'])->middleware('permission:health.preauth.request');
