@@ -1,6 +1,6 @@
 # Web app handover (2026-09-26)
 
-Live: https://insurance.opesdatacenter.tech, release **r20260926-191117** (commit 2ea5d75). Backend only; the mobile app is handed over separately.
+Live: https://insurance.opesdatacenter.tech, release **r20260927-023336** (commit a99d539; UI build-out deployed 2026-09-27; full suite 1,912 passed). Backend only; the mobile app is handed over separately.
 
 ## 1. Summary of the current state
 The **back end, the data and the APIs** are largely built and deployed. The **web user interface is not.** Most of the work in Batches 1–17, the Gap Closure Pack and document security D1–D4 went into the domain services, database, API endpoints, seeders and tests (1,819 tests). The owner's assessment is correct: much of what the back end can do has **no web screen**, or only a basic list and form screen.
@@ -17,7 +17,27 @@ The **back end, the data and the APIs** are largely built and deployed. The **we
 | Institutional data | 29 carriers, 63 offices, 153 makes / 512 models, 4,326 master data values, the CIMA dictionary. Data with no verified source is left empty (PENDING_SOURCE), never invented |
 | Operations | Timezones, business hours, approval matrix, work queues, integrations outbox, backups, deploy with rehearsal |
 
-## 3. Known gaps in the web UI (owner-reported; partly confirmed by audit)
+## 2b. UI build-out delivered 2026-09-27 (release r20260927-023336)
+| Commit | Delivered |
+|---|---|
+| 8bd9db8, 4ade97f | Core detail pages with tabs (Overview, Timeline, Documents with download and verify, Financial, Related): policy, claim, quote, proposal, generated document (new view page with Download and QR Verify), party, customer, partner. Shared `RecordShell` / `CoreRecordOverview`. The claim and policy headers use the shared workflow actions. Claims list claimant column fixed. |
+| ce33239 | Shared, permission-checked workflow actions (`app/Filament/Shared/Actions`), calling the same services as the API. **Claims:** register wizard, assign, assess, reserve and approve, decide and approve, settle/offer, close, reopen with two-person approval. **Policy:** endorse, cancel with a refund preview, review. **Templates:** submit, approve, publish, approve-publish, retire. **Approvals:** approve, reject, withdraw. **Work queues:** take next case, assign. **Health:** pre-authorization and settlement actions. |
+| 29cf48c, 48d47a9, 3295689, 2c233ed | View pages for all 54 list-only configuration and reference resources, built on the shared `RecordInfolist`. Tabs: Details, Status & provenance with data-status badges, Related, Audit. Secrets are always masked. Clicking a row opens the view page. |
+| 5f13a53 | Configuration screens. **Letterhead designer:** versions, maker-checker, live PDF specimen preview. **Template editor:** placeholder help, preview, and save & submit. **Seal and physical security:** artwork preview with a hash check, security features, verification by a second administrator, and a read-only enforcement-readiness panel. **Organisation settings:** timezone and language for the user, organisation and branches. Migration `2026_10_30_100001`. |
+| 2895d7b | Provider portal forms: eligibility leading to pre-authorization, pre-authorization requests, admissions, extensions and discharge, claims with multiple lines and the EOB, settlements, contracts and tariffs, documents with download and verify, and reports with CSV export. Dashboards for admin, insurer and broker (premium chart, my work, expiring policies, open claims, recent activity). A shared Reports page with CSV export. |
+| 27544b2 | Mobile payloads: `carrier_logo_url` on wallet policies, quote offers, claims and proposals; `policy_id` on proposals. |
+
+**Still open after this build:**
+- **Provider portal:** dispute and reconciliation forms and a treatment-episode form are not built. Web forms don't use an idempotency key, so a double click could submit twice. Dashboards don't refresh without reloading the page.
+- **Workflow actions not built:** line-by-line pre-authorization and settlement decisions, provider claim adjudication, claim payments, disputes, recoveries. Some flows (successful cancellation, claim decision and settlement) have no tests yet.
+- **Endorsement permission:** the API route for servicing requests has no permission gate, so the web action has none either. The owner must name the role.
+- **Approval inbox:** approve and reject now need `approvals.decide`, as the API does. Admin roles without that permission no longer see the buttons.
+- **Quote and party pages:** no header actions yet; there is no service for them.
+- **Claim evidence:** no download link yet.
+- **Public site redesign:** still waiting for the design folder.
+- **Browser check:** the new screens were covered by the 1,912 tests but not reviewed page by page in a browser.
+
+## 3. Known gaps in the web UI (as found before the 2026-09-27 build-out) (owner-reported; partly confirmed by audit)
 **Confirmed:** 59 of the 109 Filament resources have **no detail (view) page**. They are list and edit screens only. These include:
 - Generated documents, certificate templates, document numbering and issuance profiles, physical security assets
 - Claim decisions, claim reserves, approval requests, work queues
@@ -37,6 +57,8 @@ The **back end, the data and the APIs** are largely built and deployed. The **we
 Honest estimate: the back end is roughly 80–90% built, but the web UI covers only a minority of it. The owner's figure of about 90% missing is plausible for detail pages, tabs, actions and configuration screens.
 
 ## 4. Pending actions (owner or admin)
+0. **Insurer logos.** All 29 insurers have no logo yet, so `logo_url` and `carrier_logo_url` are null. Supply official logo files (transparent PNG or SVG, at least 256px), or approve downloading them from each insurer's official site. Then upload them through the Letterhead designer as public-display logos.
+0b. **MTN MoMo credentials.** The production log shows repeated "MTN MoMo authentication failed" every 5 minutes. Check the MoMo credentials in the payment connection.
 1. **Publish the 12 provider document templates.** These are in REVIEW. In Admin, open Document templates and run *Approve & publish* on each, or call `POST /api/v1/document-templates/{id}/approve-publish`. The session's attempt to run this on production was blocked by a permission check, so an admin must do it.
 2. **Seal enforcement (D6).** Upload the official corporate seal artwork under *Admin → Physical security assets* and mark it verified. Only then set `DOCUMENT_ENFORCE_CONTROLS=true`. Turning it on earlier blocks every S3+ document (certificates, policy schedules).
 3. **Stamp duty schedules.** Both are still DRAFT and need confirmation.
