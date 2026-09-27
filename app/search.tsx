@@ -203,7 +203,7 @@ export default function GlobalSearch() {
             style={({ pressed }) => [s.sortBtn, pressed && s.pressed]}
           >
             <ArrowUpDown size={16} color={colors.navy900} />
-            <Text style={s.sortText}>{t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}</Text>
+            <Text style={s.sortText}>{`${t("ofSort")}: ${t(sortBy === "name" ? "sortNameAZ" : "sortBestMatch")}`}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -277,7 +277,7 @@ export default function GlobalSearch() {
                     </View>
                     <View style={s.tagRow}>
                       {c ? <Text style={s.tag}>{t(c.label)}</Text> : null}
-                      {x.line_code ? <Text style={s.tag}>{x.line_code}</Text> : null}
+                      {x.line_code && (!c || x.line_code.toUpperCase() !== t(c.label).toUpperCase()) ? <Text style={s.tag}>{x.line_code}</Text> : null}
                     </View>
                   </View>
                 </View>
@@ -403,7 +403,7 @@ const s = StyleSheet.create({
   linkText: { ...type.label, color: colors.blue600 },
   primaryBtn: { flex: 1, minHeight: 46, borderRadius: radius.control, backgroundColor: colors.blue600, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
   primaryText: { ...type.label, color: colors.white },
-  sortRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end" },
+  sortRow: { flexDirection: "row", alignItems: "center", justifyContent: "flex-start" },
   sortBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
   sortText: { ...type.label, color: colors.navy900, fontSize: 13 },
   offerTile: { width: 72, height: 72, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },

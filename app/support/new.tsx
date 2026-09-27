@@ -125,7 +125,7 @@ export default function NewSupport() {
             // Long lists: a drop-down; the first row clears the link.
             <SelectField
               label={t("supportRelatedPolicy")}
-              value={policyId ?? ""}
+              value={policyId ?? undefined}
               onChange={(v) => setPolicyId(v || null)}
               options={[{ value: "", label: t("mdNotChosen") }, ...policies.data.map((p) => ({ value: p.id, label: p.policy_number, subtitle: p.product_name ?? undefined }))]}
             />

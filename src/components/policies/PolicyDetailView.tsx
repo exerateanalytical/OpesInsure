@@ -352,9 +352,9 @@ export function PolicyDetailView({ id }: { id: string }) {
 
         {p.certificate_number || p.issued_at || cover.excessMinor !== null || cover.coverages.some((c) => c.limitMinor !== null) || cover.exclusions.length ? (
           <Card style={st.infoCard}>
-            {p.certificate_number ? <InfoRow label={t("pdCertificate")} value={p.certificate_number} /> : null}
-            {p.issued_at ? <InfoRow label={t("pdIssued")} value={f.date(p.issued_at)} /> : null}
-            {cover.excessMinor !== null ? <InfoRow label={t("pdExcess")} value={f.xaf(cover.excessMinor)} /> : null}
+            {p.certificate_number ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdCertificate")}</Text><Text style={st.limitValue}>{p.certificate_number}</Text></View> : null}
+            {p.issued_at ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdIssued")}</Text><Text style={st.limitValue}>{f.date(p.issued_at)}</Text></View> : null}
+            {cover.excessMinor !== null ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdExcess")}</Text><Text style={st.limitValue}>{f.xaf(cover.excessMinor)}</Text></View> : null}
             {cover.coverages.some((c) => c.limitMinor !== null) ? (
               <View style={st.limits}>
                 <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text>

@@ -215,7 +215,7 @@ export function HeroCard({
           {provider ? (
             <View style={s.providerRow}>
               <InstitutionMark logoUrl={providerLogo} initials={providerInitials ?? provider.slice(0, 2).toUpperCase()} size={22} />
-              <Text style={s.providerText} numberOfLines={1}>{provider}</Text>
+              <Text style={s.providerText} numberOfLines={2}>{provider}</Text>
             </View>
           ) : null}
           {lines.filter(Boolean).map((l, i) => (

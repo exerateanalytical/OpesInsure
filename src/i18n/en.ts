@@ -2911,4 +2911,5 @@ export const en = {
   cmpPageSubtitle: "Choose the cover that fits your needs.",
   coEncrypted: "Your payment information is encrypted and secure.",
   appealNotEligible: "Not eligible for appeal yet",
+  claimPoliciesCount: "{count} policies",
 };

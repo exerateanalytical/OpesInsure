@@ -37,7 +37,7 @@ export const heritage = {
 export const CONTENT_MAX_WIDTH = 720;
 
 export const space = { x1: 4, x2: 8, x3: 12, x4: 16, x5: 20, x6: 24, x8: 32, x10: 40, x12: 48, x16: 64 } as const;
-export const radius = { control: 10, card: 14, feature: 18, sheet: 20, pill: 999 } as const;
+export const radius = { control: 12, card: 14, feature: 18, sheet: 20, pill: 999 } as const;
 export const type = {
   display: { fontSize: 34, lineHeight: 40, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
   pageTitle: { fontSize: 26, lineHeight: 32, fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },

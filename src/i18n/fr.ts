@@ -2900,4 +2900,5 @@ export const fr: Record<keyof typeof en, string> = {
   cmpPageSubtitle: "Choisissez la couverture adaptée à vos besoins.",
   coEncrypted: "Vos informations de paiement sont chiffrées et sécurisées.",
   appealNotEligible: "Pas encore éligible à un recours",
+  claimPoliciesCount: "{count} polices",
 };

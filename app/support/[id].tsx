@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { ArrowUpCircle, CalendarDays, ChevronRight, Clock3, FileText, Flag, Headset, MessageSquare, MessagesSquare, Paperclip, Send, Tag, Ticket, User } from "lucide-react-native";
@@ -104,6 +104,7 @@ export default function SupportDetail() {
                 placeholder={t("supportReplyPlaceholder")}
                 placeholderTextColor={colors.neutral500}
                 multiline
+                numberOfLines={Platform.OS === "web" ? 1 : undefined}
                 style={styles.replyInput}
               />
               <View style={styles.sendWrap}>
@@ -327,8 +328,8 @@ const styles = StyleSheet.create({
   awaitingText: { ...type.caption, color: colors.gold600 },
   replyBar: { flexDirection: "row", alignItems: "flex-end", gap: space.x2 },
   attachBtn: { width: 50, height: 50, borderRadius: radius.control, borderWidth: 1, borderColor: colors.neutral300, backgroundColor: colors.white, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  replyInput: { ...type.body, flex: 1, minHeight: 50, maxHeight: 120, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, backgroundColor: colors.white, paddingHorizontal: space.x3, paddingVertical: space.x3, color: colors.navy950 },
-  sendWrap: { minWidth: 130 },
+  replyInput: { ...type.body, fontSize: 15, flex: 1, minWidth: 0, minHeight: 50, maxHeight: 120, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, backgroundColor: colors.white, paddingHorizontal: 10, paddingVertical: space.x3, color: colors.navy950 },
+  sendWrap: { flexShrink: 0 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },
 });

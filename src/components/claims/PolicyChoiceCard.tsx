@@ -32,7 +32,7 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
   const status = (policy.status ?? "ACTIVE").toUpperCase();
   const body = (
     <View style={s.row}>
-      <TintedIcon icon={Icon} tint={tint} size={onPress ? 52 : 48} />
+      <TintedIcon icon={Icon} tint={tint} size={52} />
       <View style={s.flex}>
         <View style={s.titleRow}>
           <Text style={s.title}>{title}</Text>
@@ -44,7 +44,7 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
             <Text style={s.body}>{provider}</Text>
           </View>
         ) : null}
-        {policy.policy_number ? <Text style={s.body}>{t("claimPolicyNo", { number: policy.policy_number })}</Text> : null}
+        {policy.policy_number ? <Text style={s.body}>{t("claimPolicyNo", { number: policy.policy_number.replace(/-/g, "‑") })}</Text> : null}
         {asset ? (
           <View style={s.line}>
             <Icon size={16} color={colors.navy800} />
@@ -73,12 +73,12 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
 
 const s = StyleSheet.create({
   flex: { flex: 1, gap: 3 },
-  card: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, overflow: "hidden" },
+  card: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, overflow: "hidden" },
   cardOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   pressed: { opacity: 0.85 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   titleRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", columnGap: space.x2, rowGap: 4 },
-  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 120 },
+  title: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, flexGrow: 1, flexShrink: 1, flexBasis: 150 },
   line: { flexDirection: "row", alignItems: "center", gap: 6 },
   body: { ...type.body, color: colors.neutral700, flexShrink: 1 },
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.neutral300, alignItems: "center", justifyContent: "center", backgroundColor: colors.white },
