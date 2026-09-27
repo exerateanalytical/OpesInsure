@@ -10,7 +10,7 @@ return [
     'side' => [
         'dashboard' => 'Dashboard', 'policies' => 'My Policies', 'quotes' => 'Quotes', 'claims' => 'Claims', 'payments' => 'Payments',
         'documents' => 'Documents', 'vehicles' => 'My Vehicles', 'leads' => 'Leads', 'reports' => 'Reports', 'commissions' => 'Commissions', 'book' => 'My Book', 'staff' => 'Staff', 'customers' => 'Customers', 'desk' => 'Claims Desk',
-        'profile' => 'My Profile', 'notifications' => 'Notifications', 'support' => 'Support',
+        'profile' => 'My Profile', 'kyc' => 'Identity check', 'requests' => 'Policy requests', 'privacy' => 'Privacy & security', 'notifications' => 'Notifications', 'support' => 'Support',
     ],
     'help_t' => 'Need Help?', 'help_d' => 'Talk to our insurance experts.', 'help_btn' => 'Call Us',
     'js' => [

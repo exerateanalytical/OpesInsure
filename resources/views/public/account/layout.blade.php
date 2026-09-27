@@ -24,7 +24,10 @@
     ['commissions', '/account/commissions', 'piggy', 'agent'],
     ['staff', '/account/staff', 'handshake', 'agent', 'broker.portal.read'],
     ['desk', '/account/claims-desk', 'scale', 'officer'],
+    ['requests', '/account/requests', 'refresh', null],
     ['profile', '/account/profile', 'user', null],
+    ['kyc', '/account/kyc', 'check', null],
+    ['privacy', '/account/privacy', 'lock', null],
     ['notifications', '/account/notifications', 'bell', null],
     ['support', '/account/support', 'headset', null],
   ];

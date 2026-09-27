@@ -1,7 +1,12 @@
-{{-- /account/quotes — the user's quotes (GET /mobile/quotes) with status and resume links. --}}
+{{-- /account/quotes — the user's quotes (GET /mobile/quotes) with status and resume links, and proposals the insurer
+     counter-offered (GET /mobile/proposals, POST /mobile/proposals/{id}/counteroffer/{accept|decline}). --}}
 @extends('public.account.layout', ['title' => __('account_buy.list_t'), 'lede' => __('account_buy.list_d'), 'crumbs' => [[__('account_buy.quotes'), null]], 'active' => 'quotes'])
 @include('public.account.buy.assets')
+@push('scripts')
+<script>window.OPES_CUST = {!! json_encode(__('account_customer.js'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};</script>
+@endpush
 @section('content')
+<section class="acard" data-counter hidden style="margin-bottom:16px"></section>
 <section class="acard">
   <div class="acard-h"><span>{{ __('account_buy.list_t') }}</span><a class="dbtn dbtn-primary sm" href="/account/buy">+ {{ __('account_buy.new_quote') }}</a></div>
   <div data-page-body></div>
@@ -43,6 +48,35 @@ Opes.page(function (ctx) {
     }).catch(function (e) { Opes.fail(box, e); });
   }
   load();
+
+  // Proposals the insurer counter-offered: accept (then pay) or decline.
+  var C = window.OPES_CUST.counter, cb = Opes.$('[data-counter]');
+  function money(v) { return v === null || v === undefined ? '—' : Opes.money(v, { minor: true }); }
+  function counters() {
+    return Opes.list('/mobile/proposals', { per_page: 100 }).then(function (r) {
+      var rows = (r.items || []).filter(function (p) { return String(p.status).toUpperCase() === 'COUNTEROFFERED'; });
+      cb.hidden = !rows.length; if (!rows.length) return;
+      Opes.clear(cb).append(h('h2', null, C.title), h('p', { class: 'sub' }, C.text));
+      rows.forEach(function (p) {
+        var co = p.counter_offer || {};
+        function answer(a, btn) {
+          if (a === 'decline' && !window.confirm(C.decline_q)) return;
+          Opes.busy(btn, true);
+          Opes.api('/mobile/proposals/' + encodeURIComponent(p.id) + '/counteroffer/' + a, { body: {} }).then(function () {
+            if (a === 'accept') { location.href = '/account/payments/new?proposal=' + encodeURIComponent(p.id); return; }
+            Opes.alert(C.declined, 'ok'); return counters();
+          }).catch(function (err) { Opes.busy(btn, false); Opes.alert(err.message); });
+        }
+        var ya = h('button', { type: 'button', class: 'dbtn dbtn-primary sm', 'data-counter-accept': p.id, onclick: function () { answer('accept', ya); } }, Opes.icon('check'), C.accept);
+        var no = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { answer('decline', no); } }, Opes.icon('x'), C.decline);
+        cb.appendChild(h('div', { class: 'op-case', style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' },
+          h('div', { style: 'flex:1;min-width:200px' }, h('b', null, (p.carrier_name || '') + ' — ' + (p.product_name || B.lineName(p.line_code))),
+            h('small', { class: 'b-muted', style: 'display:block' }, C.was + ' : ' + money(p.total_minor) + ' · ' + C.now + ' : ' + money(co.total_minor)), co.notes ? h('small', { style: 'display:block' }, co.notes) : null),
+          ya, no));
+      });
+    }).catch(function () { cb.hidden = true; });
+  }
+  counters();
 });
 </script>
 @endpush

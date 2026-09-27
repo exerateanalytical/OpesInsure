@@ -6,6 +6,11 @@
 <div class="agrid c2" data-page-body>
   <section class="acard" data-user></section>
   <section class="acard" data-cust></section>
+  <section class="acard" data-profile-links style="grid-column:1/-1"><div class="btnbar" style="justify-content:flex-start;margin:0">
+    <a class="dbtn dbtn-outline sm" href="/account/kyc">{{ __('account.side.kyc') }}</a>
+    <a class="dbtn dbtn-outline sm" href="/account/privacy">{{ __('account.side.privacy') }}</a>
+    <a class="dbtn dbtn-outline sm" href="/account/requests">{{ __('account.side.requests') }}</a>
+  </div></section>
 </div>
 @endsection
 @push('scripts')

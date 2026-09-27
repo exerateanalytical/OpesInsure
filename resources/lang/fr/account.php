@@ -9,7 +9,7 @@ return [
     'side' => [
         'dashboard' => 'Tableau de bord', 'policies' => 'Mes polices', 'quotes' => 'Devis', 'claims' => 'Sinistres', 'payments' => 'Paiements',
         'documents' => 'Documents', 'vehicles' => 'Mes véhicules', 'leads' => 'Prospects', 'reports' => 'Rapports', 'commissions' => 'Commissions', 'book' => 'Mon portefeuille', 'staff' => 'Personnel', 'customers' => 'Clients', 'desk' => 'Gestion des sinistres',
-        'profile' => 'Mon profil', 'notifications' => 'Notifications', 'support' => 'Assistance',
+        'profile' => 'Mon profil', 'kyc' => 'Vérification d’identité', 'requests' => 'Demandes sur police', 'privacy' => 'Confidentialité et sécurité', 'notifications' => 'Notifications', 'support' => 'Assistance',
     ],
     'help_t' => 'Besoin d’aide ?', 'help_d' => 'Parlez à nos experts en assurance.', 'help_btn' => 'Nous appeler',
     'js' => [

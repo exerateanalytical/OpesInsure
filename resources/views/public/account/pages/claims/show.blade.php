@@ -2,11 +2,15 @@
      Data: GET /mobile/claims/{id}, /timeline, /evidence, /evidence-requirements, /settlement; uploads via
      POST /mobile/documents + /mobile/claims/{id}/evidence; files open via POST /mobile/documents/{doc}/access.
      Withdraw: POST /mobile/claims/{id}/withdraw {reason}, offered only while the API says can_withdraw (before assessment).
+     Appeal: POST /mobile/claims/{id}/appeals {reason}, offered once the claim is decided (DECLINED, PARTIALLY_APPROVED, PAID, CLOSED).
      The customer API has no summary PDF, so the page offers print-to-PDF instead. --}}
 @php $L = __('account_claims.js'); $D = $L['d']; @endphp
 @extends('public.account.layout', ['title' => __('account_claims.show.title'), 'lede' => __('account_claims.show.lede'),
   'crumbs' => [[__('account_claims.list.title'), '/account/claims'], [__('account_claims.show.title'), null]], 'active' => 'claims'])
 @include('public.account.claims.assets')
+@push('scripts')
+<script>window.OPES_CUST = {!! json_encode(__('account_customer.js'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};</script>
+@endpush
 @section('content')
 <div data-page-body><div class="acct-loading" role="status"><span class="spin"></span>{{ __('account.js.loading') }}</div></div>
 @endsection
@@ -98,6 +102,30 @@ Opes.page(function (ctx) {
     document.body.appendChild(dlg); dlg.showModal(); ta.focus();
   }
 
+  /** Appeal a decided claim: dialog with a required reason (min 10), then POST /appeals. */
+  var APPEALABLE = /^(DECLINED|PARTIALLY_APPROVED|PAID|CLOSED)$/;
+  function appeal(c) {
+    var A = window.OPES_CUST.appeal;
+    var ta = h('textarea', { name: 'reason', minlength: '10', maxlength: '4000', rows: 5, 'aria-label': A.reason });
+    var err = h('p', { class: 'err', role: 'alert', hidden: true });
+    var ok = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok', 'data-appeal-confirm': '' }, A.send);
+    var dlg = h('dialog', { class: 'cl-dlg', 'aria-labelledby': 'cl-ap-t' }, h('form', { method: 'dialog' },
+      h('h2', { id: 'cl-ap-t' }, A.title), h('p', null, A.text), h('label', { class: 'afield-s' }, h('span', null, A.reason + ' '), ta), err,
+      h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, A.cancel), ok)));
+    dlg.querySelector('form').addEventListener('submit', function (e) {
+      if (e.submitter && e.submitter.value === 'cancel') return;
+      e.preventDefault();
+      var reason = ta.value.trim();
+      if (reason.length < 10) { err.textContent = A.err; err.hidden = false; ta.focus(); return; }
+      Opes.busy(ok, true);
+      Opes.api('/mobile/claims/' + encodeURIComponent(c.id) + '/appeals', { method: 'POST', body: { reason: reason } })
+        .then(function () { dlg.close(); dlg.remove(); Opes.alert(A.done, 'ok'); return load(); })
+        .catch(function (e2) { Opes.busy(ok, false); err.textContent = (e2 && e2.message) || Opes.t.error; err.hidden = false; });
+    });
+    dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); });
+    document.body.appendChild(dlg); dlg.showModal(); ta.focus();
+  }
+
   function render(c, events, evidence, reqs, settle) {
     var p = c.policy || {}, r = K.risk(p), inc = (c.loss_details && c.loss_details.incident) || {}, s = K.shown(c);
     var inspection = c.loss_details && c.loss_details.inspection, repair = c.loss_details && c.loss_details.repair;
@@ -114,6 +142,7 @@ Opes.page(function (ctx) {
         c.withdrawn_at ? h('small', { style: 'display:block' }, K.fmt(D.withdraw.withdrawn_on, { date: Opes.date(iso(c.withdrawn_at), true) }) + (c.withdrawal_reason ? ' — ' + c.withdrawal_reason : '')) : null),
       h('div', { class: 'btns' },
         c.can_withdraw ? (function () { var b = h('button', { type: 'button', class: 'dbtn dbtn-outline cl-danger', 'data-withdraw': '', onclick: function () { withdraw(c, b); } }, Opes.icon('x'), D.withdraw.btn); return b; })() : null,
+        APPEALABLE.test(String(c.status || '').toUpperCase()) ? h('button', { type: 'button', class: 'dbtn dbtn-outline', 'data-appeal': '', onclick: function () { appeal(c); } }, Opes.icon('scale'), window.OPES_CUST.appeal.btn) : null,
         h('button', { type: 'button', class: 'dbtn dbtn-outline', onclick: function () { window.print(); } }, Opes.icon('download'), D.print),
         h('a', { class: 'dbtn dbtn-primary', href: '/account/support?claim_id=' + encodeURIComponent(c.id) }, Opes.icon('chat'), D.contact))));
     body.appendChild(stepper(c, events));

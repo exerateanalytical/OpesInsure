@@ -1,24 +1,27 @@
-{{-- /account/support[?policy=<id>] — GET/POST /mobile/support/cases, GET /mobile/support/cases/{id}, POST .../messages. --}}
+{{-- /account/support[?policy=<id>|claim_id=<id>|payment_id=<id>] — GET/POST /mobile/support/cases, GET /mobile/support/cases/{id}, POST .../messages;
+     emergency assistance: POST /mobile/claims/emergency-assistance {policy_id, service, location, callback_phone}. --}}
 @extends('public.account.layout', ['title' => __('account_policies.sup.title'), 'lede' => __('account_policies.sup.lede'), 'crumbs' => [[__('account_policies.sup.title'), null]], 'active' => 'support'])
 @section('content')
-@include('public.account.partials.policies-assets')
+@include('public.account.partials.customer-assets')
 <div class="agrid main-side op-ms380">
   <section class="acard" data-page-body></section>
-  <section class="acard" data-new></section>
+  <div style="display:grid;gap:16px;align-content:start"><section class="acard" data-new></section><section class="acard" data-sos></section></div>
 </div>
 @endsection
 @push('scripts')
 <script>
 Opes.page(function (ctx) {
   var h = Opes.h, T = OP.T, U = T.sup, $ = Opes.$, box = $('[data-page-body]'), nb = $('[data-new]');
-  var policyId = ctx.params.get('policy');
-  var cat = h('select', { name: 'category', required: true }, Object.keys(U.cats).map(function (k) { return h('option', { value: k, selected: policyId && k === 'POLICY' }, U.cats[k]); }));
+  var policyId = ctx.params.get('policy'), claimId = ctx.params.get('claim_id'), paymentId = ctx.params.get('payment_id');
+  var cat = h('select', { name: 'category', required: true }, Object.keys(U.cats).map(function (k) { return h('option', { value: k, selected: (claimId ? k === 'CLAIM' : paymentId ? k === 'PAYMENT' : policyId && k === 'POLICY') }, U.cats[k]); }));
   var send = h('button', { type: 'submit', class: 'dbtn dbtn-primary wide' }, Opes.icon('send'), U.send);
   var form = h('form', { style: 'display:grid;gap:12px', onsubmit: function (e) {
     e.preventDefault();
     var d = {}; new FormData(form).forEach(function (v, k) { d[k] = String(v).trim(); });
     if (d.subject.length < 3 || d.description.length < 10) { Opes.alert(U.desc_h); return; }
     if (policyId) d.policy_id = policyId;
+    if (claimId) d.claim_id = claimId;
+    if (paymentId) d.payment_id = paymentId;
     Opes.busy(send, true);
     Opes.api('/mobile/support/cases', { body: d }).then(function (c) { Opes.alert(OP.fmt(U.sent, { ref: (c && c.reference) || '' }), 'ok'); form.reset(); return load(); })
       .catch(function (err) { Opes.alert(err.message); }).finally(function () { Opes.busy(send, false); });
@@ -28,6 +31,26 @@ Opes.page(function (ctx) {
     h('label', { class: 'afield-s' }, h('span', null, U.desc, h('i', null, ' *')), h('textarea', { name: 'description', required: true, minlength: 10, maxlength: 10000, rows: 6 }), h('small', { class: 'op-muted' }, U.desc_h)),
     send);
   Opes.clear(nb).append(h('h2', null, U.new), form);
+
+  // Emergency assistance (towing / medical / police) on one of the customer's active policies.
+  var S = window.OPES_CUST.sos, sb = $('[data-sos]');
+  OP.policies().then(function (pols) {
+    pols = (pols || []).filter(function (p) { return /ACTIVE|EXPIRING/.test(OP.state(p)); });
+    if (!pols.length) { sb.remove(); return; }
+    var go = h('button', { type: 'submit', class: 'dbtn dbtn-primary wide' }, Opes.icon('phone'), S.send);
+    var sf = h('form', { style: 'display:grid;gap:12px', 'data-sos-form': '', onsubmit: function (e) {
+      e.preventDefault(); var el = sf.elements; Opes.busy(go, true);
+      Opes.api('/mobile/claims/emergency-assistance', { body: { policy_id: el.policy_id.value, service: el.service.value, location: el.location.value.trim(), callback_phone: el.callback_phone.value.trim() } })
+        .then(function (r) { Opes.alert(OP.fmt(S.sent, { ref: (r && r.reference) || '' }), 'ok'); sf.reset(); return load(); })
+        .catch(function (err) { Opes.alert(err.message); }).finally(function () { Opes.busy(go, false); });
+    } },
+      h('label', { class: 'afield-s' }, h('span', null, T.pol ? T.pol.policy : 'Policy'), h('select', { name: 'policy_id', required: true }, pols.map(function (p) { return h('option', { value: p.id, selected: p.id === policyId }, (p.policy_number || '') + ' — ' + OP.title(p)); }))),
+      h('label', { class: 'afield-s' }, h('span', null, S.service), h('select', { name: 'service', required: true }, Object.keys(S.services).map(function (k) { return h('option', { value: k }, S.services[k]); }))),
+      h('label', { class: 'afield-s' }, h('span', null, S.location, h('i', null, ' *')), h('input', { name: 'location', required: true, minlength: 3, maxlength: 500 })),
+      h('label', { class: 'afield-s' }, h('span', null, S.phone, h('i', null, ' *')), h('input', { name: 'callback_phone', type: 'tel', required: true, maxlength: 32, autocomplete: 'tel', value: ((ctx.session.user || {}).phone_e164) || '' })),
+      go);
+    Opes.clear(sb).append(h('h2', null, S.title), h('p', { class: 'sub' }, S.text), sf);
+  }).catch(function () { sb.remove(); });
 
   function thread(c, holder) {
     Opes.loading(holder);

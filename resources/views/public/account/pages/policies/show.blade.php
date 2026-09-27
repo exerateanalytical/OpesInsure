@@ -2,7 +2,7 @@
      /mobile/policies/{id}/documents, /mobile/payments, /mobile/claims. --}}
 @extends('public.account.layout', ['title' => __('account_policies.show.title'), 'lede' => __('account_policies.show.lede'), 'crumbs' => [[__('account_policies.pol.title'), '/account/policies'], [__('account_policies.show.title'), null]], 'active' => 'policies'])
 @section('content')
-@include('public.account.partials.policies-assets')
+@include('public.account.partials.customer-assets')
 <div data-page-body>
   <div class="acard"><div class="acct-loading" role="status"><span class="spin"></span>{{ __('account.js.loading') }}</div></div>
 </div>
@@ -94,6 +94,8 @@ Opes.page(function (ctx) {
         p.certificate && p.certificate.verification_url ? h('a', { class: 'dbtn dbtn-outline', href: p.certificate.verification_url, target: '_blank', rel: 'noopener' }, Opes.icon('check'), S.qa_verify) : null,
         OP.btn(S.qa_pay, '/account/payments/new?policy=' + id, 'dbtn-navy', 'card'),
         OP.btn(S.qa_claim, '/account/claims/new?policy=' + id, 'dbtn-outline', 'shield'),
+        OP.btn(window.OPES_CUST.req.new_t, '/account/requests?policy=' + id, 'dbtn-outline', 'edit'),
+        OP.btn(window.OPES_CUST.req.renew, '/account/requests?policy=' + id + '#renew', 'dbtn-outline', 'refresh'),
         OP.btn(S.qa_help, '/account/support?policy=' + id, 'dbtn-outline', 'headset')));
       return c;
     }
