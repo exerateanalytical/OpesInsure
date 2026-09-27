@@ -4,5 +4,5 @@ import { AgentWorkspaceApi } from "@/api/partner";
 import { PartnerProposalsScreen } from "@/components/partner/PartnerProposalsScreen";
 
 export default function AgentProposals() {
-  return <PartnerProposalsScreen tabs={agentTabs} load={AgentWorkspaceApi.proposals} />;
+  return <PartnerProposalsScreen portal="agent" tabs={agentTabs} load={AgentWorkspaceApi.proposals} />;
 }

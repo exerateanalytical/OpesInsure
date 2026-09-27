@@ -136,7 +136,7 @@ export default function PaymentDetail() {
                   valueNode={
                     <View style={st.providerCell}>
                       <InstitutionMark logoUrl={insurer?.logo_url ?? null} initials={(providerName ?? "").slice(0, 2).toUpperCase()} size={24} />
-                      <Text style={st.value} numberOfLines={2}>{providerName ?? "—"}</Text>
+                      <Text style={st.value}>{providerName ?? "—"}</Text>
                     </View>
                   }
                 />

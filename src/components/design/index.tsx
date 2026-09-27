@@ -210,17 +210,17 @@ export function HeroCard({
         ) : null}
         <View style={s.flex}>
           <View style={[s.heroTitleRow, compact && s.heroTitleRowWrap]}>
-            <Text style={[s.cardTitle, compact ? s.heroTitleGrow : s.flex]} numberOfLines={compact ? undefined : 2}>{title}</Text>
+            <Text style={[s.cardTitle, compact ? s.heroTitleGrow : s.flex]}>{title}</Text>
             {chip}
           </View>
           {provider ? (
             <View style={s.providerRow}>
               <InstitutionMark logoUrl={providerLogo} initials={providerInitials ?? provider.slice(0, 2).toUpperCase()} size={22} />
-              <Text style={s.providerText} numberOfLines={2}>{provider}</Text>
+              <Text style={s.providerText}>{provider}</Text>
             </View>
           ) : null}
           {lines.filter(Boolean).map((l, i) => (
-            <Text key={i} style={s.heroLine} numberOfLines={2}>{l}</Text>
+            <Text key={i} style={s.heroLine}>{l}</Text>
           ))}
         </View>
       </View>
@@ -243,7 +243,7 @@ export function MetaGrid({ items, columns }: { items: HeroMeta[]; columns?: 2 | 
             <Icon size={cols === 3 ? 18 : 20} color={m.tone === "danger" ? colors.danger : colors.navy800} />
             <View style={cols === 3 ? undefined : s.flex}>
               <Text style={[s.metaLabel, cols === 3 && s.metaLabelSmall]} numberOfLines={2}>{m.label}</Text>
-              <Text style={[s.metaValue, cols === 3 && s.metaValueSmall, { color: tone }]} numberOfLines={3}>{m.value}</Text>
+              <Text style={[s.metaValue, cols === 3 && s.metaValueSmall, { color: tone }]}>{m.value}</Text>
             </View>
           </View>
         );
@@ -310,7 +310,7 @@ export function DetailRow({ icon: Icon, label, value, valueNode, strong, tint, c
   return (
     <View style={s.detailRow}>
       {Icon ? (tint ? <TintedIcon icon={Icon} tint={tint} size={40} /> : <Icon size={20} color={colors.navy800} />) : null}
-      <Text style={[s.detailLabel, Icon && s.detailLabelIcon, compact && s.detailTextCompact]} numberOfLines={2}>{label}</Text>
+      <Text style={[s.detailLabel, Icon && s.detailLabelIcon, compact && s.detailTextCompact]}>{label}</Text>
       <View style={s.detailValueWrap}>
         {valueNode ?? <Text style={[s.detailValue, strong && s.detailValueStrong, compact && s.detailTextCompact]}>{value ?? "—"}</Text>}
       </View>

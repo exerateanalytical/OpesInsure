@@ -176,7 +176,7 @@ export default function Notifications() {
               <TintedIcon icon={Icon} tint={n.read ? "neutral" : tint} size={52} />
               <View style={styles.flex}>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.title, !n.read && styles.bold, styles.flex]} numberOfLines={2}>{n.title}</Text>
+                  <Text style={[styles.title, !n.read && styles.bold, styles.flex]}>{n.title}</Text>
                   {narrow ? null : <Text style={styles.meta}>{relative(n.created_at)}</Text>}
                   {!n.read ? <View style={[styles.dot, n.severity === "CRITICAL" && styles.dotCritical]} accessibilityElementsHidden /> : null}
                 </View>

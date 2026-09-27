@@ -314,7 +314,7 @@ export default function GlobalSearch() {
                   <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={56} />
                   <ChevronRight size={18} color={colors.blue600} />
                 </View>
-                <Text style={s.providerName} numberOfLines={2}>{p.name}</Text>
+                <Text style={s.providerName}>{p.name}</Text>
                 <Text style={s.meta}>{p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : p.city ?? ""}</Text>
               </Pressable>
             ))}
@@ -334,8 +334,8 @@ export default function GlobalSearch() {
                     <>
                       <TintedIcon icon={Icon} tint={h.type === "claims" ? "gold" : "blue"} size={44} />
                       <View style={s.flex}>
-                        <Text style={s.rowTitle} numberOfLines={2}>{h.title}</Text>
-                        {h.subtitle ? <Text style={s.meta} numberOfLines={2}>{h.subtitle}</Text> : null}
+                        <Text style={s.rowTitle}>{h.title}</Text>
+                        {h.subtitle ? <Text style={s.meta}>{h.subtitle}</Text> : null}
                         {h.status ? <View style={{ flexDirection: "row", marginTop: 4 }}><StatusChip label={td(`status_${h.status}`, h.status)} tone="info" /></View> : null}
                       </View>
                       {href ? <ChevronRight size={20} color={colors.neutral500} /> : null}

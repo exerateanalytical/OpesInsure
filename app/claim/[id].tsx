@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useColumns } from "@/components/responsive";
 import {
   AlertTriangle,
   ArrowRight,
@@ -70,6 +71,8 @@ const STAGE_LABELS: Record<(typeof DETAIL_STAGES)[number], CopyKey> = {
 export default function ClaimDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td, date } = useTranslation();
+  // LAND-004: shared responsive grid (drops columns on narrow screens / large text).
+  const grid = useColumns({ max: 3, minItem: 96, gap: space.x2 });
   const q = useLoad(() => ClaimsApi.show(id), [id]);
   const timeline = useLoad(() => ClaimRecordsApi.timeline(id), [id]);
   const evidence = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
@@ -217,9 +220,9 @@ export default function ClaimDetail() {
 
               <SectionHeading title={t("claimActions")} />
               {actions.length ? (
-                <View style={styles.tiles}>
+                <View style={grid.row}>
                   {actions.map((a) => (
-                    <IconTile key={a.action} icon={a.icon} label={t(a.label)} tint={a.action === "appeal" ? "gold" : "blue"} onPress={() => go(a.path)} style={styles.tile} />
+                    <IconTile key={a.action} icon={a.icon} label={t(a.label)} tint={a.action === "appeal" ? "gold" : "blue"} onPress={() => go(a.path)} style={grid.item} />
                   ))}
                 </View>
               ) : null}

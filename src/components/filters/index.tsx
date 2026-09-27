@@ -82,9 +82,32 @@ export function filterQuery(values: FilterValues, text = ""): string {
 }
 
 /** Filter state for one list (keyed by `list`), with saved + recent filters persisted on the device. */
-export function useListFilters(list: string, sections: FilterSection[]) {
-  const [values, setValues] = useState<FilterValues>(() => emptyFilters(sections));
-  const [text, setText] = useState("");
+/**
+ * NAV-002: the last selection per list, kept for this app session so coming
+ * back to a list (back button, tab switch, remount) shows the same filters and
+ * search. Session memory only - nothing about results is stored.
+ */
+const sessionState = new Map<string, { values: FilterValues; text: string }>();
+
+/** DASH-003: `?f_status=DUE,OVERDUE&q=...` pre-filters a list opened from a KPI. */
+export function filtersFromParams(params: Record<string, string | string[] | undefined>): { values: FilterValues; text?: string } | undefined {
+  const values: FilterValues = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (!k.startsWith("f_") || v == null) continue;
+    values[k.slice(2)] = (Array.isArray(v) ? v : String(v).split(",")).filter(Boolean);
+  }
+  const text = typeof params.q === "string" ? params.q : undefined;
+  return Object.keys(values).length || text ? { values, text } : undefined;
+}
+
+export function useListFilters(list: string, sections: FilterSection[], initial?: { values: FilterValues; text?: string }) {
+  const [values, setValues] = useState<FilterValues>(() =>
+    initial ? { ...emptyFilters(sections), ...initial.values } : sessionState.get(list)?.values ?? emptyFilters(sections),
+  );
+  const [text, setText] = useState(() => initial?.text ?? sessionState.get(list)?.text ?? "");
+  useEffect(() => {
+    sessionState.set(list, { values, text });
+  }, [list, values, text]);
   const [open, setOpen] = useState(false);
   const [stored, setStored] = useState<Stored>({ saved: [], recent: [] });
   useEffect(() => {

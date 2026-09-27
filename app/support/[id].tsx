@@ -134,7 +134,7 @@ export default function SupportDetail() {
                       <Text style={styles.reference}>{c.reference}</Text>
                       <View style={[styles.statusChip, statusTone]}>
                         <View style={[styles.dot, { backgroundColor: closed ? colors.neutral500 : colors.success }]} />
-                        <Text style={[styles.statusText, { color: closed ? colors.neutral700 : colors.successText }]} numberOfLines={1}>{td(`supportStatus_${c.status}`, c.status)}</Text>
+                        <Text style={[styles.statusText, { color: closed ? colors.neutral700 : colors.successText }]}>{td(`supportStatus_${c.status}`, c.status)}</Text>
                       </View>
                     </View>
                     <Text style={styles.subject}>{c.subject}</Text>
@@ -203,14 +203,14 @@ export default function SupportDetail() {
                     <TintedIcon icon={Tag} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportCategoryLabel")}</Text>
-                      <Text style={styles.summaryValue} numberOfLines={2}>{td(`supportCategory_${c.category}`, c.category)}</Text>
+                      <Text style={styles.summaryValue}>{td(`supportCategory_${c.category}`, c.category)}</Text>
                     </View>
                   </View>
                   <View style={[styles.summaryCell, styles.summaryBorder]}>
                     <TintedIcon icon={Flag} tint="blue" size={32} />
                     <View style={styles.flex}>
                       <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
-                      <Text style={styles.summaryValue} numberOfLines={2}>{td(`priority_${c.priority}`, c.priority)}</Text>
+                      <Text style={styles.summaryValue}>{td(`priority_${c.priority}`, c.priority)}</Text>
                     </View>
                   </View>
                   <View style={[styles.summaryCell, styles.summaryTop]}>

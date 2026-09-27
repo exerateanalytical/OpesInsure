@@ -7,7 +7,7 @@ import { brokerTabs } from "@/components/portal/tabs";
 import { EmptyState, StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { applyFilters, FilterToolbar, optionsFrom, useListFilters, type FilterSection, type Matchers } from "@/components/filters";
+import { applyFilters, FilterToolbar, filtersFromParams, optionsFrom, useListFilters, type FilterSection, type Matchers } from "@/components/filters";
 import { BrokerWorkspaceApi, money, shortDate, type PartnerPolicy } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
@@ -20,7 +20,7 @@ const haystack = (p: PartnerPolicy) => [p.policy_number, p.customer_name, p.carr
 
 export default function BrokerPolicies() {
   const { t, td } = useTranslation();
-  const params = useLocalSearchParams<{ q?: string }>();
+  const params = useLocalSearchParams<Record<string, string>>();
   const q = useLoad(() => BrokerWorkspaceApi.policies(), []);
   const rows = useMemo(() => q.data ?? [], [q.data]);
   const sections = useMemo<FilterSection[]>(
@@ -31,7 +31,7 @@ export default function BrokerPolicies() {
     ],
     [rows, t, td],
   );
-  const f = useListFilters("broker.policies", sections);
+  const f = useListFilters("broker.policies", sections, filtersFromParams(params));
   const { setText } = f;
   useEffect(() => {
     if (typeof params.q === "string" && params.q) setText(params.q);

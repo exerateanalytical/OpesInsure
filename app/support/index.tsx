@@ -52,7 +52,7 @@ export default function Support() {
                   <TintedIcon icon={Ticket} tint={closed ? "neutral" : waiting ? "gold" : "blue"} size={48} />
                   <View style={styles.flex}>
                     <Text style={styles.reference}>{c.reference}</Text>
-                    <Text style={styles.subject} numberOfLines={2}>{c.subject}</Text>
+                    <Text style={styles.subject}>{c.subject}</Text>
                     <Text style={styles.meta} numberOfLines={1}>
                       {td(`supportCategory_${c.category}`, c.category)} · {date(c.created_at)}
                     </Text>

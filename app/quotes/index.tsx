@@ -9,6 +9,7 @@ import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
 import { CustomerQuoteSummary, QuotesApi } from "@/api/client";
+import { useListState } from "@/hooks/useListState";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize } from "@/lib/purchase";
@@ -35,6 +36,8 @@ export default function QuoteHistory() {
   const narrow = useWindowDimensions().width < 400;
   const f = useFormatters();
   const list = usePagedList<CustomerQuoteSummary>((page) => QuotesApi.history(page));
+  // NAV-002: keep scroll position and refetch on return from a quote.
+  const listState = useListState("customer.quotes", list.reload);
   const [query, setQuery] = useState("");
   const [family, setFamily] = useState<"all" | LineFamily>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -72,6 +75,7 @@ export default function QuoteHistory() {
   return (
     <Screen scroll={false}>
       <FlatList
+        {...listState}
         data={shown}
         keyExtractor={(q) => q.id}
         showsVerticalScrollIndicator={false}
@@ -119,7 +123,7 @@ export default function QuoteHistory() {
                       {provider ? (
                         <View style={s.providerRow}>
                           <InstitutionMark logoUrl={q.carrier_logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={20} />
-                          <Text style={[s.meta, s.flex]} numberOfLines={1}>{provider}</Text>
+                          <Text style={[s.meta, s.flex]}>{provider}</Text>
                         </View>
                       ) : q.quote_number ? <Text style={s.meta}>{q.quote_number}</Text> : null}
                     </View>
@@ -137,7 +141,7 @@ export default function QuoteHistory() {
                 </View>
               </View>
               <View style={s.nameRow}>
-                <Text style={[s.title, s.flex]} numberOfLines={2}>{q.product_name ?? q.vehicle_label ?? humanize(q.line_code)}</Text>
+                <Text style={[s.title, s.flex]}>{q.product_name ?? q.vehicle_label ?? humanize(q.line_code)}</Text>
                 {typeof q.lowest_total_minor === "number" ? (
                   <View style={s.priceBox}>
                     <Text style={s.price}>{f.xaf(q.lowest_total_minor)}</Text>

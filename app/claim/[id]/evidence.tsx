@@ -283,7 +283,7 @@ export default function Evidence() {
                     </View>
                     <View style={styles.flex}>
                       <Text style={styles.reqLabel}>{td(`evidence_${item.evidence_type}`, item.evidence_type)}</Text>
-                      <Text style={styles.meta} numberOfLines={1}>
+                      <Text style={styles.meta}>
                         {[size, item.submitted_at ? date(item.submitted_at) : null].filter(Boolean).join(" · ")}
                       </Text>
                     </View>
@@ -312,7 +312,7 @@ function Fact({ icon, value, label }: { icon: typeof Calendar; value: string; la
     <View style={styles.fact}>
       <TintedIcon icon={icon} tint="blue" size={36} />
       <View style={styles.flex}>
-        <Text style={styles.factValue} numberOfLines={2}>{value}</Text>
+        <Text style={styles.factValue}>{value}</Text>
         <Text style={styles.meta}>{label}</Text>
       </View>
     </View>

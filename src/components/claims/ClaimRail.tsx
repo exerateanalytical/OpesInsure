@@ -50,10 +50,10 @@ export function ClaimRail({ status, dates = [] }: { status: string; dates?: (str
               </View>
               <View style={[s.line, last && s.lineHidden, state === "done" && s.lineOn]} />
             </View>
-            <Text style={[s.label, state === "upcoming" && s.muted, state === "rejected" && s.rejected]} numberOfLines={1}>
+            <Text style={[s.label, state === "upcoming" && s.muted, state === "rejected" && s.rejected]} numberOfLines={2} maxFontSizeMultiplier={1.3}>
               {state === "rejected" ? t("railRejected") : t(LABELS[step])}
             </Text>
-            {caption ? <Text style={[s.caption, state === "current" && s.captionOn]} numberOfLines={1}>{caption}</Text> : null}
+            {caption ? <Text style={[s.caption, state === "current" && s.captionOn]} numberOfLines={2} maxFontSizeMultiplier={1.3}>{caption}</Text> : null}
           </View>
         );
       })}

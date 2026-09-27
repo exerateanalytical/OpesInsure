@@ -192,7 +192,7 @@ export default function Offers() {
               >
                 <InstitutionMark logoUrl={logoFor(i.carrierId, i.name, carrierLogo(i.cheapest))} initials={i.name.slice(0, 2).toUpperCase()} size={40} />
                 <View style={st.flex}>
-                  <Text style={st.insurerName} numberOfLines={2}>{i.name}</Text>
+                  <Text style={st.insurerName}>{i.name}</Text>
                   <Text style={ps.meta}>
                     {t("ofInsurerOffers", { count: i.offers })} · <Text style={st.insurerPrice}>{t("ofFrom", { amount: f.xaf(i.cheapest.total_minor) })}</Text>
                   </Text>

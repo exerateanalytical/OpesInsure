@@ -61,11 +61,11 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
         </View>
         <View style={s.flex}>
           <View style={s.chipRow}><StatusChip label={needsAction ? t("claimActionNeeded") : status} tone={claimTone(claim.status)} /></View>
-          <Text style={s.title} numberOfLines={2}>{title}</Text>
+          <Text style={s.title}>{title}</Text>
           {mark.name ? (
             <View style={s.providerRow}>
               <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={24} />
-              <Text style={[s.meta, s.shrink]} numberOfLines={2}>{mark.name}</Text>
+              <Text style={[s.meta, s.shrink]}>{mark.name}</Text>
             </View>
           ) : null}
           <Text style={s.number}>{claim.claim_number}</Text>

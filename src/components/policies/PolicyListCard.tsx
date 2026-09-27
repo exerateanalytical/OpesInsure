@@ -64,7 +64,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
         <Text style={styles.title} >{w.product_name ?? t("insurancePolicy")}</Text>
         <View style={styles.providerRow}>
           <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={28} />
-          <Text style={styles.provider} numberOfLines={2}>{provider}</Text>
+          <Text style={styles.provider}>{provider}</Text>
         </View>
         <Text style={styles.number}>{policy.policy_number}</Text>
         <View style={styles.metaRow}>

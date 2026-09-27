@@ -111,7 +111,7 @@ export function FeaturedProviders({ providers }: { providers: Institution[] }) {
             >
               <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={52} />
               <View style={styles.nameBox}>
-                <Text style={styles.name} numberOfLines={2}>
+                <Text style={styles.name}>
                   {p.name}
                 </Text>
               </View>

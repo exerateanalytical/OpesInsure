@@ -163,7 +163,7 @@ export default function ProductDetail() {
                   <View style={s.providerTop}>
                     <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={48} />
                     <View style={s.flex}>
-                      <Text style={s.providerName} numberOfLines={2}>{p.name}</Text>
+                      <Text style={s.providerName}>{p.name}</Text>
                       <Text style={s.meta}>{t("productsCount", { count })}</Text>
                     </View>
                     <ChevronRight size={18} color={colors.blue600} />

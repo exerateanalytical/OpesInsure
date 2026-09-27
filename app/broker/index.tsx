@@ -27,7 +27,7 @@ import { useTranslation } from "@/i18n";
 /** DASH-002: each KPI opens its work queue (server still authorizes it). */
 const KPI_ROUTES: Record<string, KpiRoute> = {
   Clients: { label: "kpiClients", href: "/broker/clients" },
-  "Policies in force": { label: "kpiPoliciesInForce", href: "/broker/policies" },
+  "Policies in force": { label: "kpiPoliciesInForce", href: "/broker/policies?f_status=ACTIVE" },
   "Premium written (12m)": { label: "kpiPremiumWritten", href: "/broker/production" },
   "Commission outstanding": { label: "kpiCommissionOutstanding", href: "/broker/commissions" },
   "Renewals due": { label: "kpiRenewalsDue", href: "/broker/renewals" },

@@ -206,8 +206,8 @@ export default function CustomerHome() {
             <ShieldCheck size={28} color={colors.gold500} />
           </View>
           <View style={styles.ctaCopy}>
-            <Text style={styles.ctaTitle} numberOfLines={2}>{t("homeCtaTitle")}</Text>
-            <Text style={styles.ctaBody} numberOfLines={2}>{t("homeCtaBody")}</Text>
+            <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
+            <Text style={styles.ctaBody}>{t("homeCtaBody")}</Text>
             <View style={styles.ctaButton}>
               <Text style={styles.ctaButtonText}>{t("propGetQuote")}</Text>
             </View>

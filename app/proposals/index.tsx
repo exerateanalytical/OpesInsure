@@ -168,7 +168,7 @@ export default function Applications() {
               <View style={s.flex}>
                 <View style={[s.status, statusStyle]}>
                   <StatusIcon size={14} color={statusText.color} />
-                  <Text style={[s.statusLabel, statusText]} numberOfLines={1}>{info.label}</Text>
+                  <Text style={[s.statusLabel, statusText]}>{info.label}</Text>
                 </View>
                 <Text style={s.title}>{fam ? td(`lineFamily_${fam}`, name) : name}</Text>
                 {provider ? (

@@ -42,8 +42,8 @@ export default function Wallet() {
                 <View style={s.row}>
                   <TintedIcon icon={ShieldCheck} tint={toneTint(status.tone)} size={48} />
                   <View style={s.flex}>
-                    <Text style={s.title} numberOfLines={2}>{p.product_name ?? p.policy_number}</Text>
-                    {carrier ? <Text style={s.sub} numberOfLines={1}>{carrier}</Text> : null}
+                    <Text style={s.title}>{p.product_name ?? p.policy_number}</Text>
+                    {carrier ? <Text style={s.sub}>{carrier}</Text> : null}
                     <Text style={s.meta}>{p.policy_number}</Text>
                     <Text style={s.meta}>{f.range(p.coverage_starts_at, p.coverage_ends_at)}</Text>
                   </View>

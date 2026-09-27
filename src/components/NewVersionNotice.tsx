@@ -28,7 +28,7 @@ export function NewVersionNotice() {
           style={styles.pillMain}
         >
           <Download size={14} color={colors.white} />
-          <Text style={styles.text} numberOfLines={1}>
+          <Text style={styles.text}>
             {t("newVersionAvailable", { version: release.latest_version ?? "" })}
           </Text>
         </Pressable>

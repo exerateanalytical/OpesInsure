@@ -146,7 +146,7 @@ export default function Profile() {
             <Text style={styles.avatarText}>{initialsOf(user?.full_name)}</Text>
           </View>
           <View style={styles.flex}>
-            <Text style={styles.name} numberOfLines={2}>{user?.full_name ?? t("profile")}</Text>
+            <Text style={styles.name}>{user?.full_name ?? t("profile")}</Text>
             {role ? <Text style={styles.role}>{role}</Text> : null}
             {kycStatus ? (
               <View style={styles.chipRow}>

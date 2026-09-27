@@ -70,6 +70,8 @@ export type PartnerProposal = {
   submitted_at: string | null;
   decided_at: string | null;
   created_at: string | null;
+  /** Set once the proposal was issued (Proposal::issuedPolicyId). */
+  policy_id?: string | null;
 };
 /** Issued documents of one book client (DocumentAccessPolicy::intermediaryMay). download_url only when current. */
 export type ClientDocument = {

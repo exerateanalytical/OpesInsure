@@ -193,7 +193,7 @@ function RenewalOfferCard({
             <Text style={st.name}>{name}</Text>
             <BadgeCheck size={18} color={colors.blue600} />
           </View>
-          <Text style={st.product} numberOfLines={2}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
+          <Text style={st.product}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
           {rating ? (
             <View style={st.ratingRow}>
               <Star size={14} color={colors.gold500} fill={colors.gold500} />
