@@ -1,20 +1,31 @@
 import React, { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from "@expo-google-fonts/inter";
+// Per-weight subpath imports: the package index requires all 18 Inter TTFs,
+// which Metro then packages into the APK even though only 4 are used (PERF-003).
+import { useFonts } from "expo-font";
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
 import { colors } from "@/theme/tokens";
 import { roleToPortal, useSession, WORKSPACE_PORTALS } from "@/store/session";
+import { carrierShellAllowed } from "@/lib/carrierAccess";
 import { AppRuntime } from "@/components/AppRuntime";
 import { ProductionErrorBoundary } from "@/components/ProductionErrorBoundary";
+import { Telemetry } from "@/security/telemetry";
+import { Platform } from "react-native";
+import { rememberColdStartPath } from "@/lib/navigationContinuity";
+
+// NAV-001: a web reload / deep link lands on index while the session boots;
+// index restores this path once auth is back (native: +native-intent).
+if (Platform.OS === "web" && typeof window !== "undefined") {
+  rememberColdStartPath(window.location.pathname + window.location.search);
+}
 
 SplashScreen.preventAutoHideAsync();
+Telemetry.installGlobalHandlers();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -29,8 +40,14 @@ export default function RootLayout() {
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+  const pathname = usePathname();
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync();
+    Telemetry.setScreen(pathname);
+  }, [pathname]);
+  useEffect(() => {
+    if (!loaded) return;
+    SplashScreen.hideAsync();
+    Telemetry.launched();
   }, [loaded]);
   if (!loaded) return null;
   const portal =
@@ -38,7 +55,10 @@ export default function RootLayout() {
   const customer = portal === "customer";
   const agent = portal === "agent";
   const broker = portal === "broker_admin" || portal === "broker_staff";
-  const carrier = portal === "carrier";
+  // CAR-014: finance/claims/compliance staff use the shared carrier shell for
+  // the modules their workspace is granted (each screen is CarrierGate'd and
+  // the server scopes every call); no separate table-only duplicate.
+  const carrier = carrierShellAllowed(portal, workspace?.permissions);
   const partner = !!portal && WORKSPACE_PORTALS.includes(portal);
   const authenticated = status === "authenticated";
   return (
@@ -184,6 +204,11 @@ export default function RootLayout() {
           <Stack.Screen name="agent/policies" />
           <Stack.Screen name="agent/proposals" />
           <Stack.Screen name="agent/claims" />
+          <Stack.Screen name="agent/claims/[id]" />
+          <Stack.Screen name="agent/claims/new" />
+          <Stack.Screen name="agent/policies/[id]" />
+          <Stack.Screen name="agent/commissions/[id]" />
+          <Stack.Screen name="agent/withdrawals/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={broker}>
           <Stack.Screen name="broker/index" />
@@ -206,6 +231,17 @@ export default function RootLayout() {
           <Stack.Screen name="broker/proposals" />
           <Stack.Screen name="broker/staff" />
           <Stack.Screen name="broker/commissions" />
+          {/* Broker record details + creation (BRK-002..010). */}
+          <Stack.Screen name="broker/clients/new" />
+          <Stack.Screen name="broker/leads/new" />
+          <Stack.Screen name="broker/policies/[id]" />
+          <Stack.Screen name="broker/claims/[id]" />
+          <Stack.Screen name="broker/renewals/[id]" />
+          <Stack.Screen name="broker/production/[id]" />
+          <Stack.Screen name="broker/commissions/[id]" />
+          <Stack.Screen name="broker/receivables/[id]" />
+          <Stack.Screen name="broker/compliance/[id]" />
+          <Stack.Screen name="broker/staff/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={carrier}>
           <Stack.Screen name="carrier/index" />
@@ -226,6 +262,14 @@ export default function RootLayout() {
           <Stack.Screen name="carrier/claims/[id]" />
           <Stack.Screen name="carrier/payments" />
           <Stack.Screen name="carrier/partners" />
+          {/* CAR-003..011: carrier record details (shared DetailScreen). */}
+          <Stack.Screen name="carrier/proposals/[id]" />
+          <Stack.Screen name="carrier/products/[id]" />
+          <Stack.Screen name="carrier/issuance/[id]" />
+          <Stack.Screen name="carrier/policies/[id]" />
+          <Stack.Screen name="carrier/payments/[id]" />
+          <Stack.Screen name="carrier/partners/[id]" />
+          <Stack.Screen name="carrier/bordereaux/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={partner}>
           <Stack.Screen name="workspace/[role]" />

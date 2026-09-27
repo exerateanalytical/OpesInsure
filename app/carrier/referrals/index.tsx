@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { PortalScreen } from "@/components/portal/PortalShell";
@@ -10,6 +11,14 @@ import { OperationsList } from "@/components/OperationsList";
 import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 export default function Referrals() {
+  return (
+    <CarrierGate module="referrals">
+      <ReferralsBody />
+    </CarrierGate>
+  );
+}
+
+function ReferralsBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.referrals(), []);
   const x = q.data ?? [];

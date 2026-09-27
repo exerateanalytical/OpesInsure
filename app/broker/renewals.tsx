@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { RefreshCw } from "lucide-react-native";
@@ -18,6 +19,7 @@ export default function BrokerRenewals() {
           <>
           <OperationsList
             icon={RefreshCw}
+            onPress={(id) => router.push({ pathname: "/broker/renewals/[id]", params: { id: id } })}
             rows={x.map((r) => ({
               id: r.id,
               title: r.customer_name,

@@ -111,6 +111,8 @@ test("search results group by type and deep-link per portal", () => {
   assert.equal(searchHitRoute({ type: "customers", id: "tc1", party_id: "pa1" }, "broker"), "/broker/clients/tc1?partyId=pa1");
   assert.equal(searchHitRoute({ type: "vehicles", id: "a1" }, "customer"), "/assets/a1");
   assert.equal(searchHitRoute({ type: "policies", id: "p1" }, "agent"), null);
+  assert.equal(searchHitRoute({ type: "policies", id: "p1" }, "broker"), "/broker/policies/p1");
+  assert.equal(searchHitRoute({ type: "claims", id: "c1" }, "broker"), "/broker/claims/c1");
   const api = read("src/api/crm.ts");
   assert.match(api, /types\[\]/);
   assert.match(read("app/_layout.tsx"), /name="search"/);

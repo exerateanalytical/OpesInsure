@@ -175,7 +175,7 @@ export default function SupportDetail() {
                       return (
                         <View key={v.id} style={styles.msgRow}>
                           <View style={styles.avatarCol}>
-                            <TintedIcon icon={mine ? User : Headset} tint={mine ? "gold" : "blue"} size={48} />
+                            <TintedIcon icon={mine ? User : Headset} tint={mine ? "gold" : "blue"} size={48} round />
                             {i < messages.length - 1 ? <View style={styles.rail} /> : null}
                           </View>
                           <View style={styles.flex}>

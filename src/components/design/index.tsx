@@ -9,6 +9,7 @@ import React, { ReactNode, useState } from "react";
 import { WORDMARK } from "@/components/BrandMark";
 import { Image, LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useKeyboardVisible } from "@/hooks/useKeyboardVisible";
 import { router } from "expo-router";
 import { ArrowLeft, Bell, Check, ChevronRight, CircleHelp, LucideIcon } from "lucide-react-native";
 import { InstitutionMark } from "@/components/InstitutionMark";
@@ -255,13 +256,14 @@ export function MetaGrid({ items, columns }: { items: HeroMeta[]; columns?: 2 | 
 // Tiles, rows, banners, CTA
 // ---------------------------------------------------------------------------
 
-export type Tint = "blue" | "gold" | "red" | "green" | "neutral";
+export type Tint = "blue" | "gold" | "red" | "green" | "neutral" | "purple";
 const tints: Record<Tint, { bg: string; fg: string }> = {
   blue: { bg: colors.blue50, fg: colors.blue600 },
   gold: { bg: colors.gold50, fg: colors.gold600 },
   red: { bg: colors.dangerSoft, fg: colors.danger },
   green: { bg: colors.successSoft, fg: colors.success },
   neutral: { bg: colors.neutral100, fg: colors.navy800 },
+  purple: { bg: colors.purple50, fg: colors.purple700 },
 };
 
 /** Soft tinted square with a large icon (design: policy actions row). */
@@ -283,21 +285,21 @@ export function IconTile({ icon: Icon, label, tint = "blue", onPress, disabled, 
   );
 }
 
-/** Outlined white tile with icon + label (design: View Policy / Download / Share). */
-export function ActionTile({ icon: Icon, label, onPress, loading, disabled, style }: { icon: LucideIcon; label: string; onPress?: () => void; loading?: boolean; disabled?: boolean; style?: StyleProp<ViewStyle> }) {
+/** Outlined white tile with icon + label (design: View Policy / Download / Share); `filled` = solid blue600 primary tile (design: claim timeline Add information). */
+export function ActionTile({ icon: Icon, label, onPress, loading, disabled, style, filled }: { icon: LucideIcon; label: string; onPress?: () => void; loading?: boolean; disabled?: boolean; style?: StyleProp<ViewStyle>; filled?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, busy: !!loading }} disabled={disabled || loading} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [s.actionTile, pressed && s.pressed, disabled && s.disabled, style]}>
-      <Icon size={22} color={colors.blue600} />
-      <Text style={s.actionTileLabel} numberOfLines={2}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, busy: !!loading }} disabled={disabled || loading} onPress={onPress} android_ripple={ripple(filled)} style={({ pressed }) => [s.actionTile, filled && s.actionTileFilled, pressed && s.pressed, disabled && s.disabled, style]}>
+      <Icon size={22} color={filled ? colors.white : colors.blue600} />
+      <Text style={[s.actionTileLabel, filled && s.actionTileLabelFilled]} numberOfLines={2}>{label}</Text>
     </Pressable>
   );
 }
 
-/** Small round tinted icon at the start of a list row or section title. */
-export function TintedIcon({ icon: Icon, tint = "blue", size = 44 }: { icon: LucideIcon; tint?: Tint; size?: number }) {
+/** Tinted rounded-square icon (radius ~14 at 44–56dp) at the start of a list row or section title; `round` keeps a circle (avatars). */
+export function TintedIcon({ icon: Icon, tint = "blue", size = 44, round = false }: { icon: LucideIcon; tint?: Tint; size?: number; round?: boolean }) {
   const c = tints[tint];
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: size, height: size, borderRadius: round ? size / 2 : Math.round(size * 0.28), backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
       <Icon size={Math.round(size * 0.5)} color={c.fg} />
     </View>
   );
@@ -381,7 +383,10 @@ export function SectionHeading({ title, icon: Icon, action, onAction, right }: {
 /** Pinned bottom bar with the primary CTA (and optional secondary link), safe-area aware. */
 export function CtaBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
-  return <View style={[s.ctaBar, { paddingBottom: space.x3 + insets.bottom }]}>{children}</View>;
+  // FORM-003: while the keyboard is up it covers the gesture area, so the
+  // bottom inset would only push the pinned action further up.
+  const keyboard = useKeyboardVisible();
+  return <View style={[s.ctaBar, { paddingBottom: space.x3 + (keyboard ? 0 : insets.bottom) }]}>{children}</View>;
 }
 
 /** Selectable option card with a radio (design: Renewal Options, policy picker). */
@@ -473,6 +478,8 @@ const s = StyleSheet.create({
   tile: { flex: 1, minHeight: 104, borderRadius: radius.feature, alignItems: "center", justifyContent: "center", gap: space.x2, paddingVertical: space.x3, paddingHorizontal: 2, overflow: "hidden" },
   tileLabel: { ...type.label, textAlign: "center", fontSize: 12.5, lineHeight: 16 },
   actionTile: { flex: 1, minHeight: 64, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, paddingHorizontal: space.x2, overflow: "hidden" },
+  actionTileFilled: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
+  actionTileLabelFilled: { color: colors.white },
   actionTileLabel: { ...type.label, color: colors.navy950, flexShrink: 1, textAlign: "center", fontSize: 13, lineHeight: 17 },
   // detail row
   detailRow: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 36 },

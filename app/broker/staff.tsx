@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Share, StyleSheet, Text } from "react-native";
 import { MailPlus, UserRound } from "lucide-react-native";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen, SectionTitle, TextField } from "@/components/ui";
@@ -32,6 +33,7 @@ export default function BrokerStaffScreen() {
           <>
             <OperationsList
               icon={UserRound}
+              onPress={(id) => router.push({ pathname: "/broker/staff/[id]", params: { id: id } })}
               rows={d.members.map((m) => ({
                 id: m.membership_id,
                 title: m.is_me ? `${m.full_name} (you)` : m.full_name,

@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { FileText } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
@@ -10,6 +12,14 @@ import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierPolicies() {
+  return (
+    <CarrierGate module="policies">
+      <CarrierPoliciesBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierPoliciesBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.policies(), []);
   return (
@@ -25,6 +35,7 @@ export default function CarrierPolicies() {
         {(x) => (
           <OperationsList
             icon={FileText}
+            onPress={(id) => router.push(`/carrier/policies/${id}` as never)}
             rows={x.map((p) => ({
               id: p.id,
               title: `${p.policy_number ?? "Pending number"} · ${p.customer_name}`,

@@ -18,19 +18,24 @@ import {
   Search,
   UserPlus,
 } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { brokerTabs } from "@/components/portal/tabs";
-import { useColumns } from "@/components/responsive";
+import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { BrokerApi } from "@/api/client";
-import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+/** DASH-002: each KPI opens its work queue (server still authorizes it). */
+const KPI_ROUTES: Record<string, KpiRoute> = {
+  Clients: { label: "kpiClients", href: "/broker/clients" },
+  "Policies in force": { label: "kpiPoliciesInForce", href: "/broker/policies" },
+  "Premium written (12m)": { label: "kpiPremiumWritten", href: "/broker/production" },
+  "Commission outstanding": { label: "kpiCommissionOutstanding", href: "/broker/commissions" },
+  "Renewals due": { label: "kpiRenewalsDue", href: "/broker/renewals" },
+  "Open compliance items": { label: "kpiOpenCompliance", href: "/broker/compliance" },
+};
 export default function BrokerHome() {
   const { t } = useTranslation();
   const q = useLoad(() => BrokerApi.dashboard(), []);
-  const grid = useColumns();
   return (
     <PortalScreen tabs={brokerTabs}>
       <PortalHeader
@@ -46,16 +51,7 @@ export default function BrokerHome() {
         emptyTitle={t("agNoActivity")}
         emptyMessage={t("agNoActivityBody")}
       >
-        {(v) => (
-          <View style={grid.row}>
-            {v.metrics.map((m) => (
-              <Card key={m.label} style={[s.metric, grid.item]}>
-                <Text style={s.meta}>{m.label}</Text>
-                <Text style={s.value}>{m.value}</Text>
-              </Card>
-            ))}
-          </View>
-        )}
+        {(v) => <KpiGrid metrics={v.metrics} routes={KPI_ROUTES} />}
       </StatePanel>
       <WorkspaceMenu
         items={[
@@ -80,8 +76,3 @@ export default function BrokerHome() {
     </PortalScreen>
   );
 }
-const s = StyleSheet.create({
-  metric: { minHeight: 96 },
-  meta: { ...type.meta, color: colors.neutral600 },
-  value: { ...type.sectionTitle, color: colors.navy950 },
-});

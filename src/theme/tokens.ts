@@ -23,6 +23,8 @@ export const colors = {
   neutral100: '#EEF2F7', neutral50: '#F7F9FC', white: '#FFFFFF',
   success: '#12A150', successText: '#0B7A3C', successSoft: '#E6F7EC',
   warning: '#D98A0B', warningText: '#7A4A00', warningSoft: '#FFF4E0',
+  // Violet accent (claim next steps). purple700 on purple50 = 7.4:1 (AA).
+  purple700: '#6D28D9', purple50: '#F3EEFE',
   danger: '#E02424', dangerText: '#B71C1C', dangerSoft: '#FDECEC',
 } as const;
 

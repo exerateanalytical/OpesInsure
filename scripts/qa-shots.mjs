@@ -9,6 +9,11 @@
  *   node scripts/qa-shots.mjs policy-details  # only screens whose name contains the filter
  *
  * Output: docs/qa/shots/<name>@<width>.png
+ *
+ * Font-scale stress (A11Y-005): QA_FONT_SCALE=1.3 or 2 multiplies every text
+ * node's font-size/line-height (as Android "Font size" would) and writes
+ * <name>@<width>-fs<scale>.png. "clipped" then also counts line-clamped text
+ * that no longer fits (numberOfLines on critical text).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -17,6 +22,7 @@ import puppeteer from "puppeteer-core";
 
 const BASE = process.env.QA_BASE ?? "http://localhost:8089";
 const API = "https://insurance.opesdatacenter.tech/api/v1";
+const FONT_SCALE = Number(process.env.QA_FONT_SCALE ?? 1);
 const WIDTHS = (process.env.QA_WIDTHS ?? "360,390,430").split(",").map(Number);
 const HEIGHT = Number(process.env.QA_HEIGHT ?? 2200);
 const CHROME =
@@ -159,7 +165,18 @@ try {
           await sleep(step.wait ?? 1200);
         }
       }
-      const file = path.join(outDir, `${s.name}@${w}.png`);
+      if (FONT_SCALE !== 1) {
+        await page.evaluate((k) => {
+          for (const el of document.querySelectorAll("div,span")) {
+            if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+            const cs = getComputedStyle(el);
+            el.style.fontSize = `${parseFloat(cs.fontSize) * k}px`;
+            if (cs.lineHeight !== "normal") el.style.lineHeight = `${parseFloat(cs.lineHeight) * k}px`;
+          }
+        }, FONT_SCALE);
+        await sleep(800);
+      }
+      const file = path.join(outDir, `${s.name}@${w}${FONT_SCALE !== 1 ? `-fs${FONT_SCALE}` : ""}.png`);
       await page.screenshot({ path: file });
       const overflow = await page.evaluate((process_debug) => {
         // Elements wider than the viewport or text clipped with an ellipsis.
@@ -177,7 +194,8 @@ try {
           }
           if (!hidden && r.width > 0 && r.right > vw + 1) { wide++; if (process_debug) dbg.push("W " + el.getAttribute("aria-label") + " " + (el.textContent || "").slice(0, 40) + " r=" + Math.round(r.right)); }
           const cs = getComputedStyle(el);
-          if (cs.textOverflow === "ellipsis" && el.scrollWidth > el.clientWidth + 1) { clipped++; if (process_debug) dbg.push("C " + (el.textContent || "").slice(0, 60)); }
+          const clamped = cs.webkitLineClamp && cs.webkitLineClamp !== "none" && el.scrollHeight > el.clientHeight + 1;
+          if ((cs.textOverflow === "ellipsis" && el.scrollWidth > el.clientWidth + 1) || clamped) { clipped++; if (process_debug) dbg.push("C " + (el.textContent || "").slice(0, 60)); }
         }
         return { wide, clipped, dbg };
       }, !!process.env.QA_DEBUG);

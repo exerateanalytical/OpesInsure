@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { HandCoins } from "lucide-react-native";
@@ -13,6 +15,14 @@ import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierPayments() {
+  return (
+    <CarrierGate module="payments">
+      <CarrierPaymentsBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierPaymentsBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.payments(), []);
   const grid = useColumns();
@@ -47,6 +57,7 @@ export default function CarrierPayments() {
             <SectionTitle title={t("faqTopicPayments")} />
             <OperationsList
               icon={HandCoins}
+              onPress={(id) => router.push(`/carrier/payments/${id}` as never)}
               rows={d.items.map((p) => ({
                 id: p.id,
                 title: `${p.customer_name} · ${money(p.amount_minor)}`,

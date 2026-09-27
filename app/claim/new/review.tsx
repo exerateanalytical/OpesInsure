@@ -67,9 +67,7 @@ export default function NewClaimReview() {
       footer={
         <CtaBar>
           <Button label={t("claimSubmitClaim")} icon={ArrowRight} loading={busy} onPress={() => void submit()} />
-          <Pressable accessibilityRole="button" onPress={open} hitSlop={8} style={s.draft}>
-            <Text style={s.draftText}>{t("claimSaveDraft")}</Text>
-          </Pressable>
+          <Button variant="tertiary" label={t("claimSaveDraft")} onPress={open} />
         </CtaBar>
       }
     >

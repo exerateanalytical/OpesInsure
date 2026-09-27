@@ -1,7 +1,6 @@
 import React from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
-import { StyleSheet, Text, View } from "react-native";
 import {
   CircleDollarSign,
   CircleUserRound,
@@ -17,18 +16,23 @@ import {
   Search,
   ShieldAlert,
 } from "lucide-react-native";
-import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { agentTabs } from "@/components/portal/tabs";
-import { useColumns } from "@/components/responsive";
+import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { AgentApi } from "@/api/client";
-import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+/** DASH-002: each KPI opens its work queue (server still authorizes it). */
+const KPI_ROUTES: Record<string, KpiRoute> = {
+  Clients: { label: "kpiClients", href: "/agent/clients" },
+  "Active policies": { label: "kpiActivePolicies", href: "/agent/policies" },
+  "Renewals due": { label: "kpiRenewalsDue", href: "/agent/renewals" },
+  "Commission available": { label: "kpiCommissionAvailable", href: "/agent/wallet" },
+  "Commission pending": { label: "kpiCommissionPending", href: "/agent/wallet" },
+};
 export default function AgentHome() {
   const { t } = useTranslation();
   const q = useLoad(() => AgentApi.dashboard(), []);
-  const grid = useColumns();
   return (
     <PortalScreen tabs={agentTabs}>
       <PortalHeader
@@ -44,16 +48,7 @@ export default function AgentHome() {
         emptyTitle={t("agNoActivity")}
         emptyMessage={t("agNoActivityBody")}
       >
-        {(v) => (
-          <View style={grid.row}>
-            {v.metrics.map((m) => (
-              <Card key={m.label} style={[s.metric, grid.item]}>
-                <Text style={s.meta}>{m.label}</Text>
-                <Text style={s.value}>{m.value}</Text>
-              </Card>
-            ))}
-          </View>
-        )}
+        {(v) => <KpiGrid metrics={v.metrics} routes={KPI_ROUTES} />}
       </StatePanel>
       <WorkspaceMenu
         items={[
@@ -76,8 +71,3 @@ export default function AgentHome() {
     </PortalScreen>
   );
 }
-const s = StyleSheet.create({
-  metric: { minHeight: 96 },
-  meta: { ...type.meta, color: colors.neutral600 },
-  value: { ...type.sectionTitle, color: colors.navy950 },
-});

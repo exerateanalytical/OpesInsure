@@ -72,14 +72,8 @@ export default function ProductDetail() {
       footer={
         <CtaBar>
           <View style={s.ctaRow}>
-            <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/quote/product", params: { product: category.id } })} android_ripple={ripple()} style={({ pressed }) => [s.compareBtn, pressed && s.pressed]}>
-              <BarChart3 size={20} color={colors.blue600} />
-              <Text style={s.compareText}>{t("pdCompareOffers")}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={quote} android_ripple={ripple()} style={({ pressed }) => [s.goldBtn, pressed && s.pressed]}>
-              <Text style={s.goldText}>{t("searchGetQuote")}</Text>
-              <ArrowRight size={20} color={colors.navy950} />
-            </Pressable>
+            <Button variant="secondary" icon={BarChart3} label={t("pdCompareOffers")} onPress={() => router.push({ pathname: "/quote/product", params: { product: category.id } })} style={s.flex1} />
+            <Button variant="gold" icon={ArrowRight} label={t("searchGetQuote")} onPress={quote} style={s.flex1} />
           </View>
         </CtaBar>
       }
@@ -213,6 +207,7 @@ const s = StyleSheet.create({
   providerTop: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   providerName: { ...type.label, color: colors.navy950 },
   ctaRow: { flexDirection: "row", gap: space.x3 },
+  flex1: { flex: 1 },
   compareBtn: { flex: 1, minHeight: 52, borderRadius: radius.card, borderWidth: 1.5, borderColor: colors.blue600, backgroundColor: colors.blue50, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },
   compareText: { ...type.label, color: colors.blue600 },
   goldBtn: { flex: 1, minHeight: 52, borderRadius: radius.card, backgroundColor: colors.gold500, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, overflow: "hidden" },

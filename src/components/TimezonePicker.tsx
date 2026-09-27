@@ -43,6 +43,7 @@ export function TimezonePicker() {
         suggest={false}
         otherAllowed={false}
         value={own ?? DEFAULT}
+        valueLabel={own ? own.replaceAll("_", " ").replaceAll("/", " / ") : defaultText[language === "fr" ? "fr" : "en"]}
         loaderKey={`${business}|${language}`}
         loader={async () => timezoneValues(await SettingsApi.timezones(), defaultText)}
         onChange={(v) => {

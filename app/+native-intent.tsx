@@ -1,4 +1,4 @@
-import { resolveSystemPath } from "@/lib/navigationContinuity";
+import { rememberColdStartPath, resolveSystemPath } from "@/lib/navigationContinuity";
 
 /**
  * System URL → route. See src/lib/navigationContinuity.ts: /app prefix and
@@ -7,5 +7,7 @@ import { resolveSystemPath } from "@/lib/navigationContinuity";
  * so returning from another app never replaces the current screen.
  */
 export function redirectSystemPath({ path, initial }: { path: string; initial: boolean }): string {
-  return resolveSystemPath(path, initial);
+  const value = resolveSystemPath(path, initial);
+  if (initial) rememberColdStartPath(value);
+  return value;
 }

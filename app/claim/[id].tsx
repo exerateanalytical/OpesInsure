@@ -188,7 +188,7 @@ export default function ClaimDetail() {
 
               <Card>
                 <View style={styles.statusRow}>
-                <TintedIcon icon={ClipboardPen} tint="neutral" size={48} />
+                <TintedIcon icon={ClipboardPen} tint="purple" size={48} />
                 <View style={[styles.flex, styles.gap]}>
                 <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimNextSteps")}</Text>
                 <View accessibilityRole="list">

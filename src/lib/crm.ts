@@ -113,11 +113,11 @@ export function searchHitRoute(hit: Pick<SearchHit, "type" | "id"> & { party_id?
   const party = typeof hit.party_id === "string" && hit.party_id ? `?partyId=${encodeURIComponent(hit.party_id)}` : "";
   switch (hit.type) {
     case "policies":
-      return role === "customer" ? `/policy/${hit.id}` : null;
+      return role === "customer" ? `/policy/${hit.id}` : role === "broker" ? `/broker/policies/${hit.id}` : null;
     case "claims":
-      return role === "carrier" ? `/carrier/claims/${hit.id}` : role === "customer" ? `/claim/${hit.id}` : null;
+      return role === "carrier" ? `/carrier/claims/${hit.id}` : role === "customer" ? `/claim/${hit.id}` : role === "broker" ? `/broker/claims/${hit.id}` : null;
     case "quotes":
-      return role === "customer" ? `/quotes/${hit.id}` : null;
+      return role === "customer" ? `/quotes/${hit.id}` : role === "broker" ? `/broker/quotes/${hit.id}` : role === "agent" ? `/agent/quotes/${hit.id}` : null;
     case "documents":
       return role === "customer" ? `/documents/${hit.id}` : null;
     case "vehicles":

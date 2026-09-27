@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { ShieldAlert } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { PortalScreen } from "@/components/portal/PortalShell";
@@ -41,6 +42,7 @@ export default function AgentClaims() {
                 .join(" · "),
               status: c.status,
             }))}
+            onPress={(id) => router.push({ pathname: "/agent/claims/[id]", params: { id: id } })}
           />
         )}
       </StatePanel>

@@ -58,7 +58,7 @@ export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId
           {q.data.length ? (
             q.data.map((b) => (
               <View key={b.id} style={s.person}>
-                <TintedIcon icon={UserRound} tint="blue" size={44} />
+                <TintedIcon icon={UserRound} tint="blue" size={44} round />
                 <View style={s.flex}>
                   <Text style={s.name}>{b.full_name ?? "—"}</Text>
                   <Text style={s.meta}>

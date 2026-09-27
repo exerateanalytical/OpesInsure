@@ -220,7 +220,7 @@ const s = StyleSheet.create({
   select: { minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.white },
   selectError: { borderColor: colors.danger },
   selectText: { ...type.body, color: colors.navy950, flex: 1 },
-  placeholder: { color: colors.neutral400 },
+  placeholder: { color: colors.neutral500 },
   backdrop: { flex: 1, backgroundColor: "rgba(7,26,43,0.4)" },
   sheet: { maxHeight: "60%", backgroundColor: colors.white, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, padding: space.x4, gap: space.x2 },
   sheetTitle: { ...type.cardTitle, color: colors.navy950 },

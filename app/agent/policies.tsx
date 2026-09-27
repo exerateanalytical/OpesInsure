@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { PortalScreen } from "@/components/portal/PortalShell";
@@ -31,6 +32,7 @@ export default function AgentPolicies() {
               subtitle: `${p.carrier_name} · ${money(p.premium_minor)} · ends ${shortDate(p.coverage_ends_at)}`,
               status: p.status,
             }))}
+            onPress={(id) => router.push({ pathname: "/agent/policies/[id]", params: { id: id } })}
           />
         )}
       </StatePanel>

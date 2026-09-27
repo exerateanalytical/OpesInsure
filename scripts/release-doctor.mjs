@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 const profile = process.argv.includes("--production") ? "production" : "demo";
@@ -27,6 +27,36 @@ const pkg = readJson("package.json");
 const app = readJson("app.json");
 if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${app.expo.version},package.json=${pkg.version}`);
 if (app.expo.runtimeVersion?.policy !== "appVersion") errors.push("RUNTIME_POLICY_NOT_APPVERSION");
+// PERF-001: keep Hermes + New Architecture in every release build.
+if (app.expo.newArchEnabled !== true) errors.push("NEW_ARCHITECTURE_DISABLED");
+if ((app.expo.jsEngine ?? "hermes") !== "hermes") errors.push("HERMES_DISABLED");
+// PERF-002: direct APKs ship arm64-v8a + armeabi-v7a only, with R8 and
+// resource shrinking (x86/x86_64 are emulator/Chromebook-only payloads).
+const buildProps = app.expo.plugins.find((p) => Array.isArray(p) && p[0] === "expo-build-properties")?.[1]?.android;
+if (!buildProps) errors.push("BUILD_PROPERTIES_MISSING");
+else {
+  if (!buildProps.enableProguardInReleaseBuilds) errors.push("R8_MINIFY_DISABLED");
+  if (!buildProps.enableShrinkResourcesInReleaseBuilds) errors.push("RESOURCE_SHRINK_DISABLED");
+  if (!buildProps.buildArchs?.includes("arm64-v8a")) errors.push("ARM64_ABI_MISSING");
+}
+// PERF-003: importing the @expo-google-fonts/inter index bundles all 18 TTFs.
+const layout = readFileSync("app/_layout.tsx", "utf8");
+if (/from\s+["']@expo-google-fonts\/inter["']/.test(layout)) errors.push("FONT_INDEX_IMPORT_BUNDLES_ALL_WEIGHTS");
+// PROD-001: crash telemetry must be wired and use backend-accepted event codes.
+if (!layout.includes("ProductionErrorBoundary") || !layout.includes("Telemetry.installGlobalHandlers"))
+  errors.push("CRASH_TELEMETRY_NOT_WIRED");
+const backendRuntime = "../config/mobile_runtime.php";
+if (existsSync(backendRuntime)) {
+  const allowed = new Set([...readFileSync(backendRuntime, "utf8").matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]));
+  const telemetry = readFileSync("src/security/telemetry.ts", "utf8");
+  const union = telemetry.match(/export type TelemetryEvent =([\s\S]*?);/)?.[1] ?? "";
+  for (const [, code] of union.matchAll(/"([A-Z_]+)"/g)) if (!allowed.has(code)) errors.push(`TELEMETRY_EVENT_NOT_ACCEPTED_BY_BACKEND:${code}`);
+}
+// Scratch files must never ship in scripts/.
+for (const name of readdirSync("scripts")) if (/^_.*tmp/i.test(name)) errors.push(`TEMP_FILE_IN_SCRIPTS:${name}`);
+// PROD-002: a store release needs explicit sign-off that every P0 audit item passed.
+if (profile === "production" && process.argv.includes("--store") && process.env.OPES_P0_SIGNOFF !== "1")
+  errors.push("P0_AUDIT_SIGNOFF_REQUIRED(set OPES_P0_SIGNOFF=1 after acceptance journeys pass)");
 const associations = readFileSync("store/associations/assetlinks.json", "utf8");
 // The Play App Signing fingerprint only exists once the app is on Play: it
 // blocks store releases (--store), not the direct-download APK channel.

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { usePathname } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CircleCheck, Flag, X } from "lucide-react-native";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -28,6 +29,7 @@ const TAB_ROUTES = new Set(["/", "/explore", "/policies", "/claims", "/profile"]
 export function IssueReportButton() {
   const { t } = useTranslation();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,7 +81,7 @@ export function IssueReportButton() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.sheetWrap}
         >
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space.x5) }]} accessibilityViewIsModal>
             {sent ? (
               <View style={styles.sentState}>
                 <CircleCheck size={32} color={colors.success} />

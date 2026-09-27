@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Smartphone } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -45,7 +46,7 @@ export default function Devices() {
         {(devices) => (
           <>
             {devices.map((device) => (
-              <Card key={device.id} style={styles.card}>
+              <Card key={device.id} style={styles.card} onPress={() => router.push({ pathname: "/account/device/[id]", params: { id: device.id } })} accessibilityLabel={t("devOpenDetail", { name: device.name })}>
                 <View style={styles.row}>
                   <TintedIcon icon={Smartphone} tint={device.current ? "green" : "neutral"} size={48} />
                   <View style={styles.flex}>

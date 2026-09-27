@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLoad } from "@/hooks/useLoad";
@@ -9,6 +11,14 @@ import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierProducts() {
+  return (
+    <CarrierGate module="products">
+      <CarrierProductsBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierProductsBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.products(), []);
   return (
@@ -53,6 +63,12 @@ function ProductCard({ product: p, onChange }: { product: CarrierProduct; onChan
       <Text style={s.meta}>
         {p.code} · v{p.version} · {p.line_code} · from {shortDate(p.effective_from)}
       </Text>
+      <Button
+        label={t("cdViewDetails")}
+        variant="tertiary"
+        size="small"
+        onPress={() => router.push(`/carrier/products/${p.id}` as never)}
+      />
       <Text style={s.meta}>
         {approved ? t("caApprovedTariff", { version: approved.version }) : t("caNoApprovedTariff")} · {t("caPoliciesInForceCount", { count: p.policies_in_force })}
       </Text>

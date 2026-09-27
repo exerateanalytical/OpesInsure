@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LayoutGrid, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
-import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
+import { Button, Chip, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { InstitutionMark } from "@/components/InstitutionMark";
@@ -115,7 +115,7 @@ export default function QuoteHistory() {
                   <View style={s.titleRow}>
                     <TintedIcon icon={Icon} tint="blue" size={40} />
                     <View style={s.flex}>
-                      <Text style={s.line} numberOfLines={1}>{fam ? td(`lineFamily_${fam}`, humanize(q.line_code)) : humanize(q.line_code)}</Text>
+                      <Text style={s.line}>{fam ? td(`lineFamily_${fam}`, humanize(q.line_code)) : humanize(q.line_code)}</Text>
                       {provider ? (
                         <View style={s.providerRow}>
                           <InstitutionMark logoUrl={q.carrier_logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={20} />
@@ -173,30 +173,26 @@ export default function QuoteHistory() {
                 </Pressable>
               </View>
               <View style={[s.actions, narrow && s.actionsWrap]}>
-                <Pressable accessibilityRole="button" onPress={open} android_ripple={ripple()} style={({ pressed }) => [s.btn, s.gold_btn, narrow && s.fullRow, pressed && s.pressed]}>
-                  <ArrowRight size={18} color={colors.navy950} />
-                  <Text style={s.btnText}>{t("quotesResume")}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
+                {/* BTN-002: shared Button variants instead of local pills. */}
+                <Button size="small" variant="gold" icon={ArrowRight} iconPosition="left" label={t("quotesResume")} onPress={open} style={[s.btnFlex, s.btnGrow, narrow && s.fullRow]} />
+                <Button
+                  size="small"
+                  variant="secondary"
+                  icon={ArrowLeftRight}
+                  label={t("quotesCompare")}
                   onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: q.id } })}
-                  android_ripple={ripple()}
-                  style={({ pressed }) => [s.btn, s.soft_btn, pressed && s.pressed]}
-                >
-                  <ArrowLeftRight size={18} color={colors.navy950} />
-                  <Text style={s.btnText}>{t("quotesCompare")}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ busy: deleting === q.id }}
+                  style={s.btnFlex}
+                />
+                <Button
+                  size="small"
+                  variant="danger"
+                  icon={Trash2}
+                  label={t("quotesDelete")}
+                  loading={deleting === q.id}
                   disabled={!!deleting}
                   onPress={() => remove(q)}
-                  android_ripple={ripple()}
-                  style={({ pressed }) => [s.btn, s.soft_btn, s.deleteBtn, pressed && s.pressed, deleting === q.id && s.disabled]}
-                >
-                  <Trash2 size={18} color={colors.navy950} />
-                  <Text style={s.btnText}>{t("quotesDelete")}</Text>
-                </Pressable>
+                  style={s.btnFlex}
+                />
               </View>
             </View>
           );
@@ -263,6 +259,8 @@ const s = StyleSheet.create({
   actions: { flexDirection: "row", gap: space.x2 },
   actionsWrap: { flexWrap: "wrap" },
   fullRow: { flexBasis: "100%" },
+  btnFlex: { flex: 1, paddingHorizontal: space.x2 },
+  btnGrow: { flex: 1.3 },
   btn: { flex: 1, minHeight: 46, borderRadius: radius.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, overflow: "hidden", paddingHorizontal: space.x2 },
   gold_btn: { flex: 1.3, backgroundColor: colors.gold500 },
   soft_btn: { backgroundColor: colors.blue50 },

@@ -7,7 +7,7 @@ import { brokerTabs } from "@/components/portal/tabs";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { SearchBar } from "@/components/SearchBar";
-import { AppHeader } from "@/components/ui";
+import { AppHeader, Button } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
 import { LeadDirectoryApi } from "@/api/crm";
 import { shortDate } from "@/api/partner";
@@ -26,6 +26,7 @@ export default function BrokerLeads() {
   return (
     <PortalScreen tabs={brokerTabs}>
       <AppHeader title={t("brLeads")} subtitle={t("brLeadsSubtitle")} back />
+      <Button label={t("leadNewTitle")} icon={UserPlus} onPress={() => router.push("/broker/leads/new")} />
       <SearchBar value={text} onChangeText={setText} onSubmit={() => setQuery(text.trim())} placeholder={t("brSearchLeads")} label={t("brSearchLeads")} clearLabel={t("clearSearch")} />
       <ChoiceChips<Filter>
         label={t("agFilterLeads")}

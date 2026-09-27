@@ -88,6 +88,29 @@ export const CarrierFinanceApi = {
     api<CarrierSettlementDetail>(`/mobile/carrier/settlements/${id}`),
   bordereaux: async () =>
     rows(await api<Page<Bordereau>>("/mobile/carrier/bordereaux")),
+  /** Summary + line items, carrier-scoped server-side (403/404 otherwise). CAR-011. */
+  bordereau: (id: string) => api<BordereauDetail>(`/mobile/carrier/bordereaux/${id}`),
+};
+export type BordereauItem = {
+  id: string;
+  policy_id: string;
+  transaction_type: string;
+  premium_minor: number;
+  commission_minor: number;
+  currency: string;
+  effective_at?: string | null;
+  source_type?: string | null;
+};
+export type BordereauDetail = Bordereau & {
+  carrier_reference?: string | null;
+  approved_at?: string | null;
+  acknowledged_at?: string | null;
+  rejection_reason?: string | null;
+  total_amount_minor?: number | null;
+  created_at?: string | null;
+  items?: BordereauItem[];
+  /** Future: actions the caller may take (validate/return/accept/...). */
+  capabilities?: string[];
 };
 
 // --- Claims --------------------------------------------------------------

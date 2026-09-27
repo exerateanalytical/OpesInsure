@@ -35,6 +35,8 @@ type Props = {
   suggest?: boolean;
   /** Custom text for the empty-selection placeholder. */
   placeholder?: string;
+  /** Label for the current value until the list has loaded (never show a raw code). */
+  valueLabel?: string;
 };
 
 /**
@@ -43,7 +45,7 @@ type Props = {
  * hierarchical and narrowed when a parent is chosen. "Other / Not listed"
  * asks for the value, files it for review and never blocks the quote.
  */
-export function MasterSelectField({ label, domain, list, value, multiple, parent, otherAllowed, otherText, onChange, error, required, lineCode, fieldKey, screen, loader, loaderKey, suggest = true, placeholder }: Props) {
+export function MasterSelectField({ label, domain, list, value, multiple, parent, otherAllowed, otherText, onChange, error, required, lineCode, fieldKey, screen, loader, loaderKey, suggest = true, placeholder, valueLabel }: Props) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
   const [data, setData] = useState<{ list: MasterList; parents?: MasterList } | null>(null);
@@ -81,7 +83,7 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
   }, [data, parent, q, lang, otherAllowed]);
   const sections = useMemo(() => (q || parent ? [{ title: "", data: values }] : groupByParent(values, data?.parents?.values, lang)), [values, data, q, parent, lang]);
   const byCode = useMemo(() => new Map((data?.list.values ?? []).map((v) => [v.code, v])), [data]);
-  const display = selected.map((c) => (c === OTHER ? `${t("mdOther")}${otherText ? `: ${otherText}` : ""}` : byCode.get(c) ? labelOf(byCode.get(c)!, lang) : c)).join(", ");
+  const display = selected.map((c) => (c === OTHER ? `${t("mdOther")}${otherText ? `: ${otherText}` : ""}` : byCode.get(c) ? labelOf(byCode.get(c)!, lang) : (valueLabel ?? c))).join(", ");
   const fieldLabel = required ? label : `${label} ${t("mdOptional")}`;
 
   const pick = (v: MasterValue) => {
@@ -121,8 +123,15 @@ export function MasterSelectField({ label, domain, list, value, multiple, parent
         onPress={() => (state === "error" ? void load() : setOpen(true))}
         style={({ pressed }) => [fieldStyles.control, pressed && fieldStyles.controlPressed, error ? fieldStyles.controlError : null]}
       >
-        <Text style={[fieldStyles.value, !display && fieldStyles.placeholder, state === "error" && s.loadError]} numberOfLines={2}>
-          {state === "error" ? t("mdLoadFailed") : display || placeholder || (multiple ? t("mdChooseSeveral") : t("mdChoose"))}
+        <Text style={[fieldStyles.value, !display && fieldStyles.placeholder, state === "error" && s.loadError]}>
+          {/* A11Y-007: the full selection wraps (no line cap); multi-select leads with a count. */}
+          {state === "error"
+            ? t("mdLoadFailed")
+            : display
+              ? multiple && selected.length > 1
+                ? `${t("mdSelectedCount", { count: selected.length })} · ${display}`
+                : display
+              : placeholder || (multiple ? t("mdChooseSeveral") : t("mdChoose"))}
         </Text>
         {state === "loading" ? <ActivityIndicator size="small" color={colors.blue600} /> : <ChevronDown size={20} color={colors.neutral600} />}
       </Pressable>

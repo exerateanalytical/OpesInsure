@@ -633,5 +633,13 @@
    "click": "Next|Suivant",
    "times": 0
   }
+ },
+ {
+  "name": "security-login-activity",
+  "route": "/account/login-activity"
+ },
+ {
+  "name": "security-devices",
+  "route": "/account/devices"
  }
 ]

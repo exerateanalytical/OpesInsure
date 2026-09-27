@@ -15,7 +15,7 @@ import {
   ArrowUpDown,
   Users,
 } from "lucide-react-native";
-import { Chip, Screen, StatusChip, ripple } from "@/components/ui";
+import { Button, Chip, Screen, StatusChip, ripple } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { SearchBar } from "@/components/SearchBar";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
@@ -243,14 +243,8 @@ export default function GlobalSearch() {
                   </View>
                 </View>
                 <View style={s.actions}>
-                  <Pressable accessibilityRole="button" onPress={() => openProduct(c)} style={({ pressed }) => [s.linkBtn, pressed && s.pressed]}>
-                    <Text style={s.linkText}>{t("searchViewDetails")}</Text>
-                    <ChevronRight size={18} color={colors.blue600} />
-                  </Pressable>
-                  <Pressable accessibilityRole="button" onPress={() => quoteProduct(c)} android_ripple={ripple(true)} style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}>
-                    <Text style={s.primaryText}>{t("searchGetQuote")}</Text>
-                    <ArrowRight size={18} color={colors.white} />
-                  </Pressable>
+                  <Button size="small" variant="tertiary" icon={ChevronRight} label={t("searchViewDetails")} onPress={() => openProduct(c)} />
+                  <Button size="small" icon={ArrowRight} label={t("searchGetQuote")} onPress={() => quoteProduct(c)} style={s.flex} />
                 </View>
               </View>
             );
@@ -282,22 +276,20 @@ export default function GlobalSearch() {
                   </View>
                 </View>
                 <View style={s.actions}>
-                  <Pressable
-                    accessibilityRole="button"
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    label={t("searchViewDetails")}
                     onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.id } })}
-                    style={({ pressed }) => [s.outlineBtn, pressed && s.pressed]}
-                  >
-                    <Text style={s.linkText}>{t("searchViewDetails")}</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
+                    style={s.flex}
+                  />
+                  <Button
+                    size="small"
+                    icon={ArrowRight}
+                    label={t("searchGetQuote")}
                     onPress={() => router.push({ pathname: "/quote/product", params: c ? { product: c.id } : {} })}
-                    android_ripple={ripple(true)}
-                    style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
-                  >
-                    <Text style={s.primaryText}>{t("searchGetQuote")}</Text>
-                    <ArrowRight size={18} color={colors.white} />
-                  </Pressable>
+                    style={s.flex}
+                  />
                 </View>
               </View>
             );

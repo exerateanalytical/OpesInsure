@@ -244,7 +244,8 @@ test("screens render the server forms with the shared renderer; timezone, canoni
 });
 
 test("carrier issuance never sends a policy number: the server allocates it, an optional carrier reference may be sent", () => {
-  const screen = read("app/carrier/issuance.tsx");
+  // CAR-005: the decision moved from the queue card to the Issuance Detail.
+  const screen = read("app/carrier/issuance/[id].tsx");
   const partner = read("src/api/partner.ts");
   assert.doesNotMatch(screen, /policy_number:/, "no policy_number in the approve payload");
   assert.match(screen, /carrier_reference: carrierReference\.trim\(\)/);

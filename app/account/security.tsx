@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as LocalAuthentication from "expo-local-authentication";
-import { ChevronRight, Fingerprint, Laptop, LogOut, ShieldCheck, Smartphone } from "lucide-react-native";
+import { ChevronRight, Fingerprint, History, Laptop, LogOut, ShieldCheck, Smartphone } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { useSession } from "@/store/session";
@@ -124,8 +124,18 @@ export default function Security() {
           <ChevronRight size={20} color={colors.neutral500} />
         </View>
       </Card>
+      <Card style={styles.card} onPress={() => router.push("/account/login-activity")} accessibilityLabel={t("secActivityTitle")}>
+        <View style={styles.row}>
+          <TintedIcon icon={History} tint="blue" size={44} />
+          <View style={styles.flex}>
+            <Text style={styles.title}>{t("secActivityTitle")}</Text>
+            <Text style={styles.body}>{t("secActivityLinkBody")}</Text>
+          </View>
+          <ChevronRight size={20} color={colors.neutral500} />
+        </View>
+      </Card>
       {(devices.data ?? []).slice(0, 3).map((d) => (
-        <Card key={d.id} style={styles.card}>
+        <Card key={d.id} style={styles.card} onPress={() => router.push({ pathname: "/account/device/[id]", params: { id: d.id } })} accessibilityLabel={t("devOpenDetail", { name: d.name })}>
           <View style={styles.row}>
             <TintedIcon icon={Smartphone} tint={d.current ? "green" : "neutral"} size={44} />
             <View style={styles.flex}>

@@ -69,3 +69,39 @@ export function resolveSystemPath(path: string, initial: boolean): string {
     return initial ? "/" : "";
   }
 }
+
+/**
+ * NAV-001 deep links / reloads into a partner portal. On a cold start the
+ * session is still "booting", so every guarded screen is removed from the
+ * root Stack and expo-router falls back to index, which used to send the
+ * user to the portal home and lose e.g. /agent/wallet. The requested path is
+ * remembered here once and index restores it after auth, only when it lives
+ * inside the portal the signed-in workspace resolves to. The Stack.Protected
+ * guards and the server stay the authorization boundary.
+ */
+let pendingPath: string | null = null;
+const PORTAL_ROOTS = ["agent", "broker", "carrier"];
+
+const firstSegment = (path: string) => path.split(/[/?#]/).filter(Boolean)[0] ?? "";
+
+/** Remember the path the app was opened on (cold start only). */
+export function rememberColdStartPath(path: string | null | undefined) {
+  const value = String(path ?? "");
+  pendingPath = PORTAL_ROOTS.includes(firstSegment(value)) ? value : null;
+}
+
+/** Pure: the remembered path if it belongs to the same portal as `home` and is not home itself. */
+export function restorablePath(path: string | null, home: string): string | null {
+  if (!path) return null;
+  const root = firstSegment(home);
+  if (!PORTAL_ROOTS.includes(root) || firstSegment(path) !== root) return null;
+  if (path.replace(/\/+$/, "") === home.replace(/\/+$/, "")) return null;
+  return path;
+}
+
+/** Consume the remembered path (one use) for the resolved session home. */
+export function takePendingPath(home: string): string | null {
+  const path = restorablePath(pendingPath, home);
+  pendingPath = null;
+  return path;
+}

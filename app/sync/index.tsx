@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { AlertTriangle, CloudOff, CloudUpload, Lock, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react-native";
-import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, Screen } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { useTranslation, formatCameroonDate } from "@/i18n";
 import { useResilience } from "@/store/resilience";
+import { SyncStateChip, syncStateOf } from "@/components/Freshness";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 export default function SyncCentre() {
@@ -52,16 +53,7 @@ export default function SyncCentre() {
                     <Text style={styles.itemTitle}>{item.resource}</Text>
                     <Text style={styles.meta}>{item.kind} · {item.method}</Text>
                   </View>
-                  <StatusChip
-                    label={
-                      item.state === "FAILED"
-                        ? t("failed")
-                        : item.state === "CONFLICT"
-                          ? t("conflict")
-                          : t("pending")
-                    }
-                    tone={item.state === "FAILED" ? "danger" : item.state === "CONFLICT" ? "warning" : "info"}
-                  />
+                  <SyncStateChip state={syncStateOf(item, syncing)} />
                 </View>
                 {item.error_code ? <Text style={styles.error}>{item.error_code}</Text> : null}
                 <View style={styles.actions}>

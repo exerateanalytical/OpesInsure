@@ -12,8 +12,8 @@ import type { CopyKey } from "@/i18n/strings";
 import { matchesQuery } from "@/lib/customerLogic";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const TILE_BG: Record<Tint, string> = { blue: colors.blue50, gold: colors.gold50, red: colors.dangerSoft, green: colors.successSoft, neutral: colors.neutral50 };
-const TILE_FG: Record<Tint, string> = { blue: colors.blue700, gold: colors.navy900, red: colors.danger, green: colors.successText, neutral: colors.neutral700 };
+const TILE_BG: Record<Tint, string> = { blue: colors.blue50, gold: colors.gold50, red: colors.dangerSoft, green: colors.successSoft, neutral: colors.neutral50, purple: colors.purple50 };
+const TILE_FG: Record<Tint, string> = { blue: colors.blue700, gold: colors.navy900, red: colors.danger, green: colors.successText, neutral: colors.neutral700, purple: colors.purple700 };
 
 /** Curated help centre (static, bilingual). Topics group the questions. */
 const TOPICS: { title: CopyKey; body: CopyKey; icon: LucideIcon; tint: Tint; items: [CopyKey, CopyKey][] }[] = [

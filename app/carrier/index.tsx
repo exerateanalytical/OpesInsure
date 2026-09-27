@@ -16,19 +16,33 @@ import {
   ShieldAlert,
   Search,
 } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { Card } from "@/components/ui";
 import { PortalHeader, PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
-import { useColumns } from "@/components/responsive";
+import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
+import { useWorkspacePermissions } from "@/components/carrier/CarrierGate";
+import { CARRIER_ROUTE_MODULE, canUseCarrierModule } from "@/lib/carrierAccess";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
 import { CarrierApi } from "@/api/client";
-import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+/** DASH-002: each KPI opens its work queue (server still authorizes it). */
+const KPI_ROUTES: Record<string, KpiRoute> = {
+  "Underwriting referrals": { label: "kpiReferrals", href: "/carrier/referrals" },
+  "Issuance queue": { label: "kpiIssuanceQueue", href: "/carrier/issuance" },
+  "Open claims": { label: "kpiOpenClaims", href: "/carrier/claims" },
+  "Policies in force": { label: "kpiPoliciesInForce", href: "/carrier/policies" },
+  "Settlements (net)": { label: "kpiSettlementsNet", href: "/carrier/settlements" },
+};
 export default function CarrierHome() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.dashboard(), []);
-  const grid = useColumns();
+  // NAV-003: show only modules this workspace is granted (the server still
+  // enforces every route; CarrierGate covers direct links).
+  const perms = useWorkspacePermissions();
+  const allowed = (href: string) => {
+    const mod = CARRIER_ROUTE_MODULE[href.split("/")[2] ?? ""];
+    return !mod || canUseCarrierModule(perms, mod);
+  };
+  const kpiRoutes = Object.fromEntries(Object.entries(KPI_ROUTES).filter(([, r]) => allowed(r.href)));
   return (
     <PortalScreen tabs={carrierTabs}>
       <PortalHeader
@@ -44,16 +58,7 @@ export default function CarrierHome() {
         emptyTitle={t("agNoActivity")}
         emptyMessage={t("agNoActivityBody")}
       >
-        {(v) => (
-          <View style={grid.row}>
-            {v.metrics.map((m) => (
-              <Card key={m.label} style={[s.metric, grid.item]}>
-                <Text style={s.meta}>{m.label}</Text>
-                <Text style={s.value}>{m.value}</Text>
-              </Card>
-            ))}
-          </View>
-        )}
+        {(v) => <KpiGrid metrics={v.metrics} routes={kpiRoutes} />}
       </StatePanel>
       <WorkspaceMenu
         items={[
@@ -70,13 +75,8 @@ export default function CarrierHome() {
           { label: t("caSettlements"), subtitle: t("caPremiumSettlements"), icon: Landmark, href: "/carrier/settlements" },
           { label: t("caBordereaux"), subtitle: t("caBrokerBordereaux"), icon: FileSpreadsheet, href: "/carrier/bordereaux" },
           { label: t("account"), subtitle: t("agProfileSecurity"), icon: CircleUserRound, href: "/carrier/account" },
-        ]}
+        ].filter((it) => allowed(it.href))}
       />
     </PortalScreen>
   );
 }
-const s = StyleSheet.create({
-  metric: { minHeight: 96 },
-  meta: { ...type.meta, color: colors.neutral600 },
-  value: { ...type.sectionTitle, color: colors.navy950 },
-});

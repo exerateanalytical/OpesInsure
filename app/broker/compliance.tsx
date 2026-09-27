@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { BadgeCheck } from "lucide-react-native";
@@ -22,6 +23,7 @@ export default function BrokerCompliance() {
           <>
           <OperationsList
             icon={BadgeCheck}
+            onPress={(id) => router.push({ pathname: "/broker/compliance/[id]", params: { id: id } })}
             rows={x.map((c) => ({
               id: c.id,
               title: c.label,

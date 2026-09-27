@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { Button } from "@/components/ui";
 import {
   ArrowRight,
   BadgeCheck,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
-import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
+import { AuthTextField } from "@/components/auth/AuthField";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { authColors, authIcon, authRadius, authSpace, authType } from "@/theme/tokens";
@@ -211,7 +212,7 @@ export default function SignIn() {
                 onChange={setChannel}
               />
             )}
-            <AuthPrimaryButton
+            <Button variant="brand"
               label={
                 busy
                   ? mode === "password" ? t("signingIn") : t("sending")
@@ -244,7 +245,7 @@ export default function SignIn() {
               />
             ) : null}
 
-            <AuthSecondaryButton label={t("createAccount")} onPress={() => router.push("/(auth)/sign-up")} />
+            <Button variant="brandOutline" label={t("createAccount")} onPress={() => router.push("/(auth)/sign-up")} />
             <View style={styles.trustRow}>
               <LockKeyhole size={16} color={authColors.slate500} />
               <Text style={styles.trustText}>{t("authTrust")}</Text>

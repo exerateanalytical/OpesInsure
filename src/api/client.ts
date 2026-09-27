@@ -328,6 +328,30 @@ export type DeviceSession = {
   platform: string;
   last_seen_at: string;
   current: boolean;
+  /** Optional detail fields (SEC-ACC-003); shown only when the server sends them. */
+  model?: string | null;
+  os_version?: string | null;
+  app_version?: string | null;
+  first_seen_at?: string | null;
+  last_auth_method?: string | null;
+  attestation_status?: string | null;
+  /** Approximate, server-derived network location (country/city). Never GPS. */
+  approx_location?: string | null;
+};
+/** GET /me/security/login-activity row. country_code is server-derived; no GPS. */
+export type LoginActivity = {
+  id: string;
+  method: string | null;
+  device_id: string | null;
+  device_name: string | null;
+  platform: string | null;
+  country_code: string | null;
+  new_device: boolean;
+  anomaly_flags: string[] | null;
+  occurred_at: string;
+  outcome?: string | null;
+  app_version?: string | null;
+  masked_ip?: string | null;
 };
 export type NotificationPreferences = {
   push: boolean;
@@ -378,6 +402,8 @@ export const AccountApi = {
       idempotent: true,
     }),
   devices: () => api<DeviceSession[]>("/mobile/account/devices"),
+  /** GET /me/security/login-activity — the signed-in user's own last 50 sign-ins. */
+  loginActivity: () => api<LoginActivity[]>("/me/security/login-activity"),
   revokeDevice: (id: string) =>
     api<void>(`/mobile/account/devices/${id}`, {
       method: "DELETE",
@@ -1316,6 +1342,13 @@ export type CarrierQueueItem = {
   status: string;
   priority: string;
   submitted_at: string;
+  carrier_name?: string | null;
+  /** ISS-003 (forward compatible): server-computed actions for this caller,
+   * e.g. ["approve","reject","request_correction","second_approve"]. */
+  capabilities?: string[];
+  /** Maker-checker stage, e.g. UNDERWRITER_REVIEW / ISSUANCE_VERIFICATION / SECOND_APPROVAL. */
+  stage?: string | null;
+  approvals?: { role: string; actor_name?: string | null; decision: string; decided_at: string | null }[];
 };
 export type CarrierSettlement = {
   id: string;

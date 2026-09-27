@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -13,6 +14,14 @@ import { colors, space, type } from "@/theme/tokens";
 const day = (v?: string | null) => (v ? formatDisplayDate(v) : "");
 
 export default function CarrierSettlementDetail() {
+  return (
+    <CarrierGate module="settlements">
+      <CarrierSettlementDetailBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierSettlementDetailBody() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierFinanceApi.settlement(id), [id]);

@@ -2,10 +2,11 @@ import React, { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import { Button } from "@/components/ui";
 import { KeyRound, Phone, ShieldCheck } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
-import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
+import { AuthTextField } from "@/components/auth/AuthField";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
 import { finishSignIn, isCameroonMobile, normalizeCameroonPhone } from "@/components/auth/finishSignIn";
 import { AuthApi, type OtpChannel } from "@/api/client";
@@ -100,7 +101,7 @@ export default function ForgotPassword() {
               error={error}
             />
             <ChannelPicker label={t("sendCodeBy")} options={channels} value={channel} onChange={setChannel} />
-            <AuthPrimaryButton label={t("sendCode")} loading={busy} disabled={!!locked} onPress={() => void request()} />
+            <Button variant="brand" label={t("sendCode")} loading={busy} disabled={!!locked} onPress={() => void request()} />
           </>
         ) : (
           <>
@@ -134,8 +135,8 @@ export default function ForgotPassword() {
               autoComplete="new-password"
               error={error}
             />
-            <AuthPrimaryButton label={t("saveAndSignIn")} loading={busy} disabled={!!locked} onPress={() => void reset()} />
-            <AuthSecondaryButton label={t("sendNewCode")} disabled={busy || !!locked} onPress={() => void request()} />
+            <Button variant="brand" label={t("saveAndSignIn")} loading={busy} disabled={!!locked} onPress={() => void reset()} />
+            <Button variant="brandOutline" label={t("sendNewCode")} disabled={busy || !!locked} onPress={() => void request()} />
           </>
         )}
       </AuthCard>

@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { BookOpenCheck } from "lucide-react-native";
@@ -22,6 +23,7 @@ export default function BrokerProductionScreen() {
           <>
           <OperationsList
             icon={BookOpenCheck}
+            onPress={(id) => router.push({ pathname: "/broker/production/[id]", params: { id: id } })}
             rows={x.map((p) => ({
               id: p.id,
               title: p.policy_number,

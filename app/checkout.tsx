@@ -145,7 +145,7 @@ export default function Checkout() {
                 }
               />
               <Pressable accessibilityRole="button" accessibilityLabel={`${t("coApplicantEdit")}: ${applicant.full_name}`} onPress={() => router.push("/account/profile")} android_ripple={ripple()} style={st.applicant}>
-                <TintedIcon icon={UserRound} tint="blue" size={56} />
+                <TintedIcon icon={UserRound} tint="blue" size={56} round />
                 <View style={st.flex}>
                   <Text style={st.applicantName}>{applicant.full_name}</Text>
                   {applicant.email ? <Text style={ps.meta}>{applicant.email}</Text> : null}

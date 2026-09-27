@@ -33,6 +33,15 @@ module.exports = () => {
           ],
           category: ["BROWSABLE", "DEFAULT"],
         },
+        {
+          // Document QR codes (…/verify?code=… or ?ref=…&t=…) open the in-app verify page.
+          action: "VIEW",
+          autoVerify: false,
+          data: [
+            { scheme: "https", host: "insurance.opesdatacenter.tech", pathPrefix: "/verify" },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
       ],
     },
     plugins: [

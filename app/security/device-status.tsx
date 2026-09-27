@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import * as Application from "expo-application";
 import { CircleAlert, ShieldAlert, ShieldCheck } from "lucide-react-native";
-import { DeviceRiskResult, DeviceSecurityApi } from "@/api/client";
+import { DeviceRiskResult } from "@/api/client";
+import { DeviceAttestation } from "@/security/attestation";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon } from "@/components/design";
 import { environmentConfig } from "@/config/environment";
@@ -18,16 +19,7 @@ export default function DeviceStatus() {
     setBusy(true);
     setError(undefined);
     try {
-      const challenge = await DeviceSecurityApi.nonce();
-      setResult(
-        await DeviceSecurityApi.assess({
-          nonce: challenge.nonce,
-          platform: Platform.OS === "ios" ? "IOS" : "ANDROID",
-          provider: "UNAVAILABLE_MANAGED_RUNTIME",
-          attestation_token: null,
-          app_version: environmentConfig.appVersion,
-        }),
-      );
+      setResult(await DeviceAttestation.assess());
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("devFailed"));
     } finally {
@@ -36,7 +28,7 @@ export default function DeviceStatus() {
   };
   return (
     <Screen>
-      <BrandHeader title={t("devTitle")} subtitle={t("devSubtitle")} back right={null} />
+      <BrandHeader title={t("secDeviceStatus")} subtitle={t("devSubtitle")} back right={null} />
       <Card style={styles.card}>
         <View style={styles.headRow}>
           <TintedIcon icon={ShieldAlert} tint="blue" size={56} />
@@ -48,6 +40,7 @@ export default function DeviceStatus() {
         </View>
         {/* devBody: this screen never claims that a JavaScript check proves device integrity. */}
         <Text style={styles.body}>{t("devBody")}</Text>
+        <StatusChip label={DeviceAttestation.available() ? t("secAttestNative") : t("secAttestUnavailable")} tone={DeviceAttestation.available() ? "success" : "warning"} />
         <Button label={t("devRun")} loading={busy} onPress={() => void assess()} />
       </Card>
       {result ? (

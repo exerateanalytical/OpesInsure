@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import { Button } from "@/components/ui";
 import { ShieldCheck } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
-import { AuthPrimaryButton, AuthSecondaryButton, AuthTextField } from "@/components/auth/AuthField";
+import { AuthTextField } from "@/components/auth/AuthField";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
 import { AuthApi, type OtpChannel } from "@/api/client";
 import { finishSignIn } from "@/components/auth/finishSignIn";
@@ -140,14 +141,14 @@ export default function Verify() {
         >
           {expired ? t("otpExpired") : t("otpExpiresIn", { time: formatCountdown(expiresIn) })}
         </Text>
-        <AuthPrimaryButton
+        <Button variant="brand"
           label={t("verifyContinue")}
           loading={busy}
           disabled={code.length !== 6 || expired || !!locked}
           onPress={() => void submit()}
         />
         {isEmail ? null : (
-          <AuthSecondaryButton
+          <Button variant="brandOutline"
             label={resending ? t("sending") : resendIn > 0 ? t("otpResendIn", { time: formatCountdown(resendIn) }) : t("otpResend")}
             disabled={resendIn > 0 || resending || !!locked}
             onPress={() => void resend()}

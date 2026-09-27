@@ -5,7 +5,8 @@
  * permission-gated and scoped server-side to the caller's own partner or
  * carrier (see routes/wave16_partner.php).
  */
-import { api, AgentClient } from "./client";
+import { api, AgentApi, AgentClient } from "./client";
+import type { CommissionRow } from "@/components/partner/commissionFilters";
 import { formatDisplayDate } from "@/i18n";
 
 // ------------------------------------------------------------------ shared
@@ -35,6 +36,9 @@ export type PartnerPolicy = {
   coverage_starts_at: string | null;
   coverage_ends_at: string | null;
   issued_at: string | null;
+  /** Agent/broker book rows: TenantCustomer id + party id of the policyholder. */
+  customer_id?: string | null;
+  party_id?: string | null;
 };
 export type PartnerClaim = {
   id: string;
@@ -49,6 +53,8 @@ export type PartnerClaim = {
   currency: string;
   loss_occurred_at: string | null;
   submitted_at: string | null;
+  carrier_name?: string | null;
+  carrier_logo_url?: string | null;
 };
 
 export type PartnerProposal = {
@@ -150,6 +156,50 @@ export const AgentWorkspaceApi = {
   claims: () => api<PartnerClaim[]>("/mobile/partner/agent/claims"),
   clientDocuments: (customerId: string) =>
     api<ClientDocument[]>(`/mobile/partner/agent/clients/${encodeURIComponent(customerId)}/documents`),
+  /** Agent-assisted FNOL (AssistedFnolRequest); the agent files, the insurer adjudicates. */
+  reportClaim: (payload: {
+    policy_id: string;
+    claimant_party_id: string;
+    loss_occurred_at: string;
+    loss_details: { description: string };
+    loss_location?: string;
+    estimated_loss_minor?: number;
+    idempotency_key: string;
+  }) =>
+    api<{ id: string; claim_number: string; status: string; policy_id: string }>(
+      "/mobile/partner/agent/claims",
+      post(payload),
+    ),
+  /**
+   * Commission ledger rows for the shared CommissionLedger: the server-scoped
+   * accruals (own partner only, COM-008) enriched with the matching book
+   * policy for insurer / product / customer / premium attribution.
+   */
+  commissionLedger: async (): Promise<CommissionRow[]> => {
+    const [rows, policies] = await Promise.all([
+      AgentApi.commissions(),
+      AgentWorkspaceApi.policies().catch(() => [] as PartnerPolicy[]),
+    ]);
+    const byId = new Map(policies.map((p) => [p.id, p]));
+    return rows.map((c) => {
+      const p = c.policy_id ? byId.get(c.policy_id) : undefined;
+      const x = c as typeof c & Partial<CommissionRow>;
+      return {
+        ...x,
+        policy_number: x.policy_number ?? p?.policy_number ?? null,
+        customer_id: x.customer_id ?? p?.customer_id ?? null,
+        customer_name: x.customer_name ?? p?.customer_name ?? null,
+        carrier_id: x.carrier_id ?? p?.carrier_id ?? null,
+        carrier_name: x.carrier_name ?? p?.carrier_name ?? null,
+        line_code: x.line_code ?? p?.line_code ?? null,
+        premium_minor: x.premium_minor ?? p?.premium_minor ?? null,
+        issued_at: x.issued_at ?? p?.issued_at ?? null,
+        // Never a producer dimension for an independent agent (COM-008).
+        producer_id: null,
+        producer_name: null,
+      };
+    });
+  },
 };
 
 // ------------------------------------------------------------------ broker
@@ -223,6 +273,40 @@ export const BrokerWorkspaceApi = {
   inviteStaff: (payload: { recipient_phone_e164?: string; recipient_email?: string }) =>
     api<BrokerInvitation>("/mobile/partner/broker/staff/invitations", post(payload)),
   commissions: () => api<BrokerCommissions>("/mobile/partner/broker/commissions"),
+  /** Broker client onboarding (POST /mobile/broker/clients): origin-locked to the broker's own partner. */
+  createClient: (payload: { full_name: string; phone_e164: string; city: string; consent_reference: string }) =>
+    api<{ id: string; full_name: string }>("/mobile/broker/clients", post(payload)),
+  /** REQ-CRM-001 lead capture (POST /crm/leads), scoped to the broker book server-side. */
+  createLead: (payload: { full_name: string; phone_e164: string; city?: string; product_interest?: string; notes?: string; source?: string }) =>
+    api<{ id: string }>("/crm/leads", post(payload)),
+  /** One commission statement (GET /mobile/broker/statements/{id}); fields as stored. */
+  statement: (id: string) => api<Record<string, unknown>>(`/mobile/broker/statements/${encodeURIComponent(id)}`),
+  /** Broker accruals as shared CommissionRows (joined on the book's policies, like AgentWorkspaceApi.commissionLedger). */
+  commissionLedger: async (): Promise<CommissionRow[]> => {
+    const [d, policies] = await Promise.all([
+      BrokerWorkspaceApi.commissions(),
+      BrokerWorkspaceApi.policies().catch(() => [] as PartnerPolicy[]),
+    ]);
+    const byId = new Map(policies.map((p) => [p.id, p]));
+    return d.accruals.map((a) => {
+      const p = byId.get(a.policy_id);
+      const x = a as typeof a & Partial<CommissionRow>;
+      return {
+        ...x,
+        policy_number: x.policy_number ?? p?.policy_number ?? null,
+        customer_id: x.customer_id ?? p?.customer_id ?? null,
+        customer_name: x.customer_name ?? p?.customer_name ?? null,
+        carrier_id: x.carrier_id ?? p?.carrier_id ?? null,
+        carrier_name: x.carrier_name ?? p?.carrier_name ?? null,
+        line_code: x.line_code ?? p?.line_code ?? null,
+        premium_minor: x.premium_minor ?? p?.premium_minor ?? null,
+        issued_at: x.issued_at ?? p?.issued_at ?? null,
+        // Producer attribution only when the server returns it (broker admin scope).
+        producer_id: x.producer_id ?? null,
+        producer_name: x.producer_name ?? null,
+      };
+    });
+  },
 };
 
 // ----------------------------------------------------------------- insurer
@@ -276,6 +360,24 @@ export type CarrierClaimDetail = PartnerClaim & {
     proposed_at: string | null;
   } | null;
   timeline: { to_status: string; reason_code: string; occurred_at: string }[];
+  /** Coverage snapshot frozen on the policy (PartnerCarrierWorkspaceController::claimRisk). */
+  insured_item?: Record<string, unknown> | null;
+  deductibles?: { code: string; name: string | null; deductible_minor: number | null; limit_minor?: number | null }[];
+  deductible_minor?: number | null;
+};
+/** Evidence metadata for an own-carrier claim; bytes only via claimEvidenceAccess. */
+export type CarrierClaimEvidence = {
+  document_id: string;
+  evidence_type: string;
+  status: string;
+  category: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  scan_status: string | null;
+  is_image: boolean;
+  downloadable: boolean;
+  submitted_at: string | null;
+  verified_at: string | null;
 };
 export type CarrierPayment = {
   id: string;
@@ -346,6 +448,13 @@ export const CarrierWorkspaceApi = {
     api<{ id: string; status: string; rejection_reason: string }>(
       `/mobile/partner/carrier/issuance/${id}/reject`,
       post({ reason }),
+    ),
+  claimEvidence: (id: string) => api<CarrierClaimEvidence[]>(`/mobile/partner/carrier/claims/${id}/evidence`),
+  /** Short-lived signed URL; the server logs the read (document_access_log). */
+  claimEvidenceAccess: (id: string, documentId: string) =>
+    api<{ document_id: string; mime_type: string; url: string; expires_at: string }>(
+      `/mobile/partner/carrier/claims/${id}/evidence/${documentId}/access`,
+      post(),
     ),
   payments: () => api<CarrierPayments>("/mobile/partner/carrier/payments"),
   partners: () => api<DistributionPartner[]>("/mobile/partner/carrier/partners"),

@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { RefreshCw } from "lucide-react-native";
@@ -28,6 +29,7 @@ export default function AgentRenewals() {
                 title={r.customer_name}
                 subtitle={t("agDaysRemaining", { number: r.policy_number, days: r.days_remaining })}
                 status={r.status}
+                onPress={() => router.push({ pathname: "/agent/policies/[id]", params: { id: r.id } })}
               />
             ))}
           </Card>

@@ -9,10 +9,10 @@ import { openDocumentUrl } from "@/components/documents/openDocument";
 import { useTranslation } from "@/i18n";
 
 /** Issued documents of a book client; only current documents carry a (signed, short-lived) download link. */
-export function ClientDocumentsCard({ customerId, load }: { customerId: string; load: (id: string) => Promise<ClientDocument[]> }) {
+export function ClientDocumentsCard({ customerId, load, policyId }: { customerId: string; load: (id: string) => Promise<ClientDocument[]>; /** Only this policy's documents (policy detail). */ policyId?: string }) {
   const { t, language } = useTranslation();
   const q = useLoad(() => load(customerId), [customerId]);
-  const docs = q.data ?? [];
+  const docs = (q.data ?? []).filter((d) => !policyId || d.policy_id === policyId);
   if (q.loading || q.error) return null;
   return (
     <Card>

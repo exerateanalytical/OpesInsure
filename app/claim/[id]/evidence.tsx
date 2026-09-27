@@ -282,7 +282,7 @@ export default function Evidence() {
                       {pdf ? <Text style={styles.pdfTag}>PDF</Text> : null}
                     </View>
                     <View style={styles.flex}>
-                      <Text style={styles.reqLabel} numberOfLines={1}>{td(`evidence_${item.evidence_type}`, item.evidence_type)}</Text>
+                      <Text style={styles.reqLabel}>{td(`evidence_${item.evidence_type}`, item.evidence_type)}</Text>
                       <Text style={styles.meta} numberOfLines={1}>
                         {[size, item.submitted_at ? date(item.submitted_at) : null].filter(Boolean).join(" · ")}
                       </Text>

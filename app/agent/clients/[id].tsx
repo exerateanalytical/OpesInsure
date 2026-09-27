@@ -9,6 +9,7 @@ import { useTranslation } from "@/i18n";
 import { Customer360Panel } from "@/components/crm/Customer360Panel";
 import { ClientDocumentsCard } from "@/components/partner/ClientDocumentsCard";
 import { AgentWorkspaceApi } from "@/api/partner";
+import { ClientRelatedRecords } from "@/components/partner/ClientRelatedRecords";
 export default function AgentClientDetail() {
   const { t } = useTranslation();
   const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
@@ -32,6 +33,13 @@ export default function AgentClientDetail() {
             <Text>Active policies: {x?.active_policies ?? 0}</Text>
             <Text>Renewal due: {x?.renewal_due_at ?? t("agNone")}</Text>
           </Card>
+          <ClientRelatedRecords
+            customerId={id}
+            base="/agent"
+            loadPolicies={AgentWorkspaceApi.policies}
+            loadProposals={AgentWorkspaceApi.proposals}
+            loadClaims={AgentWorkspaceApi.claims}
+          />
           <Customer360Panel partyId={x?.party_id ?? partyId ?? null} />
           <ClientDocumentsCard customerId={id} load={AgentWorkspaceApi.clientDocuments} />
           <Button

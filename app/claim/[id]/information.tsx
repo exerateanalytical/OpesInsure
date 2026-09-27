@@ -105,7 +105,7 @@ export default function ClaimInformationRequest() {
       footer={
         allowed ? (
           <CtaBar>
-            <Button label={t("infoReqSubmit")} icon={ArrowRight} loading={busy} disabled={!!uploading} onPress={() => void submit()} />
+            <Button label={t("infoReqSubmit")} icon={ArrowRight} variant="gold" loading={busy} disabled={!!uploading} onPress={() => void submit()} />
             <Button
               label={t("claimContactClaimsSupport")}
               icon={Headphones}

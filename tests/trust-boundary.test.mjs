@@ -477,7 +477,17 @@ test("patch eight keeps device integrity server mediated", () => {
   assert.match(client, /DeviceSecurityApi/);
   assert.match(client, /device-attestation\/nonce/);
   assert.match(client, /device-attestation\/assess/);
-  assert.match(screen, /UNAVAILABLE_MANAGED_RUNTIME/);
+  const attestation = read("src/security/attestation.ts");
+  // The screen must go through the attestation module, never assess on its own.
+  assert.match(screen, /DeviceAttestation\.assess\(\)/);
+  assert.doesNotMatch(screen, /DeviceSecurityApi\.assess/);
+  // The native module is optional and guarded; when missing, report UNAVAILABLE_MANAGED_RUNTIME.
+  assert.match(attestation, /requireOptionalNativeModule/);
+  assert.match(attestation, /provider: token \? \([^)]*\) : "UNAVAILABLE_MANAGED_RUNTIME"/);
+  // The verdict comes only from the server assess call; the client never sets ALLOW/LIMIT/BLOCK.
+  assert.match(attestation, /DeviceSecurityApi\.nonce\(\)/);
+  assert.match(attestation, /return DeviceSecurityApi\.assess\(/);
+  assert.doesNotMatch(attestation, /"(ALLOW|LIMIT|BLOCK)"/);
   assert.match(screen, /never claims.*JavaScript check proves device integrity/i);
 });
 test("patch eight verified links retain signing placeholders as release blockers", () => {

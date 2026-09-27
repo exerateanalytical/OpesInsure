@@ -1,5 +1,9 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
+import { Paperclip } from "lucide-react-native";
+import { DetailSection, UnavailableSection } from "@/components/detail";
+import { OperationsList } from "@/components/OperationsList";
 import { useLocalSearchParams } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
@@ -13,6 +17,14 @@ import { useTranslation } from "@/i18n";
 type Decision = "APPROVE" | "PARTIAL" | "DECLINE";
 
 export default function CarrierClaimScreen() {
+  return (
+    <CarrierGate module="claims">
+      <CarrierClaimScreenBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierClaimScreenBody() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierWorkspaceApi.claim(String(id)), [id]);
@@ -178,6 +190,22 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
 
       <Notice text={msg?.text ?? null} tone={msg?.tone ?? "ok"} />
 
+      {/* CAR-007: claim file — coverage snapshot and evidence, alongside the preserved maker-checker decision flow. */}
+      <DetailSection
+        title={t("cdCoverageSnapshot")}
+        rows={[
+          [t("cdDeductible"), c.deductible_minor != null ? money(c.deductible_minor) : null],
+          ...((c.deductibles ?? []).map((d) => [
+            d.name ?? humanize(d.code),
+            [d.deductible_minor != null ? `${t("cdDeductible")} ${money(d.deductible_minor)}` : null, d.limit_minor != null ? `${t("cdLimit")} ${money(d.limit_minor)}` : null]
+              .filter(Boolean)
+              .join(" · ") || null,
+          ]) as [string, string | null][]),
+        ]}
+      />
+      <ClaimEvidence claimId={c.id} />
+      <UnavailableSection title={t("cdClaimFileMore")} />
+
       {c.timeline.length > 0 ? (
         <>
           <SectionTitle title={t("claimTimeline")} />
@@ -190,6 +218,47 @@ function ClaimBody({ claim: c, onChange }: { claim: CarrierClaimDetail; onChange
           </Card>
         </>
       ) : null}
+    </>
+  );
+}
+
+function ClaimEvidence({ claimId }: { claimId: string }) {
+  const { t } = useTranslation();
+  const q = useLoad(() => CarrierWorkspaceApi.claimEvidence(claimId), [claimId]);
+  const [err, setErr] = useState<string | null>(null);
+  const open = async (documentId: string) => {
+    setErr(null);
+    try {
+      const r = await CarrierWorkspaceApi.claimEvidenceAccess(claimId, documentId);
+      await Linking.openURL(r.url);
+    } catch (e) {
+      setErr(errorMessage(e));
+    }
+  };
+  return (
+    <>
+      <SectionTitle title={t("cdEvidence")} />
+      <StatePanel {...q} onRetry={q.reload} emptyTitle={t("cdNoEvidence")} emptyMessage={t("cdNoEvidenceBody")}>
+        {(rows) => (
+          <OperationsList
+            icon={Paperclip}
+            onPress={(docId) => {
+              const r = rows.find((x) => x.document_id === docId);
+              if (r?.downloadable) void open(docId);
+              else setErr(t("cdEvidenceNotReady"));
+            }}
+            rows={rows.map((r) => ({
+              id: r.document_id,
+              title: humanize(r.evidence_type),
+              subtitle: [r.category ? humanize(r.category) : null, r.submitted_at ? shortDate(r.submitted_at) : null, r.downloadable ? null : t("cdEvidenceNotReady")]
+                .filter(Boolean)
+                .join(" · "),
+              status: humanize(r.status),
+            }))}
+          />
+        )}
+      </StatePanel>
+      <Notice text={err} tone="error" />
     </>
   );
 }

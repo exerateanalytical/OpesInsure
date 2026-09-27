@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { FileSignature } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
@@ -9,6 +11,14 @@ import { useTranslation } from "@/i18n";
 import { proposalStatusInfo } from "@/lib/purchase";
 
 export default function CarrierProposals() {
+  return (
+    <CarrierGate module="proposals">
+      <CarrierProposalsBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierProposalsBody() {
   const { t, language } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.proposals(), []);
   return (
@@ -24,6 +34,7 @@ export default function CarrierProposals() {
         {(x) => (
           <OperationsList
             icon={FileSignature}
+            onPress={(id) => router.push(`/carrier/proposals/${id}` as never)}
             rows={x.map((p) => ({
               id: p.id,
               title: `${p.reference} · ${p.customer_name}`,

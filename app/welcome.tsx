@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { Button } from "@/components/ui";
 import {
   ArrowRight,
   Building2,
@@ -33,7 +34,7 @@ import {
   OnboardingNodeGrid,
   PaginationDots,
 } from "@/components/onboarding/OnboardingParts";
-import { AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthField";
+
 import { authColors, authSpace, authType, colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { Preferences } from "@/store/preferences";
@@ -173,10 +174,11 @@ export default function Onboarding() {
         accessibilityRole="button"
         hitSlop={8}
         style={styles.skip}
-        accessibilityLabel={t("skip")}
+        accessibilityLabel={t("signIn")}
+        accessibilityHint={t("welcomeSignInHint")}
         onPress={() => leave("/(auth)/sign-in")}
       >
-        <Text style={styles.skipText}>{t("skip")}</Text>
+        <Text style={styles.skipText}>{t("signIn")}</Text>
       </Pressable>
       </View>
       <ScrollView
@@ -216,12 +218,26 @@ export default function Onboarding() {
         <View style={styles.actionsInner}>
           {last ? (
             <>
-              <AuthPrimaryButton
+              <Button variant="brand"
                 label={t("getStarted")}
                 onPress={() => primary(() => leave("/(auth)/sign-up"))}
                 icon={ArrowRight}
               />
-              <AuthSecondaryButton label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
+              <Button variant="brandOutline" label={t("haveAccountSignIn")} onPress={() => leave("/(auth)/sign-in")} />
+              {/* LAND-002: browse licensed insurers and their products without an
+                  account (anonymous /public/institutions); sign-in starts only
+                  when a quote needs personal data. */}
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={t("welcomeExploreNoAccount")}
+                accessibilityHint={t("welcomeExploreHint")}
+                hitSlop={4}
+                style={({ pressed }) => [styles.exploreLink, pressed && styles.nextPressed]}
+                onPress={() => router.push("/institutions/insurers")}
+              >
+                <Search size={18} color={authColors.blue500} />
+                <Text style={styles.exploreText}>{t("welcomeExploreNoAccount")}</Text>
+              </Pressable>
             </>
           ) : (
             <View style={styles.stepRow}>
@@ -238,17 +254,32 @@ export default function Onboarding() {
               </Pressable>
             </View>
           )}
+          {/* LAND-003: utilities, visually separated from the customer CTA. */}
+          <View style={styles.utilityDivider} />
           <View style={[styles.links, compact && styles.linksCompact]}>
-            <Pressable accessibilityRole="button" hitSlop={8} style={styles.linkHit} onPress={() => router.push("/verify")}>
-              <Text style={styles.link}>{t("verifyCertificate")}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityHint={t("welcomeVerifyHint")}
+              hitSlop={8}
+              style={styles.linkHit}
+              onPress={() => router.push("/verify")}
+            >
+              <View style={styles.linkRow}>
+                <FileCheck2 size={16} color={authColors.textSecondary} />
+                <Text style={styles.link}>{t("verifyCertificate")}</Text>
+              </View>
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityHint={t("welcomePartnerHint")}
               hitSlop={8}
               style={styles.linkHit}
               onPress={() => router.push("/(auth)/invitation")}
             >
-              <Text style={styles.link}>{t("partnersJoin")}</Text>
+              <View style={styles.linkRow}>
+                <Handshake size={16} color={authColors.textSecondary} />
+                <Text style={styles.link}>{t("partnersJoin")}</Text>
+              </View>
             </Pressable>
           </View>
         </View>
@@ -289,7 +320,11 @@ const styles = StyleSheet.create({
   links: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: authSpace[3] },
   linksCompact: { flexDirection: "column", alignItems: "stretch", gap: 0 },
   linkHit: { minHeight: 44, justifyContent: "center", flexShrink: 1 },
-  link: { ...authType.label, fontSize: 13, color: authColors.blue500 },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  link: { ...authType.label, fontSize: 13, color: authColors.textSecondary, flexShrink: 1 },
+  utilityDivider: { height: 1, backgroundColor: colors.neutral200, marginTop: authSpace[1] },
+  exploreLink: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: authSpace[2] },
+  exploreText: { ...authType.label, color: authColors.blue500, textDecorationLine: "underline", flexShrink: 1, textAlign: "center" },
   // Transparent so the blue/gold wave of the canvas shows behind the controls.
   actions: {
     paddingHorizontal: authSpace[5],

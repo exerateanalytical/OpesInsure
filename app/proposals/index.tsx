@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, Briefcase, CalendarDays, Car, CheckCircle2, ChevronRight, Clock3, FileText, HardHat, HeartPulse, Home, Info, LoaderCircle, LucideIcon, Plane, ShieldPlus } from "lucide-react-native";
-import { Chip, Screen, ripple } from "@/components/ui";
+import { Button, Chip, Screen, ripple } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
@@ -200,10 +200,7 @@ export default function Applications() {
                   </View>
                 ) : null}
               </View>
-              <Pressable accessibilityRole="button" onPress={() => openProposal(p)} android_ripple={ripple(bucket !== "awaiting")} style={({ pressed }) => [s.btn, bucket === "awaiting" ? s.btnGold : s.btnNavy, pressed && s.pressed]}>
-                <Text style={[s.btnText, bucket === "awaiting" ? s.btnTextDark : s.btnTextLight]}>{action}</Text>
-                <ArrowRight size={18} color={bucket === "awaiting" ? colors.navy950 : colors.white} />
-              </Pressable>
+              <Button variant={bucket === "awaiting" ? "gold" : "primary"} icon={ArrowRight} label={action} onPress={() => openProposal(p)} />
             </View>
           </View>
         );

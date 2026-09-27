@@ -14,19 +14,27 @@ import {
   ViewStyle,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { LucideIcon } from "lucide-react-native";
-import { CONTENT_MAX_WIDTH, colors, radius, space, type } from "@/theme/tokens";
+import { ArrowRight, Check, ChevronRight, LucideIcon } from "lucide-react-native";
+import { CONTENT_MAX_WIDTH, authRadius, authType, colors, radius, space, type } from "@/theme/tokens";
 import { formatXaf, useTranslation } from "@/i18n";
+import { highContrast, useHighContrast } from "@/theme/contrast";
 import { BrandHeader } from "@/components/design";
+
+/** Design sign-in button (sampled #003AA0->#004FCD gradient midpoint). */
+const BRAND_BLUE = "#0045B8";
 
 export function Screen({
   children,
   scroll = true,
   style,
   footer,
+  keyboardAvoid = true,
 }: {
   children: ReactNode;
   scroll?: boolean;
+  /** FORM-003: Android "height" avoidance only where the screen has inputs or a
+   * pinned footer; screens without either pass false and never compress. */
+  keyboardAvoid?: boolean;
   style?: StyleProp<ViewStyle>;
   /** Pinned below the scroll area (e.g. a portal bottom bar). */
   footer?: ReactNode;
@@ -44,7 +52,8 @@ export function Screen({
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : keyboardAvoid || footer ? "height" : undefined}
+        enabled={keyboardAvoid || !!footer}
       >
         {scroll ? (
           <ScrollView
@@ -55,7 +64,8 @@ export function Screen({
             ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios" && !keyboardAvoid}
           >
             {body}
           </ScrollView>
@@ -139,6 +149,9 @@ export function Card({
   );
 }
 
+/** Arrow-style icons that read as "continue" and so sit after the label. */
+const TRAILING_ICONS = new Set<LucideIcon>([ArrowRight, ChevronRight]);
+
 export function Button({
   label,
   onPress,
@@ -147,55 +160,78 @@ export function Button({
   loading = false,
   disabled = false,
   size = "default",
+  iconPosition,
+  hint,
+  style,
 }: {
+  /** Layout only (flex, width, margins) - never colours; use a variant. */
+  style?: StyleProp<ViewStyle>;
   label: string;
+  /** Spoken consequence when the label alone is not enough (A11Y-003). */
+  hint?: string;
   onPress?: () => void;
   icon?: LucideIcon;
   /** tertiary = ghost (text only). */
-  variant?: "primary" | "secondary" | "tertiary" | "danger";
+  /** gold = gold500 fill with navy950 text (design: claim information submit). danger = outlined red. */
+  /** brand / brandOutline = the auth & onboarding CTA look (#0045B8, 56dp, 16 radius) - BTN-001. */
+  variant?: "primary" | "secondary" | "tertiary" | "danger" | "gold" | "brand" | "brandOutline";
   loading?: boolean;
   disabled?: boolean;
   /** small = 48dp (still a full touch target); default = 52dp. */
   size?: "default" | "small";
+  /** Defaults to "right" for arrow/chevron CTA icons, "left" otherwise. */
+  iconPosition?: "left" | "right";
 }) {
+  const iconRight = (iconPosition ?? (Icon && TRAILING_ICONS.has(Icon) ? "right" : "left")) === "right";
+  const light = variant === "primary" || variant === "brand";
+  const hc = useHighContrast();
+  const iconNode = Icon ? (
+    <Icon
+      size={20}
+      color={
+        light
+          ? colors.white
+          : variant === "gold"
+            ? colors.navy950
+            : variant === "danger"
+              ? colors.dangerText
+              : colors.blue600
+      }
+      style={{ flexShrink: 0 }}
+    />
+  ) : null;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={hint}
       accessibilityState={{ disabled, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
-      android_ripple={ripple(variant === "primary")}
+      android_ripple={ripple(light)}
+      hitSlop={size === "small" ? 4 : undefined}
       style={({ pressed }) => [
         styles.button,
+        (variant === "brand" || variant === "brandOutline") && styles.buttonBrand,
         size === "small" && styles.buttonSmall,
         styles[`button_${variant}`],
         pressed && styles.pressed,
         disabled && styles.disabled,
+        hc && (variant === "secondary" || variant === "brandOutline" || variant === "danger") && styles.hcBorder,
+        style,
       ]}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === "primary" ? colors.white : colors.blue600}
+          color={light ? colors.white : variant === "gold" ? colors.navy950 : colors.blue600}
         />
       ) : (
         <>
-          {Icon ? (
-            <Icon
-              size={20}
-              color={
-                variant === "primary"
-                  ? colors.white
-                  : variant === "danger"
-                    ? colors.danger
-                    : colors.blue600
-              }
-              style={{ flexShrink: 0 }}
-            />
-          ) : null}
-          <Text allowFontScaling maxFontSizeMultiplier={1.8} style={[styles.buttonLabel, styles[`buttonLabel_${variant}`]]}>
+          {iconRight ? null : iconNode}
+          <Text allowFontScaling maxFontSizeMultiplier={1.8} style={[styles.buttonLabel, (variant === "brand" || variant === "brandOutline") && styles.buttonLabelBrand, styles[`buttonLabel_${variant}`]]}>
             {label}
           </Text>
+          {iconRight ? iconNode : null}
         </>
       )}
     </Pressable>
@@ -210,6 +246,7 @@ export function TextField({
 }: TextInputProps & { label: string; error?: string; hint?: string }) {
   const [focused, setFocused] = useState(false);
   const disabled = props.editable === false;
+  const hc = useHighContrast();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -231,6 +268,7 @@ export function TextField({
         style={[
           styles.input,
           props.multiline && styles.inputMultiline,
+          hc && styles.hcBorder,
           focused && styles.inputFocused,
           error && styles.inputError,
           disabled && styles.inputDisabled,
@@ -286,20 +324,24 @@ export function Chip({
   /** "tab" inside an accessibilityRole="tablist" row of exclusive filters. */
   role?: "button" | "tab";
 }) {
+  const hc = useHighContrast();
   return (
     <Pressable
       accessibilityRole={role}
       accessibilityState={{ selected }}
       onPress={onPress}
       android_ripple={ripple(selected)}
-      style={({ pressed }) => [styles.chipSelect, selected && styles.chipSelectOn, pressed && styles.pressed]}
+      hitSlop={4}
+      style={({ pressed }) => [styles.chipSelect, hc && styles.hcBorder, selected && styles.chipSelectOn, pressed && styles.pressed]}
     >
+      {/* BTN-005: selection is also shown by a check mark, not colour alone. */}
+      {selected ? <Check size={16} color={String(StyleSheet.flatten(styles.chipSelectTextOn).color ?? colors.white)} style={{ marginRight: 4, flexShrink: 0 }} /> : null}
       <Text allowFontScaling maxFontSizeMultiplier={1.6} style={[styles.chipSelectText, selected && styles.chipSelectTextOn]}>
         {label}
       </Text>
       {count != null ? (
         <View style={[styles.chipCount, { backgroundColor: selected ? colors.white : countTone ?? colors.neutral500 }]}>
-          <Text style={[styles.chipCountText, { color: selected ? colors.navy900 : colors.white }]}>{count}</Text>
+          <Text style={[styles.chipCountText, { color: selected ? colors.blue700 : colors.white }]}>{count}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -369,7 +411,7 @@ export const fieldStyles = StyleSheet.create({
   control: {
     minHeight: FIELD.height,
     borderWidth: 1,
-    borderColor: colors.neutral300,
+    borderColor: colors.neutral400,
     borderRadius: FIELD.radius,
     backgroundColor: colors.white,
     paddingHorizontal: FIELD.padX,
@@ -456,17 +498,28 @@ const styles = StyleSheet.create({
   },
   button_secondary: {
     backgroundColor: colors.white,
-    borderColor: colors.neutral300,
+    borderColor: colors.neutral400,
   },
   button_tertiary: {
     backgroundColor: "transparent",
     borderColor: "transparent",
   },
+  button_gold: {
+    backgroundColor: colors.gold500,
+    borderColor: colors.gold500,
+  },
   button_danger: {
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: colors.white,
     borderColor: colors.danger,
   },
+  button_brand: { backgroundColor: BRAND_BLUE, borderColor: BRAND_BLUE },
+  button_brandOutline: { backgroundColor: colors.white, borderColor: colors.blue600, borderWidth: 1.5 },
+  buttonBrand: { minHeight: 56, borderRadius: authRadius.button },
+  buttonLabelBrand: { ...authType.button },
+  buttonLabel_brand: { color: colors.white },
+  buttonLabel_brandOutline: { color: colors.blue600 },
   buttonSmall: { minHeight: 48 },
+  hcBorder: { borderColor: highContrast.border, borderWidth: highContrast.borderWidth },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.48 },
   buttonLabel: { ...type.label },
@@ -474,12 +527,13 @@ const styles = StyleSheet.create({
   buttonLabel_secondary: { color: colors.navy950 },
   buttonLabel_tertiary: { color: colors.blue600 },
   buttonLabel_danger: { color: colors.dangerText },
+  buttonLabel_gold: { color: colors.navy950 },
   field: { gap: space.x2 },
   label: { ...type.label, color: colors.neutral800 },
   input: {
     minHeight: FIELD.height,
     borderWidth: 1,
-    borderColor: colors.neutral300,
+    borderColor: colors.neutral400,
     borderRadius: FIELD.radius,
     backgroundColor: colors.white,
     paddingHorizontal: FIELD.padX,
@@ -487,7 +541,8 @@ const styles = StyleSheet.create({
     ...type.body,
     color: colors.navy950,
   },
-  inputMultiline: { paddingVertical: space.x3 },
+  // FORM-004: Android centres multiline text vertically unless told otherwise.
+  inputMultiline: { paddingVertical: space.x3, textAlignVertical: "top", minHeight: 96 },
   // Focus/error borders keep a 1dp width and use a same-colour ring so the text never shifts.
   inputFocused: { borderColor: colors.blue600, ...FIELD.ring(colors.blue600) },
   inputError: { borderColor: colors.danger, ...FIELD.ring(colors.danger) },
@@ -505,16 +560,16 @@ const styles = StyleSheet.create({
   chipSelect: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 40,
+    minHeight: 48, // A11Y-008: full 48dp target
     overflow: "hidden",
     paddingHorizontal: space.x4,
     justifyContent: "center",
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.neutral300,
+    borderColor: colors.neutral400,
     backgroundColor: colors.white,
   },
-  chipSelectOn: { backgroundColor: colors.navy950, borderColor: colors.navy950 },
+  chipSelectOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
   chipSelectText: { ...type.label, color: colors.neutral700 },
   chipSelectTextOn: { color: colors.white },
   sectionRow: {

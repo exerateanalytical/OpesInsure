@@ -1,3 +1,5 @@
+import { router } from "expo-router";
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { Handshake } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
@@ -8,6 +10,14 @@ import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierPartners() {
+  return (
+    <CarrierGate module="partners">
+      <CarrierPartnersBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierPartnersBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierWorkspaceApi.partners(), []);
   return (
@@ -23,6 +33,7 @@ export default function CarrierPartners() {
         {(x) => (
           <OperationsList
             icon={Handshake}
+            onPress={(id) => router.push(`/carrier/partners/${id}` as never)}
             rows={x.map((p) => ({
               id: p.id,
               title: p.name,

@@ -10,9 +10,10 @@ export class ProductionErrorBoundary extends Component<{ children: ReactNode }, 
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
-    void Telemetry.capture("mobile.render_failure", {
-      error_type: error.name,
-      component_hash: info.componentStack ? "present" : "absent",
+    // Must be a backend-allowed event code: the old "mobile.render_failure"
+    // was rejected (422) so render crashes never reached operations.
+    void Telemetry.capture("APP_CRASHED", {
+      reason: `render:${error.name}${info.componentStack ? "" : ":nostack"}`,
     });
   }
   private goHome = () => {

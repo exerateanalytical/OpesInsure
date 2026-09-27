@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -15,6 +16,14 @@ type Line = { code: string; label: string; amount: string };
 
 /** One manual quote request: SLA, risk, then start / offer (premium, tax, fees, breakdown, conditions, validity) / decline. */
 export default function CarrierQuoteRequestDetail() {
+  return (
+    <CarrierGate module="quote_requests">
+      <CarrierQuoteRequestDetailBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierQuoteRequestDetailBody() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td } = useTranslation();
   const f = useFormatters();

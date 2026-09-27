@@ -81,7 +81,7 @@ const s = StyleSheet.create({
   itemHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   itemTitle: { ...type.label, color: colors.navy950 },
   total: { ...type.meta },
-  ok: { color: colors.success },
+  ok: { color: colors.successText },
   bad: { color: colors.dangerText },
   error: { ...type.meta, color: colors.dangerText },
 });

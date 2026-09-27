@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
 import { PortalScreen } from "@/components/portal/PortalShell";
 import { brokerTabs } from "@/components/portal/tabs";
@@ -28,6 +29,7 @@ export default function Receivables() {
         {(x) => (
           <OperationsList
             icon={ReceiptText}
+            onPress={(id) => router.push({ pathname: "/broker/receivables/[id]", params: { id: id } })}
             rows={x.map((r) => ({
               id: r.id,
               title: r.customer_name,

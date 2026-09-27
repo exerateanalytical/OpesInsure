@@ -26,6 +26,7 @@ import {
   RefreshCw,
   ShieldCheck,
   ShieldAlert,
+  Wallet,
   WifiOff,
 } from "lucide-react-native";
 import { SearchBar } from "@/components/SearchBar";
@@ -42,7 +43,8 @@ import { useColumns } from "@/components/responsive";
 import { usePolicies } from "@/hooks/usePolicies";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
-import { SupportContactsApi } from "@/api/client";
+import { PaymentsApi, SupportContactsApi } from "@/api/client";
+import { PriorityFeed, usePriorityItems } from "@/components/customer/PriorityFeed";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
@@ -69,6 +71,9 @@ export default function CustomerHome() {
   const claims = useLoad(() => CustomerApi.claims());
   const notifications = useLoad(() => CustomerApi.notifications());
   const contacts = useLoad(() => SupportContactsApi.get());
+  // HOME-002/003: server payment + KYC state feed the priority block.
+  const payments = useLoad(() => PaymentsApi.list());
+  const kyc = useLoad(() => CustomerApi.kyc());
 
   // Brand-new customers are offered the short profile/KYC step once.
   useEffect(() => {
@@ -79,10 +84,12 @@ export default function CustomerHome() {
 
   // Unread badge stays fresh when coming back from the inbox.
   const reloadNotifications = notifications.reload;
+  const reloadPayments = payments.reload;
   useFocusEffect(
     useCallback(() => {
       void reloadNotifications();
-    }, [reloadNotifications]),
+      void reloadPayments();
+    }, [reloadNotifications, reloadPayments]),
   );
 
   const refresh = async () => {
@@ -92,6 +99,8 @@ export default function CustomerHome() {
       quotes.reload(),
       claims.reload(),
       notifications.reload(),
+      payments.reload(),
+      kyc.reload(),
     ]);
     setRefreshing(false);
   };
@@ -103,6 +112,12 @@ export default function CustomerHome() {
   );
   const openClaims = (claims.data ?? []).filter((c) => isActiveClaim(c.status));
   const unread = (notifications.data ?? []).filter((n) => !n.read).length;
+  const priority = usePriorityItems({
+    payments: payments.data?.items ?? [],
+    claims: claims.data ?? [],
+    policies: policies.policies,
+    kyc: kyc.data,
+  });
   const firstName = user?.full_name?.split(" ")[0];
   // A typed query runs the live global search (GET /search + marketplace);
   // an empty submit opens the marketplace.
@@ -166,6 +181,9 @@ export default function CustomerHome() {
           count={(f) => applyExploreFilters(insurers, f).length}
         />
 
+        {/* HOME-003: urgent exceptions above routine content. */}
+        <PriorityFeed items={priority} />
+
         <CategoryStrip
           ids={["motor", "health", "travel", "home", "more"]}
           onPress={(c) =>
@@ -216,6 +234,7 @@ export default function CustomerHome() {
         <View style={styles.quickRow}>
           <IconTile icon={FileText} label={t("pdFileClaim")} onPress={() => router.push("/claim/new")} />
           <IconTile icon={RefreshCw} label={t("pdRenew")} onPress={() => (renewals[0] ? router.push({ pathname: "/policy/[id]/renew", params: { id: renewals[0].id } }) : router.push("/(customer)/(tabs)/policies"))} />
+          <IconTile icon={Wallet} label={t("homePayments")} onPress={() => router.push("/payments")} />
           <IconTile icon={LifeBuoy} label={t("homeGetSupport")} onPress={() => router.push("/support")} />
         </View>
 
@@ -278,11 +297,13 @@ export default function CustomerHome() {
           error={!!policies.error}
           onRetry={() => void policies.reload()}
           empty={t("homeNoRenewals")}
+          onSeeAll={renewals.length > 3 ? () => router.push("/(customer)/(tabs)/policies") : undefined}
+          seeAllLabel={t("seeAll")}
           retryLabel={t("retry")}
           errorLabel={t("loadErrorShort")}
           loadingLabel={t("loading")}
         >
-          {renewals.map((p) => (
+          {renewals.slice(0, 3).map((p) => (
             <Row
               key={p.id}
               title={p.policy_number}
@@ -501,8 +522,9 @@ function Row({
     >
       {Icon ? <Icon size={19} color={colors.navy800} /> : null}
       <View style={styles.flex}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{title}</Text>
-        {meta ? <Text style={styles.meta} numberOfLines={2}>{meta}</Text> : null}
+        {/* HOME-001: identifiers wrap instead of being ellipsized. */}
+        <Text style={styles.rowTitle}>{title}</Text>
+        {meta ? <Text style={styles.meta}>{meta}</Text> : null}
         {chip ? <View style={styles.rowChip}>{chip}</View> : null}
       </View>
       <ChevronRight size={18} color={colors.neutral500} />

@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
 import { router } from "expo-router";
 import { Inbox } from "lucide-react-native";
@@ -12,6 +13,14 @@ import { caseWaitingState, slaChipText } from "@/lib/quoteWorkflow";
 
 /** Insurer work queue for manual quotation (REQ-QUO-006), soonest deadline first. */
 export default function CarrierQuoteRequests() {
+  return (
+    <CarrierGate module="quote_requests">
+      <CarrierQuoteRequestsBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierQuoteRequestsBody() {
   const { t, td } = useTranslation();
   const f = useFormatters();
   const [open, setOpen] = useState(true);

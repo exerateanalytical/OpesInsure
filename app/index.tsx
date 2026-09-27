@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { Href, router } from "expo-router";
 import { RefreshCw } from "lucide-react-native";
 import { Button } from "@/components/ui";
 import { EntryLockup } from "@/components/BrandMark";
 import { sessionHome, useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
+import { takePendingPath } from "@/lib/navigationContinuity";
 import { useTranslation } from "@/i18n";
 import { colors, space, type } from "@/theme/tokens";
 
@@ -37,7 +38,9 @@ export default function Splash() {
     const timer = setTimeout(async () => {
       const home = sessionHome({ status, bootstrap, activeWorkspace: workspace });
       if (home) {
-        router.replace(home);
+        // NAV-001: return a reload / deep link to the page it asked for.
+        const restored = typeof home === "string" ? takePendingPath(home) : null;
+        router.replace(restored ? (restored as Href) : home);
         return;
       }
       // Returning signed-out users skip the marketing slides.

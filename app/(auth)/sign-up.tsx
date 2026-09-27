@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { Button } from "@/components/ui";
 import {
   ArrowRight,
   Building2,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
-import { AuthPrimaryButton, AuthTextField } from "@/components/auth/AuthField";
+import { AuthTextField } from "@/components/auth/AuthField";
 import { AccountTypeSelector } from "@/components/auth/AccountTypeSelector";
 import { TrustStrip } from "@/components/auth/TrustStrip";
 import { ChannelPicker } from "@/components/auth/ChannelPicker";
@@ -267,7 +268,7 @@ export default function SignUp() {
                 </Pressable>
                 {fieldErrors.agreed ? <Text style={styles.error}>{fieldErrors.agreed}</Text> : null}
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <AuthPrimaryButton
+                <Button variant="brand"
                   label={busy ? t("creating") : t("createAccount")}
                   icon={ArrowRight}
                   loading={busy}

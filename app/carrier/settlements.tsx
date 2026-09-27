@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { router } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
@@ -9,6 +10,14 @@ import { CarrierApi } from "@/api/client";
 import { fcfa } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 export default function CarrierSettlements() {
+  return (
+    <CarrierGate module="settlements">
+      <CarrierSettlementsBody />
+    </CarrierGate>
+  );
+}
+
+function CarrierSettlementsBody() {
   const { t } = useTranslation();
   const q = useLoad(() => CarrierApi.settlements(), []);
   return (

@@ -44,8 +44,8 @@ export default function Wallet() {
                   <View style={s.flex}>
                     <Text style={s.title} numberOfLines={2}>{p.product_name ?? p.policy_number}</Text>
                     {carrier ? <Text style={s.sub} numberOfLines={1}>{carrier}</Text> : null}
-                    <Text style={s.meta} numberOfLines={1}>{p.policy_number}</Text>
-                    <Text style={s.meta} numberOfLines={1}>{f.range(p.coverage_starts_at, p.coverage_ends_at)}</Text>
+                    <Text style={s.meta}>{p.policy_number}</Text>
+                    <Text style={s.meta}>{f.range(p.coverage_starts_at, p.coverage_ends_at)}</Text>
                   </View>
                   <View style={s.right}>
                     <StatusChip label={status.label} tone={status.tone} />

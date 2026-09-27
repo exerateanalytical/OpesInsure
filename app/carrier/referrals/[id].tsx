@@ -1,3 +1,4 @@
+import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
@@ -14,8 +15,17 @@ import {
 } from "@/components/ui";
 import { CarrierApi, CarrierReferral } from "@/api/client";
 import { useTranslation } from "@/i18n";
+import { UnavailableSection } from "@/components/detail";
 import { errorMessage } from "@/lib/purchase";
 export default function ReferralDetail() {
+  return (
+    <CarrierGate module="referrals">
+      <ReferralDetailBody />
+    </CarrierGate>
+  );
+}
+
+function ReferralDetailBody() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td } = useTranslation();
   const q = useLoad(() => CarrierApi.referral(id), [id]);
@@ -57,6 +67,7 @@ export default function ReferralDetail() {
         </Text>
         {x ? <Money amount={x.premium_minor / 100} /> : null}
         <Text>{x?.reason}</Text>
+        {x?.decision_note ? <Text>{t("cdLastDecisionNote", { note: x.decision_note })}</Text> : null}
         <TextField
           label={t("caUnderwritingNote")}
           multiline
@@ -85,6 +96,12 @@ export default function ReferralDetail() {
             onPress={() => decide("DECLINE")}
           />
         </>
+      ) : null}
+      {x ? (
+        /* CAR-002: assignment, escalation above authority, second approval and
+           conditions need backend endpoints; authority stays server-side
+           (AUTHORITY_EXCEEDED is surfaced on decide). */
+        <UnavailableSection title={t("cdReferralWorkflow")} message={t("cdReferralWorkflowBody")} />
       ) : null}
     </Screen>
   );

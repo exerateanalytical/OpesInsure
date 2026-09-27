@@ -93,7 +93,7 @@ export default function ClaimTimeline() {
               ) : null}
               <View style={s.tiles}>
                 {canAdd ? (
-                  <ActionTile icon={Upload} label={t("claimAddInformation")} onPress={() => router.push({ pathname: "/claim/[id]/information" as never, params: { id } })} style={s.tile} />
+                  <ActionTile icon={Upload} label={t("claimAddInformation")} filled onPress={() => router.push({ pathname: "/claim/[id]/information" as never, params: { id } })} style={s.tile} />
                 ) : null}
                 {claimActionAllowed("message", c.status) ? (
                   <ActionTile

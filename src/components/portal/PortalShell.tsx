@@ -122,7 +122,8 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
           >
             <View style={[s.tabIndicator, selected && s.tabIndicatorOn]} />
             <t.icon size={24} color={tint} strokeWidth={selected ? 2.2 : 1.9} />
-            <Text numberOfLines={1} style={[s.tabLabel, { color: tint }]}>
+            {/* A11Y-006: two lines + capped scaling so long FR labels wrap instead of clipping. */}
+            <Text numberOfLines={2} maxFontSizeMultiplier={1.4} style={[s.tabLabel, { color: tint }, selected && s.tabLabelOn]}>
               {label}
             </Text>
           </Pressable>
@@ -404,7 +405,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
-  tabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2 },
+  tabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2, textAlign: "center" },
+  // Selected tab is also bolder (and has the indicator bar), not colour alone.
+  tabLabelOn: { fontFamily: "Inter_700Bold" },
   profileRow: { flexDirection: "row", gap: space.x3, alignItems: "center" },
   avatar: {
     width: 52,
