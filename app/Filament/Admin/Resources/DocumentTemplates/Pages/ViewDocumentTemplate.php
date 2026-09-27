@@ -14,6 +14,6 @@ final class ViewDocumentTemplate extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [EditAction::make()->label('Designer'), DocumentTemplateResource::previewAction(), ...DocumentTemplateResource::workflowActions()];
+        return [EditAction::make()->label('Designer'), DocumentTemplateResource::previewAction(), ...\App\Filament\Shared\Actions\DocumentTemplateActions::all()];
     }
 }

@@ -41,7 +41,7 @@ beforeEach(function () {
     $this->tenant = Tenant::create(['type' => 'PLATFORM', 'legal_name' => 'Cfg Platform', 'slug' => 'cfg-'.Str::random(6), 'status' => 'ACTIVE',
         'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'fr']);
     $this->admin = makeAuthTestUser($this->tenant, [], 'PLATFORM_ADMIN');
-    $this->checker = makeAuthTestUser($this->tenant, [], 'COMPLIANCE_ADMIN');
+    $this->checker = makeAuthTestUser($this->tenant, ['documents.templates.manage'], 'COMPLIANCE_ADMIN');
     $this->staff = makeAuthTestUser($this->tenant, [], 'TEST_ROLE');
     $this->carrier = Carrier::create(['party_id' => Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Cfg Assurances', 'status' => 'ACTIVE'])->id,
         'cima_code' => 'CFG-'.Str::random(5), 'status' => 'ACTIVE', 'capabilities' => []]);
@@ -119,7 +119,8 @@ it('renders the template designer with the placeholder help, previews the unsave
 
     // Maker-checker: the author cannot approve; a second admin can.
     $this->actingAs($this->checker);
-    Livewire::test(\App\Filament\Admin\Resources\DocumentTemplates\Pages\ViewDocumentTemplate::class, ['record' => $t->getRouteKey()])->assertOk()->callAction('approve');
+    app(\App\Domain\Tenancy\TenantContext::class)->set($this->tenant->id); // shared DocumentTemplateActions check documents.templates.manage in the tenant
+    Livewire::test(\App\Filament\Admin\Resources\DocumentTemplates\Pages\ViewDocumentTemplate::class, ['record' => $t->getRouteKey()])->assertOk()->callAction('templateApprove');
     expect($t->refresh()->status)->toBe('APPROVED');
 });
 

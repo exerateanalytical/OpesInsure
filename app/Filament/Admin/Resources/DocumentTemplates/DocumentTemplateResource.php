@@ -109,12 +109,7 @@ final class DocumentTemplateResource extends Resource
         ])->recordActions([
             Actions\ViewAction::make(),
             Actions\EditAction::make()->label('Designer'),
-            self::transition('submit', 'Submit for review', 'DRAFT'),
-            self::transition('approve', 'Approve', 'REVIEW'),
-            self::transition('publish', 'Publish', 'APPROVED'),
-            Actions\Action::make('retire')->color('danger')->requiresConfirmation()->visible(fn ($record) => $record->status !== 'RETIRED')
-                ->schema([Forms\Components\TextInput::make('reason')->required()->minLength(5)])
-                ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(DocumentTemplateService::class)->retire($record, $data['reason'], auth()->user()))),
+            ...\App\Filament\Shared\Actions\DocumentTemplateActions::all(),
         ]);
     }
 
@@ -171,18 +166,6 @@ final class DocumentTemplateResource extends Resource
                     echo $pdf;
                 }, 'template-'.$record->document_type_code.'-specimen.pdf', ['Content-Type' => 'application/pdf']);
             });
-    }
-
-    /** Workflow buttons for the view / designer headers (same service calls as the table row actions). */
-    public static function workflowActions(): array
-    {
-        return [self::transition('submit', 'Submit for review', 'DRAFT'), self::transition('approve', 'Approve', 'REVIEW'), self::transition('publish', 'Publish', 'APPROVED')];
-    }
-
-    private static function transition(string $action, string $label, string $from): Actions\Action
-    {
-        return Actions\Action::make($action)->label($label)->requiresConfirmation()->visible(fn ($record) => $record->status === $from)
-            ->action(fn ($record) => ServiceValidation::run(fn () => app(DocumentTemplateService::class)->{$action}($record, auth()->user())));
     }
 
     public static function getPages(): array
