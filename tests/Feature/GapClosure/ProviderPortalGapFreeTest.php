@@ -345,3 +345,154 @@ it('REQ-PRV-003 web: another provider\'s claim or contract never opens on this p
     \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ContractsPage::class)->assertDontSee('GP4-001')
         ->call('open', $this->contract->id)->assertSee('Contract not found.');
 });
+
+// ----------------------------------------------------------------- round 2: episode / reconciliation / dispute forms, web idempotency, insurer health screens
+
+it('REQ-PRV-003 web: treatment episode form opens, records services, closes and bills through the API actions', function () {
+    gp4Web($this);
+    $p = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\TreatmentEpisodesPage::class)
+        ->set('episode_type', 'OUTPATIENT')->set('policy_id', $this->policy->id)->set('member_ref', $this->f['party']->id)->set('facility_id', $this->main->id)->set('started_on', '2026-03-10')
+        ->call('openEpisode')->assertSet('state', 'SUCCESS');
+    $ep = $p->get('selected');
+    expect(DB::table('treatment_episodes')->where('id', $ep)->value('status'))->toBe('OPEN');
+    $p->set('service_code', 'CONS_GP4')->set('unit_price_minor', '18000')->call('addLine')->assertSet('state', 'SUCCESS')->assertSee('CONS_GP4')
+        ->set('ended_on', '2026-03-10')->call('closeEpisode')->assertSet('state', 'SUCCESS')
+        ->set('invoice_reference', 'EP-INV-1')->call('billEpisode')->assertSet('state', 'SUCCESS');
+    expect(DB::table('treatment_episodes')->where('id', $ep)->value('status'))->toBe('BILLED')
+        ->and(DB::table('health_provider_claims')->where('invoice_reference', 'EP-INV-1')->count())->toBe(1);
+    // Validation lands on the field; nothing is created.
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\TreatmentEpisodesPage::class)->call('openEpisode')
+        ->assertSet('state', 'VALIDATION_FAILED')->assertHasErrors('member_ref');
+    expect(DB::table('treatment_episodes')->count())->toBe(1);
+});
+
+it('REQ-PRV-003 web: a double-submitted form (same submission key, same payload) is replayed, never executed twice; an edited form is a new submission', function () {
+    gp4Web($this);
+    $fill = fn ($c) => $c->set('payment_reference', 'VIR-DBL')->set('received_on', '2026-04-02')->set('currency', 'XAF')->set('amount_minor', '5000');
+    $p = $fill(\Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\ReconciliationsPage::class));
+    $token = $p->get('formToken');
+    expect($token)->not->toBeNull(); // editing a field issued a submission key
+    $p->call('recordPayment')->assertSet('state', 'SUCCESS');
+    // Double click: the second request carries the same key and the same payload, so IdempotencyGuard replays it.
+    $fill($p)->set('formToken', $token)->call('recordPayment')->assertSet('state', 'SUCCESS');
+    expect(DB::table('provider_reconciliations')->where('payment_reference', 'VIR-DBL')->count())->toBe(1)
+        ->and(DB::table('idempotency_keys')->where('key', $token)->where('operation', 'provider_portal.web.reconciliationStore')->count())->toBe(1);
+    // The user edits the form again: a fresh key, a real second submission.
+    $fill($p)->set('payment_reference', 'VIR-DBL-2')->call('recordPayment')->assertSet('state', 'SUCCESS');
+    expect(DB::table('provider_reconciliations')->where('payment_reference', 'like', 'VIR-DBL%')->count())->toBe(2);
+    // Manual allocation needs a reason (field error, nothing allocated).
+    $p->set('claim_id', (string) Str::uuid())->set('allocation_minor', '100')->call('allocate')->assertSet('state', 'VALIDATION_FAILED')->assertHasErrors('reason');
+});
+
+it('REQ-PRV-003 web: dispute form opens a reason-coded dispute on a claim line through the API action', function () {
+    $claim = app(ProviderClaimService::class)->create($this->tenant->id, ['provider_id' => $this->clinic->id, 'contract_id' => $this->contract->id, 'invoice_reference' => 'DSP-1',
+        'service_date' => '2026-03-10', 'policy_id' => $this->policy->id, 'lines' => [['medical_service_id' => $this->cons->id, 'unit_price_minor' => 15000]]], $this->user->id);
+    DB::table('health_provider_claims')->where('id', $claim->id)->update(['provider_facility_id' => $this->main->id]);
+    gp4Web($this);
+    \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\DisputesPage::class)
+        ->set('subject_type', 'CLAIM_LINE')->set('claim_id', $claim->id)->set('claim_line_no', '1')->call('openDispute')
+        ->assertSet('state', 'VALIDATION_FAILED')->assertHasErrors('description');
+    $p = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\DisputesPage::class)
+        ->set('subject_type', 'CLAIM_LINE')->set('claim_id', $claim->id)->set('claim_line_no', '1')->set('reason_code', 'TARIFF_DIFFERENCE')
+        ->set('disputed_amount_minor', '3000')->set('description', 'Consultation is contracted at 15000')->call('openDispute')->assertSet('state', 'SUCCESS');
+    $d = DB::table('provider_disputes')->where('id', $p->get('selected'))->first();
+    expect($d)->not->toBeNull()->and($d->subject_type)->toBe('CLAIM_LINE')->and($d->reason_code)->toBe('TARIFF_DIFFERENCE')->and($d->status)->toBe('SUBMITTED');
+    $p->assertSee($d->dispute_number);
+});
+
+function gp4Insurer(object $t, array $perms): User
+{
+    $u = makeAuthTestUser($t->tenant, $perms);
+    DB::table('authority_limits')->insert(['id' => (string) Str::uuid(), 'carrier_id' => $t->f['carrier']->id, 'holder_type' => 'USER', 'holder_id' => $u->id,
+        'authority_type' => \App\Application\Health\Preauth\PreauthLifecycle::authorityType(), 'max_amount_minor' => 10_000_000, 'currency' => 'XAF',
+        'effective_from' => now()->subMonth()->toDateString(), 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+    test()->actingAs($u, 'web');
+    app(\App\Domain\Tenancy\TenantContext::class)->set($t->tenant->id);
+    \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+
+    return $u;
+}
+
+it('REQ-HLT-002 web (insurer): pre-authorization queue shows the request and its detail; a line-by-line partial decision runs through PreauthorizationService', function () {
+    gp4Web($this);
+    $id = \Livewire\Livewire::test(\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::class)
+        ->set('request_type', 'OUTPATIENT')->set('policy_id', $this->policy->id)->set('member_ref', $this->f['party']->id)->set('facility_id', $this->main->id)
+        ->set('service_code', 'CONS_GP4')->set('quantity', '1')->set('details', ['consultation_date' => '2026-03-10', 'diagnosis_code' => 'J06'])
+        ->call('submitRequest')->assertSet('state', 'SUCCESS')->get('selected');
+    $pa = DB::table('health_preauthorizations')->find($id);
+    $line = DB::table('health_preauthorization_lines')->where('health_preauthorization_id', $id)->first();
+
+    gp4Insurer($this, ['health.preauth.view']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class)->assertOk()->assertSee($pa->preauth_number)
+        ->assertTableActionHidden('preauthPropose', $id)
+        ->mountTableAction('viewDetail', $id)->assertMountedActionModalSee('CONS_GP4');
+
+    gp4Insurer($this, ['health.preauth.view', 'health.preauth.review']);
+    $reduced = intdiv((int) $line->insurer_amount_minor, 2);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthPreauthorizationQueue::class)
+        ->callTableAction('preauthPropose', $id, ['decision' => 'PARTIAL', 'valid_until' => '2026-03-14',
+            'lines' => [['line_id' => $line->id, 'summary' => 'x', 'approved_quantity' => 1, 'approved_amount_minor' => $reduced, 'decline_reason' => 'Protocol cap']]])
+        ->assertHasNoTableActionErrors();
+    $l = DB::table('health_preauthorization_lines')->find($line->id);
+    expect(DB::table('health_preauthorizations')->where('id', $id)->value('status'))->toBeIn(['PENDING_APPROVAL', 'REFERRED'])
+        ->and($l->line_decision)->toBe('PARTIAL')->and((int) $l->approved_amount_minor)->toBe($reduced)->and($l->decline_reason)->toBe('Protocol cap');
+});
+
+it('REQ-HLT-003 web (insurer): provider claim review, line-by-line adjudication, payable, settlement batch create and pay via the shared actions', function () {
+    $claim = app(ProviderClaimService::class)->create($this->tenant->id, ['provider_id' => $this->clinic->id, 'contract_id' => $this->contract->id, 'invoice_reference' => 'ADJ-1',
+        'service_date' => '2026-03-10', 'policy_id' => $this->policy->id, 'member_party_id' => $this->f['party']->id,
+        'lines' => [['medical_service_id' => $this->cons->id, 'unit_price_minor' => 15000], ['medical_service_id' => $this->cons->id, 'unit_price_minor' => 15000]]], $this->user->id);
+    app(ProviderClaimService::class)->submit($this->tenant->id, $claim->id, $this->user->id);
+
+    gp4Insurer($this, ['health.provider_claims.view']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class)->assertSee('ADJ-1')->assertTableActionHidden('providerClaimReview', $claim->id);
+
+    gp4Insurer($this, ['health.provider_claims.view', 'health.provider_claims.adjudicate', 'health.provider_claims.approve_payment',
+        'health.provider_settlements.manage', 'health.provider_settlements.pay']);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class)->callTableAction('providerClaimReview', $claim->id);
+    expect(DB::table('health_provider_claims')->where('id', $claim->id)->value('status'))->toBe('UNDER_REVIEW');
+    // A rejected line without a reason code is refused by the form.
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class)
+        ->callTableAction('providerClaimAdjudicate', $claim->id, ['lines' => [['line_no' => 1, 'summary' => 'a', 'reject' => false], ['line_no' => 2, 'summary' => 'b', 'reject' => true, 'reason_code' => null]]])
+        ->assertHasTableActionErrors();
+    expect(DB::table('health_provider_claims')->where('id', $claim->id)->value('status'))->toBe('UNDER_REVIEW');
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class)
+        ->callTableAction('providerClaimAdjudicate', $claim->id, ['note' => 'Line 2 duplicate', 'lines' => [
+            ['line_no' => 1, 'summary' => 'a', 'reject' => false, 'allowed_minor' => null],
+            ['line_no' => 2, 'summary' => 'b', 'reject' => true, 'reason_code' => 'DUPLICATE', 'explanation' => 'Billed twice'],
+        ]])->assertHasNoTableActionErrors();
+    $lines = DB::table('health_provider_claim_lines')->where('health_provider_claim_id', $claim->id)->orderBy('line_no')->get();
+    expect(DB::table('health_provider_claims')->where('id', $claim->id)->value('status'))->toBe('PARTIALLY_APPROVED')
+        ->and($lines[1]->reason_code)->toBe('DUPLICATE')->and((int) $lines[1]->allowed_minor)->toBe(0)->and((int) $lines[0]->allowed_minor)->toBeGreaterThan(0);
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderClaimQueue::class)->callTableAction('providerClaimPayable', $claim->id);
+    expect(DB::table('health_provider_claims')->where('id', $claim->id)->value('status'))->toBe('PAYABLE');
+
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderSettlements::class)
+        ->callTableAction('settlementCreate', data: ['provider_id' => $this->clinic->id, 'currency' => 'XAF'])->assertHasNoTableActionErrors();
+    $batch = DB::table('health_provider_settlement_batches')->where('provider_profile_id', $this->clinic->id)->first();
+    expect($batch)->not->toBeNull()->and($batch->status)->toBe('OPEN');
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderSettlements::class)->assertSee($batch->batch_number)
+        ->mountTableAction('viewDetail', $batch->id)->assertMountedActionModalSee('ADJ-1');
+    \Livewire\Livewire::test(\App\Filament\Admin\Pages\HealthProviderSettlements::class)->callTableAction('settlementPay', $batch->id, ['payment_reference' => 'VIR-R2']);
+    expect(DB::table('health_provider_settlement_batches')->where('id', $batch->id)->value('status'))->toBe('PAID')
+        ->and(DB::table('health_provider_claims')->where('id', $claim->id)->value('status'))->toBe('PAID');
+});
+
+it('REQ-PRV-003 web: a provider form action on a real /livewire/update round-trip keeps the panel tenant (ScopesPanelTenant)', function () {
+    $this->actingAs($this->user, 'web');
+    app(\App\Domain\Tenancy\TenantContext::class)->clear();
+    $html = $this->get(\App\Application\Providers\Workspace\Filament\Pages\ReconciliationsPage::getUrl(panel: 'provider'))->assertOk()->getContent();
+    preg_match_all('/wire:snapshot="([^"]+)"/', $html, $m);
+    $snapshot = collect($m[1])->map(fn ($s) => json_decode(html_entity_decode($s, ENT_QUOTES), true))
+        ->first(fn ($s) => str_contains((string) ($s['memo']['name'] ?? ''), 'reconciliations-page'));
+    expect($snapshot)->not->toBeNull();
+    app(\App\Domain\Tenancy\TenantContext::class)->clear();
+
+    $this->withHeaders(['X-Livewire' => 'true'])->postJson(app(\Livewire\Mechanisms\HandleRequests\HandleRequests::class)->getUpdateUri(), [
+        '_token' => csrf_token(),
+        'components' => [['snapshot' => json_encode($snapshot),
+            'updates' => ['payment_reference' => 'VIR-RT', 'received_on' => '2026-04-03', 'currency' => 'XAF', 'amount_minor' => '7000'],
+            'calls' => [['path' => '', 'method' => 'recordPayment', 'params' => []]]]],
+    ])->assertOk();
+    expect(DB::table('provider_reconciliations')->where('payment_reference', 'VIR-RT')->where('tenant_id', $this->tenant->id)->count())->toBe(1);
+});

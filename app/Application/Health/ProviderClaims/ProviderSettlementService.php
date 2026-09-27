@@ -76,6 +76,15 @@ final class ProviderSettlementService
         });
     }
 
+    /** Settlement batches, newest first (same shape as health_provider_settlement_batches rows). @param array{status?: ?string, provider_id?: ?string} $f */
+    public function list(string $tenantId, array $f): array
+    {
+        return DB::table('health_provider_settlement_batches')->where('tenant_id', $tenantId)
+            ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
+            ->when($f['provider_id'] ?? null, fn ($q, $v) => $q->where('provider_profile_id', $v))
+            ->orderByDesc('created_at')->limit(200)->get()->all();
+    }
+
     public function batch(string $tenantId, string $id): object
     {
         $b = DB::table('health_provider_settlement_batches')->where(['tenant_id' => $tenantId, 'id' => $id])->first()

@@ -58,8 +58,14 @@ return [
     'providerClaimPayable' => ['label' => 'Valider pour paiement', 'done' => 'Facture prestataire payable'],
     'settlementCreate' => ['label' => 'Créer un lot de règlement', 'done' => 'Lot de règlement créé'],
     'settlementPay' => ['label' => 'Payer le lot de règlement', 'done' => 'Lot de règlement payé'],
+    'providerClaimReview' => ['label' => 'Commencer l’examen', 'done' => 'Facture prestataire en examen'],
+    'providerClaimAdjudicate' => ['label' => 'Statuer', 'done' => 'Facture prestataire liquidée', 'help' => 'Les lignes non modifiées sont valorisées au tarif conventionné. Rejetez une ligne avec un motif ou réduisez son montant admis.'],
+    'providerClaimResolveDispute' => ['label' => 'Traiter la contestation', 'done' => 'Contestation traitée'],
+    'viewDetail' => ['label' => 'Ouvrir'],
 
     'fields' => [
+        'lines' => 'Lignes', 'approved_quantity' => 'Quantité accordée', 'approved_amount_minor' => 'Montant accordé (unités mineures)', 'decline_reason' => 'Motif de refus / réduction',
+        'reject_line' => 'Rejeter la ligne', 'allowed_minor' => 'Montant admis (unités mineures)', 'explanation' => 'Explication',
         'policy' => 'Police', 'claimant' => 'Déclarant', 'loss_occurred_at' => 'Date du sinistre', 'loss_location' => 'Lieu du sinistre',
         'loss_description' => 'Circonstances', 'estimated_loss_minor' => 'Préjudice estimé (unités mineures)', 'priority' => 'Priorité', 'channel' => 'Canal',
         'assignee' => 'Affecter à', 'reason_code' => 'Code motif', 'reason' => 'Motif', 'reason_codes' => 'Codes motifs', 'heads' => 'Postes',
@@ -83,8 +89,17 @@ return [
         'recovery_op' => ['RECEIVE' => 'Enregistrer un encaissement', 'DISPUTE' => 'Marquer comme contesté', 'RESOLVE' => 'Résoudre la contestation', 'CLOSE' => 'Clôturer'],
         'decision' => ['APPROVE' => 'Accepter', 'PARTIAL' => 'Acceptation partielle', 'DECLINE' => 'Refuser'],
         'preauth' => ['APPROVED' => 'Accepter', 'PARTIAL' => 'Acceptation partielle', 'DECLINED' => 'Refuser'],
+        'provider_dispute' => ['REOPEN' => 'Rouvrir pour nouvelle liquidation', 'UPHOLD' => 'Maintenir la décision'],
         'initiator' => ['INSURED' => 'Assuré', 'INSURER' => 'Assureur', 'INTERMEDIARY' => 'Intermédiaire'],
         'closure' => ['SETTLED_PAID' => 'Réglé et payé', 'DECLINED_FINAL' => 'Refusé (définitif)', 'NO_PAYMENT_DUE' => 'Aucun paiement dû', 'WITHDRAWN' => 'Retiré par le déclarant', 'DUPLICATE' => 'Doublon', 'OPENED_IN_ERROR' => 'Ouvert par erreur'],
         'reopen' => ['NEW_EVIDENCE' => 'Nouvel élément', 'LATE_INVOICE' => 'Facture tardive', 'RECOVERY_RECEIVED' => 'Recours encaissé', 'DISPUTE_UPHELD' => 'Contestation fondée', 'ERROR_CORRECTION' => "Correction d'erreur", 'REGULATORY_REQUEST' => 'Demande du régulateur', 'COURT_ORDER' => 'Décision de justice'],
+    ],
+    'screens' => [
+        'group' => 'Santé',
+        'preauth_queue' => 'File des prises en charge',
+        'provider_claims' => 'Factures prestataires',
+        'provider_settlements' => 'Lots de règlement prestataires',
+        'lines' => 'Lignes',
+        'history' => 'Historique',
     ],
 ];

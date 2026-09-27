@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
+use App\Application\Providers\Portal\ProviderPortalService;
 use App\Application\Providers\Portal\ProviderScope;
 use App\Application\Providers\Workspace\ProviderOperationsService;
 use App\Application\Providers\Workspace\ProviderWorkspaceService;
@@ -13,6 +14,8 @@ use BackedEnum;
 use Filament\Pages\Page;
 use App\Application\Providers\Workspace\Http\ProviderWorkspaceController;
 use App\Interfaces\Http\Errors\ApiProblemException;
+use App\Interfaces\Http\Middleware\IdempotencyGuard;
+use Illuminate\Support\Str;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +43,20 @@ abstract class ProviderWorkspacePage extends Page
 
     public ?string $stateMessage = null;
 
+    /**
+     * Idempotency key of the pending form submission. It is rotated whenever the user edits a form field (a new logical
+     * submission), never by the submit itself, so a double click — the queued second request carries no field change —
+     * reuses the key and is replayed by IdempotencyGuard instead of executing twice.
+     */
+    public ?string $formToken = null;
+
+    public function updated(string $name): void
+    {
+        if ($name !== 'formToken') {
+            $this->formToken = (string) Str::uuid();
+        }
+    }
+
     public static function canAccess(): bool
     {
         $u = auth()->user();
@@ -55,6 +72,19 @@ abstract class ProviderWorkspacePage extends Page
     public function getTitle(): string
     {
         return __('provider_workspace.screens.'.static::$screen);
+    }
+
+    /** The current user holds $permission (form gating; the API route's permission middleware equivalent). */
+    public function allows(string $permission): bool
+    {
+        return (bool) rescue(fn () => $this->user()->hasPermission($permission), false, false);
+    }
+
+    /** Facilities of the active provider for form selects. @return array<string, string> */
+    public function facilityOptions(): array
+    {
+        return collect(rescue(fn () => app(ProviderPortalService::class)->facilities($this->scope()), [], false))
+            ->mapWithKeys(fn ($f) => [((array) $f)['id'] => ((array) $f)['code'].' — '.((array) $f)['name']])->all();
     }
 
     protected function user(): User
@@ -165,17 +195,29 @@ abstract class ProviderWorkspacePage extends Page
      */
     protected function callWorkspace(string $action, array $input, ?string $id = null, array $fieldMap = []): ?array
     {
+        $this->formToken ??= (string) Str::uuid();
         $r = Request::create('/api/v1/provider-portal', 'POST', $input);
+        $r->headers->set('Idempotency-Key', $this->formToken);
         $r->setUserResolver(fn () => $this->user());
         $r->attributes->set(ProviderScope::ATTRIBUTE, $this->scope());
         $this->resetErrorBag();
         try {
             $c = app(ProviderWorkspaceController::class);
-            $res = $id === null ? $c->{$action}($r) : $c->{$action}($r, $id);
+            // Same IdempotencyGuard as the API routes, keyed per form submission ($formToken): a double click replays the
+            // stored response (or is refused while the first is in flight) instead of executing twice.
+            $res = app(IdempotencyGuard::class)->handle($r, fn (Request $req) => $id === null ? $c->{$action}($req) : $c->{$action}($req, $id),
+                'provider_portal.web.'.$action.($id === null ? '' : ':'.$id));
+            $body = json_decode((string) $res->getContent(), true);
+            if ($res->getStatusCode() >= 400) {
+                $this->state = 'VALIDATION_FAILED';
+                $this->stateMessage = (string) ($body['message'] ?? __('provider_workspace.states.VALIDATION_FAILED'));
+
+                return null;
+            }
             $this->state = 'SUCCESS';
             $this->stateMessage = __('provider_workspace.states.SUCCESS');
 
-            return json_decode((string) $res->getContent(), true)['data'] ?? [];
+            return $body['data'] ?? [];
         } catch (ValidationException $e) {
             foreach ($e->errors() as $k => $msgs) {
                 $this->addError($fieldMap[$k] ?? $k, $msgs[0]);

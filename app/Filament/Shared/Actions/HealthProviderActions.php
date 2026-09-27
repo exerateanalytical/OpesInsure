@@ -10,7 +10,11 @@ use App\Application\Health\ProviderClaims\ProviderClaimService;
 use App\Application\Health\ProviderClaims\ProviderSettlementService;
 use App\Domain\Tenancy\TenantContext;
 use Filament\Actions\Action;
+use App\Application\Health\ProviderClaims\ProviderClaimPricer;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -24,6 +28,9 @@ use Illuminate\Support\Facades\DB;
  *   preauthReturn       POST health/preauthorizations/{p}/proposal/return    health.preauth.approve  PreauthorizationService::returnProposal
  *   preauthDecide       POST health/preauthorizations/{p}/decision           health.preauth.approve  PreauthorizationService::decide  (issues the guarantee of payment)
  *   preauthCancel       POST health/preauthorizations/{p}/cancel             health.preauth.review   PreauthorizationService::cancel
+ *   providerClaimReview POST health/provider-claims/{c}/review               health.provider_claims.adjudicate       ProviderClaimService::startReview
+ *   providerClaimAdjudicate POST health/provider-claims/{c}/adjudicate       health.provider_claims.adjudicate       ProviderClaimService::adjudicate (line overrides)
+ *   providerClaimResolveDispute POST health/provider-claims/{c}/dispute/resolve health.provider_claims.adjudicate   ProviderClaimService::resolveDispute
  *   providerClaimPayable POST health/provider-claims/{c}/payable             health.provider_claims.approve_payment  ProviderClaimService::markPayable
  *   settlementCreate    POST health/provider-settlements                     health.provider_settlements.manage      ProviderSettlementService::createBatch
  *   settlementPay       POST health/provider-settlements/{b}/pay             health.provider_settlements.pay         ProviderSettlementService::payBatch
@@ -59,9 +66,22 @@ final class HealthProviderActions
                 DatePicker::make('valid_from')->label(__('workflow_actions.fields.valid_from')),
                 DatePicker::make('valid_until')->label(__('workflow_actions.fields.valid_until'))->afterOrEqual('valid_from'),
                 Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(5000),
+                // Line-by-line decision (PARTIAL): a line left untouched is approved in full; reduce or decline it with a reason.
+                Repeater::make('lines')->label(__('workflow_actions.fields.lines'))->visible(fn (callable $get) => $get('decision') === 'PARTIAL')
+                    ->addable(false)->deletable(false)->reorderable(false)->columns(4)
+                    ->itemLabel(fn (array $state) => $state['summary'] ?? null)
+                    ->schema([
+                        Hidden::make('line_id'), Hidden::make('summary'),
+                        TextInput::make('approved_quantity')->label(__('workflow_actions.fields.approved_quantity'))->numeric()->minValue(0),
+                        TextInput::make('approved_amount_minor')->label(__('workflow_actions.fields.approved_amount_minor'))->integer()->minValue(0),
+                        TextInput::make('decline_reason')->label(__('workflow_actions.fields.decline_reason'))->maxLength(200)->columnSpan(2),
+                    ]),
             ])
+            ->fillForm(fn ($record) => ['lines' => DB::table('health_preauthorization_lines')->where('health_preauthorization_id', WorkflowAction::id($record))->whereNull('extension_id')
+                ->orderBy('line_no')->get()->map(fn ($l) => ['line_id' => $l->id, 'approved_quantity' => $l->quantity, 'approved_amount_minor' => (int) $l->insurer_amount_minor,
+                    'summary' => '#'.$l->line_no.' '.$l->service_code.' x '.$l->quantity.' = '.number_format((int) $l->insurer_amount_minor)])->all()])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(PreauthorizationService::class)->propose(
-                self::tenant(), WorkflowAction::id($record), array_filter($data, fn ($v) => filled($v)), auth()->user())));
+                self::tenant(), WorkflowAction::id($record), self::proposal($data), auth()->user())));
     }
 
     public static function preauthReturn(): Action
@@ -106,6 +126,63 @@ final class HealthProviderActions
                 fn () => app(ProviderClaimService::class)->markPayable(self::tenant(), WorkflowAction::id($record), auth()->id())));
     }
 
+    /** @return list<Action> insurer-side provider claim adjudication actions in lifecycle order */
+    public static function providerClaim(): array
+    {
+        return [self::providerClaimReview(), self::providerClaimAdjudicate(), self::providerClaimPayable(), self::providerClaimResolveDispute()];
+    }
+
+    public static function providerClaimReview(): Action
+    {
+        $p = 'health.provider_claims.adjudicate';
+
+        return WorkflowAction::make('providerClaimReview', $p)->icon('heroicon-o-magnifying-glass')->requiresConfirmation()
+            ->visible(fn ($record) => self::status($record) === 'SUBMITTED')
+            ->action(fn (Action $action, $record) => WorkflowAction::run($action, $p,
+                fn () => app(ProviderClaimService::class)->startReview(self::tenant(), WorkflowAction::id($record), auth()->id())));
+    }
+
+    /** Line-by-line adjudication: each line may be rejected (reason code) or have its allowed amount reduced; the rest is priced on the tariff. */
+    public static function providerClaimAdjudicate(): Action
+    {
+        $p = 'health.provider_claims.adjudicate';
+
+        return WorkflowAction::make('providerClaimAdjudicate', $p)->icon('heroicon-o-scale')->modalWidth('5xl')
+            ->visible(fn ($record) => self::status($record) === 'UNDER_REVIEW')
+            ->fillForm(fn ($record) => ['lines' => collect(app(ProviderClaimService::class)->find(self::tenant(), WorkflowAction::id($record))->lines)
+                ->map(fn ($l) => ['line_no' => $l->line_no, 'reject' => false,
+                    'summary' => '#'.$l->line_no.' '.$l->service_code.' x '.$l->quantity.' = '.number_format((int) $l->billed_minor)])->all()])
+            ->schema([
+                Repeater::make('lines')->label(__('workflow_actions.fields.lines'))->addable(false)->deletable(false)->reorderable(false)->columns(4)
+                    ->itemLabel(fn (array $state) => $state['summary'] ?? null)
+                    ->schema([
+                        Hidden::make('line_no'), Hidden::make('summary'),
+                        Toggle::make('reject')->label(__('workflow_actions.fields.reject_line'))->live(),
+                        Select::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->options(WorkflowAction::options(ProviderClaimPricer::REASONS))
+                            ->required(fn (callable $get) => (bool) $get('reject')),
+                        TextInput::make('allowed_minor')->label(__('workflow_actions.fields.allowed_minor'))->integer()->minValue(0)->hidden(fn (callable $get) => (bool) $get('reject')),
+                        TextInput::make('explanation')->label(__('workflow_actions.fields.explanation'))->maxLength(2000),
+                    ]),
+                Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(2000),
+            ])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(ProviderClaimService::class)->adjudicate(
+                self::tenant(), WorkflowAction::id($record), self::overrides($data['lines'] ?? []), $data['note'] ?? null, auth()->id())));
+    }
+
+    public static function providerClaimResolveDispute(): Action
+    {
+        $p = 'health.provider_claims.adjudicate';
+
+        return WorkflowAction::make('providerClaimResolveDispute', $p)->icon('heroicon-o-chat-bubble-left-right')
+            ->visible(fn ($record) => self::status($record) === 'DISPUTED')
+            ->schema([
+                Select::make('outcome')->label(__('workflow_actions.fields.outcome'))->options(WorkflowAction::options(['REOPEN', 'UPHOLD'], 'provider_dispute'))->required(),
+                Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->minLength(5)->maxLength(2000),
+            ])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(ProviderClaimService::class)->resolveDispute(self::tenant(), WorkflowAction::id($record), $data['outcome'], $data['reason'], auth()->id())));
+    }
+
     /** List-page header action (no record): batch the provider's unbatched PAYABLE claims. */
     public static function settlementCreate(): Action
     {
@@ -132,6 +209,44 @@ final class HealthProviderActions
             ->schema([TextInput::make('payment_reference')->label(__('workflow_actions.fields.payment_reference'))->required()->maxLength(120)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(ProviderSettlementService::class)->payBatch(self::tenant(), WorkflowAction::id($record), $data['payment_reference'], auth()->id())));
+    }
+
+    /** Preauth proposal payload: line rows only for a PARTIAL decision, each with its non-empty fields. */
+    private static function proposal(array $data): array
+    {
+        $lines = ($data['decision'] ?? null) === 'PARTIAL'
+            ? array_values(array_map(fn ($l) => array_filter(array_diff_key($l, ['summary' => 1]), fn ($v) => filled($v)), $data['lines'] ?? []))
+            : [];
+        unset($data['lines']);
+
+        return array_filter($data, fn ($v) => filled($v)) + ($lines === [] ? [] : ['lines' => $lines]);
+    }
+
+    /**
+     * Adjudication overrides in the API shape (lines.*.line_no / reject / reason_code / allowed_minor / explanation): only lines
+     * the adjudicator touched are sent; untouched lines are priced on the tariff.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function overrides(array $lines): array
+    {
+        $out = [];
+        foreach ($lines as $l) {
+            $o = ['line_no' => (int) $l['line_no']];
+            if (! empty($l['reject'])) {
+                $o += ['reject' => true, 'reason_code' => $l['reason_code'] ?? null];
+            } elseif (filled($l['allowed_minor'] ?? null)) {
+                $o['allowed_minor'] = (int) $l['allowed_minor'];
+            }
+            if (filled($l['explanation'] ?? null)) {
+                $o['explanation'] = $l['explanation'];
+            }
+            if (count($o) > 1) {
+                $out[] = $o;
+            }
+        }
+
+        return $out;
     }
 
     private static function status(mixed $record): ?string

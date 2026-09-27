@@ -6,6 +6,7 @@ namespace App\Application\Providers\Workspace\Filament;
 
 use App\Application\Providers\Portal\ProviderScope;
 use App\Domain\Tenancy\TenantContext;
+use App\Filament\Shared\Middleware\ScopesPanelTenant;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ResolveProviderPanelScope
 {
+    use ScopesPanelTenant;
+
     public function __construct(private readonly TenantContext $context) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -34,12 +37,7 @@ final class ResolveProviderPanelScope
         $scope = new ProviderScope($active, $ids, $p->party_id, $p->partner_id);
         $request->attributes->set(ProviderScope::ATTRIBUTE, $scope);
         app()->instance(ProviderScope::class.'@panel', $scope);
-        $this->context->set($membership->tenant_id);
-
-        try {
-            return $next($request);
-        } finally {
-            $this->context->clear();
-        }
+        // Persistent middleware: on a Livewire round-trip the tenant must survive until the component call (ScopesPanelTenant).
+        return $this->withPanelTenant($this->context, $membership->tenant_id, $request, $next);
     }
 }

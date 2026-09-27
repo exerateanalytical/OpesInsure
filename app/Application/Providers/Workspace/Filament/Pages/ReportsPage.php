@@ -46,13 +46,6 @@ final class ReportsPage extends ProviderWorkspacePage
         return ProviderWorkspaceRegister::REPORTS;
     }
 
-    /** @return array<string, string> */
-    public function facilityOptions(): array
-    {
-        return collect(rescue(fn () => app(ProviderPortalService::class)->facilities($this->scope()), [], false))
-            ->mapWithKeys(fn ($f) => [((array) $f)['id'] => ((array) $f)['code'].' — '.((array) $f)['name']])->all();
-    }
-
     public function canExport(): bool
     {
         return (bool) rescue(fn () => $this->user()->hasPermission('provider.reports.export'), false, false);

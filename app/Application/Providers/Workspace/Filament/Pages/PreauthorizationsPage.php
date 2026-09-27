@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Health\Preauth\PreauthLifecycle;
-use App\Application\Providers\Portal\ProviderPortalService;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 
@@ -74,13 +73,6 @@ final class PreauthorizationsPage extends ProviderWorkspacePage
     public function typeFields(): array
     {
         return PreauthLifecycle::TYPE_FIELDS[$this->request_type] ?? [];
-    }
-
-    /** @return array<string, string> */
-    public function facilityOptions(): array
-    {
-        return collect(rescue(fn () => app(ProviderPortalService::class)->facilities($this->scope()), [], false))
-            ->mapWithKeys(fn ($f) => [((array) $f)['id'] => ((array) $f)['code'].' — '.((array) $f)['name']])->all();
     }
 
     public function submitRequest(): void

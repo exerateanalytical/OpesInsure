@@ -73,13 +73,6 @@ final class ClaimsPage extends ProviderWorkspacePage
             ->mapWithKeys(fn ($l) => [$l->medical_service_id => $l->code.' — '.$l->name.' ('.number_format((int) $l->contracted_price_minor).')'])->all();
     }
 
-    /** @return array<string, string> */
-    public function facilityOptions(): array
-    {
-        return collect(rescue(fn () => app(ProviderPortalService::class)->facilities($this->scope()), [], false))
-            ->mapWithKeys(fn ($f) => [((array) $f)['id'] => ((array) $f)['code'].' — '.((array) $f)['name']])->all();
-    }
-
     public function addLine(): void
     {
         $this->lines[] = ['medical_service_id' => null, 'provider_code' => null, 'quantity' => '1', 'unit_price_minor' => null];

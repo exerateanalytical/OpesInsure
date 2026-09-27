@@ -58,8 +58,14 @@ return [
     'providerClaimPayable' => ['label' => 'Approve for payment', 'done' => 'Provider claim payable'],
     'settlementCreate' => ['label' => 'Create settlement batch', 'done' => 'Settlement batch created'],
     'settlementPay' => ['label' => 'Pay settlement batch', 'done' => 'Settlement batch paid'],
+    'providerClaimReview' => ['label' => 'Start review', 'done' => 'Provider claim under review'],
+    'providerClaimAdjudicate' => ['label' => 'Adjudicate', 'done' => 'Provider claim adjudicated', 'help' => 'Lines left untouched are priced on the contracted tariff. Reject a line with a reason code, or lower its allowed amount.'],
+    'providerClaimResolveDispute' => ['label' => 'Resolve dispute', 'done' => 'Dispute resolved'],
+    'viewDetail' => ['label' => 'Open'],
 
     'fields' => [
+        'lines' => 'Lines', 'approved_quantity' => 'Approved quantity', 'approved_amount_minor' => 'Approved amount (minor units)', 'decline_reason' => 'Decline / reduction reason',
+        'reject_line' => 'Reject line', 'allowed_minor' => 'Allowed amount (minor units)', 'explanation' => 'Explanation',
         'policy' => 'Policy', 'claimant' => 'Claimant', 'loss_occurred_at' => 'Date of loss', 'loss_location' => 'Place of loss',
         'loss_description' => 'What happened', 'estimated_loss_minor' => 'Estimated loss (minor units)', 'priority' => 'Priority', 'channel' => 'Channel',
         'assignee' => 'Assign to', 'reason_code' => 'Reason code', 'reason' => 'Reason', 'reason_codes' => 'Reason codes', 'heads' => 'Heads',
@@ -83,8 +89,17 @@ return [
         'recovery_op' => ['RECEIVE' => 'Record money received', 'DISPUTE' => 'Mark as disputed', 'RESOLVE' => 'Resolve the dispute', 'CLOSE' => 'Close'],
         'decision' => ['APPROVE' => 'Approve', 'PARTIAL' => 'Partial approval', 'DECLINE' => 'Decline'],
         'preauth' => ['APPROVED' => 'Approve', 'PARTIAL' => 'Partial approval', 'DECLINED' => 'Decline'],
+        'provider_dispute' => ['REOPEN' => 'Reopen for re-adjudication', 'UPHOLD' => 'Uphold the decision'],
         'initiator' => ['INSURED' => 'Insured', 'INSURER' => 'Insurer', 'INTERMEDIARY' => 'Intermediary'],
         'closure' => ['SETTLED_PAID' => 'Settled and paid', 'DECLINED_FINAL' => 'Declined (final)', 'NO_PAYMENT_DUE' => 'No payment due', 'WITHDRAWN' => 'Withdrawn by claimant', 'DUPLICATE' => 'Duplicate', 'OPENED_IN_ERROR' => 'Opened in error'],
         'reopen' => ['NEW_EVIDENCE' => 'New evidence', 'LATE_INVOICE' => 'Late invoice', 'RECOVERY_RECEIVED' => 'Recovery received', 'DISPUTE_UPHELD' => 'Dispute upheld', 'ERROR_CORRECTION' => 'Error correction', 'REGULATORY_REQUEST' => 'Regulatory request', 'COURT_ORDER' => 'Court order'],
+    ],
+    'screens' => [
+        'group' => 'Health',
+        'preauth_queue' => 'Pre-authorization queue',
+        'provider_claims' => 'Provider claims',
+        'provider_settlements' => 'Provider settlement batches',
+        'lines' => 'Lines',
+        'history' => 'History',
     ],
 ];
