@@ -10,6 +10,8 @@
       <div class="tabs-u" role="tablist" data-tabs></div>
       <div class="desk-tools" data-tools>
         <a class="dbtn dbtn-primary sm" href="/account/buy">@include('public.partials.i', ['n' => 'compare']){{ $K['js']['new_quote'] }}</a>
+        {{-- UI audit 2026-09-27: entry point for client onboarding (the form lives on the buy page, origin-locked to the partner). --}}
+        <a class="dbtn dbtn-outline sm" href="/account/buy?new_client=1" data-new-client-link>@include('public.partials.i', ['n' => 'users']){{ __('account_buy.new_client') }}</a>
       </div>
       <div data-rows></div>
     </section>
@@ -25,6 +27,7 @@
 Opes.page(function (ctx) {
   var A = Agent, O = Opes, h = O.h;
   if (!A.guard(ctx)) return;
+  var ncl = O.$('[data-new-client-link]'); if (ncl && !(A.mode() === 'broker' ? O.can('crm.leads.manage') : O.can('agent.clients.manage'))) ncl.hidden = true;
   var box = O.$('[data-rows]'), all = [], state = { tab: 'all', q: '' };
   O.loading(box);
   if (!A.canQuote()) O.$('[data-tools] a').remove();

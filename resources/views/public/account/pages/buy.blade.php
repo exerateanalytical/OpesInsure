@@ -90,6 +90,7 @@ Opes.page(function (ctx) {
       $('[data-book-note]').hidden = false;
       $('[data-new-client-bar]').hidden = false;
       $('[data-new-client]').addEventListener('click', function () { ncForm.hidden = false; ncForm.elements.full_name.focus(); });
+      if (params.get('new_client') === '1') { ncForm.hidden = false; ncForm.elements.full_name.focus(); }
       $('[data-nc-cancel]').addEventListener('click', function () { ncForm.hidden = true; });
       ncForm.addEventListener('submit', function (e) {
         e.preventDefault(); Opes.alert('');

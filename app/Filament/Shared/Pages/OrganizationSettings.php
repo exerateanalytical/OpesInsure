@@ -38,7 +38,10 @@ abstract class OrganizationSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
-    protected static ?string $navigationLabel = 'Organisation settings';
+    public static function getNavigationLabel(): string
+    {
+        return __('organisation_settings.title');
+    }
 
     protected static ?string $slug = 'organisation-settings';
 
@@ -64,7 +67,7 @@ abstract class OrganizationSettings extends Page
 
     public function getTitle(): string
     {
-        return 'Organisation settings';
+        return __('organisation_settings.title');
     }
 
     public function mount(): void
@@ -92,33 +95,33 @@ abstract class OrganizationSettings extends Page
         $manage = fn () => $this->canManageTenant();
 
         return $schema->statePath('data')->components([
-            Section::make('My preferences')->columns(2)->schema([
-                Select::make('locale')->label('Language')->options(self::LOCALES)->required(),
-                Select::make('display_timezone')->label('Display timezone')->options($tz)->searchable()->placeholder('Follow organisation / branch'),
+            Section::make(__('organisation_settings.my_preferences'))->columns(2)->schema([
+                Select::make('locale')->label(__('organisation_settings.language'))->options(self::LOCALES)->required(),
+                Select::make('display_timezone')->label(__('organisation_settings.display_timezone'))->options($tz)->searchable()->placeholder(__('organisation_settings.follow')),
             ]),
-            Section::make('Organisation')->columns(3)->schema([
-                Select::make('tenant_id')->label('Organisation')->options(fn () => Tenant::orderBy('legal_name')->pluck('legal_name', 'id')->all())->searchable()
+            Section::make(__('organisation_settings.organisation'))->columns(3)->schema([
+                Select::make('tenant_id')->label(__('organisation_settings.organisation'))->options(fn () => Tenant::orderBy('legal_name')->pluck('legal_name', 'id')->all())->searchable()
                     ->visible(fn () => $this->tenantSelectable())->live()->dehydrated(false)
                     ->afterStateUpdated(function ($state) {
                         $this->tenantId = $state;
                         $this->fillState();
                     }),
-                Select::make('tenant_timezone')->label('Organisation timezone')->options($tz)->searchable()->placeholder('Platform default')->disabled(fn () => ! $manage()),
-                Select::make('tenant_locale')->label('Primary language')->options(self::LOCALES)->disabled(fn () => ! $manage()),
-                Placeholder::make('effective')->label('Effective timezone')->content(fn () => $this->tenantId ? app(TimezoneResolver::class)->forTenant($this->tenantId) : '—'),
+                Select::make('tenant_timezone')->label(__('organisation_settings.organisation_timezone'))->options($tz)->searchable()->placeholder(__('organisation_settings.platform_default'))->disabled(fn () => ! $manage()),
+                Select::make('tenant_locale')->label(__('organisation_settings.primary_language'))->options(self::LOCALES)->disabled(fn () => ! $manage()),
+                Placeholder::make('effective')->label(__('organisation_settings.effective_timezone'))->content(fn () => $this->tenantId ? app(TimezoneResolver::class)->forTenant($this->tenantId) : '—'),
             ])->visible(fn () => $this->tenantId !== null || $this->tenantSelectable()),
-            Section::make('Branches')->description('Empty = inherit the organisation timezone.')->visible(fn () => $this->tenantId !== null)->schema([
+            Section::make(__('organisation_settings.branches'))->description(__('organisation_settings.branches_hint'))->visible(fn () => $this->tenantId !== null)->schema([
                 Repeater::make('branches')->hiddenLabel()->addable(false)->deletable(false)->reorderable(false)->columns(2)->disabled(fn () => ! $manage())->schema([
                     Hidden::make('id'),
-                    TextInput::make('name')->disabled()->dehydrated(false),
-                    Select::make('timezone')->options($tz)->searchable()->placeholder('Inherit organisation'),
+                    TextInput::make('name')->label(__('organisation_settings.name'))->disabled()->dehydrated(false),
+                    Select::make('timezone')->label(__('organisation_settings.timezone'))->options($tz)->searchable()->placeholder(__('organisation_settings.inherit')),
                 ]),
                 Placeholder::make('business_hours')->hiddenLabel()->content(fn () => \Filament\Facades\Filament::getCurrentOrDefaultPanel()->getId() === 'admin'
-                    ? new HtmlString('Opening hours and holidays: <a class="text-primary-600 underline" href="'
-                        .e(\App\Filament\Admin\Resources\BusinessHours\BusinessHoursResource::getUrl('index', panel: 'admin')).'">Business hours</a>.')
-                    : 'Opening hours and holidays are maintained by the platform administrators (Business hours).'),
+                    ? new HtmlString(e(__('organisation_settings.hours_admin')).' <a class="text-primary-600 underline" href="'
+                        .e(\App\Filament\Admin\Resources\BusinessHours\BusinessHoursResource::getUrl('index', panel: 'admin')).'">'.e(__('organisation_settings.business_hours')).'</a>.')
+                    : __('organisation_settings.hours_portal')),
             ]),
-            Section::make('Document numbering prefixes (read-only)')->visible(fn () => $this->tenantId !== null)->schema([
+            Section::make(__('organisation_settings.numbering'))->visible(fn () => $this->tenantId !== null)->schema([
                 Placeholder::make('numbering')->hiddenLabel()->content(fn () => $this->numberingHtml()),
             ]),
         ]);
@@ -130,16 +133,16 @@ abstract class OrganizationSettings extends Page
         return DocumentNumberingFamily::where('status', 'ACTIVE')->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $this->tenantId))
             ->orderByRaw('tenant_id IS NULL')->get()->unique('family_code')->sortBy('family_code')
             ->map(fn ($f) => ['family' => $f->family_code, 'prefix' => $f->prefix, 'include_year' => (bool) $f->include_year, 'pad' => (int) $f->pad,
-                'scope' => $f->tenant_id ? 'Organisation' : 'Platform default'])->values()->all();
+                'scope' => $f->tenant_id ? __('organisation_settings.scope_org') : __('organisation_settings.scope_platform')])->values()->all();
     }
 
     private function numberingHtml(): HtmlString
     {
         $rows = $this->numbering();
         if ($rows === []) {
-            return new HtmlString('<span class="text-sm text-gray-500">No numbering family configured: numbers use the document type family code.</span>');
+            return new HtmlString('<span class="text-sm text-gray-500">'.e(__('organisation_settings.numbering_none')).'</span>');
         }
-        $html = '<table class="text-sm"><thead><tr class="text-left"><th class="pe-4">Family</th><th class="pe-4">Example</th><th>Scope</th></tr></thead><tbody>';
+        $html = '<table class="text-sm"><thead><tr class="text-left"><th class="pe-4">'.e(__('organisation_settings.family')).'</th><th class="pe-4">'.e(__('organisation_settings.example')).'</th><th>'.e(__('organisation_settings.scope')).'</th></tr></thead><tbody>';
         foreach ($rows as $r) {
             $example = $r['prefix'].'-'.($r['include_year'] ? now()->format('Y').'-' : '').str_pad('1', $r['pad'], '0', STR_PAD_LEFT);
             $html .= '<tr><td class="pe-4 font-mono">'.e($r['family']).'</td><td class="pe-4 font-mono">'.e($example).'</td><td>'.e($r['scope']).'</td></tr>';
@@ -156,7 +159,7 @@ abstract class OrganizationSettings extends Page
         $catalogue = app(TimezoneCatalogue::class);
         foreach (['display_timezone', 'tenant_timezone'] as $k) {
             if (! empty($d[$k]) && ! $catalogue->isValid($d[$k])) {
-                throw ValidationException::withMessages(['data.'.$k => 'Unknown timezone.']);
+                throw ValidationException::withMessages(['data.'.$k => __('organisation_settings.unknown_timezone')]);
             }
         }
 
@@ -193,6 +196,6 @@ abstract class OrganizationSettings extends Page
         }
 
         $this->fillState();
-        Notification::make()->title('Settings saved')->success()->send();
+        Notification::make()->title(__('organisation_settings.saved'))->success()->send();
     }
 }
