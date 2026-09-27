@@ -5,7 +5,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { HandCoins } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { CarrierApi } from "@/api/client";
 import { fcfa } from "@/api/extra";

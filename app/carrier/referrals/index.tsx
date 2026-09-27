@@ -7,7 +7,7 @@ import { StatePanel } from "@/components/StatePanel";
 import { router } from "expo-router";
 import { ClipboardCheck } from "lucide-react-native";
 import { AppHeader } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";

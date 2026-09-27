@@ -8,7 +8,7 @@ import { PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Card, SectionTitle } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { useColumns } from "@/components/responsive";
 import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";

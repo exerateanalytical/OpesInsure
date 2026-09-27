@@ -4,7 +4,7 @@ import { FileSignature, Plus } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Screen } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";

@@ -6,7 +6,7 @@ import { PortalScreen } from "@/components/portal/PortalShell";
 import { agentTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";

@@ -5,7 +5,7 @@ import { Handshake } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
 import { useTranslation } from "@/i18n";

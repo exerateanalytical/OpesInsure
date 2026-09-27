@@ -6,7 +6,7 @@ import { PortalScreen } from "@/components/portal/PortalShell";
 import { agentTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
@@ -31,6 +31,7 @@ export default function AgentClaims() {
             {...listSpec(x, t, {
               status: (c) => c.status,
               statusLabel: (v) => td(`claimStatus_${v}`, v),
+              dims: [{ key: "carrier", title: t("fltInsurer"), get: (c) => (c.carrier_name ? { value: c.carrier_name, label: c.carrier_name } : null) }],
               date: (c) => c.submitted_at,
               dateTitle: t("fltCreated"),
               amount: (c) => c.approved_amount_minor ?? c.estimated_loss_minor,
@@ -39,6 +40,7 @@ export default function AgentClaims() {
             haystack={(c) => [c.claim_number, c.customer_name, c.policy_number, c.carrier_name, c.status]}
             placeholder={t("fltSearchQueue")}
             icon={ShieldAlert}
+            mark={(c) => ({ logoUrl: c.carrier_logo_url, name: c.carrier_name })}
             render={(c) => ({
               title: `${c.claim_number} · ${c.customer_name}`,
               subtitle: [

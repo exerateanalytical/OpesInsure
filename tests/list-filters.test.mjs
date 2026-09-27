@@ -92,7 +92,12 @@ test("custom range is inclusive of both local days", () => {
   assert.ok(inPeriod("2026-09-30T22:30:00Z", v));
   assert.ok(!inPeriod("2026-10-01T00:30:00Z", v));
   const swapped = periodRange(customPeriod("2026-10-05", "2026-10-01"));
-  assert.ok(swapped.from < swapped.to);
+  assert.equal(swapped.from.toISOString(), "2026-09-30T23:00:00.000Z", "reversed range starts on the earlier day");
+  assert.equal(swapped.to.toISOString(), "2026-10-05T23:00:00.000Z", "and includes the later day");
+  assert.ok(inPeriod("2026-10-03T12:00:00Z", customPeriod("2026-10-05", "2026-10-01")));
+  assert.ok(inPeriod("2026-10-01T00:30:00Z", customPeriod("2026-10-05", "2026-10-01")));
+  assert.ok(inPeriod("2026-10-05T22:30:00Z", customPeriod("2026-10-05", "2026-10-01")));
+  assert.ok(inPeriod("2026-10-03T12:00:00Z", customPeriod("2026-10-01", "")), "open-ended range");
   assert.equal(periodRange("custom:.."), null);
 });
 

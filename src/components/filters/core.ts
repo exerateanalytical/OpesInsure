@@ -180,13 +180,15 @@ export function periodRange(value: string, now: Date = new Date(), tz = DEFAULT_
       return { from: localMidnight(y, 0, 1, tz), to: localMidnight(y + 1, 0, 1, tz) };
   }
   if (value.startsWith("custom:")) {
-    const [a, b] = value.slice(7).split("..");
+    let [a, b] = value.slice(7).split("..");
+    // Typed backwards ("to" before "from"): swap the days so the range stays inclusive of both.
+    if (a && b && ISO_DAY.test(a) && ISO_DAY.test(b) && a > b) [a, b] = [b, a];
     const pa = ISO_DAY.exec(a ?? "");
     const pb = ISO_DAY.exec(b ?? "");
     if (!pa && !pb) return null;
     const from = pa ? localMidnight(Number(pa[1]), Number(pa[2]) - 1, Number(pa[3]), tz) : new Date(0);
     const to = pb ? localMidnight(Number(pb[1]), Number(pb[2]) - 1, Number(pb[3]) + 1, tz) : new Date(8.64e15);
-    return from <= to ? { from, to } : { from: to, to: from };
+    return { from, to };
   }
   return null;
 }

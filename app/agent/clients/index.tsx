@@ -24,7 +24,7 @@ export default function AgentClients() {
   const sections = useMemo(() => portfolioSections(rows, policies, { t, td }), [rows, policies, t, td]);
   const matchers = useMemo(() => portfolioMatchers(policies), [policies]);
   const f = useListFilters("agent.clients", sections);
-  const x = applyFilters(rows, f.values, matchers, f.text, portfolioHaystack);
+  const x = applyFilters(rows, f.values, matchers, f.query, portfolioHaystack);
   return (
     <PortalScreen tabs={agentTabs}>
       <AppHeader
@@ -36,7 +36,7 @@ export default function AgentClients() {
         icon={Plus}
         onPress={() => router.push("/agent/clients/new")}
       />
-      <FilterToolbar filters={f} sections={sections} count={(v) => applyFilters(rows, v, matchers, f.text, portfolioHaystack).length} placeholder={t("fltSearchClients")} />
+      <FilterToolbar filters={f} sections={sections} count={(v) => applyFilters(rows, v, matchers, f.text, portfolioHaystack).length} placeholder={t("fltSearchClients")} resultCount={f.active ? x.length : undefined} />
       <StatePanel {...q} onRetry={q.reload}>
         {() => (
           <>

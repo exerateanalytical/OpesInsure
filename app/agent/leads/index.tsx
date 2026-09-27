@@ -7,7 +7,7 @@ import { agentTabs } from "@/components/portal/tabs";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button } from "@/components/ui";
-import { FilteredList } from "@/components/partner/FilteredList";
+import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { AgentWorkspaceApi, LeadStatus, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
