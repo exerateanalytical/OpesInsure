@@ -63,7 +63,8 @@ final class ApprovalRequestResource extends Resource
     {
         $tenant = rescue(fn () => app(TenantContext::class)->id(), null, false);
 
-        return parent::getEloquentQuery()->where(fn ($q) => $q->whereNull('tenant_id')->when($tenant, fn ($q) => $q->orWhere('tenant_id', $tenant)));
+        return parent::getEloquentQuery()->where(fn ($q) => $q->when(\App\Application\WebExperiences\PortalScope::panel() === null, fn ($q) => $q->whereNull('tenant_id'))->when($tenant, fn ($q) => $q->orWhere('tenant_id', $tenant))
+            ->when(\App\Application\WebExperiences\PortalScope::panel() !== null && ! $tenant, fn ($q) => $q->whereRaw('1 = 0')));
     }
 
     public static function getNavigationBadge(): ?string

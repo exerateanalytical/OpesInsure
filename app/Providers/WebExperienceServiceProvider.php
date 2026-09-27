@@ -32,5 +32,7 @@ final class WebExperienceServiceProvider extends ServiceProvider
 
         // Owner decision D3: Lucide icons across every panel (central mapping, see LucideIcons).
         \Filament\Facades\Filament::serving(fn () => \App\Filament\Shared\LucideIcons::apply());
+        // UI audit 2026-09-27: one money/date/status convention for list columns (see Columns).
+        \Filament\Facades\Filament::serving(fn () => \App\Filament\Shared\Columns::applyDefaults());
     }
 }

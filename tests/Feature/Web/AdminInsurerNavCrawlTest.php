@@ -77,6 +77,7 @@ dataset('crawl_roles', [
     'REINSURANCE_OFFICER (insurer)' => ['insurer', 'CARRIER', 'REINSURANCE_OFFICER'],
     'CUSTOMER_SERVICE (insurer)' => ['insurer', 'CARRIER', 'CUSTOMER_SERVICE'],
     'ADJUSTER (insurer)' => ['insurer', 'CARRIER', 'ADJUSTER'],
+    'FINANCE_OFFICER (insurer)' => ['insurer', 'CARRIER', 'FINANCE_OFFICER'],
 ]);
 
 it('every nav URL renders for the role, with no 500 and no dead link', function (string $panel, string $tenantType, string $role) {
@@ -132,7 +133,7 @@ it('every nav URL renders for the role, with no 500 and no dead link', function 
 
 it('staff roles without a web panel are refused cleanly (403 page, never 500)', function () {
     $tenant = crawlTenant('CARRIER');
-    foreach (['FINANCE_OFFICER'] as $role) {
+    foreach (['CASHIER', 'REGULATOR'] as $role) {
         $u = crawlUser($tenant, $role);
         foreach (['/admin', '/insurer'] as $p) {
             expect($this->actingAs($u)->get($p)->status())->toBeLessThan(500);
@@ -152,6 +153,7 @@ it('insurer admins and staff reach the records their carrier.* permissions allow
     ];
     foreach ($expect as $role => $paths) {
         $this->flushSession();
+        app()->forgetInstance(\Filament\Navigation\NavigationManager::class); // scoped singleton: rebuild the sidebar for the next user
         $home = $this->actingAs(crawlUser($tenant, $role, $chain['carrier']->id))->get('/insurer')->assertOk();
         $hrefs = array_column(crawlSidebar($home->getContent(), 'insurer'), 'href');
         foreach ($paths as $p) {
@@ -179,6 +181,7 @@ it('the sidebar is sentence case, unambiguous and French for a French user', fun
     TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $fr->id, 'role_code' => 'PLATFORM_ADMIN', 'status' => 'ACTIVE'])
         ->roles()->syncWithoutDetaching([Role::where('tenant_id', $tenant->id)->where('code', 'PLATFORM_ADMIN')->value('id')]);
     $this->flushSession();
+        app()->forgetInstance(\Filament\Navigation\NavigationManager::class); // scoped singleton: rebuild the sidebar for the next user
     $navFr = crawlSidebar($this->actingAs($fr)->get('/admin')->assertOk()->getContent(), 'admin');
     expect(array_column($navFr, 'label'))->toContain('Tableau de bord', 'Sinistres', 'Polices', 'Registre des documents')->not->toContain('Claims', 'Policies')
         ->and(array_column($navFr, 'group'))->toContain('Opérations financières', 'Gestion des sinistres')->not->toContain('Financial operations');
@@ -197,4 +200,42 @@ it('every list page in the admin and insurer panels opens a record (view/edit pa
         }
     }
     expect(array_unique($missing))->toBe([]);
+});
+
+it('insurer panel exposes the sections each insurer role\'s permissions allow (approval inbox, underwriting, reinsurance, finance)', function () {
+    $tenant = crawlTenant('CARRIER');
+    $chain = makeMobileFinanceProposalChain($tenant);
+    $expect = [
+        'CARRIER_ADMIN' => ['/insurer/approvals/inbox', '/insurer/policy-issuances', '/insurer/quotes', '/insurer/quote-requests', '/insurer/referrals', '/insurer/sticker-batches'],
+        'UNDERWRITER' => ['/insurer/underwriting-cases', '/insurer/referrals', '/insurer/quote-requests', '/insurer/coinsurance'],
+        'REINSURANCE_OFFICER' => ['/insurer/reinsurance-treaties', '/insurer/reinsurance-cessions', '/insurer/coinsurance', '/insurer/fx-rates'],
+        'FINANCE_OFFICER' => ['/insurer/journals', '/insurer/cashier-sessions', '/insurer/fx-rates', '/insurer/carrier-settlements', '/insurer/commission-accruals', '/insurer/policy-issuances'],
+    ];
+    foreach ($expect as $role => $paths) {
+        $this->flushSession();
+        app()->forgetInstance(\Filament\Navigation\NavigationManager::class); // scoped singleton: rebuild the sidebar for the next user
+        $home = $this->actingAs(crawlUser($tenant, $role, $chain['carrier']->id))->get('/insurer')->assertOk();
+        $hrefs = array_column(crawlSidebar($home->getContent(), 'insurer'), 'href');
+        foreach ($paths as $p) {
+            expect(collect($hrefs)->contains(fn ($h) => str_starts_with($h, $p)))->toBeTrue("{$role} missing {$p}");
+            $this->get(collect($hrefs)->first(fn ($h) => str_starts_with($h, $p)))->assertOk();
+        }
+    }
+    // Read-only: no create button for quotes in the insurer panel.
+    $this->flushSession();
+        app()->forgetInstance(\Filament\Navigation\NavigationManager::class); // scoped singleton: rebuild the sidebar for the next user
+    $this->actingAs(crawlUser($tenant, 'CARRIER_SUPER_ADMIN', $chain['carrier']->id));
+    \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('insurer'));
+    app(\App\Domain\Tenancy\TenantContext::class)->set($tenant->id);
+    expect(\Illuminate\Support\Facades\Gate::allows('create', \App\Models\Quote::class))->toBeFalse();
+});
+
+it('shared list columns: money in FCFA, status badge tones, dates in the viewer timezone', function () {
+    $row = new \App\Models\RegisterRow;
+    $row->setRawAttributes(['amount_minor' => 1234500, 'currency' => 'XAF', 'status' => 'REJECTED']);
+    expect(\App\Filament\Shared\Columns::humanise('PENDING_REVIEW'))->toBe('Pending review')
+        ->and(\App\Filament\Shared\Components\RecordInfolist::color('REJECTED'))->toBe('danger')
+        ->and(\App\Application\WebExperiences\Money::display(1234500, 'XAF', 'en'))->toBe("12,345\u{00A0}FCFA");
+    \App\Filament\Shared\Columns::applyDefaults();
+    expect(\Filament\Support\Facades\FilamentTimezone::get())->toBe(app(\App\Application\Temporal\TimezoneResolver::class)->forUser(null));
 });

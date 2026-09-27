@@ -11,7 +11,7 @@ final class OrganisationSettingsPage extends OrganizationSettings
 {
     public const MANAGER_ROLES = ['SYSTEM_ADMIN', 'PLATFORM_ADMIN'];
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Administration'; // UI audit 2026-09-27 (was Integrations)
 
     protected static ?int $navigationSort = 91;
 
