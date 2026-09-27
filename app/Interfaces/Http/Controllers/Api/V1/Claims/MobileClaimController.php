@@ -45,10 +45,19 @@ final class MobileClaimController
             'police_report_filed' => 'sometimes|boolean',
             'police_reference' => 'nullable|string|max:120',
             'estimated_loss_minor' => 'nullable|integer|min:0',
+            'latitude' => \App\Application\Claims\ClaimIncidentService::rules()['latitude'],
+            'longitude' => \App\Application\Claims\ClaimIncidentService::rules()['longitude'],
         ]);
         $data['idempotency_key'] = $request->header('Idempotency-Key');
+        $coordinates = array_intersect_key($data, array_flip(['latitude', 'longitude']));
+        unset($data['latitude'], $data['longitude']);
 
-        $claim = $service->fnol($data, $request->user(), app(TenantContext::class)->id());
+        $tenantId = app(TenantContext::class)->id();
+        $claim = $service->fnol($data, $request->user(), $tenantId);
+        // Coordinates go through the same incident path as PUT /mobile/claims/{id}/incident.
+        if (array_filter($coordinates, fn ($v) => $v !== null) !== []) {
+            $claim = app(\App\Application\Claims\ClaimIncidentService::class)->save($claim->id, $coordinates, $request->user(), $tenantId);
+        }
 
         return response()->json(['data' => $claim], 201);
     }

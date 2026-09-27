@@ -117,3 +117,17 @@ it('legacy ClaimController::store and MobileClaimService go through the one FNOL
     expect($legacy)->toContain('FnolService')->not->toContain("DB::table('claims')->insert")
         ->and($mobile)->toContain('FnolService')->not->toContain('$this->lifecycle->fnol(');
 });
+
+it('mobile FNOL accepts incident coordinates in the same call and validates them like the incident endpoint', function () {
+    $f = makeMobileCustomerFixture('+237670110299');
+    $policy = makeMobileTestPolicy($f['proposal'], $f['tenant'], $f['carrier']->id, $f['party']->id, ['coverage_starts_at' => now()->subMonths(6)]);
+    c2Versions($f['tenant']->id, $policy->id);
+    Passport::actingAs($f['user']);
+    $headers = fn () => array_merge(tenantHeaderFor($f['tenant']), ['Idempotency-Key' => (string) Str::uuid()]);
+
+    $this->postJson('/api/v1/mobile/claims', c2MobilePayload($policy->id) + ['latitude' => 95, 'longitude' => 9.7], $headers())->assertStatus(422)->assertJsonValidationErrors('latitude');
+
+    $res = $this->postJson('/api/v1/mobile/claims', c2MobilePayload($policy->id) + ['latitude' => 4.0511, 'longitude' => 9.7679], $headers())->assertStatus(201);
+    $incident = \App\Models\Claim::find($res->json('data.id'))->loss_details['incident'];
+    expect((float) $incident['latitude'])->toBe(4.0511)->and((float) $incident['longitude'])->toBe(9.7679);
+});
