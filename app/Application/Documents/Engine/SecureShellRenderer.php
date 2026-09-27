@@ -68,4 +68,20 @@ final class SecureShellRenderer
 
         return Pdf::loadView('pdf.engine-shell', $data)->setPaper($s['paper'] ?? 'a4')->output();
     }
+
+    /**
+     * Specimen of a document type for the configuration screens (letterhead designer, template editor): the same
+     * shell, marked SPECIMEN, no number, no verification code and no QR. Never stored, never registered.
+     *
+     * @param  ?array<string, mixed>  $letterhead  LetterheadResolver::forDocument() shape
+     * @param  list<array{heading: ?string, paragraphs: list<string>}>  $sections
+     */
+    public function specimen(string $typeCode, string $issuerName, ?array $letterhead, array $sections = [], ?string $titleEn = null, ?string $titleFr = null, string $lang = 'BILINGUAL'): string
+    {
+        return $this->render(array_filter([
+            'type_code' => $typeCode, 'number' => 'SPECIMEN', 'verification' => '', 'qr_url' => false, 'issuer_name' => $issuerName,
+            'letterhead' => $letterhead, 'sections' => $sections, 'status' => 'SPECIMEN', 'label' => 'SPÉCIMEN — SANS VALEUR / SPECIMEN — NOT VALID',
+            'lang' => $lang, 'template_ref' => 'SPECIMEN '.$typeCode, 'title_en' => $titleEn ?: null, 'title_fr' => $titleFr ?: null,
+        ], fn ($v) => $v !== null));
+    }
 }

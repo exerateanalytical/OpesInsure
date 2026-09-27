@@ -18,7 +18,7 @@ final class PhysicalSecurityAsset extends Model
 
     protected function casts(): array
     {
-        return ['applies_to_spec_ids' => 'array', 'verified_at' => 'datetime', 'serial_from' => 'integer', 'serial_to' => 'integer',
+        return ['applies_to_spec_ids' => 'array', 'security_features' => 'array', 'verified_at' => 'datetime', 'serial_from' => 'integer', 'serial_to' => 'integer',
             'quantity_received' => 'integer', 'quantity_issued' => 'integer', 'quantity_spoiled' => 'integer', 'quantity_destroyed' => 'integer'];
     }
 

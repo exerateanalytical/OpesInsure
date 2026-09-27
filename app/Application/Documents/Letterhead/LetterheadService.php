@@ -22,7 +22,7 @@ final class LetterheadService
 {
     public const OWNERS = ['CARRIER', 'TENANT'];
 
-    public const TEXT_FIELDS = ['brand_color', 'registered_address', 'rccm', 'niu', 'licence_reference', 'public_display', 'authorized_by', 'authorized_on', 'authorization_source', 'authorization_note'];
+    public const TEXT_FIELDS = ['brand_color', 'registered_address', 'rccm', 'niu', 'licence_reference', 'contact_phone', 'contact_email', 'website', 'footer_text_en', 'footer_text_fr', 'public_display', 'authorized_by', 'authorized_on', 'authorization_source', 'authorization_note'];
 
     public function __construct(private readonly AuditWriter $audit) {}
 
@@ -134,6 +134,11 @@ final class LetterheadService
             'rccm' => ['nullable', 'string', 'max:64'],
             'niu' => ['nullable', 'string', 'max:64'],
             'licence_reference' => ['nullable', 'string', 'max:120'],
+            'contact_phone' => ['nullable', 'string', 'max:32'],
+            'contact_email' => ['nullable', 'email', 'max:190'],
+            'website' => ['nullable', 'string', 'max:190'],
+            'footer_text_en' => ['nullable', 'string', 'max:1000'],
+            'footer_text_fr' => ['nullable', 'string', 'max:1000'],
             'public_display' => ['nullable', 'boolean'],
             'authorized_by' => ['required', 'string', 'max:190'],
             'authorized_on' => ['required', 'date', 'before_or_equal:today'],

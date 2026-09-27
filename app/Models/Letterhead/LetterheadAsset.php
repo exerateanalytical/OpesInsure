@@ -40,6 +40,11 @@ final class LetterheadAsset extends Model
             $this->rccm ? 'RCCM '.$this->rccm : null,
             $this->niu ? 'NIU '.$this->niu : null,
             $this->licence_reference ? $this->licence_reference : null,
+            $this->contact_phone ? 'Tel. '.$this->contact_phone : null,
+            $this->contact_email ?: null,
+            $this->website ?: null,
+            $this->footer_text_fr ? trim(preg_replace('/\s+/', ' ', (string) $this->footer_text_fr)) : null,
+            $this->footer_text_en ? trim(preg_replace('/\s+/', ' ', (string) $this->footer_text_en)) : null,
         ]));
     }
 }

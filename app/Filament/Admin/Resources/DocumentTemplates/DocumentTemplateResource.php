@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\DocumentTemplates;
 
+use App\Application\Documents\Engine\DocumentEngine;
 use App\Application\Documents\Engine\DocumentRegister;
+use App\Application\Documents\Engine\SecureShellRenderer;
+use App\Application\Documents\Letterhead\LetterheadResolver;
+use Closure;
+use Illuminate\Support\HtmlString;
 use App\Application\Documents\Engine\DocumentTemplateService;
 use App\Filament\Admin\Concerns\DocumentEngineAccess;
 use App\Filament\Admin\Concerns\ServiceValidation;
@@ -74,8 +79,13 @@ final class DocumentTemplateResource extends Resource
                 Forms\Components\Repeater::make('content.sections')->label('Sections')->schema([
                     Forms\Components\TextInput::make('heading_fr'), Forms\Components\TextInput::make('heading_en'),
                     Forms\Components\Textarea::make('body_fr')->rows(3), Forms\Components\Textarea::make('body_en')->rows(3),
-                ])->columns(2)->helperText('Placeholders: {policy_number} {insured_name} {carrier_name} {product_name} {subject} {coverage_start} {coverage_end} {document_number} {event}'),
+                ])->columns(2)->helperText('Placeholders: '.implode(' ', array_keys(self::PLACEHOLDERS))),
                 Forms\Components\Toggle::make('content.show_coverages')->label('Print the cover table'),
+            ]),
+            Section::make('Placeholders')->description('Replaced by the document engine at issuance; the specimen preview uses the sample values.')->collapsible()->schema([
+                Forms\Components\Placeholder::make('placeholders_help')->hiddenLabel()->content(fn () => new HtmlString('<table class="text-sm"><tbody>'
+                    .collect(self::PLACEHOLDERS)->map(fn ($p, $k) => '<tr><td class="pe-4 font-mono">'.e($k).'</td><td class="pe-4">'.e($p[0]).'</td><td class="text-gray-500">'.e($p[1]).'</td></tr>')->implode('')
+                    .'</tbody></table>')),
             ]),
         ]);
     }
@@ -122,6 +132,51 @@ final class DocumentTemplateResource extends Resource
                     ->map(fn ($t) => 'v'.$t->version.' · '.$t->status.' · from '.$t->effective_from?->toDateString().($t->effective_until ? ' to '.$t->effective_until->toDateString() : '').($t->published_at ? ' · published '.$t->published_at->toDateString() : ''))->all())->listWithLineBreaks(),
             ]),
         ]);
+    }
+
+    /** Placeholders DocumentEngine substitutes in section bodies: [description, specimen value]. */
+    public const PLACEHOLDERS = [
+        '{policy_number}' => ['Policy number', 'POL-SPECIMEN-000001'], '{insured_name}' => ['Insured / policyholder name', 'Jean SPECIMEN'],
+        '{carrier_name}' => ['Insurer name', 'Insurer (specimen)'], '{product_name}' => ['Product name', 'Product (specimen)'],
+        '{subject}' => ['Insured subject (vehicle, person ...)', 'LT-000-SP'], '{coverage_start}' => ['Cover start date (dd/mm/yyyy)', '01/01/2026'],
+        '{coverage_end}' => ['Cover end date (dd/mm/yyyy)', '31/12/2026'], '{document_number}' => ['Document number', 'SPECIMEN'],
+        '{event}' => ['Issuing event label', 'Specimen'],
+    ];
+
+    /** Specimen PDF of a template's (possibly unsaved) content through the secure shell. */
+    public static function previewPdf(DocumentTemplate $t, ?array $content = null, ?string $titleEn = null, ?string $titleFr = null): string
+    {
+        $vars = array_map(fn ($p) => $p[1], self::PLACEHOLDERS);
+        $sections = DocumentEngine::templateSections($content ?? (array) $t->content, (string) $t->language, $vars);
+        [$issuer, $name, $carrierId, $tenantId] = match ($t->ownership) {
+            'INSURER' => ['INSURER', $t->carrier?->party?->display_name ?? 'Insurer', $t->carrier_id, null],
+            'BROKER' => ['BROKER', Tenant::find($t->broker_tenant_id)?->legal_name ?? 'Broker', null, $t->broker_tenant_id],
+            default => ['PLATFORM', 'OpesInsure', null, null],
+        };
+        $letterhead = LetterheadResolver::forDocument($issuer, $name, $carrierId, $issuer === 'INSURER' ? $name : null, $tenantId, null);
+
+        return app(SecureShellRenderer::class)->specimen($t->document_type_code, $name, $letterhead, $sections,
+            $titleEn ?: $t->title_en, $titleFr ?: $t->title_fr, (string) $t->language);
+    }
+
+    /** @param  ?Closure(mixed): array<string, mixed>  $state  unsaved designer state (edit page) */
+    public static function previewAction(?Closure $state = null): Actions\Action
+    {
+        return Actions\Action::make('previewPdf')->label('Preview PDF')->icon(Heroicon::OutlinedEye)->color('gray')
+            ->action(function (DocumentTemplate $record, $livewire) use ($state) {
+                $d = $state ? $state($livewire) : [];
+                $pdf = self::previewPdf($record, $d['content'] ?? null, $d['title_en'] ?? null, $d['title_fr'] ?? null);
+
+                return response()->streamDownload(function () use ($pdf) {
+                    echo $pdf;
+                }, 'template-'.$record->document_type_code.'-specimen.pdf', ['Content-Type' => 'application/pdf']);
+            });
+    }
+
+    /** Workflow buttons for the view / designer headers (same service calls as the table row actions). */
+    public static function workflowActions(): array
+    {
+        return [self::transition('submit', 'Submit for review', 'DRAFT'), self::transition('approve', 'Approve', 'REVIEW'), self::transition('publish', 'Publish', 'APPROVED')];
     }
 
     private static function transition(string $action, string $label, string $from): Actions\Action

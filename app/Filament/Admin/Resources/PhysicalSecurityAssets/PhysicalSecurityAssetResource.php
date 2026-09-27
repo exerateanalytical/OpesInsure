@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\PhysicalSecurityAssets;
 
+use App\Application\Documents\Security\EnforcementReadiness;
 use App\Application\Documents\Security\PhysicalSecurityRegistry;
+use Illuminate\Support\HtmlString;
 use App\Filament\Admin\Concerns\DocumentEngineAccess;
 use App\Models\DocumentSecurity\PhysicalSecurityAsset;
 use BackedEnum;
@@ -58,7 +60,7 @@ final class PhysicalSecurityAssetResource extends Resource
     {
         return $schema->components([
             Section::make('Asset')->columns(3)->schema([
-                Forms\Components\Select::make('asset_kind')->options(self::KIND_LABELS)->required(),
+                Forms\Components\Select::make('asset_kind')->options(self::KIND_LABELS)->required()->live(),
                 Forms\Components\Select::make('physical_profile_code')->label('Physical profile')->options(['PS-01' => 'PS-01 Standard secure print', 'PS-02' => 'PS-02 UV', 'PS-03' => 'PS-03 Holographic', 'PS-04' => 'PS-04 Controlled stock']),
                 Forms\Components\Select::make('seal_profile_code')->label('Seal profile')->options(['SEAL-01' => 'SEAL-01 Corporate', 'SEAL-03' => 'SEAL-03 Finance', 'SEAL-04' => 'SEAL-04 Claims', 'SEAL-05' => 'SEAL-05 Provider', 'SEAL-06' => 'SEAL-06 Broker verified']),
                 Forms\Components\TextInput::make('name')->required()->maxLength(255),
@@ -80,8 +82,23 @@ final class PhysicalSecurityAssetResource extends Resource
                 Forms\Components\TextInput::make('quantity_destroyed')->numeric()->minValue(0)->default(0),
                 Forms\Components\TextInput::make('custodian_name')->maxLength(255)->columnSpan(2),
             ]),
-            Section::make('Seal artwork')->schema([
-                Forms\Components\FileUpload::make('artwork_path')->disk('local')->directory('document-security/seal-artwork')->acceptedFileTypes(['image/png', 'image/svg+xml'])->maxSize(2048),
+            Section::make('Enforcement status (read-only)')->collapsible()->schema([
+                Forms\Components\Placeholder::make('enforcement_status')->hiddenLabel()->content(fn () => self::enforcementHtml()),
+            ]),
+            Section::make('Seal artwork')->description('SEAL-01 corporate seal: upload the official artwork (PNG or SVG). It counts only once VERIFIED by a second administrator.')
+                ->visible(fn ($get) => in_array($get('asset_kind'), ['SEAL_ARTWORK', null], true))->columns(2)->schema([
+                    Forms\Components\FileUpload::make('artwork_path')->label('Artwork file')->disk('local')->directory('document-security/seal-artwork')->visibility('private')
+                        ->acceptedFileTypes(['image/png', 'image/svg+xml'])->maxSize(2048),
+                    Forms\Components\Placeholder::make('artwork_preview')->label('Stored artwork')->content(fn (?PhysicalSecurityAsset $record) => self::artworkPreview($record)),
+                ]),
+            Section::make('Security features')->description('What the supplier certifies for this batch / capability. Recorded as stated; nothing is simulated on the PDF.')->columns(3)->schema([
+                Forms\Components\TextInput::make('security_features.paper_stock_grade')->label('Paper stock grade / type')->maxLength(120),
+                Forms\Components\TextInput::make('security_features.paper_weight_gsm')->label('Paper weight (g/m²)')->numeric()->minValue(40)->maxValue(400),
+                Forms\Components\TextInput::make('security_features.watermark_paper')->label('Paper watermark')->maxLength(120),
+                Forms\Components\TextInput::make('security_features.uv_ink')->label('UV ink / fibres')->maxLength(120),
+                Forms\Components\TextInput::make('security_features.hologram_type')->label('Hologram type')->maxLength(120),
+                Forms\Components\TextInput::make('security_features.hologram_serial_format')->label('Hologram serial format')->maxLength(64),
+                Forms\Components\TextInput::make('security_features.certificate_reference')->label('Supplier certificate / test report')->maxLength(120)->columnSpan(2),
             ]),
             Section::make('Status')->columns(2)->schema([
                 Forms\Components\Select::make('status')->options(['PENDING_VERIFICATION' => 'Pending verification', 'CONFIG_REQUIRED' => 'Config required', 'VERIFIED' => 'Verified', 'RETIRED' => 'Retired'])->default('PENDING_VERIFICATION')->required(),
@@ -104,6 +121,43 @@ final class PhysicalSecurityAssetResource extends Resource
             Tables\Columns\TextColumn::make('status')->badge(),
             Tables\Columns\TextColumn::make('verified_at')->dateTime(),
         ])->recordActions([Actions\EditAction::make()]);
+    }
+
+    /** Inline preview of the stored seal artwork (private disk → data URI, hash-checked). */
+    public static function artworkPreview(?PhysicalSecurityAsset $record): HtmlString
+    {
+        $path = $record?->artwork_path;
+        $disk = Storage::disk('local');
+        if (! $path || ! $disk->exists($path)) {
+            return new HtmlString('<span class="text-sm text-gray-500">No artwork stored.</span>');
+        }
+        $bytes = (string) $disk->get($path);
+        if ($record->artwork_sha256 && ! hash_equals($record->artwork_sha256, hash('sha256', $bytes))) {
+            return new HtmlString('<span class="text-sm text-danger-600">Stored file does not match its recorded hash.</span>');
+        }
+        $mime = str_contains(substr($bytes, 0, 512), '<svg') ? 'image/svg+xml' : 'image/png';
+
+        return new HtmlString('<img src="data:'.$mime.';base64,'.base64_encode($bytes).'" alt="Seal artwork" style="max-height:140px;max-width:220px;border:1px solid #e5e7eb;border-radius:6px;padding:6px;background:#fff">'
+            .'<div class="text-xs text-gray-500 mt-1 font-mono">sha256 '.e(substr((string) $record->artwork_sha256, 0, 16)).'…</div>');
+    }
+
+    /** DOCUMENT_ENFORCE_CONTROLS status and the config-dependent gate steps that would refuse (read-only). */
+    public static function enforcementHtml(): HtmlString
+    {
+        $s = EnforcementReadiness::summary();
+        $html = '<div class="text-sm"><p><strong>DOCUMENT_ENFORCE_CONTROLS: '.($s['enforced'] ? '<span style="color:#15803d">ON</span>' : '<span style="color:#b45309">OFF</span>').'</strong> — '
+            .($s['enforced'] ? 'documents whose gate steps are CONFIG_REQUIRED are refused.' : 'CONFIG_REQUIRED steps are recorded on each document but do not block issuance.').'</p>';
+        foreach ($s['types'] as $t) {
+            $html .= '<p class="mt-2 font-semibold">'.e($t['code']).' ('.e((string) $t['tier']).')</p><ul class="list-disc ms-5">';
+            foreach ($t['steps'] as $st) {
+                $ok = in_array($st['status'], ['PASS', 'NOT_APPLICABLE'], true);
+                $html .= '<li><span class="font-mono">GATE-'.sprintf('%02d', $st['step']).'</span> '.e($st['check']).': <strong style="color:'.($ok ? '#15803d' : '#b91c1c').'">'.e($st['status']).'</strong>'
+                    .($st['reason'] ? ' <span class="text-gray-500">('.e($st['reason']).')</span>' : '').'</li>';
+            }
+            $html .= '</ul><p class="text-gray-600">'.($t['would_refuse'] === [] ? 'Would issue with enforcement on.' : 'Would be refused with enforcement on: '.e(implode('; ', $t['would_refuse']))).'</p>';
+        }
+
+        return new HtmlString($html.'</div>');
     }
 
     /**

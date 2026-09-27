@@ -407,17 +407,7 @@ final class DocumentEngine
             '{coverage_start}' => (string) $policy->coverage_starts_at?->format('d/m/Y'), '{coverage_end}' => (string) $policy->coverage_ends_at?->format('d/m/Y'),
             '{document_number}' => $number['number'], '{event}' => $label,
         ];
-        $sections = [];
-        foreach ((array) ($template->content['sections'] ?? []) as $s) {
-            $paragraphs = [];
-            foreach (['fr', 'en'] as $l) {
-                if (($lang === 'BILINGUAL' || strtolower($lang) === $l) && ! empty($s['body_'.$l])) {
-                    $paragraphs[] = strtr((string) $s['body_'.$l], $vars);
-                }
-            }
-            $heading = $lang === 'EN' ? ($s['heading_en'] ?? null) : ($lang === 'FR' ? ($s['heading_fr'] ?? null) : trim(($s['heading_fr'] ?? '').' / '.($s['heading_en'] ?? ''), ' /'));
-            $sections[] = ['heading' => $heading, 'paragraphs' => $paragraphs];
-        }
+        $sections = self::templateSections((array) ($template->content ?? []), $lang, $vars);
         // Event facts rendered after the template text (provider flows: eligibility result, EOB lines, settlement lines ...).
         foreach ((array) ($ctx['sections'] ?? []) as $s) {
             $sections[] = ['heading' => (string) ($s['heading'] ?? ''), 'paragraphs' => array_values(array_map('strval', (array) ($s['paragraphs'] ?? [])))];
@@ -649,5 +639,30 @@ final class DocumentEngine
         }
 
         return ['', []];
+    }
+
+    /**
+     * Template sections (content.sections heading/body FR/EN) with placeholders substituted, in the shell's
+     * {heading, paragraphs} form. Shared with the template editor's specimen preview.
+     *
+     * @param  array<string, mixed>  $content
+     * @param  array<string, string>  $vars
+     * @return list<array{heading: ?string, paragraphs: list<string>}>
+     */
+    public static function templateSections(array $content, string $lang, array $vars): array
+    {
+        $sections = [];
+        foreach ((array) ($content['sections'] ?? []) as $s) {
+            $paragraphs = [];
+            foreach (['fr', 'en'] as $l) {
+                if (($lang === 'BILINGUAL' || strtolower($lang) === $l) && ! empty($s['body_'.$l])) {
+                    $paragraphs[] = strtr((string) $s['body_'.$l], $vars);
+                }
+            }
+            $heading = $lang === 'EN' ? ($s['heading_en'] ?? null) : ($lang === 'FR' ? ($s['heading_fr'] ?? null) : trim(($s['heading_fr'] ?? '').' / '.($s['heading_en'] ?? ''), ' /'));
+            $sections[] = ['heading' => $heading, 'paragraphs' => $paragraphs];
+        }
+
+        return $sections;
     }
 }
