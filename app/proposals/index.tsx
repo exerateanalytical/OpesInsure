@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, Briefcase, CalendarDays, Car, CheckCircle2, ChevronRight, Clock3, FileText, HardHat, HeartPulse, Home, Info, LoaderCircle, LucideIcon, Plane, ShieldPlus } from "lucide-react-native";
+import { ArrowRight, Briefcase, CalendarDays, CarFront, CheckCircle2, ChevronRight, Clock3, FileText, HardHat, HeartPulse, Home, Info, LoaderCircle, LucideIcon, Plane, ShieldPlus } from "lucide-react-native";
 import { Button, Screen, ripple } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
@@ -17,7 +17,7 @@ import { byDate, FilterToolbar, optionsFrom, periodMatcher, periodSection, runLi
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: Car, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
+const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: CarFront, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
 const LINE_TINT: Record<LineFamily, "blue" | "gold" | "red" | "green" | "neutral"> = { motor: "gold", health: "red", travel: "blue", home: "green", business: "neutral", life: "blue", accident: "gold" };
 type Filter = "all" | Exclude<DraftBucket, "other">;
 const FILTERS: { value: Filter; label: "draftsAll" | "draftsInProgress" | "draftsAwaiting" | "draftsReady" }[] = [

@@ -6,7 +6,7 @@
  */
 import React, { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Car, LucideIcon, ShieldCheck } from "lucide-react-native";
+import { CarFront, LucideIcon, ShieldCheck } from "lucide-react-native";
 import { HeroCard, HeroMeta, StepIndicator } from "@/components/design";
 import { ripple, StatusChip } from "@/components/ui";
 import { Policy, QuoteOffer } from "@/api/client";
@@ -36,7 +36,7 @@ export function useRenewalIdentity(policy: RenewalPolicy | Policy | null | undef
   const isMotor = lineCode === "MOTOR" || /motor|auto|véhicule|vehicle/i.test(productName ?? "");
   const vehicle = insuredObjectLabel(p, riskFacts);
   const title = productName ?? t("insurancePolicy");
-  return { productName, provider, vehicle, title, isMotor, icon: (isMotor ? Car : ShieldCheck) as LucideIcon, logo: offer ? carrierLogo(offer) : null };
+  return { productName, provider, vehicle, title, isMotor, icon: (isMotor ? CarFront : ShieldCheck) as LucideIcon, logo: offer ? carrierLogo(offer) : null };
 }
 
 export function RenewalHero({

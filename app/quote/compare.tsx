@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Car, Columns3, Info, Pencil, ShieldCheck } from "lucide-react-native";
+import { CarFront, Columns3, Info, Pencil, ShieldCheck } from "lucide-react-native";
 import { CompareTable, compareTableStyles } from "@/components/offers/CompareTable";
 import { OfferCard, useNow } from "@/components/offers/OfferCard";
 import { router, useLocalSearchParams } from "expo-router";
@@ -82,7 +82,7 @@ export default function CompareOffers() {
       {quote ? (
         <Card>
           <View style={st.quoteRow}>
-            <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? Car : ShieldCheck} tint="gold" size={56} />
+            <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? CarFront : ShieldCheck} tint="gold" size={56} />
             <View style={st.quoteText}>
               <Text style={st.quoteTitle}>{vehicle ?? productLabel ?? t("insuranceOffer")}</Text>
               <Text style={ps.meta}>{[vehicle && productLabel ? productLabel : null, quote.quote_number].filter(Boolean).join(" · ")}</Text>

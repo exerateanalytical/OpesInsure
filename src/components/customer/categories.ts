@@ -1,6 +1,6 @@
 import {
   Briefcase,
-  Car,
+  CarFront,
   HardHat,
   HeartPulse,
   Home,
@@ -22,7 +22,7 @@ export type Category = {
 };
 
 export const CATEGORIES: Category[] = [
-  { id: "motor", label: "catMotor", caption: "catMotorCaption", icon: Car, lines: ["MOTOR", "AUTO"] },
+  { id: "motor", label: "catMotor", caption: "catMotorCaption", icon: CarFront, lines: ["MOTOR", "AUTO"] },
   { id: "health", label: "catHealth", caption: "catHealthCaption", icon: HeartPulse, lines: ["HEALTH", "MEDICAL"] },
   { id: "travel", label: "catTravel", caption: "catTravelCaption", icon: Plane, lines: ["TRAVEL"] },
   { id: "home", label: "catHome", caption: "catHomeCaption", icon: Home, lines: ["HOME", "PROPERTY", "MRH"] },

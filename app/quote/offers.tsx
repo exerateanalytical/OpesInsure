@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Building2, Car, ChevronRight, Columns3, Info, Pencil, RefreshCcw, ShieldCheck } from "lucide-react-native";
+import { Building2, CarFront, ChevronRight, Columns3, Info, Pencil, RefreshCcw, ShieldCheck } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
 import { Button, Card, ripple, Screen, TextField } from "@/components/ui";
 import { FilterButton } from "@/components/SearchBar";
@@ -172,7 +172,7 @@ export default function Offers() {
       <QuoteSteps current={2} />
       <Card>
         <View style={st.quoteRow}>
-          <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? Car : ShieldCheck} tint="gold" size={56} />
+          <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? CarFront : ShieldCheck} tint="gold" size={56} />
           <View style={st.flex}>
             <Text style={st.quoteTitle}>{riskVehicleLabel(quote.risk_facts) ?? (product ? td(`qtProd_${product}`, product) : t("insuranceOffer"))}</Text>
             <Text style={ps.meta}>{[riskVehicleLabel(quote.risk_facts) && product ? td(`qtProd_${product}`, product) : null, quote.quote_number].filter(Boolean).join(" · ")}</Text>

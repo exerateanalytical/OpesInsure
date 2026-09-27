@@ -5,7 +5,7 @@ import {
   Building2,
   CalendarCheck,
   CalendarX,
-  Car,
+  CarFront,
   Clock,
   Eye,
   FileText,
@@ -118,7 +118,7 @@ export default function VerifyResult() {
               {number ? <DetailRow icon={Hash} label={t("vfNumber")} value={number} compact /> : null}
               {doc?.policy_reference ? <DetailRow icon={FileText} label={t("vfPolicy")} value={doc.policy_reference} compact /> : null}
               {doc?.holder ? <DetailRow icon={User} label={t("vfHolder")} value={doc.holder} compact /> : null}
-              {doc?.vehicle ? <DetailRow icon={Car} label={t("vfVehicle")} value={doc.vehicle} compact /> : null}
+              {doc?.vehicle ? <DetailRow icon={CarFront} label={t("vfVehicle")} value={doc.vehicle} compact /> : null}
               {insurer && insurer !== issuer ? <DetailRow icon={ShieldCheck} label={t("vfInsurerLabel")} value={insurer} compact /> : null}
               {issuer ? <DetailRow icon={Building2} label={t("vfIssuer")} value={issuer} compact /> : null}
               {data.product_name || data.product_class ? (

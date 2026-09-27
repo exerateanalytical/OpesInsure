@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, CalendarDays, Car, Coins, Headset, Lock, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react-native";
+import { ArrowRight, CalendarDays, CarFront, Coins, Headset, Lock, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, HeroCard, HeroMeta, SectionHeading, StepIndicator, TintedIcon } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -94,7 +94,7 @@ export default function Payment() {
   const vehicle = riskVehicleLabel(quote?.risk_facts);
   const totalMinor = payment?.amount_minor ?? terms?.total_minor ?? null;
   const meta: HeroMeta[] = [
-    ...(vehicle ? [{ icon: Car, label: t("rnVehicle"), value: vehicle } as HeroMeta] : []),
+    ...(vehicle ? [{ icon: CarFront, label: t("rnVehicle"), value: vehicle } as HeroMeta] : []),
     { icon: CalendarDays, label: t("ppPolicyStarts"), value: terms?.coverage_starts_at ? f.date(terms.coverage_starts_at) : t("sumWhenPaid") },
     { icon: Coins, label: t("ppTotalPayable"), value: totalMinor !== null ? f.xaf(totalMinor) : "—" },
   ];
@@ -127,7 +127,7 @@ export default function Payment() {
       <StepIndicator steps={STEPS} current={step.done ? 2 : 1} />
 
       <HeroCard
-        icon={vehicle ? Car : ShieldCheck}
+        icon={vehicle ? CarFront : ShieldCheck}
         title={productName}
         provider={source ? providerName(source, f.language) : proposal ? t("licensedCarrier") : null}
         providerLogo={source ? carrierLogo(source) : null}

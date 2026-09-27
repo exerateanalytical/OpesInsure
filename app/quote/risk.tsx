@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, Car, Info, Plus, UserRound, Users } from "lucide-react-native";
+import { ArrowRight, CarFront, Info, Plus, UserRound, Users } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, TintedIcon } from "@/components/design";
 import { CATEGORIES } from "@/components/customer/categories";
 import { Button, Card, Screen, TextField } from "@/components/ui";
@@ -165,7 +165,7 @@ export default function Risk() {
       <QuoteSteps current={1} />
       {productName ? (
         <View style={st.productCard}>
-          <TintedIcon icon={CATEGORIES.find((c) => c.id === product)?.icon ?? Car} tint="gold" size={56} />
+          <TintedIcon icon={CATEGORIES.find((c) => c.id === product)?.icon ?? CarFront} tint="gold" size={56} />
           <View style={st.flex}>
             <Text style={st.productTitle}>{productName}</Text>
             <Text style={st.productSub}>{td(`qtProdSub_${product}`, "")}</Text>
@@ -219,7 +219,7 @@ export default function Risk() {
                         <RadioCard
                           key={a.id}
                           selected={on}
-                          icon={Car}
+                          icon={CarFront}
                           tint="gold"
                           title={a.label || a.registration_number || t("qtSavedAsset")}
                           subtitle={a.registration_number && a.registration_number !== a.label ? a.registration_number : t("qtSavedAssetSub")}

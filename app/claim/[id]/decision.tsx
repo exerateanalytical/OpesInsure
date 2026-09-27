@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Calendar, Car, Check, X, Coins, FileText, Landmark, MessageSquareWarning, ShieldCheck, Target } from "lucide-react-native";
+import { ArrowRight, Calendar, CarFront, Check, X, Coins, FileText, Landmark, MessageSquareWarning, ShieldCheck, Target } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, MetaGrid, type HeroMeta } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
@@ -94,7 +94,7 @@ export default function ClaimDecision() {
                 <MetaGrid items={meta} columns={2} />
                 {cl.description ? (
                   <View style={s.summary}>
-                    <Car size={24} color={colors.navy900} />
+                    <CarFront size={24} color={colors.navy900} />
                     <View style={s.flex}>
                       <Text style={s.label}>{t("decisionIncidentSummary")}</Text>
                       <Text style={s.body}>{cl.description}</Text>

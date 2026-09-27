@@ -3,7 +3,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimens
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
-import { Calendar, Car, Check, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
+import { Calendar, CarFront, Check, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
 import { BrandHeader, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
@@ -191,7 +191,7 @@ export function PolicyDetailView({ id }: { id: string }) {
 
   const meta: HeroMeta[] = [
     { icon: FileText, label: t("pdPolicyNumber"), value: (p.policy_number ?? "—").replace(/-/g, "\u2011") },
-    { icon: isMotor ? Car : Shield, label: labels.insured, value: insured ?? "—" },
+    { icon: isMotor ? CarFront : Shield, label: labels.insured, value: insured ?? "—" },
     { icon: Calendar, label: t("pdStartDate"), value: f.date(p.coverage_starts_at) },
     { icon: Calendar, label: t("pdExpiryDate"), value: f.date(p.coverage_ends_at), tone: info.bucket === "expired" ? "danger" : undefined },
     { icon: Coins, label: labels.totalPremium, value: premium === null ? "—" : f.xaf(premium) },
@@ -216,7 +216,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         {error ? <ErrorCard error={error} fallback={t("pdStale")} onRetry={() => void load()} /> : null}
 
         <HeroCard
-          icon={isMotor ? Car : Shield}
+          icon={isMotor ? CarFront : Shield}
           title={p.product_name ?? labels.policy}
           provider={provider}
           providerLogo={insurer?.logo_url ?? null}
@@ -323,7 +323,7 @@ export function PolicyDetailView({ id }: { id: string }) {
         <View style={st.twoUp}>
           <Card style={st.twoUpCard} onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} accessibilityLabel={`${labels.insured}. ${insured ?? "—"}. ${t("pdChange")}`}>
             <View style={st.rowTitle}>
-              {isMotor ? <Car size={22} color={colors.navy900} /> : <Shield size={22} color={colors.navy900} />}
+              {isMotor ? <CarFront size={22} color={colors.navy900} /> : <Shield size={22} color={colors.navy900} />}
               <Text style={[st.smallTitle, st.flex]}>{labels.insured}</Text>
               <ChevronRight size={18} color={colors.blue600} />
             </View>

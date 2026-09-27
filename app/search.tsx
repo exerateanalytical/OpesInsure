@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
   Building2,
-  Car,
+  CarFront,
   ChevronRight,
   FileText,
   LucideIcon,
@@ -41,8 +41,8 @@ const HIT_ICONS: Record<string, LucideIcon> = {
   claims: FileText,
   quotes: Tag,
   documents: FileText,
-  vehicles: Car,
-  risk_assets: Car,
+  vehicles: CarFront,
+  risk_assets: CarFront,
 };
 
 /** REQ-SRC-001 global search (GET /search?q=&types[]=). ?role= picks the portal's detail screens. */

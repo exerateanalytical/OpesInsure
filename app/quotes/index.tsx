@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
+import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, CarFront, ChevronRight, Clock3, HardHat, HeartPulse, Home, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
 import { Button, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
 import { byDate, byNumber, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
@@ -18,7 +18,7 @@ import { useTranslation } from "@/i18n";
 import { quoteOutcome, quoteTone } from "@/lib/quoteWorkflow";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: Car, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
+const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: CarFront, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
 
 type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null; carrier_logo_url?: string | null };
 

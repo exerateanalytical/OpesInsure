@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Car, CircleAlert, RefreshCw } from "lucide-react-native";
+import { CarFront, CircleAlert, RefreshCw } from "lucide-react-native";
 import { Button, Chip, TextField } from "@/components/ui";
 import { PickerField } from "@/components/purchase/PurchaseUi";
 import { SelectField } from "@/components/forms/SelectField";
@@ -322,7 +322,7 @@ export function VehiclePicker({
       <View style={st.wrap}>
         <Text style={st.label}>{`${t("vehicleMake")} · ${t("vehicleModel")}`}</Text>
         <View style={[st.selected, error ? st.errorBorder : null]}>
-          <Car size={20} color={colors.blue600} />
+          <CarFront size={20} color={colors.blue600} />
           <View style={st.flex}>
             <Text style={st.rowTitle}>{selectionLabel({ make: value.make, model: value.model })}</Text>
             <Text style={st.pending}>{t("vehiclePendingReview")}</Text>

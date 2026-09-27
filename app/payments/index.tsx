@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CalendarDays, Car, ChevronRight, CreditCard, HeartPulse, Home, Plane, ShieldCheck, Wallet } from "lucide-react-native";
+import { CalendarDays, CarFront, ChevronRight, CreditCard, HeartPulse, Home, Plane, ShieldCheck, Wallet } from "lucide-react-native";
 import { Card, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
@@ -32,7 +32,7 @@ const bucketOf = (p: Payment): Filter => (Object.keys(FILTERS) as Exclude<Filter
 /** Line icon from the wallet policy's product name (payments carry no line code). */
 function lineIcon(name: string | null | undefined) {
   const n = String(name ?? "").toLowerCase();
-  if (/motor|auto|véhicule|vehicle|car/.test(n)) return Car;
+  if (/motor|auto|véhicule|vehicle|car/.test(n)) return CarFront;
   if (/health|santé|sante|medical/.test(n)) return HeartPulse;
   if (/travel|voyage/.test(n)) return Plane;
   if (/home|habitation|property|multirisque/.test(n)) return Home;

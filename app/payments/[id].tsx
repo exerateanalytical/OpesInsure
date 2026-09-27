@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import * as RN from "react-native";
 import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { type LucideIcon, ArrowRight, Building2, Calendar, Car, CheckCircle2, CircleCheck, Coins, Copy, CreditCard, Download, FileText, Headset, RefreshCcw, Share2, Shield, ShieldCheck, User, Wallet } from "lucide-react-native";
+import { type LucideIcon, ArrowRight, Building2, Calendar, CarFront, CheckCircle2, CircleCheck, Coins, Copy, CreditCard, Download, FileText, Headset, RefreshCcw, Share2, Shield, ShieldCheck, User, Wallet } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
 import { Banner, BrandHeader, IconTile, SectionHeading, TintedIcon } from "@/components/design";
@@ -166,7 +166,7 @@ export default function PaymentDetail() {
               <SectionHeading title={t("pmRelatedPolicy")} />
               <Card>
                 <View style={st.policyRow}>
-                  <TintedIcon icon={policy.risk_asset || /motor|auto/i.test(policy.product_name ?? "") ? Car : ShieldCheck} tint="blue" size={56} />
+                  <TintedIcon icon={policy.risk_asset || /motor|auto/i.test(policy.product_name ?? "") ? CarFront : ShieldCheck} tint="blue" size={56} />
                   <View style={st.flex}>
                     <Text style={st.policyTitle}>{policy.product_name ?? policy.policy_number}</Text>
                     {providerName ? <Text style={st.policyMeta}>{providerName}</Text> : null}

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Calendar, Car, ChevronRight, FileText, Shield } from "lucide-react-native";
+import { Calendar, CarFront, ChevronRight, FileText, Shield } from "lucide-react-native";
 import { Screen, StatusChip, ripple } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
@@ -56,7 +56,7 @@ export default function PolicyDocuments() {
   const provider = p ? p.carrier_name ?? p.carrier?.party?.display_name ?? t("licensedCarrier") : "";
   const insured = p ? insuredObjectLabel(p, p.terms_snapshot?.risk_facts ?? p.proposal?.offer?.quote?.risk_facts) : null;
   const isMotor = p ? /motor|auto|vehic|moto/i.test(p.product_name ?? "") || !!p.risk_asset : false;
-  const Icon = isMotor ? Car : Shield;
+  const Icon = isMotor ? CarFront : Shield;
 
   return (
     <Screen>

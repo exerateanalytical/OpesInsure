@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { CalendarDays, Car, Coins, ShieldCheck, ShieldOff } from "lucide-react-native";
+import { CalendarDays, CarFront, Coins, ShieldCheck, ShieldOff } from "lucide-react-native";
 import { CheckList, DetailRow, HeroCard, SectionHeading } from "@/components/design";
 import { Card, StatusChip } from "@/components/ui";
 import { PriceRow, TotalBand } from "@/components/policies/RenewalUi";
@@ -38,7 +38,7 @@ export function ProposalSummary({ proposal, offer, chip, title }: { proposal: Pr
       <Card>
         <SectionHeading title={title ?? tr("rrPolicySummary")} right={chip ?? <StatusChip label={proposal.proposal_number} tone="info" />} />
         <HeroCard
-          icon={isMotor ? Car : ShieldCheck}
+          icon={isMotor ? CarFront : ShieldCheck}
           title={productName}
           provider={provider}
           providerLogo={named ? carrierLogo(named) : null}
