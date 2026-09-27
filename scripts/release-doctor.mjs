@@ -32,6 +32,11 @@ const pkg = readJson("package.json");
 const app = readJson("app.json");
 if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${app.expo.version},package.json=${pkg.version}`);
 if (app.expo.runtimeVersion?.policy !== "appVersion") errors.push("RUNTIME_POLICY_NOT_APPVERSION");
+// OPS-03: OTA updates must be code-signed; the certificate (public) is committed, the private key never is.
+const updates = app.expo.updates ?? {};
+if (!updates.codeSigningCertificate || !existsSync(updates.codeSigningCertificate)) errors.push("OTA_CODE_SIGNING_CERTIFICATE_MISSING");
+if (updates.codeSigningMetadata?.alg !== "rsa-v1_5-sha256" || !updates.codeSigningMetadata?.keyid) errors.push("OTA_CODE_SIGNING_METADATA_INVALID");
+if (existsSync("keys") || existsSync("certs/private-key.pem")) errors.push("OTA_PRIVATE_KEY_IN_PROJECT(move it to ~/.opesinsure-keys/codesigning)");
 // PERF-001: keep Hermes + New Architecture in every release build.
 if (app.expo.newArchEnabled !== true) errors.push("NEW_ARCHITECTURE_DISABLED");
 if ((app.expo.jsEngine ?? "hermes") !== "hermes") errors.push("HERMES_DISABLED");

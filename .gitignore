@@ -23,3 +23,8 @@ expo-env.d.ts
 # @end expo-clidocs/qa/shots/
 docs/qa/compare/
 docs/qa/report.json
+
+# OTA code-signing private key (kept outside repo in ~/.opesinsure-keys; certs/certificate.pem is public and committed)
+keys/
+*.pem
+!certs/certificate.pem
