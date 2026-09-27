@@ -212,4 +212,4 @@ export const InstitutionsApi = {
 
 /** Minor units → "12 345 FCFA". */
 export const fcfa = (minor: number) =>
-  `${new Intl.NumberFormat("fr-CM").format((minor ?? 0) / 100)} FCFA`;
+  `${new Intl.NumberFormat("fr-CM", { maximumFractionDigits: 0 }).format(Math.round((minor ?? 0) / 100))} FCFA`;

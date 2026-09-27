@@ -46,7 +46,7 @@ export function useTranslation() {
 }
 
 export const formatXaf = (amount: number, language: Language) =>
-  `${new Intl.NumberFormat(language === "fr" ? "fr-CM" : "en-CM").format(amount)} FCFA`;
+  `${new Intl.NumberFormat(language === "fr" ? "fr-CM" : "en-CM", { maximumFractionDigits: 0 }).format(Math.round(amount))} FCFA`;
 
 export const formatCameroonDate = (
   value: string | null | undefined,
