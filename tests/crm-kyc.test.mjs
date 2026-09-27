@@ -200,6 +200,6 @@ test("Batch 4 keys exist in EN and FR", () => {
 
 test("Batch 4 stays JS-only (OTA-safe)", () => {
   const pkg = JSON.parse(read("package.json"));
-  assert.equal(pkg.version, "1.4.0");
-  assert.equal(JSON.parse(read("app.json")).expo.version, "1.4.0");
+  assert.equal(pkg.version, "1.5.0");
+  assert.equal(JSON.parse(read("app.json")).expo.version, "1.5.0");
 });
