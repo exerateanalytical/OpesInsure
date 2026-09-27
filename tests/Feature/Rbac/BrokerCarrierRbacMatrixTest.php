@@ -55,6 +55,8 @@ const RBACM_INSURER = [
     '/insurer/bordereaux/bordereaus' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'],
     '/insurer/carrier-settlements' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'],
     '/insurer/reports' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER'],
+    '/insurer/quotes' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER'],
+    '/insurer/kyc' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN'],
 ];
 
 function rbacmTenant(string $type): Tenant
