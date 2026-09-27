@@ -10,31 +10,8 @@ declare(strict_types=1);
  *    no raw TextColumn on a *_minor attribute).
  */
 
-/**
- * Files another change had in flight during the 2026-09-27 sweep (provider workspace pages, reports);
- * LucideIcons maps their Heroicon navigation icons at runtime. Remove each entry once converted.
- */
-const HEROICON_PENDING = [
-    'app/Application/Providers/Workspace/Filament/Pages/AccountsPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/AuditPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/FacilitiesPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/IntegrationPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/NotificationsPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/ProfilePage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/ProviderDashboardPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/UsersPage.php',
-    'app/Filament/Shared/Pages/ReportsPage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/ProviderWorkspacePage.php',
-    'app/Application/Providers/Workspace/Filament/Pages/TreatmentEpisodesPage.php',
-    'app/Filament/Admin/Resources/IntegrationClients/IntegrationClientResource.php',
-    'app/Filament/Admin/Resources/IntegrationDeliveryAttempts/IntegrationDeliveryAttemptResource.php',
-    'app/Filament/Admin/Resources/VehicleMasterReviews/VehicleMasterReviewResource.php',
-    'app/Filament/Shared/Actions/PartnerActions.php',
-    'app/Filament/Shared/Actions/PartyActions.php',
-    'app/Filament/Shared/Actions/PolicyServicingActions.php',
-    'app/Filament/Shared/Actions/ProposalActions.php',
-    'app/Filament/Shared/Actions/QuoteActions.php',
-];
+/** Files allowed to keep Heroicons (none: the sweep is complete). */
+const HEROICON_PENDING = [];
 
 function filamentSources(): array
 {

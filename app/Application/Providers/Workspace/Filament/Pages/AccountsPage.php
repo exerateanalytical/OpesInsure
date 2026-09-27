@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screen "provider_accounts" (Gap-Free spec ui_screen_register). */
 final class AccountsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-banknote';
 
     protected static ?int $navigationSort = 7;
 

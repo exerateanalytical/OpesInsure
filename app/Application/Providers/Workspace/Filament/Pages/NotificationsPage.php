@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screen "notifications" (Gap-Free spec ui_screen_register). */
 final class NotificationsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBell;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-bell';
 
     protected static ?int $navigationSort = 14;
 

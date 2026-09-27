@@ -131,7 +131,7 @@ it('REQ-UW-001 REQ-UW-002 REQ-UW-004 REQ-UW-005 walks the canonical case states,
         ->and(\App\Application\Underwriting\UnderwritingCaseMachine::canonicalState($case))->toBe('CONDITIONAL')
         ->and($decision->decision)->toBe('APPROVED')->and($decision->outcome)->toBe('CONDITIONAL')
         ->and($decision->system_recommendation)->toBe('REFER')->and($decision->engine_evaluation_id)->toBe($ev['engine_evaluation_id'])
-        ->and(DB::table('workflow_transition_history')->where('machine', 'proposal')->where('subject_id', $f['proposal_id'])->pluck('event')->last())->toBe('approve');
+        ->and(DB::table('workflow_transition_history')->where('machine', 'proposal')->where('subject_id', $f['proposal_id'])->orderBy('occurred_at')->pluck('event')->last())->toBe('approve');
     $this->postJson("/api/v1/underwriting/cases/{$caseId}/evaluate", [], $h)->assertStatus(422); // decided cases are closed
     $this->getJson("/api/v1/underwriting/cases/{$caseId}", $h)->assertOk()->assertJsonPath('data.decisions.0.outcome', 'CONDITIONAL')->assertJsonPath('data.available_events', []);
 });

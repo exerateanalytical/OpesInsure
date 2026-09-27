@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Providers\Workspace\ProviderOperationsService;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screen "treatment_episodes" (Gap-Free spec ui_screen_register): open an episode, add services, close it
@@ -14,7 +13,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class TreatmentEpisodesPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHeart;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-heart';
 
     protected static ?int $navigationSort = 5;
 

@@ -33,8 +33,8 @@ final class VehicleMasterChangeResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with('actor'))
             ->columns([
                 \App\Filament\Shared\Columns::date('occurred_at')->sortable(),
-                Tables\Columns\TextColumn::make('entity_type')->badge(),
-                Tables\Columns\TextColumn::make('action')->badge()->color(fn (string $state) => match ($state) {
+                Tables\Columns\TextColumn::make('entity_type')->searchable()->badge(),
+                Tables\Columns\TextColumn::make('action')->searchable()->badge()->color(fn (string $state) => match ($state) {
                     'MERGED' => 'warning', 'REJECTED' => 'danger', 'SEEDED', 'SEED_REFRESHED' => 'gray', default => 'success'
                 }),
                 Tables\Columns\TextColumn::make('before')->formatStateUsing($json)->wrap()->limit(120)->placeholder('-'),

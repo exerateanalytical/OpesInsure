@@ -62,7 +62,7 @@ final class BusinessHoursResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\TextColumn::make('jurisdiction'),
+            Tables\Columns\TextColumn::make('jurisdiction')->searchable(),
             Tables\Columns\TextColumn::make('branch_id')->label('Branch')->placeholder('All branches'),
             Tables\Columns\TextColumn::make('weekday'),
             Tables\Columns\TextColumn::make('opens'),

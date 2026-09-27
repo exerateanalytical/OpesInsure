@@ -10,7 +10,6 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 final class IntegrationDeliveryAttemptResource extends Resource
 {
     protected static ?string $model = IntegrationDeliveryAttempt::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-triangle-alert';
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
     protected static ?string $navigationLabel = 'Delivery attempts';
     protected static ?int $navigationSort = 91;
@@ -43,14 +42,12 @@ final class IntegrationDeliveryAttemptResource extends Resource
             Tables\Columns\TextColumn::make('subscription.client.name')->label('Connection')->searchable(),
             Tables\Columns\TextColumn::make('subscription.event_name')->label('Event')->badge(),
             Tables\Columns\TextColumn::make('attempt')->alignEnd(),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) {
-                'DELIVERED' => 'success', 'DEAD_LETTERED' => 'danger', default => 'warning',
-            }),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('response_status')->label('HTTP')->placeholder('—'),
             Tables\Columns\TextColumn::make('duration_ms')->label('Latency')->suffix(' ms')->placeholder('—'),
             Tables\Columns\TextColumn::make('failure_reason')->limit(60)->tooltip(fn ($record) => $record->failure_reason)->placeholder('—'),
             Tables\Columns\TextColumn::make('is_manual_replay')->label('Replay')->badge()->formatStateUsing(fn (bool $state) => $state ? 'Manual' : 'Automatic')->color(fn (bool $state) => $state ? 'info' : 'gray'),
-            Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->since(),
+            \App\Filament\Shared\Columns::date('created_at')->sortable()->since(),
         ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -59,7 +56,7 @@ final class IntegrationDeliveryAttemptResource extends Resource
             ->recordActions([
                 Actions\Action::make('replay')
                     ->label('Replay')
-                    ->icon('heroicon-o-arrow-path')
+                    ->icon('lucide-refresh-cw')
                     ->visible(fn (IntegrationDeliveryAttempt $record) => $record->status === 'DEAD_LETTERED' && $record->attempt === IntegrationDeliveryAttempt::where('integration_webhook_subscription_id', $record->integration_webhook_subscription_id)->where('event_id', $record->event_id)->max('attempt'))
                     ->requiresConfirmation()
                     ->action(function (IntegrationDeliveryAttempt $record) {
@@ -81,7 +78,7 @@ final class IntegrationDeliveryAttemptResource extends Resource
                     }),
             ])
             ->emptyStateHeading('No delivery attempts yet')
-            ->emptyStateIcon(Heroicon::OutlinedExclamationTriangle);
+            ->emptyStateIcon('lucide-triangle-alert');
     }
 
     public static function getPages(): array

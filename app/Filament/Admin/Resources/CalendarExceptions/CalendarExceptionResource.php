@@ -61,10 +61,10 @@ final class CalendarExceptionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\TextColumn::make('jurisdiction'),
+            Tables\Columns\TextColumn::make('jurisdiction')->searchable(),
             \App\Filament\Shared\Columns::date('date', false)->sortable(),
             Tables\Columns\TextColumn::make('kind')->badge(),
-            Tables\Columns\TextColumn::make('label'),
+            Tables\Columns\TextColumn::make('label')->searchable(),
             Tables\Columns\TextColumn::make('source_reference')->placeholder('UNVERIFIED')->toggleable(),
         ])->recordActions([Actions\EditAction::make()]);
     }

@@ -11,7 +11,6 @@ use App\Domain\Tenancy\TenantContext;
 use App\Models\User;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Locked;
@@ -33,7 +32,7 @@ final class ReportsPage extends Page
 {
     protected string $view = 'filament.shared.pages.reports';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentChartBar;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-file-chart-column';
 
     protected static string|UnitEnum|null $navigationGroup = null;
 

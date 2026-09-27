@@ -38,11 +38,11 @@ final class CimaCompulsoryInsuranceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-                Tables\Columns\TextColumn::make('code')->fontFamily('mono'),
+                Tables\Columns\TextColumn::make('code')->searchable()->fontFamily('mono'),
                 Tables\Columns\TextColumn::make('branch_code')->label('CIMA branch'),
                 Tables\Columns\TextColumn::make('basis')->wrap(),
                 Tables\Columns\TextColumn::make('jurisdiction')->badge(),
-                Tables\Columns\TextColumn::make('legal_reference')->placeholder('-'),
+                Tables\Columns\TextColumn::make('legal_reference')->searchable()->placeholder('-'),
                 Tables\Columns\TextColumn::make('regulatory_version')->label('Version')->toggleable(),
                 \App\Filament\Shared\Columns::date('effective_from', false)->toggleable(),
                 \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open')->toggleable(),

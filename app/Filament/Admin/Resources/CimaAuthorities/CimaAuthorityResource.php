@@ -36,9 +36,9 @@ final class CimaAuthorityResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-                Tables\Columns\TextColumn::make('code')->fontFamily('mono'),
-                Tables\Columns\TextColumn::make('name_fr')->label('Nom (FR)')->wrap(),
-                Tables\Columns\TextColumn::make('name_en')->label('Name (EN)')->placeholder('-'),
+                Tables\Columns\TextColumn::make('code')->searchable()->fontFamily('mono'),
+                Tables\Columns\TextColumn::make('name_fr')->searchable()->label('Nom (FR)')->wrap(),
+                Tables\Columns\TextColumn::make('name_en')->searchable()->label('Name (EN)')->placeholder('-'),
                 Tables\Columns\TextColumn::make('regulatory_version')->label('Version')->toggleable(),
                 \App\Filament\Shared\Columns::date('effective_from', false)->toggleable(),
                 \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open')->toggleable(),

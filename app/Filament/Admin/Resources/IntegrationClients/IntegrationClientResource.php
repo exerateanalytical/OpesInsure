@@ -6,7 +6,6 @@ use BackedEnum;
 use Filament\Actions;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -21,7 +20,7 @@ use Filament\Tables\Table;
 final class IntegrationClientResource extends Resource
 {
     protected static ?string $model = IntegrationClient::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedServerStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-server';
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
     protected static ?string $navigationLabel = 'Partner connections';
     protected static ?int $navigationSort = 90;
@@ -39,21 +38,16 @@ final class IntegrationClientResource extends Resource
             Tables\Columns\TextColumn::make('name')->searchable(),
             Tables\Columns\TextColumn::make('partner.party.display_name')->label('Partner')->placeholder('Platform-wide'),
             Tables\Columns\TextColumn::make('environment')->badge()->color(fn (string $state) => $state === 'production' ? 'danger' : 'gray'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) {
-                'ACTIVE' => 'success',
-                'REVOKED' => 'danger',
-                'SUSPENDED', 'RESTRICTED' => 'warning',
-                default => 'gray',
-            }),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('webhookSubscriptions_count')->counts('webhookSubscriptions')->label('Subscriptions')->alignEnd(),
-            Tables\Columns\TextColumn::make('last_used_at')->dateTime()->since()->placeholder('Never')->label('Last used'),
+            \App\Filament\Shared\Columns::date('last_used_at')->since()->placeholder('Never')->label('Last used'),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['DRAFT', 'TECHNICAL_REVIEW', 'SANDBOX_ENABLED', 'CERTIFICATION', 'PRODUCTION_APPROVED', 'ACTIVE', 'RESTRICTED', 'SUSPENDED', 'REVOKED']),
         ])->recordActions([
             Actions\ViewAction::make(),
         ])->emptyStateHeading('No partner connections')
             ->emptyStateDescription('Connections are registered through the integrations API (POST /api/v1/integrations/clients), then progressed through certification here.')
-            ->emptyStateIcon(Heroicon::OutlinedServerStack);
+            ->emptyStateIcon('lucide-server');
     }
 
     public static function getPages(): array

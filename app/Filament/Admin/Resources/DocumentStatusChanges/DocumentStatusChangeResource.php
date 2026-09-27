@@ -50,7 +50,7 @@ final class DocumentStatusChangeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->defaultSort('created_at', 'desc')->columns([
-            Tables\Columns\TextColumn::make('document.document_number')->label('Document')->placeholder('carrier original'),
+            Tables\Columns\TextColumn::make('document.document_number')->searchable()->label('Document')->placeholder('carrier original'),
             Tables\Columns\TextColumn::make('document.document_type_code')->label('Type'),
             Tables\Columns\TextColumn::make('action')->badge(),
             Tables\Columns\TextColumn::make('reason')->wrap(),

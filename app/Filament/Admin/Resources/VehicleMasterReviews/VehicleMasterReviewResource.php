@@ -16,7 +16,6 @@ use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -31,7 +30,7 @@ final class VehicleMasterReviewResource extends Resource
 
     protected static ?string $model = VehicleMasterReview::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-inbox';
 
     protected static ?string $navigationLabel = 'Review queue';
 
@@ -54,19 +53,17 @@ final class VehicleMasterReviewResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(fn ($query) => $query->with(['resolvedMake', 'resolvedModel', 'reviewer', 'submitter']))
             ->columns([
-                Tables\Columns\TextColumn::make('created_at')->label('Submitted')->dateTime()->sortable(),
+                \App\Filament\Shared\Columns::date('created_at')->label('Submitted')->sortable(),
                 Tables\Columns\TextColumn::make('make_text')->label('Make (typed)')->searchable(),
                 Tables\Columns\TextColumn::make('model_text')->label('Model (typed)')->searchable(),
                 Tables\Columns\TextColumn::make('model_year')->label('Year'),
                 Tables\Columns\TextColumn::make('body_type')->toggleable(),
                 Tables\Columns\TextColumn::make('vin')->label('VIN')->toggleable(),
                 Tables\Columns\TextColumn::make('registration_number')->label('Registration')->toggleable(),
-                Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) {
-                    VehicleMasterReview::STATUS_PENDING => 'warning', 'REJECTED' => 'danger', default => 'success'
-                }),
+                \App\Filament\Shared\Columns::status('status'),
                 Tables\Columns\TextColumn::make('resolved')->label('Resolved to')->state(fn (VehicleMasterReview $r) => trim(($r->resolvedMake?->name ?? '').' '.($r->resolvedModel?->name ?? '')))->placeholder('-'),
                 Tables\Columns\TextColumn::make('reviewer.full_name')->label('Reviewed by')->placeholder('-'),
-                Tables\Columns\TextColumn::make('reviewed_at')->dateTime()->placeholder('-'),
+                \App\Filament\Shared\Columns::date('reviewed_at')->placeholder('-'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->default(VehicleMasterReview::STATUS_PENDING)->options([
@@ -74,7 +71,7 @@ final class VehicleMasterReviewResource extends Resource
                 ]),
             ])
             ->recordActions([
-                Actions\Action::make('approveNew')->label('Approve as new')->icon(Heroicon::OutlinedCheck)->color('success')->visible($pending)
+                Actions\Action::make('approveNew')->label('Approve as new')->icon('lucide-check')->color('success')->visible($pending)
                     ->modalDescription('Creates the make (if it does not exist) and model with provenance CUSTOMER_SUBMITTED / status UNVERIFIED.')
                     ->schema([
                         Forms\Components\Select::make('segment')->default('PASSENGER')->options(['PASSENGER' => 'Passenger', 'COMMERCIAL' => 'Commercial', 'MIXED' => 'Mixed'])->helperText('Only used when the make is new.'),
@@ -86,7 +83,7 @@ final class VehicleMasterReviewResource extends Resource
                             Notification::make()->title('Added to the vehicle master')->success()->send();
                         }
                     }),
-                Actions\Action::make('merge')->label('Merge into existing')->icon(Heroicon::OutlinedArrowsRightLeft)->visible($pending)
+                Actions\Action::make('merge')->label('Merge into existing')->icon('lucide-arrow-left-right')->visible($pending)
                     ->fillForm(fn (VehicleMasterReview $r) => ['make_id' => $r->resolved_make_id])
                     ->schema([
                         Forms\Components\Select::make('make_id')->label('Make')->required()->searchable()->live()

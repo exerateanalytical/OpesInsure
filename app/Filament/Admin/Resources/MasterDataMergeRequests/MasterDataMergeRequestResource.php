@@ -52,7 +52,7 @@ final class MasterDataMergeRequestResource extends Resource
             Tables\Columns\TextColumn::make('list')->state(fn ($record) => "{$record->domain_code}.{$record->list_code}"),
             Tables\Columns\TextColumn::make('from.label_en')->label('Retire')->description(fn ($record) => $record->from?->code),
             Tables\Columns\TextColumn::make('into.label_en')->label('Keep')->description(fn ($record) => $record->into?->code),
-            Tables\Columns\TextColumn::make('reason')->wrap()->placeholder('—'),
+            Tables\Columns\TextColumn::make('reason')->searchable()->wrap()->placeholder('—'),
             \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['PENDING' => 'Pending', 'MERGED' => 'Merged', 'REJECTED' => 'Rejected'])->default('PENDING'),

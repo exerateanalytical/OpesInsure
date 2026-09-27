@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screen "facility_management" (Gap-Free spec ui_screen_register). */
 final class FacilitiesPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-map-pin';
 
     protected static ?int $navigationSort = 16;
 

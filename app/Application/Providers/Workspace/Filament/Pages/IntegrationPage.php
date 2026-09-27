@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screen "integration_settings" (Gap-Free spec ui_screen_register). */
 final class IntegrationPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCommandLine;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-terminal';
 
     protected static ?int $navigationSort = 18;
 

@@ -39,9 +39,9 @@ final class InstitutionVerificationLabelResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->defaultSort('code')->columns([
-            Tables\Columns\TextColumn::make('code')->fontFamily('mono'),
-            Tables\Columns\TextColumn::make('label_en')->label('English'),
-            Tables\Columns\TextColumn::make('label_fr')->label('French'),
+            Tables\Columns\TextColumn::make('code')->searchable()->fontFamily('mono'),
+            Tables\Columns\TextColumn::make('label_en')->searchable()->label('English'),
+            Tables\Columns\TextColumn::make('label_fr')->searchable()->label('French'),
             \App\Filament\Shared\Columns::date('updated_at'),
         ])->recordActions([
             Actions\Action::make('editLabel')->label('Edit labels')->icon('lucide-square-pen')

@@ -58,7 +58,7 @@ final class VerificationLookupResource extends Resource
                 Tables\Columns\TextColumn::make('channel')->badge(),
                 Tables\Columns\TextColumn::make('result')->badge()->color(fn ($state) => match ($state) {
                     'valid' => 'success', 'expired', 'not_yet_active', 'superseded', 'replaced' => 'warning', 'not_found' => 'gray', default => 'danger' }),
-                Tables\Columns\TextColumn::make('document.document_number')->label('Document')->fontFamily('mono')->placeholder('—')
+                Tables\Columns\TextColumn::make('document.document_number')->searchable()->label('Document')->fontFamily('mono')->placeholder('—')
                     ->url(fn ($record) => $record->document_id ? GeneratedDocumentResource::getUrl('view', ['record' => $record->document_id]) : null),
                 Tables\Columns\TextColumn::make('document.document_type_code')->label('Type')->placeholder('—'),
                 Tables\Columns\IconColumn::make('token_presented')->label('Token')->boolean(),

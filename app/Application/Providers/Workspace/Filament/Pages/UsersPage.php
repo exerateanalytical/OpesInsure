@@ -7,12 +7,11 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 use App\Application\Providers\Workspace\ProviderAccess;
 use BackedEnum;
 use Illuminate\Support\Facades\DB;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screens "user_management" and "roles_permissions": list, assign (role + facility scope) and revoke provider users. */
 final class UsersPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-users';
 
     protected static ?int $navigationSort = 17;
 

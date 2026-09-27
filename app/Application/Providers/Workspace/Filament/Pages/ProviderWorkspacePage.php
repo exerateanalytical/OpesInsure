@@ -15,7 +15,6 @@ use App\Application\Providers\Workspace\ProviderWorkspaceService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\User;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 use Filament\Pages\Page;
 use App\Application\Providers\Workspace\Http\ProviderWorkspaceController;
 use App\Interfaces\Http\Errors\ApiProblemException;
@@ -35,7 +34,7 @@ abstract class ProviderWorkspacePage extends Page
 {
     protected string $view = 'provider-workspace.page';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layout-grid';
 
     /** Spec permission gating the screen. */
     protected static string $permission = 'provider.dashboard.view';
