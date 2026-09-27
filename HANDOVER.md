@@ -15,7 +15,7 @@ This document is the single entry point. Every statement below was checked again
 | Production URL | https://insurance.opesdatacenter.tech |
 | Live release | `r20260927-174612`, built from commit **`bcde791`**, deployed 2026-09-27 17:46 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
-| Code on `master` not yet deployed | `bcde791..5c2684d`: 11 commits (see §6). Full suite **running** at time of writing; not yet verified. |
+| Code on `master` not yet deployed | `bcde791..5c2684d`: 11 commits (see §6). Full suite **not run**: stopped at handover. Unverified. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
 | Desktop UI coverage of backend write actions | **39.3%** on `master` (350 of 890), 27.5% on the live release. Measured by `php artisan ui:coverage` (§7). |
 | Audit copy of deployed code | `OpesInsure_web_deployed_r20260927-174612_bcde791.zip` in the project root (§14) |
@@ -153,7 +153,7 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 
 **Verification status:**
 - Each batch passed its own targeted tests.
-- The full suite on `5c2684d` is **in progress**.
+- The full suite on `5c2684d` was **started and stopped at handover. It has not been run.**
 - An earlier partial run, on a worktree mixing old and new files, showed 4 failures in `MobileSecurityDetailTest`. These are expected to be fixed by `7663a6a`, but that is **not yet confirmed**.
 - **Do not deploy until the full suite is green.**
 
@@ -297,7 +297,7 @@ Reports: `docs/UI_AUDIT_*_2026-09-27.md` (admin/insurer, broker/agent, customer,
 
 ## 13. Recommended next steps (in order)
 
-1. Finish the full suite on `5c2684d`. If it is green, back up, rehearse the migrations, deploy, verify, notify mobile, and update §5.
+1. Run the full suite on `8fc41fe` (latest `master`). If it is green, back up, rehearse the migrations, deploy, verify, notify mobile, and update §5.
 2. Coverage wave 2: batches 6–12. Include mobile D8 in batch 9–10 and mobile A7 as one shared list-filter helper.
 3. A French translation pass on the panels (column labels, titles, badges).
 4. Carrier-scope payment records, then expose payments in `/insurer`.
