@@ -117,6 +117,6 @@ final class ApprovalMatrixRuleResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListApprovalMatrixRules::route('/')];
+        return ['index' => Pages\ListApprovalMatrixRules::route('/'), 'view' => Pages\ViewApprovalMatrixRule::route('/{record}')];
     }
 }

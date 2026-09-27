@@ -72,6 +72,6 @@ final class CalendarExceptionResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCalendarExceptions::route('/'), 'create' => Pages\CreateCalendarException::route('/create'), 'edit' => Pages\EditCalendarException::route('/{record}/edit')];
+        return ['index' => Pages\ListCalendarExceptions::route('/'), 'create' => Pages\CreateCalendarException::route('/create'), 'edit' => Pages\EditCalendarException::route('/{record}/edit'), 'view' => Pages\ViewCalendarException::route('/{record}')];
     }
 }

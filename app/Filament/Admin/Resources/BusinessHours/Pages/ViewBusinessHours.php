@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\BusinessHours\Pages;
 
 use App\Filament\Admin\Resources\BusinessHours\BusinessHoursResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListBusinessHours extends ListRecords
+final class ViewBusinessHours extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = BusinessHoursResource::class;
 }

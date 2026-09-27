@@ -9,6 +9,8 @@ use Filament\Resources\Pages\ListRecords;
 
 final class ListCimaInsurerAuthorizations extends ListRecords
 {
+    use \App\Filament\Shared\Concerns\OpensViewPage;
+
     protected static string $resource = CimaInsurerAuthorizationResource::class;
 
     protected function getHeaderActions(): array

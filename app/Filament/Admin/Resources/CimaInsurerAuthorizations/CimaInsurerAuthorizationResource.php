@@ -105,6 +105,6 @@ final class CimaInsurerAuthorizationResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCimaInsurerAuthorizations::route('/')];
+        return ['index' => Pages\ListCimaInsurerAuthorizations::route('/'), 'view' => Pages\ViewCimaInsurerAuthorization::route('/{record}')];
     }
 }

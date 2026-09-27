@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\BrokerMasterDataMappings\Pages;
 
 use App\Filament\Admin\Resources\BrokerMasterDataMappings\BrokerMasterDataMappingResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListBrokerMasterDataMappings extends ListRecords
+final class ViewBrokerMasterDataMapping extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = BrokerMasterDataMappingResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [\Filament\Actions\CreateAction::make()];
-    }
 }

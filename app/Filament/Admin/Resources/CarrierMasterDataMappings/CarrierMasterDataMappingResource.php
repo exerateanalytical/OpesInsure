@@ -61,7 +61,6 @@ final class CarrierMasterDataMappingResource extends Resource
         return [
             'index' => Pages\ListCarrierMasterDataMappings::route('/'),
             'create' => Pages\CreateCarrierMasterDataMapping::route('/create'),
-            'edit' => Pages\EditCarrierMasterDataMapping::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditCarrierMasterDataMapping::route('/{record}/edit'), 'view' => Pages\ViewCarrierMasterDataMapping::route('/{record}')];
     }
 }

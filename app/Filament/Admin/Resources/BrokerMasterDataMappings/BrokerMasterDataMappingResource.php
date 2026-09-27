@@ -53,7 +53,6 @@ final class BrokerMasterDataMappingResource extends Resource
         return [
             'index' => Pages\ListBrokerMasterDataMappings::route('/'),
             'create' => Pages\CreateBrokerMasterDataMapping::route('/create'),
-            'edit' => Pages\EditBrokerMasterDataMapping::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditBrokerMasterDataMapping::route('/{record}/edit'), 'view' => Pages\ViewBrokerMasterDataMapping::route('/{record}')];
     }
 }

@@ -74,7 +74,6 @@ final class CimaLegalReferenceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCimaLegalReferences::route('/'),
-        ];
+            'index' => Pages\ListCimaLegalReferences::route('/'), 'view' => Pages\ViewCimaLegalReference::route('/{record}')];
     }
 }

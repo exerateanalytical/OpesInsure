@@ -73,7 +73,6 @@ final class CimaAuthorityResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCimaAuthorities::route('/'),
-        ];
+            'index' => Pages\ListCimaAuthorities::route('/'), 'view' => Pages\ViewCimaAuthority::route('/{record}')];
     }
 }

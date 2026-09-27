@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CimaLegalReferences\Pages;
 
 use App\Filament\Admin\Resources\CimaLegalReferences\CimaLegalReferenceResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCimaLegalReferences extends ListRecords
+final class ViewCimaLegalReference extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CimaLegalReferenceResource::class;
 }

@@ -75,6 +75,6 @@ final class BusinessHoursResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListBusinessHours::route('/'), 'create' => Pages\CreateBusinessHours::route('/create'), 'edit' => Pages\EditBusinessHours::route('/{record}/edit')];
+        return ['index' => Pages\ListBusinessHours::route('/'), 'create' => Pages\CreateBusinessHours::route('/create'), 'edit' => Pages\EditBusinessHours::route('/{record}/edit'), 'view' => Pages\ViewBusinessHours::route('/{record}')];
     }
 }

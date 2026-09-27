@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CalendarExceptions\Pages;
 
 use App\Filament\Admin\Resources\CalendarExceptions\CalendarExceptionResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCalendarExceptions extends ListRecords
+final class ViewCalendarException extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CalendarExceptionResource::class;
 }

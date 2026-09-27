@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\ApprovalMatrixRules\Pages;
 
 use App\Filament\Admin\Resources\ApprovalMatrixRules\ApprovalMatrixRuleResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListApprovalMatrixRules extends ListRecords
+final class ViewApprovalMatrixRule extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = ApprovalMatrixRuleResource::class;
 }

@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CarrierMasterDataMappings\Pages;
 
 use App\Filament\Admin\Resources\CarrierMasterDataMappings\CarrierMasterDataMappingResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCarrierMasterDataMappings extends ListRecords
+final class ViewCarrierMasterDataMapping extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CarrierMasterDataMappingResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [\Filament\Actions\CreateAction::make()];
-    }
 }
