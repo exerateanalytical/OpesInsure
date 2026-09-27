@@ -26,6 +26,9 @@ final class StepUpGate
         if (! $user) {
             return false;
         }
+        if ((! is_string($token) || $token === '') && in_array($purpose, (array) config('mobile_runtime.step_up.not_enforced_yet', []), true)) {
+            return true; // rollout hold, see config/mobile_runtime.php
+        }
         $tenant = rescue(fn () => app(TenantContext::class)->id(), null, false);
         $ok = is_string($token) && $token !== '' && $this->stepUp->consume($user, $tenant, $purpose, $token);
         app(LoginActivityRecorder::class)->recordEvent($user, 'STEP_UP', $ok ? 'SUCCESS' : 'FAILED', $purpose, null, $request);

@@ -130,6 +130,11 @@ final class MobileAuthService
             }
             if ($user) {
                 $this->audit->record('mobile.password_login.failed', 'user', $user->id, []);
+                // B2/B3: failed sign-in on the user's security timeline; the third failure in the window alerts them.
+                $this->security()->recordEvent($user, 'LOGIN_FAILED', 'FAILED', 'password');
+                if (! $demo && RateLimiter::attempts($failKey) === 3) {
+                    app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'REPEATED_FAILED_SIGN_INS');
+                }
             }
 
             throw ValidationException::withMessages(['phone_e164' => __('wave12.password_login_invalid')]);
@@ -138,11 +143,6 @@ final class MobileAuthService
         RateLimiter::clear($failKey);
 
         return $this->issueSession($user, $deviceFingerprint, $ip, $deviceName, $platform, 'password');
-                // B2/B3: failed sign-in on the user's security timeline; the third failure in the window alerts them.
-                $this->security()->recordEvent($user, 'LOGIN_FAILED', 'FAILED', 'password');
-                if (! $demo && RateLimiter::attempts($failKey) === 3) {
-                    app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'REPEATED_FAILED_SIGN_INS');
-                }
     }
 
     /**
@@ -179,6 +179,8 @@ final class MobileAuthService
         // A new password ends every existing session.
         $this->revokeAllSessions($user);
         $this->audit->record('mobile.password_reset.completed', 'user', $user->id, []);
+        $this->security()->recordEvent($user, 'PASSWORD_CHANGED', 'SUCCESS', 'password_reset');
+        app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'PASSWORD_CHANGED');
 
         return $this->issueSession($user, $deviceFingerprint, $ip, $deviceName, $platform, 'password_reset');
     }
@@ -187,8 +189,6 @@ final class MobileAuthService
     public function revokeAllSessions(User $user): void
     {
         MobileRefreshToken::where('user_id', $user->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
-        $this->security()->recordEvent($user, 'PASSWORD_CHANGED', 'SUCCESS', 'password_reset');
-        app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'PASSWORD_CHANGED');
         Passport::token()->newQuery()->where('user_id', $user->id)->update(['revoked' => true]);
     }
 
@@ -308,6 +308,9 @@ final class MobileAuthService
         });
 
         if ($userId === null) {
+            if ($lookup?->user_id && ($failed = User::find($lookup->user_id))) {
+                $this->security()->recordEvent($failed, 'OTP_FAILED', 'FAILED', 'otp');
+            }
             throw ValidationException::withMessages(['code' => __('wave12.otp_invalid')]);
         }
 
@@ -317,9 +320,6 @@ final class MobileAuthService
         // this OTP check is exactly the phone-ownership proof that status
         // exists to require, so a correct code promotes them here rather
         // than needing a separate activation step nothing else provides.
-            if ($lookup?->user_id && ($failed = User::find($lookup->user_id))) {
-                $this->security()->recordEvent($failed, 'OTP_FAILED', 'FAILED', 'otp');
-            }
         if (! $user || ! in_array($user->status, ['ACTIVE', 'PENDING_VERIFICATION'], true)) {
             throw ValidationException::withMessages(['code' => __('wave12.otp_invalid')]);
         }
@@ -357,18 +357,6 @@ final class MobileAuthService
             $device->name = $deviceName;
             $device->platform = $platform;
             $device->last_seen_at = now();
-            $device->trusted_at ??= now();
-            $device->security_metadata = ['last_ip_hash' => hash('sha256', $ip)];
-            $device->save();
-            // REQ-SEC-001 login activity + anomaly flags (never blocks the sign-in).
-            $flags = $this->security()->record($user, $method, $device->id, $deviceFingerprint, $deviceName, $platform, $isNewDevice, $ip);
-            if (in_array('NEW_DEVICE', $flags, true)) {
-                app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'NEW_DEVICE');
-            }
-
-            [$accessToken, $refreshToken, $expiresIn] = $this->issueTokenPair($user, $device->id, (string) Str::uuid());
-
-            $this->audit->record('mobile.session.created', 'user', $user->id, ['device_id' => $device->id, 'method' => $method]);
             // B1: device detail. Model / OS / app version as the app reports them; location server-derived only.
             $request = request();
             $device->first_seen_at ??= now();
@@ -381,6 +369,18 @@ final class MobileAuthService
                 $device->approx_country = $country;
                 $device->approx_city = $city;
             }
+            $device->trusted_at ??= now();
+            $device->security_metadata = ['last_ip_hash' => hash('sha256', $ip)];
+            $device->save();
+            // REQ-SEC-001 login activity + anomaly flags (never blocks the sign-in).
+            $flags = $this->security()->record($user, $method, $device->id, $deviceFingerprint, $deviceName, $platform, $isNewDevice, $ip);
+            if (in_array('NEW_DEVICE', $flags, true)) {
+                app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'NEW_DEVICE');
+            }
+
+            [$accessToken, $refreshToken, $expiresIn] = $this->issueTokenPair($user, $device->id, (string) Str::uuid());
+
+            $this->audit->record('mobile.session.created', 'user', $user->id, ['device_id' => $device->id, 'method' => $method]);
 
             return [
                 'access_token' => $accessToken,
@@ -462,6 +462,12 @@ final class MobileAuthService
         }
 
         $this->audit->record('mobile.session.revoked', 'user', $user->id, []);
+        $this->security()->recordEvent($user, 'LOGOUT');
+    }
+
+    private function security(): \App\Application\Security\Login\LoginActivityRecorder
+    {
+        return app(\App\Application\Security\Login\LoginActivityRecorder::class);
     }
 
     /**
@@ -471,12 +477,6 @@ final class MobileAuthService
      * success, null on a wrong code.
      */
     private function checkCode(?VerificationChallenge $challenge, string $code, array $purposes): ?string
-        $this->security()->recordEvent($user, 'LOGOUT');
-    }
-
-    private function security(): \App\Application\Security\Login\LoginActivityRecorder
-    {
-        return app(\App\Application\Security\Login\LoginActivityRecorder::class);
     {
         $this->assertChallengeUsable($challenge, $purposes);
 

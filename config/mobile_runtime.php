@@ -54,6 +54,10 @@ return [
         'otp_ttl_seconds' => (int) env('MOBILE_STEP_UP_OTP_TTL_SECONDS', 300),
         'max_attempts' => (int) env('MOBILE_STEP_UP_MAX_ATTEMPTS', 5),
         'resend_cooldown_seconds' => (int) env('MOBILE_STEP_UP_RESEND_COOLDOWN_SECONDS', 60),
+        // Rollout hold (mobile session, 2026-09-27): purposes listed here are not yet enforced when the request carries
+        // no grant, so the released app keeps working until its step-up-aware update is live. A presented grant is
+        // still verified. Empty this list (code change + deploy) once the mobile session confirms the update.
+        'not_enforced_yet' => ['SIGN_OUT_EVERYWHERE', 'PAYOUT_DESTINATION_CHANGE', 'PROFILE_SECURITY_CHANGE'],
         // Retroactively required by PAYMENT_REFUND_REQUEST (wired onto
         // MobilePaymentService::requestRefund() in this batch),
         // COMMISSION_WITHDRAWAL and CLAIM_SETTLEMENT_DECISION (both to be

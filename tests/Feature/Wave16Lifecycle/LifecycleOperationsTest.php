@@ -217,6 +217,7 @@ it('revokes every access and refresh token of the user on logout-all', function 
         MobileRefreshToken::create(['user_id' => $f['user']->id, 'family_id' => (string) Str::uuid(), 'token_hash' => hash('sha256', $fam), 'expires_at' => now()->addDays(30)]);
     }
     Passport::actingAs($f['user']);
+    config(['mobile_runtime.step_up.not_enforced_yet' => []]);
 
     $this->postJson('/api/v1/auth/mobile/logout-all')->assertStatus(401)->assertJsonPath('code', 'STEP_UP_REQUIRED');
     $grant = issueMobileStepUpGrant($f['user'], $f['tenant'], 'SIGN_OUT_EVERYWHERE');

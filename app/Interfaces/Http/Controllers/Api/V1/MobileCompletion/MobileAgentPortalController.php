@@ -80,11 +80,11 @@ final class MobileAgentPortalController
             $request->user()->party?->update(['display_name' => $data['full_name']]);
         }
         $this->audit->record('agent.profile.updated', 'partner', $partner->id, ['fields' => array_keys($data)]);
-
-        return response()->json(['data' => $this->profileOf($partner->refresh(), $request)]);
         if ($payoutChanged) {
             app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($request->user(), 'PAYOUT_DESTINATION_CHANGED', app(TenantContext::class)->id());
         }
+
+        return response()->json(['data' => $this->profileOf($partner->refresh(), $request)]);
     }
 
     public function clients(Request $request): JsonResponse

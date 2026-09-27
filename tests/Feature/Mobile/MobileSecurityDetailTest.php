@@ -17,6 +17,17 @@ use Laravel\Passport\Passport;
 
 uses(RefreshDatabase::class);
 
+// These tests pin the enforced behaviour; production holds it via mobile_runtime.step_up.not_enforced_yet during rollout.
+beforeEach(fn () => config(['mobile_runtime.step_up.not_enforced_yet' => []]));
+
+it('rollout hold: held purposes pass without a grant but a presented bad grant is still refused', function () {
+    config(['mobile_runtime.step_up.not_enforced_yet' => ['SIGN_OUT_EVERYWHERE']]);
+    $f = makeMobileCustomerFixture('+237670005551');
+    Passport::actingAs($f['user']);
+    $this->postJson('/api/v1/auth/mobile/logout-all', [], ['X-Step-Up-Grant' => 'not-a-real-grant'])->assertStatus(401);
+    $this->postJson('/api/v1/auth/mobile/logout-all')->assertSuccessful();
+});
+
 require_once __DIR__.'/../Wave12/Concerns/mobile_customer_helpers.php';
 
 const MSD_DEVICE = ['fingerprint' => 'msd-dev-1', 'name' => 'Pixel 8', 'platform' => 'android'];
