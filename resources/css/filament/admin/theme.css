@@ -1,6 +1,11 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 @source '../../../../app/Filament/**/*.php';
 @source '../../../../resources/views/filament/**/*.blade.php';
+/* Visual QA 2026-09-27: the provider panel renders resources/views/provider-workspace and classes from
+   the app/Application provider-workspace pages; neither was scanned, so md:grid-cols-4 etc. were never generated and the
+   provider dashboard stacked 26 KPI cards in one column. */
+@source '../../../../resources/views/provider-workspace/**/*.blade.php';
+@source '../../../../app/Application/**/Filament/**/*.php';
 
 /* ==========================================================================
    OpesInsure canonical web design tokens — ONE token set for every panel
@@ -90,6 +95,9 @@
 .fi-sidebar-item.fi-active>.fi-sidebar-item-btn,.fi-sidebar-item.fi-active>.fi-sidebar-item-button{background:var(--oi-navy-850)}
 .fi-sidebar-item.fi-active .fi-sidebar-item-label,.fi-sidebar-item.fi-active .fi-sidebar-item-icon{color:#FFFFFF}
 .fi-sidebar-item-btn:hover,.fi-sidebar-item-button:hover{background:color-mix(in srgb,var(--oi-navy-850) 70%,transparent)}
+/* Visual QA 2026-09-27: long FR labels ("Signalements de l'application", "Questionnaires de déclaration")
+   were cut to "…" in the 264 px sidebar; wrap onto a second line instead of truncating. */
+.fi-sidebar-item-label,.fi-sidebar-group-label{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
 .fi-topbar,.fi-topbar-ctn{min-height:56px}
 @media (min-width:1024px){.fi-topbar,.fi-topbar-ctn{min-height:64px}}
 .fi-topbar{background:var(--oi-card);border-bottom:1px solid var(--oi-border)}
@@ -103,6 +111,10 @@
    Controls
    ========================================================================== */
 .fi-btn,.fi-icon-btn,.fi-link{min-height:var(--oi-touch)}
+/* Visual QA 2026-09-27: with the 44 px min-height, Filament's baseline-aligned link label sat at the top of
+   the box while its icon was centred ("View" floated above the eye icon in every table row). */
+.fi-link{align-items:center}
+.fi-link>.fi-link-label{align-self:center}
 .fi-icon-btn{min-width:var(--oi-touch)}
 .fi-btn{border-radius:var(--oi-radius-control);font-weight:600}
 .fi-input-wrp,.fi-select-input,.fi-fo-field-wrp .fi-input-wrp{border-radius:var(--oi-radius-control)}
@@ -115,8 +127,13 @@
 .fi-modal-window,.fi-dropdown-panel{box-shadow:var(--oi-shadow-lifted);border-radius:var(--oi-radius-card)}
 .fi-badge{font-weight:600}
 
-/* Tables: contained horizontal scroll with a visible edge cue (never page overflow). */
-.fi-ta-content{overflow-x:auto;background:
+/* Visual QA 2026-09-27: keep row-action icon + label ("View" / "Voir") on one line. */
+.fi-ta-actions{flex-wrap:nowrap}
+.fi-ta-actions .fi-link,.fi-ta-actions .fi-btn{white-space:nowrap}
+
+/* Tables: contained horizontal scroll with a visible edge cue (never page overflow).
+   Filament v4 names the scroller .fi-ta-content-ctn (v3: .fi-ta-content) — the cue never rendered before 2026-09-27. */
+.fi-ta-content,.fi-ta-content-ctn{overflow-x:auto;background:
   linear-gradient(90deg,var(--oi-card) 30%,transparent) left/24px 100% no-repeat local,
   linear-gradient(270deg,var(--oi-card) 30%,transparent) right/24px 100% no-repeat local,
   radial-gradient(farthest-side at 0 50%,rgba(7,26,43,.14),transparent) left/10px 100% no-repeat scroll,
@@ -130,7 +147,7 @@
 .oi-card{background:var(--oi-card);border:1px solid var(--oi-border);border-radius:var(--oi-radius-card);padding:var(--oi-space-4)}
 @media (min-width:768px){.oi-card{padding:var(--oi-space-5)}}
 .oi-label{font-size:.75rem;line-height:1.3;color:var(--oi-text-muted);margin:0}
-.oi-value{margin:0;font-weight:600;overflow-wrap:anywhere}
+.oi-value{margin:0;font-weight:600;overflow-wrap:break-word}
 .oi-dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:var(--oi-space-3) var(--oi-space-6);margin:0}
 
 /* Status badge: icon + label + colour (never colour alone). */
