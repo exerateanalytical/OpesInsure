@@ -25,16 +25,16 @@ const wave = require("../../../assets/brand/header_wave.png");
 // ---------------------------------------------------------------------------
 
 /** Centered logo lockup: dotted-Africa mark, "OpesInsure" wordmark, gold tagline. */
-export function BrandLockup({ size = 40 }: { size?: number }) {
+export function BrandLockup({ size = 40, compact = false }: { size?: number; compact?: boolean }) {
   const { t } = useTranslation();
   return (
     <View style={s.lockup} accessible accessibilityRole="image" accessibilityLabel="OpesInsure">
       <Image source={mark} style={{ width: size, height: size }} resizeMode="contain" accessibilityIgnoresInvertColors />
       <View style={s.lockupText}>
-        <Text style={s.wordmark} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={[s.wordmark, compact && s.wordmarkCompact]} numberOfLines={1} adjustsFontSizeToFit>
           Opes<Text style={s.wordmarkGold}>Insure</Text>
         </Text>
-        <Text style={s.tagline} numberOfLines={1} adjustsFontSizeToFit>{t("splashTagline")}</Text>
+        <Text style={[s.tagline, compact && s.taglineCompact]} numberOfLines={1} adjustsFontSizeToFit>{t("splashTagline")}</Text>
       </View>
     </View>
   );
@@ -72,7 +72,9 @@ export function BrandHeader({
       <HeaderIconButton icon={CircleHelp} label={t("helpComplaints")} onPress={onRight ?? (() => router.push("/support/faq" as never))} />
     ) : right ?? <View style={s.iconBtnSpacer} />;
   const [rowW, setRowW] = useState(0);
-  const [lockEnd, setLockEnd] = useState(0);
+  const [slotX, setSlotX] = useState(0);
+  const [inner, setInner] = useState({ x: 0, w: 0 });
+  const lockEnd = inner.w ? slotX + inner.x + inner.w : 0;
   // Gap between the lockup and the 44dp right control (8dp clearance each side).
   const artW = rowW && lockEnd ? Math.min(140, rowW - lockEnd - 44 - 16) : 0;
   return (
@@ -92,8 +94,10 @@ export function BrandHeader({
           </View>
         ) : null}
         {back ? <HeaderIconButton icon={ArrowLeft} label={t("back")} onPress={() => (router.canGoBack() ? router.back() : router.replace("/" as never))} /> : null}
-        <View style={s.lockupSlot} onLayout={(e: LayoutChangeEvent) => setLockEnd(e.nativeEvent.layout.x + e.nativeEvent.layout.width)}>
-          <BrandLockup />
+        <View style={[s.lockupSlot, back && s.lockupCentered]} onLayout={(e: LayoutChangeEvent) => setSlotX(e.nativeEvent.layout.x)}>
+          <View onLayout={(e: LayoutChangeEvent) => setInner({ x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
+            <BrandLockup compact={back} size={back ? 32 : 40} />
+          </View>
         </View>
         <View style={s.rightSlot}>{rightNode}</View>
       </View>
@@ -172,6 +176,7 @@ export function HeroCard({
   lines = [],
   chip,
   meta = [],
+  metaColumns,
   children,
   style,
 }: {
@@ -184,6 +189,8 @@ export function HeroCard({
   lines?: (string | null | undefined)[];
   chip?: ReactNode;
   meta?: HeroMeta[];
+  /** Meta grid columns (default: 3 when the count divides by 3, else 2). */
+  metaColumns?: 2 | 3;
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -213,7 +220,7 @@ export function HeroCard({
           ))}
         </View>
       </View>
-      {meta.length ? <MetaGrid items={meta} /> : null}
+      {meta.length ? <MetaGrid items={meta} columns={metaColumns} /> : null}
       {children}
     </View>
   );
@@ -231,7 +238,7 @@ export function MetaGrid({ items, columns }: { items: HeroMeta[]; columns?: 2 | 
           <View key={`${m.label}-${i}`} style={[s.metaCell, { width: `${100 / cols}%` }, i % cols !== 0 && s.metaCellBorder, i >= cols && s.metaCellTop]}>
             <Icon size={20} color={m.tone === "danger" ? colors.danger : colors.navy800} />
             <View style={s.flex}>
-              <Text style={s.metaLabel} numberOfLines={1}>{m.label}</Text>
+              <Text style={s.metaLabel} numberOfLines={2}>{m.label}</Text>
               <Text style={[s.metaValue, { color: tone }]} numberOfLines={2}>{m.value}</Text>
             </View>
           </View>
@@ -397,11 +404,14 @@ const s = StyleSheet.create({
   wave: { position: "absolute", bottom: 0, opacity: 0.6 },
   topRow: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 52 },
   lockupSlot: { flexShrink: 1 },
+  lockupCentered: { flex: 1, alignItems: "center" },
   rightSlot: { marginLeft: "auto" },
   lockup: { flexDirection: "row", alignItems: "center", gap: 6 },
   lockupText: { flexShrink: 1 },
   wordmark: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 28, color: WORDMARK.ink, letterSpacing: -0.4 },
   wordmarkGold: { color: WORDMARK.accent },
+  wordmarkCompact: { fontSize: 20, lineHeight: 24 },
+  taglineCompact: { fontSize: 6, lineHeight: 8, letterSpacing: 0.3 },
   tagline: { fontFamily: "Inter_700Bold", fontSize: 7.5, lineHeight: 10, letterSpacing: 0.6, color: colors.navy900 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   iconBtnSpacer: { width: 44, height: 44 },
@@ -441,11 +451,11 @@ const s = StyleSheet.create({
   metaCell: { flexDirection: "row", gap: space.x2, alignItems: "flex-start", paddingHorizontal: space.x2, paddingVertical: space.x1 },
   metaCellBorder: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
   metaCellTop: { borderTopWidth: 1, borderTopColor: colors.neutral200, marginTop: space.x2, paddingTop: space.x3 },
-  metaLabel: { ...type.meta, color: colors.neutral500 },
-  metaValue: { ...type.label, color: colors.navy950 },
+  metaLabel: { ...type.meta, color: colors.neutral600 },
+  metaValue: { ...type.label, fontSize: 15, lineHeight: 20, color: colors.navy950 },
   // tiles
-  tile: { flex: 1, minHeight: 104, borderRadius: radius.feature, alignItems: "center", justifyContent: "center", gap: space.x2, padding: space.x2, overflow: "hidden" },
-  tileLabel: { ...type.label, textAlign: "center", fontSize: 13, lineHeight: 17 },
+  tile: { flex: 1, minHeight: 104, borderRadius: radius.feature, alignItems: "center", justifyContent: "center", gap: space.x2, paddingVertical: space.x3, paddingHorizontal: 2, overflow: "hidden" },
+  tileLabel: { ...type.label, textAlign: "center", fontSize: 12.5, lineHeight: 16 },
   actionTile: { flex: 1, minHeight: 64, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.x2, paddingHorizontal: space.x2, overflow: "hidden" },
   actionTileLabel: { ...type.label, color: colors.navy950, flexShrink: 1, textAlign: "center", fontSize: 13, lineHeight: 17 },
   // detail row
@@ -457,7 +467,7 @@ const s = StyleSheet.create({
   detailValueStrong: { fontFamily: "Inter_700Bold" },
   // checklist
   checkList: { gap: space.x2 },
-  checkListTwo: { flexDirection: "row", flexWrap: "wrap" },
+  checkListTwo: { flexDirection: "row", flexWrap: "wrap", gap: 0 },
   checkItem: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   checkItemHalf: { width: "50%", paddingRight: space.x2, marginBottom: space.x2 },
   checkDot: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", marginTop: 1 },

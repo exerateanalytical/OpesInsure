@@ -1,10 +1,11 @@
 import React from "react";
-import { Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Building2,
   ChevronRight,
   ExternalLink,
+  FileText,
   Globe,
   Headset,
   LucideIcon,
@@ -36,6 +37,8 @@ import {
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
+
+const heroArt = require("../../../assets/brand/header_network.png");
 
 const open = (url: string | null) => {
   if (url) void Linking.openURL(url).catch(() => undefined);
@@ -78,12 +81,18 @@ export default function InsurerDetail() {
           <CtaBar>
             <View style={styles.ctaRow}>
               <View style={styles.flex}>
-                <Button label={t("insurerCompareProducts")} icon={Scale} variant="secondary" onPress={() => router.push("/quote/product")} />
+                <Button label={t("insurerCompareShort")} icon={Scale} variant="secondary" onPress={() => router.push("/quote/product")} />
               </View>
               {firstProduct ? (
-                <View style={styles.flex}>
-                  <Button label={t("propGetQuote")} onPress={() => compare(firstProduct.line_code)} />
-                </View>
+                <>
+                  <View style={styles.flex}>
+                    <Button label={t("insurerViewProducts")} icon={Package} onPress={() => router.push({ pathname: "/quote/product", params: { product: productCategory(firstProduct.name, firstProduct.line_code)?.id ?? "" } })} />
+                  </View>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("propGetQuote")} onPress={() => compare(firstProduct.line_code)} android_ripple={ripple()} style={({ pressed }) => [styles.gold, pressed && styles.pressed]}>
+                    <FileText size={18} color={colors.navy950} />
+                    <Text style={styles.goldText} numberOfLines={1}>{t("insurerGetQuote")}</Text>
+                  </Pressable>
+                </>
               ) : null}
             </View>
           </CtaBar>
@@ -100,6 +109,7 @@ export default function InsurerDetail() {
 
 function Profile({ insurer, compare }: { insurer: Institution; compare: (line: string) => void }) {
   const { t, language } = useTranslation();
+  const [allProducts, setAllProducts] = React.useState(false);
   const d = readDirectory(insurer);
   const phone = d.phones.find((p) => telUrl(p));
   const email = d.emails[0];
@@ -114,32 +124,43 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
     ).values(),
   );
   const branchCount = insurer.branch_count ?? d.branches.length;
+  const cities = Array.from(new Set(d.branches.map((b) => b.city).filter((c): c is string => !!c)));
+  const verified = d.verification ? verificationText(d.verification, language, t) : insurer.is_official_register && insurer.licensed ? t("licensedStatus") : null;
   const actions: { icon: LucideIcon; label: string; onPress: () => void }[] = [
     ...(phone ? [{ icon: Phone, label: t("insurerCall"), onPress: () => open(telUrl(phone)) }] : []),
     ...(email ? [{ icon: Mail, label: t("insurerEmail"), onPress: () => open(`mailto:${email}`) }] : []),
     ...(d.website ? [{ icon: Globe, label: t("insurerWebsite"), onPress: () => open(d.website) }] : []),
     ...(address ? [{ icon: MapPin, label: t("insurerDirections"), onPress: () => open(mapsUrl(address)) }] : []),
   ];
+  const featured = allProducts ? products : products.slice(0, 2);
   return (
     <>
-      <Card feature>
+      {/* Hero: logo tile, full name, verification chip, contact actions. */}
+      <View style={styles.hero}>
+        <View style={styles.heroArt} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Image source={heroArt} style={styles.heroArtImg} resizeMode="contain" />
+        </View>
         <View style={styles.heroRow}>
-          <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} size={88} />
+          <View style={styles.logoTile}>
+            <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} size={76} />
+          </View>
           <View style={styles.flex}>
-            <Text accessibilityRole="header" style={styles.title}>{insurer.short_name ?? insurer.name}</Text>
-            <View style={styles.badges}>
-              {d.verification ? <StatusChip label={verificationText(d.verification, language, t)} tone={d.verification.tone} /> : null}
-              {insurer.is_official_register && insurer.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
-              {insurer.branch ? (
-                <StatusChip
-                  label={t(insurer.branch === "LIFE" ? "branchBadgeLIFE" : "branchBadgeIARD")}
-                  tone={insurer.branch === "LIFE" ? "success" : "info"}
-                />
-              ) : null}
-            </View>
+            <Text accessibilityRole="header" style={styles.title}>{insurer.name}</Text>
+            {verified ? (
+              <View style={styles.verified}>
+                <ShieldCheck size={16} color={colors.successText} />
+                <Text style={styles.verifiedText}>{verified}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
-        {insurer.legal_name ? <Text style={styles.body}>{insurer.legal_name}</Text> : null}
+        {insurer.legal_name && insurer.legal_name.toLowerCase() !== insurer.name.toLowerCase() ? <Text style={styles.body}>{insurer.legal_name}</Text> : null}
+        <View style={styles.badges}>
+          {insurer.branch ? (
+            <StatusChip label={t(insurer.branch === "LIFE" ? "branchBadgeLIFE" : "branchBadgeIARD")} tone={insurer.branch === "LIFE" ? "success" : "info"} />
+          ) : null}
+          {d.verification && insurer.is_official_register && insurer.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
+        </View>
         {insurer.canonical_id ? <Text style={styles.canonical}>{t("canonicalId", { id: insurer.canonical_id })}</Text> : null}
         {actions.length ? (
           <View style={styles.actions}>
@@ -148,23 +169,34 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
                 <View style={styles.actionIcon}>
                   <a.icon size={22} color={colors.blue600} />
                 </View>
-                <Text style={styles.actionText}>{a.label}</Text>
+                <Text style={styles.actionText} numberOfLines={2}>{a.label}</Text>
               </Pressable>
             ))}
           </View>
         ) : null}
-      </Card>
+      </View>
 
+      {/* Stats strip: three cells with dividers. */}
       <View style={styles.stats}>
         <Stat icon={Package} value={String(products.length)} label={t("insurerStatProducts")} />
-        {branchCount ? <Stat icon={Building2} value={String(branchCount)} label={t("insurerStatBranches")} /> : null}
-        {d.hq?.city ? <Stat icon={MapPin} value={d.hq.city} label={t("headOffice")} /> : null}
+        {branchCount ? (
+          <>
+            <View style={styles.statDivider} />
+            <Stat icon={Building2} value={String(branchCount)} label={t("insurerStatBranches")} />
+          </>
+        ) : null}
+        {d.hq?.city ? (
+          <>
+            <View style={styles.statDivider} />
+            <Stat icon={MapPin} value={d.hq.city} label={t("headOffice")} />
+          </>
+        ) : null}
       </View>
 
       {cats.length ? (
         <>
-          <SectionHeading title={t("insurerCategories")} />
-          <View style={styles.cats}>
+          <SectionHeading title={t("insurerCategories")} action={t("seeAll")} onAction={() => router.push("/quote/product")} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cats}>
             {cats.map((c) => {
               const tint = CATEGORY_TINT[c.id];
               const line = products.find((p) => productCategory(p.name, p.line_code)?.id === c.id)?.line_code ?? c.id;
@@ -177,38 +209,50 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
                   android_ripple={ripple()}
                   style={({ pressed }) => [styles.cat, { backgroundColor: tint.bg }, pressed && styles.pressed]}
                 >
-                  <c.icon size={26} color={tint.fg} />
-                  <Text style={styles.catText}>{t(c.label)}</Text>
+                  <c.icon size={28} color={tint.fg} />
+                  <Text style={styles.catText} numberOfLines={2}>{t(c.label)}</Text>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </>
       ) : null}
 
-      <SectionHeading title={t("productsOnOpesInsure")} />
+      <SectionHeading
+        title={t("insurerFeaturedProducts")}
+        action={products.length > 2 ? (allProducts ? t("insurerShowLess") : t("seeAll")) : undefined}
+        onAction={() => setAllProducts((v) => !v)}
+      />
       {products.length ? (
-        products.map((p) => {
-          const cat = productCategory(p.name, p.line_code);
-          const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
-          const Icon = cat?.icon ?? ShieldCheck;
-          return (
-            <Card key={p.id}>
-              <View style={styles.productRow}>
-                <View style={[styles.productIcon, { backgroundColor: tint.bg }]}>
-                  <Icon size={28} color={tint.fg} />
-                </View>
-                <View style={styles.flex}>
-                  <Text style={styles.offer}>{p.name}</Text>
-                  <View style={styles.badges}>
-                    <StatusChip label={p.line_code} tone="info" />
+        <View style={styles.productGrid}>
+          {featured.map((p) => {
+            const cat = productCategory(p.name, p.line_code);
+            const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
+            const Icon = cat?.icon ?? ShieldCheck;
+            return (
+              <Pressable
+                key={p.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${p.name}. ${t("compareThisProduct")}`}
+                onPress={() => compare(p.line_code)}
+                android_ripple={ripple()}
+                style={({ pressed }) => [styles.product, pressed && styles.pressed]}
+              >
+                <View style={styles.productTop}>
+                  <View style={[styles.productIcon, { backgroundColor: tint.bg }]}>
+                    <Icon size={30} color={tint.fg} />
+                  </View>
+                  <View style={styles.chevron}>
+                    <ChevronRight size={16} color={colors.navy900} />
                   </View>
                 </View>
-              </View>
-              <Button label={t("compareThisProduct")} variant="secondary" onPress={() => compare(p.line_code)} />
-            </Card>
-          );
-        })
+                <Text style={styles.productName} numberOfLines={3}>{p.name}</Text>
+                <StatusChip label={cat ? t(cat.label) : p.line_code} tone="info" />
+                <Text style={styles.productCta}>{t("compareThisProduct")}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       ) : (
         <Card>
           <Text style={styles.offer}>{t("noPlatformProducts")}</Text>
@@ -216,58 +260,91 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
         </Card>
       )}
 
-      {d.phones.length || d.emails.length || d.website ? (
+      {insurer.product_families?.length ? (
         <>
-          <SectionTitle title={t("contactDetails")} />
-          <Card>
-            <View style={styles.row}>
-              <Headset size={22} color={colors.blue600} />
-              <Text style={styles.cardTitle}>{t("insurerSupport")}</Text>
+          <SectionHeading title={t("insurerAbout", { name: insurer.short_name ?? insurer.name })} />
+          <View style={styles.about}>
+            <View style={styles.aboutIcon}>
+              <FileText size={24} color={colors.blue600} />
             </View>
-            {d.phones.map((p) =>
-              telUrl(p) ? (
-                <Button key={p} label={t("callNumber", { phone: p })} icon={Phone} variant="secondary" onPress={() => open(telUrl(p))} />
-              ) : null,
-            )}
-            {d.emails.map((e) => (
-              <Button key={e} label={t("sendEmail", { email: e })} icon={Mail} variant="secondary" onPress={() => open(`mailto:${e}`)} />
-            ))}
-            {d.website ? <Button label={t("openWebsite")} icon={ExternalLink} variant="tertiary" onPress={() => open(d.website)} /> : null}
-          </Card>
+            <View style={styles.copy}>
+              <Text style={styles.aboutLabel}>{t("publishedFamiliesUnverified")}</Text>
+              <View style={styles.families}>
+                {insurer.product_families.map((f) => (
+                  <Text key={f} style={styles.family}>{f}</Text>
+                ))}
+              </View>
+            </View>
+          </View>
         </>
+      ) : null}
+
+      {d.phones.length || d.emails.length || d.website || branchCount ? (
+        <View style={styles.twoUp}>
+          {d.phones.length || d.emails.length || d.website ? (
+            <View style={styles.infoCard}>
+              <View style={styles.row}>
+                <Headset size={22} color={colors.blue600} />
+                <Text style={[styles.cardTitle, styles.flex]}>{t("insurerSupport")}</Text>
+              </View>
+              {d.phones.map((p) =>
+                telUrl(p) ? (
+                  <Pressable key={p} accessibilityRole="link" accessibilityLabel={t("callNumber", { phone: p })} onPress={() => open(telUrl(p))} style={styles.contactRow}>
+                    <Phone size={16} color={colors.blue600} />
+                    <Text style={styles.contactText}>{p}</Text>
+                  </Pressable>
+                ) : null,
+              )}
+              {d.emails.map((e) => (
+                <Pressable key={e} accessibilityRole="link" accessibilityLabel={t("sendEmail", { email: e })} onPress={() => open(`mailto:${e}`)} style={styles.contactRow}>
+                  <Mail size={16} color={colors.blue600} />
+                  <Text style={styles.contactText} numberOfLines={2}>{e}</Text>
+                </Pressable>
+              ))}
+              {d.website ? (
+                <Pressable accessibilityRole="link" accessibilityLabel={t("openWebsite")} onPress={() => open(d.website)} style={styles.contactRow}>
+                  <ExternalLink size={16} color={colors.blue600} />
+                  <Text style={styles.contactText} numberOfLines={1}>{t("openWebsite")}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+          {branchCount ? (
+            <View style={styles.infoCard}>
+              <View style={styles.row}>
+                <Building2 size={22} color={colors.blue600} />
+                <Text style={[styles.cardTitle, styles.flex]}>{t("insurerStatBranches")}</Text>
+              </View>
+              <Text style={styles.branchCount}>{branchCount}</Text>
+              {cities.length ? <Text style={styles.body} numberOfLines={4}>{cities.join(" · ")}</Text> : null}
+            </View>
+          ) : null}
+        </View>
       ) : null}
 
       {d.hq ? (
-        <>
-          <SectionTitle title={t("headOffice")} />
-          <Card>
-            <View style={styles.row}>
-              <MapPin size={20} color={colors.blue600} />
-              <View style={styles.copy}>
-                {d.hq.address ? <Text style={styles.offer}>{d.hq.address}</Text> : null}
-                {d.hq.city ? <Text style={styles.body}>{d.hq.city}</Text> : null}
-                {d.hq.po_box ? <Text style={styles.body}>{t("poBox", { box: d.hq.po_box })}</Text> : null}
-              </View>
+        <View style={styles.location}>
+          <View style={styles.locationHead}>
+            <View style={styles.aboutIcon}>
+              <MapPin size={22} color={colors.blue600} />
             </View>
-            {address ? <Button label={t("insurerDirections")} icon={Navigation} variant="tertiary" onPress={() => open(mapsUrl(address))} /> : null}
-          </Card>
-        </>
+            <View style={styles.copy}>
+              <Text style={styles.cardTitle}>{t("insurerOfficeLocation")}</Text>
+              <Text style={styles.aboutLabel}>{t("headOffice")}</Text>
+              {d.hq.address ? <Text style={styles.body}>{[d.hq.address, d.hq.city && !d.hq.address.includes(d.hq.city) ? d.hq.city : null].filter(Boolean).join(", ")}</Text> : d.hq.city ? <Text style={styles.body}>{d.hq.city}</Text> : null}
+              {d.hq.po_box ? <Text style={styles.body}>{t("poBox", { box: d.hq.po_box })}</Text> : null}
+            </View>
+          </View>
+          {address ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={t("insurerDirections")} onPress={() => open(mapsUrl(address))} android_ripple={ripple()} style={({ pressed }) => [styles.directions, pressed && styles.pressed]}>
+              <Navigation size={18} color={colors.blue600} />
+              <Text style={styles.directionsText}>{t("insurerDirections")}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
 
       <BranchNetwork branches={d.branches} />
-
-      {insurer.product_families?.length ? (
-        <>
-          <SectionTitle title={t("publishedFamiliesUnverified")} />
-          <Card>
-            <View style={styles.families}>
-              {insurer.product_families.map((f) => (
-                <Text key={f} style={styles.family}>{f}</Text>
-              ))}
-            </View>
-          </Card>
-        </>
-      ) : null}
 
       {legalFooter(insurer).length || insurer.is_official_register ? (
         <View style={styles.trust}>
@@ -294,10 +371,8 @@ function Stat({ icon: Icon, value, label }: { icon: LucideIcon; value: string; l
       <View style={styles.statIcon}>
         <Icon size={20} color={colors.blue600} />
       </View>
-      <View style={styles.copy}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-      </View>
+      <Text style={styles.statValue} numberOfLines={2}>{value}</Text>
+      <Text style={styles.statLabel} numberOfLines={2}>{label}</Text>
     </View>
   );
 }
@@ -339,24 +414,50 @@ function BranchNetwork({ branches }: { branches: ReturnType<typeof readDirectory
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
-  ctaRow: { flexDirection: "row", gap: space.x3 },
+  ctaRow: { flexDirection: "row", gap: space.x2, alignItems: "stretch" },
+  gold: { flex: 1, minHeight: 50, borderRadius: radius.control, backgroundColor: colors.gold500, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: space.x2, overflow: "hidden" },
+  goldText: { ...type.label, color: colors.navy950, flexShrink: 1 },
+  hero: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
+  heroArt: { position: "absolute", right: -30, top: -26, width: 110, height: 110, opacity: 0.22 },
+  heroArtImg: { width: 110, height: 110 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: space.x4 },
-  title: { ...type.pageTitle, fontSize: 26, lineHeight: 32, color: colors.navy950 },
-  badges: { flexDirection: "row", gap: space.x2, flexWrap: "wrap", marginTop: space.x2 },
+  logoTile: { padding: 6, borderRadius: radius.feature, backgroundColor: colors.white, shadowColor: colors.navy950, shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  title: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 29, color: colors.navy950, letterSpacing: -0.3 },
+  verified: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", backgroundColor: colors.successSoft, borderRadius: radius.pill, paddingHorizontal: space.x3, paddingVertical: 5, marginTop: space.x2 },
+  verifiedText: { ...type.label, color: colors.successText },
+  badges: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
   actions: { flexDirection: "row", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: colors.neutral100, paddingTop: space.x3 },
-  action: { alignItems: "center", gap: 6, minWidth: 64, minHeight: 48, paddingVertical: 4, borderRadius: radius.card, overflow: "hidden" },
-  actionIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
-  actionText: { ...type.meta, color: colors.navy950 },
-  stats: { flexDirection: "row", flexWrap: "wrap", gap: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, padding: space.x4 },
-  stat: { flexDirection: "row", alignItems: "center", gap: space.x2, flexGrow: 1, flexBasis: 140 },
-  statIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
-  statValue: { ...type.cardTitle, color: colors.navy950 },
-  statLabel: { ...type.meta, color: colors.neutral600 },
-  cats: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  cat: { width: 100, minHeight: 92, borderRadius: radius.card, alignItems: "center", justifyContent: "center", gap: 6, padding: space.x2, overflow: "hidden" },
+  action: { alignItems: "center", gap: 6, width: 76, minHeight: 48, paddingVertical: 4, borderRadius: radius.card, overflow: "hidden" },
+  actionIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  actionText: { ...type.meta, color: colors.navy950, textAlign: "center" },
+  stats: { flexDirection: "row", alignItems: "center", backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, paddingVertical: space.x3, paddingHorizontal: space.x2 },
+  stat: { flex: 1, alignItems: "center", gap: 4, paddingHorizontal: space.x2 },
+  statDivider: { width: 1, alignSelf: "stretch", backgroundColor: colors.neutral200 },
+  statIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  statValue: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950, textAlign: "center" },
+  statLabel: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.neutral600, textAlign: "center" },
+  cats: { gap: space.x2, paddingVertical: 2 },
+  cat: { width: 96, minHeight: 96, borderRadius: radius.card, alignItems: "center", justifyContent: "center", gap: 6, padding: space.x2, overflow: "hidden" },
   catText: { ...type.caption, color: colors.navy950, textAlign: "center" },
-  productRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  productIcon: { width: 56, height: 56, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  productGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
+  product: { flexGrow: 1, flexBasis: 150, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, gap: space.x2, overflow: "hidden" },
+  productTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  productIcon: { width: 64, height: 64, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  productName: { ...type.label, fontSize: 15, lineHeight: 20, color: colors.navy950 },
+  productCta: { ...type.label, color: colors.blue600 },
+  chevron: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
+  about: { flexDirection: "row", gap: space.x3 },
+  aboutIcon: { width: 48, height: 48, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
+  aboutLabel: { ...type.label, color: colors.navy950 },
+  twoUp: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
+  infoCard: { flexGrow: 1, flexBasis: 150, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3, gap: space.x2 },
+  contactRow: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 32 },
+  contactText: { ...type.meta, color: colors.navy950, flexShrink: 1 },
+  branchCount: { fontFamily: "Inter_700Bold", fontSize: 26, lineHeight: 32, color: colors.navy950 },
+  locationHead: { flexDirection: "row", gap: space.x3 },
+  location: { gap: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x3 },
+  directions: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.blue50, borderRadius: radius.control, paddingHorizontal: space.x3, minHeight: 44, overflow: "hidden" },
+  directionsText: { ...type.label, color: colors.blue600 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 32 },
   copy: { flex: 1, gap: 3 },
   cardTitle: { ...type.label, fontSize: 16, color: colors.navy950 },
@@ -366,7 +467,7 @@ const styles = StyleSheet.create({
   offer: { ...type.cardTitle, color: colors.navy950 },
   body: { ...type.body, color: colors.neutral600 },
   canonical: { ...type.meta, color: colors.neutral500, fontVariant: ["tabular-nums"] },
-  families: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  families: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   family: {
     ...type.meta,
     color: colors.neutral700,
@@ -376,7 +477,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.x2,
     paddingVertical: 2,
   },
-  trust: { flexDirection: "row", gap: space.x3, padding: space.x4, borderRadius: radius.card, backgroundColor: colors.blue50, borderWidth: 1, borderColor: colors.blue100 },
+  trust: { flexDirection: "row", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue50, borderWidth: 1, borderColor: colors.blue100 },
   trustIcon: { width: 52, height: 52, borderRadius: radius.card, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" },
   legal: { ...type.meta, color: colors.neutral600 },
   source: { ...type.meta, color: colors.neutral500, textAlign: "center" },

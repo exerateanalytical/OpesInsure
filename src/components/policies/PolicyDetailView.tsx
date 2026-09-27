@@ -181,6 +181,8 @@ export function PolicyDetailView({ id }: { id: string }) {
         ? { label: latestInfo?.tone === "danger" ? latestInfo.label : t("pdPaymentPending"), tone: latestInfo?.tone === "danger" ? ("danger" as const) : ("warning" as const) }
         : { label: payments === null ? t("paymentsLoading") : t("pdPaymentNone"), tone: "neutral" as const };
   const walletDocs = p.documents ?? [];
+  // The verified certificate has its own card; keep the wallet copy for the full list below.
+  const gridDocs = walletDocs.filter((d) => !/CERT/i.test(`${d.type ?? ""} ${d.label ?? ""}`));
 
   const meta: HeroMeta[] = [
     { icon: FileText, label: t("pdPolicyNumber"), value: p.policy_number },
@@ -193,12 +195,12 @@ export function PolicyDetailView({ id }: { id: string }) {
 
   const docCard = (key: string, title: string, subtitle: string | undefined, onPress: () => void, busy = false) => (
     <Pressable key={key} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ busy }} disabled={busy} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [st.docCard, pressed && st.pressed]}>
-      <TintedIcon icon={FileText} tint={key === "certificate" ? "red" : "blue"} size={36} />
-      <View style={st.flex}>
-        <Text style={st.docCardTitle} numberOfLines={2}>{title}</Text>
-        {subtitle ? <Text style={st.docCardMeta} numberOfLines={1}>{subtitle}</Text> : null}
+      <View style={st.docCardTop}>
+        <TintedIcon icon={FileText} tint={key === "certificate" ? "red" : "blue"} size={36} />
+        <Download size={20} color={colors.blue600} />
       </View>
-      <Download size={20} color={colors.blue600} />
+      <Text style={st.docCardTitle} numberOfLines={2}>{title}</Text>
+      {subtitle ? <Text style={st.docCardMeta} numberOfLines={2}>{subtitle}</Text> : null}
     </Pressable>
   );
 
@@ -216,6 +218,7 @@ export function PolicyDetailView({ id }: { id: string }) {
           chip={<StatusChip label={info.label} tone={info.tone} />}
           lines={[`${labels.policy} · ${coverageType}`, info.note]}
           meta={meta}
+          metaColumns={2}
         >
           {p.certificate_number || p.issued_at || cover.excessMinor !== null ? (
             <View style={st.extraRows}>
@@ -232,7 +235,15 @@ export function PolicyDetailView({ id }: { id: string }) {
               <TintedIcon icon={ShieldCheck} tint="gold" size={40} />
               <Text style={st.cardTitle}>{t("pdKeyBenefits")}</Text>
             </View>
-            <CheckList columns={2} items={cover.coverages.map((c) => `${c.name}${c.optional ? t("pdOptional") : ""}${c.limitMinor !== null ? ` · ${f.xaf(c.limitMinor)}` : ""}`)} />
+            <CheckList columns={2} items={cover.coverages.map((c) => `${c.name}${c.optional ? t("pdOptional") : ""}`)} />
+            {cover.coverages.some((c) => c.limitMinor !== null) ? (
+              <View style={st.limits}>
+                <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text>
+                {cover.coverages.filter((c) => c.limitMinor !== null).map((c) => (
+                  <InfoRow key={c.code} label={c.name} value={f.xaf(c.limitMinor as number)} />
+                ))}
+              </View>
+            ) : null}
             {cover.exclusions.length ? <Text style={ps.meta}>{t("pdExcludes", { list: cover.exclusions.map((e) => e.name).join(", ") })}</Text> : null}
           </View>
         ) : null}
@@ -272,15 +283,15 @@ export function PolicyDetailView({ id }: { id: string }) {
           <Card>
             <SectionHeading icon={FileText} title={t("pdDocuments")} action={t("pdViewAll")} onAction={openDocumentsPage} />
             <View style={st.docGrid}>
-              {docCard("certificate", t("pdOpenCertificate"), p.certificate_number ?? undefined, () => void certificate(), certBusy)}
-              {walletDocs.slice(0, 3).map((d) => {
+              {docCard("certificate", t("pdCertificate"), p.certificate_number ?? undefined, () => void certificate(), certBusy)}
+              {gridDocs.slice(0, 3).map((d) => {
                 const url = openableUrl(d.download_url);
                 const title = d.label || humanize(d.type) || t("pdDocument");
                 return docCard(d.id, title, d.issued_at ? t("docIssuedOn", { date: f.date(d.issued_at) }) : d.status ? humanize(d.status) : undefined, () => (url ? openDocumentUrl(url, title) : router.push({ pathname: "/documents/[id]", params: { id: d.id } })));
               })}
             </View>
             {certMessage ? <Text style={ps.meta}>{certMessage}</Text> : null}
-            {walletDocs.slice(3).map((d) => {
+            {gridDocs.slice(3).map((d) => {
               const url = openableUrl(d.download_url);
               return (
                 <FlowRow
@@ -321,13 +332,13 @@ export function PolicyDetailView({ id }: { id: string }) {
 
         <Pressable accessibilityRole="button" accessibilityLabel={`${t("pdEmergencyTitle")}. ${helpline ?? t("pdContact")}`} onPress={callHelpline} android_ripple={ripple()} style={({ pressed }) => [st.emergency, pressed && st.pressed]}>
           <Phone size={22} color={colors.danger} />
-          <View style={st.flex}>
+          <View style={st.emergencyText}>
             <Text style={st.emergencyTitle}>{t("pdEmergencyTitle")}</Text>
             <Text style={st.emergencyBody}>{t("pdEmergencyBody")}</Text>
           </View>
           <View style={st.emergencyPill}>
             <Phone size={16} color={colors.danger} />
-            <Text style={st.emergencyPillText} numberOfLines={1}>{helpline ?? t("pdContact")}</Text>
+            <Text style={st.emergencyPillText}>{helpline ?? t("pdContact")}</Text>
           </View>
         </Pressable>
 
@@ -384,6 +395,8 @@ const st = StyleSheet.create({
   extraRows: { gap: space.x2, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
   rowTitle: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   cardTitle: { ...type.cardTitle, color: colors.navy950 },
+  limits: { gap: space.x2, borderTopWidth: 1, borderTopColor: colors.gold100, paddingTop: space.x3 },
+  limitsTitle: { ...type.label, color: colors.navy950 },
   benefits: { backgroundColor: colors.gold50, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   termCard: { borderRadius: radius.feature },
   termMonths: { ...type.label, color: colors.neutral600 },
@@ -397,16 +410,18 @@ const st = StyleSheet.create({
   termLabel: { ...type.meta, color: colors.neutral600 },
   tiles: { flexDirection: "row", gap: space.x2 },
   docGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  docCard: { width: "48.5%", flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.x2, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  docCard: { flexBasis: 140, flexGrow: 1, gap: space.x2, padding: space.x3, borderRadius: radius.card, borderWidth: 1, borderColor: colors.neutral200, backgroundColor: colors.white, overflow: "hidden" },
+  docCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   docCardTitle: { ...type.label, color: colors.navy950 },
   docCardMeta: { ...type.caption, fontFamily: "Inter_500Medium", color: colors.neutral600, marginTop: 2 },
   twoUp: { flexDirection: "row", gap: space.x2 },
   smallTitle: { ...type.label, fontSize: 15, color: colors.navy950 },
   smallBody: { ...type.body, color: colors.neutral700 },
   smallMeta: { ...type.meta, color: colors.neutral600 },
-  emergency: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x3, borderRadius: radius.card, backgroundColor: colors.dangerSoft, overflow: "hidden" },
+  emergency: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x3, padding: space.x3, borderRadius: radius.card, backgroundColor: colors.dangerSoft, overflow: "hidden" },
+  emergencyText: { flexGrow: 1, flexBasis: 200, flexShrink: 1 },
   emergencyTitle: { ...type.label, color: colors.dangerText },
   emergencyBody: { ...type.meta, color: colors.neutral700, marginTop: 2 },
-  emergencyPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 8, maxWidth: "45%" },
+  emergencyPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 8, marginLeft: "auto" },
   emergencyPillText: { ...type.label, color: colors.dangerText, flexShrink: 1 },
 });
