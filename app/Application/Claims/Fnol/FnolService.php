@@ -72,6 +72,21 @@ final class FnolService
         return $this->submit($tenantId, $data, $agent, ['channel' => 'AGENT', 'role' => 'AGENT', 'partner_id' => $partner->id]);
     }
 
+    /** Broker-assisted FNOL: a broker user files for a client in the part of the company book they may see (BookScope::bookOf). */
+    public function submitForBrokerClient(string $tenantId, array $data, User $user): Claim
+    {
+        $partner = $this->scope->broker($user);
+        if ($partner === null) {
+            abort(403, 'No active broker company for this user.');
+        }
+        if (! in_array($data['claimant_party_id'], $this->scope->bookPartyIds($user, $partner), true)) {
+            throw ValidationException::withMessages(['claimant_party_id' => 'This customer is not in your book.']);
+        }
+
+        // Intermediary-assisted (channel/role AGENT); the snapshot's acting_partner_id is the broker company.
+        return $this->submit($tenantId, $data, $user, ['channel' => 'AGENT', 'role' => 'AGENT', 'partner_id' => $partner->id]);
+    }
+
     public function snapshotFor(Claim $claim): ?object
     {
         $row = DB::table('claim_fnol_snapshots')->where('claim_id', $claim->id)->first();

@@ -1,6 +1,6 @@
 {{-- /account/customers/{id}/claim — agent-assisted FNOL for a client in the agent's book (UI audit 2026-09-27).
      GET /mobile/agent/clients/{id} + /mobile/partner/agent/policies (the client's active policies), then
-     POST /mobile/partner/agent/claims (AgentFnolController → FnolService::submitForCustomer, which refuses a client outside the book). --}}
+     POST /mobile/partner/agent/claims or /mobile/partner/broker/claims (AgentFnolController → FnolService::submitForCustomer, which refuses a client outside the book). --}}
 @php $K = __('account_agent'); @endphp
 @extends('public.account.layout', ['title' => $K['claim_t'], 'lede' => $K['claim_lede'], 'crumbs' => [[$K['customers_t'], '/account/customers'], [$K['claim_t'], null]], 'active' => 'customers'])
 @section('content')
@@ -46,7 +46,7 @@ Opes.page(function (ctx) {
       var el = form.elements, desc = el.description.value.trim(), when = el.loss_occurred_at.value, est = el.estimate.value;
       if (!sel.value || !when || desc.length < 3) return O.alert(A.t('claim_missing'));
       var btn = O.$('[data-submit]'); O.busy(btn, true);
-      O.api('/mobile/partner/agent/claims', { body: {
+      O.api(A.claimPath(), { body: {
         policy_id: sel.value, claimant_party_id: c.party_id, loss_occurred_at: new Date(when).toISOString(),
         loss_details: { description: desc }, loss_location: el.loss_location.value.trim() || null,
         estimated_loss_minor: est === '' ? null : Math.round(Number(est) * 100), idempotency_key: idem,

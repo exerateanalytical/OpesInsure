@@ -101,7 +101,7 @@ it('renders the partner workspace pages with their API wiring, in EN and FR', fu
     $this->get($url.'?lang=fr')->assertOk()->assertSee($fr, false);
 })->with([
     'book' => ['/account/book', 'My Book', 'Mon portefeuille', 'A.proposals'],
-    'client claim' => ['/account/customers/ea5d30a0-05e7-4839-8c9f-8a0c85ce6c01/claim', 'File a Claim for a Client', 'Déclarer un sinistre pour un client', '/mobile/partner/agent/claims'],
+    'client claim' => ['/account/customers/ea5d30a0-05e7-4839-8c9f-8a0c85ce6c01/claim', 'File a Claim for a Client', 'Déclarer un sinistre pour un client', 'A.claimPath()'], // agent.js: /mobile/partner/{agent,broker}/claims
     'client documents' => ['/account/customers/ea5d30a0-05e7-4839-8c9f-8a0c85ce6c01', 'Documents', 'Documents', 'A.clientDocuments'],
     'staff' => ['/account/staff', 'Staff', 'Personnel', '/mobile/partner/broker/staff/invitations'],
 ]);

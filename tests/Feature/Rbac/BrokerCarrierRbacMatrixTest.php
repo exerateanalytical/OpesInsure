@@ -42,7 +42,7 @@ const RBACM_BROKER = [
     '/broker/agreements' => ['BROKER_ADMIN'],
     '/broker/commission-accruals' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
     '/broker/carrier-settlements' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
-    '/broker/bordereaux/bordereaus' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
+    '/broker/bordereaux' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
     '/broker/memberships' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
     '/broker/reports' => [],
 ];
@@ -52,7 +52,7 @@ const RBACM_INSURER = [
     '/insurer/policies' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'REINSURANCE_OFFICER', 'CUSTOMER_SERVICE'],
     '/insurer/claims' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'REINSURANCE_OFFICER', 'CUSTOMER_SERVICE', 'ADJUSTER'],
     '/insurer/agreements' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN'],
-    '/insurer/bordereaux/bordereaus' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'],
+    '/insurer/bordereaux' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'],
     '/insurer/carrier-settlements' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'],
     '/insurer/reports' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'REINSURANCE_OFFICER'],
     '/insurer/quotes' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER'],

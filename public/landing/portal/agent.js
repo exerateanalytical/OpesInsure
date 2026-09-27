@@ -92,8 +92,9 @@
   A.proposals = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/proposals' : '/mobile/partner/agent/proposals').then(function (r) { return r.items; }); };
   A.claims = function () { return O.list(A.mode() === 'broker' ? '/mobile/partner/broker/claims' : '/mobile/partner/agent/claims').then(function (r) { return r.items; }); };
   A.clientDocuments = function (id) { return O.list((A.mode() === 'broker' ? '/mobile/partner/broker/clients/' : '/mobile/partner/agent/clients/') + encodeURIComponent(id) + '/documents').then(function (r) { return r.items; }); };
-  /** Agent-assisted FNOL (POST /mobile/partner/agent/claims) exists for agents only. */
-  A.canFileClaim = function () { return A.mode() === 'agent' && O.can('agent.clients.manage'); };
+  /** Assisted FNOL: agents POST /mobile/partner/agent/claims (agent.clients.manage), brokers /mobile/partner/broker/claims (broker.claims.file). */
+  A.canFileClaim = function () { return A.mode() === 'broker' ? O.can('broker.claims.file') : O.can('agent.clients.manage'); };
+  A.claimPath = function () { return A.mode() === 'broker' ? '/mobile/partner/broker/claims' : '/mobile/partner/agent/claims'; };
   A.dashboard = function () { return O.api(A.mode() === 'broker' ? '/mobile/broker/dashboard' : '/mobile/agent/dashboard'); };
 
   /** POST with extra headers (the step-up grant). Same auth headers as Opes.api; a 401 here is shown, never a sign-out. */

@@ -81,3 +81,43 @@ it('broker staff see only the clients they recorded; a colleague\'s client docum
 it('a supervisor sees their team\'s clients only', function () {
     expect(pwsBook($this, $this->sup))->toBe(['policies' => ['POL-A1'], 'claims' => ['CLM-A1'], 'clients' => [$this->c1['customer']->id]]);
 });
+
+function pwsFnol($test, User $u, array $client): \Illuminate\Testing\TestResponse
+{
+    Passport::actingAs($u);
+    $party = $client['customer']->party_id;
+    $policy = \App\Models\Policy::where('party_id', $party)->firstOrFail();
+    $policy->forceFill(['coverage_starts_at' => now()->subMonths(6)])->save();
+
+    return $test->postJson('/api/v1/mobile/partner/broker/claims', ['policy_id' => $policy->id, 'claimant_party_id' => $party,
+        'loss_occurred_at' => now()->subDay()->toIso8601String(), 'loss_details' => ['description' => 'Windscreen broken'],
+        'idempotency_key' => (string) Str::uuid()], ['X-Tenant-Id' => $test->t->id]);
+}
+
+it('broker staff file an assisted claim for their own client, not a colleague\'s; the admin may for any company client', function () {
+    $res = pwsFnol($this, $this->staff1, $this->c1)->assertStatus(201);
+    $snap = \Illuminate\Support\Facades\DB::table('claim_fnol_snapshots')->where('claim_id', $res->json('data.id'))->first();
+    expect($snap->acting_partner_id)->toBe($this->a->id)->and($snap->reporter_user_id)->toBe($this->staff1->id);
+    pwsFnol($this, $this->staff1, $this->c2)->assertStatus(422)->assertJsonValidationErrors('claimant_party_id');
+    pwsFnol($this, $this->sup, $this->c2)->assertStatus(422);
+    pwsFnol($this, $this->admin, $this->c2)->assertStatus(201);
+});
+
+it('a customer cannot use the broker-assisted FNOL endpoint', function () {
+    $f = makeMobileCustomerFixture('+237670110299');
+    Passport::actingAs($f['user']);
+    $this->postJson('/api/v1/mobile/partner/broker/claims', [], tenantHeaderFor($f['tenant']))->assertStatus(403);
+});
+
+it('acting follows visibility: PartnerBook::contains uses BookScope::bookOf', function () {
+    app(\App\Domain\Tenancy\TenantContext::class)->set($this->t->id);
+    $book = app(\App\Application\Partners\PartnerBook::class);
+    $p1 = $this->c1['customer']->party_id;
+    $p2 = $this->c2['customer']->party_id;
+    expect($book->contains($this->staff1, $p1))->toBeTrue()
+        ->and($book->contains($this->staff1, $p2))->toBeFalse()
+        ->and($book->contains($this->sup, $p2))->toBeFalse()
+        ->and($book->contains($this->admin, $p2))->toBeTrue()
+        ->and($book->contains($this->staff1, $this->a->party_id))->toBeTrue(); // own party stays actionable
+    expect(fn () => $book->assertInBook($this->staff2, $p1))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+});

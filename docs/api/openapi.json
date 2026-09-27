@@ -53317,6 +53317,92 @@
                         "userToken": []
                     }
                 ]
+            },
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_broker_claims",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Claims\\AgentFnolController@storeForBroker",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.claims.file"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "policy_id": {
+                                        "type": "string",
+                                        "x-rules": "required|uuid"
+                                    },
+                                    "claimant_party_id": {
+                                        "type": "string",
+                                        "x-rules": "required|uuid"
+                                    },
+                                    "loss_occurred_at": {
+                                        "type": "string",
+                                        "x-rules": "required|date|before_or_equal:now"
+                                    },
+                                    "loss_details": {
+                                        "type": "array",
+                                        "x-rules": "required|array"
+                                    },
+                                    "loss_location": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:255"
+                                    },
+                                    "estimated_loss_minor": {
+                                        "type": "integer",
+                                        "x-rules": "nullable|integer|min:0"
+                                    },
+                                    "idempotency_key": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:16|max:128"
+                                    }
+                                },
+                                "required": [
+                                    "policy_id",
+                                    "claimant_party_id",
+                                    "loss_occurred_at",
+                                    "loss_details",
+                                    "idempotency_key"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/partner/broker/clients/{customer}/documents": {

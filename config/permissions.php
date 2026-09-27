@@ -143,6 +143,10 @@ return [
             'description' => 'Register a new client on behalf of the agent\'s own Partner org (AgentClientController::store). Origin-locks the client to the caller\'s own Partner — never a caller-supplied one.',
             'suggested_roles' => ['AGENT'],
         ],
+        'broker.claims.file' => [
+            'description' => 'Broker-assisted FNOL for a client in the caller\'s visible book (POST /mobile/partner/broker/claims, BookScope::bookOf).',
+            'suggested_roles' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF'],
+        ],
         'agent.commissions.read' => [
             'description' => 'View the agent\'s own commission/PartnerStatement history (AgentCommissionController::index).',
             'suggested_roles' => ['AGENT'],
@@ -854,6 +858,7 @@ return [
         'health.preauth.request' => ['description' => 'Health preauth request.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'health.preauth.review' => ['description' => 'Health preauth review.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'health.preauth.approve' => ['description' => 'Health preauth approve.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
+        'health.preauth.supervise' => ['description' => 'Decide a referred pre-authorization or stay extension (supervisor authority).', 'suggested_roles' => ['CLAIMS_MANAGER', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
         'operations.console.view' => ['description' => 'Operations console view.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'operations.platform.view' => ['description' => 'Operations platform view.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'operations.jobs.manage' => ['description' => 'Operations jobs manage.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],

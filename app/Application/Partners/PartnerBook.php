@@ -60,8 +60,8 @@ final class PartnerBook
         }
         $partner = $this->partner($user);
 
-        return $partner !== null && DB::table('customer_attributions')
-            ->where(['party_id' => $partyId, 'partner_id' => $partner->id, 'status' => 'ACTIVE'])->exists();
+        // Acting follows visibility (BookScope::bookOf): staff act for their own recordings, supervisors for their team's.
+        return $partner !== null && DB::query()->fromSub(app(BookScope::class)->bookOf($user, $partner), 'b')->where('party_id', $partyId)->exists();
     }
 
     /** 403 when a book-scoped partner targets a party outside their book. */

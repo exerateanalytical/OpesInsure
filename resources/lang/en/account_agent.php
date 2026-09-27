@@ -26,7 +26,7 @@ return [
         'no_book' => 'Nothing in your book yet.', 'search_book' => 'Search by client, number or insurer', 'client_documents' => 'Documents', 'no_client_documents' => 'No documents for this client yet.', 'download' => 'Download',
         'file_claim' => 'File a claim', 'claim_policy' => 'Policy', 'claim_loss_at' => 'Date and time of the loss', 'claim_location' => 'Place of the loss', 'claim_type' => 'Type of claim',
         'claim_description' => 'What happened?', 'claim_estimate' => 'Estimated loss (FCFA, optional)', 'claim_submit' => 'Submit the claim', 'claim_missing' => 'Choose a policy, the date of the loss and describe what happened.',
-        'claim_done' => 'Claim :n recorded for :c.', 'claim_no_policy' => 'This client has no active policy to claim on.', 'claim_agent_only' => 'Filing a claim for a client is available to agents with client management rights.',
+        'claim_done' => 'Claim :n recorded for :c.', 'claim_no_policy' => 'This client has no active policy to claim on.', 'claim_agent_only' => 'Filing a claim for a client needs client management (agents) or claim filing (broker) rights.',
         'staff_members' => 'Members', 'staff_pending' => 'Pending invitations', 'th_member' => 'Name', 'th_role' => 'Role', 'th_since' => 'Since', 'th_recipient' => 'Recipient',
         'no_pending' => 'No pending invitation.', 'invite_t' => 'Invite a staff member', 'invite_phone' => 'Mobile number', 'invite_email' => 'Or e-mail address', 'invite_submit' => 'Send invitation',
         'invite_missing' => 'Enter a mobile number or an e-mail address.', 'invite_done' => 'Invitation sent to :r. Invitation code: :c', 'invite_admin_only' => 'Only a broker administrator can invite staff.',

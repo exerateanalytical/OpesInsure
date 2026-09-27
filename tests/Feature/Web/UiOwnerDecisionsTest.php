@@ -65,12 +65,12 @@ test('D4 carrier portal: bordereaux and settlements are tenant + carrier scoped,
     $foreign = makeMobileTestBordereau($other, $chain['carrier']->id, $reader, ['bordereau_number' => 'BDX-OTHERTENANT']);
     makeMobileTestSettlementBatch($tenant, $chain['carrier']->id, $reader, ['settlement_number' => 'STL-MINE-1']);
 
-    $this->actingAs($reader)->get('/insurer/bordereaux/bordereaus')->assertOk()->assertSee('BDX-MINE-1')->assertDontSee('BDX-OTHERCARRIER')->assertDontSee('BDX-OTHERTENANT');
-    $this->actingAs($reader)->get('/insurer/bordereaux/bordereaus/'.$mine->id)->assertOk();
-    $this->actingAs($reader)->get('/insurer/bordereaux/bordereaus/'.$foreign->id)->assertNotFound();
+    $this->actingAs($reader)->get('/insurer/bordereaux')->assertOk()->assertSee('BDX-MINE-1')->assertDontSee('BDX-OTHERCARRIER')->assertDontSee('BDX-OTHERTENANT');
+    $this->actingAs($reader)->get('/insurer/bordereaux/'.$mine->id)->assertOk();
+    $this->actingAs($reader)->get('/insurer/bordereaux/'.$foreign->id)->assertNotFound();
     $this->actingAs($reader)->get('/insurer/carrier-settlements')->assertOk()->assertSee('STL-MINE-1');
     $this->flushSession();
-    $this->actingAs($noPerm)->get('/insurer/bordereaux/bordereaus')->assertForbidden();
+    $this->actingAs($noPerm)->get('/insurer/bordereaux')->assertForbidden();
 
     // read-only in the portal: write abilities are never granted there
     \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('insurer'));

@@ -72,3 +72,7 @@ Open: health queues are tenant-scoped, not carrier-scoped, so health permissions
 - CARRIER_ADMIN (and CARRIER_SUPER_ADMIN): + distribution.agreements.view, + kyc.view.
 - `claims.read` retired; `claims.view` is the only claim-read permission (widget, closure routes, mobile workspace card, CLAIMS_OFFICER).
 - Production roles: migration `2026_10_31_100001_rbac_broker_carrier_owner_decision_grants` runs `rbac:sync-role-permissions`. It is additive (never removes a custom grant, skips `*` roles) and renames retired codes.
+
+## Acting follows visibility (2026-09-27)
+
+`PartnerBook::contains` / `assertInBook` (quote → offer → proposal → payment) and broker-assisted FNOL (`POST /mobile/partner/broker/claims`, `broker.claims.file`) use `BookScope::bookOf`: BROKER_STAFF act only for clients they recorded, BROKER_SUPERVISOR for their team's, BROKER_ADMIN for the whole company book. The caller's own party stays actionable.
