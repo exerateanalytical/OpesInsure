@@ -25,8 +25,8 @@ final class PremiumCollectedChartWidget extends ChartWidget
 
     protected ?string $maxHeight = '260px';
 
-    // No polling: a Livewire round-trip would not carry the panel tenant (non-persistent auth middleware).
-    protected ?string $pollingInterval = null;
+    // The panel tenant middleware is persistent on Livewire round-trips (ScopesPanelTenant), so polling keeps the tenant.
+    protected ?string $pollingInterval = '120s';
 
     public static function canView(): bool
     {

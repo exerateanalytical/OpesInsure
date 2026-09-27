@@ -121,8 +121,9 @@ final class RecordShell
      * The standard detail layout: header, failure banners, then tabs.
      *
      * @param  array<int, \Filament\Schemas\Components\Component>  $overview
+     * @param  array<int, Tabs\Tab>  $extra  record-specific tabs, placed after Financial (e.g. claim payments / disputes / recoveries)
      */
-    public static function detailTabs(string $subjectType, array $overview = [], ?array $authority = null, bool $related = false, array $without = []): array
+    public static function detailTabs(string $subjectType, array $overview = [], ?array $authority = null, bool $related = false, array $without = [], array $extra = []): array
     {
         $tabs = [];
         if ($overview !== []) {
@@ -135,6 +136,7 @@ final class RecordShell
         if (! in_array('financial', $without, true)) {
             $tabs[] = Tabs\Tab::make(__('web_experience.tabs.financial'))->schema([self::financialBreakdown(), self::financialPanel()]);
         }
+        array_push($tabs, ...$extra);
         if ($related) {
             $tabs[] = Tabs\Tab::make(__('web_experience.tabs.related'))->schema([self::relatedRecords()]);
         }

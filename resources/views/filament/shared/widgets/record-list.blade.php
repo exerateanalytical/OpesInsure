@@ -1,5 +1,5 @@
 @php($p = $this->payload())
-<x-filament-widgets::widget>
+<x-filament-widgets::widget :attributes="new \Illuminate\View\ComponentAttributeBag($this->pollingInterval ? ['wire:poll.'.$this->pollingInterval => ''] : [])">
     <x-filament::section :heading="$this->heading()" compact>
         @if ($p['error'])
             <p class="text-sm text-danger-600" data-state="ERROR">{{ __('dashboards.states.error') }}</p>

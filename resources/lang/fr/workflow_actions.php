@@ -23,6 +23,13 @@ return [
     'claimClose' => ['label' => 'Clôturer / retirer le sinistre', 'done' => 'Sinistre clôturé', 'help' => 'La liste de contrôle de clôture doit être satisfaite. Utilisez le motif « Retiré » lorsque le déclarant retire sa déclaration.'],
     'claimRequestReopen' => ['label' => 'Demander la réouverture', 'done' => 'Réouverture demandée'],
     'claimDecideReopen' => ['label' => 'Statuer sur la réouverture', 'done' => 'Réouverture traitée'],
+    'claimRequestPayment' => ['label' => 'Demander le paiement du sinistre', 'done' => 'Paiement demandé', 'help' => 'Paie le déclarant sur la base d\'une décision approuvée. Une seconde personne l\'approuve.'],
+    'claimApprovePayment' => ['label' => 'Approuver le paiement du sinistre', 'done' => 'Paiement approuvé'],
+    'claimReversePayment' => ['label' => 'Annuler le paiement du sinistre', 'done' => 'Paiement annulé', 'help' => 'La personne qui a approuvé le paiement ne peut pas l\'annuler.'],
+    'claimOpenDispute' => ['label' => 'Enregistrer une contestation', 'done' => 'Contestation enregistrée', 'help' => 'Seul un sinistre refusé ou partiellement accepté peut être contesté.'],
+    'claimResolveDispute' => ['label' => 'Résoudre la contestation', 'done' => 'Contestation résolue'],
+    'claimOpenRecovery' => ['label' => 'Ouvrir un recours', 'done' => 'Recours ouvert', 'help' => 'Crée la créance attendue (subrogation, sauvetage, etc.).'],
+    'claimUpdateRecovery' => ['label' => 'Mettre à jour le recours', 'done' => 'Recours mis à jour'],
 
     'policyEndorse' => ['label' => 'Demander un avenant', 'done' => 'Avenant demandé', 'help' => "Crée une demande de gestion. Si la prime augmente, le client paie d'abord ; un valideur approuve."],
     'policyDecideService' => ['label' => 'Approuver la demande de gestion', 'done' => 'Demande de gestion traitée'],
@@ -67,9 +74,13 @@ return [
         'pending_transaction' => 'Demande en attente', 'initiated_by' => 'À l’initiative de', 'refund_preview' => 'Aperçu du remboursement', 'effective_from' => 'En vigueur à partir du',
         'queue' => 'File', 'question' => 'Question au prestataire', 'valid_from' => 'Valable du', 'valid_until' => "Valable jusqu'au", 'provider' => 'Prestataire',
         'currency' => 'Devise', 'payment_reference' => 'Référence de paiement',
+        'payment' => 'Paiement', 'statement' => 'Déclaration', 'dispute' => 'Contestation', 'resolution' => 'Résolution', 'reassess' => 'Renvoyer le sinistre en réexamen',
+        'recovery_type' => 'Type de recours', 'counterparty' => 'Contrepartie', 'target_amount_minor' => 'Montant attendu (unités mineures)', 'due_at' => 'Échéance',
+        'recovery' => 'Recours', 'operation' => 'Opération',
     ],
 
     'codes' => [
+        'recovery_op' => ['RECEIVE' => 'Enregistrer un encaissement', 'DISPUTE' => 'Marquer comme contesté', 'RESOLVE' => 'Résoudre la contestation', 'CLOSE' => 'Clôturer'],
         'decision' => ['APPROVE' => 'Accepter', 'PARTIAL' => 'Acceptation partielle', 'DECLINE' => 'Refuser'],
         'preauth' => ['APPROVED' => 'Accepter', 'PARTIAL' => 'Acceptation partielle', 'DECLINED' => 'Refuser'],
         'initiator' => ['INSURED' => 'Assuré', 'INSURER' => 'Assureur', 'INTERMEDIARY' => 'Intermédiaire'],

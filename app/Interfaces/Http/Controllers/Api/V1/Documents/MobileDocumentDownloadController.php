@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\Documents;
 
 use App\Models\Document;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -30,6 +32,9 @@ final class MobileDocumentDownloadController
         $disk = Storage::disk(config('filesystems.default'));
 
         abort_unless($disk->exists($record->storage_key), 404);
+
+        // Every signed download is logged, as PolicyDocumentDownloadController does (the actor is whoever minted the link).
+        DB::table('document_access_log')->insert(['document_id' => $record->id, 'actor_id' => null, 'action' => 'DOWNLOAD', 'purpose' => 'SIGNED_LINK', 'request_id' => (string) (request()->header('X-Request-Id') ?? Str::uuid()), 'occurred_at' => now()]);
 
         return $disk->download($record->storage_key, null, ['Content-Type' => $record->mime_type]);
     }

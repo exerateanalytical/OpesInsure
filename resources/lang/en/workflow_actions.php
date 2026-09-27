@@ -23,6 +23,13 @@ return [
     'claimClose' => ['label' => 'Close / withdraw claim', 'done' => 'Claim closed', 'help' => 'The closure checklist must pass. Use reason WITHDRAWN when the claimant withdraws the claim.'],
     'claimRequestReopen' => ['label' => 'Request reopening', 'done' => 'Reopening requested'],
     'claimDecideReopen' => ['label' => 'Decide reopening', 'done' => 'Reopening decided'],
+    'claimRequestPayment' => ['label' => 'Request claim payment', 'done' => 'Payment requested', 'help' => 'Pays the claimant against an approved decision. A second person approves it.'],
+    'claimApprovePayment' => ['label' => 'Approve claim payment', 'done' => 'Payment approved'],
+    'claimReversePayment' => ['label' => 'Reverse claim payment', 'done' => 'Payment reversed', 'help' => 'The person who approved the payment cannot reverse it.'],
+    'claimOpenDispute' => ['label' => 'Record dispute', 'done' => 'Dispute recorded', 'help' => 'Only a declined or partly approved claim can be disputed.'],
+    'claimResolveDispute' => ['label' => 'Resolve dispute', 'done' => 'Dispute resolved'],
+    'claimOpenRecovery' => ['label' => 'Open recovery', 'done' => 'Recovery opened', 'help' => 'Creates the expected receivable (subrogation, salvage and similar).'],
+    'claimUpdateRecovery' => ['label' => 'Update recovery', 'done' => 'Recovery updated'],
 
     'policyEndorse' => ['label' => 'Request endorsement', 'done' => 'Endorsement requested', 'help' => 'Creates a servicing request. With a positive premium the customer pays first; a checker approves it.'],
     'policyDecideService' => ['label' => 'Approve servicing request', 'done' => 'Servicing request decided'],
@@ -67,9 +74,13 @@ return [
         'pending_transaction' => 'Pending request', 'initiated_by' => 'Initiated by', 'refund_preview' => 'Refund preview', 'effective_from' => 'Effective from',
         'queue' => 'Queue', 'question' => 'Question to the provider', 'valid_from' => 'Valid from', 'valid_until' => 'Valid until', 'provider' => 'Provider',
         'currency' => 'Currency', 'payment_reference' => 'Payment reference',
+        'payment' => 'Payment', 'statement' => 'Statement', 'dispute' => 'Dispute', 'resolution' => 'Resolution', 'reassess' => 'Send the claim back for review',
+        'recovery_type' => 'Recovery type', 'counterparty' => 'Counterparty', 'target_amount_minor' => 'Expected amount (minor units)', 'due_at' => 'Due date',
+        'recovery' => 'Recovery', 'operation' => 'Operation',
     ],
 
     'codes' => [
+        'recovery_op' => ['RECEIVE' => 'Record money received', 'DISPUTE' => 'Mark as disputed', 'RESOLVE' => 'Resolve the dispute', 'CLOSE' => 'Close'],
         'decision' => ['APPROVE' => 'Approve', 'PARTIAL' => 'Partial approval', 'DECLINE' => 'Decline'],
         'preauth' => ['APPROVED' => 'Approve', 'PARTIAL' => 'Partial approval', 'DECLINED' => 'Decline'],
         'initiator' => ['INSURED' => 'Insured', 'INSURER' => 'Insurer', 'INTERMEDIARY' => 'Intermediary'],

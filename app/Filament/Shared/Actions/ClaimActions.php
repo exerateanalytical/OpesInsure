@@ -7,16 +7,21 @@ namespace App\Filament\Shared\Actions;
 use App\Application\Claims\Assessment\ClaimAssessmentService;
 use App\Application\Claims\Assessment\Models\ClaimAssessment;
 use App\Application\Claims\ClaimLifecycleService;
+use App\Application\Claims\ClaimPaymentService;
 use App\Application\Claims\ClaimReferenceCodes;
 use App\Application\Claims\Closure\ClaimClosureChecklist;
 use App\Application\Claims\Closure\ClaimClosureService;
 use App\Application\Claims\Decisions\ClaimDecisionService;
 use App\Application\Claims\Fnol\FnolService;
+use App\Application\Claims\Recovery\ClaimRecoveryService;
 use App\Application\Claims\Reserves\ClaimReserveService;
 use App\Application\Claims\Settlement\ClaimSettlementService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Claim;
 use App\Models\ClaimDecision;
+use App\Models\ClaimDispute;
+use App\Models\ClaimPayment;
+use App\Models\ClaimRecovery;
 use App\Models\ClaimReserveChange;
 use App\Models\Policy;
 use App\Models\User;
@@ -48,6 +53,15 @@ use Illuminate\Support\Str;
  *   close           POST claims/{claim}/close                     claims.close                ClaimClosureService::close
  *   requestReopen   POST claims/{claim}/reopen-requests           claims.reopen.request       ClaimClosureService::requestReopen
  *   decideReopen    POST claims/reopen-requests/{r}/approve|reject claims.reopen.approve      ClaimClosureService::approveReopen|rejectReopen
+ *   requestPayment  POST claims/{id}/decisions/{d}/payments       claims.payment.request      ClaimPaymentService::request
+ *   approvePayment  POST claims/{id}/payments/{p}/approve         claims.payment.approve      ClaimPaymentService::approve
+ *   reversePayment  POST claims/{id}/payments/{p}/reverse         claims.payment.reverse      ClaimPaymentService::reverse
+ *   openDispute     POST claims/{id}/disputes                     claims.dispute              ClaimLifecycleService::openDispute
+ *   resolveDispute  POST claims/{id}/disputes/{d}/resolve         claims.dispute.resolve      ClaimLifecycleService::resolveDispute
+ *   openRecovery    POST claim-recoveries                         claims.recovery             ClaimRecoveryService::open
+ *   updateRecovery  POST claim-recoveries/{r}/receive|dispute|resolve-dispute|close
+ *                                                                 claims.recovery             ClaimRecoveryService::receive|dispute|resolveDispute|close
+ * Payment execution (processing / failed / paid, claims.payment.execute) belongs to the payment rail and has no web action.
  * Staff withdrawal on the claimant's behalf is `close` with reason WITHDRAWN (the claimant's own withdrawal is the
  * mobile route, MobileClaimService::withdraw, which is limited to the claimant).
  */
@@ -59,6 +73,8 @@ final class ClaimActions
         return ActionGroup::make([
             self::assign(), self::assess(), self::reviewAssessment(), self::reserve(), self::approveReserve(),
             self::decide(), self::approveDecision(), self::settle(), self::offerSettlement(),
+            self::requestPayment(), self::approvePayment(), self::reversePayment(),
+            self::openDispute(), self::resolveDispute(), self::openRecovery(), self::updateRecovery(),
             self::close(), self::requestReopen(), self::decideReopen(),
         ])->label(__('workflow_actions.claim_group'))->icon('heroicon-o-bolt')->button();
     }
@@ -321,6 +337,143 @@ final class ClaimActions
 
                 return WorkflowAction::run($action, $p, fn () => $data['outcome'] === 'APPROVE' ? $s->approveReopen($id, auth()->user(), $data['note'] ?? null) : $s->rejectReopen($id, auth()->user(), (string) $data['note']));
             });
+    }
+
+    public static function requestPayment(): Action
+    {
+        $p = 'claims.payment.request';
+        $approved = fn (Claim $c) => ClaimDecision::where(['claim_id' => $c->id, 'status' => 'APPROVED']);
+
+        return WorkflowAction::make('claimRequestPayment', $p)->icon('heroicon-o-currency-dollar')->requiresConfirmation()
+            ->visible(fn (Claim $record) => in_array($record->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) && $approved($record)->exists())
+            ->schema([
+                Select::make('decision_id')->label(__('workflow_actions.fields.decision'))->required()
+                    ->options(fn (Claim $record) => $approved($record)->get()->mapWithKeys(fn ($d) => [$d->id => $d->decision.' · '.number_format((int) $d->approved_amount_minor).' '.$d->currency])),
+                TextInput::make('amount_minor')->label(__('workflow_actions.fields.amount_minor'))->integer()->minValue(1)->required(),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p, fn () => app(ClaimPaymentService::class)->request(
+                $record, $approved($record)->whereKey($data['decision_id'])->firstOrFail(),
+                // The payee is always the claimant (the service refuses anyone else); one idempotency key per submission.
+                ['payee_party_id' => $record->claimant_party_id, 'amount_minor' => (int) $data['amount_minor'], 'idempotency_key' => (string) Str::uuid()],
+                auth()->user())));
+    }
+
+    public static function approvePayment(): Action
+    {
+        $p = 'claims.payment.approve';
+        $pending = fn (Claim $c) => ClaimPayment::where(['claim_id' => $c->id, 'status' => 'PENDING_APPROVAL']);
+
+        return WorkflowAction::make('claimApprovePayment', $p)->icon('heroicon-o-check-badge')->color('success')->requiresConfirmation()
+            ->visible(fn (Claim $record) => $pending($record)->exists())
+            ->schema([
+                Select::make('payment_id')->label(__('workflow_actions.fields.payment'))->required()
+                    ->options(fn (Claim $record) => $pending($record)->get()->mapWithKeys(fn ($x) => [$x->id => self::paymentLabel($x)])),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(ClaimPaymentService::class)->approve($pending($record)->whereKey($data['payment_id'])->firstOrFail(), auth()->user())));
+    }
+
+    public static function reversePayment(): Action
+    {
+        $p = 'claims.payment.reverse';
+        $paid = fn (Claim $c) => ClaimPayment::where(['claim_id' => $c->id, 'status' => 'PAID']);
+
+        return WorkflowAction::make('claimReversePayment', $p)->icon('heroicon-o-arrow-uturn-left')->color('danger')->requiresConfirmation()
+            ->visible(fn (Claim $record) => $paid($record)->exists())
+            ->schema([
+                Select::make('payment_id')->label(__('workflow_actions.fields.payment'))->required()
+                    ->options(fn (Claim $record) => $paid($record)->get()->mapWithKeys(fn ($x) => [$x->id => self::paymentLabel($x)])),
+                Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->minLength(20)->maxLength(2000),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(ClaimPaymentService::class)->reverse($paid($record)->whereKey($data['payment_id'])->firstOrFail(), $data['reason'], auth()->user())));
+    }
+
+    public static function openDispute(): Action
+    {
+        $p = 'claims.dispute';
+
+        return WorkflowAction::make('claimOpenDispute', $p)->icon('heroicon-o-hand-raised')
+            ->visible(fn (Claim $record) => in_array($record->status, ['DECLINED', 'PARTIALLY_APPROVED'], true) && ! ClaimDispute::where(['claim_id' => $record->id, 'status' => 'OPEN'])->exists())
+            ->schema([
+                TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
+                Textarea::make('statement')->label(__('workflow_actions.fields.statement'))->required()->minLength(20)->maxLength(5000),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p, fn () => app(ClaimLifecycleService::class)->openDispute(
+                $record, ['reason_code' => $data['reason_code'], 'statement' => $data['statement']], auth()->user())));
+    }
+
+    public static function resolveDispute(): Action
+    {
+        $p = 'claims.dispute.resolve';
+        $open = fn (Claim $c) => ClaimDispute::where(['claim_id' => $c->id, 'status' => 'OPEN']);
+
+        return WorkflowAction::make('claimResolveDispute', $p)->icon('heroicon-o-check-circle')->requiresConfirmation()
+            ->visible(fn (Claim $record) => $open($record)->exists())
+            ->schema([
+                Select::make('dispute_id')->label(__('workflow_actions.fields.dispute'))->required()
+                    ->options(fn (Claim $record) => $open($record)->get()->mapWithKeys(fn ($d) => [$d->id => $d->reference.' · '.$d->reason_code])),
+                Textarea::make('resolution')->label(__('workflow_actions.fields.resolution'))->required()->minLength(20)->maxLength(5000),
+                Toggle::make('reassess')->label(__('workflow_actions.fields.reassess')),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p, fn () => app(ClaimLifecycleService::class)->resolveDispute(
+                $open($record)->whereKey($data['dispute_id'])->firstOrFail(), $data['resolution'], ! empty($data['reassess']), auth()->user())));
+    }
+
+    public static function openRecovery(): Action
+    {
+        $p = 'claims.recovery';
+
+        return WorkflowAction::make('claimOpenRecovery', $p)->icon('heroicon-o-arrow-down-tray')
+            ->visible(fn (Claim $record) => $record->status !== 'DRAFT')
+            ->schema([
+                Select::make('type')->label(__('workflow_actions.fields.recovery_type'))->options(WorkflowAction::options(ClaimRecoveryService::TYPES))->required(),
+                TextInput::make('counterparty_name')->label(__('workflow_actions.fields.counterparty'))->required()->maxLength(255),
+                TextInput::make('target_amount_minor')->label(__('workflow_actions.fields.target_amount_minor'))->integer()->minValue(1)->required(),
+                DateTimePicker::make('due_at')->label(__('workflow_actions.fields.due_at')),
+                Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(2000),
+            ])
+            ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p, fn () => app(ClaimRecoveryService::class)->open($record, [
+                'type' => $data['type'], 'counterparty_name' => $data['counterparty_name'], 'target_amount_minor' => (int) $data['target_amount_minor'],
+                'due_at' => ($data['due_at'] ?? null) ?: null, 'notes' => $data['notes'] ?? null,
+            ], auth()->user())));
+    }
+
+    /** Receive money on, dispute, resolve the dispute on, or close a recovery (one action; the operation is chosen in the form). */
+    public static function updateRecovery(): Action
+    {
+        $p = 'claims.recovery';
+        $live = fn (Claim $c) => ClaimRecovery::where('claim_id', $c->id)->where('status', '!=', 'CLOSED');
+        $needsText = fn (callable $get) => in_array($get('operation'), ['DISPUTE', 'RESOLVE', 'CLOSE'], true);
+        $receiving = fn (callable $get) => $get('operation') === 'RECEIVE';
+
+        return WorkflowAction::make('claimUpdateRecovery', $p)->icon('heroicon-o-arrow-path-rounded-square')
+            ->visible(fn (Claim $record) => $live($record)->exists())
+            ->schema([
+                Select::make('recovery_id')->label(__('workflow_actions.fields.recovery'))->required()
+                    ->options(fn (Claim $record) => $live($record)->get()->mapWithKeys(fn ($r) => [$r->id => $r->reference.' · '.$r->type.' · '.$r->status.' · '.number_format((int) $r->recovered_amount_minor).'/'.number_format((int) $r->target_amount_minor).' '.$r->currency])),
+                Select::make('operation')->label(__('workflow_actions.fields.operation'))->options(WorkflowAction::options(['RECEIVE', 'DISPUTE', 'RESOLVE', 'CLOSE'], 'recovery_op'))->required()->live(),
+                TextInput::make('amount_minor')->label(__('workflow_actions.fields.amount_minor'))->integer()->minValue(1)->visible($receiving)->required($receiving),
+                TextInput::make('reference')->label(__('workflow_actions.fields.payment_reference'))->maxLength(120)->visible($receiving)->required($receiving),
+                Textarea::make('text')->label(__('workflow_actions.fields.reason'))->maxLength(2000)->visible($needsText)->required($needsText),
+            ])
+            ->action(function (Action $action, Claim $record, array $data) use ($p, $live) {
+                $r = $live($record)->whereKey($data['recovery_id'])->firstOrFail();
+                $s = app(ClaimRecoveryService::class);
+                $u = auth()->user();
+
+                return WorkflowAction::run($action, $p, fn () => match ($data['operation']) {
+                    'RECEIVE' => $s->receive($r, (int) $data['amount_minor'], (string) $data['reference'], $u),
+                    'DISPUTE' => $s->dispute($r, (string) $data['text'], $u),
+                    'RESOLVE' => $s->resolveDispute($r, (string) $data['text'], $u),
+                    'CLOSE' => $s->close($r, Str::limit((string) $data['text'], 255, ''), $u),
+                });
+            });
+    }
+
+    private static function paymentLabel(ClaimPayment $x): string
+    {
+        return number_format((int) $x->amount_minor).' '.$x->currency.' · '.$x->status.' · '.optional($x->created_at)->toDateString();
     }
 
     private static function tenant(): string

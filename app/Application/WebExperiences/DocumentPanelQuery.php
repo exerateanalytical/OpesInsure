@@ -77,17 +77,27 @@ final class DocumentPanelQuery
     }
 
     /**
-     * Short-lived signed download link (the existing PolicyDocumentService /
-     * mobile.policy-documents.download route, which logs every access) for a
-     * stored, clean policy document; null otherwise. Callers only reach this
-     * for rows that already passed DocumentAccessPolicy::staffMay().
+     * Short-lived signed download link for a stored, clean document; null otherwise. Policy documents use the
+     * existing PolicyDocumentService / mobile.policy-documents.download route; claim evidence uses the bound
+     * SignedUrlAdapter (mobile.documents.download, the same link DocumentController::access mints). Both target
+     * routes log every download in document_access_log. Callers only reach this for rows that already passed
+     * DocumentAccessPolicy::staffMay().
      */
     public static function downloadUrl(Document $d): ?string
     {
-        if (! $d->policy_id || ! $d->storage_key || $d->scan_status !== 'CLEAN') {
+        if (! $d->storage_key || $d->scan_status !== 'CLEAN') {
             return null;
         }
+        if ($d->policy_id) {
+            return app(\App\Application\Policies\PolicyDocumentService::class)->downloadUrl($d);
+        }
+        if ($d->claim_id) {
+            return app(\App\Application\Documents\Adapters\SignedUrlAdapter::class)->sign($d, self::CLAIM_EVIDENCE_TTL_SECONDS)->url;
+        }
 
-        return app(\App\Application\Policies\PolicyDocumentService::class)->downloadUrl($d);
+        return null;
     }
+
+    /** Same lifetime as the API's DocumentController::access link. */
+    private const CLAIM_EVIDENCE_TTL_SECONDS = 300;
 }

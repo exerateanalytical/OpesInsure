@@ -13,7 +13,14 @@ use App\Filament\Shared\Actions\HealthProviderActions;
 use App\Filament\Shared\Actions\PolicyActions;
 use App\Filament\Shared\Actions\WorkQueueActions;
 use App\Models\ApprovalRequest;
+use App\Application\WebExperiences\DocumentPanelQuery;
+use App\Filament\Admin\Resources\Claims\ClaimResource;
 use App\Models\Claim;
+use App\Models\ClaimDecision;
+use App\Models\ClaimDispute;
+use App\Models\ClaimPayment;
+use App\Models\ClaimRecovery;
+use App\Models\Document;
 use App\Models\DocumentTemplate;
 use App\Models\Policy;
 use App\Models\Role;
@@ -235,4 +242,153 @@ it('hides health pre-authorization and provider settlement actions without the p
 
     wfAs(wfUser($this->tenant, ['health.provider_settlements.manage'], 'FINANCE_MANAGER'), $this->tenant);
     wfHarness([fn () => HealthProviderActions::settlementCreate()])->assertActionVisible('settlementCreate');
+});
+
+/** An APPROVED claim with an approved decision of $amount (maker and checker are different users). */
+function wfApprovedClaim(array $f, Policy $policy, int $amount = 300000): array
+{
+    $claim = wfClaim($f, $policy, 'APPROVED');
+    $claim->update(['approved_amount_minor' => $amount, 'current_reserve_minor' => $amount]);
+    $maker = wfUser($f['tenant']->id, ['claims.view']);
+    $checker = wfUser($f['tenant']->id, ['claims.view']);
+    $decision = ClaimDecision::create(['claim_id' => $claim->id, 'decision' => 'APPROVE', 'approved_amount_minor' => $amount, 'currency' => 'XAF',
+        'reason_code' => 'COVERED_IN_FULL', 'rationale' => 'Covered in full after assessment.', 'status' => 'APPROVED', 'proposed_by' => $maker->id, 'approved_by' => $checker->id, 'approved_at' => now()]);
+
+    return [$claim->refresh(), $decision];
+}
+
+function wfAuthority(array $f, User $u, int $limit): void
+{
+    DB::table('authority_limits')->insert(['id' => (string) Str::uuid(), 'carrier_id' => $f['carrier']->id, 'holder_type' => 'USER', 'holder_id' => $u->id,
+        'authority_type' => 'CLAIM_SETTLE', 'max_amount_minor' => $limit, 'currency' => 'XAF', 'effective_from' => now()->subMonth()->toDateString(),
+        'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+}
+
+it('requests a policy cancellation successfully when an approved cancellation rule exists', function () {
+    DB::table('cancellation_rule_versions')->insert([
+        'id' => (string) Str::uuid(), 'line_code' => 'AUTO', 'version' => 1, 'status' => 'APPROVED', 'basis' => 'PRO_RATA', 'short_rate_basis_points' => 10000,
+        'admin_fee_minor' => 0, 'effective_from' => now()->subYear()->toDateString(), 'effective_until' => null, 'created_by' => wfUser($this->tenant, [])->id, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    wfAs(wfUser($this->tenant, ['policies.cancellation.request'], 'CARRIER_STAFF'), $this->tenant);
+    wfHarness([fn () => PolicyActions::requestCancellation()], $this->policy)->callAction('policyRequestCancellation', [
+        'effective_at' => now()->addDays(10)->toDateTimeString(), 'initiated_by' => 'INSURED', 'reason_code' => 'CUSTOMER_REQUEST',
+    ])->assertNotified(__('workflow_actions.policyRequestCancellation.done'));
+    $c = DB::table('policy_cancellations')->where('policy_id', $this->policy->id)->first();
+    expect($c)->not->toBeNull()->and($c->status)->toBe('REQUESTED')->and((int) $c->refund_minor)->toBeGreaterThan(0);
+});
+
+it('proposes a claim decision and a different checker approves it (decide + approveDecision)', function () {
+    $claim = wfClaim($this->f, $this->policy, 'CARRIER_REVIEW');
+    $perms = ['claims.view', 'claims.decision.propose', 'claims.decision.approve'];
+    $maker = wfUser($this->tenant, $perms);
+    $checker = wfUser($this->tenant, $perms, 'CLAIMS_MANAGER');
+    wfAuthority($this->f, $maker, 500000);
+    wfAuthority($this->f, $checker, 500000);
+
+    wfAs($maker, $this->tenant);
+    wfHarness([fn () => ClaimActions::decide()], $claim)->callAction('claimDecide', [
+        'decision' => 'PARTIAL', 'reason_codes' => ['DEDUCTIBLE_APPLIED'], 'heads' => [['head' => 'REPAIR', 'amount_minor' => 200000]],
+        'rationale' => 'Assessed against the adjuster report and policy wording.',
+    ])->assertNotified(__('workflow_actions.claimDecide.done'));
+    $d = ClaimDecision::where('claim_id', $claim->id)->firstOrFail();
+    expect($d->status)->toBe('PENDING_APPROVAL')->and((int) $d->approved_amount_minor)->toBe(200000);
+
+    // The maker cannot approve their own decision: the refusal is shown and nothing changes.
+    wfHarness([fn () => ClaimActions::approveDecision()], $claim->refresh())->callAction('claimApproveDecision', ['decision_id' => $d->id, 'outcome' => 'APPROVE'])
+        ->assertNotified(__('workflow_actions.failed'));
+    expect($d->refresh()->status)->toBe('PENDING_APPROVAL');
+
+    wfAs($checker, $this->tenant);
+    wfHarness([fn () => ClaimActions::approveDecision()], $claim->refresh())->callAction('claimApproveDecision', ['decision_id' => $d->id, 'outcome' => 'APPROVE'])
+        ->assertNotified(__('workflow_actions.claimApproveDecision.done'));
+    expect($d->refresh()->status)->toBe('APPROVED')->and($claim->refresh()->status)->toBe('PARTIALLY_APPROVED');
+});
+
+it('calculates a settlement and a different user offers it (settle + offerSettlement)', function () {
+    [$claim] = wfApprovedClaim($this->f, $this->policy, 300000);
+    wfAs(wfUser($this->tenant, ['claims.settlement.calculate', 'claims.settlement.offer'], 'CLAIMS_MANAGER'), $this->tenant);
+    wfHarness([fn () => ClaimActions::settle()], $claim)->callAction('claimSettle', ['covered_minor' => 250000, 'excluded_minor' => 10000, 'deductible_minor' => 0])
+        ->assertNotified(__('workflow_actions.claimSettle.done'));
+    $s = DB::table('claim_settlements')->where('claim_id', $claim->id)->first();
+    expect($s->status)->toBe('CALCULATED')->and((int) $s->amount_minor)->toBe(240000);
+
+    // Four eyes: the calculator cannot offer.
+    wfHarness([fn () => ClaimActions::offerSettlement()], $claim)->callAction('claimOfferSettlement', ['settlement_id' => $s->id])->assertNotified(__('workflow_actions.failed'));
+    wfAs(wfUser($this->tenant, ['claims.settlement.offer'], 'CLAIMS_MANAGER'), $this->tenant);
+    wfHarness([fn () => ClaimActions::offerSettlement()], $claim)->callAction('claimOfferSettlement', ['settlement_id' => $s->id])
+        ->assertNotified(__('workflow_actions.claimOfferSettlement.done'));
+    expect(DB::table('claim_settlements')->where('id', $s->id)->value('status'))->toBe('OFFERED');
+});
+
+it('requests a claim payment and a different user approves it; hidden without claims.payment.request', function () {
+    [$claim, $decision] = wfApprovedClaim($this->f, $this->policy, 300000);
+    wfAs(wfUser($this->tenant, ['claims.view']), $this->tenant);
+    wfHarness([fn () => ClaimActions::requestPayment()], $claim)->assertActionHidden('claimRequestPayment');
+
+    wfAs(wfUser($this->tenant, ['claims.payment.request', 'claims.payment.approve']), $this->tenant);
+    wfHarness([fn () => ClaimActions::requestPayment()], $claim)->callAction('claimRequestPayment', ['decision_id' => $decision->id, 'amount_minor' => 400000])
+        ->assertNotified(__('workflow_actions.failed')); // above the approved amount
+    wfHarness([fn () => ClaimActions::requestPayment()], $claim)->callAction('claimRequestPayment', ['decision_id' => $decision->id, 'amount_minor' => 300000])
+        ->assertNotified(__('workflow_actions.claimRequestPayment.done'));
+    $p = ClaimPayment::where('claim_id', $claim->id)->sole();
+    expect($p->status)->toBe('PENDING_APPROVAL')->and($p->payee_party_id)->toBe($claim->claimant_party_id);
+    // The requester cannot approve their own payment.
+    wfHarness([fn () => ClaimActions::approvePayment()], $claim)->callAction('claimApprovePayment', ['payment_id' => $p->id])->assertNotified(__('workflow_actions.failed'));
+
+    wfAs(wfUser($this->tenant, ['claims.payment.approve'], 'CLAIMS_MANAGER'), $this->tenant);
+    wfHarness([fn () => ClaimActions::approvePayment()], $claim)->callAction('claimApprovePayment', ['payment_id' => $p->id])
+        ->assertNotified(__('workflow_actions.claimApprovePayment.done'));
+    expect($p->refresh()->status)->toBe('APPROVED')->and($claim->refresh()->status)->toBe('PAYMENT_PENDING');
+});
+
+it('records and resolves a claim dispute on a declined claim', function () {
+    $claim = wfClaim($this->f, $this->policy, 'DECLINED');
+    wfAs(wfUser($this->tenant, ['claims.dispute', 'claims.dispute.resolve'], 'CLAIMS_MANAGER'), $this->tenant);
+    wfHarness([fn () => ClaimActions::openDispute()], $claim)->callAction('claimOpenDispute', ['reason_code' => 'COVER_CONTESTED', 'statement' => 'The claimant contests the exclusion applied to the loss.'])
+        ->assertNotified(__('workflow_actions.claimOpenDispute.done'));
+    $d = ClaimDispute::where('claim_id', $claim->id)->sole();
+    expect($d->status)->toBe('OPEN')->and($claim->refresh()->status)->toBe('DISPUTED');
+
+    wfHarness([fn () => ClaimActions::resolveDispute()], $claim)->callAction('claimResolveDispute', ['dispute_id' => $d->id, 'resolution' => 'Reviewed the wording; the claim goes back for review.', 'reassess' => true])
+        ->assertNotified(__('workflow_actions.claimResolveDispute.done'));
+    expect($d->refresh()->status)->toBe('RESOLVED')->and($claim->refresh()->status)->toBe('CARRIER_REVIEW');
+});
+
+it('opens a recovery, records a receipt and closes it through ClaimRecoveryService; hidden without claims.recovery', function () {
+    [$claim] = wfApprovedClaim($this->f, $this->policy);
+    wfAs(wfUser($this->tenant, ['claims.view']), $this->tenant);
+    wfHarness([fn () => ClaimActions::openRecovery()], $claim)->assertActionHidden('claimOpenRecovery');
+
+    wfAs(wfUser($this->tenant, ['claims.recovery'], 'CLAIMS_MANAGER'), $this->tenant);
+    wfHarness([fn () => ClaimActions::openRecovery()], $claim)->callAction('claimOpenRecovery', ['type' => 'SUBROGATION', 'counterparty_name' => 'Third-party insurer', 'target_amount_minor' => 100000])
+        ->assertNotified(__('workflow_actions.claimOpenRecovery.done'));
+    $r = ClaimRecovery::where('claim_id', $claim->id)->sole();
+    expect($r->status)->toBe('EXPECTED')->and($r->financial_obligation_id)->not->toBeNull();
+
+    wfHarness([fn () => ClaimActions::updateRecovery()], $claim)->callAction('claimUpdateRecovery', ['recovery_id' => $r->id, 'operation' => 'RECEIVE', 'amount_minor' => 40000, 'reference' => 'BANK-001'])
+        ->assertNotified(__('workflow_actions.claimUpdateRecovery.done'));
+    expect($r->refresh()->status)->toBe('OUTSTANDING')->and((int) $r->recovered_amount_minor)->toBe(40000);
+
+    wfHarness([fn () => ClaimActions::updateRecovery()], $claim)->callAction('claimUpdateRecovery', ['recovery_id' => $r->id, 'operation' => 'CLOSE', 'text' => 'Balance written off'])
+        ->assertNotified(__('workflow_actions.claimUpdateRecovery.done'));
+    expect($r->refresh()->status)->toBe('CLOSED');
+});
+
+it('shows the payments, disputes and recoveries tabs and a signed download link for clean claim evidence', function () {
+    [$claim, $decision] = wfApprovedClaim($this->f, $this->policy);
+    ClaimPayment::create(['claim_id' => $claim->id, 'claim_decision_id' => $decision->id, 'payee_party_id' => $claim->claimant_party_id, 'amount_minor' => 1000,
+        'currency' => 'XAF', 'status' => 'PENDING_APPROVAL', 'idempotency_key' => (string) Str::uuid(), 'requested_by' => $decision->proposed_by]);
+    $doc = Document::create(['tenant_id' => $this->tenant, 'claim_id' => $claim->id, 'party_id' => $this->f['party']->id, 'category' => 'CLAIM_EVIDENCE',
+        'storage_key' => 'claims/evidence/'.Str::uuid().'.jpg', 'mime_type' => 'image/jpeg', 'size_bytes' => 10, 'sha256' => str_repeat('a', 64), 'scan_status' => 'CLEAN']);
+    $viewer = wfUser($this->tenant, ['claims.view', 'documents.read'], 'CLAIMS_MANAGER');
+
+    $row = collect(app(DocumentPanelQuery::class)->for($claim, $viewer)['rows'])->firstWhere('id', $doc->id);
+    expect($row)->not->toBeNull()->and($row['download_url'])->toContain('/mobile/documents/'.$doc->id.'/download')->toContain('signature=');
+
+    $doc->update(['scan_status' => 'PENDING']);
+    expect(DocumentPanelQuery::downloadUrl($doc->refresh()))->toBeNull();
+
+    wfAs($viewer, $this->tenant);
+    $this->get(ClaimResource::getUrl('view', ['record' => $claim]))
+        ->assertOk()->assertSee(__('web_experience.tabs.payments'))->assertSee(__('web_experience.tabs.disputes'))->assertSee(__('web_experience.tabs.recoveries'));
 });

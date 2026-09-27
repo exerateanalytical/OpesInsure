@@ -33,7 +33,7 @@ final class PortalPanelFactory
             ->resources($resources)
             ->pages([PortalDashboard::class, \App\Filament\Shared\Pages\PortalOrganisationSettings::class, \App\Filament\Shared\Pages\ReportsPage::class])
             ->middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, AuthenticateSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class, SubstituteBindings::class, DisableBladeIconComponents::class, DispatchServingFilamentEvent::class, SetPanelLocale::class])
-            ->authMiddleware([AuthenticatePortal::class, ResolvePortalTenant::class]));
+            ->authMiddleware([AuthenticatePortal::class, ResolvePortalTenant::class], isPersistent: true));
     }
 
     /**

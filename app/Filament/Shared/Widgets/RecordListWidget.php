@@ -11,14 +11,17 @@ use Throwable;
 
 /**
  * Dashboard list widget shared by the admin, insurer and broker home dashboards: a heading, a short record list from an
- * existing tenant-scoped query/service and an EMPTY / ERROR state. Never lazy: the panel tenant is resolved by
- * non-persistent auth middleware, so the widget renders in the page request where TenantContext is set.
+ * existing tenant-scoped query/service and an EMPTY / ERROR state. Refreshes every $pollingInterval: the panel tenant
+ * middleware is persistent on Livewire round-trips (ScopesPanelTenant), so the poll sees the same tenant as the page.
  */
 abstract class RecordListWidget extends Widget
 {
     protected string $view = 'filament.shared.widgets.record-list';
 
     protected static bool $isLazy = false;
+
+    /** Livewire poll interval (null = no refresh). */
+    public ?string $pollingInterval = '120s';
 
     protected int|string|array $columnSpan = ['default' => 'full', 'lg' => 1];
 

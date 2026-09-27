@@ -19,6 +19,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ResolvePortalTenant
 {
+    use ScopesPanelTenant;
+
     public function __construct(private readonly TenantContext $context, private readonly PortalAccess $access) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -26,12 +28,6 @@ final class ResolvePortalTenant
         $membership = $this->access->membershipFor($request->user(), Filament::getCurrentOrDefaultPanel()->getId());
         abort_if($membership === null, 403);
 
-        $this->context->set($membership->tenant_id);
-
-        try {
-            return $next($request);
-        } finally {
-            $this->context->clear();
-        }
+        return $this->withPanelTenant($this->context, $membership->tenant_id, $request, $next);
     }
 }

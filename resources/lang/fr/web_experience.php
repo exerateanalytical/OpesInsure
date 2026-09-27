@@ -4,7 +4,7 @@ return [
     'unknown' => 'Inconnu',
     'portals' => ['insurer' => 'Portail assureur', 'broker' => 'Portail courtier'],
     'meta' => ['carrier' => 'Assureur', 'premium' => 'Prime', 'cover' => 'Couverture', 'version' => 'Version', 'priority' => 'Priorité', 'reserve' => 'Provision', 'assignee' => 'Gestionnaire', 'loss_at' => 'Date du sinistre', 'line' => 'Branche', 'created' => 'Créé le', 'product' => 'Produit', 'total' => 'Total', 'submitted' => 'Soumis le', 'type' => 'Type', 'security' => 'Niveau de sécurité', 'issued' => 'Émis le', 'valid_until' => "Valide jusqu'au", 'organization' => 'Organisation', 'licence' => 'Agrément', 'licence_expires' => "Fin d'agrément"],
-    'tabs' => ['overview' => 'Aperçu', 'timeline' => 'Historique', 'documents' => 'Documents', 'financial' => 'Finances', 'authority' => 'Pouvoirs', 'related' => 'Dossiers liés'],
+    'tabs' => ['overview' => 'Aperçu', 'timeline' => 'Historique', 'documents' => 'Documents', 'financial' => 'Finances', 'authority' => 'Pouvoirs', 'related' => 'Dossiers liés', 'payments' => 'Paiements', 'disputes' => 'Contestations', 'recoveries' => 'Recours'],
     'list' => [
         'empty_heading' => 'Aucun élément pour le moment',
         'empty_description' => 'Les enregistrements apparaîtront ici dès leur création.',
@@ -104,6 +104,7 @@ return [
         'policy' => 'Police', 'cover' => 'Couverture et prime', 'claim' => 'Sinistre', 'loss' => 'Survenance', 'amounts' => 'Montants', 'quote' => 'Devis', 'proposal' => 'Proposition', 'document' => 'Document',
         'integrity' => 'Intégrité et vérification', 'party' => 'Identité', 'customer' => 'Relation client', 'partner' => 'Profil partenaire', 'lifecycle' => 'Cycle de vie',
     ],
+    'claim_work' => ['empty' => 'Aucun enregistrement pour le moment.'],
     'fields' => [
         'number' => 'Numéro', 'status' => 'Statut', 'customer' => 'Client', 'carrier' => 'Assureur', 'product' => 'Produit', 'premium' => 'Prime', 'cover_start' => 'Début de garantie', 'cover_end' => 'Fin de garantie',
         'issued' => 'Émis le', 'version' => 'Version', 'certificate_number' => "Numéro d'attestation", 'issuance_reference' => "Référence d'émission", 'policy' => 'Police', 'loss_date' => 'Date du sinistre', 'loss_location' => 'Lieu du sinistre',
@@ -114,5 +115,6 @@ return [
         'valid_from' => 'Valide à partir du', 'valid_until' => "Valide jusqu'au", 'sha256' => 'SHA-256', 'status_reason' => 'Motif du statut', 'carrier_original' => "Original de l'assureur", 'subject' => 'Objet', 'display_name' => 'Nom',
         'created' => 'Créé le', 'organization' => 'Organisation', 'segment' => 'Segment', 'external_reference' => 'Référence externe', 'licence' => 'Agrément', 'licence_expires' => "Fin d'agrément",
         'regulatory_status' => 'Statut réglementaire', 'legal_name' => 'Raison sociale', 'trade_name' => 'Nom commercial', 'claimant' => 'Déclarant', 'partner' => 'Partenaire',
+        'amount' => 'Montant', 'requested' => 'Demandé', 'approved' => 'Approuvé', 'paid' => 'Payé', 'reversed' => 'Annulé', 'reason' => 'Motif', 'reason_code' => 'Code motif', 'statement' => 'Déclaration', 'resolution' => 'Résolution', 'resolved' => 'Résolu', 'counterparty' => 'Contrepartie', 'target_amount' => 'Montant attendu', 'recovered_amount' => 'Recouvré', 'due' => 'Échéance',
     ],
 ];

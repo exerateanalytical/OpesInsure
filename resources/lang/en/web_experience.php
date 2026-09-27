@@ -4,7 +4,7 @@ return [
     'unknown' => 'Unknown',
     'portals' => ['insurer' => 'Insurer portal', 'broker' => 'Broker portal'],
     'meta' => ['carrier' => 'Carrier', 'premium' => 'Premium', 'cover' => 'Cover', 'version' => 'Version', 'priority' => 'Priority', 'reserve' => 'Reserve', 'assignee' => 'Assignee', 'loss_at' => 'Loss date', 'line' => 'Line', 'created' => 'Created', 'product' => 'Product', 'total' => 'Total', 'submitted' => 'Submitted', 'type' => 'Type', 'security' => 'Security level', 'issued' => 'Issued', 'valid_until' => 'Valid until', 'organization' => 'Organization', 'licence' => 'Licence', 'licence_expires' => 'Licence expires'],
-    'tabs' => ['overview' => 'Overview', 'timeline' => 'Timeline', 'documents' => 'Documents', 'financial' => 'Financial', 'authority' => 'Authority', 'related' => 'Related records'],
+    'tabs' => ['overview' => 'Overview', 'timeline' => 'Timeline', 'documents' => 'Documents', 'financial' => 'Financial', 'authority' => 'Authority', 'related' => 'Related records', 'payments' => 'Payments', 'disputes' => 'Disputes', 'recoveries' => 'Recoveries'],
     'list' => [
         'empty_heading' => 'Nothing here yet',
         'empty_description' => 'Records appear here as soon as they are created.',
@@ -104,6 +104,7 @@ return [
         'policy' => 'Policy', 'cover' => 'Cover & premium', 'claim' => 'Claim', 'loss' => 'Loss', 'amounts' => 'Amounts', 'quote' => 'Quote', 'proposal' => 'Proposal', 'document' => 'Document',
         'integrity' => 'Integrity & verification', 'party' => 'Identity', 'customer' => 'Customer relationship', 'partner' => 'Partner profile', 'lifecycle' => 'Lifecycle',
     ],
+    'claim_work' => ['empty' => 'None recorded yet.'],
     'fields' => [
         'number' => 'Number', 'status' => 'Status', 'customer' => 'Customer', 'carrier' => 'Carrier', 'product' => 'Product', 'premium' => 'Premium', 'cover_start' => 'Cover starts', 'cover_end' => 'Cover ends',
         'issued' => 'Issued', 'version' => 'Version', 'certificate_number' => 'Certificate number', 'issuance_reference' => 'Issuance reference', 'policy' => 'Policy', 'loss_date' => 'Loss date', 'loss_location' => 'Loss location',
@@ -114,5 +115,6 @@ return [
         'valid_from' => 'Valid from', 'valid_until' => 'Valid until', 'sha256' => 'SHA-256', 'status_reason' => 'Status reason', 'carrier_original' => 'Carrier original', 'subject' => 'Subject', 'display_name' => 'Name',
         'created' => 'Created', 'organization' => 'Organization', 'segment' => 'Segment', 'external_reference' => 'External reference', 'licence' => 'Licence', 'licence_expires' => 'Licence expires',
         'regulatory_status' => 'Regulatory status', 'legal_name' => 'Legal name', 'trade_name' => 'Trade name', 'claimant' => 'Claimant', 'partner' => 'Partner',
+        'amount' => 'Amount', 'requested' => 'Requested', 'approved' => 'Approved', 'paid' => 'Paid', 'reversed' => 'Reversed', 'reason' => 'Reason', 'reason_code' => 'Reason code', 'statement' => 'Statement', 'resolution' => 'Resolution', 'resolved' => 'Resolved', 'counterparty' => 'Counterparty', 'target_amount' => 'Expected amount', 'recovered_amount' => 'Recovered', 'due' => 'Due',
     ],
 ];
