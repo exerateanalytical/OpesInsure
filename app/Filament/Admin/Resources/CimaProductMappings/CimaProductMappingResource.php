@@ -108,6 +108,6 @@ final class CimaProductMappingResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCimaProductMappings::route('/')];
+        return ['index' => Pages\ListCimaProductMappings::route('/'), 'view' => Pages\ViewCimaProductMapping::route('/{record}')];
     }
 }

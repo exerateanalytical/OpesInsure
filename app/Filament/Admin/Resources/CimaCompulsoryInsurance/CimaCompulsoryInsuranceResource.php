@@ -77,7 +77,6 @@ final class CimaCompulsoryInsuranceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCimaCompulsoryInsurance::route('/'),
-        ];
+            'index' => Pages\ListCimaCompulsoryInsurance::route('/'), 'view' => Pages\ViewCimaCompulsoryInsurance::route('/{record}')];
     }
 }

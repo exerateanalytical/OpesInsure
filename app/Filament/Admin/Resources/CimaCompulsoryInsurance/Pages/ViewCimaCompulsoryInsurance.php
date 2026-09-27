@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CimaCompulsoryInsurance\Pages;
 
 use App\Filament\Admin\Resources\CimaCompulsoryInsurance\CimaCompulsoryInsuranceResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCimaCompulsoryInsurance extends ListRecords
+final class ViewCimaCompulsoryInsurance extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CimaCompulsoryInsuranceResource::class;
 }

@@ -80,7 +80,6 @@ final class MasterDataReviewResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMasterDataReviews::route('/'),
-        ];
+            'index' => Pages\ListMasterDataReviews::route('/'), 'view' => Pages\ViewMasterDataReview::route('/{record}')];
     }
 }

@@ -77,7 +77,6 @@ final class CimaReportingCategoryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCimaReportingCategories::route('/'),
-        ];
+            'index' => Pages\ListCimaReportingCategories::route('/'), 'view' => Pages\ViewCimaReportingCategory::route('/{record}')];
     }
 }

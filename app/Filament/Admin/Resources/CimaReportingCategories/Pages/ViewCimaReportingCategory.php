@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\CimaReportingCategories\Pages;
 
 use App\Filament\Admin\Resources\CimaReportingCategories\CimaReportingCategoryResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListCimaReportingCategories extends ListRecords
+final class ViewCimaReportingCategory extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = CimaReportingCategoryResource::class;
 }

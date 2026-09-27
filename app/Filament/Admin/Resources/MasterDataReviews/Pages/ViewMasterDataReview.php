@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\MasterDataReviews\Pages;
 
 use App\Filament\Admin\Resources\MasterDataReviews\MasterDataReviewResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListMasterDataReviews extends ListRecords
+final class ViewMasterDataReview extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = MasterDataReviewResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

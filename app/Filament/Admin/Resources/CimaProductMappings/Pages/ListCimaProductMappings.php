@@ -9,6 +9,8 @@ use Filament\Resources\Pages\ListRecords;
 
 final class ListCimaProductMappings extends ListRecords
 {
+    use \App\Filament\Shared\Concerns\OpensViewPage;
+
     protected static string $resource = CimaProductMappingResource::class;
 
     protected function getHeaderActions(): array
