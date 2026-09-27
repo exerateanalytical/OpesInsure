@@ -35,7 +35,7 @@ final class InvitationService
         $token = Str::random(64);
         $invitation = TenantInvitation::create([
             'tenant_id'=>$tenant->id, 'recipient_email'=>$email ? mb_strtolower($email) : null, 'recipient_phone_e164'=>$phone,
-            'role_code'=>$roleCode, 'carrier_id'=>in_array($roleCode, RoleCatalogue::CARRIER_ROLES, true) ? $carrierId : null,
+            'role_code'=>$roleCode, 'carrier_id'=>in_array($roleCode, RoleCatalogue::CARRIER_LINKABLE_ROLES, true) ? $carrierId : null,
             'token_hash'=>hash('sha256', $token), 'status'=>'PENDING', 'expires_at'=>now()->addHours($ttlHours), 'invited_by'=>$actor->id,
         ]);
         $this->audit->record('identity.invitation.issued', 'tenant_invitation', $invitation->id, ['tenant_id'=>$tenant->id,'role_code'=>$roleCode]);

@@ -73,11 +73,22 @@ Health (owner decision: insurance company admins see everything about their own 
 
 Known limits: a settlement batch created before this change can mix carriers; a carrier then sees the batch but only its own claims in the detail, and paying it pays every claim of the batch. The provider statement API stays platform-only.
 
+## 3a. Insurer finance, claims and compliance staff (E9, mobile audit 2026-09-27)
+
+| Role | carrier.* grants | Scope |
+|---|---|---|
+| FINANCE_OFFICER | carrier.dashboard.read, carrier.finance.read (settlements, bordereaux, carrier payments) | membership `carrier_id` (CarrierScopeResolver); unlinked = tenant finance staff (tenant-wide, as for its existing settlement.read / bordereaux.view) |
+| CLAIMS_OFFICER | carrier.dashboard.read, carrier.claims.read (carrier claims queue, claim detail, evidence) | same |
+| FINANCE_MANAGER, CLAIMS_MANAGER, COMPLIANCE_ADMIN | `*` (unchanged; no separate compliance officer role exists in the catalogue) | same |
+
+`RoleCatalogue::CARRIER_LINKABLE_ROLES` lists the roles whose membership / invitation may carry `carrier_id` (only CARRIER_ROLES require it). A linked finance officer never sees another carrier's settlements, a linked claims officer never another carrier's claims; a claims officer has no finance read and a finance officer no claims read. Migration `2026_10_31_100003_rbac_carrier_finance_claims_grants` runs `rbac:sync-role-permissions`. Enforced by `tests/Feature/Rbac/CarrierFinanceClaimsScopeTest.php`.
+
 ## 4. Permissions changed
 - BROKER_ADMIN: + distribution.agreements.view.
 - CARRIER_ADMIN (and CARRIER_SUPER_ADMIN): + distribution.agreements.view, + kyc.view.
 - `claims.read` retired; `claims.view` is the only claim-read permission (widget, closure routes, mobile workspace card, CLAIMS_OFFICER).
 - CARRIER_STAFF: + health.preauth.view, health.preauth.review, health.provider_claims.view, health.provider_claims.adjudicate (RoleCatalogue::CARRIER_HEALTH_MAKER). CARRIER_ADMIN / CARRIER_SUPER_ADMIN: + those and health.preauth.approve, health.preauth.supervise, health.provider_claims.approve_payment, health.provider_settlements.manage, health.provider_settlements.pay (CARRIER_HEALTH_CHECKER). CLAIMS_OFFICER: + health.preauth.view, health.provider_claims.view. Migration `2026_10_31_100002_rbac_carrier_health_grants` runs `rbac:sync-role-permissions`.
+- FINANCE_OFFICER: + carrier.dashboard.read, carrier.finance.read. CLAIMS_OFFICER: + carrier.dashboard.read, carrier.claims.read (§3a).
 - Production roles: migration `2026_10_31_100001_rbac_broker_carrier_owner_decision_grants` runs `rbac:sync-role-permissions`. It is additive (never removes a custom grant, skips `*` roles) and renames retired codes.
 
 ## Acting follows visibility (2026-09-27)

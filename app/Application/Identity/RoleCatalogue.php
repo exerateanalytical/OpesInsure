@@ -106,6 +106,19 @@ final class RoleCatalogue
     /** Roles linked to one insurer via tenant_memberships.carrier_id. */
     public const CARRIER_ROLES = ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF'];
 
+    /**
+     * E9 (mobile audit 2026-09-27): roles whose membership MAY carry tenant_memberships.carrier_id. Besides the insurer
+     * roles above, an insurer's finance, claims and compliance staff can be linked to their carrier; CarrierScopeResolver
+     * then scopes every carrier.* read to that carrier. Only CARRIER_ROLES require the link.
+     */
+    public const CARRIER_LINKABLE_ROLES = [...self::CARRIER_ROLES, 'FINANCE_OFFICER', 'FINANCE_MANAGER', 'CLAIMS_OFFICER', 'CLAIMS_MANAGER', 'COMPLIANCE_ADMIN'];
+
+    /** E9: carrier-portal reads of a finance officer (settlements, bordereaux, payments) — scoped by CarrierScopeResolver. */
+    public const CARRIER_FINANCE_READS = ['carrier.dashboard.read', 'carrier.finance.read'];
+
+    /** E9: carrier-portal reads of a claims officer (claims queue, claim detail, evidence) — scoped by CarrierScopeResolver. */
+    public const CARRIER_CLAIMS_READS = ['carrier.dashboard.read', 'carrier.claims.read'];
+
     public const PROVIDER_ROLES = ['PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
         'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER'];
 
@@ -174,13 +187,17 @@ final class RoleCatalogue
         'providers.view', 'provider_networks.view', 'workspace.read', 'cases.view', 'cases.manage',
         // Health claims: read only (review / adjudication / approval stay with CLAIMS_MANAGER; no checker permission here).
         'health.preauth.view', 'health.provider_claims.view',
+        // E9: the carrier claims queue, scoped to the linked carrier.
+        ...self::CARRIER_CLAIMS_READS,
     ];
 
     public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal'];
 
     public const REINSURANCE_OFFICER_PERMISSIONS = ['policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view', 'fx.rates.view', 'finance.reports.view', 'technical_accounting.read'];
 
-    public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request', 'finance.obligations.view', 'payments.allocations.read', 'payments.allocations.manage', 'premium_status.read', 'premium_components.manage', 'refund.view', 'refund.review', 'refund.pay', 'clearing.view', 'clearing.manage', 'cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'statements.read', 'finance.exceptions.view', 'finance.reports.view', 'ledger.periods.close', 'technical_accounting.read', 'technical_accounting.actuarial.import', 'commission.statements.adjust', 'commission.statements.dispute', 'bordereaux.view', 'collections.view', 'collections.manage'];
+    public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request', 'finance.obligations.view', 'payments.allocations.read', 'payments.allocations.manage', 'premium_status.read', 'premium_components.manage', 'refund.view', 'refund.review', 'refund.pay', 'clearing.view', 'clearing.manage', 'cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'statements.read', 'finance.exceptions.view', 'finance.reports.view', 'ledger.periods.close', 'technical_accounting.read', 'technical_accounting.actuarial.import', 'commission.statements.adjust', 'commission.statements.dispute', 'bordereaux.view', 'collections.view', 'collections.manage',
+        // E9: the carrier finance screens, scoped to the linked carrier.
+        ...self::CARRIER_FINANCE_READS];
 
     public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'finance.obligations.view', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.view'];
 
