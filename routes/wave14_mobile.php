@@ -97,6 +97,11 @@ Route::get('mobile/carrier/referrals', [MobileCarrierOpsController::class, 'refe
 Route::get('mobile/carrier/referrals/{id}', [MobileCarrierOpsController::class, 'referral'])->middleware('permission:carrier.referrals.read');
 Route::post('mobile/carrier/referrals/{id}/decision', [MobileCarrierOpsController::class, 'decideReferral'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
 Route::get('mobile/carrier/issuance', [MobileCarrierOpsController::class, 'issuance'])->middleware('permission:carrier.issuance.read');
+// Mobile audit E2: issuance maker-checker (approve/reject: mobile/partner/carrier/issuance/{id}/approve|reject).
+Route::get('mobile/carrier/issuance/{id}', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileCarrierIssuanceController::class, 'show'])->middleware('permission:carrier.issuance.read');
+Route::post('mobile/carrier/issuance/{id}/request-correction', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileCarrierIssuanceController::class, 'requestCorrection'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
+Route::post('mobile/carrier/issuance/{id}/verify', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileCarrierIssuanceController::class, 'verify'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
+Route::post('mobile/carrier/issuance/{id}/second-approve', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileCarrierIssuanceController::class, 'secondApprove'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
 Route::get('mobile/carrier/claims', [MobileCarrierOpsController::class, 'claims'])->middleware('permission:carrier.claims.read');
 
 // workspace/[role]

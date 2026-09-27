@@ -25,6 +25,7 @@ final class InsurerPanelProvider extends PanelProvider
             \App\Filament\Admin\Resources\ApprovalRequests\ApprovalRequestResource::class,
             \App\Filament\Admin\Resources\Quotes\QuoteResource::class,
             \App\Filament\Admin\Resources\PolicyIssuances\PolicyIssuanceResource::class,
+            \App\Filament\Admin\Resources\IssuanceExceptions\IssuanceExceptionResource::class,
             \App\Filament\Admin\Resources\UnderwritingCases\UnderwritingCaseResource::class,
             \App\Filament\Admin\Resources\StickerBatches\StickerBatchResource::class,
             \App\Filament\Admin\Resources\StickerInventory\StickerInventoryResource::class,

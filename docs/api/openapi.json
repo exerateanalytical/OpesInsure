@@ -49869,6 +49869,254 @@
                 ]
             }
         },
+        "/api/v1/mobile/carrier/issuance/{id}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_carrier_issuance_id",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.issuance.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/carrier/issuance/{id}/request-correction": {
+            "post": {
+                "operationId": "post_api_v1_mobile_carrier_issuance_id_request_correction",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@requestCorrection",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.referrals.decide"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:5|max:2000"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/carrier/issuance/{id}/second-approve": {
+            "post": {
+                "operationId": "post_api_v1_mobile_carrier_issuance_id_second_approve",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@secondApprove",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.referrals.decide"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "carrier_reference": {
+                                        "type": "string",
+                                        "x-rules": "sometimes|string|max:64"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/carrier/issuance/{id}/verify": {
+            "post": {
+                "operationId": "post_api_v1_mobile_carrier_issuance_id_verify",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@verify",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.referrals.decide"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "notes": {
+                                        "type": "string",
+                                        "x-rules": "sometimes|nullable|string|max:2000"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mobile/carrier/referrals": {
             "get": {
                 "operationId": "get_api_v1_mobile_carrier_referrals",
@@ -60899,6 +61147,189 @@
                         "partnerClient": []
                     }
                 ]
+            }
+        },
+        "/api/v1/partner/staff/{user}/force-reauth": {
+            "post": {
+                "operationId": "post_api_v1_partner_staff_user_force_reauth",
+                "tags": [
+                    "partner"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerStaffSecurityController@forceReauth",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "staff.security.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:500"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/staff/{user}/security": {
+            "get": {
+                "operationId": "get_api_v1_partner_staff_user_security",
+                "tags": [
+                    "partner"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerStaffSecurityController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "staff.security.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/partner/staff/{user}/suspend-access": {
+            "post": {
+                "operationId": "post_api_v1_partner_staff_user_suspend_access",
+                "tags": [
+                    "partner"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerStaffSecurityController@suspendAccess",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "staff.security.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:5|max:500"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/partner/usage": {

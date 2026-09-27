@@ -8,7 +8,9 @@ use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\Shared\CanonicalJson;
 use App\Application\Authority\AuthorityDenied;
+use App\Application\Authority\AuthorityOutcome;
 use App\Application\Authority\AuthorityService;
+use App\Interfaces\Http\Errors\ApiProblemException;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
 use App\Models\PolicyIssuanceRequest;
@@ -157,16 +159,182 @@ final class PolicyIssuanceService
         });
     }
 
+    /**
+     * Authorize & issue. Maker-checker: the requester never approves. When POLICY_ISSUE authority limits are configured
+     * for the carrier, the approver's limit must cover the premium: no limit at all → 409 AUTHORITY_EXCEEDED (nothing
+     * recorded); a limit below the premium → the approval is recorded as the FIRST approval and 409
+     * SECOND_APPROVAL_REQUIRED is raised — a different user with enough authority completes it with secondApprove().
+     */
     public function approve(PolicyIssuanceRequest $request, array $data, User $actor): Policy
     {
-        return DB::transaction(function () use ($request, $data, $actor): Policy {
-            $request = PolicyIssuanceRequest::whereKey($request->id)->lockForUpdate()->firstOrFail();
-
-            if (! in_array($request->status, ['REQUESTED', 'CARRIER_REVIEW'], true)) {
-                throw ValidationException::withMessages(['status' => __('wave5.issuance_not_pending')]);
+        $gate = DB::transaction(function () use ($request, $data, $actor): string {
+            $request = $this->lockPending($request, $actor);
+            if ($request->first_approved_by !== null) {
+                return 'SECOND_APPROVAL_REQUIRED';
             }
-            if ($request->requested_by === $actor->id) {
-                throw ValidationException::withMessages(['actor' => __('wave5.maker_checker')]);
+            $outcome = $this->issueAuthority($request, $actor);
+            if ($outcome === null || $outcome->reason === 'WITHIN_AUTHORITY_LIMIT') {
+                return 'ISSUE';
+            }
+            if ($outcome->reason === 'NO_AUTHORITY_LIMIT') {
+                return 'AUTHORITY_EXCEEDED';
+            }
+            $request->update(['first_approved_by' => $actor->id, 'first_approved_at' => now(), 'carrier_reference' => $data['carrier_reference'] ?? $request->carrier_reference]);
+            $this->event($request, $request->status, $request->status, 'FIRST_APPROVAL', $actor, ['authority_reason' => $outcome->reason]);
+            $this->audit->record('policy.issuance.first_approved', 'policy_issuance_request', $request->id, ['authority_reason' => $outcome->reason]);
+
+            return 'SECOND_APPROVAL_REQUIRED';
+        });
+
+        if ($gate !== 'ISSUE') {
+            throw $this->problem($gate);
+        }
+
+        return $this->issue($request, $data, $actor, false);
+    }
+
+    /** Completes a request whose first approver lacked the authority. The second approver differs from requester and first approver. */
+    public function secondApprove(PolicyIssuanceRequest $request, array $data, User $actor): Policy
+    {
+        $gate = DB::transaction(function () use ($request, $actor): string {
+            $request = $this->lockPending($request, $actor);
+            if ($request->first_approved_by === null) {
+                throw ValidationException::withMessages(['status' => __('issuance_maker_checker.no_first_approval')]);
+            }
+            if ($request->first_approved_by === $actor->id) {
+                throw ValidationException::withMessages(['actor' => __('issuance_maker_checker.second_approver_same')]);
+            }
+            $outcome = $this->issueAuthority($request, $actor);
+
+            return $outcome === null || $outcome->reason === 'WITHIN_AUTHORITY_LIMIT' ? 'ISSUE' : 'AUTHORITY_EXCEEDED';
+        });
+        if ($gate !== 'ISSUE') {
+            throw $this->problem($gate);
+        }
+        $request->refresh();
+
+        return $this->issue($request, ['carrier_reference' => $data['carrier_reference'] ?? $request->carrier_reference ?? 'INS-'.strtoupper(Str::random(10))] + $data, $actor, true);
+    }
+
+    /** A checker sends the request back to the requester; any verification or first approval is void. */
+    public function requestCorrection(PolicyIssuanceRequest $request, string $reason, User $actor): PolicyIssuanceRequest
+    {
+        return DB::transaction(function () use ($request, $reason, $actor): PolicyIssuanceRequest {
+            $request = $this->lockPending($request, $actor);
+            $request->update(['correction_reason' => $reason, 'correction_requested_by' => $actor->id, 'correction_requested_at' => now(),
+                'verified_by' => null, 'verified_at' => null, 'first_approved_by' => null, 'first_approved_at' => null]);
+            $this->event($request, $request->status, $request->status, 'CORRECTION_REQUESTED', $actor, ['reason' => $reason]);
+            $this->audit->record('policy.issuance.correction_requested', 'policy_issuance_request', $request->id, [], $reason);
+
+            return $request->refresh();
+        });
+    }
+
+    /** A checker (never the requester) confirms the request is complete and correct; this also clears an answered correction. */
+    public function verify(PolicyIssuanceRequest $request, User $actor, ?string $notes = null): PolicyIssuanceRequest
+    {
+        return DB::transaction(function () use ($request, $actor, $notes): PolicyIssuanceRequest {
+            $request = $this->lockPending($request, $actor, true);
+            if ($request->verified_at !== null && $request->correction_requested_at === null) {
+                throw ValidationException::withMessages(['status' => __('issuance_maker_checker.already_verified')]);
+            }
+            $request->update(['verified_by' => $actor->id, 'verified_at' => now(), 'correction_reason' => null, 'correction_requested_by' => null, 'correction_requested_at' => null]);
+            $this->event($request, $request->status, $request->status, 'VERIFIED', $actor, array_filter(['notes' => $notes]));
+            $this->audit->record('policy.issuance.verified', 'policy_issuance_request', $request->id, [], $notes);
+
+            return $request->refresh();
+        });
+    }
+
+    /** Maker-checker stage of a request (queues and detail screens). */
+    public function stage(PolicyIssuanceRequest $r): string
+    {
+        return match (true) {
+            $r->status === 'APPROVED' => 'ISSUED',
+            $r->status === 'REJECTED' => 'REJECTED',
+            $r->correction_requested_at !== null => 'CORRECTION_REQUESTED',
+            $r->first_approved_by !== null => 'AWAITING_SECOND_APPROVAL',
+            $r->verified_at !== null => 'VERIFIED',
+            default => 'AWAITING_VERIFICATION',
+        };
+    }
+
+    /** @return list<array{step: string, user_id: string, name: ?string, at: ?string}> */
+    public function approvals(PolicyIssuanceRequest $r): array
+    {
+        $final = $r->status === 'REJECTED' ? 'REJECTED' : ($r->first_approved_by ? 'SECOND_APPROVAL' : 'APPROVED');
+        $steps = [['REQUESTED', $r->requested_by, $r->created_at], ['CORRECTION_REQUESTED', $r->correction_requested_by, $r->correction_requested_at],
+            ['VERIFIED', $r->verified_by, $r->verified_at], ['FIRST_APPROVAL', $r->first_approved_by, $r->first_approved_at], [$final, $r->approved_by, $r->approved_at]];
+        $steps = array_values(array_filter($steps, fn ($s) => $s[1] !== null));
+        $names = User::whereIn('id', array_column($steps, 1))->pluck('full_name', 'id');
+
+        return array_map(fn ($s) => ['step' => $s[0], 'user_id' => $s[1], 'name' => $names[$s[1]] ?? null, 'at' => $s[2]?->toIso8601String()], $steps);
+    }
+
+    /** @return list<string> what $user may do next on this request ($mayDecide = holds the deciding permission); maker-checker applied. */
+    public function capabilities(PolicyIssuanceRequest $r, User $user, bool $mayDecide): array
+    {
+        if (! $mayDecide || ! in_array($r->status, ['REQUESTED', 'CARRIER_REVIEW'], true) || $r->requested_by === $user->id) {
+            return [];
+        }
+        $stage = $this->stage($r);
+        $caps = ['reject'];
+        if ($stage !== 'CORRECTION_REQUESTED') {
+            $caps[] = 'request_correction';
+        }
+        if (in_array($stage, ['CORRECTION_REQUESTED', 'AWAITING_VERIFICATION'], true)) {
+            $caps[] = 'verify';
+        }
+        if (in_array($stage, ['VERIFIED', 'AWAITING_VERIFICATION'], true)) {
+            $caps[] = 'approve';
+        }
+        if ($stage === 'AWAITING_SECOND_APPROVAL' && $r->first_approved_by !== $user->id) {
+            $caps[] = 'second_approve';
+        }
+
+        return $caps;
+    }
+
+    private function lockPending(PolicyIssuanceRequest $request, User $actor, bool $allowCorrection = false): PolicyIssuanceRequest
+    {
+        $request = PolicyIssuanceRequest::whereKey($request->id)->lockForUpdate()->firstOrFail();
+        if (! in_array($request->status, ['REQUESTED', 'CARRIER_REVIEW'], true)) {
+            throw ValidationException::withMessages(['status' => __('wave5.issuance_not_pending')]);
+        }
+        if ($request->requested_by === $actor->id) {
+            throw ValidationException::withMessages(['actor' => __('wave5.maker_checker')]);
+        }
+        if (! $allowCorrection && $request->correction_requested_at !== null) {
+            throw ValidationException::withMessages(['status' => __('issuance_maker_checker.correction_pending')]);
+        }
+
+        return $request;
+    }
+
+    /** POLICY_ISSUE staff authority for the premium; null when the carrier has no POLICY_ISSUE limits configured (single approval). */
+    private function issueAuthority(PolicyIssuanceRequest $request, User $actor): ?AuthorityOutcome
+    {
+        $configured = DB::table('authority_limits')->where('authority_type', 'POLICY_ISSUE')->where('carrier_id', $request->carrier_id)->where('status', 'ACTIVE')->exists();
+        if (! $configured) {
+            return null;
+        }
+        $terms = $request->proposal->terms_snapshot ?? [];
+
+        return $this->authority->checkStaffLimit($request->tenant_id, $request->carrier_id, $actor, 'POLICY_ISSUE', (int) ($terms['total_minor'] ?? 0), (string) ($terms['currency'] ?? 'XAF'),
+            ['type' => 'policy_issuance_request', 'id' => $request->id, 'title' => 'Policy issuance'], 'policy.issue', $request->proposal->offer?->quote?->line_code);
+    }
+
+    private function problem(string $code): ApiProblemException
+    {
+        return new ApiProblemException($code, 409, __('issuance_maker_checker.'.strtolower($code)));
+    }
+
+    private function issue(PolicyIssuanceRequest $request, array $data, User $actor, bool $second): Policy
+    {
+        return DB::transaction(function () use ($request, $data, $actor, $second): Policy {
+            $request = $this->lockPending($request, $actor);
+            if ($second !== ($request->first_approved_by !== null)) {
+                throw $this->problem('SECOND_APPROVAL_REQUIRED');
             }
 
             $proposal = $request->proposal;
@@ -319,7 +487,7 @@ final class PolicyIssuanceService
         });
     }
 
-    private function event(PolicyIssuanceRequest $request, ?string $from, string $to, string $reason, ?User $actor): void
+    private function event(PolicyIssuanceRequest $request, ?string $from, string $to, string $reason, ?User $actor, array $meta = []): void
     {
         DB::table('policy_issuance_events')->insert([
             'id' => (string) Str::uuid(),
@@ -328,7 +496,7 @@ final class PolicyIssuanceService
             'to_status' => $to,
             'reason_code' => $reason,
             'actor_id' => $actor?->id,
-            'metadata' => '{}',
+            'metadata' => json_encode((object) $meta),
             'occurred_at' => now(),
         ]);
     }

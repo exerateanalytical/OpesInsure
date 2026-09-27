@@ -69,6 +69,7 @@ final class PortalAuthorization
         CommissionAccrual::class => ['insurer' => ['finance.obligations.view', 'statements.read'], 'broker' => 'broker.finance.read'],
         // UI audit 2026-09-27: insurer-panel sections, same admin resources, gated by the permissions insurer roles hold.
         PolicyIssuanceRequest::class => ['insurer' => ['policies.issuance_queue.view', 'carrier.issuance.read']],
+        \App\Application\Policies\IssuanceQueue\IssuanceException::class => ['insurer' => 'policies.issuance_queue.view'],
         UnderwritingCase::class => ['insurer' => ['underwriting.decide', 'carrier.referrals.read']],
         StickerBatch::class => ['insurer' => 'stickers.view'],
         StickerStock::class => ['insurer' => 'stickers.view'],

@@ -114,11 +114,17 @@ final class MobileCarrierOpsController
             ->where('policy_issuance_requests.tenant_id', $t)->when($this->carrierId($request), fn ($q, $cid) => $q->where('policy_issuance_requests.carrier_id', $cid))->select('policy_issuance_requests.*', 'proposals.proposal_number', 'parties.display_name')->orderByDesc('policy_issuance_requests.created_at')->limit(100)->get();
 
         $names = $this->carrierNames($rows->pluck('carrier_id'));
+        // Mobile audit E2: queue rows carry the maker-checker stage, approvals and the viewer's capabilities.
+        $models = \App\Models\PolicyIssuanceRequest::whereIn('id', $rows->pluck('id'))->get()->keyBy('id');
+        $issuance = app(\App\Application\Policies\PolicyIssuanceService::class);
+        $mayDecide = $request->user()->hasPermission('carrier.referrals.decide');
 
         return response()->json(['data' => $rows->map(fn ($r) => [
             'carrier_id' => $r->carrier_id, 'carrier_name' => $names[$r->carrier_id] ?? null,
             'id' => $r->id, 'reference' => $r->proposal_number ?? substr($r->id, 0, 8), 'subject' => ($r->display_name ?? 'Customer').' · issuance', 'status' => $r->status,
             'priority' => in_array($r->status, ['REQUESTED', 'CARRIER_REVIEW', 'PENDING'], true) ? 'HIGH' : 'NORMAL', 'submitted_at' => \Carbon\Carbon::parse($r->created_at)->toIso8601String(),
+            'stage' => $issuance->stage($models[$r->id]), 'approvals' => $issuance->approvals($models[$r->id]),
+            'capabilities' => $issuance->capabilities($models[$r->id], $request->user(), $mayDecide),
         ])->values()]);
     }
 

@@ -1,22 +1,22 @@
 {
-    "generated_at": "2026-09-27T18:56:54+01:00",
+    "generated_at": "2026-09-27T19:33:01+01:00",
     "totals": {
-        "actions": 885,
-        "covered": 243,
-        "uncovered": 642,
-        "coverage_pct": 27.5,
-        "ui_relevant_actions": 860,
-        "ui_relevant_covered": 240,
-        "ui_coverage_pct": 27.9,
+        "actions": 890,
+        "covered": 350,
+        "uncovered": 540,
+        "coverage_pct": 39.3,
+        "ui_relevant_actions": 865,
+        "ui_relevant_covered": 347,
+        "ui_coverage_pct": 40.1,
         "uncovered_by_classification": {
-            "CUSTOMER_WEB_NEEDED": 35,
+            "CUSTOMER_WEB_NEEDED": 20,
             "MOBILE_ONLY_OK": 16,
-            "STAFF_DESKTOP_NEEDED": 582,
+            "STAFF_DESKTOP_NEEDED": 495,
             "SYSTEM_ONLY": 9
         },
         "covered_via": {
-            "filament": 189,
-            "account_portal": 62
+            "filament": 296,
+            "account_portal": 67
         }
     },
     "actions": [
@@ -71,7 +71,8 @@
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileAccountController@revokeDevice",
             "services": [
-                "App\\Application\\Audit\\AuditWriter::record"
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent"
             ],
             "permissions": [],
             "middleware": [
@@ -154,7 +155,9 @@
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileAccountController@updateProfile",
             "services": [
-                "App\\Application\\Audit\\AuditWriter::record"
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\StepUpGate::assert",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send"
             ],
             "permissions": [],
             "middleware": [
@@ -925,7 +928,9 @@
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Identity\\MobileLogoutAllController",
             "services": [
-                "App\\Application\\Audit\\AuditWriter::record"
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send"
             ],
             "permissions": [],
             "middleware": [
@@ -933,6 +938,7 @@
                 "auth:api",
                 "tenant",
                 "json.api",
+                "step-up:SIGN_OUT_EVERYWHERE",
                 "throttle:10,1"
             ],
             "domain": "auth",
@@ -1432,6 +1438,7 @@
             ],
             "domain": "broker-settlements",
             "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php",
                 "Shared/Actions/HealthProviderActions.php"
             ],
             "portal_entry": false,
@@ -3659,9 +3666,11 @@
                 "permission:chargeback.resolve"
             ],
             "domain": "chargebacks",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -3840,9 +3849,11 @@
                 "permission:claims.settlement.discharge"
             ],
             "domain": "claim-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -3864,9 +3875,11 @@
                 "permission:claims.settlement.discharge"
             ],
             "domain": "claim-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -3940,9 +3953,11 @@
                 "permission:claims.settlement.pay"
             ],
             "domain": "claim-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4066,9 +4081,11 @@
                 "permission:claims.coverage.check"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4091,7 +4108,8 @@
             ],
             "domain": "claims",
             "filament_entry": [
-                "Shared/Actions/ClaimActions.php"
+                "Shared/Actions/ClaimActions.php",
+                "Shared/Actions/ClaimCaseActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -4116,9 +4134,11 @@
                 "permission:claims.investigation.conclude"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4140,9 +4160,11 @@
                 "permission:claims.investigation.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4164,9 +4186,11 @@
                 "permission:claims.investigation.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4188,9 +4212,11 @@
                 "permission:claims.close"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4264,9 +4290,11 @@
                 "permission:claims.decision.appeal"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4340,9 +4368,11 @@
                 "permission:claims.coverage.check"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4365,9 +4395,11 @@
                 "permission:claims.coverage.resolve"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4467,9 +4499,11 @@
                 "permission:claims.investigation.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4492,9 +4526,11 @@
                 "permission:claims.view"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4516,9 +4552,11 @@
                 "permission:claims.late_report.approve"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4540,9 +4578,11 @@
                 "permission:claims.late_report.recommend"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4564,9 +4604,11 @@
                 "permission:claims.parties.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4588,9 +4630,11 @@
                 "permission:claims.parties.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4612,9 +4656,11 @@
                 "permission:claims.parties.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4690,7 +4736,8 @@
             ],
             "domain": "claims",
             "filament_entry": [
-                "Shared/Actions/ClaimActions.php"
+                "Shared/Actions/ClaimActions.php",
+                "Shared/Actions/ClaimCaseActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -4715,9 +4762,11 @@
                 "permission:claims.experts.assign"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4740,9 +4789,11 @@
                 "permission:claims.experts.assign"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4765,9 +4816,11 @@
                 "permission:claims.experts.review"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4790,9 +4843,11 @@
                 "permission:claims.experts.review"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4814,9 +4869,11 @@
                 "permission:claims.carrier.exchange"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4862,9 +4919,11 @@
                 "permission:claims.carrier.manual_entry"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4886,9 +4945,11 @@
                 "permission:claims.carrier.manual_approve"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4910,9 +4971,11 @@
                 "permission:claims.carrier.manual_approve"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4934,9 +4997,11 @@
                 "permission:claims.carrier.callback"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -4958,9 +5023,11 @@
                 "permission:claims.carrier.callback"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5110,9 +5177,11 @@
                 "permission:claims.evidence.manage"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5134,9 +5203,11 @@
                 "permission:claims.evidence.verify"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5158,9 +5229,11 @@
                 "permission:claims.evidence.verify"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5182,9 +5255,11 @@
                 "permission:claims.carrier.exchange"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5233,9 +5308,11 @@
                 "permission:claims.payment.execute"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5281,9 +5358,11 @@
                 "permission:claims.payment.execute"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5432,9 +5511,11 @@
                 "permission:claims.transition"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5753,9 +5834,11 @@
                 "throttle:10,1"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5779,9 +5862,11 @@
                 "throttle:10,1"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5880,9 +5965,11 @@
                 "throttle:60,1"
             ],
             "domain": "claims",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClaimCaseActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5929,9 +6016,11 @@
                 "permission:clearing.manage"
             ],
             "domain": "clearing",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClearingActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5953,9 +6042,11 @@
                 "permission:clearing.manage"
             ],
             "domain": "clearing",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClearingActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -5977,9 +6068,11 @@
                 "permission:clearing.reconcile"
             ],
             "domain": "clearing",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClearingActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6001,9 +6094,11 @@
                 "permission:clearing.manage"
             ],
             "domain": "clearing",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ClearingActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10367,6 +10462,87 @@
         },
         {
             "verb": "POST",
+            "path": "/mobile/carrier/issuance/{id}/request-correction",
+            "name": null,
+            "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@requestCorrection",
+            "services": [
+                "App\\Application\\Policies\\PolicyIssuanceService::requestCorrection"
+            ],
+            "permissions": [
+                "carrier.referrals.decide"
+            ],
+            "middleware": [
+                "api",
+                "auth:api",
+                "tenant",
+                "json.api",
+                "permission:carrier.referrals.decide",
+                "throttle:20,1"
+            ],
+            "domain": "issuance",
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
+            "portal_entry": false,
+            "covered": true,
+            "classification": "STAFF_DESKTOP_NEEDED"
+        },
+        {
+            "verb": "POST",
+            "path": "/mobile/carrier/issuance/{id}/second-approve",
+            "name": null,
+            "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@secondApprove",
+            "services": [
+                "App\\Application\\Policies\\PolicyIssuanceService::secondApprove"
+            ],
+            "permissions": [
+                "carrier.referrals.decide"
+            ],
+            "middleware": [
+                "api",
+                "auth:api",
+                "tenant",
+                "json.api",
+                "permission:carrier.referrals.decide",
+                "throttle:20,1"
+            ],
+            "domain": "issuance",
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
+            "portal_entry": false,
+            "covered": true,
+            "classification": "STAFF_DESKTOP_NEEDED"
+        },
+        {
+            "verb": "POST",
+            "path": "/mobile/carrier/issuance/{id}/verify",
+            "name": null,
+            "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCarrierIssuanceController@verify",
+            "services": [
+                "App\\Application\\Policies\\PolicyIssuanceService::verify"
+            ],
+            "permissions": [
+                "carrier.referrals.decide"
+            ],
+            "middleware": [
+                "api",
+                "auth:api",
+                "tenant",
+                "json.api",
+                "permission:carrier.referrals.decide",
+                "throttle:20,1"
+            ],
+            "domain": "issuance",
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
+            "portal_entry": false,
+            "covered": true,
+            "classification": "STAFF_DESKTOP_NEEDED"
+        },
+        {
+            "verb": "POST",
             "path": "/mobile/partner/carrier/issuance/{issuance}/approve",
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@approveIssuance",
@@ -10385,9 +10561,11 @@
                 "throttle:20,1"
             ],
             "domain": "issuance",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10410,9 +10588,11 @@
                 "throttle:20,1"
             ],
             "domain": "issuance",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10434,9 +10614,11 @@
                 "permission:policies.issuance_queue.manage"
             ],
             "domain": "issuance-exceptions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10458,9 +10640,11 @@
                 "permission:policies.issuance_queue.manage"
             ],
             "domain": "issuance-exceptions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10482,9 +10666,11 @@
                 "permission:policies.issuance_queue.resolve"
             ],
             "domain": "issuance-exceptions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -10506,9 +10692,11 @@
                 "permission:policies.issuance_queue.manage"
             ],
             "domain": "issuance-exceptions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/IssuanceActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13776,7 +13964,9 @@
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Identity\\AccountController@changePassword",
             "services": [
-                "App\\Application\\Identity\\MobileAuthService::revokeAllSessions"
+                "App\\Application\\Identity\\MobileAuthService::revokeAllSessions",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send"
             ],
             "permissions": [],
             "middleware": [
@@ -13811,9 +14001,11 @@
                 "permission:payments.allocations.reverse"
             ],
             "domain": "payment-allocation-runs",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13859,8 +14051,8 @@
             ],
             "domain": "payments",
             "filament_entry": [],
-            "portal_entry": false,
-            "covered": false,
+            "portal_entry": true,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -13907,9 +14099,11 @@
                 "permission:payments.allocations.manage"
             ],
             "domain": "payments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13933,9 +14127,11 @@
                 "permission:chargeback.manage"
             ],
             "domain": "payments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13982,9 +14178,11 @@
                 "permission:refund.request"
             ],
             "domain": "payments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14006,9 +14204,11 @@
                 "permission:refund.request"
             ],
             "domain": "payments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14028,9 +14228,11 @@
                 "throttle:10,1"
             ],
             "domain": "payments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PaymentActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -14213,9 +14415,11 @@
                 "permission:beneficiaries.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14290,9 +14494,11 @@
                 "permission:cargo_declarations.declare"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14343,9 +14549,11 @@
                 "permission:health.members.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14368,9 +14576,11 @@
                 "permission:health.members.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14422,9 +14632,11 @@
                 "permission:premium_components.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14578,9 +14790,11 @@
                 "permission:special_policies.schedule.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14627,9 +14841,11 @@
                 "permission:special_policies.manage"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14651,9 +14867,11 @@
                 "permission:stickers.assign"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14676,9 +14894,11 @@
                 "permission:life_surrender.quote"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14700,9 +14920,11 @@
                 "permission:policies.suspend"
             ],
             "domain": "policies",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -14956,7 +15178,7 @@
             ],
             "domain": "policy-issuance-requests",
             "filament_entry": [
-                "Admin/Resources/PolicyIssuances/Pages/ViewPolicyIssuance.php"
+                "Shared/Actions/IssuanceActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -14982,7 +15204,7 @@
             ],
             "domain": "policy-issuance-requests",
             "filament_entry": [
-                "Admin/Resources/PolicyIssuances/Pages/ViewPolicyIssuance.php"
+                "Shared/Actions/IssuanceActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -15060,9 +15282,11 @@
                 "permission:policies.portfolio_transfer.approve"
             ],
             "domain": "policy-portfolio-transfers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15084,9 +15308,11 @@
                 "permission:policies.portfolio_transfer.request"
             ],
             "domain": "policy-portfolio-transfers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15108,9 +15334,11 @@
                 "permission:policies.portfolio_transfer.approve"
             ],
             "domain": "policy-portfolio-transfers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15132,9 +15360,11 @@
                 "permission:policy.recovery.request"
             ],
             "domain": "policy-premium-instalments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15156,9 +15386,11 @@
                 "permission:policy.premium.waive"
             ],
             "domain": "policy-premium-instalments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15180,9 +15412,11 @@
                 "permission:policy.recovery.approve"
             ],
             "domain": "policy-recovery-cases",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15204,9 +15438,11 @@
                 "permission:policy.recovery.approve"
             ],
             "domain": "policy-recovery-cases",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15412,7 +15648,10 @@
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileAgentPortalController@updateProfile",
             "services": [
                 "App\\Application\\Agents\\AgentPartnerResolver::resolve",
-                "App\\Application\\Audit\\AuditWriter::record"
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\StepUpGate::assert",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send",
+                "TenantContext::id"
             ],
             "permissions": [
                 "agent.clients.read"
@@ -15497,9 +15736,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -15519,9 +15760,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -15540,9 +15783,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -15561,9 +15806,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -15582,7 +15829,9 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": true,
             "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
@@ -15603,7 +15852,9 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": true,
             "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
@@ -15625,9 +15876,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -15649,9 +15902,11 @@
                 "permission:documents.review"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -15767,9 +16022,11 @@
                 "json.api"
             ],
             "domain": "proposals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/ProposalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17470,9 +17727,11 @@
                 "throttle:60,1"
             ],
             "domain": "quote-comparisons",
-            "filament_entry": [],
-            "portal_entry": false,
-            "covered": false,
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
+            "portal_entry": true,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17494,9 +17753,11 @@
                 "permission:carrier.quote_requests.respond"
             ],
             "domain": "quote-requests",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -17544,9 +17805,11 @@
                 "permission:carrier.quote_requests.respond"
             ],
             "domain": "quote-requests",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -17566,9 +17829,11 @@
                 "json.api"
             ],
             "domain": "quotes",
-            "filament_entry": [],
-            "portal_entry": false,
-            "covered": false,
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
+            "portal_entry": true,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17591,8 +17856,8 @@
             ],
             "domain": "quotes",
             "filament_entry": [],
-            "portal_entry": false,
-            "covered": false,
+            "portal_entry": true,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17659,9 +17924,11 @@
                 "json.api"
             ],
             "domain": "quotes",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17710,9 +17977,11 @@
                 "permission:quotes.carrier_requests.create"
             ],
             "domain": "quotes",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -17734,9 +18003,11 @@
                 "permission:quotes.carrier_requests.record_on_behalf"
             ],
             "domain": "quotes",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -17781,9 +18052,11 @@
                 "json.api"
             ],
             "domain": "quotes",
-            "filament_entry": [],
-            "portal_entry": false,
-            "covered": false,
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
+            "portal_entry": true,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17803,9 +18076,11 @@
                 "json.api"
             ],
             "domain": "quotes",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -17870,9 +18145,11 @@
                 "json.api"
             ],
             "domain": "quotes",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/QuoteActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "CUSTOMER_WEB_NEEDED"
         },
         {
@@ -18367,9 +18644,11 @@
                 "permission:refund.approve"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -18391,9 +18670,11 @@
                 "permission:refund.request"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -18415,9 +18696,11 @@
                 "permission:refund.pay"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -18439,9 +18722,11 @@
                 "permission:refund.reconcile"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -18463,9 +18748,11 @@
                 "permission:refund.approve"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -18487,9 +18774,11 @@
                 "permission:refund.review"
             ],
             "domain": "refunds",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RefundActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -19544,9 +19833,11 @@
                 "permission:providers.manage"
             ],
             "domain": "repair-network",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RepairNetworkActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -19568,9 +19859,11 @@
                 "permission:providers.credential"
             ],
             "domain": "repair-network",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RepairNetworkActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -20091,7 +20384,9 @@
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileDeviceAttestationController@assess",
             "services": [
                 "App\\Application\\Audit\\AuditWriter::record",
-                "App\\Application\\Security\\Attestation\\DeviceAttestationService::verify"
+                "App\\Application\\Security\\Attestation\\DeviceAttestationService::verify",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send"
             ],
             "permissions": [],
             "middleware": [
@@ -20362,6 +20657,62 @@
         },
         {
             "verb": "POST",
+            "path": "/partner/staff/{user}/force-reauth",
+            "name": null,
+            "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerStaffSecurityController@forceReauth",
+            "services": [
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send",
+                "App\\Application\\Identity\\MobileAuthService::revokeAllSessions"
+            ],
+            "permissions": [
+                "staff.security.manage"
+            ],
+            "middleware": [
+                "api",
+                "auth:api",
+                "tenant",
+                "json.api",
+                "permission:staff.security.manage",
+                "throttle:10,1"
+            ],
+            "domain": "staff",
+            "filament_entry": [],
+            "portal_entry": false,
+            "covered": false,
+            "classification": "STAFF_DESKTOP_NEEDED"
+        },
+        {
+            "verb": "POST",
+            "path": "/partner/staff/{user}/suspend-access",
+            "name": null,
+            "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerStaffSecurityController@suspendAccess",
+            "services": [
+                "App\\Application\\Audit\\AuditWriter::record",
+                "App\\Application\\Security\\Login\\LoginActivityRecorder::recordEvent",
+                "App\\Application\\Security\\Alerts\\SecurityAlerts::send",
+                "App\\Application\\Identity\\MobileAuthService::revokeAllSessions"
+            ],
+            "permissions": [
+                "staff.security.manage"
+            ],
+            "middleware": [
+                "api",
+                "auth:api",
+                "tenant",
+                "json.api",
+                "permission:staff.security.manage",
+                "throttle:10,1"
+            ],
+            "domain": "staff",
+            "filament_entry": [],
+            "portal_entry": false,
+            "covered": false,
+            "classification": "STAFF_DESKTOP_NEEDED"
+        },
+        {
+            "verb": "POST",
             "path": "/sticker-batches",
             "name": null,
             "controller": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Certificates\\CertificateController@receiveBatch",
@@ -20416,9 +20767,11 @@
                 "permission:stickers.handover"
             ],
             "domain": "sticker-handovers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StickerCustodyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -20440,9 +20793,11 @@
                 "permission:stickers.handover"
             ],
             "domain": "sticker-handovers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StickerCustodyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -20464,9 +20819,12 @@
                 "permission:stickers.handover"
             ],
             "domain": "sticker-handovers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php",
+                "Shared/Actions/StickerCustodyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -20488,9 +20846,12 @@
                 "permission:stickers.handover"
             ],
             "domain": "sticker-handovers",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PolicyOperationsActions.php",
+                "Shared/Actions/StickerCustodyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -20513,9 +20874,11 @@
                 "permission:stickers.reconcile"
             ],
             "domain": "sticker-reconciliations",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StickerCustodyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
