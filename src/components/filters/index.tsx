@@ -15,7 +15,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Bookmark, History, X } from "lucide-react-native";
+import { Bookmark, CalendarRange, History, X } from "lucide-react-native";
 import {
   activeFilterCount,
   emptyFilters,
@@ -26,16 +26,37 @@ import {
 } from "@/components/customer/FiltersSheet";
 import { SearchBar } from "@/components/SearchBar";
 import { useTranslation } from "@/i18n";
+import type { CopyKey } from "@/i18n/strings";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { PERIOD_PRESETS, removeFilter } from "./core";
+
+export {
+  applyFilters,
+  byDate,
+  byNumber,
+  byText,
+  countBy,
+  customPeriod,
+  filterQuery,
+  filtersFromParams,
+  inPeriod,
+  matchesText,
+  normalizeText,
+  optionsFrom,
+  periodMatcher,
+  periodRange,
+  removeFilter,
+  runList,
+  sortRows,
+  totals,
+} from "./core";
+export type { Matchers, Sorters } from "./core";
 
 export { activeFilterCount, emptyFilters, FiltersSheet };
 export type { FilterOption, FilterSection, FilterValues };
 
 export type SavedFilter = { name: string; text: string; values: FilterValues };
 type Stored = { saved: SavedFilter[]; recent: SavedFilter[] };
-
-/** Row predicate per section key: true when `row` matches the chosen `value`. */
-export type Matchers<T> = Record<string, (row: T, value: string) => boolean>;
 
 const storageKey = (list: string) => `opes.filters.${list}`;
 const MAX_RECENT = 5;
@@ -45,40 +66,34 @@ const same = (a: SavedFilter, b: SavedFilter) =>
 const isEmpty = (f: SavedFilter, sections: FilterSection[]) =>
   !f.text.trim() && activeFilterCount(f.values, sections) === 0;
 
-/** Distinct options from loaded rows (insurers, products, cities...), sorted by label. */
-export function optionsFrom<T>(rows: T[], pick: (row: T) => { value: string | null | undefined; label?: string | null } | null): FilterOption[] {
-  const seen = new Map<string, FilterOption>();
-  for (const r of rows) {
-    const o = pick(r);
-    if (o?.value && !seen.has(o.value)) seen.set(o.value, { value: o.value, label: o.label || o.value });
+type Tr = (k: CopyKey, p?: Record<string, string | number>) => string;
+
+/** Date-period section (presets + custom range, Africa/Douala days). Match with `periodMatcher(row => row.created_at)`. */
+export function periodSection(t: Tr, key = "period", title?: string): FilterSection {
+  return {
+    key,
+    kind: "period",
+    single: true,
+    title: title ?? t("fltPeriod"),
+    options: [
+      ...PERIOD_PRESETS.map((p) => ({ value: p, label: t(`fltPeriod_${p}` as CopyKey) })),
+      { value: "custom", label: t("fltPeriod_custom"), icon: CalendarRange },
+    ],
+  };
+}
+
+/** Sort section: first option is the default order. Pair with `sortRows(rows, values.sort[0], sorters)`. */
+export function sortSection(t: Tr, options: FilterOption[], key = "sort"): FilterSection {
+  return { key, kind: "sort", single: true, title: t("filterSort"), options };
+}
+
+/** Pill label for a chosen value (custom periods read "2026-09-01 – 2026-09-27"). */
+export function valueLabel(section: FilterSection, value: string, t: Tr) {
+  if (value.startsWith("custom:")) {
+    const [a, b] = value.slice(7).split("..");
+    return `${a || "…"} – ${b || "…"}`;
   }
-  return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
-}
-
-/**
- * Rows matching the free text (any of `text(row)`) and every section with a
- * selection (OR inside a section, AND across sections). Sections without a
- * matcher are server-side only and ignored here.
- */
-export function applyFilters<T>(rows: T[], values: FilterValues, matchers: Matchers<T>, text = "", haystack?: (row: T) => (string | null | undefined)[]): T[] {
-  const needle = text.trim().toLowerCase();
-  return rows.filter((row) => {
-    if (needle && haystack && !haystack(row).some((v) => v && v.toLowerCase().includes(needle))) return false;
-    return Object.entries(values).every(([key, chosen]) => {
-      const m = matchers[key];
-      if (!m || !chosen?.length || chosen[0] === "ALL") return true;
-      return chosen.some((v) => m(row, v));
-    });
-  });
-}
-
-/** Query string for server-side filtering (`carrier_id=a&carrier_id=b&q=...`). Empty when nothing is chosen. */
-export function filterQuery(values: FilterValues, text = ""): string {
-  const qs = new URLSearchParams();
-  if (text.trim()) qs.set("q", text.trim());
-  for (const [k, vs] of Object.entries(values)) for (const v of vs ?? []) if (v && v !== "ALL") qs.append(k, v);
-  const s = qs.toString();
-  return s ? `?${s}` : "";
+  return section.options.find((o) => o.value === value)?.label ?? (section.kind === "period" ? t("fltPeriod") : value);
 }
 
 /** Filter state for one list (keyed by `list`), with saved + recent filters persisted on the device. */
@@ -87,18 +102,8 @@ export function filterQuery(values: FilterValues, text = ""): string {
  * back to a list (back button, tab switch, remount) shows the same filters and
  * search. Session memory only - nothing about results is stored.
  */
+export const SEARCH_DEBOUNCE_MS = 250;
 const sessionState = new Map<string, { values: FilterValues; text: string }>();
-
-/** DASH-003: `?f_status=DUE,OVERDUE&q=...` pre-filters a list opened from a KPI. */
-export function filtersFromParams(params: Record<string, string | string[] | undefined>): { values: FilterValues; text?: string } | undefined {
-  const values: FilterValues = {};
-  for (const [k, v] of Object.entries(params)) {
-    if (!k.startsWith("f_") || v == null) continue;
-    values[k.slice(2)] = (Array.isArray(v) ? v : String(v).split(",")).filter(Boolean);
-  }
-  const text = typeof params.q === "string" ? params.q : undefined;
-  return Object.keys(values).length || text ? { values, text } : undefined;
-}
 
 export function useListFilters(list: string, sections: FilterSection[], initial?: { values: FilterValues; text?: string }) {
   const [values, setValues] = useState<FilterValues>(() =>
@@ -108,6 +113,13 @@ export function useListFilters(list: string, sections: FilterSection[], initial?
   useEffect(() => {
     sessionState.set(list, { values, text });
   }, [list, values, text]);
+  // Debounced search term: the field updates at once, rows re-filter 250 ms after typing stops.
+  const [query, setQuery] = useState(text);
+  useEffect(() => {
+    if (!text) return setQuery("");
+    const id = setTimeout(() => setQuery(text), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [text]);
   const [open, setOpen] = useState(false);
   const [stored, setStored] = useState<Stored>({ saved: [], recent: [] });
   useEffect(() => {
@@ -168,7 +180,12 @@ export function useListFilters(list: string, sections: FilterSection[], initial?
     setText("");
   }, [sections]);
   const count = activeFilterCount(values, sections);
-  return { values, setValues: apply, text, setText, open, setOpen, count, saved: stored.saved, recent: stored.recent, reapply, save, unsave, clear, remember };
+  /** Remove one chosen value (pill "x"). */
+  const remove = useCallback((section: FilterSection, value: string) => apply(removeFilter(values, section, value)), [apply, values]);
+  /** Selected value of a single-choice section (sort / period), defaulting to its first option. */
+  const pick = useCallback((key: string) => values[key]?.[0] ?? sections.find((s) => s.key === key)?.options[0]?.value, [sections, values]);
+  const active = count > 0 || !!text.trim();
+  return { values, setValues: apply, text, setText, query, pick, remove, active, open, setOpen, count, saved: stored.saved, recent: stored.recent, reapply, save, unsave, clear, remember };
 }
 
 export type ListFilters = ReturnType<typeof useListFilters>;
@@ -176,7 +193,7 @@ export type ListFilters = ReturnType<typeof useListFilters>;
 /** Human summary of a selection ("Allianz · Motor · Business"). */
 function summary(f: SavedFilter, sections: FilterSection[]) {
   const labels = sections.flatMap((s) =>
-    (f.values[s.key] ?? []).filter((v) => !(s.single && v === s.options[0]?.value)).map((v) => s.options.find((o) => o.value === v)?.label ?? v),
+    (f.values[s.key] ?? []).filter((v) => !(s.single && v === s.options[0]?.value)).map((v) => (v.startsWith("custom:") ? v.slice(7).replace("..", " – ") : s.options.find((o) => o.value === v)?.label ?? v)),
   );
   return [f.text.trim() ? `"${f.text.trim()}"` : null, ...labels].filter(Boolean).join(" · ");
 }
@@ -208,12 +225,21 @@ export function FilterToolbar({
   count,
   placeholder,
   subtitle,
+  resultCount,
+  filled,
+  quick,
 }: {
   filters: ListFilters;
   sections: FilterSection[];
   count: (v: FilterValues) => number;
   placeholder?: string;
   subtitle?: string;
+  /** Rows shown after filters + search: renders "12 results" under the toolbar. */
+  resultCount?: number;
+  /** Soft grey search field (customer screens). */
+  filled?: boolean;
+  /** Quick-filter chip row (status tabs) rendered between the search and the active pills. */
+  quick?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const f = filters;
@@ -222,9 +248,9 @@ export function FilterToolbar({
       sections.flatMap((s) =>
         (f.values[s.key] ?? [])
           .filter((v) => !(s.single && v === s.options[0]?.value))
-          .map((v) => ({ section: s, value: v, label: s.options.find((o) => o.value === v)?.label ?? v })),
+          .map((v) => ({ section: s, value: v, label: valueLabel(s, v, t) })),
       ),
-    [f.values, sections],
+    [f.values, sections, t],
   );
   const current: SavedFilter = { name: "", text: f.text, values: f.values };
   const canSave = !isEmpty(current, sections) && !f.saved.some((s) => same(s, current));
@@ -241,7 +267,9 @@ export function FilterToolbar({
         onFilter={() => f.setOpen(true)}
         filterLabel={t("filtersTitle")}
         filterCount={f.count}
+        filled={filled}
       />
+      {quick}
       {active.length ? (
         <View style={st.row} accessibilityLabel={t("fltActive")}>
           {active.map((a) => (
@@ -250,12 +278,7 @@ export function FilterToolbar({
               on
               label={a.label}
               removeLabel={t("fltRemove", { name: a.label })}
-              onRemove={() =>
-                f.setValues({
-                  ...f.values,
-                  [a.section.key]: a.section.single ? [a.section.options[0]?.value ?? ""] : (f.values[a.section.key] ?? []).filter((v) => v !== a.value),
-                })
-              }
+              onRemove={() => f.remove(a.section, a.value)}
             />
           ))}
           <Pill label={t("fltClearAll")} onPress={f.clear} />
@@ -272,6 +295,11 @@ export function FilterToolbar({
           {canSave ? <Pill icon={Bookmark} label={t("fltSave")} onPress={() => f.save(summary(current, sections))} /> : null}
         </View>
       ) : null}
+      {resultCount !== undefined ? (
+        <Text accessibilityLiveRegion="polite" style={st.results}>
+          {t(resultCount === 1 ? "fltResultsOne" : "fltResults", { count: resultCount })}
+        </Text>
+      ) : null}
       <FiltersSheet visible={f.open} onClose={() => f.setOpen(false)} sections={sections} value={f.values} onApply={f.setValues} count={count} subtitle={subtitle ?? t("fltSheetSubtitle")} />
     </View>
   );
@@ -286,4 +314,5 @@ const st = StyleSheet.create({
   pillX: { paddingRight: space.x3, paddingLeft: 2, minHeight: 36, justifyContent: "center" },
   pillText: { ...type.meta, color: colors.neutral700, flexShrink: 1 },
   pillTextOn: { color: colors.blue700 },
+  results: { ...type.meta, color: colors.neutral600 },
 });

@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, ArrowLeftRight, Briefcase, CalendarDays, Car, ChevronRight, Clock3, HardHat, HeartPulse, Home, LayoutGrid, LucideIcon, Plane, ShieldPlus, Trash2 } from "lucide-react-native";
 import { Button, Chip, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, TintedIcon } from "@/components/design";
-import { SearchBar } from "@/components/SearchBar";
+import { byDate, byNumber, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
@@ -14,7 +14,6 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize } from "@/lib/purchase";
 import { daysUntil, isExpiringSoon, lineFamily, LineFamily } from "@/lib/crm";
-import { matchesQuery } from "@/lib/customerLogic";
 import { useTranslation } from "@/i18n";
 import { quoteOutcome, quoteTone } from "@/lib/quoteWorkflow";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -38,18 +37,42 @@ export default function QuoteHistory() {
   const list = usePagedList<CustomerQuoteSummary>((page) => QuotesApi.history(page));
   // NAV-002: keep scroll position and refetch on return from a quote.
   const listState = useListState("customer.quotes", list.reload);
-  const [query, setQuery] = useState("");
-  const [family, setFamily] = useState<"all" | LineFamily>("all");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
 
-  const shown = useMemo(
-    () =>
-      (list.items as Row[]).filter(
-        (q) => (family === "all" || lineFamily(q.line_code) === family) && matchesQuery(query, q.product_name, q.quote_number, q.vehicle_label, q.line_code, q.carrier_name, q.provider_name),
-      ),
-    [list.items, family, query],
+  // Shared list standard (FLT-001..006): family tabs + sheet (status, period, sort) + accent-insensitive search.
+  const rows = list.items as Row[];
+  const sections = useMemo<FilterSection[]>(
+    () => [
+      { key: "family", title: t("filterCategory"), options: optionsFrom(rows, (q) => { const fam = lineFamily(q.line_code); return fam ? { value: fam, label: td(`lineFamily_${fam}`, fam) } : null; }) },
+      { key: "status", title: t("filterStatus"), options: optionsFrom(rows, (q) => { const k = quoteOutcome(q) ?? q.status; return { value: k, label: td(`quoteStatus_${k}`, k) }; }) },
+      periodSection(t, "period", t("fltCreated")),
+      sortSection(t, [
+        { value: "recent", label: t("fltSortRecent") },
+        { value: "oldest", label: t("fltSortOldest") },
+        { value: "price", label: t("fltSortAmountLow") },
+      ]),
+    ],
+    [rows, t, td],
   );
+  const flt = useListFilters("customer.quotes", sections);
+  const matchers: Matchers<Row> = {
+    family: (q, v) => lineFamily(q.line_code) === v,
+    status: (q, v) => (quoteOutcome(q) ?? q.status) === v,
+    period: periodMatcher((q) => q.created_at),
+  };
+  const sorters: Sorters<Row> = { recent: byDate((q) => q.created_at), oldest: byDate((q) => q.created_at, "asc"), price: byNumber((q) => q.lowest_total_minor, "asc") };
+  const haystack = (q: Row) => [q.product_name, q.quote_number, q.vehicle_label, q.line_code, q.carrier_name, q.provider_name, td(`quoteStatus_${q.status}`, q.status)];
+  const run = (v: FilterValues) => runList(rows, { values: v, text: flt.query, matchers, haystack, sorters });
+  const shown = run(flt.values);
+  const famSel = flt.values.family ?? [];
+  const family = famSel.length === 1 ? famSel[0] : famSel.length ? null : "all";
+  const setFamily = (v: string) => flt.setValues({ ...flt.values, family: v === "all" ? [] : [v] });
+  // No server-side filters on /mobile/quotes: while filtering, fetch every page so no match is hidden on a later page.
+  const { hasMore, loadAll } = list;
+  useEffect(() => {
+    if (flt.active && hasMore) void loadAll();
+  }, [flt.active, hasMore, loadAll]);
 
   const remove = (q: Row) =>
     Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [
@@ -89,12 +112,21 @@ export default function QuoteHistory() {
         ListHeaderComponent={
           <View style={s.header}>
             <BrandHeader title={t("quotesTitle")} subtitle={t("quotesSubtitle")} back right="bell" />
-            <SearchBar value={query} onChangeText={setQuery} placeholder={t("quotesSearchPlaceholder")} label={t("quotesTitle")} clearLabel={t("clearSearch")} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
-              {FILTERS.map((o) => (
-                <Chip key={o.value} role="tab" label={t(o.label)} selected={family === o.value} onPress={() => setFamily(o.value)} />
-              ))}
-            </ScrollView>
+            <FilterToolbar
+              filters={flt}
+              sections={sections}
+              placeholder={t("quotesSearchPlaceholder")}
+              count={(v) => run(v).length}
+              resultCount={flt.active ? shown.length : undefined}
+              quick={
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
+                  {FILTERS.map((o) => (
+                    <Chip key={o.value} role="tab" label={t(o.label)} selected={family === o.value} onPress={() => setFamily(o.value)} />
+                  ))}
+                </ScrollView>
+              }
+            />
+            {list.fetchingAll ? <Text style={s.meta}>{t("fltLoadingAll")}</Text> : null}
             {list.loading && !list.items.length ? <LoadingState label={t("quotesLoading")} /> : null}
             {list.error && !list.items.length ? <ErrorCard error={list.error} fallback={t("quotesLoadFailed")} onRetry={() => void list.reload()} /> : null}
             {actionError ? <ErrorCard error={actionError} fallback={t("actionFailed")} /> : null}
@@ -144,7 +176,7 @@ export default function QuoteHistory() {
                 <Text style={[s.title, s.flex]}>{q.product_name ?? q.vehicle_label ?? humanize(q.line_code)}</Text>
                 {typeof q.lowest_total_minor === "number" ? (
                   <View style={s.priceBox}>
-                    <Text style={s.price}>{f.xaf(q.lowest_total_minor)}</Text>
+                    <Text style={s.price}>{(q.offer_count ?? 0) > 1 ? t("quotesFromPrice", { price: f.xaf(q.lowest_total_minor) }) : f.xaf(q.lowest_total_minor)}</Text>
                     <Text style={s.meta}>{t("quotesPerYear")}</Text>
                   </View>
                 ) : null}
@@ -172,13 +204,17 @@ export default function QuoteHistory() {
                     <Text style={s.metaStrong}>{t("quotesSavedOn", { date: f.date(q.created_at) })}</Text>
                   </View>
                 ) : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t("quotesResume")} hitSlop={8} onPress={open}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(q.can_resume === false ? "quotesViewQuote" : "quotesResume")} hitSlop={8} onPress={open}>
                   <ChevronRight size={20} color={colors.navy800} />
                 </Pressable>
               </View>
               <View style={[s.actions, narrow && s.actionsWrap]}>
                 {/* BTN-002: shared Button variants instead of local pills. */}
-                <Button size="small" variant="gold" icon={ArrowRight} iconPosition="left" label={t("quotesResume")} onPress={open} style={[s.btnFlex, s.btnGrow, narrow && s.fullRow]} />
+                {q.can_resume === false ? (
+                  <Button size="small" variant="secondary" icon={ArrowRight} iconPosition="left" label={t("quotesViewQuote")} onPress={open} style={[s.btnFlex, s.btnGrow, narrow && s.fullRow]} />
+                ) : (
+                  <Button size="small" variant="gold" icon={ArrowRight} iconPosition="left" label={t("quotesResume")} onPress={open} style={[s.btnFlex, s.btnGrow, narrow && s.fullRow]} />
+                )}
                 <Button
                   size="small"
                   variant="secondary"
@@ -204,7 +240,7 @@ export default function QuoteHistory() {
         ListEmptyComponent={
           !list.loading && !list.error ? (
             list.items.length ? (
-              <EmptyState title={t("quotesNoMatch")} message={t("quotesEmptyBody")} action={t("clearSearch")} onPress={() => { setQuery(""); setFamily("all"); }} />
+              <EmptyState title={t("quotesNoMatch")} message={t("quotesEmptyBody")} action={t("fltClearAll")} onPress={flt.clear} />
             ) : (
               <EmptyState title={t("quotesEmpty")} message={t("quotesEmptyBody")} action={t("quotesGetQuote")} onPress={() => router.push("/quote/product")} />
             )

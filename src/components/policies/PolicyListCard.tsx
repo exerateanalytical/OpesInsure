@@ -9,6 +9,7 @@ import { ripple, StatusChip } from "@/components/ui";
 import type { Policy, WalletPolicy } from "@/api/client";
 import { useFormatters } from "@/hooks/useFormatters";
 import { policyStatusInfo } from "@/lib/purchase";
+import { insuredObjectLabel } from "@/lib/renewal";
 import { daysUntil } from "@/lib/customerLogic";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -37,6 +38,8 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
     logoUrl: w.carrier_logo_url,
   });
   const provider = mark.name ?? t("licensedCarrier");
+  // Insured vehicle / property (wallet risk_asset, else the rated risk facts).
+  const asset = insuredObjectLabel(w);
   const cat = policyCategory(policy);
   const Icon: LucideIcon | null = cat?.icon ?? null;
   const tint = cat ? CATEGORY_TINT[cat.id] : { bg: colors.blue50, fg: colors.navy900 };
@@ -66,6 +69,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
           <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={28} />
           <Text style={styles.provider}>{provider}</Text>
         </View>
+        {asset ? <Text style={styles.number} numberOfLines={1}>{asset}</Text> : null}
         <Text style={styles.number}>{policy.policy_number}</Text>
         <View style={styles.metaRow}>
           <StatusChip label={info.label} tone={info.tone} />

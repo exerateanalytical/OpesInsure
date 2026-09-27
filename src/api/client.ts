@@ -969,6 +969,8 @@ export const ClaimsApi = {
     incident_at: string;
     incident_location?: string;
     description: string;
+    latitude?: number;
+    longitude?: number;
     [key: string]: unknown;
   }) =>
     api<Claim>("/mobile/claims", {
@@ -1567,8 +1569,10 @@ export type WalletPolicy = Policy & {
   product_name?: string | null;
   documents?: WalletDocument[];
   delivery?: StickerDelivery | null;
+  /** Not sent by /mobile/wallet (contract 2026-09-27); kept for older payloads. Use risk_asset. */
   insured_object?: string | Record<string, unknown> | null;
-  risk_asset?: { id?: string; label?: string; registration_number?: string } | null;
+  /** Insured vehicle/property from proposal.offer.quote.riskAsset. */
+  risk_asset?: { id?: string; label?: string | null; registration_number?: string | null } | null;
 };
 export type StickerDelivery = {
   id: string;
@@ -1824,13 +1828,16 @@ export const QuotesApi = {
     api<void>(`/mobile/quotes/${id}`, { method: "DELETE", idempotent: true }),
 };
 export const DocumentsApi = {
-  list: (ownerType?: string, ownerId?: string) =>
-    api<SecureDocument[]>(
+  /** Paginated (Laravel paginator), not a bare array. */
+  list: (ownerType?: string, ownerId?: string, page = 1) =>
+    apiPage<SecureDocument>(
       `/mobile/documents${ownerType && ownerId ? `?owner_type=${encodeURIComponent(ownerType)}&owner_id=${encodeURIComponent(ownerId)}` : ""}`,
+      page,
     ),
   show: (id: string) => api<SecureDocument>(`/mobile/documents/${id}`),
+  /** Document fields plus url and signed_url (same short-lived link). */
   access: (id: string) =>
-    api<SecureDocument>(`/mobile/documents/${id}/access`, {
+    api<SecureDocument & { url?: string | null }>(`/mobile/documents/${id}/access`, {
       method: "POST",
       idempotent: true,
     }),

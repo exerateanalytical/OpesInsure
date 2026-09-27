@@ -5,7 +5,8 @@ import { FileSignature } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { proposalStatusInfo } from "@/lib/purchase";
@@ -32,15 +33,20 @@ function CarrierProposalsBody() {
         emptyMessage={t("caNoProposalsBody")}
       >
         {(x) => (
-          <OperationsList
+          <FilteredList
+            list="carrier.proposals"
             icon={FileSignature}
-            onPress={(id) => router.push(`/carrier/proposals/${id}` as never)}
-            rows={x.map((p) => ({
-              id: p.id,
+            onPress={({ id }) => router.push(`/carrier/proposals/${id}` as never)}
+            rows={x}
+            {...listSpec(x, t, { status: (p) => p.status, statusLabel: (v) => proposalStatusInfo(v, language).label, dims: [{ key: "product", title: t("fltProductLine"), get: (p) => ({ value: p.product }) }], date: (p) => p.submitted_at ?? p.created_at, dateTitle: t("fltReceived"), amount: (p) => p.premium_minor, name: (p) => p.customer_name })}
+            haystack={(p) => [p.reference, p.customer_name, p.product, proposalStatusInfo(p.status, language).label]}
+            placeholder={t("fltSearchQueue")}
+            amount={(p) => p.premium_minor}
+            render={(p) => ({
               title: `${p.reference} · ${p.customer_name}`,
               subtitle: `${p.product} · ${money(p.premium_minor)} · ${shortDate(p.submitted_at ?? p.created_at)}`,
               status: proposalStatusInfo(p.status, language).label,
-            }))}
+            })}
           />
         )}
       </StatePanel>

@@ -5,7 +5,8 @@ import { Handshake } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
@@ -31,11 +32,16 @@ function CarrierPartnersBody() {
         emptyMessage={t("caNoPartnersBody")}
       >
         {(x) => (
-          <OperationsList
+          <FilteredList
+            list="carrier.partners"
             icon={Handshake}
-            onPress={(id) => router.push(`/carrier/partners/${id}` as never)}
-            rows={x.map((p) => ({
-              id: p.id,
+            onPress={({ id }) => router.push(`/carrier/partners/${id}` as never)}
+            rows={x}
+            {...listSpec(x, t, { status: (p) => p.status, dims: [{ key: "type", title: t("fltType"), get: (p) => ({ value: p.type, label: humanize(p.type) }) }], amount: (p) => p.premium_minor, name: (p) => p.name })}
+            haystack={(p) => [p.name, p.type, p.agreement_number, p.status]}
+            placeholder={t("fltSearchQueue")}
+            amount={(p) => p.premium_minor}
+            render={(p) => ({
               title: p.name,
               subtitle: [
                 humanize(p.type),
@@ -45,7 +51,7 @@ function CarrierPartnersBody() {
                 .filter(Boolean)
                 .join(" · "),
               status: p.status,
-            }))}
+            })}
           />
         )}
       </StatePanel>

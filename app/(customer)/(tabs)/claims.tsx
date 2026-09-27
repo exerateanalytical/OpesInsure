@@ -1,14 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router } from "expo-router";
 import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Siren } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
-import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { claimPolicy, insuredLabel, policyLine, policyTitle, productCategory, providerName } from "@/components/claims/claimProduct";
-import { activeFilterCount, FiltersSheet, type FilterSection, type FilterValues } from "@/components/customer/FiltersSheet";
+import { byDate, countBy, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useLoad } from "@/hooks/useLoad";
@@ -18,7 +17,6 @@ import type { Claim } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { ClaimSegment, claimSegment, claimStatusKey, isActiveClaim } from "@/lib/claimStatus";
-import { matchesQuery } from "@/lib/customerLogic";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const SEGMENTS: { key: ClaimSegment; label: CopyKey; icon: LucideIcon }[] = [
@@ -32,24 +30,15 @@ export default function Claims() {
   const { t, td } = useTranslation();
   const q = useLoad(() => CustomerApi.claims());
   const { policies } = usePolicies();
-  const [segment, setSegment] = useState<ClaimSegment>("all");
-  const [query, setQuery] = useState("");
   const claims = q.data ?? [];
   const byPolicy = useMemo(() => new Map(policies.map((p) => [p.id, p])), [policies]);
-  const counts = {
-    all: claims.length,
-    progress: claims.filter((c) => claimSegment(c.status) === "progress").length,
-    completed: claims.filter((c) => claimSegment(c.status) === "completed").length,
-  };
-  const [sheet, setSheet] = useState(false);
-  const [extra, setExtra] = useState<FilterValues>({});
   const carriers = useCarriers();
   const meta = (c: Claim) => {
     const p = byPolicy.get(c.policy_id) ?? claimPolicy(c);
     const m = carrierMark(carriers, p?.carrier_id ?? p?.carrier?.id, { name: providerName(p) });
     return { p, provider: { id: p?.carrier_id ?? m.name ?? "", ...m }, line: productCategory(policyTitle(p, ""), policyLine(p))?.id ?? "" };
   };
-  // Filter sheet: product line and insurer, both derived from the claim's policy.
+  // Shared list standard (FLT-001..006): product line, insurer, incident period, sort.
   const filterSections = useMemo<FilterSection[]>(() => {
     const rows = claims.map(meta);
     const provs = new Map<string, (typeof rows)[number]["provider"]>();
@@ -57,31 +46,33 @@ export default function Claims() {
     return [
       { key: "line", title: t("filterCategory"), subtitle: t("filterCategoryBody"), options: CATEGORIES.filter((c) => rows.some((r) => r.line === c.id)).map((c) => ({ value: c.id, label: t(c.label), icon: c.icon })) },
       { key: "provider", title: t("filterProvider"), subtitle: t("filterProviderBody"), options: [...provs.values()].map((m) => ({ value: m.id, label: m.name ?? t("licensedCarrier"), logoUrl: m.logoUrl, initials: m.initials })) },
+      periodSection(t, "incident", t("fltIncidentDate")),
+      sortSection(t, [
+        { value: "recent", label: t("fltSortRecent") },
+        { value: "oldest", label: t("fltSortOldest") },
+      ]),
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claims, byPolicy, carriers, t]);
-  const matches = (c: Claim, f: FilterValues) => {
-    const m = meta(c);
-    if (f.line?.length && !f.line.includes(m.line)) return false;
-    if (f.provider?.length && !f.provider.includes(m.provider.id)) return false;
-    return true;
+  const f = useListFilters("customer.claims", filterSections);
+  const segment = (f.values.segment?.[0] ?? "all") as ClaimSegment;
+  const setSegment = (key: ClaimSegment) => f.setValues({ ...f.values, segment: key === "all" ? [] : [key] });
+  const matchers: Matchers<Claim> = {
+    segment: (c, v) => claimSegment(c.status) === v,
+    line: (c, v) => meta(c).line === v,
+    provider: (c, v) => meta(c).provider.id === v,
+    incident: periodMatcher((c) => c.incident_at ?? c.created_at),
   };
-  const visible = claims.filter((c) => {
-    if (segment !== "all" && claimSegment(c.status) !== segment) return false;
-    if (!matches(c, extra)) return false;
+  const sorters: Sorters<Claim> = { recent: byDate((c) => c.incident_at ?? c.created_at), oldest: byDate((c) => c.incident_at ?? c.created_at, "asc") };
+  const haystack = (c: Claim) => {
     const p = byPolicy.get(c.policy_id) ?? claimPolicy(c);
-    return matchesQuery(
-      query,
-      c.claim_number,
-      c.incident_location,
-      c.description,
-      p?.policy_number,
-      policyTitle(p, ""),
-      insuredLabel(p),
-      providerName(p),
-      td(claimStatusKey(c.status), c.status),
-    );
-  });
+    return [c.claim_number, c.incident_location, c.description, p?.policy_number, policyTitle(p, ""), insuredLabel(p), providerName(p), td(claimStatusKey(c.status), c.status)];
+  };
+  const run = (v: FilterValues) => runList(claims, { values: v, text: f.query, matchers, haystack, sorters });
+  const visible = run(f.values);
+  // Segment badges follow the other filters and the search.
+  const bySegment = countBy(run({ ...f.values, segment: [] }), (c) => claimSegment(c.status));
+  const counts = { all: Object.values(bySegment).reduce((n, v) => n + v, 0), progress: bySegment.progress ?? 0, completed: bySegment.completed ?? 0 };
   const open = visible.filter((c) => isActiveClaim(c.status));
   const past = visible.filter((c) => !isActiveClaim(c.status));
 
@@ -149,31 +140,18 @@ export default function Claims() {
           );
         })}
       </View>
-      <SearchBar
+      <FilterToolbar
+        filters={f}
+        sections={filterSections}
         filled
-        value={query}
-        onChangeText={setQuery}
         placeholder={t("claimsSearchPlaceholder")}
-        label={t("claimsSearchLabel")}
-        clearLabel={t("clearSearch")}
-        onFilter={() => setSheet(true)}
-        filterLabel={t("filtersTitle")}
-        filterCount={activeFilterCount(extra, filterSections)}
+        subtitle={t("filtersClaimsSubtitle")}
+        count={(v) => run(v).length}
+        resultCount={f.active ? visible.length : undefined}
       />
     </View>
   );
 
-  const filterSheet = (
-    <FiltersSheet
-      visible={sheet}
-      onClose={() => setSheet(false)}
-      sections={filterSections}
-      value={extra}
-      onApply={setExtra}
-      count={(f) => claims.filter((c) => (segment === "all" || claimSegment(c.status) === segment) && matches(c, f)).length}
-      subtitle={t("filtersClaimsSubtitle")}
-    />
-  );
   if (!visible.length)
     return (
       <Screen>
@@ -183,12 +161,11 @@ export default function Claims() {
         ) : q.error && !q.data ? (
           <ErrorState error={q.error} onRetry={() => void q.reload()} />
         ) : claims.length ? (
-          <EmptyState title={t("claimsNoMatch")} message={t("claimsNoMatchBody")} />
+          <EmptyState title={t("claimsNoMatch")} message={t("claimsNoMatchBody")} action={t("fltClearAll")} onPress={f.clear} />
         ) : (
           <EmptyState title={t("claimsEmpty")} message={t("claimsEmptyBody")} />
         )}
         {emergency}
-        {filterSheet}
       </Screen>
     );
   const sections =
@@ -216,7 +193,6 @@ export default function Claims() {
         SectionSeparatorComponent={Separator}
         ListFooterComponent={<View style={styles.footer}>{emergency}</View>}
       />
-      {filterSheet}
     </Screen>
   );
 }

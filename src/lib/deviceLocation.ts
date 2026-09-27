@@ -12,7 +12,6 @@
 import { Alert, Platform } from "react-native";
 import { requireOptionalNativeModule } from "expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ClaimsCompletionApi } from "@/api/client";
 import type { DeviceFix } from "@/lib/locationMatch";
 
 type LocationModule = typeof import("expo-location");
@@ -147,15 +146,11 @@ export async function readDeviceLocation(copy: LocationCopy, interactive = false
 }
 
 /**
- * Attaches the incident position to a claim (PUT /mobile/claims/{id}/incident
- * accepts latitude/longitude; POST /mobile/claims does not). Best effort: a
- * failure never blocks the claim.
+ * Incident position for POST /mobile/claims (latitude/longitude, 6 decimals).
+ * Empty when there is no fix, so the claim is created without coordinates.
+ * Later edits go through PUT /mobile/claims/{id}/incident.
  */
-export async function attachClaimCoordinates(claimId: string, fix: Pick<DeviceFix, "latitude" | "longitude"> | null) {
-  if (!fix) return;
-  try {
-    await ClaimsCompletionApi.saveIncident(claimId, { latitude: Number(fix.latitude.toFixed(6)), longitude: Number(fix.longitude.toFixed(6)) });
-  } catch {
-    // coordinates are optional
-  }
+export function claimCoordinates(fix: Pick<DeviceFix, "latitude" | "longitude"> | null): { latitude?: number; longitude?: number } {
+  if (!fix || !Number.isFinite(fix.latitude) || !Number.isFinite(fix.longitude)) return {};
+  return { latitude: Number(fix.latitude.toFixed(6)), longitude: Number(fix.longitude.toFixed(6)) };
 }

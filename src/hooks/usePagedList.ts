@@ -54,6 +54,39 @@ export function usePagedList<T extends { id: string }>(
     }
   }, [hasMore, loadingMore, page]);
 
+  /**
+   * Fetches every remaining page (bounded) so client-side filters, search and
+   * totals cover the whole history, not only the pages scrolled so far.
+   * Used while a filter is active on endpoints without server-side filters.
+   */
+  const loadingAll = useRef(false);
+  const [fetchingAll, setFetchingAll] = useState(false);
+  const loadAll = useCallback(async (maxPages = 20) => {
+    if (loadingAll.current || !hasMore) return;
+    loadingAll.current = true;
+    setFetchingAll(true);
+    try {
+      let p = page;
+      let more: boolean = hasMore;
+      let acc: T[] = [];
+      while (more && p < maxPages) {
+        const result = await fetcher.current(p + 1);
+        if (!alive.current) return;
+        acc = mergePages(acc, result.items);
+        p += 1;
+        more = result.info.hasMore && result.items.length > 0;
+      }
+      setItems((current) => mergePages(current, acc));
+      setPage(p);
+      setHasMore(more);
+    } catch (e) {
+      if (alive.current) setMoreError(e);
+    } finally {
+      loadingAll.current = false;
+      if (alive.current) setFetchingAll(false);
+    }
+  }, [hasMore, page]);
+
   useEffect(() => {
     alive.current = true;
     void reload();
@@ -62,5 +95,5 @@ export function usePagedList<T extends { id: string }>(
     };
   }, [reload]);
 
-  return { items, loading, loadingMore, error, moreError, hasMore, reload, loadMore };
+  return { items, loading, loadingMore, error, moreError, hasMore, reload, loadMore, loadAll, fetchingAll };
 }

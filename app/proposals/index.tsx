@@ -13,6 +13,7 @@ import { RecentProposals } from "@/store/insurance";
 import { localized, mergePages, proposalStatusInfo } from "@/lib/purchase";
 import { checklistProgress, draftBucket, DraftBucket, lineFamily, LineFamily } from "@/lib/crm";
 import { useFormatters } from "@/hooks/useFormatters";
+import { byDate, countBy, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -41,7 +42,6 @@ export default function Applications() {
   const [loading, setLoading] = useState(true);
   const [more, setMore] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [filter, setFilter] = useState<Filter>("all");
   /** Checklist completion per proposal (GET /proposals/{id}/checklist); missing when the API has none. */
   const [progress, setProgress] = useState<Record<string, number>>({});
 
@@ -104,15 +104,42 @@ export default function Applications() {
   // A proposal whose policy is issued is no longer a draft: it lives under My policies.
   const drafts = useMemo(() => items.filter((p) => !p.policy_id), [items]);
   const issuedCount = items.length - drafts.length;
-  const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: drafts.length, progress: 0, awaiting: 0, ready: 0 };
-    for (const p of drafts) {
-      const b = draftBucket(p.status);
-      if (b !== "other") c[b] += 1;
-    }
-    return c;
-  }, [drafts]);
-  const shown = filter === "all" ? drafts : drafts.filter((p) => draftBucket(p.status) === filter);
+  // Shared list standard (FLT-001..006): status tabs + sheet (product family, insurer, period, sort) + search.
+  const rows = drafts as Row[];
+  const lineOf = (p: Row) => lineFamily(p.line_code ?? p.offer?.quote?.line_code ?? null);
+  const sections = useMemo<FilterSection[]>(
+    () => [
+      { key: "family", title: t("filterCategory"), options: optionsFrom(rows, (p) => { const fam = lineOf(p); return fam ? { value: fam, label: td(`lineFamily_${fam}`, fam) } : null; }) },
+      { key: "provider", title: t("filterProvider"), options: optionsFrom(rows, (p) => (p.carrier_name ? { value: p.carrier_name, label: p.carrier_name } : null)) },
+      periodSection(t, "period", t("fltCreated")),
+      sortSection(t, [
+        { value: "recent", label: t("fltSortRecent") },
+        { value: "oldest", label: t("fltSortOldest") },
+      ]),
+    ],
+    [rows, t, td],
+  );
+  const flt = useListFilters("customer.proposals", sections);
+  const dateOf = (p: Row) => p.updated_at ?? p.submitted_at ?? p.created_at ?? null;
+  const matchers: Matchers<Row> = {
+    bucket: (p, v) => draftBucket(p.status) === v,
+    family: (p, v) => lineOf(p) === v,
+    provider: (p, v) => p.carrier_name === v,
+    period: periodMatcher((p) => p.created_at),
+  };
+  const sorters: Sorters<Row> = { recent: byDate(dateOf), oldest: byDate(dateOf, "asc") };
+  const haystack = (p: Row) => [p.product_name, localized(p.offer?.product?.name, f.language), p.carrier_name, p.proposal_number, p.vehicle_label, p.risk_summary, proposalStatusInfo(p.status, f.language).label];
+  const run = (v: FilterValues) => runList(rows, { values: v, text: flt.query, matchers, haystack, sorters });
+  const shown = run(flt.values);
+  const byBucket = countBy(run({ ...flt.values, bucket: [] }), (p) => draftBucket(p.status));
+  const counts: Record<Filter, number> = { all: Object.values(byBucket).reduce((a, b) => a + b, 0), progress: byBucket.progress ?? 0, awaiting: byBucket.awaiting ?? 0, ready: byBucket.ready ?? 0 };
+  const filter = (flt.values.bucket?.[0] ?? "all") as Filter;
+  const setFilter = (v: Filter) => flt.setValues({ ...flt.values, bucket: v === "all" ? [] : [v] });
+  // No server-side filters on /mobile/proposals: while filtering, keep fetching pages so no match is hidden.
+  useEffect(() => {
+    if (flt.active && hasMore && !more && !loading && !error) void loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flt.active, hasMore, more, loading, error]);
 
   const openProposal = (p: Row) => {
     const status = (p.status ?? "").toUpperCase();
@@ -123,11 +150,20 @@ export default function Applications() {
   return (
     <Screen>
       <BrandHeader title={t("draftsTitle")} subtitle={t("draftsSubtitle")} back right="bell" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
-        {FILTERS.map((o) => (
-          <Chip key={o.value} role="tab" label={t(o.label, { count: counts[o.value] })} selected={filter === o.value} onPress={() => setFilter(o.value)} />
-        ))}
-      </ScrollView>
+      <FilterToolbar
+        filters={flt}
+        sections={sections}
+        placeholder={t("fltSearchProposals")}
+        count={(v) => run(v).length}
+        resultCount={flt.active ? shown.length : undefined}
+        quick={
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips} accessibilityRole="tablist">
+            {FILTERS.map((o) => (
+              <Chip key={o.value} role="tab" label={t(o.label, { count: counts[o.value] })} selected={filter === o.value} onPress={() => setFilter(o.value)} />
+            ))}
+          </ScrollView>
+        }
+      />
       <Banner icon={Info} tint="blue" title={t("draftsAutoSaveTitle")} body={t("draftsAutoSaveBody")} right={<FileText size={40} color={colors.blue100} />} />
       {loading && !items.length ? <LoadingState label={t("propLoading")} /> : null}
       {error ? <ErrorCard error={error} fallback={t("propLoadFailed")} onRetry={() => void load()} /> : null}
@@ -141,7 +177,7 @@ export default function Applications() {
       {!loading && !error && !drafts.length ? (
         <EmptyState title={t("propEmpty")} message={t("propEmptyBody")} action={t("propGetQuote")} onPress={() => router.push("/quote/product")} />
       ) : null}
-      {!loading && drafts.length && !shown.length ? <EmptyState title={t("draftsNoneInFilter")} message={t("propEmptyBody")} action={t("filterAll")} onPress={() => setFilter("all")} /> : null}
+      {!loading && drafts.length && !shown.length ? <EmptyState title={t("draftsNoneInFilter")} message={t("propEmptyBody")} action={t("fltClearAll")} onPress={flt.clear} /> : null}
       {shown.map((row) => {
         const p = row as Row;
         const info = proposalStatusInfo(p.status, f.language);
@@ -155,6 +191,9 @@ export default function Applications() {
         const pct: number | null = checklistProgress(p.required_documents) ?? (typeof fetched === "number" && fetched >= 0 ? fetched : null);
         const subtitle = [p.vehicle_label ?? p.risk_summary ?? null, p.proposal_number, p.terms_snapshot?.total_minor ? f.xaf(p.terms_snapshot.total_minor) : null].filter(Boolean).join(" • ");
         const updated = p.updated_at ?? p.submitted_at ?? p.created_at ?? null;
+        const cs = p.terms_snapshot?.coverage_starts_at, ce = p.terms_snapshot?.coverage_ends_at;
+        const period = cs && ce ? t("draftsCoverPeriod", { start: f.date(cs), end: f.date(ce) }) : null;
+        const submitted = p.submitted_at ? t("draftsSubmittedOn", { date: f.date(p.submitted_at) }) : null;
         const StatusIcon = bucket === "ready" ? CheckCircle2 : bucket === "awaiting" ? Clock3 : LoaderCircle;
         const statusStyle = bucket === "ready" ? s.statusGreen : bucket === "awaiting" ? s.statusGold : info.tone === "danger" ? s.statusRed : s.statusBlue;
         const statusText = bucket === "ready" ? s.statusGreenText : bucket === "awaiting" ? s.statusGoldText : info.tone === "danger" ? s.statusRedText : s.statusBlueText;
@@ -178,6 +217,7 @@ export default function Applications() {
                   </View>
                 ) : null}
                 <Text style={s.meta}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>
+                {period || submitted ? <Text style={s.meta}>{[period, submitted].filter(Boolean).join(" • ")}</Text> : null}
               </View>
               <Pressable accessibilityRole="button" accessibilityLabel={t("draftsOpen")} onPress={() => openProposal(p)} hitSlop={8} style={s.chevron}>
                 <ChevronRight size={18} color={colors.navy800} />

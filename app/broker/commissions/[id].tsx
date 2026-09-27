@@ -1,12 +1,17 @@
 import React from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
-import { AppHeader, Screen } from "@/components/ui";
+import { FileDown } from "lucide-react-native";
+import { AppHeader, Button, Screen } from "@/components/ui";
 import { EmptyState, StatePanel } from "@/components/StatePanel";
 import { CommissionDetail } from "@/components/partner/CommissionDetail";
 import { DetailScreen, DetailSection } from "@/components/detail";
 import { BrokerWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { loadBrokerLedger } from "@/components/partner/brokerLedger";
+import { usePermission } from "@/components/carrier/CarrierGate";
+import { openDocumentUrl } from "@/components/documents/openDocument";
+import { environmentConfig } from "@/config/environment";
 
 const scalar = (v: unknown) => (v === null || v === undefined || typeof v === "object" ? null : String(v));
 const HIDDEN = /(^id$|tenant|partner|_id$|created_at|updated_at|version)/;
@@ -14,6 +19,8 @@ const HIDDEN = /(^id$|tenant|partner|_id$|created_at|updated_at|version)/;
 /** Commission statement (list row + GET /mobile/broker/statements/{id} audit fields). */
 function StatementDetail({ id }: { id: string }) {
   const { t } = useTranslation();
+  // GET finance/partner-statements/{id}?format=pdf needs statements.read (server-enforced too).
+  const canPdf = usePermission("statements.read");
   const q = useLoad(async () => {
     const [d, server] = await Promise.all([BrokerWorkspaceApi.commissions(), BrokerWorkspaceApi.statement(id).catch(() => ({}) as Record<string, unknown>)]);
     const row = d.statements.find((s) => s.id === id);
@@ -36,6 +43,20 @@ function StatementDetail({ id }: { id: string }) {
                 [t("bkCurrency"), d.row.currency],
               ]}
             />
+            {canPdf ? (
+              <Button
+                variant="secondary"
+                icon={FileDown}
+                label={t("pcStatementPdf")}
+                onPress={() =>
+                  openDocumentUrl(
+                    `${environmentConfig.apiBaseUrl}/finance/partner-statements/${encodeURIComponent(id)}?format=pdf`,
+                    d.row.statement_number,
+                    `${d.row.statement_number}.pdf`,
+                  )
+                }
+              />
+            ) : null}
             <DetailSection
               title={t("bkAuditDetail")}
               rows={Object.entries(d.server)
@@ -53,7 +74,7 @@ function StatementDetail({ id }: { id: string }) {
 export default function BrokerCommissionDetail() {
   const { t } = useTranslation();
   const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
-  const q = useLoad(async () => (kind === "statement" ? null : ((await BrokerWorkspaceApi.commissionLedger()).find((r) => r.id === id) ?? null)), [id, kind]);
+  const q = useLoad(async () => (kind === "statement" ? null : ((await loadBrokerLedger()).find((r) => r.id === id) ?? null)), [id, kind]);
   if (kind === "statement") return <StatementDetail id={id} />;
   return (
     <Screen>

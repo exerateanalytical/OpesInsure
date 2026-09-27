@@ -8,6 +8,8 @@ import { DetailRow } from "@/components/design";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { EmptyState, StatePanel } from "@/components/StatePanel";
 import { ClientDocumentsCard } from "./ClientDocumentsCard";
+import { SaleCommissionCard } from "./SaleCommission";
+import type { CommissionRow } from "./commissionFilters";
 import { ClientDocument, PartnerClaim, PartnerPolicy, humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
@@ -28,6 +30,8 @@ export function PartnerPolicyDetail({
   loadClaims,
   loadDocuments,
   canAssist = false,
+  loadCommissions,
+  canReportClaim = false,
 }: {
   id: string;
   /** "/agent" or "/broker" — detail links stay inside the portal. */
@@ -37,12 +41,18 @@ export function PartnerPolicyDetail({
   loadDocuments: (customerId: string) => Promise<ClientDocument[]>;
   /** Show FNOL assistance / renewal requote buttons (agent.clients.manage holders). */
   canAssist?: boolean;
+  /** Commission ledger of the caller: shows "You earned" for this sale (server accruals joined by policy id). */
+  loadCommissions?: () => Promise<CommissionRow[]>;
+  /** Show "Report a claim" even without party_id on the row (the claim form resolves the policyholder). */
+  canReportClaim?: boolean;
 }) {
   const { t, td } = useTranslation();
   const q = useLoad(async () => {
     const [policies, claims] = await Promise.all([loadPolicies(), loadClaims().catch(() => [] as PartnerClaim[])]);
     return { policy: policies.find((p) => p.id === id) ?? null, claims: claims.filter((c) => c.policy_id === id) };
   }, [id]);
+  // Separate load: a missing finance permission or a failed ledger never hides the policy.
+  const commissions = useLoad(async () => (loadCommissions ? await loadCommissions().catch(() => null) : null), [id]);
   const p = q.data?.policy;
   const days = daysUntil(p?.coverage_ends_at);
   const renewable = !!p && ["ACTIVE", "EXPIRING"].includes(p.status) && days !== null && days <= 60;
@@ -64,6 +74,11 @@ export function PartnerPolicyDetail({
                 <DetailRow label={t("pdEnds")} value={shortDate(d.policy.coverage_ends_at)} />
                 <DetailRow label={t("pdIssued")} value={shortDate(d.policy.issued_at)} />
               </Card>
+              <SaleCommissionCard
+                rows={commissions.data}
+                sale={{ policyId: d.policy.id, premiumMinor: d.policy.premium_minor }}
+                onOpen={(accrualId) => router.push(`${base}/commissions/${accrualId}` as Href)}
+              />
               {d.policy.customer_id ? (
                 <FlowRow
                   icon={ContactRound}
@@ -99,7 +114,7 @@ export function PartnerPolicyDetail({
                     onPress={() => router.push(`${base}/claims/${c.id}` as Href)}
                   />
                 ))}
-                {canAssist && d.policy.party_id && d.policy.status === "ACTIVE" ? (
+                {((canAssist && d.policy.party_id) || canReportClaim) && d.policy.status === "ACTIVE" ? (
                   <Button
                     variant="secondary"
                     icon={ShieldAlert}

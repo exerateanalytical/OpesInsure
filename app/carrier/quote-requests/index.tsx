@@ -5,7 +5,8 @@ import { Inbox } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Screen } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { CarrierQuoteRequestsApi } from "@/api/workflow";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
@@ -31,13 +32,22 @@ function CarrierQuoteRequestsBody() {
       <Button label={open ? t("cqrShowAll") : t("cqrShowOpen")} variant="tertiary" onPress={() => setOpen((x) => !x)} />
       <StatePanel {...q} onRetry={q.reload} loadingLabel={t("cqrLoading")} emptyTitle={t("cqrEmpty")} emptyMessage={t("cqrEmptyBody")}>
         {(rows) => (
-          <OperationsList
+          <FilteredList
+            list={`carrier.quoteRequests.${open ? "open" : "all"}`}
             icon={Inbox}
-            onPress={(id) => router.push({ pathname: "/carrier/quote-requests/[id]", params: { id } })}
-            rows={rows.map((r) => {
+            onPress={({ id }) => router.push({ pathname: "/carrier/quote-requests/[id]", params: { id } })}
+            rows={rows}
+            {...listSpec(rows, t, {
+              status: (r) => r.status,
+              statusLabel: (v) => td(`cqrStatus_${v}`, v),
+              date: (r) => r.response_due_at,
+              dateTitle: t("fltDueDate"),
+            })}
+            haystack={(r) => [r.request_number, td(`cqrStatus_${r.status}`, r.status)]}
+            placeholder={t("fltSearchQueue")}
+            render={(r) => {
               const waiting = caseWaitingState(r);
               return {
-                id: r.id,
                 title: r.request_number,
                 subtitle: [
                   r.response_due_at ? t("cqrDue", { date: f.dateTime(r.response_due_at) }) : null,
@@ -47,7 +57,7 @@ function CarrierQuoteRequestsBody() {
                   .join(" · "),
                 status: waiting ? td(`cqrWait_${waiting}`, waiting) : td(`cqrStatus_${r.status}`, r.status),
               };
-            })}
+            }}
           />
         )}
       </StatePanel>

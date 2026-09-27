@@ -29,7 +29,7 @@ const KPI_ROUTES: Record<string, KpiRoute> = {
   Clients: { label: "kpiClients", href: "/broker/clients" },
   "Policies in force": { label: "kpiPoliciesInForce", href: "/broker/policies?f_status=ACTIVE" },
   "Premium written (12m)": { label: "kpiPremiumWritten", href: "/broker/production" },
-  "Commission outstanding": { label: "kpiCommissionOutstanding", href: "/broker/commissions" },
+  "Commission outstanding": { label: "kpiCommissionOutstanding", href: "/broker/commissions?f_lifecycle=unpaid" },
   "Renewals due": { label: "kpiRenewalsDue", href: "/broker/renewals" },
   "Open compliance items": { label: "kpiOpenCompliance", href: "/broker/compliance" },
 };

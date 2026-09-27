@@ -5,7 +5,8 @@ import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { FileSpreadsheet } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { CarrierFinanceApi, fcfa } from "@/api/extra";
 import { formatDisplayDate, useTranslation } from "@/i18n";
 
@@ -36,15 +37,20 @@ function CarrierBordereauxBody() {
         emptyMessage={t("caNoBordereauxBody")}
       >
         {(x) => (
-          <OperationsList
+          <FilteredList
+            list="carrier.bordereaux"
             icon={FileSpreadsheet}
-            onPress={(id) => router.push(`/carrier/bordereaux/${id}` as never)}
-            rows={x.map((b) => ({
-              id: b.id,
+            onPress={({ id }) => router.push(`/carrier/bordereaux/${id}` as never)}
+            rows={x}
+            {...listSpec(x, t, { status: (b) => b.status, dims: [{ key: "type", title: t("fltType"), get: (b) => ({ value: b.type }) }], date: (b) => b.period_end, dateTitle: t("fltPeriod"), amount: (b) => b.gross_premium_minor })}
+            haystack={(b) => [b.bordereau_number, b.type, b.status]}
+            placeholder={t("fltSearchPlaceholder")}
+            amount={(b) => b.gross_premium_minor}
+            render={(b) => ({
               title: b.bordereau_number,
               subtitle: `${day(b.period_start)} – ${day(b.period_end)} · ${b.item_count} items · ${fcfa(b.gross_premium_minor)}`,
               status: b.status,
-            }))}
+            })}
           />
         )}
       </StatePanel>

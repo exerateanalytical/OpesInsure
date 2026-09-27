@@ -7,7 +7,8 @@ import { StatePanel } from "@/components/StatePanel";
 import { ShieldAlert } from "lucide-react-native";
 import { router } from "expo-router";
 import { AppHeader } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 export default function CarrierClaims() {
@@ -37,15 +38,19 @@ function CarrierClaimsBody() {
       >
         {() => (
           <>
-          <OperationsList
+          <FilteredList
+            list="carrier.claims"
             icon={ShieldAlert}
-            onPress={(id) => router.push(`/carrier/claims/${id}`)}
-            rows={x.map((i) => ({
-              id: i.id,
+            onPress={({ id }) => router.push(`/carrier/claims/${id}`)}
+            rows={x}
+            {...listSpec(x, t, { status: (i) => i.status, dims: [{ key: "priority", title: t("fltPriority"), get: (i) => ({ value: i.priority }) }], date: (i) => i.submitted_at, dateTitle: t("fltReceived") })}
+            haystack={(i) => [i.reference, i.subject, i.priority, i.status, i.carrier_name]}
+            placeholder={t("fltSearchQueue")}
+            render={(i) => ({
               title: i.reference,
               subtitle: `${i.subject} · ${i.priority}`,
               status: i.status,
-            }))}
+            })}
           />
           </>
         )}

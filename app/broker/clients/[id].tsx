@@ -3,7 +3,8 @@ import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { useLocalSearchParams } from "expo-router";
 import { Text } from "react-native";
-import { ReceiptText, RefreshCw, ShieldAlert, UserPlus } from "lucide-react-native";
+import { ReceiptText, RefreshCw, ShieldAlert, ShieldPlus, UserPlus } from "lucide-react-native";
+import { usePermission } from "@/components/carrier/CarrierGate";
 import { AppHeader, Card, Money, Screen, SectionTitle, StatusChip } from "@/components/ui";
 import { BrokerApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -19,6 +20,7 @@ export default function BrokerClientDetail() {
   const { t } = useTranslation();
   const { id, partyId } = useLocalSearchParams<{ id: string; partyId?: string }>();
   const q = useLoad(() => BrokerApi.client(id), [id]);
+  const canReportClaim = usePermission("broker.claims.file");
   const x = q.data;
   const name = encodeURIComponent(x?.full_name ?? "");
   return (
@@ -45,6 +47,7 @@ export default function BrokerClientDetail() {
             items={[
               { label: t("leadNewTitle"), subtitle: t("brLeadsSubtitle"), icon: UserPlus, href: "/broker/leads/new" },
               { label: t("claims"), subtitle: t("brClaimsOnBook"), icon: ShieldAlert, href: `/broker/claims?q=${name}` },
+              ...(canReportClaim ? [{ label: t("brReportClaim"), subtitle: t("pdFileClaimHint"), icon: ShieldPlus, href: `/broker/claims/new?customerId=${id}` }] : []),
               { label: t("brRenewals"), subtitle: t("agPoliciesDueSoon"), icon: RefreshCw, href: "/broker/renewals" },
               { label: t("brReceivables"), subtitle: t("brAmountsDue"), icon: ReceiptText, href: "/broker/receivables" },
             ]}

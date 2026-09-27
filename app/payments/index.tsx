@@ -11,6 +11,8 @@ import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 import { Payment, PaymentsApi, WalletApi, WalletPolicy } from "@/api/client";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useFormatters } from "@/hooks/useFormatters";
+import { useListState } from "@/hooks/useListState";
+import { byDate, byNumber, FilterToolbar, inPeriod, optionsFrom, periodMatcher, periodSection, runList, sortSection, totals, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { networkName, paymentStatusInfo, type Tone } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -25,7 +27,7 @@ const FILTERS: Record<Exclude<Filter, "all">, string[]> = {
   failed: ["FAILED", "EXPIRED", "CANCELLED"],
   refunded: ["REFUNDED"],
 };
-const matches = (p: Payment, f: Filter) => f === "all" || FILTERS[f].includes(String(p.status).toUpperCase());
+const bucketOf = (p: Payment): Filter => (Object.keys(FILTERS) as Exclude<Filter, "all">[]).find((k) => FILTERS[k].includes(String(p.status).toUpperCase())) ?? "all";
 
 /** Line icon from the wallet policy's product name (payments carry no line code). */
 function lineIcon(name: string | null | undefined) {
@@ -47,7 +49,6 @@ export default function Payments() {
   const f = useFormatters();
   const logoFor = useInsurerLogos();
   const list = usePagedList<Payment>((page) => PaymentsApi.list(page));
-  const [filter, setFilter] = useState<Filter>("all");
   const [policies, setPolicies] = useState<Record<string, WalletPolicy>>({});
 
   // Payments carry policy_id only; product and insurer come from the wallet (same data as the web app).
@@ -62,18 +63,54 @@ export default function Payments() {
     };
   }, []);
 
-  const visible = useMemo(() => list.items.filter((p) => matches(p, filter)), [list.items, filter]);
+  const policyOf = (p: Payment) => (p.policy_id ? policies[p.policy_id] : undefined) ?? (p.proposal_id ? policies[`proposal:${p.proposal_id}`] : undefined);
+  // Shared list standard (FLT-001..006): status tabs + sheet (status, network, period, sort) + search.
+  const sections = useMemo<FilterSection[]>(
+    () => [
+      { key: "status", title: t("filterStatus"), options: (Object.keys(FILTERS) as Exclude<Filter, "all">[]).map((k) => ({ value: k, label: t(`phFilter_${k}`) })) },
+      { key: "network", title: t("fltPaymentNetwork"), options: optionsFrom(list.items, (p) => ({ value: p.provider, label: networkName(p.provider) })) },
+      periodSection(t, "period", t("fltPaidOn")),
+      sortSection(t, [
+        { value: "recent", label: t("fltSortRecent") },
+        { value: "oldest", label: t("fltSortOldest") },
+        { value: "amount_desc", label: t("fltSortAmountHigh") },
+        { value: "amount_asc", label: t("fltSortAmountLow") },
+      ]),
+    ],
+    [list.items, t],
+  );
+  const flt = useListFilters("customer.payments", sections);
+  const matchers: Matchers<Payment> = { status: (p, v) => bucketOf(p) === v, network: (p, v) => p.provider === v, period: periodMatcher((p) => p.created_at) };
+  const sorters: Sorters<Payment> = {
+    recent: byDate((p) => p.created_at),
+    oldest: byDate((p) => p.created_at, "asc"),
+    amount_desc: byNumber((p) => p.amount_minor),
+    amount_asc: byNumber((p) => p.amount_minor, "asc"),
+  };
+  const haystack = (p: Payment) => {
+    const pol = policyOf(p);
+    return [pol?.product_name, pol?.carrier_name, pol?.policy_number, networkName(p.provider), p.provider_reference, p.payer_phone_e164, paymentStatusInfo(p.status, f.language).label];
+  };
+  const run = (v: FilterValues) => runList(list.items, { values: v, text: flt.query, matchers, haystack, sorters });
+  const visible = run(flt.values);
+  const filter: Filter = flt.values.status?.length === 1 ? (flt.values.status[0] as Filter) : flt.values.status?.length ? ("none" as Filter) : "all";
+  const setFilter = (key: Filter) => flt.setValues({ ...flt.values, status: key === "all" ? [] : [key] });
+  // The endpoint has no server filters: while a filter is on, fetch every page so results and totals cover the whole history.
+  const { hasMore, loadAll } = list;
+  useEffect(() => {
+    if (flt.active && hasMore) void loadAll();
+  }, [flt.active, hasMore, loadAll]);
+  const filteredPaid = totals(visible, (p) => p.amount_minor, (p) => p.status === "SUCCEEDED");
   // Only a complete history gives an honest yearly total.
   const year = new Date().getFullYear();
-  const paidThisYear = useMemo(() => {
-    const rows = list.items.filter((p) => p.status === "SUCCEEDED" && p.created_at && new Date(p.created_at).getFullYear() === year);
-    return { total: rows.reduce((sum, p) => sum + (p.amount_minor ?? 0), 0), count: rows.length };
-  }, [list.items, year]);
+  const paidThisYear = useMemo(() => totals(list.items, (p) => p.amount_minor, (p) => p.status === "SUCCEEDED" && inPeriod(p.created_at, "this_year")), [list.items]);
   const complete = !list.hasMore && !list.loading && list.items.length > 0;
 
+  const listState = useListState("customer.payments");
   return (
     <Screen scroll={false}>
       <FlatList
+        {...listState}
         data={visible}
         keyExtractor={(p) => p.id}
         showsVerticalScrollIndicator={false}
@@ -86,11 +123,27 @@ export default function Payments() {
         ListHeaderComponent={
           <View style={s.header}>
             <BrandHeader title={t("paymentsReceipts")} subtitle={t("paymentsSubtitle")} back right={null} />
-            <ChipRow exclusive>
-              {(["all", "succeeded", "pending", "failed", "refunded"] as const).map((key) => (
-                <Chip key={key} role="tab" label={t(`phFilter_${key}`)} selected={filter === key} onPress={() => setFilter(key)} />
-              ))}
-            </ChipRow>
+            <FilterToolbar
+              filters={flt}
+              sections={sections}
+              filled
+              placeholder={t("fltSearchPayments")}
+              count={(v) => run(v).length}
+              resultCount={flt.active ? visible.length : undefined}
+              quick={
+                <ChipRow exclusive>
+                  {(["all", "succeeded", "pending", "failed", "refunded"] as const).map((key) => (
+                    <Chip key={key} role="tab" label={t(`phFilter_${key}`)} selected={filter === key} onPress={() => setFilter(key)} />
+                  ))}
+                </ChipRow>
+              }
+            />
+            {list.fetchingAll ? <Text style={s.meta}>{t("fltLoadingAll")}</Text> : null}
+            {flt.active && !list.hasMore && visible.length ? (
+              <Text style={s.meta} accessibilityLiveRegion="polite">
+                {t("fltTotalFiltered", { count: visible.length })}: {f.xaf(filteredPaid.total)} ({t("phPaymentsCount", { count: filteredPaid.count })}, {t("phFilter_succeeded")})
+              </Text>
+            ) : null}
             {complete ? (
               <View style={s.summary} accessible accessibilityLabel={`${t("phPaidThisYear", { year })}: ${f.xaf(paidThisYear.total)}`}>
                 <TintedIcon icon={Wallet} tint="blue" size={52} />
@@ -108,7 +161,7 @@ export default function Payments() {
         }
         renderItem={({ item: p }) => {
           const status = paymentStatusInfo(p.status, f.language);
-          const policy = (p.policy_id ? policies[p.policy_id] : undefined) ?? (p.proposal_id ? policies[`proposal:${p.proposal_id}`] : undefined);
+          const policy = policyOf(p);
           const network = networkName(p.provider);
           const when = p.created_at ? f.date(p.created_at) : null;
           const Icon = policy ? lineIcon(policy.product_name) : CreditCard;
@@ -152,7 +205,7 @@ export default function Payments() {
         ListEmptyComponent={
           !list.loading && !list.error ? (
             list.items.length ? (
-              <EmptyState title={t("phNoMatch")} message={t("phNoMatchBody")} action={t("phFilter_all")} onPress={() => setFilter("all")} />
+              <EmptyState title={t("phNoMatch")} message={t("phNoMatchBody")} action={t("fltClearAll")} onPress={flt.clear} />
             ) : (
               <EmptyState title={t("paymentsEmpty")} message={t("paymentsEmptyBody")} action={t("refresh")} onPress={() => void list.reload()} />
             )

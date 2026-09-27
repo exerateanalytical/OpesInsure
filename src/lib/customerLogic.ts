@@ -106,8 +106,11 @@ export function lockoutSeconds(error: unknown, fallback = 60) {
 }
 
 /** Filters a list by a free-text query over the given fields. */
+/** Case- and accent-insensitive; every word must appear in some field (same rule as filters/core matchesText). */
 export function matchesQuery(query: string, ...fields: (string | null | undefined)[]) {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return fields.some((f) => (f ?? "").toLowerCase().includes(q));
+  const fold = (s: string | null | undefined) => (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const words = fold(query).split(" ").filter(Boolean);
+  if (!words.length) return true;
+  const hay = fields.map(fold).join(" \u0001 ");
+  return words.every((w) => hay.includes(w));
 }

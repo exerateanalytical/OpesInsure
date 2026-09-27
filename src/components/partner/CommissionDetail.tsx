@@ -6,7 +6,7 @@ import { DetailRow } from "@/components/design";
 import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
-import type { CommissionRow } from "./commissionFilters";
+import { owedAmount, paidAmount, stageOf, type CommissionRow } from "./commissionFilters";
 
 /**
  * Record-level commission view (COM-007), shared by agent and broker. Shows
@@ -15,11 +15,12 @@ import type { CommissionRow } from "./commissionFilters";
  */
 export function CommissionDetail({ row, onOpenPolicy }: { row: CommissionRow; onOpenPolicy?: (policyId: string) => void }) {
   const { t, td } = useTranslation();
-  const outstanding = row.amount_minor - (row.paid_minor ?? 0);
+  const outstanding = owedAmount(row);
   return (
     <>
       <Card feature>
         <StatusChip label={td(`commissionStatus_${row.status}`, humanize(row.status))} tone={row.status === "PAID" ? "success" : row.status === "REVERSED" ? "danger" : "info"} />
+        <Text style={{ ...type.meta, color: colors.neutral600 }}>{t(`pcStage_${stageOf(row)}` as const)}</Text>
         <Money amount={row.amount_minor / 100} size="large" />
         <Text style={{ ...type.meta, color: colors.neutral600 }}>{t("pcOutstanding", { amount: money(outstanding) })}</Text>
       </Card>
@@ -37,7 +38,9 @@ export function CommissionDetail({ row, onOpenPolicy }: { row: CommissionRow; on
         <DetailRow label={t("pcBasis")} value={row.basis ?? row.reason} />
         <DetailRow label={t("pcRate")} value={row.rate_bps != null ? `${(row.rate_bps / 100).toFixed(2)} %` : null} />
         <DetailRow label={t("pcAmount")} value={money(row.amount_minor)} strong />
-        <DetailRow label={t("pcPaid")} value={money(row.paid_minor ?? 0)} />
+        {row.clawed_back_minor ? <DetailRow label={t("pcClawback")} value={money(row.clawed_back_minor)} /> : null}
+        <DetailRow label={t("pcPaid")} value={money(paidAmount(row))} />
+        {row.rule_version ? <DetailRow label={t("pcRuleVersion")} value={row.rule_version} /> : null}
       </Card>
       <SectionTitle title={t("pcSettlement")} />
       <Card>
@@ -45,6 +48,7 @@ export function CommissionDetail({ row, onOpenPolicy }: { row: CommissionRow; on
         <DetailRow label={t("pcBasis_issue")} value={shortDate(row.issued_at)} />
         <DetailRow label={t("pcBasis_accrual")} value={shortDate(row.accrued_at)} />
         <DetailRow label={t("pcAvailableOn")} value={shortDate(row.available_at)} />
+        {row.payable_at ? <DetailRow label={t("pcPayableOn")} value={shortDate(row.payable_at)} /> : null}
         <DetailRow label={t("pcBasis_payment")} value={shortDate(row.paid_at)} />
         <DetailRow label={t("pcStatement")} value={row.statement_number} />
       </Card>

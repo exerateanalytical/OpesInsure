@@ -8,7 +8,8 @@ import { PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Card, SectionTitle } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { useColumns } from "@/components/responsive";
 import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
@@ -55,17 +56,22 @@ function CarrierPaymentsBody() {
               ))}
             </View>
             <SectionTitle title={t("faqTopicPayments")} />
-            <OperationsList
+            <FilteredList
+              list="carrier.payments"
               icon={HandCoins}
-              onPress={(id) => router.push(`/carrier/payments/${id}` as never)}
-              rows={d.items.map((p) => ({
-                id: p.id,
+              onPress={({ id }) => router.push(`/carrier/payments/${id}` as never)}
+              rows={d.items}
+              {...listSpec(d.items, t, { status: (p) => p.status, dims: [{ key: "provider", title: t("fltPaymentNetwork"), get: (p) => ({ value: p.provider }) }, { key: "reconciliation_status", title: t("fltType"), get: (p) => ({ value: p.reconciliation_status, label: humanize(p.reconciliation_status) }) }], date: (p) => p.created_at, dateTitle: t("fltPaidOn"), amount: (p) => p.amount_minor, name: (p) => p.customer_name })}
+              haystack={(p) => [p.customer_name, p.proposal_number, p.provider, p.exception_code, p.status]}
+              placeholder={t("fltSearchQueue")}
+              amount={(p) => p.amount_minor}
+              render={(p) => ({
                 title: `${p.customer_name} · ${money(p.amount_minor)}`,
                 subtitle: [p.proposal_number, p.provider, shortDate(p.created_at), humanize(p.reconciliation_status), p.exception_code]
                   .filter(Boolean)
                   .join(" · "),
                 status: p.status,
-              }))}
+              })}
             />
           </>
         )}

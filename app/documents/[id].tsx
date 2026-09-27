@@ -26,8 +26,9 @@ export default function DocumentPreview() {
     setOpenError(null);
     try {
       const x = await DocumentsApi.access(id);
-      setData(x);
-      const url = openableUrl(x.signed_url);
+      // Access returns the document fields too, but its expires_at is the link's expiry: keep the document's own.
+      setData((cur) => ({ ...(cur ?? {}), ...x, expires_at: cur ? cur.expires_at : null }));
+      const url = openableUrl(x.signed_url ?? x.url);
       if (url) openDocumentUrl(url, x.label, x.share_reference);
       else setOpenError(new Error(t("docNoFile")));
     } catch (e) {

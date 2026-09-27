@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, ArrowRight, Check, LucideIcon } from "lucide-react-native";
 import { BrandLockup } from "@/components/design";
@@ -7,6 +7,7 @@ import { InstitutionMark } from "@/components/InstitutionMark";
 import { CONTENT_MAX_WIDTH, ripple } from "@/components/ui";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { activeFilterCount as coreActiveCount, customPeriod, emptyFilters as coreEmpty } from "@/components/filters/core";
 
 export type FilterOption = {
   value: string;
@@ -23,20 +24,16 @@ export type FilterSection = {
   options: FilterOption[];
   /** Exactly one value (sort order); otherwise any number, none = no filter. */
   single?: boolean;
+  /** "period": single choice of date presets plus a custom from/to range (values from periodSection()). */
+  kind?: "period" | "sort";
 };
 export type FilterValues = Record<string, string[]>;
 
 /** Number of active choices across sections, ignoring single-choice sections at their default. */
-export const activeFilterCount = (values: FilterValues, sections: FilterSection[]) =>
-  sections.reduce((n, s) => {
-    const v = values[s.key] ?? [];
-    if (s.single) return n + (v[0] && v[0] !== s.options[0]?.value ? 1 : 0);
-    return n + v.length;
-  }, 0);
+export const activeFilterCount: (values: FilterValues, sections: FilterSection[]) => number = coreActiveCount;
 
 /** Empty selection for every section (single-choice sections go back to their first option). */
-export const emptyFilters = (sections: FilterSection[]): FilterValues =>
-  Object.fromEntries(sections.map((s) => [s.key, s.single && s.options[0] ? [s.options[0].value] : []]));
+export const emptyFilters: (sections: FilterSection[]) => FilterValues = coreEmpty;
 
 /**
  * Filter sheet from opesinsure_filters_mobile_ui.png: full-screen modal with
@@ -69,6 +66,7 @@ export function FiltersSheet({
   const toggle = (s: FilterSection, v: string) =>
     setDraft((d) => {
       const cur = d[s.key] ?? [];
+      if (s.kind === "period" && v === "custom") return { ...d, [s.key]: [customPeriod("", "")] };
       if (s.single) return { ...d, [s.key]: [v] };
       return { ...d, [s.key]: cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v] };
     });
@@ -97,7 +95,7 @@ export function FiltersSheet({
               {s.subtitle ? <Text style={st.cardSub}>{s.subtitle}</Text> : null}
               <View style={st.options} accessibilityRole={s.single ? "radiogroup" : undefined}>
                 {s.options.map((o) => {
-                  const on = (draft[s.key] ?? []).includes(o.value);
+                  const on = (draft[s.key] ?? []).includes(o.value) || (o.value === "custom" && (draft[s.key]?.[0] ?? "").startsWith("custom:"));
                   const Icon = o.icon;
                   const provider = o.logoUrl !== undefined || o.initials;
                   return (
@@ -125,6 +123,7 @@ export function FiltersSheet({
                   );
                 })}
               </View>
+              {s.kind === "period" ? <CustomRange value={draft[s.key]?.[0]} onChange={(v) => setDraft((d) => ({ ...d, [s.key]: [v] }))} /> : null}
             </View>
           ))}
         </ScrollView>
@@ -151,7 +150,39 @@ export function FiltersSheet({
   );
 }
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** From / To (YYYY-MM-DD, inclusive local days) for a custom period. */
+function CustomRange({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+  const [from, to] = (value?.startsWith("custom:") ? value.slice(7) : "..").split("..");
+  if (!value?.startsWith("custom:")) return null;
+  const field = (label: string, v: string, set: (x: string) => void) => (
+    <View style={st.rangeField}>
+      <Text style={st.cardSub}>{label}</Text>
+      <TextInput
+        accessibilityLabel={label}
+        value={v}
+        onChangeText={(x) => set(x.replace(/[^0-9-]/g, "").slice(0, 10))}
+        placeholder="YYYY-MM-DD"
+        placeholderTextColor={colors.neutral500}
+        keyboardType="numbers-and-punctuation"
+        style={[st.rangeInput, v && !DAY.test(v) ? st.rangeBad : null]}
+      />
+    </View>
+  );
+  return (
+    <View style={st.range}>
+      {field(t("fltFrom"), from ?? "", (x) => onChange(customPeriod(x, to ?? "")))}
+      {field(t("fltTo"), to ?? "", (x) => onChange(customPeriod(from ?? "", x)))}
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  range: { flexDirection: "row", gap: space.x3, marginTop: space.x3, flexWrap: "wrap" },
+  rangeField: { flex: 1, minWidth: 130, gap: 4 },
+  rangeInput: { ...type.body, minHeight: 48, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control, paddingHorizontal: space.x3, color: colors.navy950, backgroundColor: colors.white },
+  rangeBad: { borderColor: colors.danger },
   safe: { flex: 1, height: "100%", backgroundColor: colors.neutral50 },
   scroll: { flex: 1 },
   pressed: { opacity: 0.85 },

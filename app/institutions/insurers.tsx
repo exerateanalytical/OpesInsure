@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
@@ -7,6 +7,7 @@ import { BrandArt } from "@/components/design/BrandArt";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
+import { useListFilters, type FilterSection } from "@/components/filters";
 import { InstitutionsApi, type Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 import {
@@ -21,6 +22,8 @@ import {
 } from "@/lib/institutions";
 import { colors, radius, space, type } from "@/theme/tokens";
 
+const NO_SECTIONS: FilterSection[] = [];
+
 const BRANCHES: { id: BranchFilter; label: "branchAll" | "branchIARD" | "branchLIFE" }[] = [
   { id: "all", label: "branchAll" },
   { id: "IARD", label: "branchIARD" },
@@ -30,15 +33,20 @@ const BRANCHES: { id: BranchFilter; label: "branchAll" | "branchIARD" | "branchL
 /** Licensed insurers from the DGTCFM/MINFI 2026 register, split Non-life (IARD) / Life. */
 export default function Insurers() {
   const { t } = useTranslation();
-  const [query, setQuery] = useState("");
-  const [branch, setBranch] = useState<BranchFilter>("all");
+  // Shared list memory (FLT/NAV-002): branch, city and search survive back / tab switches.
+  const flt = useListFilters("customer.insurers", NO_SECTIONS);
+  const query = flt.text;
+  const setQuery = flt.setText;
+  const branch = (flt.values.branch?.[0] ?? "all") as BranchFilter;
+  const setBranch = (b: BranchFilter) => flt.setValues({ ...flt.values, branch: b === "all" ? [] : [b] });
   const q = useLoad(() => InstitutionsApi.list("insurer"), []);
   const counts = useMemo(() => registerCounts(q.data ?? []), [q.data]);
-  const [city, setCity] = useState<string | null>(null);
+  const city = flt.values.city?.[0] ?? null;
+  const setCity = (c: string | null) => flt.setValues({ ...flt.values, city: c ? [c] : [] });
   const cities = useMemo(() => directoryCities(q.data ?? []), [q.data]);
   const filtered = useMemo(
-    () => filterByCity(filterInsurers(q.data ?? [], branch, query), city),
-    [q.data, branch, query, city],
+    () => filterByCity(filterInsurers(q.data ?? [], branch, flt.query), city),
+    [q.data, branch, flt.query, city],
   );
 
   return (
@@ -79,6 +87,11 @@ export default function Insurers() {
             <Chip key={c ?? "all"} label={c ?? t("cityAll")} selected={city === c} onPress={() => setCity(c)} />
           ))}
         </ScrollView>
+      ) : null}
+      {q.data && (flt.query || branch !== "all" || city) ? (
+        <Text accessibilityLiveRegion="polite" style={styles.results}>
+          {t(filtered.length === 1 ? "fltResultsOne" : "fltResults", { count: filtered.length })}
+        </Text>
       ) : null}
       <Button
         label={t("browseAuthorizedBrokers")}
@@ -166,6 +179,7 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
 }
 
 const styles = StyleSheet.create({
+  results: { ...type.meta, color: colors.neutral600 },
   tabs: { flexDirection: "row", gap: space.x2, flexWrap: "wrap" },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   copy: { flex: 1, gap: 3 },

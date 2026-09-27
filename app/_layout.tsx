@@ -235,6 +235,7 @@ export default function RootLayout() {
           <Stack.Screen name="broker/clients/new" />
           <Stack.Screen name="broker/leads/new" />
           <Stack.Screen name="broker/policies/[id]" />
+          <Stack.Screen name="broker/claims/new" />
           <Stack.Screen name="broker/claims/[id]" />
           <Stack.Screen name="broker/renewals/[id]" />
           <Stack.Screen name="broker/production/[id]" />

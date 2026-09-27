@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
@@ -7,17 +7,23 @@ import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
+import { useListFilters, type FilterSection } from "@/components/filters";
 import { InstitutionsApi, type Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 import { REGISTER_SOURCE_KEY, filterBrokers } from "@/lib/institutions";
 import { colors, space, type } from "@/theme/tokens";
 
+const NO_SECTIONS: FilterSection[] = [];
+
 /** Authorized brokers from the DGTCFM/MINFI 2026 register, in regulator order. */
 export default function Brokers() {
   const { t } = useTranslation();
-  const [query, setQuery] = useState("");
+  // Shared list memory (NAV-002): the search survives back / tab switches; filtering is debounced.
+  const flt = useListFilters("customer.brokers", NO_SECTIONS);
+  const query = flt.text;
+  const setQuery = flt.setText;
   const q = useLoad(() => InstitutionsApi.list("broker"), []);
-  const filtered = useMemo(() => filterBrokers(q.data ?? [], query), [q.data, query]);
+  const filtered = useMemo(() => filterBrokers(q.data ?? [], flt.query), [q.data, flt.query]);
   const official = (q.data ?? []).filter((b) => b.is_official_register).length;
 
   return (
@@ -33,6 +39,11 @@ export default function Brokers() {
         onChangeText={setQuery}
         placeholder={t("searchBrokersPlaceholder")}
       />
+      {q.data && flt.query ? (
+        <Text accessibilityLiveRegion="polite" style={styles.note}>
+          {t(filtered.length === 1 ? "fltResultsOne" : "fltResults", { count: filtered.length })}
+        </Text>
+      ) : null}
       <Text style={styles.note}>{t("brokerVerifyNote")}</Text>
       <StatePanel
         {...q}

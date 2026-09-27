@@ -1,18 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { Button, Screen, SectionTitle, Chip } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
-import { SearchBar } from "@/components/SearchBar";
 import { PolicyListCard, policyCategory } from "@/components/policies/PolicyListCard";
-import { activeFilterCount, FiltersSheet, type FilterSection, type FilterValues } from "@/components/customer/FiltersSheet";
+import { byDate, byText, countBy, FilterToolbar, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import type { WalletPolicy } from "@/api/client";
 import { usePolicies } from "@/hooks/usePolicies";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { PolicyBucket, policyStatusInfo } from "@/lib/purchase";
+import { useListState } from "@/hooks/useListState";
 import { useTranslation } from "@/i18n";
 import { colors, space } from "@/theme/tokens";
 
@@ -21,24 +21,13 @@ const FILTERS: (PolicyBucket | "all")[] = ["all", "active", "pending", "expired"
 export default function Policies() {
   const { t, td } = useTranslation();
   const { policies, loading, error, reload } = usePolicies();
-  const [filter, setFilter] = useState<PolicyBucket | "all">("all");
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: policies.length };
-    policies.forEach((p) => {
-      const b = policyStatusInfo(p.status).bucket;
-      c[b] = (c[b] ?? 0) + 1;
-    });
-    return c;
-  }, [policies]);
-  const [query, setQuery] = useState("");
-  const [sheet, setSheet] = useState(false);
-  const [extra, setExtra] = useState<FilterValues>({});
   const carriers = useCarriers();
   const providerOf = (p: WalletPolicy) => {
     const m = carrierMark(carriers, p.carrier_id, { name: p.carrier_name ?? p.carrier?.party?.display_name, logoUrl: (p as { carrier_logo_url?: string | null }).carrier_logo_url });
     return { id: p.carrier_id ?? m.name ?? "", ...m };
   };
-  // Filter sheet: only the dimensions the wallet payload carries (status, product line, insurer).
+  const bucketOf = (p: WalletPolicy) => policyStatusInfo(p.status).bucket;
+  // Shared list standard (FLT-001..006): status tabs and the sheet edit the same "status" selection.
   const sections = useMemo<FilterSection[]>(() => {
     const lines = CATEGORIES.filter((c) => policies.some((p) => policyCategory(p)?.id === c.id));
     const provs = new Map<string, ReturnType<typeof providerOf>>();
@@ -46,27 +35,42 @@ export default function Policies() {
       const m = providerOf(p);
       if (m.id && !provs.has(m.id)) provs.set(m.id, m);
     });
+    const present = new Set(policies.map(bucketOf));
     return [
-      { key: "status", title: t("filterStatus"), subtitle: t("filterStatusBody"), options: FILTERS.filter((k) => k !== "all" && counts[k]).map((k) => ({ value: k, label: td(`policyFilter_${k}`, k) })) },
+      { key: "status", title: t("filterStatus"), subtitle: t("filterStatusBody"), options: FILTERS.filter((k) => k !== "all" && present.has(k)).map((k) => ({ value: k, label: td(`policyFilter_${k}`, k) })) },
       { key: "line", title: t("filterCategory"), subtitle: t("filterCategoryBody"), options: lines.map((c) => ({ value: c.id, label: t(c.label), icon: c.icon })) },
       { key: "provider", title: t("filterProvider"), subtitle: t("filterProviderBody"), options: [...provs.values()].map((m) => ({ value: m.id, label: m.name ?? t("licensedCarrier"), logoUrl: m.logoUrl, initials: m.initials })) },
+      periodSection(t, "ends", t("fltPolicyEnds")),
+      sortSection(t, [
+        { value: "recent", label: t("fltSortRecent") },
+        { value: "expiry", label: t("fltSortExpiry") },
+        { value: "name", label: t("fltSortName") },
+      ]),
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [policies, carriers, counts, t, td]);
-  const apply = (list: WalletPolicy[], f: FilterValues, bucket: PolicyBucket | "all", text: string) => {
-    const q = text.trim().toLowerCase();
-    return list.filter((p) => {
-      const b = policyStatusInfo(p.status).bucket;
-      if (bucket !== "all" && b !== bucket) return false;
-      if (f.status?.length && !f.status.includes(b)) return false;
-      if (f.line?.length && !f.line.includes(policyCategory(p)?.id ?? "")) return false;
-      const m = providerOf(p);
-      if (f.provider?.length && !f.provider.includes(m.id)) return false;
-      if (!q) return true;
-      return [p.policy_number, p.product_name, m.name].some((x) => (x ?? "").toLowerCase().includes(q));
-    });
+  }, [policies, carriers, t, td]);
+  const f = useListFilters("customer.policies", sections);
+  const matchers: Matchers<WalletPolicy> = {
+    status: (p, v) => bucketOf(p) === v,
+    line: (p, v) => (policyCategory(p)?.id ?? "") === v,
+    provider: (p, v) => providerOf(p).id === v,
+    ends: periodMatcher((p) => p.coverage_ends_at),
   };
-  const visible = apply(policies, extra, filter, query);
+  const sorters: Sorters<WalletPolicy> = {
+    recent: byDate((p) => p.coverage_starts_at),
+    expiry: byDate((p) => p.coverage_ends_at, "asc"),
+    name: byText((p) => p.product_name ?? p.policy_number),
+  };
+  const haystack = (p: WalletPolicy) => [p.policy_number, p.product_name, providerOf(p).name, td(`policyFilter_${bucketOf(p)}`, bucketOf(p))];
+  const run = (v: FilterValues) => runList(policies, { values: v, text: f.query, matchers, haystack, sorters });
+  const visible = run(f.values);
+  // Tab badges count what each tab would show with the other filters and search applied.
+  const counts = countBy(run({ ...f.values, status: [] }), bucketOf);
+  counts.all = Object.values(counts).reduce((a, b) => a + b, 0);
+  const selected = f.values.status ?? [];
+  const tab = selected.length === 1 ? selected[0] : selected.length ? null : "all";
+  const setTab = (key: string) => f.setValues({ ...f.values, status: key === "all" ? [] : [key] });
+  const listState = useListState("customer.policies");
   const header = (
     <>
       <BrandHeader back={false} title={t("myPoliciesTitle")} subtitle={t("policiesTagline")} />
@@ -90,6 +94,7 @@ export default function Policies() {
   return (
     <Screen scroll={false}>
       <FlatList
+        {...listState}
         data={visible}
         keyExtractor={(p) => p.id}
         showsVerticalScrollIndicator={false}
@@ -99,22 +104,22 @@ export default function Policies() {
         ListHeaderComponent={
           <View style={st.header}>
             {header}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
-              {FILTERS.filter((key) => key === "all" || counts[key]).map((key) => {
-                const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
-                return <Chip key={key} label={label} count={counts[key] || undefined} countTone={key === "active" ? colors.success : key === "expired" ? colors.danger : key === "pending" ? colors.neutral500 : undefined} selected={filter === key} onPress={() => setFilter(key)} />;
-              })}
-            </ScrollView>
-            <SearchBar
+            <FilterToolbar
+              filters={f}
+              sections={sections}
               filled
-              value={query}
-              onChangeText={setQuery}
-              label={t("searchLabel")}
               placeholder={t("policiesSearchPlaceholder")}
-              clearLabel={t("clearSearch")}
-              onFilter={() => setSheet(true)}
-              filterLabel={t("filtersTitle")}
-              filterCount={activeFilterCount(extra, sections)}
+              subtitle={t("filtersPoliciesSubtitle")}
+              count={(v) => run(v).length}
+              resultCount={f.active ? visible.length : undefined}
+              quick={
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
+                  {FILTERS.filter((key) => key === "all" || counts[key] || selected.includes(key)).map((key) => {
+                    const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
+                    return <Chip key={key} label={label} count={counts[key] || undefined} countTone={key === "active" ? colors.success : key === "expired" ? colors.danger : key === "pending" ? colors.neutral500 : undefined} selected={tab === key} onPress={() => setTab(key)} />;
+                  })}
+                </ScrollView>
+              }
             />
             <SectionTitle title={t("policiesYours")} />
           </View>
@@ -123,22 +128,13 @@ export default function Policies() {
           <PolicyListCard policy={policy} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: policy.id } })} />
         )}
         ListEmptyComponent={
-          <EmptyState title={t("policiesFilterEmpty")} message={t("policiesFilterEmptyBody")} action={t("showAll")} onPress={() => { setFilter("all"); setExtra({}); setQuery(""); }} />
+          <EmptyState title={t("policiesFilterEmpty")} message={t("policiesFilterEmptyBody")} action={t("showAll")} onPress={f.clear} />
         }
         ListFooterComponent={
           <View style={st.footer}>
             <Button label={t("paymentsReceipts")} variant="secondary" onPress={() => router.push("/payments")} />
           </View>
         }
-      />
-      <FiltersSheet
-        visible={sheet}
-        onClose={() => setSheet(false)}
-        sections={sections}
-        value={extra}
-        onApply={setExtra}
-        count={(f) => apply(policies, f, filter, query).length}
-        subtitle={t("filtersPoliciesSubtitle")}
       />
     </Screen>
   );

@@ -65,6 +65,8 @@ export type PartnerProposal = {
   status: string;
   line_code: string | null;
   carrier_name: string | null;
+  /** Insurer logo; null until the carrier has one (initials fallback). */
+  carrier_logo_url?: string | null;
   total_minor: number | null;
   currency: string;
   submitted_at: string | null;
@@ -275,6 +277,17 @@ export const BrokerWorkspaceApi = {
   inviteStaff: (payload: { recipient_phone_e164?: string; recipient_email?: string }) =>
     api<BrokerInvitation>("/mobile/partner/broker/staff/invitations", post(payload)),
   commissions: () => api<BrokerCommissions>("/mobile/partner/broker/commissions"),
+  /** Broker-assisted FNOL for a book client (POST /mobile/partner/broker/claims, AssistedFnolRequest; broker.claims.file). */
+  reportClaim: (payload: {
+    policy_id: string;
+    claimant_party_id: string;
+    loss_occurred_at: string;
+    loss_details: { description: string };
+    loss_location?: string;
+    estimated_loss_minor?: number;
+    idempotency_key: string;
+  }) =>
+    api<{ id: string; claim_number: string; status: string; policy_id: string }>("/mobile/partner/broker/claims", post(payload)),
   /** Broker client onboarding (POST /mobile/broker/clients): origin-locked to the broker's own partner. */
   createClient: (payload: { full_name: string; phone_e164: string; city: string; consent_reference: string }) =>
     api<{ id: string; full_name: string }>("/mobile/broker/clients", post(payload)),

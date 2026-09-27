@@ -11,7 +11,7 @@ import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { usePolicies } from "@/hooks/usePolicies";
 import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
-import { attachClaimCoordinates } from "@/lib/deviceLocation";
+import { claimCoordinates } from "@/lib/deviceLocation";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { useTranslation } from "@/i18n";
 import type { MasterValue } from "@/lib/masterFields";
@@ -55,8 +55,8 @@ export default function NewClaimIncident() {
         footer={<Text style={styles.note}>{t("claimNewNote")}</Text>}
         onSubmit={async (payload) => {
           // Form data is kept on failure so the customer can retry.
-          const claim = await ClaimsApi.create(payload as Parameters<typeof ClaimsApi.create>[0]);
-          await attachClaimCoordinates(claim.id, fix.current);
+          // POST /mobile/claims accepts latitude/longitude, so the position goes in the create call.
+          const claim = await ClaimsApi.create({ ...(payload as Parameters<typeof ClaimsApi.create>[0]), ...claimCoordinates(fix.current) });
           router.replace({ pathname: "/claim/[id]/evidence", params: { id: claim.id, wizard: "1" } });
         }}
       />

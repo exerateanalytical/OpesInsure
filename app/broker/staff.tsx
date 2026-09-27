@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Share, StyleSheet, Text } from "react-native";
 import { MailPlus, UserRound } from "lucide-react-native";
 import { router } from "expo-router";
@@ -6,14 +6,38 @@ import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button, Card, Screen, SectionTitle, TextField } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { byDate, byText, optionsFrom, sortSection, type FilterSection, type Matchers, type Sorters } from "@/components/filters";
 import { errorMessage, Notice } from "@/components/portal/Workspace";
-import { BrokerInvitation, BrokerWorkspaceApi, humanize, shortDate } from "@/api/partner";
+import { BrokerInvitation, BrokerStaffMember, BrokerWorkspaceApi, humanize, shortDate } from "@/api/partner";
 import { colors, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
+const matchers: Matchers<BrokerStaffMember & { id: string }> = {
+  role: (m, v) => m.role_code === v,
+  status: (m, v) => m.status === v,
+};
+const sorters: Sorters<BrokerStaffMember & { id: string }> = {
+  name: byText((m) => m.full_name),
+  recent: byDate((m) => m.since),
+};
+const haystack = (m: BrokerStaffMember) => [m.full_name, m.phone_e164, m.role_code, m.status];
+
 export default function BrokerStaffScreen() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const q = useLoad(() => BrokerWorkspaceApi.staff(), []);
+  const members = useMemo(() => (q.data?.members ?? []).map((m) => ({ ...m, id: m.membership_id })), [q.data]);
+  const sections = useMemo<FilterSection[]>(
+    () => [
+      { key: "role", title: t("brRole"), options: optionsFrom(members, (m) => ({ value: m.role_code, label: td(`role_${m.role_code}`, humanize(m.role_code)) })) },
+      { key: "status", title: t("pcStatus"), options: optionsFrom(members, (m) => ({ value: m.status, label: td(`memberStatus_${m.status}`, humanize(m.status)) })) },
+      sortSection(t, [
+        { value: "name", label: t("fltSortName") },
+        { value: "recent", label: t("fltSortRecent") },
+      ]),
+    ],
+    [members, t, td],
+  );
   const [phone, setPhone] = useState("+237");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,16 +55,23 @@ export default function BrokerStaffScreen() {
       >
         {(d) => (
           <>
-            <OperationsList
-              icon={UserRound}
-              onPress={(id) => router.push({ pathname: "/broker/staff/[id]", params: { id: id } })}
-              rows={d.members.map((m) => ({
-                id: m.membership_id,
-                title: m.is_me ? `${m.full_name} (you)` : m.full_name,
-                subtitle: [humanize(m.role_code), m.phone_e164, m.since ? `since ${shortDate(m.since)}` : null].filter(Boolean).join(" · "),
-                status: m.status,
-              }))}
-            />
+            {d.members.length ? (
+              <FilteredList
+                list="broker.staff"
+                rows={members}
+                sections={sections}
+                matchers={matchers}
+                haystack={haystack}
+                sorters={sorters}
+                icon={UserRound}
+                onPress={(m) => router.push({ pathname: "/broker/staff/[id]", params: { id: m.membership_id } })}
+                render={(m) => ({
+                  title: m.is_me ? t("brStaffYou", { name: m.full_name }) : m.full_name,
+                  subtitle: [td(`role_${m.role_code}`, humanize(m.role_code)), m.phone_e164, m.since ? t("brSince", { date: shortDate(m.since) }) : null].filter(Boolean).join(" · "),
+                  status: td(`memberStatus_${m.status}`, humanize(m.status)),
+                })}
+              />
+            ) : null}
             {d.pending_invitations.length > 0 ? (
               <>
                 <SectionTitle title={t("brPendingInvitations")} />
@@ -49,8 +80,8 @@ export default function BrokerStaffScreen() {
                   rows={d.pending_invitations.map((i) => ({
                     id: i.id,
                     title: i.recipient,
-                    subtitle: `${humanize(i.role_code)} · expires ${shortDate(i.expires_at)}`,
-                    status: "PENDING",
+                    subtitle: `${td(`role_${i.role_code}`, humanize(i.role_code))} · ${t("brExpiresOn", { date: shortDate(i.expires_at) })}`,
+                    status: td("memberStatus_PENDING", humanize("PENDING")),
                   }))}
                 />
               </>

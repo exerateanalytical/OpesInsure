@@ -7,7 +7,8 @@ import { agentTabs } from "@/components/portal/tabs";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Button } from "@/components/ui";
-import { OperationsList } from "@/components/OperationsList";
+import { FilteredList } from "@/components/partner/FilteredList";
+import { listSpec } from "@/components/filters/spec";
 import { AgentWorkspaceApi, LeadStatus, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { isOpenLead } from "@/lib/crm";
@@ -44,15 +45,19 @@ export default function AgentLeads() {
         emptyMessage={t("agNoLeadsBody")}
       >
         {(x) => (
-          <OperationsList
+          <FilteredList
+            list="agent.leads"
             icon={UserPlus}
-            onPress={(id) => router.push(`/agent/leads/${id}`)}
-            rows={x.map((l) => ({
-              id: l.id,
+            onPress={({ id }) => router.push(`/agent/leads/${id}`)}
+            rows={x}
+            {...listSpec(x, t, { status: (l) => l.status, statusLabel: (v) => td(`leadStatus_${v}`, v), dims: [{ key: "product_interest", title: t("fltProductLine"), get: (l) => ({ value: l.product_interest }) }], date: (l) => l.created_at, dateTitle: t("fltCreated"), name: (l) => l.full_name })}
+            haystack={(l) => [l.full_name, l.phone_e164, l.product_interest, td(`leadStatus_${l.status}`, l.status)]}
+            placeholder={t("fltSearchQueue")}
+            render={(l) => ({
               title: l.full_name,
               subtitle: [l.phone_e164, l.product_interest, t("agLeadAdded", { date: shortDate(l.created_at) })].filter(Boolean).join(" · "),
               status: td(`leadStatus_${l.status}`, l.status),
-            }))}
+            })}
           />
         )}
       </StatePanel>
