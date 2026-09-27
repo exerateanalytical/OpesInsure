@@ -187,6 +187,41 @@ final class RoleCatalogue
     /** D10: till operator. Operates a cashier session; never approves it (BRANCH_MANAGER / checker does). */
     public const CASHIER_PERMISSIONS = ['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view'];
 
+    /**
+     * Provider Portal Gap-Free spec permissions (the /provider panel screens, config/permissions.php 'provider_workspace')
+     * per desk. Merged into every provider role's defaults (FRP V and legacy SPEC codes alike): without them a governed
+     * provider role could not open its own dashboard (UI audit 2026-09-27). Clinical screens (treatment, documents) only
+     * for clinical desks; reconciliation.match only for finance (segregation from the administrator).
+     */
+    private const PROVIDER_DESK = ['provider.dashboard.view', 'provider.patient.search', 'provider.eligibility.check', 'provider.benefits.view', 'provider.preauth.create',
+        'provider.preauth.view', 'provider.admission.create', 'provider_portal.profile.view'];
+
+    private const PROVIDER_CLINICAL = [...self::PROVIDER_DESK, 'provider.preauth.respond_to_query', 'provider.admission.extend', 'provider.treatment.view', 'provider.treatment.update',
+        'provider.documents.view', 'provider.documents.download'];
+
+    private const PROVIDER_DISPENSING = ['provider.dashboard.view', 'provider.patient.search', 'provider.eligibility.check', 'provider.benefits.view', 'provider.preauth.create', 'provider.preauth.view',
+        'provider.preauth.respond_to_query', 'provider.claim.create', 'provider.claim.submit', 'provider.claim.view', 'provider.claim.respond_to_query', 'provider.tariff.view',
+        'provider_portal.profile.view', 'provider_portal.tariffs.view'];
+
+    private const PROVIDER_BILLING_DESK = ['provider.dashboard.view', 'provider.preauth.view', 'provider.treatment.view', 'provider.claim.create', 'provider.claim.submit', 'provider.claim.view',
+        'provider.claim.respond_to_query', 'provider.invoice.create', 'provider.invoice.submit', 'provider.tariff.view', 'provider.contract.view', 'provider.dispute.create', 'provider.dispute.view',
+        'provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view'];
+
+    private const PROVIDER_FINANCE_DESK = ['provider.dashboard.view', 'provider.claim.view', 'provider.tariff.view', 'provider.contract.view', 'provider.finance.view', 'provider.settlement.view',
+        'provider.reconciliation.view', 'provider.reconciliation.match', 'provider.dispute.create', 'provider.dispute.view', 'provider.reports.view', 'provider.reports.export',
+        'provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view'];
+
+    public const PROVIDER_WORKSPACE_PERMISSIONS = [
+        'PROVIDER_ADMIN' => [...self::PROVIDER_CLINICAL, ...self::PROVIDER_BILLING_DESK, 'provider.finance.view', 'provider.settlement.view', 'provider.reconciliation.view',
+            'provider.reports.view', 'provider.reports.export', 'provider.users.manage', 'provider.settings.manage', 'provider.audit.view'],
+        'PROVIDER_FRONT_DESK' => self::PROVIDER_DESK, 'FRONT_DESK' => self::PROVIDER_DESK,
+        'PROVIDER_DOCTOR' => self::PROVIDER_CLINICAL, 'DOCTOR' => self::PROVIDER_CLINICAL,
+        'PROVIDER_BILLING' => self::PROVIDER_BILLING_DESK, 'BILLING_OFFICER' => self::PROVIDER_BILLING_DESK,
+        'PROVIDER_PHARMACY' => self::PROVIDER_DISPENSING, 'PHARMACY_USER' => self::PROVIDER_DISPENSING,
+        'PROVIDER_LAB' => self::PROVIDER_DISPENSING, 'LAB_USER' => self::PROVIDER_DISPENSING,
+        'PROVIDER_FINANCE' => self::PROVIDER_FINANCE_DESK, 'FINANCE_USER' => self::PROVIDER_FINANCE_DESK,
+    ];
+
     public const PROVIDER_PERMISSIONS = [
         'PROVIDER_ADMIN' => ['provider.portal.read', 'provider.staff.manage', 'provider.claims.submit', 'provider.claims.read', 'provider.finance.read',
             'provider_portal.profile.view', 'provider_portal.network.view', 'provider_portal.tariffs.view', 'provider_portal.assignments.view', 'provider_portal.preauth.view', 'provider_portal.claims.view', 'provider_portal.finance.view'],
@@ -272,7 +307,7 @@ final class RoleCatalogue
             'REGULATOR' => self::REGULATOR_PERMISSIONS,
             'DEVELOPER' => self::DEVELOPER_PERMISSIONS,
             'PROVIDER_ADMIN', 'PROVIDER_FRONT_DESK', 'PROVIDER_DOCTOR', 'PROVIDER_BILLING', 'PROVIDER_PHARMACY', 'PROVIDER_LAB', 'PROVIDER_FINANCE',
-            'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER' => self::PROVIDER_PERMISSIONS[$roleCode],
+            'FRONT_DESK', 'DOCTOR', 'BILLING_OFFICER', 'PHARMACY_USER', 'LAB_USER', 'FINANCE_USER' => [...self::PROVIDER_PERMISSIONS[$roleCode], ...self::PROVIDER_WORKSPACE_PERMISSIONS[$roleCode]],
             // SYSTEM_ADMIN keeps '*', but PermissionEvaluator confines a
             // PLATFORM_ONLY role's grants to platform permissions.
             'SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER' => ['*'],

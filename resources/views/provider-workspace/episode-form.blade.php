@@ -11,7 +11,9 @@
             @include($f, ['model' => 'facility_id', 'label' => 'ui.facility', 'type' => 'select', 'options' => $this->facilityOptions()])
             @include($f, ['model' => 'started_on', 'label' => 'ui.started_on', 'type' => 'date'])
             @include($f, ['model' => 'attending_practitioner', 'label' => 'ui.attending_practitioner'])
-            @include($f, ['model' => 'diagnosis_summary', 'label' => 'ui.diagnosis_summary', 'type' => 'textarea', 'span' => 'md:col-span-2'])
+            @if ($this->clinical())
+                @include($f, ['model' => 'diagnosis_summary', 'label' => 'ui.diagnosis_summary', 'type' => 'textarea', 'span' => 'md:col-span-2'])
+            @endif
             <div class="md:col-span-3"><x-filament::button type="submit">{{ __('provider_workspace.ui.open_episode') }}</x-filament::button></div>
         </form>
     </x-filament::section>

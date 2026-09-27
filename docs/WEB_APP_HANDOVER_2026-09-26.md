@@ -32,7 +32,7 @@ The **back end, the data and the APIs** are largely built and deployed. The **we
 - **Workflow actions not built:** line-by-line pre-authorization and settlement decisions, provider claim adjudication, claim payments, disputes, recoveries. Some flows (successful cancellation, claim decision and settlement) have no tests yet.
 - **Endorsement permission:** the API route for servicing requests has no permission gate, so the web action has none either. The owner must name the role.
 - **Approval inbox:** approve and reject now need `approvals.decide`, as the API does. Admin roles without that permission no longer see the buttons.
-- **Quote and party pages:** no header actions yet; there is no service for them.
+- **Quote, proposal, party/customer, partner and policy-servicing header actions:** built 2026-09-27 (`QuoteActions`, `ProposalActions`, `PartyActions`, `PartnerActions`, `PolicyServicingActions`), each on the API route's service and permission. Routes without a permission gate (quote convert-to-proposal, proposal submit/answer, endorsement) stay ungated on the web too. The partner status action now needs `partners.manage` (before: a global-admin role check).
 - **Claim evidence:** no download link yet.
 - **Public site redesign:** still waiting for the design folder.
 - **Browser check:** the new screens were covered by the 1,912 tests but not reviewed page by page in a browser.

@@ -114,8 +114,14 @@ final class TreatmentEpisodesPage extends ProviderWorkspacePage
         $e = (array) $this->ops()->episode($this->tenantId(), $this->user(), $this->scope(), $this->selected);
 
         return ['title' => __('provider_workspace.screens.treatment_episodes').' '.($e['episode_number'] ?? ''),
-            'cards' => array_intersect_key($e, array_flip(['episode_number', 'episode_type', 'status', 'member_ref', 'started_on', 'ended_on', 'health_provider_claim_id'])),
+            // diagnosis_summary is dropped by the base page for non-clinical roles (and already redacted by the service).
+            'cards' => array_intersect_key($e, array_flip(['episode_number', 'episode_type', 'status', 'member_ref', 'started_on', 'ended_on', 'attending_practitioner', 'diagnosis_summary'])),
             'rows' => array_map(fn ($l) => array_intersect_key((array) $l, array_flip(['line_no', 'service_code', 'service_name', 'quantity', 'unit_price_minor', 'service_date', 'performed_by'])), $e['lines'] ?? [])];
+    }
+
+    protected function columns(): array
+    {
+        return ['episode_number', 'episode_type', 'status', 'member_ref', 'started_on', 'ended_on', 'attending_practitioner', 'diagnosis_summary'];
     }
 
     protected function rows(): array

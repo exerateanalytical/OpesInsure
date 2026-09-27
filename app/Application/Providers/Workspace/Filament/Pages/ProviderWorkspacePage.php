@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Providers\Portal\ProviderPortalService;
+use App\Application\Providers\Workspace\ProviderAccess;
+use App\Application\Temporal\TimezoneResolver;
+use App\Application\WebExperiences\Money;
+use Carbon\CarbonImmutable;
 use App\Application\Providers\Portal\ProviderScope;
 use App\Application\Providers\Workspace\ProviderOperationsService;
 use App\Application\Providers\Workspace\ProviderWorkspaceService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\User;
 use BackedEnum;
+use Filament\Support\Icons\Heroicon;
 use Filament\Pages\Page;
 use App\Application\Providers\Workspace\Http\ProviderWorkspaceController;
 use App\Interfaces\Http\Errors\ApiProblemException;
 use App\Interfaces\Http\Middleware\IdempotencyGuard;
 use Illuminate\Support\Str;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -133,10 +137,75 @@ abstract class ProviderWorkspacePage extends Page
     /** @return list<array<string, mixed>> */
     abstract protected function rows(): array;
 
-    /** @return list<string> column keys to show (empty = all keys of the first row) */
+    /** @return list<string> column keys to show (empty = all displayable keys of the first row) */
     protected function columns(): array
     {
         return [];
+    }
+
+    /** Medical content (ProviderWorkspaceService::CLINICAL_FIELDS): never rendered to a non-clinical role, not even as an empty column. */
+    private const CLINICAL_KEYS = ['clinical_notes', 'diagnosis_summary', 'diagnosis_code', 'diagnosis_codes', 'admission_reason', 'type_details', 'decision_notes', 'discharge_summary'];
+
+    /** Technical keys never shown as a column (identifiers, redaction markers). */
+    private const HIDDEN_KEYS = ['id', 'tenant_id', 'created_by', 'updated_by', 'clinical_redacted', 'editable', 'balance_source'];
+
+    /** The viewer may read clinical content (provider_users role, ProviderAccess::mayReadClinical). */
+    public function clinical(): bool
+    {
+        return (bool) rescue(fn () => app(ProviderAccess::class)->mayReadClinical($this->user(), $this->scope()), false, false);
+    }
+
+    /** Whether $key may be rendered to this viewer. */
+    protected function displayable(string $key): bool
+    {
+        return ! in_array($key, self::HIDDEN_KEYS, true) && ! str_ends_with($key, '_id') && ($this->clinical() || ! in_array($key, self::CLINICAL_KEYS, true));
+    }
+
+    /** EN/FR label of a column / card key (provider_workspace.columns.*); unknown keys are humanised, never shown raw. */
+    public function label(string $key): string
+    {
+        $t = __($k = 'provider_workspace.columns.'.$key);
+
+        return $t !== $k ? $t : ucfirst(str_replace('_', ' ', (string) preg_replace('/_minor$/', '', $key)));
+    }
+
+    /**
+     * Display value: money (minor units) via Money::display with the row currency, dates as d/m/Y (timestamps in the
+     * viewer's timezone, d/m/Y H:i), booleans as Yes/No, empty as an em dash.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public function cell(string $key, mixed $value, array $row = []): string
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+        if (is_bool($value)) {
+            return __('provider_workspace.ui.'.($value ? 'yes' : 'no'));
+        }
+        if (! is_scalar($value)) {
+            return (string) json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+        if (is_numeric($value) && preg_match('/(_minor|_amount|^payments_received|^reconciliation_difference|^CURRENT|^DAYS_\w+)$/', $key)) {
+            return Money::display((int) $value, is_string($row['currency'] ?? null) ? $row['currency'] : 'XAF');
+        }
+        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}.*)?$/', $value, $m)) {
+            return rescue(function () use ($value, $m) {
+                $d = CarbonImmutable::parse($value);
+
+                return isset($m[1]) ? $d->setTimezone(app(TimezoneResolver::class)->forUser($this->user(), $this->tenantId()))->format('d/m/Y H:i') : $d->format('d/m/Y');
+            }, $value, false);
+        }
+
+        $fr = app()->getLocale() === 'fr';
+
+        return is_numeric($value) && ! is_string($value) ? number_format((float) $value, is_float($value) ? 1 : 0, $fr ? ',' : '.', $fr ? "\u{202F}" : ',') : (string) $value;
+    }
+
+    /** @param array<string, mixed> $cards @return array<string, mixed> */
+    private function visibleCards(array $cards): array
+    {
+        return array_filter($cards, fn ($k) => $this->displayable((string) $k), ARRAY_FILTER_USE_KEY);
     }
 
     /** Record opened in the detail panel (claim EOB, settlement statement, contract tariffs …). */
@@ -181,7 +250,14 @@ abstract class ProviderWorkspacePage extends Page
             return ['title' => $this->selected, 'cards' => [], 'rows' => [], 'error' => $e->getMessage()];
         }
 
-        return $d === null ? null : $d + ['cards' => [], 'rows' => [], 'error' => null];
+        if ($d === null) {
+            return null;
+        }
+        $d += ['cards' => [], 'rows' => [], 'error' => null];
+        $d['cards'] = $this->visibleCards($d['cards']);
+        $d['rows'] = array_map(fn ($r) => $this->visibleCards((array) $r), $d['rows']);
+
+        return $d;
     }
 
     /**
@@ -243,7 +319,8 @@ abstract class ProviderWorkspacePage extends Page
             report($e);
             [$rows, $cards, $state] = [[], [], 'ERROR'];
         }
-        $cols = $this->columns() ?: array_keys($rows[0] ?? []);
+        $cols = array_values(array_filter($this->columns() ?: array_keys($rows[0] ?? []), fn ($c) => $this->displayable((string) $c)));
+        $cards = $this->visibleCards($cards);
 
         return ['cards' => $cards, 'columns' => $cols, 'rows' => $rows, 'state' => $state, 'message' => $this->stateMessage ?? __('provider_workspace.states.'.$state)];
     }

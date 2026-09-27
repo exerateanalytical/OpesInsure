@@ -11,8 +11,8 @@
         <div class="grid gap-4 md:grid-cols-4">
             @foreach ($p['cards'] as $label => $value)
                 <x-filament::section compact>
-                    <div class="text-xs uppercase text-gray-500">{{ str_replace('_', ' ', $label) }}</div>
-                    <div class="text-xl font-semibold">{{ is_numeric($value) ? number_format((float) $value) : ($value ?? '—') }}</div>
+                    <div class="text-xs text-gray-500">{{ $this->label((string) $label) }}</div>
+                    <div class="text-xl font-semibold">{{ $this->cell((string) $label, $value) }}</div>
                 </x-filament::section>
             @endforeach
         </div>
@@ -39,15 +39,15 @@
             @if ($detail['cards'] !== [])
                 <dl class="grid gap-3 md:grid-cols-4 mb-4">
                     @foreach ($detail['cards'] as $label => $value)
-                        <div><dt class="text-xs uppercase text-gray-500">{{ str_replace('_', ' ', $label) }}</dt><dd class="font-semibold">{{ is_scalar($value) || $value === null ? ($value ?? '—') : json_encode($value) }}</dd></div>
+                        <div><dt class="text-xs text-gray-500">{{ $this->label((string) $label) }}</dt><dd class="font-semibold">{{ $this->cell((string) $label, $value, $detail['cards']) }}</dd></div>
                     @endforeach
                 </dl>
             @endif
             @if ($detail['rows'] !== [])
                 @php($dcols = array_keys((array) $detail['rows'][0]))
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm">
-                    <thead class="bg-gray-50"><tr>@foreach ($dcols as $c)<th class="px-3 py-2 font-medium">{{ str_replace('_', ' ', $c) }}</th>@endforeach</tr></thead>
-                    <tbody>@foreach ($detail['rows'] as $dr)<tr class="border-t border-gray-100">@foreach ($dcols as $c)@php($v = ((array) $dr)[$c] ?? '')<td class="px-3 py-2">{{ is_scalar($v) || $v === null ? $v : json_encode($v) }}</td>@endforeach</tr>@endforeach</tbody>
+                    <thead class="bg-gray-50"><tr>@foreach ($dcols as $c)<th class="px-3 py-2 font-medium">{{ $this->label((string) $c) }}</th>@endforeach</tr></thead>
+                    <tbody>@foreach ($detail['rows'] as $dr)<tr class="border-t border-gray-100">@foreach ($dcols as $c)@php($v = ((array) $dr)[$c] ?? null)<td class="px-3 py-2">{{ $this->cell((string) $c, $v, (array) $dr) }}</td>@endforeach</tr>@endforeach</tbody>
                 </table></div>
             @endif
         </x-filament::section>
@@ -57,13 +57,13 @@
         <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table class="w-full text-left text-sm">
                 <thead class="bg-gray-50"><tr>
-                    @foreach ($p['columns'] as $c)<th class="px-3 py-2 font-medium">{{ str_replace('_', ' ', $c) }}</th>@endforeach
+                    @foreach ($p['columns'] as $c)<th class="px-3 py-2 font-medium">{{ $this->label((string) $c) }}</th>@endforeach
                     <th class="px-3 py-2"></th>
                 </tr></thead>
                 <tbody>
                     @foreach ($p['rows'] as $row)
                         <tr class="border-t border-gray-100">
-                            @foreach ($p['columns'] as $c)<td class="px-3 py-2">{{ $row[$c] ?? '' }}</td>@endforeach
+                            @foreach ($p['columns'] as $c)<td class="px-3 py-2">{{ $this->cell((string) $c, $row[$c] ?? null, $row) }}</td>@endforeach
                             <td class="px-3 py-2 whitespace-nowrap">
                                 @foreach ($this->rowActions($row) as $a)
                                     @if (isset($a['url']))

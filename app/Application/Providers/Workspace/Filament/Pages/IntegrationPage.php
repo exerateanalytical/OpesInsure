@@ -22,6 +22,6 @@ final class IntegrationPage extends ProviderWorkspacePage
 
     protected function rows(): array
     {
-        return [['provider_api' => url('/api/v1/provider-portal'), 'idempotency' => 'Idempotency-Key required on POST', 'source_system' => 'tracked on provider claims', 'screens' => url('/api/v1/provider-portal/screens')]];
+        return [['provider_api' => url('/api/v1/provider-portal'), 'idempotency' => __('provider_workspace.ui.idempotency_rule'), 'source_system' => __('provider_workspace.ui.source_system_rule'), 'screens' => url('/api/v1/provider-portal/screens')]];
     }
 }
