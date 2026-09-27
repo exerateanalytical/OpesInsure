@@ -1,0 +1,2227 @@
+{
+  "document": {
+    "title": "OpesInsure Mobile Full APK Audit - Consolidated Findings and Proposed Fixes",
+    "date": "2026-09-27",
+    "purpose": "Single JSON handoff containing all findings reviewed in this conversation, the problem for each finding, and the proposed fix.",
+    "implementation_instruction": "Do not blindly rebuild working modules. Inspect current implementation first, reuse existing APIs/components/routes, implement the proposed fix only where the finding is still present, and preserve backend authorization as authoritative.",
+    "audit_method": "Static analysis of the compiled Android APK plus workflow/route/component/API/security inspection. Runtime-only behavior is explicitly marked as requiring device validation.",
+    "source_build": {
+      "file_name": "base.apk",
+      "size_bytes": 97032612,
+      "size_mib_approx": 92.54,
+      "sha256": "7bcca803444fcb42920dcdfe81b9ce80d50a970442989337432766fe5e04deb6"
+    }
+  },
+  "evidence_status_legend": {
+    "confirmed_from_apk": "Observed in the compiled APK/static implementation.",
+    "confirmed_strength": "Verified existing strength that should be preserved.",
+    "confirmed_strength_with_gap": "Verified strength with a related incompleteness.",
+    "confirmed_gap": "Gap confirmed from the available compiled implementation.",
+    "missing_feature": "No corresponding implementation was identified in the audited mobile build.",
+    "not_evidenced_in_apk": "Not found during static APK inspection; requires source/runtime/backend verification before claiming absence.",
+    "needs_verification": "Requires explicit configuration/runtime/source verification.",
+    "runtime_validation_required": "Cannot be truthfully scored from static analysis alone.",
+    "backend_not_audited": "Server-side control cannot be established from the mobile APK.",
+    "security_requirement": "Required security boundary/behavior even where current baseline may already partially follow it.",
+    "proposed_standard": "Cross-cutting implementation standard proposed to close repeated gaps.",
+    "audit_conclusion": "Overall release-readiness conclusion based on the consolidated findings.",
+    "partial_feature": "Feature exists but requires completion.",
+    "confirmed_gap_or_not_standardized": "Feature may exist in places but is not consistently available or standardized.",
+    "missing_feature_or_not_standardized": "No robust standardized implementation was identified."
+  },
+  "scorecard": {
+    "action_button_system": {
+      "score": 6.5,
+      "out_of": 10
+    },
+    "filters_and_action_visibility": {
+      "score": 6.0,
+      "out_of": 10
+    },
+    "accessibility": {
+      "score": 6.0,
+      "out_of": 10
+    },
+    "navigation": {
+      "score": 6.5,
+      "out_of": 10
+    },
+    "performance_architecture": {
+      "score": 7.5,
+      "out_of": 10
+    },
+    "apk_efficiency": {
+      "score": 5.5,
+      "out_of": 10
+    },
+    "application_architecture": {
+      "score": 8.0,
+      "out_of": 10
+    },
+    "security_fundamentals": {
+      "score": 7.5,
+      "out_of": 10
+    },
+    "anti_tamper_device_trust": {
+      "score": 5.5,
+      "out_of": 10
+    },
+    "client_side_anti_fraud": {
+      "score": 7.0,
+      "out_of": 10
+    },
+    "offline_resilience": {
+      "score": 8.0,
+      "out_of": 10
+    },
+    "data_freshness_refresh_architecture": {
+      "score": 6.5,
+      "out_of": 10
+    },
+    "design_system": {
+      "score": 7.0,
+      "out_of": 10
+    },
+    "industry_standard_readiness": {
+      "score": 7.0,
+      "out_of": 10
+    },
+    "production_readiness": {
+      "score": 6.5,
+      "out_of": 10
+    }
+  },
+  "findings_count": 123,
+  "findings": [
+    {
+      "id": "LAND-001",
+      "category": "landing",
+      "area": "Public onboarding / landing",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "public"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The top 'Skip' action routes directly to Sign In, so the label does not match the destination.",
+      "evidence": "Compiled route behavior sends Skip to /(auth)/sign-in.",
+      "impact": "Creates navigation ambiguity and can make users feel forced into authentication.",
+      "proposed_fix": "Rename the control to 'Sign in' or make Skip route to a neutral start/auth-choice screen.",
+      "acceptance_criteria": "The visible label accurately describes the destination in English and French, and no onboarding control has a misleading destination."
+    },
+    {
+      "id": "LAND-002",
+      "category": "landing",
+      "area": "Public onboarding / acquisition",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "public",
+        "customer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The public onboarding promises comparison and purchase but does not provide a public explore/compare path before registration.",
+      "evidence": "Get Started leads into account creation/authentication.",
+      "impact": "Adds friction before a user can understand available insurance options.",
+      "proposed_fix": "Add a public Explore Insurance path: browse product families, answer preliminary questions, view indicative options, then authenticate only when personal data/submission is required.",
+      "acceptance_criteria": "A logged-out user can browse and compare indicative products without creating an account; authentication begins only when protected data or binding actions are needed."
+    },
+    {
+      "id": "LAND-003",
+      "category": "landing",
+      "area": "Public onboarding / action hierarchy",
+      "severity": "medium",
+      "priority": "P2",
+      "roles": [
+        "public"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The final onboarding state exposes several competing destinations: Get Started, Sign In, Verify Certificate, Partner Join and Skip-related navigation.",
+      "evidence": "Multiple public CTAs target different audiences on the same acquisition surface.",
+      "impact": "Weakens primary customer conversion hierarchy.",
+      "proposed_fix": "Keep one dominant customer CTA, demote certificate verification to a utility action, and separate Partner Access visually from customer onboarding.",
+      "acceptance_criteria": "One primary CTA is visually dominant; partner and certificate-verification actions are clearly secondary and do not compete equally."
+    },
+    {
+      "id": "LAND-004",
+      "category": "landing",
+      "area": "Responsive layout",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "public"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The onboarding has better width/fontScale awareness than many authenticated screens, creating inconsistent responsive behavior across the app.",
+      "evidence": "Onboarding code reacts to screen width/fontScale while operational pages often use fixed truncation/row behavior.",
+      "impact": "Users may experience a polished onboarding followed by cramped authenticated screens.",
+      "proposed_fix": "Move responsive primitives used by onboarding into shared app layout components and apply them across authenticated screens.",
+      "acceptance_criteria": "Operational screens pass the same small-screen and font-scale matrix as onboarding."
+    },
+    {
+      "id": "HOME-001",
+      "category": "customer_home",
+      "area": "Customer Home rows",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "customer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Customer Home list titles are hard-limited to one line and metadata to two lines.",
+      "evidence": "Compiled UI applies one-line title and two-line metadata limits.",
+      "impact": "Long policy/claim/quote names and French translations can be truncated and hide critical information.",
+      "proposed_fix": "Allow adaptive two-line titles and 2-3 line metadata, or split critical values into dedicated fields.",
+      "acceptance_criteria": "No critical policy, claim, renewal or quote identifier is ellipsized at supported widths/font scales."
+    },
+    {
+      "id": "HOME-002",
+      "category": "customer_home",
+      "area": "Customer Home information hierarchy",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "customer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Payments, wallet and receipts are not prominent on Home despite dedicated payment/wallet routes existing.",
+      "evidence": "Routes exist for /wallet, /payments, /payments/[id], receipt and refund, but Home emphasis is elsewhere.",
+      "impact": "Users may miss payment failures, refunds, receipts or outstanding premium status.",
+      "proposed_fix": "Add a payment/financial status card or action area to Home, driven by outstanding/failure/refund states.",
+      "acceptance_criteria": "Customer Home surfaces urgent financial status and links directly to payment detail/receipt when relevant."
+    },
+    {
+      "id": "HOME-003",
+      "category": "customer_home",
+      "area": "Customer Home prioritization",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "customer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Home presents multiple domains but does not sufficiently prioritize urgent exceptions over routine cards.",
+      "evidence": "The screen includes policies, renewals, quotes, claims, notifications and support content.",
+      "impact": "Critical actions can be buried below ordinary content.",
+      "proposed_fix": "Introduce a priority action feed for payment failed, policy expiring, claim evidence required, KYC incomplete, issuance exception and similar states.",
+      "acceptance_criteria": "Urgent actionable items appear above normal summary content and disappear after resolution."
+    },
+    {
+      "id": "HOME-004",
+      "category": "customer_home",
+      "area": "Customer Home density",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "customer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The Home page can become vertically dense because many domains are stacked on one screen.",
+      "evidence": "Multiple sections are rendered on a single scrollable dashboard.",
+      "impact": "Increases scan time and cognitive load on smaller devices.",
+      "proposed_fix": "Use prioritized sections, collapsible/limited previews and 'View all' navigation instead of full-depth lists on Home.",
+      "acceptance_criteria": "Home remains concise while all detailed records remain reachable."
+    },
+    {
+      "id": "DASH-001",
+      "category": "dashboard",
+      "area": "Partner dashboard empty-state handling",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent, Broker and Carrier dashboards can hide their WorkspaceMenu when dashboard.metrics is empty because the navigation menu is wrapped inside a generic StatePanel empty-state branch.",
+      "evidence": "The homes fetch dashboard.metrics, test metrics.length === 0, and the StatePanel can replace children with 'No activity yet' plus Refresh.",
+      "impact": "A brand-new partner account can lose access to the very tools needed to create the first activity.",
+      "proposed_fix": "Move permanent navigation/module menus outside StatePanel. Empty state should apply only to metrics/activity widgets.",
+      "acceptance_criteria": "A brand-new account with zero metrics still sees every permitted module and can create its first valid transaction."
+    },
+    {
+      "id": "DASH-002",
+      "category": "dashboard",
+      "area": "Partner dashboard metrics",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Dashboard metrics are fetched but not meaningfully rendered as operational KPIs on partner Home screens.",
+      "evidence": "Metrics are used primarily in state handling while Home behaves as a module launcher.",
+      "impact": "The dashboard does not function as an operational command center.",
+      "proposed_fix": "Render KPI cards, urgent work queues, SLA/exception indicators and recent activity from the existing metrics payload.",
+      "acceptance_criteria": "Partner Home displays actionable KPIs and each KPI drills into the corresponding filtered work queue."
+    },
+    {
+      "id": "DASH-003",
+      "category": "dashboard",
+      "area": "Partner dashboard operational prioritization",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Partner homes are primarily static module launchers and do not elevate urgent work.",
+      "evidence": "Menus expose many modules at equal visual priority.",
+      "impact": "Users must manually inspect modules to discover work requiring action.",
+      "proposed_fix": "Add role-specific work queues: leads due, quotes pending, renewals, unpaid premiums, claim tasks, underwriting referrals, reconciliation exceptions, bordereau discrepancies and SLA breaches.",
+      "acceptance_criteria": "Home shows urgent counts/tasks before the module directory, with one-tap filtered navigation."
+    },
+    {
+      "id": "BTN-001",
+      "category": "design_system",
+      "area": "Universal buttons",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The app has reusable button primitives but more than one button family is used (main Button plus AuthPrimaryButton/AuthSecondaryButton), and many screens bypass them.",
+      "evidence": "Compiled UI includes shared Button variants plus separate authentication button components and many raw Pressable patterns.",
+      "impact": "Action hierarchy, sizing, accessibility and disabled/loading behavior are not guaranteed consistently.",
+      "proposed_fix": "Define one canonical AppButton system with primary, secondary, tertiary, danger and text variants; authentication should consume the same underlying primitive.",
+      "acceptance_criteria": "Primary actions across all routes use the canonical button primitive unless a documented exception exists."
+    },
+    {
+      "id": "BTN-002",
+      "category": "design_system",
+      "area": "Raw Pressable usage",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Many one-off Pressable/icon/pill/action implementations bypass the shared button system.",
+      "evidence": "Compiled screen code contains custom Pressable patterns outside the universal button layer.",
+      "impact": "Creates inconsistent hit areas, visual affordance, accessibility labels, pressed states and disabled behavior.",
+      "proposed_fix": "Replace operational raw Pressable CTAs with AppButton, IconButton, ActionRow, FilterChip or SegmentedControl components.",
+      "acceptance_criteria": "No transactional CTA is implemented as an unstandardized raw Pressable."
+    },
+    {
+      "id": "BTN-003",
+      "category": "design_system",
+      "area": "Secondary/tertiary action contrast",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Secondary, tertiary, chip and locally styled controls can visually blend with white/light surfaces.",
+      "evidence": "These controls often use subtle borders, neutral backgrounds and low-elevation styling on light application backgrounds.",
+      "impact": "Users can perceive real actions as missing, especially under glare, low vision or compressed rendering.",
+      "proposed_fix": "Increase contrast and affordance: stronger border/background separation, consistent minimum height, icon/text pairing where useful, and explicit pressed/disabled states.",
+      "acceptance_criteria": "Every actionable control is distinguishable from surrounding surfaces without relying on hover or color nuance."
+    },
+    {
+      "id": "BTN-004",
+      "category": "design_system",
+      "area": "Filter affordance",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Filter controls do not have a consistently strong visual system for interactive, selected and active-filter states.",
+      "evidence": "Filter/chip styles vary and some rely mostly on subtle color changes.",
+      "impact": "Users may not know a filter is interactive or currently active.",
+      "proposed_fix": "Create a universal FilterButton + FilterSheet + FilterChip system with active count, active chips, Clear All and Apply.",
+      "acceptance_criteria": "Filters show a visible active count and selected state that remains understandable in grayscale."
+    },
+    {
+      "id": "BTN-005",
+      "category": "design_system",
+      "area": "Color-only state risk",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Some chips/status/filter states depend heavily on color differentiation.",
+      "evidence": "Selected/unselected and status states are often represented with color treatment.",
+      "impact": "Color-vision-deficient users can miss state changes.",
+      "proposed_fix": "Pair color with text, icon, border, checkmark or shape change.",
+      "acceptance_criteria": "All status and selection states remain understandable in grayscale."
+    },
+    {
+      "id": "A11Y-001",
+      "category": "accessibility",
+      "area": "Screen-reader foundations",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The shared component layer already includes useful accessibility roles, labels, busy/disabled states, radio semantics and password visibility labels.",
+      "evidence": "Compiled shared UI contains accessibilityRole/accessibilityState/accessibilityLabel usage.",
+      "impact": "This is a strength but coverage is uneven.",
+      "proposed_fix": "Preserve these semantics and move all custom actions into standardized accessible primitives.",
+      "acceptance_criteria": "Shared controls retain correct TalkBack semantics after refactoring."
+    },
+    {
+      "id": "A11Y-002",
+      "category": "accessibility",
+      "area": "Custom control semantics",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Custom Pressable controls do not guarantee consistent accessibility labels, roles, hints or states.",
+      "evidence": "Many screens bypass shared accessible components.",
+      "impact": "TalkBack users can encounter unlabeled or context-poor actions.",
+      "proposed_fix": "Audit every custom interactive element and migrate it to an accessible primitive; require label/role/state at component API level.",
+      "acceptance_criteria": "TalkBack can identify the purpose and state of every interactive control without visual context."
+    },
+    {
+      "id": "A11Y-003",
+      "category": "accessibility",
+      "area": "Accessibility hints coverage",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Accessibility hints are comparatively uncommon.",
+      "evidence": "Labels exist more often than explanatory hints.",
+      "impact": "Complex actions may be ambiguous to screen-reader users.",
+      "proposed_fix": "Add concise accessibilityHint text where the action result is not obvious from its label.",
+      "acceptance_criteria": "Non-obvious controls announce both purpose and consequence."
+    },
+    {
+      "id": "A11Y-004",
+      "category": "accessibility",
+      "area": "High-contrast support",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "not_evidenced_in_apk",
+      "problem": "No meaningful application-level high-contrast mode or explicit adaptation to Android high-text-contrast settings was found.",
+      "evidence": "Static inspection did not reveal an app-level high-contrast implementation.",
+      "impact": "Low-vision users may struggle with subtle borders and tertiary controls.",
+      "proposed_fix": "Add high-contrast design tokens or ensure the default theme independently meets WCAG AA/AAA targets for critical elements; test Android contrast settings.",
+      "acceptance_criteria": "Critical text and controls meet contrast requirements under default and high-contrast device settings."
+    },
+    {
+      "id": "A11Y-005",
+      "category": "accessibility",
+      "area": "Font scaling consistency",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Responsive/fontScale handling is not consistent across operational screens.",
+      "evidence": "Onboarding explicitly considers fontScale while many lists/tabs use hard line limits.",
+      "impact": "150-200% text can truncate labels, actions and record metadata.",
+      "proposed_fix": "Introduce large-text-safe layouts, adaptive wrapping and vertical growth; validate 100%, 130%, 150% and 200%.",
+      "acceptance_criteria": "No critical action or record identity is lost at 200% font size."
+    },
+    {
+      "id": "A11Y-006",
+      "category": "accessibility",
+      "area": "Partner bottom-tab labels",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff",
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Partner tab labels are constrained to one line.",
+      "evidence": "Compiled tab styling forces single-line labels.",
+      "impact": "Long French labels and large fonts can truncate.",
+      "proposed_fix": "Use shorter localized labels, adaptive tab typography, or accessible icon+label behavior without clipping.",
+      "acceptance_criteria": "All supported locale labels render without ambiguity at large font settings."
+    },
+    {
+      "id": "A11Y-007",
+      "category": "accessibility",
+      "area": "Picker / select summary",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "MasterSelectField limits selected-value summary lines, making multi-select states hard to read.",
+      "evidence": "Compiled component constrains summary text.",
+      "impact": "Several selected values can become opaque or truncated.",
+      "proposed_fix": "Use chips, '+N selected', expandable summaries, or adaptive wrapping.",
+      "acceptance_criteria": "Users can determine the full selection state without reopening the picker."
+    },
+    {
+      "id": "FORM-001",
+      "category": "forms",
+      "area": "Keyboard tap handling",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The shared Screen ScrollView does not set keyboardShouldPersistTaps.",
+      "evidence": "Compiled shared screen behavior lacks keyboardShouldPersistTaps.",
+      "impact": "A first tap on a button/select while the keyboard is open may only dismiss the keyboard instead of executing the action.",
+      "proposed_fix": "Set keyboardShouldPersistTaps='handled' (or justified equivalent) in the shared form screen.",
+      "acceptance_criteria": "Primary form actions execute on the first intentional tap while the keyboard is open."
+    },
+    {
+      "id": "FORM-002",
+      "category": "forms",
+      "area": "Keyboard dismissal",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "No consistent shared keyboardDismissMode was found.",
+      "evidence": "Shared form containers do not enforce a standard dismissal policy.",
+      "impact": "Keyboard behavior varies by screen and can obstruct content.",
+      "proposed_fix": "Set a platform-appropriate global keyboardDismissMode and document exceptions.",
+      "acceptance_criteria": "Scrolling/dismissing the keyboard behaves consistently across forms."
+    },
+    {
+      "id": "FORM-003",
+      "category": "forms",
+      "area": "KeyboardAvoidingView compression",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The common KeyboardAvoidingView uses fixed height behavior without a meaningful shared vertical offset.",
+      "evidence": "Compiled common layout uses height behavior.",
+      "impact": "Long forms can compress or jump awkwardly when the keyboard appears.",
+      "proposed_fix": "Use platform-specific keyboard avoidance plus scroll-to-focused-field behavior and safe keyboard offsets.",
+      "acceptance_criteria": "Focused controls and actions remain visible without severe form compression."
+    },
+    {
+      "id": "FORM-004",
+      "category": "forms",
+      "area": "Android multiline alignment",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Multiline inputs were found without app-wide textAlignVertical='top'.",
+      "evidence": "Static inspection found many multiline fields and no consistent top vertical alignment.",
+      "impact": "Android can vertically center or awkwardly position multiline text.",
+      "proposed_fix": "Put textAlignVertical='top' in the shared multiline input style.",
+      "acceptance_criteria": "All multiline fields start text at the top consistently on Android."
+    },
+    {
+      "id": "FORM-005",
+      "category": "forms",
+      "area": "Bottom-sheet safe area",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Shared PickerField/MasterSelectField bottom sheets do not consistently apply safe-area bottom insets while Android edge-to-edge is enabled.",
+      "evidence": "Compiled app uses edge-to-edge; shared sheet implementations lack safe bottom inset handling.",
+      "impact": "Bottom actions can sit too close to or behind gesture/navigation areas.",
+      "proposed_fix": "Use useSafeAreaInsets() and safe bottom padding in every modal/sheet.",
+      "acceptance_criteria": "Bottom-sheet controls remain fully visible and tappable on gesture and 3-button navigation devices."
+    },
+    {
+      "id": "A11Y-008",
+      "category": "accessibility",
+      "area": "Touch target verification",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "runtime_validation_required",
+      "problem": "Because many custom Pressables exist, a universal 44-48dp minimum hit target cannot be guaranteed from static review alone.",
+      "evidence": "Custom controls bypass standard component sizing.",
+      "impact": "Users with motor/visual impairments may struggle to activate small targets.",
+      "proposed_fix": "Enforce minWidth/minHeight and hitSlop in canonical components; run automated/manual target-size audit.",
+      "acceptance_criteria": "Every interactive target is at least 44-48dp or has equivalent hitSlop."
+    },
+    {
+      "id": "A11Y-009",
+      "category": "accessibility",
+      "area": "End-to-end blind-user usability",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "runtime_validation_required",
+      "problem": "The app cannot yet be certified as fully usable by a blind user despite having accessibility foundations.",
+      "evidence": "Static APK review cannot validate TalkBack traversal order, modal focus trapping/restoration or complete spoken flow.",
+      "impact": "Blind users may hit unlabeled controls, dead ends or focus-order problems.",
+      "proposed_fix": "Run TalkBack end-to-end tests across authentication, quote, payment, policy, claim and partner workflows; fix traversal/focus issues.",
+      "acceptance_criteria": "A tester can complete each supported critical journey with TalkBack and without visual reliance."
+    },
+    {
+      "id": "NAV-001",
+      "category": "navigation",
+      "area": "Dead-end operational lists",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff",
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Multiple operational lists terminate without record-detail navigation.",
+      "evidence": "Agent policies/renewals, Broker policies/claims/renewals and several Carrier modules lack drill-down.",
+      "impact": "Users can see records but cannot service or inspect them.",
+      "proposed_fix": "Enforce Dashboard -> List -> Detail -> Action -> Confirmation -> Updated Record -> Timeline for every operational object with a stable ID.",
+      "acceptance_criteria": "No permitted operational object ends at a non-actionable list unless explicitly designed as read-only."
+    },
+    {
+      "id": "NAV-002",
+      "category": "navigation",
+      "area": "Deep-link/back-state standardization",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "needs_runtime_and_route_validation",
+      "problem": "The app has route/deep-link infrastructure, but all newly completed detail flows must preserve back state and refresh behavior.",
+      "evidence": "The route surface is large (~155 routes), making consistency important.",
+      "impact": "Users can return to stale or wrong list state after actions if navigation state is not standardized.",
+      "proposed_fix": "Make detail routes deep-linkable, preserve filters/list state and refresh affected screens after mutation.",
+      "acceptance_criteria": "Back returns to the prior filtered list and both list/detail reflect the latest server state."
+    },
+    {
+      "id": "NAV-003",
+      "category": "navigation",
+      "area": "Access-denied UX",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength_with_gap",
+      "problem": "Explicit access-denied/session-expired routes exist, but role shells should avoid exposing modules the user cannot access.",
+      "evidence": "Carrier and generic workspaces can show broad module menus independent of fine-grained capabilities.",
+      "impact": "Users encounter avoidable permission errors and confusing navigation.",
+      "proposed_fix": "Use backend capabilities to hide/disable inaccessible modules while preserving server-side authorization.",
+      "acceptance_criteria": "A restricted user sees only permitted modules/actions and direct forbidden routes still fail securely server-side."
+    },
+    {
+      "id": "AGT-001",
+      "category": "role_workflow",
+      "area": "Agent Claims module",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "No dedicated /agent/claims route was found.",
+      "evidence": "Broker and Carrier have claim modules while Agent does not.",
+      "impact": "Agents cannot provide consistent post-sale claim assistance from their workspace.",
+      "proposed_fix": "Add Agent Claims list/detail scoped to authorized customers/policies; allow assistance, evidence forwarding, status tracking and contact actions but no adjudication.",
+      "acceptance_criteria": "Agent can initiate/assist/track permitted claims but cannot approve, decline or settle them."
+    },
+    {
+      "id": "AGT-002",
+      "category": "role_workflow",
+      "area": "Agent Policy detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent Policies rows are rendered without a proper drill-down/detail flow.",
+      "evidence": "The list exists but no dedicated Agent Policy Detail route is present.",
+      "impact": "Agent cannot service a sold policy from the policy register.",
+      "proposed_fix": "Add role-aware PartnerPolicyDetail with policy, customer, insurer, premium, payment, coverage, documents, certificate, claims, renewal and timeline.",
+      "acceptance_criteria": "Every agent policy row opens a detail page and exposes only backend-permitted actions."
+    },
+    {
+      "id": "AGT-003",
+      "category": "role_workflow",
+      "area": "Agent Renewal detail",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent renewal records are read-only and have no end-to-end renewal workflow.",
+      "evidence": "The current renewal screen shows customer/policy/days/status without action navigation.",
+      "impact": "Renewal opportunities cannot be progressed inside the app.",
+      "proposed_fix": "Implement renewal detail through eligibility, repricing/requote, customer confirmation, payment, issuance and new policy.",
+      "acceptance_criteria": "An agent can take an eligible renewal from due to newly issued policy without dead ends."
+    },
+    {
+      "id": "AGT-004",
+      "category": "role_workflow",
+      "area": "Agent Client 360 depth",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent Client Detail summarizes customer information and 360 counts but related records are not consistently operational/drillable.",
+      "evidence": "Current content includes customer data, KYC, origin lock, policy count, next renewal, beneficiaries and timeline.",
+      "impact": "Agents must leave context or cannot act on related records.",
+      "proposed_fix": "Add tabs/sections for Policies, Quotes/Proposals, Claims, Payments, Documents, KYC, Beneficiaries and Activity with deep links.",
+      "acceptance_criteria": "All authorized related records can be opened directly from Customer 360."
+    },
+    {
+      "id": "AGT-005",
+      "category": "role_workflow",
+      "area": "Agent Sale post-payment lifecycle",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent Sale Detail does not visibly complete the full server-verified payment -> proposal -> issuance -> policy -> commission lifecycle.",
+      "evidence": "Current sale detail contains product, premium, payment phone/status, commission and payment request.",
+      "impact": "Agents cannot clearly resolve payment/issuance exceptions or follow sale completion.",
+      "proposed_fix": "Add payment attempt history, failure reason, retry, verified timestamp, receipt, proposal link, issuance status, policy link, documents and commission-accrual state.",
+      "acceptance_criteria": "PAYMENT_OK_ISSUANCE_FAILED and similar exception states are visible and actionable without falsely marking a policy issued."
+    },
+    {
+      "id": "AGT-006",
+      "category": "role_workflow",
+      "area": "Agent Withdrawal detail",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent wallet has withdrawal creation/history but lacks a detailed withdrawal lifecycle page.",
+      "evidence": "Withdrawal entries do not provide a full status/audit drill-down.",
+      "impact": "Failed or delayed withdrawals are hard to diagnose.",
+      "proposed_fix": "Add Withdrawal Detail with reference, amount, destination, verification, approval, processing, paid/failed, transaction reference, failure reason and audit history.",
+      "acceptance_criteria": "Every withdrawal can be inspected end-to-end and safely retried/cancelled only when permitted."
+    },
+    {
+      "id": "AGT-007",
+      "category": "role_model",
+      "area": "Agent staff organization model",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "agency_admin",
+        "agency_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "A dedicated Agent Staff / Agency Staff role model was not found in the compiled role set.",
+      "evidence": "Existing roles include Agent/Freelance Agent, Broker roles and Carrier roles.",
+      "impact": "An agency with multiple employees cannot cleanly separate organization administrator from salesperson permissions.",
+      "proposed_fix": "If multi-user agencies are in scope, add AGENCY_ADMIN and AGENCY_STAFF (or equivalent) with explicit organization membership and permissions.",
+      "acceptance_criteria": "Agency admins can manage internal staff without granting cross-agent data access to independent agents."
+    },
+    {
+      "id": "BRK-001",
+      "category": "role_workflow",
+      "area": "Broker Client operational actions",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Client Detail shows customer/portfolio data but lacks a first-class New Quote/New Business action path.",
+      "evidence": "Current detail includes origin lock, policy count, balance, next renewal and Customer 360.",
+      "impact": "Brokers cannot naturally progress existing clients into new business.",
+      "proposed_fix": "Add New Quote, Start New Business, View Policies, Claims, Renewals, Receivables, Documents, KYC and Timeline actions.",
+      "acceptance_criteria": "From an existing customer, permitted broker users can start new business without returning to a generic module list."
+    },
+    {
+      "id": "BRK-002",
+      "category": "role_workflow",
+      "area": "Broker New Business creation",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker lacks clear equivalents of agent new-lead/new-client/new-sale/new-quote entry points.",
+      "evidence": "Broker routes include leads/clients/quotes but no obvious broker creation routes equivalent to agent creation flows.",
+      "impact": "The brokerage workspace can become a servicing-only shell instead of a sales workflow.",
+      "proposed_fix": "Add New Lead, Register/Link Customer, Create Quote and Start Assisted Sale using shared quote infrastructure and broker attribution rules.",
+      "acceptance_criteria": "Broker can create a lead/customer/quote and progress it to policy issuance within permitted scope."
+    },
+    {
+      "id": "BRK-003",
+      "category": "role_workflow",
+      "area": "Broker Policy detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Policies is a list with no dedicated broker policy detail.",
+      "evidence": "No /broker/policies/[id] operational detail route was identified.",
+      "impact": "Brokers cannot service policies or drill into documents/renewals/claims.",
+      "proposed_fix": "Add Broker Policy Detail with customer, carrier, policy data, payments, documents, claims, renewal, commission attribution, receivable state and timeline.",
+      "acceptance_criteria": "Every policy row opens a role-aware detail page."
+    },
+    {
+      "id": "BRK-004",
+      "category": "role_workflow",
+      "area": "Broker Claim detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Claims rows are non-drillable.",
+      "evidence": "List exists without Broker Claim Detail.",
+      "impact": "Brokers cannot assist customers through claims from the app.",
+      "proposed_fix": "Add Broker Claim Detail with claim, policy, customer, evidence requirements, info requests, inspection, decision, settlement and timeline; allow assistance but not adjudication.",
+      "acceptance_criteria": "Broker can track and assist claims while insurer-only decisions remain unavailable."
+    },
+    {
+      "id": "BRK-005",
+      "category": "role_workflow",
+      "area": "Broker Renewal detail",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Renewals is effectively a read-only pipeline.",
+      "evidence": "No record-level renewal route/action chain is present.",
+      "impact": "Renewal work cannot be progressed.",
+      "proposed_fix": "Add renewal detail with assignment, eligibility, requote, customer decision, payment and issuance.",
+      "acceptance_criteria": "Broker can complete a renewal without dead ends."
+    },
+    {
+      "id": "BRK-006",
+      "category": "role_workflow",
+      "area": "Broker Production register",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Production is an OperationsList with no record-detail flow.",
+      "evidence": "Production records are visible but not operational.",
+      "impact": "Cannot trace a production item to its customer, policy, producer or commission.",
+      "proposed_fix": "Add Production Record Detail with policy, customer, carrier, premium, commission, producer, payment, issuance, dates and audit source.",
+      "acceptance_criteria": "Production rows drill into linked customer/policy/commission records."
+    },
+    {
+      "id": "BRK-007",
+      "category": "role_workflow",
+      "area": "Broker Commission record depth",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Commissions shows statements/accruals and totals but lacks robust accrual and statement detail.",
+      "evidence": "Current mobile UI is mostly summary/list level.",
+      "impact": "Commission disputes, reversals, basis and settlement attribution are hard to inspect.",
+      "proposed_fix": "Add Commission Accrual Detail and Commission Statement Detail with policy/customer/carrier/basis/rate/status/adjustments/settlement/payment references.",
+      "acceptance_criteria": "Every commission and statement row opens complete auditable details."
+    },
+    {
+      "id": "BRK-008",
+      "category": "role_workflow",
+      "area": "Broker Receivables",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Receivables lacks robust record-level reconciliation and drill-down.",
+      "evidence": "Current screen combines statements/accrual information without a full receivable lifecycle.",
+      "impact": "Outstanding amounts and allocations are difficult to resolve.",
+      "proposed_fix": "Add Receivable Detail, ageing, allocations, reconciliation history, related customer/carrier and export.",
+      "acceptance_criteria": "Users can trace each receivable balance to source transactions and reconciliation events."
+    },
+    {
+      "id": "BRK-009",
+      "category": "role_workflow",
+      "area": "Broker Compliance detail",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Compliance is essentially a list.",
+      "evidence": "OperationsList renders compliance records without a dedicated detail workflow.",
+      "impact": "Expiry, evidence and remediation cannot be managed cleanly.",
+      "proposed_fix": "Add Compliance Record Detail with licence/certificate metadata, issuer, expiry, verification, document, requirements and review history.",
+      "acceptance_criteria": "Each compliance item exposes status, evidence and permitted remediation actions."
+    },
+    {
+      "id": "BRK-010",
+      "category": "role_workflow",
+      "area": "Broker Staff management depth",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "broker_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Staff supports list/invite but lacks a robust Staff Member Detail and administration lifecycle.",
+      "evidence": "Current functionality includes staff, pending invitations, phone invite and one-time code.",
+      "impact": "Admins cannot fully manage roles, assignments, status and access history from mobile.",
+      "proposed_fix": "Add Staff Member Detail with role, permissions, assigned work, status, last activity and admin actions for permission change, suspend/reactivate, invitation revoke and work transfer.",
+      "acceptance_criteria": "Broker Admin can manage staff lifecycle without exposing admin actions to normal broker staff."
+    },
+    {
+      "id": "BRK-011",
+      "category": "role_architecture",
+      "area": "Broker Staff generic workspace",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "BROKER_STAFF is routed to a generic /workspace/[role] shell whose modules render tabular rows without rich record-level workflows.",
+      "evidence": "Generic Module renders horizontal table columns/rows; Broker Admin has richer dedicated broker routes.",
+      "impact": "Broker staff can be trapped in Dashboard -> Module -> Table -> dead end while admins have operational flows.",
+      "proposed_fix": "Route broker staff into the same broker shell as broker admin and drive module/action visibility with backend permissions/capabilities.",
+      "acceptance_criteria": "Broker Staff can perform all assigned operational work through broker-native screens without receiving admin-only actions."
+    },
+    {
+      "id": "CAR-001",
+      "category": "role_workflow",
+      "area": "Carrier Quote Request workflow",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Carrier Quote Request Detail is comparatively deep and should be preserved.",
+      "evidence": "It includes risk snapshot, SLA, review, premium/tax/fees, pricing, conditions, validity, offer and decline flows.",
+      "impact": "Rewriting it risks regression.",
+      "proposed_fix": "Preserve and reuse its interaction patterns as a benchmark for weaker modules.",
+      "acceptance_criteria": "Existing quote-request functionality remains unchanged while weaker modules adopt equivalent depth."
+    },
+    {
+      "id": "CAR-002",
+      "category": "role_workflow",
+      "area": "Carrier Underwriting Referral depth",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Referral Detail supports decision actions but lacks some enterprise workflow controls.",
+      "evidence": "Current flow includes approve within authority, request information and decline.",
+      "impact": "Complex cases need assignment, escalation and condition tracking.",
+      "proposed_fix": "Add assignment/reassignment, escalation above authority, second approval, underwriting conditions, evidence and complete decision history when backend permits.",
+      "acceptance_criteria": "Underwriters can escalate/assign without client-side authority assumptions."
+    },
+    {
+      "id": "CAR-003",
+      "category": "role_workflow",
+      "area": "Carrier Proposal detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Proposals list has no carrier-specific Proposal Detail.",
+      "evidence": "Customer proposal screen cannot safely substitute because customer actions differ.",
+      "impact": "Carrier staff cannot fully review proposal, risk, payment, underwriting and issuance context.",
+      "proposed_fix": "Add Carrier Proposal Detail with proposal, customer, intermediary, risk, disclosures, documents, premium, payment, underwriting, info requests, issuance and policy link.",
+      "acceptance_criteria": "Every proposal row opens a carrier-safe detail page with capability-driven actions."
+    },
+    {
+      "id": "CAR-004",
+      "category": "role_workflow",
+      "area": "Carrier Product detail",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Product cards support pause/resume but no full Product Detail page was found.",
+      "evidence": "Tariff/product metadata is mostly card-level.",
+      "impact": "High-impact product configuration/history is difficult to inspect.",
+      "proposed_fix": "Add Product Detail with version, tariff/history, coverages, exclusions, eligibility, risk questions, commission configuration, sales channels, effective dates, regulatory documents and audit log.",
+      "acceptance_criteria": "Product actions are auditable and product versions are inspectable."
+    },
+    {
+      "id": "CAR-005",
+      "category": "role_workflow",
+      "area": "Carrier Issuance decision depth",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Issuance approval/rejection can be performed from a relatively shallow card/queue without a full issuance record review page.",
+      "evidence": "Current issuance screen supports approve/reject and carrier reference.",
+      "impact": "High-consequence policy issuance can occur without enough context visible to the staff member.",
+      "proposed_fix": "Add Issuance Detail showing proposal, customer, intermediary, payment verification, product, risk, cover dates, premium, documents, approvals, reference and wording/version before decision.",
+      "acceptance_criteria": "Approve/Reject/Request Correction occur from a complete detail record with confirmation and step-up when configured."
+    },
+    {
+      "id": "CAR-006",
+      "category": "role_workflow",
+      "area": "Carrier Policy detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Policies is a non-drillable list.",
+      "evidence": "No dedicated carrier policy detail route was identified.",
+      "impact": "Staff cannot service, audit or manage issued policies from the register.",
+      "proposed_fix": "Add Carrier Policy Detail with customer, intermediary, payment/issuance, cover, documents, endorsements, service requests, renewals, claims, commission attribution and audit.",
+      "acceptance_criteria": "Every carrier policy opens a complete detail record."
+    },
+    {
+      "id": "CAR-007",
+      "category": "role_workflow",
+      "area": "Carrier Claim file depth",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin",
+        "claims_officer",
+        "claims_manager"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Claim Detail has good decision actions but the overall claim file is incomplete.",
+      "evidence": "Existing flow covers acknowledge, request info, proposed decision, approve/partial/decline, amount/reason/rationale, second approval and timeline.",
+      "impact": "Claims handlers need evidence, inspection, reserves, assignments and settlement context in one file.",
+      "proposed_fix": "Add tabs for Evidence, Documents, Parties, Inspection, Repair, Media, Coverage Snapshot, Reserves, Fraud/Risk Flags, Assignment, Requests, Settlement and Review history.",
+      "acceptance_criteria": "Claims staff can work the complete claim file while preserving maker-checker decisions."
+    },
+    {
+      "id": "CAR-008",
+      "category": "role_workflow",
+      "area": "Carrier Payment detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin",
+        "finance_operator",
+        "finance_manager"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Payments provides totals/list but no proper payment detail.",
+      "evidence": "Rows are not operational drill-down records.",
+      "impact": "Finance staff cannot reconcile or investigate individual payment exceptions effectively.",
+      "proposed_fix": "Add Payment Detail with reference, customer, policy/proposal, amount, method, gateway/provider ref, timestamps, reconciliation, allocation, webhook verification, refund and audit.",
+      "acceptance_criteria": "Every payment row can be investigated and permissioned reconciliation actions are available."
+    },
+    {
+      "id": "CAR-009",
+      "category": "role_workflow",
+      "area": "Carrier Partner detail",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Distribution Partner rows are non-drillable.",
+      "evidence": "List shows name/type/policy count/premium/agreement/status without a full partner record.",
+      "impact": "Carrier cannot inspect agreements, authorization, compliance, production and settlement in context.",
+      "proposed_fix": "Add Partner Detail with identity, licence, agreement, branches/staff, authorized products, production, commission, settlement, compliance, documents and history.",
+      "acceptance_criteria": "Partner list rows open auditable partner records with capability-driven actions."
+    },
+    {
+      "id": "CAR-010",
+      "category": "role_workflow",
+      "area": "Carrier Settlement actions",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin",
+        "finance_operator",
+        "finance_manager"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Settlement Detail exists but is mostly read-only.",
+      "evidence": "It displays status, amount, period, dates, bank ref and line items.",
+      "impact": "Finance users cannot complete review/reconciliation from mobile where intended.",
+      "proposed_fix": "Add Review, Approve, Reject/Return, Reconcile, Record Payment, Attach Proof, Resolve Discrepancy and Export where backend permits.",
+      "acceptance_criteria": "Settlement detail supports the configured finance lifecycle with step-up for sensitive actions."
+    },
+    {
+      "id": "CAR-011",
+      "category": "role_workflow",
+      "area": "Carrier Bordereau detail",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin",
+        "finance_operator",
+        "finance_manager"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier Bordereaux is a list-only module.",
+      "evidence": "No bordereau detail/action workflow was identified.",
+      "impact": "Policy/premium/commission discrepancies cannot be reviewed from mobile.",
+      "proposed_fix": "Add Bordereau Detail with broker, period, counts, premium/tax/commission/net, line items, validation errors, discrepancies, documents and audit plus Validate/Return/Accept/Reject/Reconcile/Export actions.",
+      "acceptance_criteria": "Every bordereau can be reviewed at summary and line-item level."
+    },
+    {
+      "id": "CAR-012",
+      "category": "role_workflow",
+      "area": "Carrier Staff management",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "No equivalent carrier staff management module was identified despite carrier admin/staff roles existing.",
+      "evidence": "Route inventory lacks a clear /carrier/staff management flow.",
+      "impact": "Carrier admins cannot manage mobile staff lifecycle from the carrier shell.",
+      "proposed_fix": "If in mobile scope, add Staff Directory, Invite, Staff Detail, Role/Permissions, Department/Scope, Status, Activity and audit with suspend/reactivate/revoke/transfer actions.",
+      "acceptance_criteria": "Carrier Admin can manage staff membership without exposing those controls to ordinary staff."
+    },
+    {
+      "id": "CAR-013",
+      "category": "role_permissions",
+      "area": "Carrier module visibility",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Carrier roles enter the same shell and module visibility does not appear consistently capability-filtered at the Home-menu level.",
+      "evidence": "Carrier Home exposes Products, Proposals, Underwriting, Issuance, Policies, Claims, Payments, Partners, Settlements and Bordereaux broadly.",
+      "impact": "Restricted staff may see modules that later fail authorization.",
+      "proposed_fix": "Have backend return allowed modules/actions and filter or disable the mobile menu accordingly; keep server authorization authoritative.",
+      "acceptance_criteria": "Restricted staff see only allowed modules/actions and cannot bypass authorization through direct routes."
+    },
+    {
+      "id": "CAR-014",
+      "category": "role_architecture",
+      "area": "Specialized carrier roles generic workspace",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "finance_admin",
+        "finance_manager",
+        "finance_operator",
+        "claims_manager",
+        "claims_officer",
+        "compliance_admin",
+        "compliance_officer"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Specialized operational roles are routed to generic workspaces that are too shallow for transactional work.",
+      "evidence": "Generic workspace modules render tabular data but lack rich details/actions.",
+      "impact": "Finance, claims and compliance staff can encounter read-only workflows.",
+      "proposed_fix": "Route specialized roles into shared Carrier Claims/Finance/Compliance shells with backend capability scoping rather than duplicating or using a generic table-only workspace.",
+      "acceptance_criteria": "Specialized staff can complete their assigned transactions through full detail/action workflows."
+    },
+    {
+      "id": "FLT-001",
+      "category": "filtering",
+      "area": "Customer portfolio by insurer",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent/Broker customer lists do not expose a proper insurer/company filter.",
+      "evidence": "The data model contains carrier/product context but mobile customer filtering is basic.",
+      "impact": "Partners cannot quickly segment customers by insurer.",
+      "proposed_fix": "Add server-side carrier_id filter and a searchable insurer selector in the universal FilterSheet.",
+      "acceptance_criteria": "Agent/Broker can show only customers with policies from a selected insurer within authorization scope."
+    },
+    {
+      "id": "FLT-002",
+      "category": "filtering",
+      "area": "Customer portfolio by insurance/product type",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Customer lists do not expose robust insurance class/product-family/product filters.",
+      "evidence": "No complete multidimensional customer filter UI was found.",
+      "impact": "Partners cannot target Motor/Health/Life/etc. portfolios or specific products.",
+      "proposed_fix": "Add product_family_id and product_id filters with server-side pagination.",
+      "acceptance_criteria": "Users can combine insurer + product family + exact product filters."
+    },
+    {
+      "id": "FLT-003",
+      "category": "filtering",
+      "area": "Customer operational dimensions",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Customer portfolio filtering is missing important dimensions such as customer type, policy status, renewal window, claim state, payment state and KYC state.",
+      "evidence": "Current lists/search are basic.",
+      "impact": "Portfolio servicing requires manual scanning.",
+      "proposed_fix": "Add filters for customer type, policy status, renewal window, claim state, payment state, KYC, city/region where appropriate and origin/ownership.",
+      "acceptance_criteria": "Users can combine multiple dimensions and active filters are visible as chips."
+    },
+    {
+      "id": "FLT-004",
+      "category": "filtering",
+      "area": "Broker producer/staff filter",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "broker_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Admin cannot filter customers/production/commissions by selling staff member/producer in a standardized way.",
+      "evidence": "No universal producer filter is exposed across the relevant screens.",
+      "impact": "Managers cannot analyze or service portfolios by producer.",
+      "proposed_fix": "Add producer_user_id, branch_id and team filters to backend/mobile where permitted.",
+      "acceptance_criteria": "Broker Admin can filter customers and commission records by staff member/producer."
+    },
+    {
+      "id": "FLT-005",
+      "category": "filtering",
+      "area": "Search dimensions",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "Portfolio search is not designed as a universal cross-identifier search.",
+      "evidence": "Current search is basic and does not consistently span policy/quote/claim/vehicle/business identifiers.",
+      "impact": "Users need multiple screens to locate a known customer-related record.",
+      "proposed_fix": "Support authorized search across customer name, phone, email, customer ref, policy, quote, claim, vehicle registration and business registration.",
+      "acceptance_criteria": "One portfolio search returns authorized matches with clear entity type."
+    },
+    {
+      "id": "FLT-006",
+      "category": "filtering",
+      "area": "Saved/recent filters",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff",
+        "carrier_staff"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "No robust saved/recent filter workflow was identified.",
+      "evidence": "Filters are not standardized across modules.",
+      "impact": "High-frequency operational searches must be rebuilt repeatedly.",
+      "proposed_fix": "Add Save Filter and Recent Filters to the universal filter framework.",
+      "acceptance_criteria": "Users can reapply a saved filter and the saved query remains permission-safe."
+    },
+    {
+      "id": "COM-001",
+      "category": "commissions",
+      "area": "Commission by insurer",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Commission screens do not expose a proper insurer/carrier filter.",
+      "evidence": "Accrual/statement data exists, but multidimensional filtering is absent.",
+      "impact": "Partners cannot reconcile earnings by insurance company.",
+      "proposed_fix": "Add carrier_id filter to commission ledger and backend query.",
+      "acceptance_criteria": "Commission ledger can be filtered by insurer with accurate totals."
+    },
+    {
+      "id": "COM-002",
+      "category": "commissions",
+      "area": "Commission by policy/product type",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Commission screens do not expose product-family or exact-product filters.",
+      "evidence": "No comprehensive commission filter sheet was found.",
+      "impact": "Partners cannot analyze Motor/Health/Life/product profitability.",
+      "proposed_fix": "Add product_family_id and product_id filters and filtered KPI aggregation.",
+      "acceptance_criteria": "Commission totals and rows update correctly for selected product dimensions."
+    },
+    {
+      "id": "COM-003",
+      "category": "commissions",
+      "area": "Commission by producer",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "broker_admin"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Broker Admin cannot filter commission by the agent/staff member who sold the policy.",
+      "evidence": "Producer dimension is not exposed as a standard commission filter.",
+      "impact": "Brokerage cannot manage producer performance or reconcile staff-attributed earnings.",
+      "proposed_fix": "Add producer_user_id/branch/team filters with permission scope.",
+      "acceptance_criteria": "Broker Admin can filter commission by producer without exposing other organizations' data."
+    },
+    {
+      "id": "COM-004",
+      "category": "commissions",
+      "area": "Paid/unpaid commission lifecycle",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Commission screens do not expose a complete paid/unpaid/lifecycle filter system.",
+      "evidence": "Existing totals include concepts such as pending/available/paid, but the operational ledger is not fully filterable.",
+      "impact": "Users cannot quickly isolate unpaid, reversed, adjusted or disputed earnings.",
+      "proposed_fix": "Implement lifecycle states: Estimated, Pending Eligibility, Accrued, Available, Statement, Approved for Payout, Paid, Reversed, Adjusted, Disputed, Withheld; include All/Unpaid/Paid shortcuts.",
+      "acceptance_criteria": "Ledger and KPI totals correctly reflect selected lifecycle states."
+    },
+    {
+      "id": "COM-005",
+      "category": "commissions",
+      "area": "Commission date dimensions",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "Commission UI lacks standardized sale/issue/accrual/payment date filtering.",
+      "evidence": "No universal date filter workflow is present.",
+      "impact": "Period reconciliation is cumbersome.",
+      "proposed_fix": "Add Today/Week/Month/Previous Month/Quarter/Year/Custom and a selectable date basis: sale, policy issue, accrual or payment.",
+      "acceptance_criteria": "Users can reproduce a statement period using date filters."
+    },
+    {
+      "id": "COM-006",
+      "category": "commissions",
+      "area": "Commission KPI drill-down",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "Commission summary numbers are not consistently tied to drill-down filtered ledgers.",
+      "evidence": "Current mobile experience is summary/list oriented.",
+      "impact": "Users cannot explain totals quickly.",
+      "proposed_fix": "Make KPI cards clickable and open the ledger with the exact underlying filter.",
+      "acceptance_criteria": "Every KPI/chart has a deterministic drill-down to source rows."
+    },
+    {
+      "id": "COM-007",
+      "category": "commissions",
+      "area": "Commission Detail",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Commission accrual/statement records lack complete record-level detail in mobile.",
+      "evidence": "Current screens emphasize totals and lists.",
+      "impact": "Users cannot verify basis, rate, policy attribution, reversals and settlement.",
+      "proposed_fix": "Add Commission Detail with policy, customer, insurer, product, producer, premium, basis, rate, amount, eligibility, issuance/payment state, statement, settlement, adjustments and audit.",
+      "acceptance_criteria": "Every commission row is auditable to policy and payment."
+    },
+    {
+      "id": "COM-008",
+      "category": "commissions",
+      "area": "Agent commission isolation",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent"
+      ],
+      "evidence_status": "security_requirement",
+      "problem": "An independent Agent must not gain cross-agent commission visibility merely because producer filtering is added.",
+      "evidence": "Current role model treats Agent as an individual role.",
+      "impact": "Poor scoping could expose commercially sensitive commission data.",
+      "proposed_fix": "Scope Agent commission endpoints to authorized own/organization portfolio. Use separate agency roles for multi-staff organizations.",
+      "acceptance_criteria": "Independent agents cannot query unrelated agents' commissions even by crafted API parameters."
+    },
+    {
+      "id": "ISS-001",
+      "category": "issuance",
+      "area": "Agent/Broker issuance authority",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Agent and Broker roles do not have unrestricted approve/issue-policy actions; this is the correct safe baseline.",
+      "evidence": "Issuance actions exist in Carrier workspace.",
+      "impact": "Granting blanket issuance to intermediaries would weaken insurer authority and auditability.",
+      "proposed_fix": "Keep insurer-owned issuance by default. Agents/brokers may prepare/submit/track business and view issued documents.",
+      "acceptance_criteria": "No intermediary can issue a policy unless backend explicitly grants delegated authority."
+    },
+    {
+      "id": "ISS-002",
+      "category": "issuance",
+      "area": "Delegated authority model",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "There is no explicit mobile model for limited delegated underwriting/issuance authority from an insurer to an intermediary.",
+      "evidence": "Current baseline separates intermediary and carrier issuance.",
+      "impact": "A future blanket role override would be unsafe.",
+      "proposed_fix": "Create delegated_authority with carrier, partner, products, territory, limits, risk classes, effective/expiry dates, actions, second-approval thresholds and agreement reference.",
+      "acceptance_criteria": "Delegated issuance is possible only within server-validated scope and every use is audited."
+    },
+    {
+      "id": "ISS-003",
+      "category": "issuance",
+      "area": "Maker-checker issuance",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "carrier_admin"
+      ],
+      "evidence_status": "partial_feature",
+      "problem": "Issuance should not always be a universal one-click approval.",
+      "evidence": "Current carrier issuance supports approve/reject; other flows already show second-approval concepts.",
+      "impact": "High-value or exceptional policies need separation of duties.",
+      "proposed_fix": "Support configurable Underwriter Review -> Issuance Verification -> Second Approval -> Issue, with straight-through only for allowed cases.",
+      "acceptance_criteria": "Threshold/authority rules are server enforced and decision history records reviewer/approver/issuer."
+    },
+    {
+      "id": "SEC-ACC-001",
+      "category": "account_security",
+      "area": "Signed-in devices",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all_authenticated"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The app already includes signed-in device/session management with current-device identification, last-seen/platform data, per-device revocation and sign-out-everywhere.",
+      "evidence": "Account devices route and session controls are present.",
+      "impact": "This is a useful security control that should be preserved and made consistently reachable by all roles.",
+      "proposed_fix": "Keep the feature and expose it consistently in Account > Security for customer, agent, broker, carrier and specialized staff roles.",
+      "acceptance_criteria": "Every authenticated role can view/revoke its own sessions."
+    },
+    {
+      "id": "SEC-ACC-002",
+      "category": "account_security",
+      "area": "Login/security activity log",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all_authenticated"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The app lacks a full login/logout/security-event history.",
+      "evidence": "Device list shows active sessions but not a complete audit of authentication events.",
+      "impact": "Users cannot verify when/where account access occurred or investigate suspicious events.",
+      "proposed_fix": "Add Account > Security > Login Activity with successful/failed sign-ins, OTP/password/biometric events, password changes, new devices, revocations, logout, session expiry, step-up and attestation failures.",
+      "acceptance_criteria": "Users can review chronological security activity with date/time, device, app version, masked IP, approximate server-derived location, method, outcome and risk state."
+    },
+    {
+      "id": "SEC-ACC-003",
+      "category": "account_security",
+      "area": "Device Detail",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all_authenticated"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "Signed-in device entries do not provide a rich device detail/audit view.",
+      "evidence": "Current feature is primarily list/revoke.",
+      "impact": "Users have limited context before revoking a session.",
+      "proposed_fix": "Add Device Detail with model/name, OS, app version, first/last seen, current session, trust/attestation status, last auth and approximate network location.",
+      "acceptance_criteria": "Users can inspect and revoke a device from a dedicated detail screen."
+    },
+    {
+      "id": "SEC-ACC-004",
+      "category": "account_security",
+      "area": "Security alerts",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all_authenticated"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "No comprehensive user-facing alert workflow for high-risk account events was established from the APK.",
+      "evidence": "Session controls exist, but full event alerting was not found.",
+      "impact": "Compromised-account response may be delayed.",
+      "proposed_fix": "Send notification/email/SMS per preferences for new device, password/identity changes, sign-out-everywhere, repeated failures, integrity failure and payout-destination changes; include Secure Account action.",
+      "acceptance_criteria": "High-risk events trigger actionable alerts and security-center navigation."
+    },
+    {
+      "id": "SEC-ACC-005",
+      "category": "account_security",
+      "area": "Organization admin staff-session visibility",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "broker_admin",
+        "carrier_admin"
+      ],
+      "evidence_status": "missing_feature",
+      "problem": "Broker/Carrier admins need organization-level staff security status without exposing unnecessary personal device data.",
+      "evidence": "Current personal device management does not equal staff account administration.",
+      "impact": "Admins cannot quickly identify dormant/compromised staff accounts.",
+      "proposed_fix": "In Staff Detail expose account status, last successful sign-in, active-session count and security status; allow suspend organization access and force reauthentication under permission.",
+      "acceptance_criteria": "Admins can secure staff access while detailed device/IP data remains restricted by privacy/security permissions."
+    },
+    {
+      "id": "PERF-001",
+      "category": "performance",
+      "area": "Hermes / New Architecture / baseline profiles",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The APK uses Hermes, React Native New Architecture and packaged baseline profiles.",
+      "evidence": "Static APK inspection identified these production-oriented performance features.",
+      "impact": "These are strong foundations.",
+      "proposed_fix": "Preserve them and measure runtime regressions on low-end devices.",
+      "acceptance_criteria": "Release builds retain Hermes/New Architecture/baseline profile behavior."
+    },
+    {
+      "id": "PERF-002",
+      "category": "performance",
+      "area": "APK size",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The audited APK is 97,032,612 bytes (~92.5 MiB) and is a universal build containing multiple ABIs.",
+      "evidence": "Static APK inspection found arm64-v8a, armeabi-v7a, x86 and x86_64 payloads.",
+      "impact": "Large direct-download size increases installation friction and data cost.",
+      "proposed_fix": "Prefer Android App Bundle/ABI splits for Play distribution; remove unnecessary native assets/ABIs/fonts for direct APK builds.",
+      "acceptance_criteria": "Typical user download size is materially reduced while required device architectures remain supported."
+    },
+    {
+      "id": "PERF-003",
+      "category": "performance",
+      "area": "Font asset weight",
+      "severity": "medium",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "A large Inter font asset set is packaged.",
+      "evidence": "Static APK review found many Inter font files.",
+      "impact": "Adds package weight and memory/resource overhead.",
+      "proposed_fix": "Subset to actually used weights/styles or use variable-font strategy if compatible.",
+      "acceptance_criteria": "Unused font files are removed without visual regression."
+    },
+    {
+      "id": "PERF-004",
+      "category": "performance",
+      "area": "Production performance monitoring",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "not_evidenced_in_apk",
+      "problem": "A mainstream crash/ANR/performance monitoring SDK was not clearly evidenced in the APK.",
+      "evidence": "Static inspection did not reveal an obvious Sentry/Bugsnag/Datadog-style integration.",
+      "impact": "Startup regressions, ANRs and dropped frames can reach production without rapid diagnosis.",
+      "proposed_fix": "Add or verify production monitoring for crash-free sessions, ANR, startup time, API latency, release version and slow-screen traces.",
+      "acceptance_criteria": "Operations can correlate crashes/performance regressions to app version and route."
+    },
+    {
+      "id": "PERF-005",
+      "category": "performance",
+      "area": "Frame rate validation",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "runtime_validation_required",
+      "problem": "Actual 60/90/120 Hz smoothness and dropped-frame rate cannot be determined from static APK inspection.",
+      "evidence": "Runtime profiling is required.",
+      "impact": "Animation/list jank may remain undiscovered.",
+      "proposed_fix": "Profile cold/warm startup, navigation, long lists, sheets and forms on low-end and high-refresh Android devices.",
+      "acceptance_criteria": "Critical flows meet agreed frame-time and dropped-frame budgets on target hardware."
+    },
+    {
+      "id": "PERF-006",
+      "category": "performance",
+      "area": "Low-end device benchmark",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "runtime_validation_required",
+      "problem": "The 155-route app and ~4 MB Hermes bundle need explicit low-memory device testing.",
+      "evidence": "Architecture is substantial and APK is large.",
+      "impact": "2-3 GB RAM devices common in target markets may expose startup/memory issues.",
+      "proposed_fix": "Benchmark on representative low-end Cortex-A53/A55 class hardware, weak networks and low storage.",
+      "acceptance_criteria": "Startup, memory and navigation remain within defined budgets on minimum-supported hardware."
+    },
+    {
+      "id": "REF-001",
+      "category": "data_freshness",
+      "area": "Refresh architecture",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Refresh/focus/sync behavior is not standardized across every operational screen.",
+      "evidence": "Customer Home has pull-to-refresh and sync/network machinery exists, but no universal freshness contract was found.",
+      "impact": "Users may act on stale operational data without realizing it.",
+      "proposed_fix": "Standardize lastUpdatedAt, pull-to-refresh, focus revalidation, stale indicator, offline/sync state and mutation invalidation.",
+      "acceptance_criteria": "Every operational screen exposes consistent freshness semantics."
+    },
+    {
+      "id": "REF-002",
+      "category": "data_freshness",
+      "area": "Realtime/high-priority queues",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "carrier_staff",
+        "broker_admin",
+        "agent"
+      ],
+      "evidence_status": "missing_feature_or_not_standardized",
+      "problem": "High-priority work queues do not have an app-wide real-time/freshness policy.",
+      "evidence": "Dashboards are largely module launchers.",
+      "impact": "Underwriting, claim, payment or renewal tasks can remain stale.",
+      "proposed_fix": "Define polling/push/focus-refresh strategy per domain based on SLA sensitivity.",
+      "acceptance_criteria": "High-priority queues update within the defined service freshness target without excessive network/battery use."
+    },
+    {
+      "id": "ARCH-001",
+      "category": "architecture",
+      "area": "API/domain modularity",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The APK has a relatively mature domain/API structure covering payments, policies, claims, proposals, quotes, roles, support, security, finance and offline synchronization.",
+      "evidence": "Static compiled code exposes centralized API/domain layers.",
+      "impact": "This foundation should be retained.",
+      "proposed_fix": "Do not rewrite the architecture; complete missing UI workflows on top of existing services.",
+      "acceptance_criteria": "New screens reuse existing domain services instead of duplicating API logic."
+    },
+    {
+      "id": "ARCH-002",
+      "category": "architecture",
+      "area": "Backend/UI depth mismatch",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all_partner_roles"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Backend/API capability is deeper than several mobile workflows.",
+      "evidence": "Rich service APIs coexist with list-only mobile modules.",
+      "impact": "Users encounter artificial mobile limitations despite backend capability.",
+      "proposed_fix": "Complete role-aware detail/action screens before adding new domain breadth.",
+      "acceptance_criteria": "Every exposed list has the detail/action depth supported by backend permissions."
+    },
+    {
+      "id": "ARCH-003",
+      "category": "architecture",
+      "area": "Design-system escape",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Screens can bypass shared UI primitives and invent actions/filters independently.",
+      "evidence": "Raw Pressable/custom patterns coexist with shared components.",
+      "impact": "Causes inconsistent styling, accessibility and behavior.",
+      "proposed_fix": "Enforce shared primitives at lint/review level; prohibit custom transactional buttons/filters without explicit exception.",
+      "acceptance_criteria": "New/modified screens pass a design-system conformance check."
+    },
+    {
+      "id": "ARCH-004",
+      "category": "architecture",
+      "area": "Generic workspace fragmentation",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "broker_staff",
+        "finance_roles",
+        "claims_roles",
+        "compliance_roles"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "Generic table-based workspaces are used for operational roles that need rich domain workflows.",
+      "evidence": "BROKER_STAFF and specialized carrier roles are routed to generic workspace modules.",
+      "impact": "The same organization gets two UX models and staff receive shallow functionality.",
+      "proposed_fix": "Use shared domain shells plus backend capabilities instead of a generic read-only workspace for transactional roles.",
+      "acceptance_criteria": "Operational staff can complete assigned domain workflows using the same core screens as admins, with restricted actions."
+    },
+    {
+      "id": "ARCH-005",
+      "category": "architecture",
+      "area": "Capability-driven UI",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "broker_staff",
+        "carrier_staff",
+        "specialized_staff"
+      ],
+      "evidence_status": "partial_or_missing",
+      "problem": "Role names are used heavily, but fine-grained capability-driven rendering is inconsistent.",
+      "evidence": "Carrier menu breadth and generic workspace behavior indicate role-shell coupling.",
+      "impact": "Role proliferation and overexposure of unavailable actions become likely.",
+      "proposed_fix": "Have backend return permissions/capabilities/allowed_actions per module/record and render UI from those.",
+      "acceptance_criteria": "UI never grants authority merely because of a role string, and server still enforces every action."
+    },
+    {
+      "id": "ARCH-006",
+      "category": "architecture",
+      "area": "Universal detail-page contract",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "proposed_standard",
+      "problem": "Detail pages do not follow one consistent loading/error/offline/audit/action contract.",
+      "evidence": "Operational depth varies widely between modules.",
+      "impact": "Users experience inconsistent states and error recovery.",
+      "proposed_fix": "Standardize detail header, statuses, overview, documents, related records, activity/audit, loading/404/403/offline/stale/error/retry and capability actions.",
+      "acceptance_criteria": "Every new detail route conforms to the shared contract and design tokens."
+    },
+    {
+      "id": "SEC-001",
+      "category": "security",
+      "area": "HTTPS production API",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Production API uses HTTPS.",
+      "evidence": "Audited production API base is HTTPS.",
+      "impact": "Provides transport encryption baseline.",
+      "proposed_fix": "Preserve strict TLS and modern server configuration.",
+      "acceptance_criteria": "No production endpoint falls back to cleartext HTTP."
+    },
+    {
+      "id": "SEC-002",
+      "category": "security",
+      "area": "Secure local storage",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Secure local token/secret storage infrastructure is present.",
+      "evidence": "Static APK inspection identified SecureStore-style encrypted/device storage logic.",
+      "impact": "Reduces casual token exposure.",
+      "proposed_fix": "Keep secrets out of AsyncStorage/plain files and validate backup/device-transfer behavior.",
+      "acceptance_criteria": "Authentication secrets remain in approved secure storage only."
+    },
+    {
+      "id": "SEC-003",
+      "category": "security",
+      "area": "Biometric authentication",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Biometric/local authentication integration is present.",
+      "evidence": "Android biometric/fingerprint permissions and local auth code exist.",
+      "impact": "Improves reauthentication UX.",
+      "proposed_fix": "Use biometrics for local unlock/step-up convenience, not as the sole server authorization mechanism.",
+      "acceptance_criteria": "Sensitive server actions still require valid authenticated/step-up grants."
+    },
+    {
+      "id": "SEC-004",
+      "category": "security",
+      "area": "Session lock and step-up",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Session idle locking and step-up authentication patterns exist.",
+      "evidence": "The app handles session timeout/relock and X-Step-Up-Grant style sensitive-action authorization.",
+      "impact": "Strong foundation for high-risk actions.",
+      "proposed_fix": "Extend step-up consistently to issuance, payout, sensitive profile/security and finance actions.",
+      "acceptance_criteria": "Configured high-risk actions cannot complete without valid step-up."
+    },
+    {
+      "id": "SEC-005",
+      "category": "security",
+      "area": "Idempotency",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "payments",
+        "financial_actions"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "Idempotency keys are generated for relevant requests.",
+      "evidence": "Network layer includes Idempotency-Key handling.",
+      "impact": "Reduces duplicate financial transactions on retry.",
+      "proposed_fix": "Preserve and extend idempotency to all payment/issuance/settlement mutations where required.",
+      "acceptance_criteria": "Retries cannot create duplicate monetary or policy-binding operations."
+    },
+    {
+      "id": "SEC-006",
+      "category": "security",
+      "area": "Secure screen / FLAG_SECURE",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The app includes secure-screen configuration intended to prevent screenshots/screen recording of protected content.",
+      "evidence": "Custom security plugin configuration enables FLAG_SECURE behavior.",
+      "impact": "Helps reduce casual screen capture of sensitive data.",
+      "proposed_fix": "Apply selectively where required and verify UX for receipts/documents that legitimately need sharing.",
+      "acceptance_criteria": "Sensitive screens are protected while approved document-sharing flows remain usable."
+    },
+    {
+      "id": "SEC-007",
+      "category": "security",
+      "area": "Native device attestation",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "Device-attestation API contracts exist but native Google Play Integrity / App Attest evidence was not evidenced as fully wired into this APK.",
+      "evidence": "The app references device-attestation nonce/assessment and correctly notes that JS alone cannot prove device integrity.",
+      "impact": "Rooted/repacked/emulated/high-risk devices may lack strong server-verifiable trust signals.",
+      "proposed_fix": "Implement Google Play Integrity on Android and App Attest/DeviceCheck on iOS, verify server-side and feed results into risk decisions.",
+      "acceptance_criteria": "Sensitive sessions/actions carry server-verified attestation results and degraded devices follow a documented risk policy."
+    },
+    {
+      "id": "SEC-008",
+      "category": "security",
+      "area": "Root/tamper risk signals",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "not_evidenced_in_apk",
+      "problem": "Dedicated root/jailbreak/tamper signals were not clearly evidenced.",
+      "evidence": "Static inspection did not show a convincing dedicated implementation.",
+      "impact": "Compromised-device risk may be underrepresented.",
+      "proposed_fix": "Add layered risk signals (not sole hard-block): integrity verdict, debug/hook indicators, package/signature checks, emulator/risk signals and server-side anomaly scoring.",
+      "acceptance_criteria": "Compromised signals influence risk/step-up while false positives do not automatically lock legitimate users without recovery."
+    },
+    {
+      "id": "SEC-009",
+      "category": "security",
+      "area": "Certificate pinning policy",
+      "severity": "medium",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "not_evidenced_as_configured",
+      "problem": "OkHttp pinning capability exists in dependencies but application-specific certificate pins were not evidenced.",
+      "evidence": "No clear OpesInsure pin configuration was found.",
+      "impact": "TLS remains standard-secure, but high-risk threat models may want MITM hardening.",
+      "proposed_fix": "Make an explicit pinning decision; if used, implement backup pins and rotation strategy to avoid outages.",
+      "acceptance_criteria": "Security documentation records whether pinning is used and operational rotation is tested."
+    },
+    {
+      "id": "SEC-010",
+      "category": "security",
+      "area": "Expo OTA update signing",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "needs_verification",
+      "problem": "Expo Updates is configured, but explicit custom OTA update code-signing configuration was not clearly evidenced during this audit.",
+      "evidence": "Static inspection showed Expo Updates production configuration but not a definitive signing setup.",
+      "impact": "A weak OTA trust chain could affect a large part of the JS application.",
+      "proposed_fix": "Verify and enforce Expo update signing, channel/environment separation and rollback controls.",
+      "acceptance_criteria": "Production OTA updates are cryptographically verified and cannot be accepted from an unauthorized channel."
+    },
+    {
+      "id": "SEC-011",
+      "category": "security",
+      "area": "APK signing",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The APK uses modern Android signing (v2 identified).",
+      "evidence": "Static APK inspection identified v2 signing.",
+      "impact": "Provides modern package integrity baseline.",
+      "proposed_fix": "Preserve modern signing and protect release keystore/process.",
+      "acceptance_criteria": "Release pipeline uses protected signing credentials and reproducible signing controls."
+    },
+    {
+      "id": "FRAUD-001",
+      "category": "anti_fraud",
+      "area": "Client-side fraud controls",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength_with_gap",
+      "problem": "The client includes device IDs, secure storage, biometrics, step-up, idempotency, sessions, attestation endpoints and support/fraud-report concepts, but device integrity is incomplete.",
+      "evidence": "Multiple client fraud/security primitives are present.",
+      "impact": "Good baseline but not sufficient against compromised devices or server-side fraud patterns.",
+      "proposed_fix": "Finish native attestation and ensure server-side risk engine consumes device/session/transaction signals.",
+      "acceptance_criteria": "High-risk actions are scored using server-verified device and behavioral context."
+    },
+    {
+      "id": "FRAUD-002",
+      "category": "anti_fraud",
+      "area": "Backend fraud engine visibility",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "backend_not_audited",
+      "problem": "Velocity rules, duplicate identity, synthetic identity, claim duplication, collusion, sanctions/PEP and anomaly models cannot be verified from the mobile APK.",
+      "evidence": "These controls are server-side by nature and were outside APK evidence.",
+      "impact": "Production-readiness cannot assume these controls exist.",
+      "proposed_fix": "Audit backend fraud controls separately and map mobile signals into them.",
+      "acceptance_criteria": "A separate backend fraud-control audit documents implemented rules, monitoring and escalation."
+    },
+    {
+      "id": "FRAUD-003",
+      "category": "anti_fraud",
+      "area": "Policy/payment state trust",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "carrier_staff",
+        "customer"
+      ],
+      "evidence_status": "security_requirement",
+      "problem": "Mobile must never infer payment success or policy issuance solely from client-side actions.",
+      "evidence": "Existing design already references server verification and issuance exception states.",
+      "impact": "Client-side trust could enable false-paid/false-issued presentation.",
+      "proposed_fix": "All paid/issued states must come from server-verified gateway and carrier state; handle delayed issuance explicitly.",
+      "acceptance_criteria": "No client-only event can mark a financial transaction paid or a policy issued."
+    },
+    {
+      "id": "OFF-001",
+      "category": "offline",
+      "area": "Offline queue/sync architecture",
+      "severity": "low",
+      "priority": "P2",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_strength",
+      "problem": "The app has secure offline queue, retry/backoff, migration and sync/network-state infrastructure.",
+      "evidence": "Static code exposes offline queue and synchronization services.",
+      "impact": "Strong fit for variable connectivity.",
+      "proposed_fix": "Preserve and extend domain coverage carefully.",
+      "acceptance_criteria": "Queued mutations remain durable, scoped and idempotent across restart/connectivity changes."
+    },
+    {
+      "id": "OFF-002",
+      "category": "offline",
+      "area": "Offline UX state consistency",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "Offline/sync states are not guaranteed to be presented uniformly across modules.",
+      "evidence": "Underlying queue/sync architecture is stronger than the visible workflow consistency.",
+      "impact": "Users may not know whether work is local, pending, synced, conflicted or failed.",
+      "proposed_fix": "Create universal statuses: Saved locally, Waiting to sync, Syncing, Synced, Conflict, Failed - action needed.",
+      "acceptance_criteria": "Every offline-capable mutation visibly communicates its current synchronization state."
+    },
+    {
+      "id": "DES-001",
+      "category": "design",
+      "area": "Design-system consistency",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "The app has a real design system, but implementation consistency varies substantially by screen.",
+      "evidence": "Shared colors/spacing/radius/typography/cards/buttons/chips coexist with custom implementations.",
+      "impact": "One screen can feel polished while the next feels unfinished or cramped.",
+      "proposed_fix": "Enforce design tokens and shared primitives; add visual regression tests for critical components/routes.",
+      "acceptance_criteria": "Critical routes use the same spacing, typography, action hierarchy and state components."
+    },
+    {
+      "id": "DES-002",
+      "category": "design",
+      "area": "Cramping/truncation stress",
+      "severity": "high",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "confirmed_from_apk",
+      "problem": "One-line/two-line caps, single-line tabs and constrained summaries create cramping risks on small screens and French localization.",
+      "evidence": "Multiple compiled components use strict line limits.",
+      "impact": "Text is truncated rather than layouts adapting.",
+      "proposed_fix": "Prefer adaptive wrapping, vertical growth and dedicated metadata rows over ellipsis for critical data.",
+      "acceptance_criteria": "Critical content remains readable on smallest supported width, French locale and 200% font scale."
+    },
+    {
+      "id": "PROD-001",
+      "category": "production_readiness",
+      "area": "Crash/ANR observability",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "not_evidenced_in_apk",
+      "problem": "Production crash/ANR observability is not clearly established from the APK.",
+      "evidence": "No obvious mainstream monitoring integration was evidenced.",
+      "impact": "Production blockers can remain invisible or difficult to correlate.",
+      "proposed_fix": "Add/verify crash, ANR and performance telemetry with release/version/user-safe identifiers.",
+      "acceptance_criteria": "Operations can identify top crashes/ANRs by app version and route within the agreed response window."
+    },
+    {
+      "id": "PROD-002",
+      "category": "production_readiness",
+      "area": "Release gating",
+      "severity": "critical",
+      "priority": "P0",
+      "roles": [
+        "all"
+      ],
+      "evidence_status": "audit_conclusion",
+      "problem": "The app has strong foundations but still contains P0 workflow, accessibility, security and navigation blockers.",
+      "evidence": "Confirmed issues include empty-dashboard trap, dead-end detail flows, weak action visibility, incomplete device attestation and incomplete role workflows.",
+      "impact": "Shipping as final unrestricted production could block legitimate users or weaken trust/security.",
+      "proposed_fix": "Do not declare final production readiness until all P0 items and agreed P1 security/accessibility items pass acceptance tests.",
+      "acceptance_criteria": "Release checklist shows zero unresolved P0 issues and signed-off accessibility/security/role-workflow tests."
+    },
+    {
+      "id": "CUST-001",
+      "category": "customer_portfolio",
+      "area": "Customer type segmentation",
+      "severity": "medium",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "A proper Individual/Business/Group customer-type filter is not exposed as a standard portfolio filter.",
+      "evidence": "Current customer filtering is basic.",
+      "impact": "Partners cannot segment B2C/B2B portfolios efficiently.",
+      "proposed_fix": "Add customer_type filter backed by server master data/schema.",
+      "acceptance_criteria": "Portfolio can be filtered by supported customer entity type."
+    },
+    {
+      "id": "CUST-002",
+      "category": "customer_portfolio",
+      "area": "Origin/ownership segmentation",
+      "severity": "high",
+      "priority": "P1",
+      "roles": [
+        "agent",
+        "broker_admin",
+        "broker_staff"
+      ],
+      "evidence_status": "confirmed_gap",
+      "problem": "Customer-origin/ownership visibility is not presented as a standardized filter despite origin-lock concepts existing.",
+      "evidence": "Client details include origin-lock information.",
+      "impact": "Partners need to distinguish own-originated, assigned and organization-owned customers.",
+      "proposed_fix": "Add authorized origin/ownership filters without weakening origin-lock rules.",
+      "acceptance_criteria": "Users can filter only scopes they are permitted to view; origin lock remains server enforced."
+    }
+  ],
+  "production_blockers": [
+    "DASH-001: Fix partner empty-dashboard navigation trap.",
+    "NAV-001: Eliminate dead-end operational lists and complete detail/action workflows.",
+    "BTN-003/BTN-004: Make secondary/filter/action controls visually unmistakable.",
+    "A11Y-002/A11Y-005/A11Y-009: Complete TalkBack, large-text and accessibility pass.",
+    "FORM-001/FORM-005: Fix keyboard and bottom-sheet safe-area issues.",
+    "AGT-001/AGT-002/AGT-003: Complete Agent Claims, Policy and Renewal workflows.",
+    "BRK-002/BRK-003/BRK-004/BRK-005: Complete Broker creation, Policy, Claim and Renewal workflows.",
+    "BRK-011: Replace Broker Staff generic dead-end workspace with broker-native permission-scoped shell.",
+    "CAR-003/CAR-005/CAR-006/CAR-008/CAR-011: Complete carrier Proposal, Issuance, Policy, Payment and Bordereau detail flows.",
+    "CAR-013/CAR-014: Make carrier/specialized staff module access capability-driven and operational.",
+    "FLT-001/FLT-002/COM-001/COM-002/COM-003/COM-004: Add customer and commission multidimensional filters.",
+    "SEC-ACC-002: Add full login/security activity history.",
+    "SEC-007: Complete native device attestation.",
+    "ARCH-003/ARCH-005: Enforce design-system and capability-driven UI.",
+    "PROD-002: Do not mark final production ready until P0 acceptance criteria pass."
+  ],
+  "acceptance_journeys": {
+    "customer": [
+      "Public Explore -> Product discovery -> Quote -> Authenticate when required -> Proposal -> Payment -> Server verification -> Policy -> Receipt/Certificate",
+      "Home urgent action -> Payment/Claim/Renewal detail -> resolve -> Home refreshes"
+    ],
+    "agent": [
+      "Lead -> Client -> Quote -> Offers -> Proposal -> Payment -> Issuance -> Policy -> Renewal -> Claim assistance",
+      "Customers -> Filter by insurer + product family + renewal window -> open customer -> open policy",
+      "Commission -> Filter by insurer + product + unpaid -> open commission -> linked policy",
+      "Account -> Security -> Signed-in devices -> revoke another device -> Login Activity"
+    ],
+    "broker_admin": [
+      "Lead -> Assignment -> Client -> New Quote/New Business -> Proposal -> Payment -> Policy -> Commission -> Renewal -> Claim",
+      "Customers -> insurer + Motor + 30-day renewal + producer -> open customer -> policy",
+      "Commission -> insurer + product + producer + unpaid + month -> detail -> linked policy",
+      "Staff -> Member Detail -> permission/status/session summary -> suspend/reactivate"
+    ],
+    "broker_staff": [
+      "Login -> broker-native dashboard -> assigned customer/lead -> quote -> policy/claim servicing without generic table dead end"
+    ],
+    "carrier_underwriting_issuance": [
+      "Quote Request -> Underwriting -> Offer -> Proposal -> Payment verified -> Issuance Detail -> approval/second approval -> Policy"
+    ],
+    "carrier_claims": [
+      "Claim -> Evidence/Information -> Assessment -> Proposed decision -> second approval when required -> Settlement -> Payment"
+    ],
+    "carrier_finance": [
+      "Payment -> Payment Detail -> Reconciliation/Exception -> Settlement -> Bordereau -> line-item resolution"
+    ],
+    "carrier_admin": [
+      "Partner -> Partner Detail -> Agreement/Compliance -> Production -> Staff/Permissions -> Audit"
+    ]
+  },
+  "implementation_guardrails": [
+    "Preserve existing strong flows: Agent/Broker Lead workflows, shared Partner Quote workflow, Carrier Quote Requests, Carrier Underwriting Referral decisions, Carrier Claim decision/maker-checker logic, secure offline queue, step-up authentication, idempotency and origin-lock protections.",
+    "No mobile filter, hidden button or role label may be treated as an authorization boundary. Server-side tenant/organization/role/ownership/permission/capability/delegated-authority checks remain mandatory.",
+    "Financial and policy-binding state must be server verified. Never mark payment successful or policy issued only from client-side events.",
+    "Use one reusable filter framework and one reusable action/button component family.",
+    "Use shared role-aware detail pages where domain records are the same; vary actions from backend capabilities rather than duplicating near-identical screens.",
+    "Every operational detail page must handle loading, empty/missing, 403, 404, offline, stale, sync-pending, API-error and retry states.",
+    "Every mutation must update/refetch the affected detail/list/dashboard state and preserve navigation context.",
+    "All new controls must be TalkBack-labelled, large-text safe, non-color-dependent and at least 44-48dp tappable.",
+    "Do not expose exact login GPS as a default security-log field; prefer server-derived approximate network location where appropriate.",
+    "Do not expose unrelated agents' commissions or customers through new filtering capabilities."
+  ]
+}

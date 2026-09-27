@@ -122,6 +122,7 @@ export default function QuoteDetail() {
           <HeroCard
             icon={ShieldCheck}
             title={name || t("pqTitle")}
+            compact
             lines={[summary?.vehicle_label ?? null, lowest !== null ? t("qwFrom", { amount: f.xaf(lowest) }) : null]}
             chip={<StatusChip label={td(`quoteStatus_${outcome ?? status}`, outcome ?? status)} tone={declined || expired ? "danger" : referred ? "warning" : canResume ? "success" : "neutral"} />}
             meta={[

@@ -5,6 +5,8 @@ import { Button, Card, SectionTitle } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ContractField } from "@/components/forms/ContractField";
+import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
+import type { DeviceFix } from "@/lib/locationMatch";
 import { api } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import { buildFormPayload, initialFormValues, normalizeFormSchema, type FormName, type FormSchema } from "@/lib/inputForms";
@@ -76,6 +78,7 @@ export function SchemaForm({
   footer,
   flat = false,
   submitIcon,
+  onLocation,
 }: {
   form: FormName;
   initialValues?: Record<string, string> | null;
@@ -90,6 +93,8 @@ export function SchemaForm({
   /** Fields straight on the page canvas (no section cards/titles), as the claim wizard design shows. */
   flat?: boolean;
   submitIcon?: React.ComponentProps<typeof Button>["icon"];
+  /** Device position used to prefill town/region (null when cleared or opted out). */
+  onLocation?: (fix: DeviceFix | null) => void;
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -141,8 +146,18 @@ export function SchemaForm({
         return (
           <React.Fragment key={step.key}>
             {schema.steps.length > 1 && !flat ? <SectionTitle title={lang === "fr" && step.titleFr ? step.titleFr : step.title} /> : null}
-            <Wrap {...(flat ? { style: s.flat } : {})}>{
-              visible.map((f) => (
+            <Wrap {...(flat ? { style: s.flat } : {})}>
+              {visible.some((f) => f.master?.list === "cameroon_region") ? (
+                <FormLocationAutofill
+                  form={form}
+                  fields={visible}
+                  values={values}
+                  setValues={setValues}
+                  onLabels={(l) => setLabels((x) => ({ ...x, ...l }))}
+                  onFix={onLocation}
+                />
+              ) : null}
+              {visible.map((f) => (
                 <ContractField
                   key={f.key}
                   field={f}

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Localization from "expo-localization";
 import { ApiError, AuthApi, SessionBootstrap, TokenVault, Workspace } from "@/api/client";
@@ -8,6 +9,7 @@ import { Language } from "@/i18n/strings";
 import { OfflineVault } from "@/offline/vault";
 import { SecureJson } from "@/security/secureJson";
 import { PaymentAttemptKeys } from "@/store/insurance";
+import { LANGUAGE_CHOICE_KEY, normalizeLanguage, resolveLanguage } from "@/lib/languageChoice";
 import { hydrateStartStatus, statusAfterNetworkFailure } from "@/lib/navigationContinuity";
 
 export type SessionStatus =
@@ -58,13 +60,34 @@ const cachedBootstrap = async (): Promise<SessionBootstrap | null> => {
 export const isCredentialFailure = (error: unknown) =>
   error instanceof ApiError && (error.status === 401 || error.code === "SESSION_EXPIRED");
 
-const deviceLanguage = (): Language => {
+/** Device / browser language tags: expo-localization on native (it reads
+ * navigator.languages on web), with navigator.language as a web fallback. */
+const deviceTags = (): string[] => {
+  const tags: string[] = [];
   try {
-    return Localization.getLocales()[0]?.languageCode === "fr" ? "fr" : "en";
+    for (const l of Localization.getLocales()) {
+      if (l.languageTag) tags.push(l.languageTag);
+      else if (l.languageCode) tags.push(l.languageCode);
+    }
   } catch {
-    return "en";
+    // fall through to navigator
   }
+  const nav = (globalThis as { navigator?: { language?: string; languages?: readonly string[] } }).navigator;
+  if (nav?.languages) tags.push(...nav.languages);
+  if (nav?.language) tags.push(nav.language);
+  return tags;
 };
+/** Explicit in-app choice (null = follow the device). */
+let explicitLanguage: Language | null = null;
+const loadExplicitLanguage = async () => {
+  try {
+    explicitLanguage = normalizeLanguage(await AsyncStorage.getItem(LANGUAGE_CHOICE_KEY));
+  } catch {
+    explicitLanguage = null;
+  }
+  return explicitLanguage;
+};
+const currentLanguage = (): Language => resolveLanguage(explicitLanguage, deviceTags());
 
 const pickWorkspace = async (bootstrap: SessionBootstrap) => {
   const tenant = await TokenVault.tenant();
@@ -89,7 +112,7 @@ export const useSession = create<SessionState>((set, get) => ({
   offline: false,
   bootstrap: null,
   activeWorkspace: null,
-  language: deviceLanguage(),
+  language: currentLanguage(),
   error: null,
   async hydrate() {
     // A signed-in user is refreshed silently: flipping to "booting" would
@@ -97,6 +120,8 @@ export const useSession = create<SessionState>((set, get) => ({
     // src/lib/navigationContinuity.ts).
     const previous = get().status;
     set({ status: hydrateStartStatus(previous), error: null });
+    await loadExplicitLanguage();
+    set({ language: currentLanguage() });
     const [token, refresh] = await Promise.all([TokenVault.access(), TokenVault.refresh()]);
     if (!token && !refresh) {
       set({ ...anonymousState });
@@ -111,7 +136,7 @@ export const useSession = create<SessionState>((set, get) => ({
         offline: false,
         bootstrap,
         activeWorkspace,
-        language: bootstrap.user.locale,
+        language: currentLanguage(),
         error: null,
       });
     } catch (error) {
@@ -130,7 +155,7 @@ export const useSession = create<SessionState>((set, get) => ({
           offline: true,
           bootstrap: cached,
           activeWorkspace: await pickWorkspace(cached),
-          language: cached.user.locale,
+          language: currentLanguage(),
           error: null,
         });
         return;
@@ -160,7 +185,7 @@ export const useSession = create<SessionState>((set, get) => ({
       offline: false,
       bootstrap,
       activeWorkspace: first,
-      language: bootstrap.user.locale,
+      language: currentLanguage(),
       error: null,
     });
   },
@@ -189,7 +214,11 @@ export const useSession = create<SessionState>((set, get) => ({
     set({ bootstrap, activeWorkspace: next, status: "authenticated", offline: false });
     return bootstrap;
   },
-  setLanguage: (language) => set({ language }),
+  setLanguage: (language) => {
+    explicitLanguage = language;
+    AsyncStorage.setItem(LANGUAGE_CHOICE_KEY, language).catch(() => undefined);
+    set({ language });
+  },
   async signOut() {
     try {
       await AuthApi.logout();
@@ -306,3 +335,11 @@ export const sessionHome = (state: {
   if (state.activeWorkspace) return portalRoute(state.activeWorkspace);
   return "/(auth)/role" as const;
 };
+
+/** Re-check the device language when the app returns to the foreground
+ * (the user may have changed it in system settings). */
+AppState.addEventListener("change", (next) => {
+  if (next !== "active") return;
+  const language = currentLanguage();
+  if (useSession.getState().language !== language) useSession.setState({ language });
+});

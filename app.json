@@ -40,6 +40,21 @@
                         "BROWSABLE",
                         "DEFAULT"
                     ]
+                },
+                {
+                    "action": "VIEW",
+                    "autoVerify": false,
+                    "data": [
+                        {
+                            "scheme": "https",
+                            "host": "insurance.opesdatacenter.tech",
+                            "path": "/verify"
+                        }
+                    ],
+                    "category": [
+                        "BROWSABLE",
+                        "DEFAULT"
+                    ]
                 }
             ],
             "permissions": [
@@ -49,6 +64,7 @@
         },
         "plugins": [
             "expo-router",
+            "react-native-blob-util",
             [
                 "expo-splash-screen",
                 {
@@ -72,6 +88,14 @@
                     "cameraPermission": "Allow OpesInsure to capture claim evidence.",
                     "microphonePermission": "Allow OpesInsure to record audio with claim videos.",
                     "photosPermission": "Allow OpesInsure to attach photos and videos to your claims and KYC."
+                }
+            ],
+            [
+                "expo-location",
+                {
+                    "locationWhenInUsePermission": "OpesInsure uses your location only while you fill a form, to prefill your town and region (and the incident position on a claim). / OpesInsure utilise votre position uniquement pendant la saisie d'un formulaire, pour préremplir votre ville et votre région (et la position du sinistre).",
+                    "isAndroidBackgroundLocationEnabled": false,
+                    "isIosBackgroundLocationEnabled": false
                 }
             ],
             "expo-document-picker",

@@ -10,6 +10,7 @@ import { usePolicies } from "@/hooks/usePolicies";
 import { claimStatusKey, claimTone } from "@/lib/claimStatus";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { IncidentCoordinates } from "@/components/forms/LocationAutofill";
 import { ApiError, ClaimIncidentDetails, ClaimsApi, ClaimsCompletionApi } from "@/api/client";
 import { OfflineVault } from "@/offline/vault";
 import { useLoad } from "@/hooks/useLoad";
@@ -110,6 +111,7 @@ export default function Incident() {
               value={x.police_report_number ?? ""}
               onChangeText={(v) => setX({ ...x, police_report_number: v })}
             />
+            <IncidentCoordinates latitude={x.latitude} longitude={x.longitude} onChange={(c) => setX((cur) => (cur ? { ...cur, ...c } : cur))} />
             {flags.map(([k, label]) => (
               <View key={k} style={s.toggle}>
                 <Text style={s.grow}>{t(label)}</Text>

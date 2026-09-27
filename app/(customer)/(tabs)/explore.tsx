@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronRight, Scale, ShieldCheck } from "lucide-react-native";
 import { Chip, ChipRow, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading } from "@/components/design";
 import { CategoryStrip, CATEGORY_TINT } from "@/components/customer/CategoryTiles";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
+import { FeaturedProviders } from "@/components/customer/FeaturedProviders";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { CATEGORIES } from "@/components/customer/categories";
@@ -76,6 +77,7 @@ export default function Explore() {
     <Screen>
       <BrandHeader back={false} title={t("exploreTitle")} subtitle={t("exploreTagline")} />
       <SearchBar
+        filled
         value={query}
         onChangeText={setQuery}
         label={t("searchLabel")}
@@ -93,21 +95,7 @@ export default function Explore() {
 
       <SectionHeading title={t("exploreFeaturedProviders")} action={t("seeAll")} onAction={() => router.push("/institutions/insurers")} />
       {featured.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRow}>
-          {featured.map((p) => (
-            <Pressable
-              key={p.id}
-              accessibilityRole="button"
-              accessibilityLabel={p.name}
-              onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.id } })}
-              android_ripple={ripple()}
-              style={({ pressed }) => [styles.featured, pressed && styles.pressed]}
-            >
-              <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={48} />
-              <Text style={styles.featuredName}>{p.name}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <FeaturedProviders providers={featured} />
       ) : null}
 
       <SectionHeading title={t("explorePopularProducts")} />
@@ -261,11 +249,8 @@ const styles = StyleSheet.create({
   },
   ctaTitle: { ...type.cardTitle, color: colors.white },
   ctaBody: { ...type.meta, color: colors.blue50 },
-  featuredRow: { gap: space.x3, paddingVertical: 2 },
-  featured: { width: 116, minHeight: 112, alignItems: "center", justifyContent: "center", gap: space.x2, padding: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, overflow: "hidden" },
-  featuredName: { ...type.label, fontSize: 13, lineHeight: 17, color: colors.navy950, textAlign: "center" },
   popular: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, overflow: "hidden" },
-  popularIcon: { width: 72, height: 72, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
+  popularIcon: { width: 60, height: 60, borderRadius: radius.card, alignItems: "center", justifyContent: "center" },
   popularTitle: { ...type.cardTitle, color: colors.navy950 },
   chevron: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.neutral200, alignItems: "center", justifyContent: "center" },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },

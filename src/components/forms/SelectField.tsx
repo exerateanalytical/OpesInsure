@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check, ChevronDown, Search, X } from "lucide-react-native";
 import { FIELD, fieldStyles } from "@/components/ui";
@@ -29,6 +29,7 @@ export function SelectField({
   disabled,
   loading,
   title,
+  sheetHeader,
 }: {
   label: string;
   value?: string;
@@ -41,6 +42,8 @@ export function SelectField({
   loading?: boolean;
   /** Sheet title (defaults to the label). */
   title?: string;
+  /** Extra content at the top of the sheet, e.g. filter chips. */
+  sheetHeader?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -76,6 +79,7 @@ export function SelectField({
         title={title ?? label}
         options={options}
         value={value}
+        header={sheetHeader}
         onClose={() => setOpen(false)}
         onPick={(v) => {
           setOpen(false);
@@ -94,6 +98,7 @@ export function OptionSheet({
   value,
   onPick,
   onClose,
+  header,
 }: {
   visible: boolean;
   title: string;
@@ -101,10 +106,22 @@ export function OptionSheet({
   value?: string;
   onPick: (value: string) => void;
   onClose: () => void;
+  header?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  // Keep the sheet (and its search box) above the software keyboard on native.
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", (e) => setKeyboard(e.endCoordinates.height));
+    const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () => setKeyboard(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   const [q, setQ] = useState("");
   const searchable = options.length > SEARCH_AFTER;
   const rows = useMemo(() => {
@@ -120,7 +137,7 @@ export function OptionSheet({
       <View style={s.root}>
         <Pressable style={s.backdrop} onPress={close} accessibilityRole="button" accessibilityLabel={t("mdClose")} />
         {/* Explicit max height: the list flexes inside it and always scrolls. */}
-        <View style={[s.sheet, { maxHeight: Math.round(height * 0.85), paddingBottom: Math.max(insets.bottom, space.x4) }]} accessibilityViewIsModal>
+        <View style={[s.sheet, { maxHeight: Math.round((height - keyboard) * 0.85), paddingBottom: keyboard ? space.x3 : Math.max(insets.bottom, space.x4), marginBottom: Platform.OS === "ios" ? keyboard : 0 }]} accessibilityViewIsModal>
           <View style={s.handle} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
           <View style={s.header}>
             <Text accessibilityRole="header" style={s.title}>{title}</Text>
@@ -128,6 +145,7 @@ export function OptionSheet({
               <X size={20} color={colors.neutral600} />
             </Pressable>
           </View>
+          {header}
           {searchable ? (
             <View style={s.search}>
               <Search size={18} color={colors.neutral600} />

@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   UserRound,
   UsersRound,
+  BadgeCheck,
+  CreditCard,
 } from "lucide-react-native";
 import { AuthCard, AuthHero } from "@/components/auth/AuthHero";
 import { AuthFooterBranding } from "@/components/auth/AuthFooter";
@@ -40,8 +42,8 @@ const accountTypes: { key: string; label: CopyKey; icon: typeof UsersRound }[] =
 
 const trustItems: { icon: typeof Check; label: CopyKey }[] = [
   { icon: ShieldCheck, label: "welcomeLicensed" },
-  { icon: Check, label: "welcomeSecurePayments" },
-  { icon: Check, label: "welcomeVerifiedProducts" },
+  { icon: CreditCard, label: "welcomeSecurePayments" },
+  { icon: BadgeCheck, label: "welcomeVerifiedProducts" },
 ];
 
 export default function SignUp() {

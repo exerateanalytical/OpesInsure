@@ -95,7 +95,9 @@ export default function Kyc() {
         back={!onboarding}
         right="help"
       />
-      <BrandArt name="glass_shield" width={64} />
+      <View style={{ alignSelf: "center" }}>
+        <TintedIcon icon={ShieldCheck} tint="blue" size={64} />
+      </View>
       <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(k) => {
           const sub = k.submission;

@@ -879,6 +879,57 @@ export const PublicApi = {
       anonymous: true,
       idempotent: true,
     }),
+  /** POST /public/verify — canonical public document verification (REQ-DUP-015, WF-082).
+   * `reference` is a document verification code, certificate serial or policy
+   * number; `token` is the QR token (?t=) of a certificate QR. Minimal disclosure. */
+  verifyDocument: (reference: string, token?: string | null) =>
+    api<DocumentVerification>("/public/verify", {
+      method: "POST",
+      body: JSON.stringify(token ? { reference, token } : { reference }),
+      anonymous: true,
+      idempotent: true,
+    }),
+};
+/** POST /public/verify payload (DocumentVerificationPresenter::publicPayload or the policy fallback). */
+export type DocumentVerification = {
+  status: "VALID" | "EXPIRED" | "REVOKED" | "REPLACED" | "NOT_FOUND" | "NOT_YET_ACTIVE" | string;
+  result?: string;
+  verification_result?: string;
+  reference?: string;
+  disclosure?: string;
+  carrier_name?: string | null;
+  product_class?: string | null;
+  product_name?: string | null;
+  policy_status?: string | null;
+  coverage_starts_at?: string | null;
+  coverage_ends_at?: string | null;
+  checked_at?: string | null;
+  notice?: string | null;
+  status_seal?: string | null;
+  document?: {
+    document_number?: string | null;
+    masked_document_number?: string | null;
+    document_type_code?: string | null;
+    title_en?: string | null;
+    title_fr?: string | null;
+    status?: string | null;
+    issuer_type?: string | null;
+    issuer_name?: string | null;
+    issuer_logo_url?: string | null;
+    issued_at?: string | null;
+    valid_from?: string | null;
+    valid_until?: string | null;
+    policy_reference?: string | null;
+    holder?: string | null;
+    language?: string | null;
+    sha256?: string | null;
+    carrier_original?: boolean | null;
+    vehicle?: string | null;
+    security_tier?: string | null;
+    signature_status?: string | null;
+    replaced_by?: string | null;
+    revoked_at?: string | null;
+  } | null;
 };
 export type ClaimEvidence = {
   id: string;

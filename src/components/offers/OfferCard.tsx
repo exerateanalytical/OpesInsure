@@ -105,10 +105,10 @@ export function OfferCard({
         <InstitutionMark logoUrl={logo} initials={name.slice(0, 2).toUpperCase()} size={56} />
         <View style={st.flex}>
           <Pressable accessibilityRole="link" accessibilityLabel={name} hitSlop={4} onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })} style={st.nameRow}>
-            <Text style={st.name} numberOfLines={2}>{name}</Text>
+            <Text style={st.name}>{name}</Text>
             {carrierVerified(offer) ? <BadgeCheck size={18} color={colors.blue600} /> : null}
           </Pressable>
-          <Text style={st.product} numberOfLines={2}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
+          <Text style={st.product}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>
           {rating || claimsDays !== null ? (
             <View style={st.ratingRow}>
               {rating ? (
@@ -140,7 +140,7 @@ export function OfferCard({
 
       {shown.length ? (
         <View style={st.covers}>
-          <CheckList items={shown} columns={twoColumns ? 2 : 1} />
+          <CheckList items={shown} columns={twoColumns ? 2 : 1} tint="blue" compact />
           {!expanded && names.length > shown.length ? <Text style={st.more}>{t("roMore", { count: names.length - shown.length })}</Text> : null}
         </View>
       ) : (

@@ -248,6 +248,9 @@ test("vehicle generations/variants normalize, years clamp, specs auto-fill", () 
   assert.match(client, /\/public\/vehicles\/models\/\$\{encodeURIComponent\(modelCode\)\}\/generations`/);
   assert.match(client, /\/generations\/\$\{encodeURIComponent\(generationCode\)\}\/variants/);
   const picker = read("src/components/vehicles/VehiclePicker.tsx");
-  assert.match(picker, /setMode\(list\.length \? "generation" : "done"\)/, "hidden when empty");
-  assert.match(picker, /setMode\(list\.length \? "variant" : "done"\)/);
+  assert.match(picker, /generations\.length > 0/, "generation field hidden when empty");
+  assert.match(picker, /variants\.length > 0/, "variant field hidden when empty");
+  // Every step is a drop-down SelectField (no inline grid/rows of makes).
+  assert.equal((picker.match(/<SelectField/g) ?? []).length, 5, "make, model, generation, year, variant");
+  assert.doesNotMatch(picker, /function Row\(/);
 });

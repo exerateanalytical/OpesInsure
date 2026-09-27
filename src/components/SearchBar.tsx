@@ -17,6 +17,7 @@ export function SearchBar({
   filterLabel,
   filterCount = 0,
   inset,
+  filled,
 }: {
   value: string;
   onChangeText: (v: string) => void;
@@ -32,6 +33,8 @@ export function SearchBar({
   filterCount?: number;
   /** Renders the filter button inside the field (Home design) instead of beside it. */
   inset?: boolean;
+  /** Soft grey fill without a border (Explore design). */
+  filled?: boolean;
 }) {
   const filterButton = onFilter ? (
     <Pressable
@@ -49,8 +52,8 @@ export function SearchBar({
     </Pressable>
   ) : null;
   const bar = (
-    <View style={[styles.bar, onFilter ? styles.flex : null]}>
-      <Search size={20} color={colors.neutral600} />
+    <View style={[styles.bar, filled && styles.filled, onFilter ? styles.flex : null]}>
+      <Search size={20} color={colors.neutral600} style={{ flexShrink: 0 }} />
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -98,8 +101,9 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral300,
     borderRadius: radius.control,
   },
-  input: { ...type.body, flex: 1, color: colors.navy950, paddingVertical: space.x3 },
+  input: { ...type.body, flex: 1, minWidth: 0, color: colors.navy950, paddingVertical: space.x3 },
   flex: { flex: 1 },
+  filled: { backgroundColor: "#F2F5FB", borderColor: "#F2F5FB" },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   filter: {
     width: 52,

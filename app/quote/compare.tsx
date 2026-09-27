@@ -82,7 +82,7 @@ export default function CompareOffers() {
         <Card>
           <View style={st.quoteRow}>
             <TintedIcon icon={String(product ?? "").toLowerCase() === "motor" ? Car : ShieldCheck} tint="gold" size={56} />
-            <View style={st.flex}>
+            <View style={st.quoteText}>
               <Text style={st.quoteTitle}>{vehicle ?? productLabel ?? t("insuranceOffer")}</Text>
               <Text style={ps.meta}>{[vehicle && productLabel ? productLabel : null, quote.quote_number].filter(Boolean).join(" · ")}</Text>
             </View>
@@ -131,7 +131,8 @@ export default function CompareOffers() {
 const st = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
-  quoteRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  quoteRow: { flexDirection: "row", alignItems: "center", gap: space.x3, flexWrap: "wrap" },
+  quoteText: { flexGrow: 1, flexShrink: 1, flexBasis: 150 },
   quoteTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.navy950 },
   editBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue50, overflow: "hidden" },
   editText: { ...type.label, color: colors.blue600 },

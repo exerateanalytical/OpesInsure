@@ -150,6 +150,7 @@ export default function Claims() {
         })}
       </View>
       <SearchBar
+        filled
         value={query}
         onChangeText={setQuery}
         placeholder={t("claimsSearchPlaceholder")}

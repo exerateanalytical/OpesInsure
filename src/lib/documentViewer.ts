@@ -113,3 +113,41 @@ export function viewerHtml(base64: string, options: { background?: string; accen
 })();
 </script></body></html>`;
 }
+
+export type DocumentKind = "pdf" | "image" | "html" | "unknown";
+
+/** Detect the payload kind from base64 magic bytes, falling back to the MIME type. */
+export function detectKind(base64: string | null | undefined, mime?: string | null): DocumentKind {
+  const head = String(base64 ?? "").slice(0, 16);
+  if (head.startsWith("JVBER")) return "pdf";
+  if (head.startsWith("iVBOR") || head.startsWith("/9j/") || head.startsWith("R0lGOD") || head.startsWith("UklGR")) return "image";
+  const m = String(mime ?? "").toLowerCase();
+  if (m.includes("pdf")) return "pdf";
+  if (m.startsWith("image/")) return "image";
+  if (m.includes("html")) return "html";
+  return "unknown";
+}
+
+/** MIME for a detected image payload (for data: URIs). */
+export function imageMime(base64: string): string {
+  if (base64.startsWith("iVBOR")) return "image/png";
+  if (base64.startsWith("R0lGOD")) return "image/gif";
+  if (base64.startsWith("UklGR")) return "image/webp";
+  return "image/jpeg";
+}
+
+/**
+ * Stable offline-cache file name for a viewer source. The URL's query string
+ * (signatures, expiry) is dropped so a re-signed link hits the same entry.
+ */
+export function cacheKey(source: ViewerSource): string {
+  const raw = source.kind === "quote" ? `quote:${source.quoteId}` : `url:${source.url.split("?")[0]}`;
+  let h = 5381;
+  for (let i = 0; i < raw.length; i++) h = ((h << 5) + h + raw.charCodeAt(i)) >>> 0;
+  return `doc-${h.toString(36)}`;
+}
+
+/** "3 / 7" page indicator text. */
+export function pageIndicator(page: number, total: number): string {
+  return total > 0 ? `${Math.min(Math.max(page, 1), total)} / ${total}` : "";
+}

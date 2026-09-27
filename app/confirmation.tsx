@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Calendar, Check, CheckCircle2, Clock3, Download, FileText, Headset, Receipt, Share2, ShieldCheck } from "lucide-react-native";
+import { ArrowRight, Calendar, Check, CheckCircle2, Clock3, Download, FileText, Headset, Receipt, Share2, ShieldCheck, Sparkles } from "lucide-react-native";
 import { Image, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
-import { ActionTile, Banner, BrandHeader, CtaBar, HeroCard, HeroMeta } from "@/components/design";
+import { ActionTile, Banner, BrandHeader, CtaBar, HeroCard, HeroMeta, TintedIcon } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
 import { ErrorCard, InfoRow, Stepper, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { InsuranceApi, Payment, PaymentsApi, PolicyApi, PurchaseStatus, TokenVault } from "@/api/client";
@@ -215,7 +215,9 @@ export default function Confirmation() {
         <Card>
           <StatusChip label={result?.status ? td(`status_${result.status}`, result.status) : t("cfVerifying")} tone={result?.status === "PAYMENT_FAILED" ? "danger" : "warning"} />
           {result?.product_name ? <Text style={ps.body}>{result.product_name}{result.carrier_name ? ` · ${result.carrier_name}` : ""}</Text> : null}
-          <BrandArt name="light_node" width={64} opacity={0.8} style={st.bottomArt} />
+          <View style={[st.bottomArt, { alignSelf: "center" }]}>
+            <TintedIcon icon={Sparkles} tint="gold" size={56} />
+          </View>
           <Text style={ps.meta}>{t("cfIssuedNote")}</Text>
           {issuanceFailed ? <Button label={t("contactSupport")} variant="secondary" onPress={() => router.push("/support/new")} /> : null}
         </Card>

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowRight } from "lucide-react-native";
@@ -11,6 +11,8 @@ import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { usePolicies } from "@/hooks/usePolicies";
 import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
+import { attachClaimCoordinates } from "@/lib/deviceLocation";
+import type { DeviceFix } from "@/lib/locationMatch";
 import { useTranslation } from "@/i18n";
 import type { MasterValue } from "@/lib/masterFields";
 import { colors, type } from "@/theme/tokens";
@@ -31,6 +33,8 @@ export default function NewClaimIncident() {
   const { policies } = usePolicies();
   const policy = policies.find((p) => p.id === id) ?? null;
   const logoFor = useInsurerLogo();
+  // Device position (town/region are prefilled by the form; coordinates go to the incident details).
+  const fix = useRef<DeviceFix | null>(null);
   const seed = useMemo(() => ({ ...(id ? { policy_id: id } : {}), incident_at: toCameroonIso(Date.now() - 3_600_000) }), [id]);
 
   return (
@@ -47,10 +51,12 @@ export default function NewClaimIncident() {
         submitLabel={t("continue")}
         submitIcon={ArrowRight}
         flat
+        onLocation={(f) => (fix.current = f)}
         footer={<Text style={styles.note}>{t("claimNewNote")}</Text>}
         onSubmit={async (payload) => {
           // Form data is kept on failure so the customer can retry.
           const claim = await ClaimsApi.create(payload as Parameters<typeof ClaimsApi.create>[0]);
+          await attachClaimCoordinates(claim.id, fix.current);
           router.replace({ pathname: "/claim/[id]/evidence", params: { id: claim.id, wizard: "1" } });
         }}
       />

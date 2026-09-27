@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
-import { BarChart3, Download, FileText, Lock, Megaphone, MessageCircle, Pencil, ShieldCheck, Trash2, UsersRound } from "lucide-react-native";
+import { BarChart3, ChevronRight, Download, FileText, Lock, Megaphone, MessageCircle, Pencil, ShieldCheck, Trash2, UsersRound } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { PrivacyApi } from "@/api/account";
 import type { Purpose } from "@/api/account";
-import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
-import { BrandArt } from "@/components/design/BrandArt";
 import type { Tint } from "@/components/design";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
 import { Preferences } from "@/store/preferences";
 import { LegalLinks } from "@/components/LegalLinks";
+import { LocationAutofillSetting } from "@/components/forms/LocationAutofill";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -118,6 +118,9 @@ export default function Privacy() {
             ))
           : null}
       </Card>
+      <Card style={styles.card}>
+        <LocationAutofillSetting />
+      </Card>
       {msg ? (
         <Text accessibilityLiveRegion="polite" accessibilityRole={msg.ok ? undefined : "alert"} style={msg.ok ? styles.notice : styles.error}>
           {msg.text}
@@ -131,9 +134,9 @@ export default function Privacy() {
       <SectionHeading title={t("privacyYourData")} />
       <Card style={styles.card}>
         <Text style={styles.body}>{t("privacyYourDataBody")}</Text>
-        <Button label={t("privacyExport")} icon={Download} variant="secondary" loading={busy === "EXPORT"} onPress={() => void requestDsr("EXPORT")} />
-        <Button label={t("privacyCorrection")} icon={Pencil} variant="secondary" onPress={correction} />
-        <Button label={t("privacyDelete")} icon={Trash2} variant="danger" loading={busy === "DELETE"} onPress={() => void requestDsr("DELETE")} />
+        <NavRow icon={Download} tint="blue" label={t("privacyExport")} busy={busy === "EXPORT"} onPress={() => void requestDsr("EXPORT")} />
+        <NavRow icon={Pencil} tint="gold" label={t("privacyCorrection")} onPress={correction} />
+        <NavRow icon={Trash2} tint="red" danger label={t("privacyDelete")} busy={busy === "DELETE"} onPress={() => void requestDsr("DELETE")} />
         {(dsr.data ?? []).map((r) => (
           <View key={r.id} style={[styles.row, styles.divider]}>
             <View style={styles.flex}>
@@ -149,11 +152,22 @@ export default function Privacy() {
         ))}
       </Card>
       <Banner icon={ShieldCheck} tint="blue" title={t("privacyImportant")} body={t("privacyRetentionNote")} />
-      <BrandArt name="logo_protection_together" width={120} />
     </Screen>
   );
 }
+function NavRow({ icon, tint, label, onPress, busy, danger }: { icon: LucideIcon; tint: Tint; label: string; onPress: () => void; busy?: boolean; danger?: boolean }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ busy: !!busy, disabled: !!busy }} disabled={busy} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [styles.row, styles.divider, styles.navRow, pressed && styles.pressed]}>
+      <TintedIcon icon={icon} tint={tint} size={44} />
+      <Text style={[styles.title, styles.flex, danger && styles.danger]}>{label}</Text>
+      {busy ? <ActivityIndicator color={colors.blue600} /> : <ChevronRight size={20} color={danger ? colors.dangerText : colors.navy900} />}
+    </Pressable>
+  );
+}
 const styles = StyleSheet.create({
+  navRow: { minHeight: 56 },
+  pressed: { opacity: 0.85 },
+  danger: { color: colors.dangerText },
   card: { borderRadius: radius.feature, gap: space.x3 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, paddingTop: space.x3 },

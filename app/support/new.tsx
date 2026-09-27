@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
-import { AlertTriangle, CreditCard, Eye, FileText, Flag, LifeBuoy, Link2, LucideIcon, Paperclip, ShieldAlert, Truck } from "lucide-react-native";
+import { StyleSheet, Text } from "react-native";
+import { Link2, Paperclip } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
-import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, type Tint } from "@/components/design";
+import { Banner, BrandHeader, CtaBar } from "@/components/design";
 import { CustomerApi } from "@/api/customer";
 import { WalletApi } from "@/api/client";
-import { ChoiceChips } from "@/components/portal/Workspace";
 import { SelectField } from "@/components/forms/SelectField";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
@@ -22,16 +21,6 @@ const CATEGORIES = [
   "REPORT_FRAUD",
   "PRIVACY_REQUEST",
 ] as const;
-const CATEGORY_ICON: Record<(typeof CATEGORIES)[number], [LucideIcon, Tint]> = {
-  GENERAL_SUPPORT: [LifeBuoy, "blue"],
-  PAYMENT: [CreditCard, "gold"],
-  POLICY_DOCUMENT: [FileText, "blue"],
-  CLAIM: [ShieldAlert, "gold"],
-  DELIVERY: [Truck, "blue"],
-  FORMAL_COMPLAINT: [Flag, "red"],
-  REPORT_FRAUD: [AlertTriangle, "red"],
-  PRIVACY_REQUEST: [Eye, "neutral"],
-};
 
 /**
  * New support case. Context params link the case to a claim / payment /
@@ -107,39 +96,22 @@ export default function NewSupport() {
       <BrandHeader title={t("supportNewTitle")} subtitle={t("supportNeverShare")} back right="help" />
       {linked ? <Banner icon={Link2} tint="blue" body={linked} /> : null}
       <Card style={s.card}>
-        <SectionHeading title={t("supportCategory")} />
-        <View style={s.wrap} accessibilityRole="radiogroup">
-          {CATEGORIES.map((x) => {
-            const [Icon, tint] = CATEGORY_ICON[x];
-            return (
-              <RadioCard key={x} selected={category === x} onPress={() => setCategory(x)} icon={Icon} tint={tint} title={td(`supportCategory_${x}`, x)} style={s.option} />
-            );
-          })}
-        </View>
+        <SelectField
+          label={t("supportCategory")}
+          value={category}
+          onChange={(v) => setCategory(v as typeof category)}
+          options={CATEGORIES.map((x) => ({ value: x, label: td(`supportCategory_${x}`, x) }))}
+        />
         {category === "PRIVACY_REQUEST" ? <StatusChip label={t("privacyRequestNote")} tone="info" /> : null}
-      </Card>
-      {policies.data?.length ? (
-        <Card style={s.card}>
-          <SectionHeading title={t("supportRelatedPolicy")} />
-          {policies.data.length > 4 ? (
-            // Long lists: a drop-down; the first row clears the link.
-            <SelectField
-              label={t("supportRelatedPolicy")}
-              value={policyId ?? undefined}
-              onChange={(v) => setPolicyId(v || null)}
-              options={[{ value: "", label: t("mdNotChosen") }, ...policies.data.map((p) => ({ value: p.id, label: p.policy_number, subtitle: p.product_name ?? undefined }))]}
-            />
-          ) : (
-            <ChoiceChips<string>
-              label={t("supportRelatedPolicy")}
-              value={policyId}
-              onChange={(v) => setPolicyId(v === policyId ? null : v)}
-              options={policies.data.map((p) => ({ value: p.id, label: `${p.policy_number}${p.product_name ? ` · ${p.product_name}` : ""}` }))}
-            />
-          )}
-        </Card>
-      ) : null}
-      <Card style={s.card}>
+        {policies.data?.length ? (
+          <SelectField
+            label={t("supportRelatedPolicy")}
+            value={policyId ?? undefined}
+            placeholder={t("mdNotChosen")}
+            onChange={(v) => setPolicyId(v || null)}
+            options={[{ value: "", label: t("mdNotChosen") }, ...policies.data.map((p) => ({ value: p.id, label: p.policy_number, subtitle: p.product_name ?? undefined }))]}
+          />
+        ) : null}
         <TextField label={t("supportSubject")} maxLength={200} value={subject} onChangeText={setSubject} hint={t("minChars", { count: 4 })} />
         <TextField
           label={t("supportDescribe")}
@@ -156,9 +128,7 @@ export default function NewSupport() {
   );
 }
 const s = StyleSheet.create({
-  card: { borderRadius: radius.feature },
-  wrap: { gap: space.x2 },
-  option: { padding: space.x3 },
+  card: { borderRadius: radius.feature, gap: space.x4 },
   area: { minHeight: 120, textAlignVertical: "top", paddingTop: 12 },
   error: { ...type.meta, color: colors.dangerText },
 });

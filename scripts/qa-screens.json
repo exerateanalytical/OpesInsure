@@ -11,7 +11,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 1
   }
  },
@@ -83,7 +83,7 @@
   "route": "/quote/risk",
   "via": {
    "route": "/quote/product",
-   "clickPrefix": "Motor insurance.",
+   "clickPrefix": "Motor insurance.|Assurance automobile",
    "wait": 7000
   }
  },
@@ -133,7 +133,7 @@
   "route": "/policy/{policy}/renewal-review",
   "via": {
    "route": "/policy/{policy}/renewal-offers",
-   "click": "Select Offer"
+   "click": "Select Offer|Choisir l'offre"
   }
  },
  {
@@ -232,7 +232,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 0
   }
  },
@@ -242,7 +242,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 2
   }
  },
@@ -252,7 +252,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 2
   }
  },
@@ -327,7 +327,7 @@
   "route": "/policy/{policy}/renewal-review",
   "via": {
    "route": "/policy/{policy}/renewal-offers",
-   "click": "Select Offer"
+   "click": "Select Offer|Choisir l'offre"
   }
  },
  {
@@ -336,7 +336,7 @@
   "route": "/policy/{policy}/renewal-review",
   "via": {
    "route": "/policy/{policy}/renewal-offers",
-   "click": "Select Offer"
+   "click": "Select Offer|Choisir l'offre"
   }
  },
  {
@@ -520,18 +520,18 @@
   "route": "/quote/compare",
   "via": {
    "route": "/quotes/{quote}",
-   "click": "Resume comparison",
+   "click": "Resume comparison|Reprendre la comparaison",
    "wait": 9000
   },
   "after": [
    {
-    "click": "Add to comparison",
+    "click": "Add to comparison|Ajouter à la comparaison",
     "each": true,
     "times": 2,
     "wait": 800
    },
    {
-    "clickPrefix": "Compare 2 offers",
+    "clickPrefix": "Compare 2 offers|Comparer 2 offres",
     "wait": 5000
    }
   ]
@@ -541,7 +541,7 @@
   "design": "opesinsure_filters_mobile_ui.png",
   "route": "/search?q=motor",
   "after": {
-   "click": "Filters",
+   "click": "Filters|Filtres",
    "times": 1
   }
  },
@@ -610,7 +610,7 @@
   "design": "imagegen.png",
   "route": "/search?q=motor",
   "after": {
-   "click": "Filters",
+   "click": "Filters|Filtres",
    "times": 1
   }
  },
@@ -620,7 +620,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 1
   }
  },
@@ -630,7 +630,7 @@
   "route": "/welcome",
   "signedOut": true,
   "after": {
-   "click": "Next",
+   "click": "Next|Suivant",
    "times": 0
   }
  }

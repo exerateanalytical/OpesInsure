@@ -38,7 +38,7 @@ const DEEP_LINK = /^\/(\(auth\)\/(invitation|sign-in)|verify|institutions|policy
  *
  * Universal/App Links are registered for https://insurance.opesdatacenter.tech
  * with pathPrefix /app, but no route lives under /app: the prefix is stripped
- * so /app/verify opens app/verify.tsx and /app/invitation?token=... opens the
+ * so /app/verify opens app/verify/index.tsx and /app/invitation?token=... opens the
  * invitation screen.
  *
  * With `initial === false` the app is already running (returning from another

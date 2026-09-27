@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { Car, Check, ChevronRight, CircleAlert, RefreshCw } from "lucide-react-native";
-import { Button, TextField , Chip } from "@/components/ui";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Car, CircleAlert, RefreshCw } from "lucide-react-native";
+import { Button, Chip, TextField } from "@/components/ui";
 import { PickerField } from "@/components/purchase/PurchaseUi";
 import { SelectField } from "@/components/forms/SelectField";
 
@@ -17,7 +17,6 @@ import {
   variantSummary,
   VehicleGeneration,
   VehicleVariant,
-  filterByQuery,
   suggestionOutcome,
   vehicleSuggestionPayload,
   ManualVehicleEntry,
@@ -60,17 +59,20 @@ export function useVehicleReference() {
 
 const toOptions = (rows: { code: string; label: string }[] | undefined) => (rows ?? []).map((r) => ({ value: r.code, label: r.label }));
 
-/** Longer lists than this collapse (makes) or open a sheet (models). */
-const MAX_INLINE = 8;
+/** Every make in the master fits one request; the sheet searches it client-side (name + aliases). */
+const MAKES_LIMIT = 200;
 
-type Mode = "make" | "model" | "generation" | "year" | "variant" | "done" | "manual";
+type Mode = "form" | "manual";
+type LoadState = "idle" | "loading" | "error" | "ready";
 
 /**
- * Make → model picker backed by the vehicle master: searchable make
- * autocomplete (server alias matching, common Cameroon makes first, optional
- * "Chinese makes" chip), model list for the make with search, and a
- * "Can't find your vehicle?" manual form that queues a master-data review
- * and continues with the typed text as the snapshot.
+ * Make → model → generation → year → engine variant, each a drop-down
+ * SelectField (same 52dp shell as every other form field) that opens a
+ * searchable bottom sheet. Makes come from the vehicle master (common
+ * Cameroon makes first) with a "Chinese makes" filter inside the sheet; the
+ * later fields appear only when the master has data for them. "Can't find
+ * your vehicle?" opens a manual form that queues a master-data review and
+ * continues with the typed text as the snapshot.
  */
 export function VehiclePicker({
   value,
@@ -85,39 +87,40 @@ export function VehiclePicker({
 }) {
   const { t } = useTranslation();
   const { reference } = useVehicleReference();
-  const [mode, setMode] = useState<Mode>(value?.make ? (value.model ? "done" : "model") : "make");
+  const [mode, setMode] = useState<Mode>("form");
   const [make, setMake] = useState<VehicleMake | null>(value?.make_code ? { code: value.make_code, name: value.make, aliases: [] } : null);
 
   // --- makes ---------------------------------------------------------------
-  const [query, setQuery] = useState("");
   const [chinese, setChinese] = useState(false);
-  const [showAllMakes, setShowAllMakes] = useState(false);
   const [makes, setMakes] = useState<VehicleMake[]>([]);
-  const [makesState, setMakesState] = useState<"loading" | "error" | "ready">("loading");
+  const [makesState, setMakesState] = useState<LoadState>("loading");
   const requestId = useRef(0);
 
   const loadMakes = useCallback(() => {
     const id = ++requestId.current;
     setMakesState("loading");
-    VehiclesApi.makes(query, { chinese, limit: query.trim() ? 20 : 26 })
+    VehiclesApi.makes("", { chinese, limit: MAKES_LIMIT })
       .then((p) => {
         if (id !== requestId.current) return;
         setMakes(normalizeMakes(p));
         setMakesState("ready");
       })
       .catch(() => id === requestId.current && setMakesState("error"));
-  }, [query, chinese]);
+  }, [chinese]);
 
   useEffect(() => {
-    if (mode !== "make") return;
-    const timer = setTimeout(loadMakes, query.trim() ? 250 : 0);
-    return () => clearTimeout(timer);
-  }, [mode, loadMakes, query]);
+    if (mode === "form") loadMakes();
+  }, [mode, loadMakes]);
+
+  // Keep the chosen make listed even when the Chinese filter hides it.
+  const makeOptions = useMemo(() => {
+    const list = make && !makes.some((m) => m.code === make.code) ? [make, ...makes] : makes;
+    return list.map((m) => ({ value: m.code, label: m.name, subtitle: m.aliases.length ? m.aliases.join(" · ") : undefined }));
+  }, [makes, make]);
 
   // --- models --------------------------------------------------------------
   const [models, setModels] = useState<VehicleModel[]>([]);
-  const [modelsState, setModelsState] = useState<"loading" | "error" | "ready">("loading");
-  const [modelQuery, setModelQuery] = useState("");
+  const [modelsState, setModelsState] = useState<LoadState>("idle");
   const loadModels = useCallback(() => {
     if (!make?.code) return;
     setModelsState("loading");
@@ -129,9 +132,60 @@ export function VehiclePicker({
       .catch(() => setModelsState("error"));
   }, [make?.code]);
   useEffect(() => {
-    if (mode === "model") loadModels();
+    if (mode === "form") loadModels();
   }, [mode, loadModels]);
-  const visibleModels = useMemo(() => filterByQuery(models, modelQuery), [models, modelQuery]);
+
+  // --- generation → year → engine variant (CUST-007) -----------------------
+  // Each field only appears when the master has data; an empty list or a
+  // failed call simply leaves the next field out.
+  const [generations, setGenerations] = useState<VehicleGeneration[]>([]);
+  const [generationsState, setGenerationsState] = useState<LoadState>("idle");
+  const [variants, setVariants] = useState<VehicleVariant[]>([]);
+  const [variantsState, setVariantsState] = useState<LoadState>("idle");
+  const modelCode = value?.manual ? undefined : value?.model_code;
+  const generation = useMemo(() => generations.find((g) => g.code === value?.generation_code) ?? null, [generations, value?.generation_code]);
+
+  useEffect(() => {
+    setGenerations([]);
+    if (!modelCode) {
+      setGenerationsState("idle");
+      return;
+    }
+    let live = true;
+    setGenerationsState("loading");
+    VehiclesApi.generations(modelCode)
+      .then((p) => {
+        if (!live) return;
+        setGenerations(normalizeGenerations(p));
+        setGenerationsState("ready");
+      })
+      .catch(() => live && setGenerationsState("error"));
+    return () => {
+      live = false;
+    };
+  }, [modelCode]);
+
+  const generationCode = generation?.code;
+  const year = value?.year;
+  useEffect(() => {
+    setVariants([]);
+    if (!modelCode || !generationCode || !year) {
+      setVariantsState("idle");
+      return;
+    }
+    let live = true;
+    setVariantsState("loading");
+    VehiclesApi.variants(modelCode, generationCode, year)
+      .then((p) => {
+        if (!live) return;
+        setVariants(normalizeVariants(p));
+        setVariantsState("ready");
+      })
+      .catch(() => live && setVariantsState("error"));
+    return () => {
+      live = false;
+    };
+  }, [modelCode, generationCode, year]);
 
   // --- manual --------------------------------------------------------------
   const [entry, setEntry] = useState<ManualVehicleEntry>(emptyManualEntry());
@@ -141,7 +195,7 @@ export function VehiclePicker({
   const years = useMemo(() => modelYears(reference?.model_years).map((y) => ({ value: y, label: y })), [reference]);
 
   const openManual = () => {
-    setEntry({ ...emptyManualEntry(), make: make?.name ?? query.trim(), model: mode === "model" ? modelQuery.trim() : "", year: value?.year ?? "" });
+    setEntry({ ...emptyManualEntry(), make: make?.name ?? "", model: "", year: value?.year ?? "" });
     setEntryErrors({});
     setMode("manual");
   };
@@ -165,29 +219,20 @@ export function VehiclePicker({
       setSubmitting(false);
     }
     onChange(selectionFromManual(entry, outcome.reviewId, outcome));
-    setMode("done");
+    setMode("form");
   };
 
   const pickMake = (m: VehicleMake) => {
+    if (m.code === make?.code && !value?.manual) return;
     setMake(m);
     setModels([]);
-    setModelQuery("");
     setNotice(null);
     onChange({ make_code: m.code, make: m.name, model: "", year: value?.year });
-    setMode("model");
   };
-
-  // --- generation → year → engine variant (CUST-007) -----------------------
-  // Each step only appears when the master has data; an empty list or a
-  // failed call skips straight to the next step / done.
-  const [generations, setGenerations] = useState<VehicleGeneration[]>([]);
-  const [generation, setGeneration] = useState<VehicleGeneration | null>(null);
-  const [variants, setVariants] = useState<VehicleVariant[]>([]);
-  const [stepLoading, setStepLoading] = useState(false);
 
   const pickModel = (m: VehicleModel) => {
     if (!make) return;
-    const next: VehicleSelection = {
+    onChange({
       ...(value ?? { make: make.name, model: "" }),
       make_code: make.code,
       make: make.name,
@@ -199,53 +244,31 @@ export function VehiclePicker({
       generation: undefined,
       variant_code: undefined,
       variant: undefined,
-    };
-    onChange(next);
-    setGeneration(null);
-    setStepLoading(true);
-    VehiclesApi.generations(m.code)
-      .then((p) => {
-        const list = normalizeGenerations(p);
-        setGenerations(list);
-        setMode(list.length ? "generation" : "done");
-      })
-      .catch(() => setMode("done"))
-      .finally(() => setStepLoading(false));
+    });
   };
 
   const pickGeneration = (g: VehicleGeneration) => {
     if (!value) return;
-    setGeneration(g);
     onChange({ ...value, generation_code: g.code, generation: g.name, body_type: g.body_type ?? value.body_type, variant_code: undefined, variant: undefined });
-    setMode("year");
   };
 
-  const pickYear = (year: string) => {
-    if (!value || !generation || !value.model_code) return;
-    const withYear = { ...value, year };
-    onChange(withYear);
-    setStepLoading(true);
-    VehiclesApi.variants(value.model_code, generation.code, year)
-      .then((p) => {
-        const list = normalizeVariants(p);
-        setVariants(list);
-        setMode(list.length ? "variant" : "done");
-      })
-      .catch(() => setMode("done"))
-      .finally(() => setStepLoading(false));
+  const pickYear = (y: string) => {
+    if (!value) return;
+    onChange({ ...value, year: y, variant_code: undefined, variant: undefined });
   };
 
   const pickVariant = (v: VehicleVariant) => {
     if (!value) return;
     onChange(applyVariant(value, v));
-    setMode("done");
   };
 
   const reset = () => {
     setMake(null);
+    setModels([]);
+    setModelsState("idle");
     setNotice(null);
     onChange(null);
-    setMode("make");
+    setMode("form");
   };
 
   const manualLink = (
@@ -256,97 +279,6 @@ export function VehiclePicker({
       </Pressable>
     </View>
   );
-
-  if (stepLoading) return <View style={st.wrap}><Inline label={t("vehicleLoadingModels")} /></View>;
-
-  if ((mode === "generation" || mode === "year" || mode === "variant") && value?.make) {
-    const header = (
-      <View style={st.selected}>
-        <Car size={20} color={colors.blue600} />
-        <Text style={[st.rowTitle, st.flex]}>{selectionLabel(value)}</Text>
-        <Pressable accessibilityRole="button" onPress={reset} hitSlop={8}>
-          <Text style={st.link}>{t("vehicleChange")}</Text>
-        </Pressable>
-      </View>
-    );
-    const skip = (
-      <Button label={t("vehicleSkipStep")} variant="tertiary" onPress={() => setMode("done")} />
-    );
-    if (mode === "generation")
-      return (
-        <View style={st.wrap}>
-          <Text style={st.label}>{t("vehicleGeneration")}</Text>
-          {header}
-          <View style={st.list}>
-            {generations.map((g) => (
-              <Row
-                key={g.code}
-                title={g.name}
-                subtitle={g.year_from ? `${g.year_from}–${g.year_to ?? t("vehicleGenerationNow")}` : undefined}
-                selected={value.generation_code === g.code}
-                onPress={() => pickGeneration(g)}
-              />
-            ))}
-          </View>
-          {skip}
-        </View>
-      );
-    if (mode === "year" && generation) {
-      const genYears = generationYears(generation, reference?.model_years);
-      return (
-        <View style={st.wrap}>
-          <Text style={st.label}>{t("vehicleYear")}</Text>
-          {header}
-          <View style={st.years}>
-            {genYears.map((y) => (
-              <Chip key={y} label={y} selected={value.year === y} onPress={() => pickYear(y)} />
-            ))}
-          </View>
-          {skip}
-        </View>
-      );
-    }
-    if (mode === "variant")
-      return (
-        <View style={st.wrap}>
-          <Text style={st.label}>{t("vehicleEngineVariant")}</Text>
-          {header}
-          <Text style={st.meta}>{t("vehicleVariantHint")}</Text>
-          <View style={st.list}>
-            {variants.map((v) => (
-              <Row key={v.code} title={v.name} subtitle={variantSummary(v) || undefined} selected={value.variant_code === v.code} onPress={() => pickVariant(v)} />
-            ))}
-          </View>
-          {skip}
-        </View>
-      );
-  }
-
-  if (mode === "done" && value?.make) {
-    return (
-      <View style={st.wrap}>
-        <Text style={st.label}>{`${t("vehicleMake")} · ${t("vehicleModel")}`}</Text>
-        <View style={[st.selected, error ? st.errorBorder : null]}>
-          <Car size={20} color={colors.blue600} />
-          <View style={st.flex}>
-            <Text style={st.rowTitle}>{selectionLabel({ make: value.make, model: value.model, generation: value.generation, variant: value.variant })}</Text>
-            {value.variant && (value.power_hp || value.engine_capacity_cc || value.powertrain) ? (
-              <Text style={st.meta}>
-                {t("vehicleSpecsAutoFilled")}{" "}
-                {[value.power_hp ? `${value.power_hp} hp` : null, value.engine_capacity_cc ? `${value.engine_capacity_cc} cc` : null, value.powertrain, value.transmission].filter(Boolean).join(" · ")}
-              </Text>
-            ) : null}
-            {value.manual ? <Text style={st.pending}>{t("vehiclePendingReview")}</Text> : null}
-          </View>
-          <Pressable accessibilityRole="button" onPress={reset} hitSlop={8}>
-            <Text style={st.link}>{t("vehicleChange")}</Text>
-          </Pressable>
-        </View>
-        {notice ? <Text style={st.meta}>{notice}</Text> : null}
-        {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
-      </View>
-    );
-  }
 
   if (mode === "manual") {
     const set = (k: keyof ManualVehicleEntry) => (v: string) => {
@@ -367,101 +299,121 @@ export function VehiclePicker({
         <TextField label={t("vehicleRegistration")} value={entry.registration_number} onChangeText={set("registration_number")} error={entryErrors.registration_number || undefined} autoCapitalize="characters" placeholder="LT 000 AA" />
         <TextField label={t("vehicleEngineNumber")} value={entry.engine_number} onChangeText={set("engine_number")} error={entryErrors.engine_number || undefined} autoCapitalize="characters" />
         <Button label={t("vehicleManualSubmit")} loading={submitting} onPress={() => void submitManual()} />
-        <Button label={t("vehicleBackToList")} variant="tertiary" disabled={submitting} onPress={() => setMode(make ? "model" : "make")} />
+        <Button label={t("vehicleBackToList")} variant="tertiary" disabled={submitting} onPress={() => setMode("form")} />
       </View>
     );
   }
 
-  if (mode === "model" && make) {
+  // A manually typed vehicle has no master codes: show it as a summary card.
+  if (value?.manual && value.make) {
     return (
       <View style={st.wrap}>
-        <Text style={st.label}>{t("vehicleMake")}</Text>
-        <View style={st.selected}>
+        <Text style={st.label}>{`${t("vehicleMake")} · ${t("vehicleModel")}`}</Text>
+        <View style={[st.selected, error ? st.errorBorder : null]}>
           <Car size={20} color={colors.blue600} />
-          <Text style={[st.rowTitle, st.flex]}>{make.name}</Text>
+          <View style={st.flex}>
+            <Text style={st.rowTitle}>{selectionLabel({ make: value.make, model: value.model })}</Text>
+            <Text style={st.pending}>{t("vehiclePendingReview")}</Text>
+          </View>
           <Pressable accessibilityRole="button" onPress={reset} hitSlop={8}>
             <Text style={st.link}>{t("vehicleChange")}</Text>
           </Pressable>
         </View>
-        {modelsState === "ready" && models.length > MAX_INLINE ? null : (
-          <TextField label={t("vehicleSearchModel")} value={modelQuery} onChangeText={setModelQuery} autoCorrect={false} />
-        )}
-        {modelsState === "loading" ? (
-          <Inline label={t("vehicleLoadingModels")} />
-        ) : modelsState === "error" ? (
-          <InlineError label={t("vehicleLoadError")} retry={t("retry")} onRetry={loadModels} />
-        ) : models.length > MAX_INLINE ? (
-          // Long model lists open a searchable sheet instead of pushing the form down by dozens of rows.
-          <SelectField
-            label={t("vehicleModel")}
-            value={value?.model_code}
-            options={models.map((m) => ({ value: m.code, label: m.name, subtitle: m.aliases.length ? m.aliases.join(" · ") : undefined }))}
-            onChange={(code) => {
-              const m = models.find((x) => x.code === code);
-              if (m) pickModel(m);
-            }}
-            error={error}
-          />
-        ) : visibleModels.length ? (
-          <View style={st.list}>
-            {visibleModels.map((m) => (
-              <Row key={m.code} title={m.name} subtitle={m.aliases.length ? m.aliases.join(" · ") : undefined} selected={value?.model_code === m.code} onPress={() => pickModel(m)} />
-            ))}
-          </View>
-        ) : (
-          <Text style={st.meta}>{t("vehicleNoModels")}</Text>
-        )}
+        {notice ? <Text style={st.meta}>{notice}</Text> : null}
         {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
-        {manualLink}
       </View>
     );
   }
 
+  const hasMake = !!make;
+  const hasModel = !!modelCode;
+  const showGeneration = hasModel && (generationsState === "loading" || generations.length > 0);
+  const genYears = generation ? generationYears(generation, reference?.model_years) : [];
+  const showVariant = !!generation && !!year && (variantsState === "loading" || variants.length > 0);
+  const specs = value?.variant
+    ? [value.power_hp ? `${value.power_hp} hp` : null, value.engine_capacity_cc ? `${value.engine_capacity_cc} cc` : null, value.powertrain, value.transmission].filter(Boolean).join(" · ")
+    : "";
+
   return (
     <View style={st.wrap}>
-      <TextField label={t("vehicleMake")} value={query} onChangeText={setQuery} placeholder={t("vehicleSearchMake")} autoCorrect={false} autoCapitalize="words" error={error} />
-      <View style={st.chips}>
-        <Chip label={t("vehicleChineseChip")} selected={chinese} onPress={() => setChinese((c) => !c)} />
-      </View>
-      {!query.trim() && !chinese ? <Text style={st.meta}>{t("vehicleCommonMakes")}</Text> : null}
-      {makesState === "loading" && !makes.length ? (
-        <Inline label={t("vehicleLoadingMakes")} />
-      ) : makesState === "error" ? (
+      {makesState === "error" ? (
         <InlineError label={t("vehicleLoadError")} retry={t("retry")} onRetry={loadMakes} />
-      ) : makes.length ? (
-        <View style={st.list}>
-          {(showAllMakes || query.trim() ? makes : makes.slice(0, MAX_INLINE)).map((m) => (
-            <Row key={m.code} title={m.name} subtitle={m.aliases.length ? m.aliases.join(" · ") : undefined} onPress={() => pickMake(m)} />
-          ))}
-        </View>
       ) : (
-        <Text style={st.meta}>{t("vehicleNoMakes", { query: query.trim() })}</Text>
+        <SelectField
+          label={t("vehicleMake")}
+          value={make?.code}
+          placeholder={t("vehicleSearchMake")}
+          options={makeOptions}
+          loading={makesState === "loading" && !makes.length}
+          hint={
+            makesState === "loading"
+              ? t("vehicleLoadingMakes")
+              : makesState === "ready" && !makes.length
+                ? t("vehicleNoMakes", { query: chinese ? t("vehicleChineseChip") : "" })
+                : !hasMake && !error
+                  ? t("vehicleCommonMakes")
+                  : undefined
+          }
+          error={!hasMake ? error : undefined}
+          onChange={(code) => {
+            const m = makes.find((x) => x.code === code) ?? (make?.code === code ? make : null);
+            if (m) pickMake(m);
+          }}
+          sheetHeader={
+            <View style={st.chips}>
+              <Chip label={t("vehicleChineseChip")} selected={chinese} onPress={() => setChinese((c) => !c)} />
+            </View>
+          }
+        />
       )}
-      {!query.trim() && !showAllMakes && makes.length > MAX_INLINE ? (
-        <Button label={`${t("showAll")} (${makes.length})`} variant="tertiary" size="small" onPress={() => setShowAllMakes(true)} />
+      {modelsState === "error" ? (
+        <InlineError label={t("vehicleLoadError")} retry={t("retry")} onRetry={loadModels} />
+      ) : (
+        <SelectField
+          label={t("vehicleModel")}
+          value={value?.model_code}
+          options={models.map((m) => ({ value: m.code, label: m.name, subtitle: m.aliases.length ? m.aliases.join(" · ") : undefined }))}
+          disabled={!hasMake || (modelsState === "ready" && !models.length)}
+          loading={hasMake && modelsState === "loading"}
+          hint={!hasMake ? t("vehicleChooseMakeFirst") : modelsState === "ready" && !models.length ? t("vehicleNoModels") : undefined}
+          error={hasMake && !hasModel ? error : undefined}
+          onChange={(code) => {
+            const m = models.find((x) => x.code === code);
+            if (m) pickModel(m);
+          }}
+        />
+      )}
+      {showGeneration ? (
+        <SelectField
+          label={t("vehicleGeneration")}
+          value={value?.generation_code}
+          loading={generationsState === "loading"}
+          options={generations.map((g) => ({ value: g.code, label: g.name, subtitle: g.year_from ? `${g.year_from}–${g.year_to ?? t("vehicleGenerationNow")}` : undefined }))}
+          onChange={(code) => {
+            const g = generations.find((x) => x.code === code);
+            if (g) pickGeneration(g);
+          }}
+        />
       ) : null}
+      {generation && genYears.length ? (
+        <SelectField label={t("vehicleYear")} value={year} options={genYears.map((y) => ({ value: y, label: y }))} onChange={pickYear} />
+      ) : null}
+      {showVariant ? (
+        <SelectField
+          label={t("vehicleEngineVariant")}
+          value={value?.variant_code}
+          loading={variantsState === "loading"}
+          hint={t("vehicleVariantHint")}
+          options={variants.map((v) => ({ value: v.code, label: v.name, subtitle: variantSummary(v) || undefined }))}
+          onChange={(code) => {
+            const v = variants.find((x) => x.code === code);
+            if (v) pickVariant(v);
+          }}
+        />
+      ) : null}
+      {specs ? <Text style={st.meta}>{`${t("vehicleSpecsAutoFilled")} ${specs}`}</Text> : null}
+      {notice ? <Text style={st.meta}>{notice}</Text> : null}
       {manualLink}
-    </View>
-  );
-}
-
-function Row({ title, subtitle, selected, onPress }: { title: string; subtitle?: string; selected?: boolean; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!selected }} style={[st.row, selected && st.rowOn]} onPress={onPress}>
-      <View style={st.flex}>
-        <Text style={st.rowTitle}>{title}</Text>
-        {subtitle ? <Text style={st.meta}>{subtitle}</Text> : null}
-      </View>
-      {selected ? <Check size={18} color={colors.blue600} /> : <ChevronRight size={18} color={colors.neutral500} />}
-    </Pressable>
-  );
-}
-
-function Inline({ label }: { label: string }) {
-  return (
-    <View accessibilityRole="progressbar" accessibilityLabel={label} style={st.inline}>
-      <ActivityIndicator color={colors.blue600} />
-      <Text style={st.meta}>{label}</Text>
     </View>
   );
 }
@@ -489,10 +441,6 @@ const st = StyleSheet.create({
   link: { ...type.label, color: colors.blue600 },
   error: { ...type.meta, color: colors.dangerText },
   chips: { flexDirection: "row", gap: space.x2 },
-  years: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  list: { gap: space.x1 },
-  row: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: space.x2, paddingHorizontal: space.x3, paddingVertical: space.x2, borderWidth: 1, borderColor: colors.neutral300, borderRadius: radius.control },
-  rowOn: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
   rowTitle: { ...type.label, color: colors.navy950 },
   selected: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: space.x3, paddingHorizontal: space.x3, borderWidth: 1, borderColor: colors.blue600, backgroundColor: colors.blue50, borderRadius: radius.control },
   errorBorder: { borderColor: colors.danger },

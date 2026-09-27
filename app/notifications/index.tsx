@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { AlertTriangle, Bell, CheckCircle2, ChevronRight, CreditCard, FileText, Info, LucideIcon, Search, ShieldCheck } from "lucide-react-native";
 import { Button, Chip, ChipRow, ripple, Screen } from "@/components/ui";
@@ -145,13 +145,15 @@ export default function Notifications() {
             {searching ? (
               <SearchBar value={query} onChangeText={setQuery} label={t("notifSearch")} placeholder={t("notifSearchPlaceholder")} clearLabel={t("clearSearch")} autoFocus />
             ) : null}
-            <ChipRow exclusive>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ChipRow exclusive style={styles.chipScroll}>
               <Chip role="tab" label={`${t("filterAll")} (${items.length})`} selected={filter === "all"} onPress={() => setFilter("all")} />
               {(Object.keys(KIND) as Kind[]).filter((k) => kindCount(k)).map((k) => (
                 <Chip key={k} role="tab" label={`${t(KIND[k].label)} (${kindCount(k)})`} selected={filter === k} onPress={() => setFilter(k)} />
               ))}
               <Chip role="tab" label={`${t("filterUnread")} (${unread})`} selected={filter === "unread"} onPress={() => setFilter("unread")} />
             </ChipRow>
+            </ScrollView>
             {unread ? <Button label={t("markAllRead")} variant="tertiary" loading={busy} onPress={() => void markAll()} /> : null}
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
           </View>
@@ -196,6 +198,7 @@ export default function Notifications() {
   );
 }
 const styles = StyleSheet.create({
+  chipScroll: { flexWrap: "nowrap" },
   content: { paddingBottom: space.x16 },
   header: { gap: space.x4, marginBottom: space.x4 },
   footer: { marginTop: space.x4 },

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { openDocumentUrl } from "@/components/documents/openDocument";
+import { router } from "expo-router";
+import { parseVerifyInput, verifyRoute } from "@/lib/verifyLink";
 import { Archive, ChevronRight, Download, Eye, FileBadge, FileText, History, Lock, QrCode, Share2, ShieldCheck, Star } from "lucide-react-native";
 import { Button, StatusChip, ripple } from "@/components/ui";
 import { Banner, SectionHeading, TintedIcon } from "@/components/design";
@@ -75,7 +77,10 @@ export function PolicyDocumentsSection({ policyId }: { policyId: string }) {
 
   const open = (d: IssuedDocument) => openDocumentUrl(d.download_url, documentTitle(d, language), d.document_number ?? undefined);
   const verify = (d: IssuedDocument) => {
-    if (d.verification_url) void Linking.openURL(d.verification_url).catch(() => open(d));
+    // In-app verification page (app/verify/[code].tsx) — no browser hand-off.
+    const target = parseVerifyInput(d.verification_url) ?? (d.verification_code ? { reference: d.verification_code, token: null } : null);
+    if (target) router.push(verifyRoute(target, d.download_url, documentTitle(d, language)));
+    else open(d);
   };
 
   const action = (Icon: typeof Eye, label: string, onPress: () => void, last = false) => (

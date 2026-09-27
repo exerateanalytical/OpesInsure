@@ -14,7 +14,7 @@ import { usePolicies } from "@/hooks/usePolicies";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { PolicyBucket, policyStatusInfo } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
-import { space } from "@/theme/tokens";
+import { colors, space } from "@/theme/tokens";
 
 const FILTERS: (PolicyBucket | "all")[] = ["all", "active", "pending", "expired", "cancelled", "suspended"];
 
@@ -102,10 +102,11 @@ export default function Policies() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filters}>
               {FILTERS.filter((key) => key === "all" || counts[key]).map((key) => {
                 const label = key === "all" ? t("filterAll") : td(`policyFilter_${key}`, key);
-                return <Chip key={key} label={`${label}${counts[key] ? ` (${counts[key]})` : ""}`} selected={filter === key} onPress={() => setFilter(key)} />;
+                return <Chip key={key} label={label} count={counts[key] || undefined} countTone={key === "active" ? colors.success : key === "expired" ? colors.danger : key === "pending" ? colors.neutral500 : undefined} selected={filter === key} onPress={() => setFilter(key)} />;
               })}
             </ScrollView>
             <SearchBar
+              filled
               value={query}
               onChangeText={setQuery}
               label={t("searchLabel")}

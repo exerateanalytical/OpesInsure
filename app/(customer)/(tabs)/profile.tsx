@@ -43,6 +43,9 @@ import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { BuildStamp } from "@/components/BuildStamp";
 import { colors, radius, space, type } from "@/theme/tokens";
+/** Design rotates icon tints row by row (blue, gold, red, green). */
+const ROW_TINTS: Tint[] = ["blue", "gold", "red", "green"];
+
 const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string][] }[] = [
   {
     title: "profileGroupYou",
@@ -136,7 +139,7 @@ export default function Profile() {
   const role = workspace?.role_code ? td(`role_${workspace.role_code}`, workspace.role_code) : null;
   return (
     <Screen>
-      <BrandHeader title={t("profile")} back={false} right="bell" />
+      <BrandHeader title={t("profile")} subtitle={t("profileHeaderSubtitle")} back={false} right="bell" />
       <Card style={styles.hero}>
         <View style={styles.heroRow}>
           <View style={styles.avatar} accessible accessibilityLabel={user?.full_name ?? t("profile")}>
@@ -223,7 +226,7 @@ export default function Profile() {
               style={({ pressed }) => [styles.item, i === group.links.length - 1 && styles.itemLast, pressed && styles.pressed]}
               onPress={() => router.push(path as never)}
             >
-              <TintedIcon icon={Icon} tint={group.tint} size={44} />
+              <TintedIcon icon={Icon} tint={ROW_TINTS[i % ROW_TINTS.length]} size={44} />
               <Text style={styles.label}>{t(label)}</Text>
               <View style={styles.circleSm}>
                 <ChevronRight size={16} color={colors.navy900} />

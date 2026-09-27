@@ -24,6 +24,7 @@ import {
   MessageCircle,
   Phone,
   RefreshCw,
+  ShieldCheck,
   ShieldAlert,
   WifiOff,
 } from "lucide-react-native";
@@ -174,7 +175,7 @@ export default function CustomerHome() {
           }
         />
 
-        {/* Primary action: the largest control on the screen. */}
+        {/* Primary action: same size as the policy cards below (PolicyListCard metrics). */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t("compareInsurance")}. ${t("compareInsuranceBody")}`}
@@ -183,16 +184,18 @@ export default function CustomerHome() {
           style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
         >
           <HeritagePattern variant="ndop" opacity={0.08} />
+          <View style={styles.ctaThumb}>
+            <ShieldCheck size={28} color={colors.gold500} />
+          </View>
           <View style={styles.ctaCopy}>
-            <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
-            <Text style={styles.ctaBody}>{t("homeCtaBody")}</Text>
+            <Text style={styles.ctaTitle} numberOfLines={2}>{t("homeCtaTitle")}</Text>
+            <Text style={styles.ctaBody} numberOfLines={2}>{t("homeCtaBody")}</Text>
             <View style={styles.ctaButton}>
               <Text style={styles.ctaButtonText}>{t("propGetQuote")}</Text>
-              <ArrowRight size={18} color={colors.navy950} />
             </View>
           </View>
-          <View style={styles.ctaShield}>
-            <BrandArt name="glass_shield" width={104} />
+          <View style={styles.ctaChevron}>
+            <ArrowRight size={18} color={colors.white} />
           </View>
         </Pressable>
 
@@ -514,21 +517,27 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: "Inter_400Regular", fontSize: 26, lineHeight: 32, color: colors.navy950 },
   greetingName: { fontFamily: "Inter_700Bold", fontSize: 34, lineHeight: 40, color: colors.navy950, letterSpacing: -0.5 },
   heroTagline: { ...type.bodyLarge, color: colors.navy800, marginTop: 4 },
+  // Same metrics as PolicyListCard (the other cards on this screen): 12dp padding,
+  // 56dp tile with a 28dp icon, 17dp title, 13/12dp meta, 36dp chevron.
   cta: {
     flexDirection: "row",
     alignItems: "center",
+    gap: space.x3,
     borderRadius: radius.feature,
-    backgroundColor: colors.navy900,
+    // Design promo navy (sampled #00255C), darker than navy900.
+    backgroundColor: "#00255C",
+    borderWidth: 1,
+    borderColor: "#00255C",
     overflow: "hidden",
-    padding: space.x5,
-    minHeight: 168,
+    padding: space.x3,
   },
-  ctaCopy: { flex: 1, gap: space.x2 },
-  ctaTitle: { fontFamily: "Inter_700Bold", fontSize: 24, lineHeight: 29, color: colors.white },
-  ctaBody: { ...type.body, color: colors.blue100 },
-  ctaButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: space.x2, backgroundColor: colors.gold500, borderRadius: radius.control, paddingHorizontal: space.x4, minHeight: 46, marginTop: space.x2 },
-  ctaButtonText: { ...type.label, fontSize: 16, color: colors.navy950 },
-  ctaShield: { width: 104, alignItems: "center", justifyContent: "center" },
+  ctaThumb: { width: 56, height: 56, borderRadius: radius.card, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  ctaCopy: { flex: 1, gap: 3, minWidth: 0 },
+  ctaTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.white },
+  ctaBody: { ...type.meta, color: colors.blue100 },
+  ctaButton: { alignSelf: "flex-start", backgroundColor: colors.gold500, borderRadius: radius.pill, paddingHorizontal: space.x3, paddingVertical: 4, marginTop: 4 },
+  ctaButtonText: { ...type.meta, fontSize: 12, lineHeight: 16, fontFamily: "Inter_600SemiBold", color: colors.navy950 },
+  ctaChevron: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" },
   quickRow: { flexDirection: "row", gap: space.x3 },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {

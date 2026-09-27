@@ -16,6 +16,7 @@ import { humanize, unwrapPage } from "@/lib/purchase";
 import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
 import { useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { ContractField } from "@/components/forms/ContractField";
+import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
 import { useTranslation } from "@/i18n";
@@ -233,6 +234,9 @@ export default function Risk() {
           ) : current ? (
             <Card>
               {stepTitle(current) ? <SectionHeading title={stepTitle(current) ?? ""} /> : null}
+              {current.fields.some((f) => f.master?.list === "cameroon_region") ? (
+                <FormLocationAutofill form={`quote.${line}`} fields={current.fields} values={values} setValues={setValues} />
+              ) : null}
               {current.fields.map((f) => (
                 isFieldVisible(f, values) ? (
                   <ContractField

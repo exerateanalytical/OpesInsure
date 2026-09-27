@@ -135,8 +135,9 @@ try {
       else if (s.via) {
         // Optional UI path: open `via.route`, click the element labelled `via.click`, capture where it lands.
         await open(page, s.via.route);
+        // Labels may list EN|FR alternatives separated by "|" (the demo account locale decides the language).
         // `via.clickPrefix` (optional) matches an aria-label that starts with the text, e.g. a RadioCard "Title. Subtitle".
-        await page.evaluate((label, prefix) => document.querySelector(prefix ? `[aria-label^="${prefix}"]` : `[aria-label="${label}"]`)?.click(), s.via.click, s.via.clickPrefix);
+        await page.evaluate((label, prefix) => document.querySelector(String(prefix ?? label).split("|").map((t) => (prefix ? `[aria-label^="${t}"]` : `[aria-label="${t}"]`)).join(","))?.click(), s.via.click, s.via.clickPrefix);
         await sleep(s.via.wait ?? 5000);
         target = await page.evaluate(() => location.pathname);
       } else target = await open(page, s.route);
@@ -147,7 +148,7 @@ try {
         for (let i = 0; i < (step.times ?? 1); i++) {
           await page.evaluate(
             (label, prefix, each, n) => {
-              const els = document.querySelectorAll(prefix ? `[aria-label^="${prefix}"]` : `[aria-label="${label}"]`);
+              const els = document.querySelectorAll(String(prefix ?? label).split("|").map((t) => (prefix ? `[aria-label^="${t}"]` : `[aria-label="${t}"]`)).join(","));
               (each ? els[n] : els[0])?.click();
             },
             step.click,

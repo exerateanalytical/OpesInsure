@@ -190,6 +190,7 @@ export function Button({
                     ? colors.danger
                     : colors.blue600
               }
+              style={{ flexShrink: 0 }}
             />
           ) : null}
           <Text allowFontScaling maxFontSizeMultiplier={1.8} style={[styles.buttonLabel, styles[`buttonLabel_${variant}`]]}>
@@ -272,10 +273,16 @@ export function Chip({
   selected,
   onPress,
   role = "button",
+  count,
+  countTone,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  /** Optional count shown as a round badge after the label (design filter chips). */
+  count?: number;
+  /** Badge colour when not selected; defaults to neutral grey. */
+  countTone?: string;
   /** "tab" inside an accessibilityRole="tablist" row of exclusive filters. */
   role?: "button" | "tab";
 }) {
@@ -290,6 +297,11 @@ export function Chip({
       <Text allowFontScaling maxFontSizeMultiplier={1.6} style={[styles.chipSelectText, selected && styles.chipSelectTextOn]}>
         {label}
       </Text>
+      {count != null ? (
+        <View style={[styles.chipCount, { backgroundColor: selected ? colors.white : countTone ?? colors.neutral500 }]}>
+          <Text style={[styles.chipCountText, { color: selected ? colors.navy900 : colors.white }]}>{count}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -377,6 +389,8 @@ export const fieldStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  chipCount: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, marginLeft: 8, alignItems: "center", justifyContent: "center" },
+  chipCountText: { fontFamily: "Inter_600SemiBold", fontSize: 12, lineHeight: 16 },
   safe: { flex: 1, backgroundColor: colors.neutral50 },
   flex: { flex: 1 },
   scroll: { flexGrow: 1 },
@@ -489,6 +503,8 @@ const styles = StyleSheet.create({
   chipText: { ...type.caption },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   chipSelect: {
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: 40,
     overflow: "hidden",
     paddingHorizontal: space.x4,

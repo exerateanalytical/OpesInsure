@@ -1,11 +1,11 @@
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { ShieldCheck } from "lucide-react-native";
 import type { ClaimSettlement } from "@/api/client";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const SHIELD = require("../../../assets/brand/claim_shield.png");
 
 /**
  * Navy settlement-amount band (opesinsure_claim_settlement_dashboard) with the
@@ -27,7 +27,9 @@ export function SettlementHero({ settlement: x }: { settlement: ClaimSettlement 
           </Text>
         </View>
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Image source={SHIELD} style={s.shield} resizeMode="contain" accessible={false} />
+          <View style={s.shield}>
+            <ShieldCheck size={32} color={colors.gold500} />
+          </View>
         </View>
       </View>
       <View style={s.split}>
@@ -57,7 +59,7 @@ const s = StyleSheet.create({
   heroLabel: { ...type.body, color: colors.white },
   heroAmount: { ...type.cardTitle, fontSize: 28, lineHeight: 34, color: colors.white },
   heroMeta: { ...type.meta, color: colors.blue100 },
-  shield: { width: 64, height: 72 },
+  shield: { width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
   split: { flexDirection: "row", backgroundColor: colors.blue50, borderRadius: radius.card, paddingVertical: space.x3 },
   cell: { flex: 1, alignItems: "center", gap: 4, paddingHorizontal: space.x1 },
   divider: { width: 1, backgroundColor: colors.neutral200 },

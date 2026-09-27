@@ -2,11 +2,11 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 import {
-  CircleUserRound,
+  UserRound,
   Compass,
   FileText,
   House,
-  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react-native";
 import { colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -62,11 +62,11 @@ export default function CustomerTabs() {
       />
       <Tabs.Screen
         name="claims"
-        options={{ title: t("claims"), tabBarAccessibilityLabel: t("claims"), tabBarIcon: icon(ShieldAlert) }}
+        options={{ title: t("claims"), tabBarAccessibilityLabel: t("claims"), tabBarIcon: icon(ShieldCheck) }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: t("profile"), tabBarAccessibilityLabel: t("profile"), tabBarIcon: icon(CircleUserRound) }}
+        options={{ title: t("profile"), tabBarAccessibilityLabel: t("profile"), tabBarIcon: icon(UserRound) }}
       />
       {/* The comparison screen (purchase flow) stays routable, reached from
           Home / Explore "Compare Insurance", but is no longer a tab. */}

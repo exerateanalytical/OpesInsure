@@ -155,7 +155,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: authSpace[2],
     borderRadius: authRadius.button,
-    backgroundColor: authColors.blue500,
+    // Design sign-in button (sampled #003AA0→#004FCD gradient midpoint).
+    backgroundColor: "#0045B8",
   },
   primaryGold: { backgroundColor: authColors.gold500 },
   primaryLabel: { ...authType.button, color: authColors.white },
