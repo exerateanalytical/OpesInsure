@@ -48,7 +48,24 @@ Build status and download: see section 5.
 Install 1.5.1 over 1.5.0 and confirm you stay signed in. Then check: sign-in with code, quote with the vehicle dropdowns, proposal, payment screen, claim with photo, video with sound and crop, KYC upload, document open/save/share (native PDF), fingerprint lock, location prompt on a new claim, QR verification scan, push notification (after step 1), agent offline queue and "Sync now", sign out everywhere (step-up prompt appears once the backend enables it). On Android 13+ also check the notification permission prompt and the photo picker.
 
 ## 5. Build and download
-(Filled in when the build finishes.)
+| Item | Value |
+|---|---|
+| EAS build | 3efbef9d, versionCode 20, runtime 1.5.1, commit fc3b410 |
+| Direct download (Expo) | https://expo.dev/artifacts/eas/WZVe63pN2B98Po3sEHi4GaoT0RHItgslkW-6DMDi83M.apk |
+| Size | 70,827,837 bytes (about 71 MB) |
+| md5 | 85290193a399322158f6b3b28184d5a0 |
+| Signing certificate | SHA-256 8764cfd0…f04f18, same as 1.4.0 and 1.5.0 (in-place upgrade keeps data) |
+| Checked in the file | version 1.5.1; Firebase `google_app_id`; Play Integrity library and OpesIntegrity module compiled; Sentry native; update-signing certificate in the manifest; overlay, write-storage, boot and badge permissions gone; camera, notifications and `/verify` link present; crop activity overridden |
+| **Download page** | **Not switched yet.** The server dropped the upload three times and briefly stopped answering (website and SSH timed out, then came back). `/download/android` still serves 1.5.0. |
+
+### To finish publishing 1.5.1 on the download page
+1. Upload the file to `/srv/opesinsure/shared/storage/app/public/downloads/opesinsure-1.5.1.apk` (the mobile session's usual `scp` with `-o ServerAliveInterval=15`; check md5 afterwards).
+2. Back up `/srv/opesinsure/shared/.env`, set `MOBILE_APP_VERSION=1.5.1`, `MOBILE_LATEST_VERSION=1.5.1`, `MOBILE_APP_ANDROID_SIZE="71 MB"`, then `php artisan config:cache` and reload php-fpm.
+3. Confirm `https://insurance.opesdatacenter.tech/download/android` serves md5 85290193a399322158f6b3b28184d5a0.
+
+### Over-the-air updates on 1.5.1
+- `99039bcf` "car_front_icon" (latest; an identical `03a53aed` went out a minute earlier after a false error from the Expo API). Vehicles now use the Lucide **CarFront** icon everywhere (17 files).
+- These updates are signed with the new key and reach phones running 1.5.1. Phones still on 1.5.0 do not receive them; they get the change by installing 1.5.1.
 
 ## 6. Coordination with the backend session
 - It is **holding** the new step-up enforcement (sign out everywhere, payout change, email change) until told. 1.5.1 handles it; 1.5.0 does not. Recommended: enable after 1.5.1 is on the download page and most users have updated.
