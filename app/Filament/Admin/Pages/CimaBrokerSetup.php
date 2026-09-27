@@ -16,7 +16,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** REQ-CIMA-005 - BRK-SET-CIMA-001..004: one intermediary's Article 557 / Article 411 reporting setup. */
 final class CimaBrokerSetup extends Page
@@ -28,7 +27,7 @@ final class CimaBrokerSetup extends Page
 
     public const COMMISSION_TYPES = ['BROKER_COMMISSION' => 'Broker commission', 'AGENT_COMMISSION' => 'Agent commission'];
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-briefcase';
 
     protected static ?string $navigationLabel = 'Broker CIMA setup';
 
@@ -58,7 +57,7 @@ final class CimaBrokerSetup extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('mapping')->label('Add reporting setting')->icon(Heroicon::OutlinedPlus)->visible(fn () => $this->partnerId !== null)
+            Actions\Action::make('mapping')->label('Add reporting setting')->icon('lucide-plus')->visible(fn () => $this->partnerId !== null)
                 ->schema([
                     Forms\Components\Select::make('screen')->required()->live()->options([
                         'BRK-SET-CIMA-001' => 'BRK-SET-CIMA-001 Reporting configuration (Art. 557 measure)',

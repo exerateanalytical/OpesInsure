@@ -13,7 +13,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -26,7 +25,7 @@ final class MobileIssueReportResource extends Resource
 {
     protected static ?string $model = MobileIssueReport::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-triangle-alert';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Operations';
 
@@ -60,9 +59,9 @@ final class MobileIssueReportResource extends Resource
                 Tables\Columns\TextColumn::make('route')->label('Screen')->searchable(),
                 Tables\Columns\TextColumn::make('note')->limit(60)->searchable(),
                 Tables\Columns\TextColumn::make('user.full_name')->label('Reported by')->placeholder('Not signed in'),
-                Tables\Columns\TextColumn::make('status')->badge()
+                \App\Filament\Shared\Columns::status('status')
                     ->color(fn (string $state) => $state === 'RESOLVED' ? 'success' : 'warning'),
-                Tables\Columns\TextColumn::make('created_at')->label('Reported')->dateTime()->sortable(),
+                \App\Filament\Shared\Columns::date('created_at')->label('Reported')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -72,7 +71,7 @@ final class MobileIssueReportResource extends Resource
                 Actions\ViewAction::make(),
                 Actions\Action::make('toggleStatus')
                     ->label(fn (MobileIssueReport $record) => $record->status === 'OPEN' ? 'Mark resolved' : 'Reopen')
-                    ->icon(fn (MobileIssueReport $record) => $record->status === 'OPEN' ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedArrowPath)
+                    ->icon(fn (MobileIssueReport $record) => $record->status === 'OPEN' ? 'lucide-circle-check' : 'lucide-refresh-cw')
                     ->action(function (MobileIssueReport $record) {
                         $record->update(['status' => $record->status === 'OPEN' ? 'RESOLVED' : 'OPEN']);
                         Notification::make()->title('Report updated')->success()->send();
@@ -80,7 +79,7 @@ final class MobileIssueReportResource extends Resource
             ])
             ->emptyStateHeading('No issues reported')
             ->emptyStateDescription('Reports filed from the mobile app\'s "Report a problem" button will appear here.')
-            ->emptyStateIcon(Heroicon::OutlinedExclamationTriangle);
+            ->emptyStateIcon('lucide-triangle-alert');
     }
 
     public static function getPages(): array

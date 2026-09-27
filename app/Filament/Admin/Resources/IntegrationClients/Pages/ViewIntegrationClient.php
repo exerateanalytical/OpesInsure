@@ -24,7 +24,7 @@ final class ViewIntegrationClient extends ViewRecord
         return [
             Action::make('advance')
                 ->label('Advance to next stage')
-                ->icon('heroicon-o-arrow-right-circle')
+                ->icon('lucide-circle-arrow-right')
                 ->visible(fn () => array_key_exists($this->record->status, ['DRAFT' => 1, 'TECHNICAL_REVIEW' => 1, 'SANDBOX_ENABLED' => 1, 'CERTIFICATION' => 1, 'PRODUCTION_APPROVED' => 1]))
                 ->schema([Textarea::make('notes')->label('Notes')])
                 ->action(function (array $data) use ($service) {
@@ -36,7 +36,7 @@ final class ViewIntegrationClient extends ViewRecord
             Action::make('suspend')
                 ->label('Suspend')
                 ->color('warning')
-                ->icon('heroicon-o-pause-circle')
+                ->icon('lucide-circle-pause')
                 ->visible(fn () => $this->record->status !== 'REVOKED')
                 ->requiresConfirmation()
                 ->schema([Textarea::make('notes')->required()->minLength(10)])
@@ -48,7 +48,7 @@ final class ViewIntegrationClient extends ViewRecord
                 }),
             Action::make('reinstate')
                 ->label('Reinstate')
-                ->icon('heroicon-o-play-circle')
+                ->icon('lucide-circle-play')
                 ->visible(fn () => in_array($this->record->status, ['SUSPENDED', 'RESTRICTED'], true))
                 ->schema([Textarea::make('notes')->required()->minLength(10)])
                 ->action(function (array $data) use ($service) {
@@ -60,7 +60,7 @@ final class ViewIntegrationClient extends ViewRecord
             Action::make('revoke')
                 ->label('Revoke permanently')
                 ->color('danger')
-                ->icon('heroicon-o-x-circle')
+                ->icon('lucide-circle-x')
                 ->visible(fn () => $this->record->status !== 'REVOKED')
                 ->requiresConfirmation()
                 ->schema([Textarea::make('notes')->required()->minLength(10)])

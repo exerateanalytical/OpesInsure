@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class CaseTaskResource extends Resource
 
     protected static ?string $model = CaseTask::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckCircle;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-circle-check';
 
     protected static ?string $navigationLabel = 'Tasks';
 
@@ -64,9 +63,9 @@ final class CaseTaskResource extends Resource
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('title')->searchable()->limit(60),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('assignee_user_id')->label('Assignee')->toggleable(),
-            Tables\Columns\TextColumn::make('due_at')->dateTime()->sortable(),
+            \App\Filament\Shared\Columns::date('due_at')->sortable(),
         ])->recordActions([Actions\ViewAction::make()]);
     }
 

@@ -58,7 +58,7 @@
 @if ($this->selected)
     @php($status = $this->selectedStatus())
     @if ($status === 'DRAFT' && $this->can('provider.claim.submit'))
-        <div data-form="claim-submit"><x-filament::button wire:click="submitClaim" wire:confirm="{{ __('provider_workspace.ui.confirm') }}" icon="heroicon-o-paper-airplane">{{ __('provider_workspace.ui.submit_claim') }}</x-filament::button></div>
+        <div data-form="claim-submit"><x-filament::button wire:click="submitClaim" wire:confirm="{{ __('provider_workspace.ui.confirm') }}" icon="lucide-send">{{ __('provider_workspace.ui.submit_claim') }}</x-filament::button></div>
     @endif
     @if (in_array($status, ['SUBMITTED', 'UNDER_REVIEW', 'DISPUTED'], true) && $this->can('provider.claim.respond_to_query'))
         <x-filament::section collapsible collapsed data-form="claim-respond">

@@ -7,14 +7,13 @@ namespace App\Filament\Admin\Pages\DocumentEngine;
 use App\Filament\Admin\Concerns\DocumentEngineAccess;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** Shared read-only report layout for the DOC-ADM report screens. */
 abstract class DocumentEngineReportPage extends Page
 {
     use DocumentEngineAccess;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-file-text';
 
     protected string $view = 'filament.admin.pages.document-engine-report';
 

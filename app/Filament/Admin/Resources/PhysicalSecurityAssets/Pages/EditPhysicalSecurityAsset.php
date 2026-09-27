@@ -10,7 +10,6 @@ use App\Filament\Admin\Resources\PhysicalSecurityAssets\PhysicalSecurityAssetRes
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Support\Icons\Heroicon;
 
 final class EditPhysicalSecurityAsset extends EditRecord
 {
@@ -20,7 +19,7 @@ final class EditPhysicalSecurityAsset extends EditRecord
     {
         // Maker-checker verify step: a different administrator than the recorder (PhysicalSecurityAssetResource::prepare).
         return [
-            Action::make('verify')->label('Verify (second administrator)')->icon(Heroicon::OutlinedShieldCheck)->color('success')->requiresConfirmation()
+            Action::make('verify')->label('Verify (second administrator)')->icon('lucide-shield-check')->color('success')->requiresConfirmation()
                 ->visible(fn () => ! in_array($this->record->status, ['VERIFIED', 'RETIRED'], true))
                 ->modalDescription('Confirm you have checked the physical asset / artwork against the supplier documents. You cannot verify an asset you recorded.')
                 ->action(function () {

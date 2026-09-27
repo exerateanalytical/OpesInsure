@@ -57,7 +57,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.review';
 
-        return WorkflowAction::make('preauthProposeExtension', $p)->icon('heroicon-o-calendar-days')
+        return WorkflowAction::make('preauthProposeExtension', $p)->icon('lucide-calendar-days')
             ->visible(fn ($record) => self::extensions($record, ['REQUESTED']) !== [])
             ->schema(fn ($record) => [
                 Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['REQUESTED']))->required()->live()
@@ -76,7 +76,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.approve';
 
-        return WorkflowAction::make('preauthDecideExtension', $p)->icon('heroicon-o-shield-check')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('preauthDecideExtension', $p)->icon('lucide-shield-check')->color('success')->requiresConfirmation()
             ->visible(fn ($record) => self::extensions($record, ['PENDING_APPROVAL', 'REFERRED']) !== [])
             ->schema(fn ($record) => [Select::make('extension_id')->label(__('workflow_actions.fields.extension'))->options(self::extensions($record, ['PENDING_APPROVAL', 'REFERRED']))->required()])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
@@ -88,7 +88,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_claims.adjudicate';
 
-        return WorkflowAction::make('providerDisputeResolve', $p)->icon('heroicon-o-scale')
+        return WorkflowAction::make('providerDisputeResolve', $p)->icon('lucide-scale')
             ->visible(fn ($record) => in_array(self::status($record), \App\Application\Providers\Workspace\ProviderOperationsService::OPEN_DISPUTE, true))
             ->schema([
                 Select::make('status')->label(__('workflow_actions.fields.outcome'))->required()
@@ -104,7 +104,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.review';
 
-        return WorkflowAction::make('preauthRequestInfo', $p)->icon('heroicon-o-question-mark-circle')
+        return WorkflowAction::make('preauthRequestInfo', $p)->icon('lucide-circle-help')
             ->visible(fn ($record) => self::status($record) === 'REQUESTED')
             ->schema([Textarea::make('question')->label(__('workflow_actions.fields.question'))->required()->maxLength(2000)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
@@ -115,7 +115,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.review';
 
-        return WorkflowAction::make('preauthPropose', $p)->icon('heroicon-o-scale')
+        return WorkflowAction::make('preauthPropose', $p)->icon('lucide-scale')
             ->visible(fn ($record) => self::status($record) === 'REQUESTED')
             ->schema([
                 Select::make('decision')->label(__('workflow_actions.fields.decision'))->options(WorkflowAction::options(PreauthLifecycle::DECISIONS, 'preauth'))->required()->live(),
@@ -135,7 +135,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.approve';
 
-        return WorkflowAction::make('preauthReturn', $p)->icon('heroicon-o-arrow-uturn-left')
+        return WorkflowAction::make('preauthReturn', $p)->icon('lucide-undo-2')
             ->visible(fn ($record) => in_array(self::status($record), ['PENDING_APPROVAL', 'REFERRED'], true))
             ->schema([Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->maxLength(2000)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
@@ -146,7 +146,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.approve';
 
-        return WorkflowAction::make('preauthDecide', $p)->icon('heroicon-o-shield-check')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('preauthDecide', $p)->icon('lucide-shield-check')->color('success')->requiresConfirmation()
             ->visible(fn ($record) => in_array(self::status($record), ['PENDING_APPROVAL', 'REFERRED'], true))
             ->action(fn (Action $action, $record) => WorkflowAction::run($action, $p,
                 fn () => app(PreauthorizationService::class)->decide(self::tenant(), WorkflowAction::id($record), auth()->user())));
@@ -156,7 +156,7 @@ final class HealthProviderActions
     {
         $p = 'health.preauth.review';
 
-        return WorkflowAction::make('preauthCancel', $p)->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('preauthCancel', $p)->icon('lucide-circle-x')->color('danger')->requiresConfirmation()
             ->visible(fn ($record) => ! in_array(self::status($record), PreauthLifecycle::TERMINAL, true))
             ->schema([Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->maxLength(2000)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,
@@ -167,7 +167,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_claims.approve_payment';
 
-        return WorkflowAction::make('providerClaimPayable', $p)->icon('heroicon-o-banknotes')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('providerClaimPayable', $p)->icon('lucide-banknote')->color('success')->requiresConfirmation()
             ->visible(fn ($record) => in_array(self::status($record), ['APPROVED', 'PARTIALLY_APPROVED'], true))
             ->action(fn (Action $action, $record) => WorkflowAction::run($action, $p,
                 fn () => app(ProviderClaimService::class)->markPayable(self::tenant(), WorkflowAction::id($record), auth()->id())));
@@ -183,7 +183,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_claims.adjudicate';
 
-        return WorkflowAction::make('providerClaimReview', $p)->icon('heroicon-o-magnifying-glass')->requiresConfirmation()
+        return WorkflowAction::make('providerClaimReview', $p)->icon('lucide-search')->requiresConfirmation()
             ->visible(fn ($record) => self::status($record) === 'SUBMITTED')
             ->action(fn (Action $action, $record) => WorkflowAction::run($action, $p,
                 fn () => app(ProviderClaimService::class)->startReview(self::tenant(), WorkflowAction::id($record), auth()->id())));
@@ -194,7 +194,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_claims.adjudicate';
 
-        return WorkflowAction::make('providerClaimAdjudicate', $p)->icon('heroicon-o-scale')->modalWidth('5xl')
+        return WorkflowAction::make('providerClaimAdjudicate', $p)->icon('lucide-scale')->modalWidth('5xl')
             ->visible(fn ($record) => self::status($record) === 'UNDER_REVIEW')
             ->fillForm(fn ($record) => ['lines' => collect(app(ProviderClaimService::class)->find(self::tenant(), WorkflowAction::id($record))->lines)
                 ->map(fn ($l) => ['line_no' => $l->line_no, 'reject' => false,
@@ -220,7 +220,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_claims.adjudicate';
 
-        return WorkflowAction::make('providerClaimResolveDispute', $p)->icon('heroicon-o-chat-bubble-left-right')
+        return WorkflowAction::make('providerClaimResolveDispute', $p)->icon('lucide-messages-square')
             ->visible(fn ($record) => self::status($record) === 'DISPUTED')
             ->schema([
                 Select::make('outcome')->label(__('workflow_actions.fields.outcome'))->options(WorkflowAction::options(['REOPEN', 'UPHOLD'], 'provider_dispute'))->required(),
@@ -235,7 +235,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_settlements.manage';
 
-        return WorkflowAction::make('settlementCreate', $p)->icon('heroicon-o-rectangle-stack')->requiresConfirmation()
+        return WorkflowAction::make('settlementCreate', $p)->icon('lucide-layers')->requiresConfirmation()
             ->schema([
                 Select::make('provider_id')->label(__('workflow_actions.fields.provider'))->required()->searchable()
                     ->options(fn () => DB::table('health_provider_claims')->join('provider_profiles', 'provider_profiles.id', '=', 'health_provider_claims.provider_profile_id')
@@ -270,7 +270,7 @@ final class HealthProviderActions
     {
         $p = 'health.provider_settlements.pay';
 
-        return WorkflowAction::make('settlementPay', $p)->icon('heroicon-o-credit-card')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('settlementPay', $p)->icon('lucide-credit-card')->color('success')->requiresConfirmation()
             ->visible(fn ($record) => self::status($record) === 'OPEN')
             ->schema([TextInput::make('payment_reference')->label(__('workflow_actions.fields.payment_reference'))->required()->maxLength(120)])
             ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p,

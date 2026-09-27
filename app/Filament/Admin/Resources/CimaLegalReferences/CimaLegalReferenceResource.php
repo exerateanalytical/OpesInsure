@@ -16,7 +16,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -26,7 +25,7 @@ final class CimaLegalReferenceResource extends Resource
 
     protected static ?string $model = LegalReference::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-book-open';
 
     protected static ?string $navigationLabel = 'Reference library';
 
@@ -42,8 +41,8 @@ final class CimaLegalReferenceResource extends Resource
                 Tables\Columns\TextColumn::make('title')->placeholder('Text not loaded - enter from the Code'),
                 Tables\Columns\TextColumn::make('source_reference')->wrap()->toggleable(),
                 Tables\Columns\TextColumn::make('regulatory_version')->label('Version')->toggleable(),
-                Tables\Columns\TextColumn::make('effective_from')->date()->toggleable(),
-                Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open')->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_from', false)->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open')->toggleable(),
             ])
             ->recordActions([static::versionAction(['title', 'summary'])]);
     }
@@ -51,7 +50,7 @@ final class CimaLegalReferenceResource extends Resource
     /** "New effective version" - the only way to change a regulatory row. */
     public static function versionAction(array $fields, array $labelFields = []): Actions\Action
     {
-        return Actions\Action::make('newVersion')->label('New effective version')->icon(Heroicon::OutlinedDocumentDuplicate)
+        return Actions\Action::make('newVersion')->label('New effective version')->icon('lucide-files')
             ->visible(fn () => static::canAccessCima())
             ->fillForm(fn ($record) => collect($fields)->mapWithKeys(fn ($f) => [$f => $record->{$f}])->all() + ['effective_from' => now()->addDay()->toDateString()])
             ->schema(array_merge(

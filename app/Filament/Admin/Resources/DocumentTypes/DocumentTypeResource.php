@@ -13,7 +13,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -24,7 +23,7 @@ final class DocumentTypeResource extends Resource
 
     protected static ?string $model = DocumentType::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-file-text';
 
     protected static ?string $navigationLabel = 'Document types';
 
@@ -49,7 +48,7 @@ final class DocumentTypeResource extends Resource
             Tables\Columns\TextColumn::make('scope')->toggleable(),
             Tables\Columns\TextColumn::make('legal_reference')->placeholder('-')->toggleable(),
             Tables\Columns\TextColumn::make('numbering_family')->label('Numbering')->placeholder('-')->toggleable(isToggledHiddenByDefault: true),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'ACTIVE' ? 'success' : 'gray'),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('category')->options(fn () => DocumentType::query()->distinct()->orderBy('category')->pluck('category', 'category')->all()),
             Tables\Filters\SelectFilter::make('register_group')->label('Register group (A–N)')->options(array_combine(range('A', 'N'), range('A', 'N'))),
@@ -62,7 +61,7 @@ final class DocumentTypeResource extends Resource
 
     public static function deactivateAction(): Actions\Action
     {
-        return Actions\Action::make('deactivate')->label('Deactivate')->icon(Heroicon::OutlinedArchiveBox)->color('gray')->requiresConfirmation()
+        return Actions\Action::make('deactivate')->label('Deactivate')->icon('lucide-archive')->color('gray')->requiresConfirmation()
             ->modalDescription('Seeded catalogue rows are never deleted. Deactivation closes the row (status INACTIVE, effective until today).')
             ->visible(fn ($record) => $record->status === 'ACTIVE' && static::canAccessDocumentCatalogue())
             ->action(function ($record) {

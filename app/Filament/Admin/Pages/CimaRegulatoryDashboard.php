@@ -7,12 +7,11 @@ namespace App\Filament\Admin\Pages;
 use App\Application\Regulatory\CimaComplianceReport;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** PLT-CIMA-001 CIMA Regulatory Dictionary dashboard. */
 final class CimaRegulatoryDashboard extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-scale';
 
     protected static string|\UnitEnum|null $navigationGroup = 'CIMA Regulatory Dictionary';
 

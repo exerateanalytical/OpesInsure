@@ -31,7 +31,7 @@ final class LetterheadService
      * @param  ?string  $logo  new logo bytes (null keeps the current logo unless $removeLogo)
      * @param  ?string  $header  new header image bytes (null keeps the current one unless $removeHeader)
      */
-    public function publish(string $ownerType, string $ownerId, array $data, ?string $logo, ?string $header, ?User $actor, bool $removeLogo = false, bool $removeHeader = false): LetterheadAsset
+    public function publish(string $ownerType, string $ownerId, array $data, ?string $logo, ?string $header, ?User $actor, bool $removeLogo = false, bool $removeHeader = false, bool $forceMakerChecker = false): LetterheadAsset
     {
         if (! in_array($ownerType, self::OWNERS, true)) {
             throw ValidationException::withMessages(['owner_type' => 'Unknown letterhead owner type.']);
@@ -39,7 +39,8 @@ final class LetterheadService
         $data = $this->validateFields($data);
         $files = ['logo' => $logo !== null ? $this->inspect($logo, 'logo') : null, 'header' => $header !== null ? $this->inspect($header, 'header') : null];
         $remove = ['logo' => $removeLogo, 'header' => $removeHeader];
-        $makerChecker = (bool) config('letterheads.maker_checker');
+        // Insurer self-service (/insurer) always needs a second approver, whatever the platform setting.
+        $makerChecker = $forceMakerChecker || (bool) config('letterheads.maker_checker');
 
         $asset = DB::transaction(function () use ($ownerType, $ownerId, $data, $files, $remove, $actor, $makerChecker) {
             $col = $ownerType === 'CARRIER' ? 'carrier_id' : 'tenant_id';

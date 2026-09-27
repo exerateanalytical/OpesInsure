@@ -8,7 +8,6 @@ use App\Filament\Admin\Concerns\VehicleMasterAccess;
 use App\Models\Vehicles\VehicleMasterChange;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -19,7 +18,7 @@ final class VehicleMasterChangeResource extends Resource
 
     protected static ?string $model = VehicleMasterChange::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clock';
 
     protected static ?string $navigationLabel = 'Change history';
 
@@ -33,7 +32,7 @@ final class VehicleMasterChangeResource extends Resource
             ->defaultSort('occurred_at', 'desc')
             ->modifyQueryUsing(fn ($query) => $query->with('actor'))
             ->columns([
-                Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
+                \App\Filament\Shared\Columns::date('occurred_at')->sortable(),
                 Tables\Columns\TextColumn::make('entity_type')->badge(),
                 Tables\Columns\TextColumn::make('action')->badge()->color(fn (string $state) => match ($state) {
                     'MERGED' => 'warning', 'REJECTED' => 'danger', 'SEEDED', 'SEED_REFRESHED' => 'gray', default => 'success'

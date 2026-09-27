@@ -15,7 +15,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +32,7 @@ final class PhysicalSecurityAssetResource extends Resource
 
     protected static ?string $model = PhysicalSecurityAsset::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFingerPrint;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-fingerprint';
 
     protected static ?string $navigationLabel = 'Physical security assets';
 
@@ -118,8 +117,8 @@ final class PhysicalSecurityAssetResource extends Resource
             Tables\Columns\TextColumn::make('batch_reference'),
             Tables\Columns\TextColumn::make('serials')->state(fn (PhysicalSecurityAsset $r) => $r->serial_from !== null ? $r->serial_prefix.$r->serial_from.' – '.$r->serial_prefix.$r->serial_to : null),
             Tables\Columns\TextColumn::make('balance')->state(fn (PhysicalSecurityAsset $r) => $r->balance()),
-            Tables\Columns\TextColumn::make('status')->badge(),
-            Tables\Columns\TextColumn::make('verified_at')->dateTime(),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('verified_at'),
         ])->recordActions([Actions\EditAction::make()]);
     }
 

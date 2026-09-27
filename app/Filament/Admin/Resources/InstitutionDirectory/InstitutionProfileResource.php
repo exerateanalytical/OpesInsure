@@ -16,7 +16,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +31,7 @@ final class InstitutionProfileResource extends Resource
 
     protected static ?string $model = InstitutionProfile::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-building-2';
 
     protected static ?string $navigationLabel = 'Insurer directory';
 
@@ -60,7 +59,7 @@ final class InstitutionProfileResource extends Resource
             Tables\Columns\TextColumn::make('verification_status')->badge()->formatStateUsing(fn (?string $state) => $state ? (static::statusOptions()[$state] ?? $state) : null)->placeholder('-'),
             Tables\Columns\TextColumn::make('website')->placeholder('-')->limit(40),
             Tables\Columns\TextColumn::make('offices_count')->label('Offices'),
-            Tables\Columns\TextColumn::make('admin_edited_at')->label('Admin edited')->dateTime()->placeholder('From directory file'),
+            \App\Filament\Shared\Columns::date('admin_edited_at')->label('Admin edited')->placeholder('From directory file'),
         ])->filters([
             Tables\Filters\SelectFilter::make('verification_status')->options(fn () => static::statusOptions()),
         ])->recordActions([static::editAction(),
@@ -71,7 +70,7 @@ final class InstitutionProfileResource extends Resource
 
     public static function editAction(): Actions\Action
     {
-        return Actions\Action::make('editDirectory')->label('Edit directory')->icon(Heroicon::OutlinedPencilSquare)
+        return Actions\Action::make('editDirectory')->label('Edit directory')->icon('lucide-square-pen')
             ->visible(fn () => static::canAccessCima())
             ->fillForm(function (InstitutionProfile $record) {
                 $hq = DB::table('party_addresses')->where('party_id', $record->carrier?->party_id)->where('type', 'HEAD_OFFICE')->first();

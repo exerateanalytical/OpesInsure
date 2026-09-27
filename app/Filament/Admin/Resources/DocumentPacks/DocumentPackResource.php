@@ -13,7 +13,6 @@ use Filament\Infolists;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -24,7 +23,7 @@ final class DocumentPackResource extends Resource
 
     protected static ?string $model = DocumentPack::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layers';
 
     protected static ?string $navigationLabel = 'Document packs';
 
@@ -44,7 +43,7 @@ final class DocumentPackResource extends Resource
             Tables\Columns\TextColumn::make('class_codes')->label('Classes')->badge()->placeholder('All classes')->wrap(),
             Tables\Columns\TextColumn::make('items_count')->label('Documents'),
             Tables\Columns\IconColumn::make('is_universal')->boolean()->label('Universal'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'ACTIVE' ? 'success' : 'gray'),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('lifecycle_stage')->options(fn () => DocumentPack::query()->distinct()->orderBy('lifecycle_stage')->pluck('lifecycle_stage', 'lifecycle_stage')->all()),
             Tables\Filters\SelectFilter::make('scope')->options(['POLICY' => 'Policy', 'PER_MEMBER' => 'Per member', 'PER_VEHICLE' => 'Per vehicle', 'PER_SHIPMENT' => 'Per shipment']),

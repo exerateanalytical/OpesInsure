@@ -14,7 +14,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -25,7 +24,7 @@ final class DocumentStatusChangeResource extends Resource
 
     protected static ?string $model = \App\Models\DocumentStatusChange::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNoSymbol;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-ban';
 
     protected static ?string $navigationLabel = 'Revocation & replacement';
 
@@ -56,8 +55,8 @@ final class DocumentStatusChangeResource extends Resource
             Tables\Columns\TextColumn::make('action')->badge(),
             Tables\Columns\TextColumn::make('reason')->wrap(),
             Tables\Columns\TextColumn::make('replacement.document_number')->label('Replacement')->placeholder('—'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn ($state) => match ($state) { 'PENDING' => 'warning', 'APPROVED' => 'success', default => 'gray' }),
-            Tables\Columns\TextColumn::make('created_at')->dateTime(),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('created_at'),
         ])->recordActions([
             Actions\Action::make('approve')->color('success')->requiresConfirmation()->visible(fn ($record) => $record->status === 'PENDING')
                 ->action(fn ($record) => ServiceValidation::run(fn () => app(\App\Application\Documents\Engine\DocumentStatusService::class)->approve($record, auth()->user()))),

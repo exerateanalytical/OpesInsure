@@ -8,7 +8,6 @@ use App\Application\Providers\Workspace\ProviderAccess;
 use App\Application\Providers\Workspace\ProviderDocumentService;
 use App\Interfaces\Http\Errors\ApiProblemException;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class DocumentsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-folder';
 
     protected static ?int $navigationSort = 12;
 

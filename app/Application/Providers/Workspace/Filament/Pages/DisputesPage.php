@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Providers\Workspace\ProviderWorkspaceRegister;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screen "disputes" (Gap-Free spec ui_screen_register): open a dispute on a claim, claim line, settlement or
@@ -14,7 +13,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class DisputesPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-scale';
 
     protected static ?int $navigationSort = 10;
 

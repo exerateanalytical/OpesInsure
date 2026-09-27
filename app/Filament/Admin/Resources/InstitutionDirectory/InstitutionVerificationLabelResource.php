@@ -13,7 +13,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -24,7 +23,7 @@ final class InstitutionVerificationLabelResource extends Resource
 
     protected static ?string $model = InstitutionVerificationLabel::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-badge-check';
 
     protected static ?string $navigationLabel = 'Verification labels';
 
@@ -43,9 +42,9 @@ final class InstitutionVerificationLabelResource extends Resource
             Tables\Columns\TextColumn::make('code')->fontFamily('mono'),
             Tables\Columns\TextColumn::make('label_en')->label('English'),
             Tables\Columns\TextColumn::make('label_fr')->label('French'),
-            Tables\Columns\TextColumn::make('updated_at')->dateTime(),
+            \App\Filament\Shared\Columns::date('updated_at'),
         ])->recordActions([
-            Actions\Action::make('editLabel')->label('Edit labels')->icon(Heroicon::OutlinedPencilSquare)
+            Actions\Action::make('editLabel')->label('Edit labels')->icon('lucide-square-pen')
                 ->visible(fn () => static::canAccessCima())
                 ->fillForm(fn (InstitutionVerificationLabel $record) => ['label_en' => $record->label_en, 'label_fr' => $record->label_fr])
                 ->schema([

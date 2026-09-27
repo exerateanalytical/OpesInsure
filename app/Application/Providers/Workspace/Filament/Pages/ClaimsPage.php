@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Providers\Portal\ProviderPortalService;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screens "claims_list", "new_provider_claim", "claim_detail" (with the per-line explanation of benefits)
@@ -15,7 +14,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class ClaimsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-file-text';
 
     protected static ?int $navigationSort = 6;
 

@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class BusinessHoursResource extends Resource
 
     protected static ?string $model = CalendarBusinessHours::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clock';
 
     protected static ?string $navigationLabel = 'Business hours';
 
@@ -68,8 +67,8 @@ final class BusinessHoursResource extends Resource
             Tables\Columns\TextColumn::make('weekday'),
             Tables\Columns\TextColumn::make('opens'),
             Tables\Columns\TextColumn::make('closes'),
-            Tables\Columns\TextColumn::make('valid_from')->date(),
-            Tables\Columns\TextColumn::make('valid_to')->date()->placeholder('open-ended'),
+            \App\Filament\Shared\Columns::date('valid_from', false),
+            \App\Filament\Shared\Columns::date('valid_to', false)->placeholder('open-ended'),
         ])->recordActions([Actions\EditAction::make()]);
     }
 

@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -23,7 +22,7 @@ final class MasterDataChangeResource extends Resource
 
     protected static ?string $model = MasterDataChange::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clock';
 
     protected static ?string $navigationLabel = 'History & audit';
 
@@ -42,7 +41,7 @@ final class MasterDataChangeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->defaultSort('created_at', 'desc')->columns([
-            Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
+            \App\Filament\Shared\Columns::date('created_at')->sortable(),
             Tables\Columns\TextColumn::make('domain_code')->label('Domain')->searchable(), Tables\Columns\TextColumn::make('entity_type')->badge(),
             Tables\Columns\TextColumn::make('action')->badge(), Tables\Columns\TextColumn::make('source')->badge(),
             Tables\Columns\TextColumn::make('after')->label('Change')->state(fn ($record) => json_encode($record->after, JSON_UNESCAPED_UNICODE))->limit(80)->wrap(),

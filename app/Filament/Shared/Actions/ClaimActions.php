@@ -76,7 +76,7 @@ final class ClaimActions
             self::requestPayment(), self::approvePayment(), self::reversePayment(),
             self::openDispute(), self::resolveDispute(), self::openRecovery(), self::updateRecovery(),
             self::close(), self::requestReopen(), self::decideReopen(),
-        ])->label(__('workflow_actions.claim_group'))->icon('heroicon-o-bolt')->button();
+        ])->label(__('workflow_actions.claim_group'))->icon('lucide-zap')->button();
     }
 
     /** List-page header action (no record): FNOL registration wizard. */
@@ -84,7 +84,7 @@ final class ClaimActions
     {
         $p = 'claims.create';
 
-        return WorkflowAction::make('claimRegister', $p)->icon('heroicon-o-plus')
+        return WorkflowAction::make('claimRegister', $p)->icon('lucide-plus')
             ->steps([
                 Step::make(__('workflow_actions.claimRegister.step_policy'))->schema([
                     Select::make('policy_id')->label(__('workflow_actions.fields.policy'))->required()->searchable()->live()
@@ -119,7 +119,7 @@ final class ClaimActions
     {
         $p = 'claims.assign';
 
-        return WorkflowAction::make('claimAssign', $p)->icon('heroicon-o-user-plus')
+        return WorkflowAction::make('claimAssign', $p)->icon('lucide-user-plus')
             ->schema([
                 Select::make('assignee_id')->label(__('workflow_actions.fields.assignee'))->required()->searchable()
                     ->options(fn () => User::where('status', 'ACTIVE')->whereHas('memberships', fn ($q) => $q->where('tenant_id', self::tenant())->where('status', 'ACTIVE'))->pluck('full_name', 'id')),
@@ -133,7 +133,7 @@ final class ClaimActions
     {
         $p = 'claims.assessment.record';
 
-        return WorkflowAction::make('claimAssess', $p)->icon('heroicon-o-clipboard-document-check')
+        return WorkflowAction::make('claimAssess', $p)->icon('lucide-clipboard-check')
             ->schema([
                 Repeater::make('heads')->label(__('workflow_actions.fields.heads'))->required()->minItems(1)->maxItems(50)->defaultItems(1)->schema([
                     Select::make('head_code')->label(__('workflow_actions.fields.head'))->options(WorkflowAction::options(ClaimReferenceCodes::RESERVE_TYPES))->required(),
@@ -154,7 +154,7 @@ final class ClaimActions
     {
         $p = 'claims.assessment.review';
 
-        return WorkflowAction::make('claimReviewAssessment', $p)->icon('heroicon-o-check-circle')
+        return WorkflowAction::make('claimReviewAssessment', $p)->icon('lucide-circle-check')
             ->visible(fn (Claim $record) => ClaimAssessment::where('claim_id', $record->id)->where('status', 'SUBMITTED')->exists())
             ->schema([
                 Select::make('assessment_id')->label(__('workflow_actions.fields.assessment'))->required()
@@ -174,7 +174,7 @@ final class ClaimActions
     {
         $p = 'claims.reserve.request';
 
-        return WorkflowAction::make('claimReserve', $p)->icon('heroicon-o-banknotes')
+        return WorkflowAction::make('claimReserve', $p)->icon('lucide-banknote')
             ->schema([
                 TextInput::make('amount_minor')->label(__('workflow_actions.fields.amount_minor'))->integer()->minValue(0)->required(),
                 Select::make('reserve_head')->label(__('workflow_actions.fields.reserve_head'))->options(WorkflowAction::options(ClaimReserveService::HEADS)),
@@ -193,7 +193,7 @@ final class ClaimActions
     {
         $p = 'claims.reserve.approve';
 
-        return WorkflowAction::make('claimApproveReserve', $p)->icon('heroicon-o-check-badge')->color('success')
+        return WorkflowAction::make('claimApproveReserve', $p)->icon('lucide-badge-check')->color('success')
             ->visible(fn (Claim $record) => ClaimReserveChange::where(['claim_id' => $record->id, 'status' => 'PENDING_APPROVAL'])->exists())
             ->schema([
                 Select::make('reserve_id')->label(__('workflow_actions.fields.pending_reserve'))->required()
@@ -208,7 +208,7 @@ final class ClaimActions
     {
         $p = 'claims.decision.propose';
 
-        return WorkflowAction::make('claimDecide', $p)->icon('heroicon-o-scale')
+        return WorkflowAction::make('claimDecide', $p)->icon('lucide-scale')
             ->schema([
                 Select::make('decision')->label(__('workflow_actions.fields.decision'))->options(WorkflowAction::options(['APPROVE', 'PARTIAL', 'DECLINE'], 'decision'))->required()->live(),
                 Select::make('reason_codes')->label(__('workflow_actions.fields.reason_codes'))->multiple()->required()->maxItems(10)
@@ -231,7 +231,7 @@ final class ClaimActions
         $p = 'claims.decision.approve';
         $pending = fn (Claim $c) => ClaimDecision::where('claim_id', $c->id)->whereIn('status', ['PENDING_APPROVAL', 'REFERRED']);
 
-        return WorkflowAction::make('claimApproveDecision', $p)->icon('heroicon-o-check-badge')->color('success')
+        return WorkflowAction::make('claimApproveDecision', $p)->icon('lucide-badge-check')->color('success')
             ->visible(fn (Claim $record) => $pending($record)->exists())
             ->schema([
                 Select::make('decision_id')->label(__('workflow_actions.fields.pending_decision'))->required()
@@ -252,7 +252,7 @@ final class ClaimActions
     {
         $p = 'claims.settlement.calculate';
 
-        return WorkflowAction::make('claimSettle', $p)->icon('heroicon-o-calculator')
+        return WorkflowAction::make('claimSettle', $p)->icon('lucide-calculator')
             ->schema([
                 TextInput::make('covered_minor')->label(__('workflow_actions.fields.covered_minor'))->integer()->minValue(0)->required(),
                 TextInput::make('excluded_minor')->label(__('workflow_actions.fields.excluded_minor'))->integer()->minValue(0),
@@ -278,7 +278,7 @@ final class ClaimActions
         $p = 'claims.settlement.offer';
         $calculated = fn (Claim $c) => DB::table('claim_settlements')->where(['claim_id' => $c->id, 'status' => 'CALCULATED']);
 
-        return WorkflowAction::make('claimOfferSettlement', $p)->icon('heroicon-o-paper-airplane')->requiresConfirmation()
+        return WorkflowAction::make('claimOfferSettlement', $p)->icon('lucide-send')->requiresConfirmation()
             ->visible(fn (Claim $record) => $calculated($record)->exists())
             ->schema([
                 Select::make('settlement_id')->label(__('workflow_actions.fields.settlement'))->required()
@@ -292,7 +292,7 @@ final class ClaimActions
     {
         $p = 'claims.close';
 
-        return WorkflowAction::make('claimClose', $p)->icon('heroicon-o-lock-closed')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('claimClose', $p)->icon('lucide-lock')->color('danger')->requiresConfirmation()
             ->visible(fn (Claim $record) => ! in_array($record->status, ['CLOSED', 'DRAFT'], true))
             ->schema([
                 Select::make('reason_code')->label(__('workflow_actions.fields.closure_reason'))->required()
@@ -307,7 +307,7 @@ final class ClaimActions
     {
         $p = 'claims.reopen.request';
 
-        return WorkflowAction::make('claimRequestReopen', $p)->icon('heroicon-o-lock-open')
+        return WorkflowAction::make('claimRequestReopen', $p)->icon('lucide-lock-open')
             ->visible(fn (Claim $record) => $record->status === 'CLOSED')
             ->schema([
                 Select::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->options(WorkflowAction::options(ClaimClosureService::REOPEN_REASONS, 'reopen'))->required(),
@@ -323,7 +323,7 @@ final class ClaimActions
         $p = 'claims.reopen.approve';
         $pending = fn (Claim $c) => DB::table('claim_reopen_requests')->where(['claim_id' => $c->id, 'status' => 'PENDING_APPROVAL']);
 
-        return WorkflowAction::make('claimDecideReopen', $p)->icon('heroicon-o-arrow-path')->requiresConfirmation()
+        return WorkflowAction::make('claimDecideReopen', $p)->icon('lucide-refresh-cw')->requiresConfirmation()
             ->visible(fn (Claim $record) => $pending($record)->exists())
             ->schema([
                 Select::make('request_id')->label(__('workflow_actions.fields.reopen_request'))->required()
@@ -344,7 +344,7 @@ final class ClaimActions
         $p = 'claims.payment.request';
         $approved = fn (Claim $c) => ClaimDecision::where(['claim_id' => $c->id, 'status' => 'APPROVED']);
 
-        return WorkflowAction::make('claimRequestPayment', $p)->icon('heroicon-o-currency-dollar')->requiresConfirmation()
+        return WorkflowAction::make('claimRequestPayment', $p)->icon('lucide-circle-dollar-sign')->requiresConfirmation()
             ->visible(fn (Claim $record) => in_array($record->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) && $approved($record)->exists())
             ->schema([
                 Select::make('decision_id')->label(__('workflow_actions.fields.decision'))->required()
@@ -363,7 +363,7 @@ final class ClaimActions
         $p = 'claims.payment.approve';
         $pending = fn (Claim $c) => ClaimPayment::where(['claim_id' => $c->id, 'status' => 'PENDING_APPROVAL']);
 
-        return WorkflowAction::make('claimApprovePayment', $p)->icon('heroicon-o-check-badge')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('claimApprovePayment', $p)->icon('lucide-badge-check')->color('success')->requiresConfirmation()
             ->visible(fn (Claim $record) => $pending($record)->exists())
             ->schema([
                 Select::make('payment_id')->label(__('workflow_actions.fields.payment'))->required()
@@ -378,7 +378,7 @@ final class ClaimActions
         $p = 'claims.payment.reverse';
         $paid = fn (Claim $c) => ClaimPayment::where(['claim_id' => $c->id, 'status' => 'PAID']);
 
-        return WorkflowAction::make('claimReversePayment', $p)->icon('heroicon-o-arrow-uturn-left')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('claimReversePayment', $p)->icon('lucide-undo-2')->color('danger')->requiresConfirmation()
             ->visible(fn (Claim $record) => $paid($record)->exists())
             ->schema([
                 Select::make('payment_id')->label(__('workflow_actions.fields.payment'))->required()
@@ -393,7 +393,7 @@ final class ClaimActions
     {
         $p = 'claims.dispute';
 
-        return WorkflowAction::make('claimOpenDispute', $p)->icon('heroicon-o-hand-raised')
+        return WorkflowAction::make('claimOpenDispute', $p)->icon('lucide-hand')
             ->visible(fn (Claim $record) => in_array($record->status, ['DECLINED', 'PARTIALLY_APPROVED'], true) && ! ClaimDispute::where(['claim_id' => $record->id, 'status' => 'OPEN'])->exists())
             ->schema([
                 TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
@@ -408,7 +408,7 @@ final class ClaimActions
         $p = 'claims.dispute.resolve';
         $open = fn (Claim $c) => ClaimDispute::where(['claim_id' => $c->id, 'status' => 'OPEN']);
 
-        return WorkflowAction::make('claimResolveDispute', $p)->icon('heroicon-o-check-circle')->requiresConfirmation()
+        return WorkflowAction::make('claimResolveDispute', $p)->icon('lucide-circle-check')->requiresConfirmation()
             ->visible(fn (Claim $record) => $open($record)->exists())
             ->schema([
                 Select::make('dispute_id')->label(__('workflow_actions.fields.dispute'))->required()
@@ -424,7 +424,7 @@ final class ClaimActions
     {
         $p = 'claims.recovery';
 
-        return WorkflowAction::make('claimOpenRecovery', $p)->icon('heroicon-o-arrow-down-tray')
+        return WorkflowAction::make('claimOpenRecovery', $p)->icon('lucide-download')
             ->visible(fn (Claim $record) => $record->status !== 'DRAFT')
             ->schema([
                 Select::make('type')->label(__('workflow_actions.fields.recovery_type'))->options(WorkflowAction::options(ClaimRecoveryService::TYPES))->required(),
@@ -447,7 +447,7 @@ final class ClaimActions
         $needsText = fn (callable $get) => in_array($get('operation'), ['DISPUTE', 'RESOLVE', 'CLOSE'], true);
         $receiving = fn (callable $get) => $get('operation') === 'RECEIVE';
 
-        return WorkflowAction::make('claimUpdateRecovery', $p)->icon('heroicon-o-arrow-path-rounded-square')
+        return WorkflowAction::make('claimUpdateRecovery', $p)->icon('lucide-repeat')
             ->visible(fn (Claim $record) => $live($record)->exists())
             ->schema([
                 Select::make('recovery_id')->label(__('workflow_actions.fields.recovery'))->required()

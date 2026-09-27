@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class WorkQueueResource extends Resource
 
     protected static ?string $model = WorkQueue::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-list-ordered';
 
     protected static ?string $navigationLabel = 'Queues';
 

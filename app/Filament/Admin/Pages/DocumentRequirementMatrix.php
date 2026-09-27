@@ -9,7 +9,6 @@ use App\Filament\Admin\Concerns\DocumentCatalogueAccess;
 use App\Models\DocumentCatalogue\DocumentProductType;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
 
 /** Document Requirement Matrix grid: product type × lifecycle stage (resolved with baseline + inheritance). */
@@ -17,7 +16,7 @@ final class DocumentRequirementMatrix extends Page
 {
     use DocumentCatalogueAccess;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-table';
 
     protected static ?string $navigationLabel = 'Requirement matrix';
 

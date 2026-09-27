@@ -9,12 +9,11 @@ use App\Application\Health\Preauth\PreauthorizationService;
 use App\Filament\Shared\Actions\HealthProviderActions;
 use App\Filament\Shared\Pages\HealthQueuePage;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Insurer pre-authorization queue and detail (GET health/preauthorizations[/{id}]); decisions via HealthProviderActions::preauth(). */
 final class HealthPreauthorizationQueue extends HealthQueuePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clipboard-check';
 
     protected static ?int $navigationSort = 60;
 

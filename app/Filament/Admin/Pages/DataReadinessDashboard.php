@@ -8,12 +8,11 @@ use App\Application\DataReadiness\DataReadinessRegistry;
 use App\Application\DataReadiness\DataStatus;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** Workflow Institutional Data Master v1 — Data Readiness registry: status, owner, source and what is missing per domain. */
 final class DataReadinessDashboard extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clipboard-check';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Master data';
 

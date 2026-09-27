@@ -14,7 +14,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Admin-editable platform settings: support contacts (served to the app by
@@ -24,7 +23,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class PlatformSettingsPage extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-settings';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
 

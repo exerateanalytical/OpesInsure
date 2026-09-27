@@ -8,7 +8,6 @@ use App\Application\MasterData\MasterDataQualityReport;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * MDM-020 Data quality: missing, duplicate, untranslated, unverified,
@@ -17,7 +16,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class MasterDataQuality extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-shield-check';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Master data';
 

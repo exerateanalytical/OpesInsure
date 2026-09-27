@@ -18,7 +18,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +34,7 @@ final class MasterDataImportResource extends Resource
 
     protected static ?string $model = ImportBatch::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-upload';
 
     protected static ?string $navigationLabel = 'Import';
 
@@ -58,13 +57,12 @@ final class MasterDataImportResource extends Resource
         $pipeline = fn () => app(ImportPipeline::class);
 
         return $table->defaultSort('created_at', 'desc')->columns([
-            Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
+            \App\Filament\Shared\Columns::date('created_at')->sortable(),
             Tables\Columns\TextColumn::make('target')->badge()->formatStateUsing(fn (string $state, $record) => $state === 'master_data_values'
                 ? 'master data · '.($record->target_params['domain'] ?? '').'.'.($record->target_params['list'] ?? '') : str_replace('_', ' ', $state)),
             Tables\Columns\TextColumn::make('filename')->wrap(),
             Tables\Columns\TextColumn::make('format')->badge(),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) {
-                'IMPORTED' => 'success', 'FAILED', 'REJECTED' => 'danger', 'CANCELLED' => 'gray', 'PENDING_APPROVAL' => 'info', default => 'warning' }),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('preview')->label('Preview')->state(fn ($record) => ($record->report['needs_mapping'] ?? [])
                 ? 'map: '.implode(', ', $record->report['needs_mapping'])
                 : sprintf('%d new · %d duplicates · %d errors', $record->report['valid'] ?? 0, count($record->report['duplicates'] ?? []), count($record->report['errors'] ?? [])))->wrap(),
@@ -75,7 +73,7 @@ final class MasterDataImportResource extends Resource
             Tables\Filters\SelectFilter::make('target')->options(fn () => app(ImportTargetRegistry::class)->options()),
             Tables\Filters\SelectFilter::make('status')->options(array_combine($s = ['UPLOADED', 'VALIDATED', 'FAILED', 'PENDING_APPROVAL', 'IMPORTED', 'REJECTED', 'CANCELLED'], $s)),
         ])->headerActions([
-            Actions\Action::make('upload')->label('Upload file')->icon(Heroicon::OutlinedArrowUpTray)->schema([
+            Actions\Action::make('upload')->label('Upload file')->icon('lucide-upload')->schema([
                 Forms\Components\Select::make('target')->required()->live()->default('master_data_values')->options(fn () => app(ImportTargetRegistry::class)->options()),
                 Forms\Components\Select::make('list_id')->label('Target list')->searchable()->options(fn () => MasterDataValueResource::listOptions())
                     ->visible(fn (Get $get) => $get('target') === 'master_data_values')->required(fn (Get $get) => $get('target') === 'master_data_values'),
@@ -93,19 +91,19 @@ final class MasterDataImportResource extends Resource
                     basename($data['file']), auth()->user(), array_filter($data['mapping'] ?? [])));
             }),
         ])->recordActions([
-            Actions\Action::make('map')->label('Map columns')->icon(Heroicon::OutlinedArrowsRightLeft)->visible(fn ($record) => in_array($record->status, ImportPipeline::OPEN, true))
+            Actions\Action::make('map')->label('Map columns')->icon('lucide-arrow-left-right')->visible(fn ($record) => in_array($record->status, ImportPipeline::OPEN, true))
                 ->fillForm(fn ($record) => ['mapping' => $record->mapping ?? []])
                 ->schema(fn ($record) => [Forms\Components\KeyValue::make('mapping')->keyLabel('Field')->valueLabel('Column in file')
                     ->helperText('File columns: '.implode(', ', $record->source_columns ?? []).' · Fields: '.implode(', ', array_keys(app(ImportTargetRegistry::class)->get($record->target)->fields())))])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $pipeline()->map($record, array_filter($data['mapping'] ?? [])))),
-            Actions\Action::make('submit')->label('Submit for approval')->color('primary')->icon(Heroicon::OutlinedPaperAirplane)->visible(fn ($record) => $record->status === 'VALIDATED')
+            Actions\Action::make('submit')->label('Submit for approval')->color('primary')->icon('lucide-send')->visible(fn ($record) => $record->status === 'VALIDATED')
                 ->schema([Forms\Components\Textarea::make('reason')->maxLength(500)])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $pipeline()->submit($record, auth()->user(), $data['reason'] ?? null))),
-            Actions\Action::make('approve')->label('Approve & import')->color('success')->icon(Heroicon::OutlinedCheck)->requiresConfirmation()
+            Actions\Action::make('approve')->label('Approve & import')->color('success')->icon('lucide-check')->requiresConfirmation()
                 ->visible(fn ($record) => $record->status === 'PENDING_APPROVAL' && self::canDecide($record))
                 ->schema([Forms\Components\Textarea::make('note')->maxLength(500)])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $pipeline()->approve($record, auth()->user(), $data['note'] ?? null))),
-            Actions\Action::make('reject')->label('Reject')->color('danger')->icon(Heroicon::OutlinedXMark)
+            Actions\Action::make('reject')->label('Reject')->color('danger')->icon('lucide-x')
                 ->visible(fn ($record) => $record->status === 'PENDING_APPROVAL' && self::canDecide($record))
                 ->schema([Forms\Components\Textarea::make('note')->required()->minLength(3)->maxLength(500)])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => $pipeline()->reject($record, auth()->user(), $data['note']))),

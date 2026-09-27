@@ -40,19 +40,19 @@ final class ViewInsuranceProduct extends ViewRecord
             'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish', 'SANDBOX_TESTS' => 'catalogue.test'];
 
         return [
-            Action::make('advance')->label(__('product_builder.actions.advance'))->icon('heroicon-o-arrow-right-circle')
+            Action::make('advance')->label(__('product_builder.actions.advance'))->icon('lucide-circle-arrow-right')
                 ->visible(fn () => isset($advancePermission[$stage()]) && $can($advancePermission[$stage()]))
                 ->schema([Textarea::make('notes')->label(__('product_builder.actions.notes'))->maxLength(2000)])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->advance($this->record->refresh(), auth()->user(), (string) ($d['notes'] ?? ''))), 'advanced')),
-            Action::make('publish')->label(__('product_builder.actions.publish'))->icon('heroicon-o-rocket-launch')->color('success')
+            Action::make('publish')->label(__('product_builder.actions.publish'))->icon('lucide-rocket')->color('success')
                 ->visible(fn () => $stage() === 'READY' && $can('catalogue.publish'))
                 ->schema([DateTimePicker::make('publish_at')->label(__('product_builder.actions.publish_at')), Textarea::make('reason')->label(__('product_builder.actions.reason'))->maxLength(2000)])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->publish($this->record->refresh(), auth()->user(), (string) ($d['reason'] ?? ''), $d['publish_at'] ?? null)), 'advanced')),
-            Action::make('reject')->label(__('product_builder.actions.reject'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+            Action::make('reject')->label(__('product_builder.actions.reject'))->icon('lucide-circle-x')->color('danger')->requiresConfirmation()
                 ->visible(fn () => in_array($stage(), [...ProductGovernanceService::REVIEW_STAGES, 'SANDBOX_TESTS', 'READY'], true) && ($can('catalogue.review') || $can('catalogue.publish')))
                 ->schema([Textarea::make('reason')->label(__('product_builder.actions.reason'))->required()->minLength(10)->maxLength(2000)])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->reject($this->record->refresh(), auth()->user(), $d['reason'])), 'advanced')),
-            Action::make('addCase')->label(__('product_builder.actions.add_case'))->icon('heroicon-o-beaker')
+            Action::make('addCase')->label(__('product_builder.actions.add_case'))->icon('lucide-flask-conical')
                 ->visible(fn () => $can('catalogue.test'))
                 ->schema([
                     TextInput::make('code')->label(__('product_builder.actions.code'))->required()->maxLength(64)->regex('/^[A-Z0-9_\-]+$/'),
@@ -67,10 +67,10 @@ final class ViewInsuranceProduct extends ViewRecord
                     $expected = array_filter(['eligibility' => $d['expected_eligibility'] ?? null, 'premium_total_minor' => isset($d['expected_total']) && $d['expected_total'] !== '' ? (int) $d['expected_total'] : null], fn ($x) => $x !== null);
                     $this->done(ServiceValidation::run(fn () => app(ProductSandbox::class)->addCase($this->record, ['code' => $d['code'], 'name' => $d['name'], 'facts' => $facts, 'expected' => $expected], auth()->user())), 'advanced');
                 }),
-            Action::make('runTests')->label(__('product_builder.actions.run_tests'))->icon('heroicon-o-play')
+            Action::make('runTests')->label(__('product_builder.actions.run_tests'))->icon('lucide-play')
                 ->visible(fn () => $can('catalogue.test'))
                 ->action(fn () => $this->done(ServiceValidation::run(fn () => app(ProductSandbox::class)->runPack($this->record, auth()->user())), 'tests_done')),
-            Action::make('attributes')->label(__('product_builder.actions.attributes'))->icon('heroicon-o-adjustments-horizontal')
+            Action::make('attributes')->label(__('product_builder.actions.attributes'))->icon('lucide-sliders-horizontal')
                 ->visible(fn () => $can('catalogue.manage'))
                 ->fillForm(fn () => $gov->state($this->record)->only(['owner_user_id', 'target_market', 'prohibited_market', 'next_review_date']))
                 ->schema([

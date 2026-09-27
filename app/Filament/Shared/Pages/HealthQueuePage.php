@@ -10,7 +10,6 @@ use App\Filament\Shared\Actions\WorkflowAction;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -31,7 +30,7 @@ abstract class HealthQueuePage extends Page implements HasTable
 
     protected string $view = 'filament.shared.pages.health-queue';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHeart;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-heart';
 
     /** Permission gating the screen (the API's list permission). */
     protected static string $permission = 'health.preauth.view';
@@ -119,7 +118,7 @@ abstract class HealthQueuePage extends Page implements HasTable
             ->filters(static::STATUSES === [] ? [] : [SelectFilter::make('status')->options(array_combine(static::STATUSES, static::STATUSES))])
             ->headerActions($this->headerWorkflowActions())
             ->recordActions([
-                Action::make('viewDetail')->label(__('workflow_actions.viewDetail.label'))->icon('heroicon-o-eye')->slideOver()
+                Action::make('viewDetail')->label(__('workflow_actions.viewDetail.label'))->icon('lucide-eye')->slideOver()
                     ->modalHeading(fn (array $record) => __('workflow_actions.screens.'.static::$screen).' — '.($record[$this->columns()[0]] ?? ''))
                     ->modalSubmitAction(false)
                     ->modalContent(fn (array $record) => view('filament.shared.pages.health-detail', $this->detail((string) $this->tenantId, static::assertVisible((string) $record['id'])))),

@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -23,7 +22,7 @@ final class MasterDataReviewResource extends Resource
 
     protected static ?string $model = MasterDataReviewItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-inbox';
 
     protected static ?string $navigationLabel = 'Suggestions';
 
@@ -51,22 +50,22 @@ final class MasterDataReviewResource extends Resource
             Tables\Columns\TextColumn::make('list')->label('List')->state(fn ($record) => "{$record->domain_code}.{$record->list_code}"),
             Tables\Columns\TextColumn::make('parent_code')->label('Under')->placeholder('—'),
             Tables\Columns\TextColumn::make('submission_count')->label('Count')->sortable()->badge(),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'DUPLICATE_FOUND' => 'warning', 'APPROVED', 'MERGED' => 'success', 'REJECTED' => 'danger', default => 'gray' }),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('possible_duplicates')->label('Possible duplicates')->state(fn ($record) => collect($record->possible_duplicates ?? [])->map(fn ($d) => $d['label']['en'] ?? $d['code'])->join(', '))->placeholder('—')->wrap(),
             Tables\Columns\TextColumn::make('screen')->toggleable(), Tables\Columns\TextColumn::make('line_code')->label('Line')->toggleable(),
             Tables\Columns\TextColumn::make('tenant_id')->label('Tenant')->toggleable(isToggledHiddenByDefault: true),
-            Tables\Columns\TextColumn::make('created_at')->dateTime()->label('First submitted'),
+            \App\Filament\Shared\Columns::date('created_at')->label('First submitted'),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->multiple()->default(\App\Models\MasterData\MasterDataReviewItem::OPEN)->options(array_combine(\App\Models\MasterData\MasterDataReviewItem::STATUSES, \App\Models\MasterData\MasterDataReviewItem::STATUSES)),
             Tables\Filters\SelectFilter::make('domain_code')->label('Domain')->options(fn () => \App\Models\MasterData\MasterDataDomain::orderBy('code')->pluck('code', 'code')->all()),
         ])->recordActions([
             Actions\Action::make('startReview')->label('Start review')->visible(fn ($record) => $record->status === 'SUBMITTED')->action(fn ($record) => $record->update(['status' => 'UNDER_REVIEW'])),
-            Actions\Action::make('approve')->label('Approve as new')->color('success')->icon(Heroicon::OutlinedCheck)->visible($open)
+            Actions\Action::make('approve')->label('Approve as new')->color('success')->icon('lucide-check')->visible($open)
                 ->fillForm(fn ($record) => ['label_en' => $record->raw_input, 'label_fr' => $record->raw_input, 'code' => \App\Application\MasterData\MasterDataNormalizer::codeFrom($record->raw_input), 'parent_code' => $record->parent_code])
                 ->schema([Forms\Components\TextInput::make('code')->required()->regex('/^[A-Z0-9_]+$/'), Forms\Components\TextInput::make('label_en')->required(),
                     Forms\Components\TextInput::make('label_fr')->required(), Forms\Components\TextInput::make('parent_code'), Forms\Components\Textarea::make('note')])
                 ->action(fn ($record, array $data) => \App\Filament\Admin\Concerns\ServiceValidation::run(fn () => $svc()->approve($record, $data, auth()->id()))),
-            Actions\Action::make('merge')->label('Merge into existing')->icon(Heroicon::OutlinedArrowsRightLeft)->visible($open)
+            Actions\Action::make('merge')->label('Merge into existing')->icon('lucide-arrow-left-right')->visible($open)
                 ->schema(fn ($record) => [Forms\Components\Select::make('value_id')->label('Existing value')->required()->searchable()
                     ->options(\App\Models\MasterData\MasterDataValue::where('list_id', $record->list_id)->where('status', 'ACTIVE')->where('is_other', false)->orderBy('label_en')->pluck('label_en', 'id')->all()),
                     Forms\Components\Textarea::make('note')])

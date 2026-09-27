@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Health\Preauth\PreauthLifecycle;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screens "admissions_list", "admission_detail", "extension_request", "discharge" (Gap-Free spec). A new admission
@@ -15,7 +14,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class AdmissionsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-building-2';
 
     protected static ?int $navigationSort = 4;
 

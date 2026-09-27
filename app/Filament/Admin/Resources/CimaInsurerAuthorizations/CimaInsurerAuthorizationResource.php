@@ -15,7 +15,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -30,7 +29,7 @@ final class CimaInsurerAuthorizationResource extends Resource
 
     protected static ?string $model = InsurerRegulatoryAuthorization::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-badge-check';
 
     protected static ?string $navigationLabel = 'Insurer branch authorization';
 
@@ -40,7 +39,7 @@ final class CimaInsurerAuthorizationResource extends Resource
 
     public static function createAction(?string $carrierId = null): Actions\Action
     {
-        return Actions\Action::make('record')->label('Record authorization')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('record')->label('Record authorization')->icon('lucide-plus')
             ->visible(fn () => static::canAccessCima())
             ->schema([
                 Forms\Components\Select::make('carrier_id')->label('Insurer')->required()->searchable()->live()->default($carrierId)
@@ -78,16 +77,16 @@ final class CimaInsurerAuthorizationResource extends Resource
             Tables\Columns\TextColumn::make('registerAuthorization.reference_year')->label('Register year')->placeholder('Not on register'),
             Tables\Columns\TextColumn::make('source')->badge()->color(fn (string $state) => $state === 'DEMO' ? 'warning' : 'gray'),
             Tables\Columns\TextColumn::make('branches_list')->label('Branches')->state(fn (InsurerRegulatoryAuthorization $a) => $a->branches->where('status', 'ACTIVE')->map(fn ($b) => (int) substr($b->branch_code, 5, 2))->sort()->join(', '))->wrap(),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'ACTIVE' => 'success', 'PENDING_APPROVAL' => 'warning', 'SUSPENDED' => 'danger', default => 'gray' }),
-            Tables\Columns\TextColumn::make('effective_from')->date(),
-            Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open'),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('effective_from', false),
+            \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open'),
         ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(['PENDING_APPROVAL' => 'Pending approval', 'ACTIVE' => 'Active', 'SUSPENDED' => 'Suspended', 'REVOKED' => 'Revoked', 'REJECTED' => 'Rejected']),
                 Tables\Filters\TernaryFilter::make('is_demo')->label('Demo'),
             ])
             ->recordActions([
-                Actions\Action::make('approve')->label('Approve')->icon(Heroicon::OutlinedCheck)->color('success')->requiresConfirmation()
+                Actions\Action::make('approve')->label('Approve')->icon('lucide-check')->color('success')->requiresConfirmation()
                     ->visible(fn (InsurerRegulatoryAuthorization $a) => $a->status === 'PENDING_APPROVAL')
                     ->action(function (InsurerRegulatoryAuthorization $a) {
                         if (ServiceValidation::run(fn () => app(CimaAuthorizationService::class)->approve($a, auth()->user()))) {

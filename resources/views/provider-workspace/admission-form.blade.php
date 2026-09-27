@@ -1,7 +1,7 @@
 {{-- Admissions: new admission = ADMISSION preauthorization; admit / extend / discharge on the opened admission. --}}
 @php($in = 'mt-1 block w-full rounded-lg border-gray-300 text-sm')
 @if (auth()->user()->hasPermission('provider.preauth.create'))
-    <div><x-filament::button tag="a" :href="\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::getUrl(['request_type' => 'ADMISSION'], panel: 'provider')" icon="heroicon-o-plus">{{ __('provider_workspace.ui.new_admission') }}</x-filament::button></div>
+    <div><x-filament::button tag="a" :href="\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::getUrl(['request_type' => 'ADMISSION'], panel: 'provider')" icon="lucide-plus">{{ __('provider_workspace.ui.new_admission') }}</x-filament::button></div>
 @endif
 @if ($this->selected)
     @if ($this->may('admit', 'provider.admission.create'))

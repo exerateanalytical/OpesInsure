@@ -9,7 +9,6 @@ use App\Application\Providers\Portal\ProviderScope;
 use App\Application\Providers\Workspace\Http\ProviderWorkspaceController;
 use App\Application\Providers\Workspace\ProviderWorkspaceRegister;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -20,7 +19,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class ReportsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-chart-column';
 
     protected static ?int $navigationSort = 13;
 

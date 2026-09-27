@@ -14,7 +14,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -25,7 +24,7 @@ final class DocumentIssuanceProfileResource extends Resource
 
     protected static ?string $model = \App\Models\DocumentIssuanceProfile::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-shield-check';
 
     protected static ?string $navigationLabel = 'Issuance rules';
 

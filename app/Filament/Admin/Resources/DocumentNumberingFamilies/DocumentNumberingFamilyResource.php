@@ -14,7 +14,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -25,7 +24,7 @@ final class DocumentNumberingFamilyResource extends Resource
 
     protected static ?string $model = \App\Models\DocumentNumberingFamily::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHashtag;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-hash';
 
     protected static ?string $navigationLabel = 'Numbering';
 
@@ -66,7 +65,7 @@ final class DocumentNumberingFamilyResource extends Resource
             Tables\Columns\TextColumn::make('prefix')->fontFamily('mono'),
             Tables\Columns\IconColumn::make('include_year')->boolean(),
             Tables\Columns\TextColumn::make('pad'),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
         ])->recordActions([Actions\EditAction::make()]);
     }
 

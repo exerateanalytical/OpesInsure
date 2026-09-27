@@ -9,6 +9,8 @@ use App\Application\WebExperiences\Money;
 use App\Filament\Shared\Components\RecordInfolist;
 use Filament\Support\Facades\FilamentTimezone;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * UI audit 2026-09-27: the ONE list-column convention for every panel.
@@ -59,5 +61,21 @@ final class Columns
         // Lazy: resolved when a column renders, i.e. after the panel tenant middleware has run.
         FilamentTimezone::set(fn () => rescue(fn () => app(TimezoneResolver::class)->forUser(auth()->user()), null, false) ?: null);
         TextColumn::configureUsing(fn (TextColumn $c) => $c->color(fn ($state) => $c->isBadge() ? RecordInfolist::color($state) : null));
+        // Every table: newest first when it declares no sort of its own, and the one EN/FR empty state
+        // (resources that set their own heading/description/icon or defaultSort still override these).
+        Table::configureUsing(fn (Table $t) => $t
+            ->defaultSort(fn (Builder $query) => self::newestFirst($query))
+            ->emptyStateHeading(fn () => __('web_experience.list.empty_heading'))
+            ->emptyStateDescription(fn () => __('web_experience.list.empty_description'))
+            ->emptyStateIcon('lucide-inbox'));
+    }
+
+    /** created_at DESC for timestamped models; null (key sort) otherwise. */
+    public static function newestFirst(Builder $query): ?Builder
+    {
+        $model = $query->getModel();
+        $column = $model->usesTimestamps() ? $model->getCreatedAtColumn() : null;
+
+        return $column ? $query->orderByDesc($model->qualifyColumn($column)) : null;
     }
 }

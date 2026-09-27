@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class CaseTypeResource extends Resource
 
     protected static ?string $model = CaseType::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layers';
 
     protected static ?string $navigationLabel = 'Case types';
 
@@ -72,7 +71,7 @@ final class CaseTypeResource extends Resource
             Tables\Columns\TextColumn::make('version'),
             Tables\Columns\TextColumn::make('name'),
             Tables\Columns\TextColumn::make('family_code')->label('Family (OQ-6.4)')->placeholder('UNVERIFIED'),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('default_confidentiality')->badge(),
         ])->recordActions([Actions\ViewAction::make()]);
     }

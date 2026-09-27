@@ -15,6 +15,6 @@
     </label>
     <label class="text-sm">{{ __('provider_workspace.ui.claim_status') }}<input type="text" wire:model.live.debounce.500ms="filters.claim_status" class="{{ $in }}" /></label>
     @if ($this->canExport())
-        <div class="md:col-span-6"><x-filament::button wire:click="exportCsv" icon="heroicon-o-arrow-down-tray" color="gray">{{ __('provider_workspace.ui.export_csv') }}</x-filament::button></div>
+        <div class="md:col-span-6"><x-filament::button wire:click="exportCsv" icon="lucide-download" color="gray">{{ __('provider_workspace.ui.export_csv') }}</x-filament::button></div>
     @endif
 </div>

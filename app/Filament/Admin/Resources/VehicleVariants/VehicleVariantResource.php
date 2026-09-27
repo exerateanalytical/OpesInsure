@@ -18,7 +18,6 @@ use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -33,7 +32,7 @@ final class VehicleVariantResource extends Resource
 
     protected static ?string $model = VehicleVariant::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-sliders-horizontal';
 
     protected static ?string $navigationLabel = 'Variants';
 
@@ -65,7 +64,7 @@ final class VehicleVariantResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('addVariant')->label('Add variant')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('addVariant')->label('Add variant')->icon('lucide-plus')
             ->visible(fn () => self::canManageVehicleMaster())
             ->schema([
                 Forms\Components\Select::make('model_id')->label('Model')->required()->searchable()->live()->options(fn () => VehicleGenerationResource::modelOptions()),
@@ -104,7 +103,7 @@ final class VehicleVariantResource extends Resource
                 Tables\Filters\TernaryFilter::make('active'),
             ])
             ->recordActions([
-                Actions\Action::make('edit')->label('Edit')->icon(Heroicon::OutlinedPencilSquare)
+                Actions\Action::make('edit')->label('Edit')->icon('lucide-square-pen')
                     ->fillForm(fn (VehicleVariant $v) => $v->only(['name', 'body_type', 'powertrain', 'hybrid_subtype', 'transmission', 'drive_type', 'engine_capacity_cc', 'year_from', 'year_to']))
                     ->schema(self::attributeFields())
                     ->action(fn (VehicleVariant $v, array $data) => ServiceValidation::run(fn () => app(VehicleMasterAdminService::class)->updateVariant($v, $data, auth()->user()))),

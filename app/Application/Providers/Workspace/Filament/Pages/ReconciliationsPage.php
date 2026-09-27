@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screen "reconciliation" (Gap-Free spec ui_screen_register): record a payment received from an insurer and
@@ -13,7 +12,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class ReconciliationsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-arrow-left-right';
 
     protected static ?int $navigationSort = 9;
 

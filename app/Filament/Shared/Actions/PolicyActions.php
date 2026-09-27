@@ -32,12 +32,12 @@ final class PolicyActions
     public static function group(): ActionGroup
     {
         return ActionGroup::make([self::endorse(), self::decideService(), self::requestCancellation(), self::reviewCancellation(), self::decideCancellation()])
-            ->label(__('workflow_actions.policy_group'))->icon('heroicon-o-bolt')->button();
+            ->label(__('workflow_actions.policy_group'))->icon('lucide-zap')->button();
     }
 
     public static function endorse(): Action
     {
-        return WorkflowAction::make('policyEndorse', null)->icon('heroicon-o-pencil-square')
+        return WorkflowAction::make('policyEndorse', null)->icon('lucide-square-pen')
             ->visible(fn (Policy $record) => $record->status === 'ACTIVE')
             ->schema([
                 TextInput::make('endorsement_type')->label(__('workflow_actions.fields.endorsement_type'))->maxLength(32),
@@ -60,7 +60,7 @@ final class PolicyActions
         $p = 'policies.service.approve';
         $pending = fn (Policy $r) => PolicyTransaction::where('policy_id', $r->id)->where('status', 'PENDING_APPROVAL');
 
-        return WorkflowAction::make('policyDecideService', $p)->icon('heroicon-o-check-badge')->requiresConfirmation()
+        return WorkflowAction::make('policyDecideService', $p)->icon('lucide-badge-check')->requiresConfirmation()
             ->visible(fn (Policy $record) => $pending($record)->exists())
             ->schema([
                 Select::make('transaction_id')->label(__('workflow_actions.fields.pending_transaction'))->required()
@@ -80,7 +80,7 @@ final class PolicyActions
     {
         $p = 'policies.cancellation.request';
 
-        return WorkflowAction::make('policyRequestCancellation', $p)->icon('heroicon-o-x-circle')->color('danger')
+        return WorkflowAction::make('policyRequestCancellation', $p)->icon('lucide-circle-x')->color('danger')
             ->visible(fn (Policy $record) => $record->status === 'ACTIVE')
             ->schema([
                 DateTimePicker::make('effective_at')->label(__('workflow_actions.fields.effective_at'))->required()->live(),
@@ -107,7 +107,7 @@ final class PolicyActions
     {
         $p = 'policies.cancellation.review';
 
-        return WorkflowAction::make('policyReviewCancellation', $p)->icon('heroicon-o-eye')
+        return WorkflowAction::make('policyReviewCancellation', $p)->icon('lucide-eye')
             ->visible(fn (Policy $record) => self::cancellation($record, ['REQUESTED']) !== null)
             ->schema([Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(2000)])
             ->action(fn (Action $action, Policy $record, array $data) => WorkflowAction::run($action, $p,
@@ -119,7 +119,7 @@ final class PolicyActions
         $p = 'policies.cancellation.approve';
         $open = ['REQUESTED', 'UNDER_REVIEW'];
 
-        return WorkflowAction::make('policyDecideCancellation', $p)->icon('heroicon-o-check-badge')->requiresConfirmation()
+        return WorkflowAction::make('policyDecideCancellation', $p)->icon('lucide-badge-check')->requiresConfirmation()
             ->visible(fn (Policy $record) => self::cancellation($record, $open) !== null)
             ->schema([
                 Select::make('outcome')->label(__('workflow_actions.fields.outcome'))->options(['APPROVE' => __('workflow_actions.accept'), 'REJECT' => __('workflow_actions.reject')])->required()->live(),

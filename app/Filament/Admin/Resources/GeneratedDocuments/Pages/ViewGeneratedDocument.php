@@ -17,10 +17,10 @@ final class ViewGeneratedDocument extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('download')->label(__('web_experience.documents.download'))->icon('heroicon-o-arrow-down-tray')
+            Action::make('download')->label(__('web_experience.documents.download'))->icon('lucide-download')
                 ->visible(fn () => DocumentPanelQuery::downloadUrl($this->record) !== null)
                 ->url(fn () => DocumentPanelQuery::downloadUrl($this->record), shouldOpenInNewTab: true),
-            Action::make('verify')->label(__('web_experience.documents.verify'))->icon('heroicon-o-qr-code')->color('gray')
+            Action::make('verify')->label(__('web_experience.documents.verify'))->icon('lucide-qr-code')->color('gray')
                 ->visible(fn () => filled($this->record->verification_code))
                 ->url(fn () => route('public.verify', ['code' => $this->record->verification_code]), shouldOpenInNewTab: true),
             GeneratedDocumentResource::statusChangeAction()->record($this->record),

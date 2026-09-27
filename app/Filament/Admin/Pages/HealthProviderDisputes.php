@@ -8,13 +8,12 @@ use App\Application\Providers\Workspace\ProviderOperationsService;
 use App\Filament\Shared\Actions\HealthProviderActions;
 use App\Filament\Shared\Pages\HealthQueuePage;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
 
 /** Insurer-side provider-portal disputes (POST provider-disputes/{id}/resolve) via HealthProviderActions::providerDisputeResolve(). */
 final class HealthProviderDisputes extends HealthQueuePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-scale';
 
     protected static ?int $navigationSort = 63;
 

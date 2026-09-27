@@ -17,7 +17,6 @@ use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -32,7 +31,7 @@ final class ProductDocumentRequirementResource extends Resource
 
     protected static ?string $model = ProductDocumentRequirement::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-sliders-horizontal';
 
     protected static ?string $navigationLabel = 'Product overrides';
 
@@ -44,7 +43,7 @@ final class ProductDocumentRequirementResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('propose')->label('Propose')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('propose')->label('Propose')->icon('lucide-plus')
             ->visible(fn () => static::canAccessDocumentCatalogue())
             ->schema([
                 Forms\Components\Select::make('insurance_product_id')->label('Product (version)')->required()->searchable()
@@ -86,19 +85,19 @@ final class ProductDocumentRequirementResource extends Resource
             Tables\Columns\TextColumn::make('stage')->placeholder('-'),
             Tables\Columns\TextColumn::make('document_type_id')->label('Document')->placeholder('-')->description(fn ($r) => $r->documentType?->name_fr),
             Tables\Columns\TextColumn::make('level')->badge()->placeholder('-'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'ACTIVE' => 'success', 'PENDING_APPROVAL' => 'warning', 'REJECTED' => 'danger', default => 'gray' }),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('reason')->wrap()->toggleable(isToggledHiddenByDefault: true),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['PENDING_APPROVAL' => 'Pending approval', 'ACTIVE' => 'Active', 'REJECTED' => 'Rejected', 'RETIRED' => 'Retired']),
             Tables\Filters\SelectFilter::make('kind')->options(['PRODUCT_TYPE' => 'Product type', 'MATRIX_OVERRIDE' => 'Matrix override']),
         ])->recordActions([
-            Actions\Action::make('approve')->icon(Heroicon::OutlinedCheck)->color('success')->requiresConfirmation()
+            Actions\Action::make('approve')->icon('lucide-check')->color('success')->requiresConfirmation()
                 ->visible(fn ($r) => $r->status === 'PENDING_APPROVAL')
                 ->action(fn ($r) => ServiceValidation::run(fn () => $svc()->approve($r, auth()->user())) && Notification::make()->title('Approved')->success()->send()),
-            Actions\Action::make('reject')->icon(Heroicon::OutlinedXMark)->color('danger')->visible(fn ($r) => $r->status === 'PENDING_APPROVAL')
+            Actions\Action::make('reject')->icon('lucide-x')->color('danger')->visible(fn ($r) => $r->status === 'PENDING_APPROVAL')
                 ->schema([Forms\Components\Textarea::make('reason')->required()->minLength(5)])
                 ->action(fn ($r, array $data) => ServiceValidation::run(fn () => $svc()->reject($r, auth()->user(), $data['reason']))),
-            Actions\Action::make('retire')->icon(Heroicon::OutlinedArchiveBox)->color('gray')->visible(fn ($r) => $r->status === 'ACTIVE')
+            Actions\Action::make('retire')->icon('lucide-archive')->color('gray')->visible(fn ($r) => $r->status === 'ACTIVE')
                 ->schema([Forms\Components\Textarea::make('reason')->required()->minLength(5)])
                 ->action(fn ($r, array $data) => ServiceValidation::run(fn () => $svc()->retire($r, auth()->user(), $data['reason']))),
         ])->emptyStateHeading('No product document requirements')

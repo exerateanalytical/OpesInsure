@@ -26,7 +26,7 @@ final class ApprovalActions
     {
         $p = 'approvals.decide';
 
-        return self::decision(WorkflowAction::make('approvalApprove', $p)->icon('heroicon-o-check')->color('success')->requiresConfirmation()
+        return self::decision(WorkflowAction::make('approvalApprove', $p)->icon('lucide-check')->color('success')->requiresConfirmation()
             ->schema([Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(2000)])
             ->action(fn (Action $action, ApprovalRequest $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(ApprovalService::class)->approve($record, auth()->user(), $data['note'] ?? null))));
@@ -36,7 +36,7 @@ final class ApprovalActions
     {
         $p = 'approvals.decide';
 
-        return self::decision(WorkflowAction::make('approvalReject', $p)->icon('heroicon-o-x-mark')->color('danger')
+        return self::decision(WorkflowAction::make('approvalReject', $p)->icon('lucide-x')->color('danger')
             ->schema([Textarea::make('note')->label(__('workflow_actions.fields.reason'))->required()->maxLength(2000)])
             ->action(fn (Action $action, ApprovalRequest $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(ApprovalService::class)->reject($record, auth()->user(), $data['note']))));
@@ -46,7 +46,7 @@ final class ApprovalActions
     {
         $p = 'approvals.inbox.view';
 
-        return WorkflowAction::make('approvalWithdraw', $p)->icon('heroicon-o-arrow-uturn-left')->color('gray')->requiresConfirmation()
+        return WorkflowAction::make('approvalWithdraw', $p)->icon('lucide-undo-2')->color('gray')->requiresConfirmation()
             ->visible(fn (ApprovalRequest $record) => $record->status === 'PENDING' && $record->requested_by === auth()->id())
             ->schema([Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->maxLength(2000)])
             ->action(fn (Action $action, ApprovalRequest $record, array $data) => WorkflowAction::run($action, $p,

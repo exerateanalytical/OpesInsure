@@ -11,7 +11,6 @@ use App\Filament\Admin\Resources\DocumentTemplates\DocumentTemplateResource;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 
 /** DOC-ADM-008 designer (DRAFT only): bilingual sections, specimen PDF preview of the unsaved state, save & submit. */
@@ -26,7 +25,7 @@ final class EditDocumentTemplate extends EditRecord
         return [
             DocumentTemplateResource::previewAction(fn (self $page) => (array) ($page->data ?? [])),
             // Submit saves first so the reviewer sees exactly what is on screen.
-            Action::make('saveAndSubmit')->label('Save & submit for review')->icon(Heroicon::OutlinedPaperAirplane)->requiresConfirmation()
+            Action::make('saveAndSubmit')->label('Save & submit for review')->icon('lucide-send')->requiresConfirmation()
                 ->visible(fn () => $this->record->status === 'DRAFT')
                 ->action(function () {
                     $this->save(shouldRedirect: false, shouldSendSavedNotification: false);

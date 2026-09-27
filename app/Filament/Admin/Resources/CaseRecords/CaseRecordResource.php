@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class CaseRecordResource extends Resource
 
     protected static ?string $model = WorkCase::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-briefcase';
 
     protected static ?string $navigationLabel = 'Cases';
 
@@ -74,11 +73,11 @@ final class CaseRecordResource extends Resource
             Tables\Columns\TextColumn::make('case_number')->searchable()->copyable(),
             Tables\Columns\TextColumn::make('case_type_code')->label('Type')->badge(),
             Tables\Columns\TextColumn::make('title')->searchable()->limit(50),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('priority')->badge(),
             Tables\Columns\TextColumn::make('confidentiality')->badge()->toggleable(),
-            Tables\Columns\TextColumn::make('due_at')->dateTime()->sortable(),
-            Tables\Columns\TextColumn::make('opened_at')->dateTime()->sortable()->toggleable(),
+            \App\Filament\Shared\Columns::date('due_at')->sortable(),
+            \App\Filament\Shared\Columns::date('opened_at')->sortable()->toggleable(),
         ])->recordActions([Actions\ViewAction::make(), \App\Filament\Shared\Actions\WorkQueueActions::assign()]);
     }
 

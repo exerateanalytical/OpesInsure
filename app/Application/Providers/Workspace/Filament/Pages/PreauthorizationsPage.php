@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Application\Health\Preauth\PreauthLifecycle;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Provider Portal screens "preauthorization_list", "new_preauthorization", "preauthorization_detail", "preauthorization_query_response" (Gap-Free spec
@@ -16,7 +15,7 @@ use Filament\Support\Icons\Heroicon;
  */
 final class PreauthorizationsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-clipboard-check';
 
     protected static ?int $navigationSort = 3;
 

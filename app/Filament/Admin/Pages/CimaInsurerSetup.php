@@ -17,14 +17,13 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** REQ-CIMA-005 - INS-SET-CIMA-001..006: one insurer's CIMA setup (authorization, branches, mappings, reporting). */
 final class CimaInsurerSetup extends Page
 {
     use CimaRegulatoryAccess;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-building-2';
 
     protected static ?string $navigationLabel = 'Insurer CIMA setup';
 
@@ -55,7 +54,7 @@ final class CimaInsurerSetup extends Page
     {
         return [
             CimaInsurerAuthorizationResource::createAction($this->carrierId),
-            Actions\Action::make('reportingMapping')->label('Add reporting mapping')->icon(Heroicon::OutlinedPlus)->visible(fn () => $this->carrierId !== null)
+            Actions\Action::make('reportingMapping')->label('Add reporting mapping')->icon('lucide-plus')->visible(fn () => $this->carrierId !== null)
                 ->schema([
                     Forms\Components\Select::make('subject_type')->options(['INSURANCE_LINE' => 'Class (insurance line)', 'INSURANCE_PRODUCT' => 'Product'])->required()->live(),
                     Forms\Components\Select::make('subject_code')->label('Class / product')->required()->searchable()

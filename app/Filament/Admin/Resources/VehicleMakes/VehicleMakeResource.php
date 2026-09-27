@@ -15,7 +15,6 @@ use Filament\Forms;
 use Filament\Forms\Components\Field;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -30,7 +29,7 @@ final class VehicleMakeResource extends Resource
 
     protected static ?string $model = VehicleMake::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-truck';
 
     protected static ?string $navigationLabel = 'Makes';
 
@@ -60,7 +59,7 @@ final class VehicleMakeResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('addMake')->label('Add make')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('addMake')->label('Add make')->icon('lucide-plus')
             ->visible(fn () => self::canManageVehicleMaster())
             ->schema([Forms\Components\TextInput::make('code')->helperText('Leave blank to derive from the name (e.g. LAND_ROVER).')->maxLength(80), ...self::makeFields()])
             ->action(function (array $data) {
@@ -95,17 +94,17 @@ final class VehicleMakeResource extends Resource
                 Tables\Filters\TernaryFilter::make('active'),
             ])
             ->recordActions([
-                Actions\Action::make('editMake')->label('Edit')->icon(Heroicon::OutlinedPencilSquare)
+                Actions\Action::make('editMake')->label('Edit')->icon('lucide-square-pen')
                     ->fillForm(fn (VehicleMake $m) => $m->only(['name', 'country_of_origin', 'segment', 'market_priority', 'cameroon_status', 'ui_rank_cameroon', 'ui_rank_chinese']))
                     ->schema(self::makeFields())
                     ->action(fn (VehicleMake $m, array $data) => ServiceValidation::run(fn () => app(VehicleMasterAdminService::class)->updateMake($m, $data, auth()->user()))),
-                Actions\Action::make('addAlias')->label('Add alias')->icon(Heroicon::OutlinedTag)
+                Actions\Action::make('addAlias')->label('Add alias')->icon('lucide-tag')
                     ->schema([Forms\Components\TextInput::make('alias')->required()->maxLength(120)])
                     ->action(function (VehicleMake $m, array $data) {
                         $ok = app(VehicleMasterAdminService::class)->addMakeAlias($m, $data['alias'], auth()->user());
                         Notification::make()->title($ok ? 'Alias added' : 'Alias already used by a make')->{$ok ? 'success' : 'warning'}()->send();
                     }),
-                Actions\Action::make('merge')->label('Merge into…')->icon(Heroicon::OutlinedArrowsRightLeft)->color('warning')
+                Actions\Action::make('merge')->label('Merge into…')->icon('lucide-arrow-left-right')->color('warning')
                     ->visible(fn (VehicleMake $m) => $m->active)
                     ->schema([Forms\Components\Select::make('target_id')->label('Canonical make')->required()->searchable()
                         ->options(fn (VehicleMake $record) => VehicleMake::where('active', true)->where('id', '!=', $record->id)->orderBy('name')->pluck('name', 'id')->all())])

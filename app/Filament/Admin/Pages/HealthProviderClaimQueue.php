@@ -8,12 +8,11 @@ use App\Application\Health\ProviderClaims\ProviderClaimService;
 use App\Filament\Shared\Actions\HealthProviderActions;
 use App\Filament\Shared\Pages\HealthQueuePage;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Insurer provider-claim adjudication (GET health/provider-claims[/{id}]); review, line-by-line adjudication, payable, dispute via HealthProviderActions::providerClaim(). */
 final class HealthProviderClaimQueue extends HealthQueuePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCheck;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-file-check';
 
     protected static ?int $navigationSort = 61;
 

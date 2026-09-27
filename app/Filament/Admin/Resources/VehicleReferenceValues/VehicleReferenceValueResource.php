@@ -12,7 +12,6 @@ use BackedEnum;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -23,7 +22,7 @@ final class VehicleReferenceValueResource extends Resource
 
     protected static ?string $model = VehicleReferenceValue::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLanguage;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-languages';
 
     protected static ?string $navigationLabel = 'Reference values';
 
@@ -45,7 +44,7 @@ final class VehicleReferenceValueResource extends Resource
                 Tables\Filters\SelectFilter::make('group')->options(array_combine(array_values(VehicleReferenceLabels::GROUPS), array_values(VehicleReferenceLabels::GROUPS))),
             ])
             ->recordActions([
-                Actions\Action::make('editLabels')->label('Edit')->icon(Heroicon::OutlinedPencilSquare)
+                Actions\Action::make('editLabels')->label('Edit')->icon('lucide-square-pen')
                     ->fillForm(fn (VehicleReferenceValue $v) => $v->only(['label_en', 'label_fr', 'sort_order', 'active']))
                     ->schema([
                         Forms\Components\TextInput::make('label_en')->required()->maxLength(120),

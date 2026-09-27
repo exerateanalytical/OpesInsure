@@ -14,7 +14,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -29,7 +28,7 @@ final class VehicleGenerationResource extends Resource
 
     protected static ?string $model = VehicleGeneration::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-list-ordered';
 
     protected static ?string $navigationLabel = 'Generations';
 
@@ -48,7 +47,7 @@ final class VehicleGenerationResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('addGeneration')->label('Add generation')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('addGeneration')->label('Add generation')->icon('lucide-plus')
             ->visible(fn () => self::canManageVehicleMaster())
             ->schema([
                 Forms\Components\Select::make('model_id')->label('Model')->required()->searchable()->options(fn () => self::modelOptions()),
@@ -85,7 +84,7 @@ final class VehicleGenerationResource extends Resource
                 Tables\Filters\TernaryFilter::make('active'),
             ])
             ->recordActions([
-                Actions\Action::make('edit')->label('Edit')->icon(Heroicon::OutlinedPencilSquare)
+                Actions\Action::make('edit')->label('Edit')->icon('lucide-square-pen')
                     ->fillForm(fn (VehicleGeneration $g) => $g->only(['name', 'year_from', 'year_to']))
                     ->schema([
                         Forms\Components\TextInput::make('name')->required()->maxLength(120),

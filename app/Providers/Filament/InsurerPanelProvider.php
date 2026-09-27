@@ -45,6 +45,8 @@ final class InsurerPanelProvider extends PanelProvider
             \App\Filament\Admin\Pages\HealthProviderClaimQueue::class,
             \App\Filament\Admin\Pages\HealthProviderSettlements::class,
             \App\Filament\Admin\Pages\HealthProviderDisputes::class,
+            // Insurer letterhead and public logo (carrier-scoped, maker-checker), feeding logo_url / carrier_logo_url.
+            \App\Filament\Shared\Pages\InsurerLetterheadPage::class,
         ]);
     }
 }

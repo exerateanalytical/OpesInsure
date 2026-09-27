@@ -13,7 +13,6 @@ use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
@@ -41,7 +40,7 @@ final class LetterheadActions
     /** @param  Closure(Model): ?string  $ownerId */
     public static function edit(string $ownerType, Closure $ownerId): Action
     {
-        return Action::make('letterhead')->label('Letterhead')->icon(Heroicon::OutlinedPhoto)
+        return Action::make('letterhead')->label('Letterhead')->icon('lucide-image')
             ->visible(fn () => self::allowed())
             ->modalDescription('Upload only artwork the institution has licensed or authorized for use. Every save creates a new audited version; issued documents keep the version they were issued with.')
             ->fillForm(fn (Model $record) => self::fillFrom(LetterheadResolver::current($ownerType, $ownerId($record))))
@@ -99,12 +98,12 @@ final class LetterheadActions
     }
 
     /** Publishes a new audited version from the form state (uploaded temp files are consumed). */
-    public static function save(string $ownerType, string $ownerId, array $data): ?LetterheadAsset
+    public static function save(string $ownerType, string $ownerId, array $data, bool $forceMakerChecker = false): ?LetterheadAsset
     {
         $logo = self::uploaded($data['logo'] ?? null, true);
         $header = self::uploaded($data['header'] ?? null, true);
         $asset = ServiceValidation::run(fn () => app(LetterheadService::class)->publish($ownerType, $ownerId, $data, $logo, $header, auth()->user(),
-            (bool) ($data['remove_logo'] ?? false), (bool) ($data['remove_header'] ?? false)));
+            (bool) ($data['remove_logo'] ?? false), (bool) ($data['remove_header'] ?? false), $forceMakerChecker));
         if ($asset) {
             Notification::make()->title($asset->status === 'ACTIVE' ? 'Letterhead v'.$asset->version.' active (audited)' : 'Letterhead v'.$asset->version.' awaiting approval')->success()->send();
         }
@@ -161,7 +160,7 @@ final class LetterheadActions
         $pending = fn (Model $record) => LetterheadAsset::where('owner_type', $ownerType)->where($ownerType === 'CARRIER' ? 'carrier_id' : 'tenant_id', $ownerId($record))
             ->where('status', 'PENDING_APPROVAL')->orderByDesc('version')->first();
 
-        return Action::make('approveLetterhead')->label('Approve letterhead')->icon(Heroicon::OutlinedCheckBadge)->color('success')
+        return Action::make('approveLetterhead')->label('Approve letterhead')->icon('lucide-badge-check')->color('success')
             ->visible(fn (Model $record) => self::allowed() && $pending($record) !== null)
             ->requiresConfirmation()
             ->modalDescription(fn (Model $record) => ($p = $pending($record)) ? 'Version '.$p->version.' authorized by '.$p->authorized_by.' on '.$p->authorized_on?->toDateString().' ('.$p->authorization_source.').' : null)

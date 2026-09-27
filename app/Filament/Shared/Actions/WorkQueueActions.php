@@ -25,7 +25,7 @@ final class WorkQueueActions
     {
         $p = 'cases.manage';
 
-        return WorkflowAction::make('queueClaimNext', $p)->icon('heroicon-o-hand-raised')->requiresConfirmation()
+        return WorkflowAction::make('queueClaimNext', $p)->icon('lucide-hand')->requiresConfirmation()
             ->visible(fn (WorkQueue $record) => (bool) $record->active)
             ->action(function (Action $action, WorkQueue $record) use ($p) {
                 $case = WorkflowAction::run($action, $p, fn () => app(CaseService::class)->pullNext($record, auth()->user()) ?? false);
@@ -43,7 +43,7 @@ final class WorkQueueActions
         $p = 'cases.assign';
         $tenant = fn () => app(TenantContext::class)->id();
 
-        return WorkflowAction::make('caseAssign', $p)->icon('heroicon-o-user-plus')
+        return WorkflowAction::make('caseAssign', $p)->icon('lucide-user-plus')
             ->schema([
                 Select::make('owner_user_id')->label(__('workflow_actions.fields.assignee'))->searchable()->requiredWithout('queue_id')
                     ->options(fn () => User::where('status', 'ACTIVE')->whereHas('memberships', fn ($q) => $q->where('tenant_id', $tenant())->where('status', 'ACTIVE'))->pluck('full_name', 'id')),

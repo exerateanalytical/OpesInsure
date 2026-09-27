@@ -19,7 +19,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
 
@@ -30,9 +29,9 @@ use Livewire\Attributes\Url;
  * Same form, save path and validation as the Letterhead modal action (LetterheadActions); every save is a new
  * audited version, pending a second admin when letterheads.maker_checker is on.
  */
-final class LetterheadDesigner extends Page
+class LetterheadDesigner extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-paintbrush';
 
     protected static ?string $navigationLabel = 'Letterhead designer';
 
@@ -110,7 +109,7 @@ final class LetterheadDesigner extends Page
 
     public function issuerName(): string
     {
-        return self::owners((string) $this->ownerType)[$this->ownerId] ?? 'Institution';
+        return static::owners((string) $this->ownerType)[$this->ownerId] ?? 'Institution';
     }
 
     public function pending(): ?LetterheadAsset
@@ -138,7 +137,7 @@ final class LetterheadDesigner extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('preview')->label('Preview PDF')->icon(Heroicon::OutlinedEye)->color('gray')->disabled(fn () => ! $this->ownerId)
+            Action::make('preview')->label('Preview PDF')->icon('lucide-eye')->color('gray')->disabled(fn () => ! $this->ownerId)
                 ->action(function () {
                     try {
                         $pdf = $this->previewPdf();
@@ -152,7 +151,7 @@ final class LetterheadDesigner extends Page
                         echo $pdf;
                     }, 'letterhead-specimen.pdf', ['Content-Type' => 'application/pdf']);
                 }),
-            Action::make('approvePending')->label('Approve pending version')->icon(Heroicon::OutlinedCheckBadge)->color('success')->requiresConfirmation()
+            Action::make('approvePending')->label('Approve pending version')->icon('lucide-badge-check')->color('success')->requiresConfirmation()
                 ->visible(fn () => $this->pending() !== null)
                 ->modalDescription(fn () => ($p = $this->pending()) ? 'Version '.$p->version.' authorized by '.$p->authorized_by.' ('.$p->authorization_source.').' : null)
                 ->action(function () {
@@ -166,16 +165,22 @@ final class LetterheadDesigner extends Page
 
     public function save(): void
     {
-        abort_unless(self::canAccess(), 403);
+        abort_unless(static::canAccess(), 403);
         if (! $this->ownerId) {
             Notification::make()->danger()->title('Choose the institution first')->send();
 
             return;
         }
         $data = $this->form->getState();
-        if (LetterheadActions::save((string) $this->ownerType, $this->ownerId, $data)) {
+        if (LetterheadActions::save((string) $this->ownerType, $this->ownerId, $data, $this->forcesMakerChecker())) {
             $this->refill();
         }
+    }
+
+    /** The insurer self-service page always routes a new version through a second approver. */
+    protected function forcesMakerChecker(): bool
+    {
+        return false;
     }
 
     /** FileUpload raw state holds TemporaryUploadedFile objects until getState(); store them to read the bytes. */

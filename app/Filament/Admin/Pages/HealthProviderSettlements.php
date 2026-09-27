@@ -8,12 +8,11 @@ use App\Application\Health\ProviderClaims\ProviderSettlementService;
 use App\Filament\Shared\Actions\HealthProviderActions;
 use App\Filament\Shared\Pages\HealthQueuePage;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Insurer provider settlement batches (health/provider-settlements): create a batch, open it, pay it — via HealthProviderActions. */
 final class HealthProviderSettlements extends HealthQueuePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-banknote';
 
     protected static ?int $navigationSort = 62;
 

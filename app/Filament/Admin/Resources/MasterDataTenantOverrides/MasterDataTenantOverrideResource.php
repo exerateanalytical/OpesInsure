@@ -16,7 +16,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -31,7 +30,7 @@ final class MasterDataTenantOverrideResource extends Resource
 
     protected static ?string $model = MasterDataTenantOverride::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-sliders-horizontal';
 
     protected static ?string $navigationLabel = 'Tenant overrides';
 
@@ -62,7 +61,7 @@ final class MasterDataTenantOverrideResource extends Resource
             Tables\Filters\SelectFilter::make('action')->options(array_combine(MasterDataOverrideService::ACTIONS, MasterDataOverrideService::ACTIONS)),
             Tables\Filters\SelectFilter::make('tenant_id')->label('Organization')->searchable()->options(fn () => Tenant::orderBy('legal_name')->pluck('legal_name', 'id')->all()),
         ])->headerActions([
-            Actions\Action::make('add')->label('Add override')->icon(Heroicon::OutlinedPlus)->schema([
+            Actions\Action::make('add')->label('Add override')->icon('lucide-plus')->schema([
                 Forms\Components\Select::make('tenant_id')->label('Organization')->required()->searchable()->options(fn () => Tenant::orderBy('legal_name')->pluck('legal_name', 'id')->all()),
                 CarrierMasterDataMappingResource::valueSelect(),
                 Forms\Components\Select::make('action')->required()->live()->options(['HIDE' => 'Hide for this organization', 'ALIAS' => 'Add an alias', 'INTERNAL_CODE' => 'Map an internal code']),

@@ -12,7 +12,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ final class CalendarExceptionResource extends Resource
 
     protected static ?string $model = CalendarException::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-calendar-days';
 
     protected static ?string $navigationLabel = 'Calendar exceptions';
 
@@ -63,7 +62,7 @@ final class CalendarExceptionResource extends Resource
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('jurisdiction'),
-            Tables\Columns\TextColumn::make('date')->date()->sortable(),
+            \App\Filament\Shared\Columns::date('date', false)->sortable(),
             Tables\Columns\TextColumn::make('kind')->badge(),
             Tables\Columns\TextColumn::make('label'),
             Tables\Columns\TextColumn::make('source_reference')->placeholder('UNVERIFIED')->toggleable(),

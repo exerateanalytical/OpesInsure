@@ -15,7 +15,6 @@ use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,7 +27,7 @@ final class ApprovalMatrixRuleResource extends Resource
 {
     protected static ?string $model = ApprovalMatrixRule::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-table';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Approvals';
 
@@ -91,7 +90,7 @@ final class ApprovalMatrixRuleResource extends Resource
             Tables\Columns\TextColumn::make('required_approvals')->label('Levels'),
             Tables\Columns\IconColumn::make('requires_maker_checker')->boolean()->label('Maker-checker'),
             Tables\Columns\TextColumn::make('source_refs')->label('Sources')->wrap(),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('category')->options(array_combine($c = ['FINANCIAL', 'CONFIGURATION', 'ACCESS', 'DOCUMENT', 'UNDERWRITING', 'CLAIM', 'POLICY', 'OVERRIDE', 'DATA'], $c)),
         ])->recordActions([

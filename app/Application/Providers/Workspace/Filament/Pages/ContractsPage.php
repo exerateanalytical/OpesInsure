@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screens "contracts", "contract_detail", "tariff_schedules" and "tariff_detail": the opened contract shows its approved tariff lines. */
 final class ContractsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-files';
 
     protected static ?int $navigationSort = 11;
 

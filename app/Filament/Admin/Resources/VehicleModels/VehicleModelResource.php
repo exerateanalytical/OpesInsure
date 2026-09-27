@@ -14,7 +14,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -25,7 +24,7 @@ final class VehicleModelResource extends Resource
 
     protected static ?string $model = VehicleModel::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layers';
 
     protected static ?string $navigationLabel = 'Models';
 
@@ -35,7 +34,7 @@ final class VehicleModelResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('addModel')->label('Add model')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('addModel')->label('Add model')->icon('lucide-plus')
             ->visible(fn () => self::canManageVehicleMaster())
             ->schema([
                 Forms\Components\Select::make('make_id')->label('Make')->required()->searchable()->options(fn () => VehicleMake::where('active', true)->orderBy('name')->pluck('name', 'id')->all()),
@@ -61,7 +60,7 @@ final class VehicleModelResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('aliases_list')->label('Aliases')->state(fn (VehicleModel $m) => $m->aliases->pluck('alias')->join(', '))->wrap()->placeholder('-'),
                 Tables\Columns\TextColumn::make('segment')->badge(),
-                Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'HISTORICAL' ? 'gray' : 'success'),
+                \App\Filament\Shared\Columns::status('status'),
                 Tables\Columns\TextColumn::make('provenance')->badge()->color('gray')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('active')->boolean(),
             ])
@@ -72,14 +71,14 @@ final class VehicleModelResource extends Resource
                 Tables\Filters\TernaryFilter::make('active'),
             ])
             ->recordActions([
-                Actions\Action::make('rename')->label('Edit')->icon(Heroicon::OutlinedPencilSquare)
+                Actions\Action::make('rename')->label('Edit')->icon('lucide-square-pen')
                     ->fillForm(fn (VehicleModel $m) => $m->only(['name', 'segment']))
                     ->schema([
                         Forms\Components\TextInput::make('name')->required()->maxLength(120),
                         Forms\Components\Select::make('segment')->required()->options(['PASSENGER' => 'Passenger', 'COMMERCIAL' => 'Commercial', 'MIXED' => 'Mixed']),
                     ])
                     ->action(fn (VehicleModel $m, array $data) => ServiceValidation::run(fn () => app(VehicleMasterAdminService::class)->updateModel($m, $data, auth()->user()))),
-                Actions\Action::make('addAlias')->label('Add alias')->icon(Heroicon::OutlinedTag)
+                Actions\Action::make('addAlias')->label('Add alias')->icon('lucide-tag')
                     ->schema([Forms\Components\TextInput::make('alias')->required()->maxLength(120)])
                     ->action(function (VehicleModel $m, array $data) {
                         $ok = app(VehicleMasterAdminService::class)->addModelAlias($m, $data['alias'], auth()->user());

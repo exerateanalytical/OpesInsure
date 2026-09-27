@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -23,7 +22,7 @@ final class CarrierMasterDataMappingResource extends Resource
 
     protected static ?string $model = CarrierMasterDataMapping::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-building-2';
 
     protected static ?string $navigationLabel = 'Carrier mappings';
 
@@ -52,7 +51,7 @@ final class CarrierMasterDataMappingResource extends Resource
         return $table->modifyQueryUsing(fn ($query) => $query->with('value'))->columns([
             Tables\Columns\TextColumn::make('carrier_id')->label('Insurer')->state(fn ($record) => \App\Models\Carrier::find($record->carrier_id)?->legal_name),
             Tables\Columns\TextColumn::make('value.code')->label('Value'), Tables\Columns\TextColumn::make('value.list_code')->label('List'),
-            Tables\Columns\TextColumn::make('target')->badge(), Tables\Columns\TextColumn::make('external_code')->searchable(), Tables\Columns\TextColumn::make('status')->badge(),
+            Tables\Columns\TextColumn::make('target')->badge(), Tables\Columns\TextColumn::make('external_code')->searchable(), \App\Filament\Shared\Columns::status('status'),
         ])->recordActions([Actions\EditAction::make()]);
     }
 

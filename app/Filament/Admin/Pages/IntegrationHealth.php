@@ -5,11 +5,10 @@ namespace App\Filament\Admin\Pages;
 use App\Application\Integrations\IntegrationHealthService;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 final class IntegrationHealth extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSignal;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-signal';
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
     protected static ?string $navigationLabel = 'Health';
     protected static ?int $navigationSort = 89;

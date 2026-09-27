@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 
 /** Provider Portal screens "settlements" and "settlement_detail" (remittance: statement figures derived from the batch claims, per-claim lines). */
 final class SettlementsPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-receipt-text';
 
     protected static ?int $navigationSort = 8;
 

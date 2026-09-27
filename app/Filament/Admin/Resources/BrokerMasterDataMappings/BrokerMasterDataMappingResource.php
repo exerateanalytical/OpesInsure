@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -23,7 +22,7 @@ final class BrokerMasterDataMappingResource extends Resource
 
     protected static ?string $model = BrokerMasterDataMapping::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-briefcase';
 
     protected static ?string $navigationLabel = 'Broker mappings';
 
@@ -44,7 +43,7 @@ final class BrokerMasterDataMappingResource extends Resource
         return $table->modifyQueryUsing(fn ($query) => $query->with('value'))->columns([
             Tables\Columns\TextColumn::make('partner_id')->label('Broker')->state(fn ($record) => \App\Models\Partner::find($record->partner_id)?->legal_name),
             Tables\Columns\TextColumn::make('value.code')->label('Value'), Tables\Columns\TextColumn::make('value.list_code')->label('List'),
-            Tables\Columns\TextColumn::make('external_code')->searchable(), Tables\Columns\TextColumn::make('status')->badge(),
+            Tables\Columns\TextColumn::make('external_code')->searchable(), \App\Filament\Shared\Columns::status('status'),
         ])->recordActions([Actions\EditAction::make()]);
     }
 

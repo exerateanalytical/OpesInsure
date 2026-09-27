@@ -22,7 +22,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +35,7 @@ use Illuminate\Validation\ValidationException;
  */
 abstract class OrganizationSettings extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-sliders-horizontal';
 
     public static function getNavigationLabel(): string
     {

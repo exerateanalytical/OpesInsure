@@ -16,7 +16,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -26,7 +25,7 @@ final class CimaTermResource extends Resource
 
     protected static ?string $model = RegulatoryTerm::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLanguage;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-languages';
 
     protected static ?string $navigationLabel = 'Terminology (FR/EN)';
 
@@ -44,8 +43,8 @@ final class CimaTermResource extends Resource
                 Tables\Columns\TextColumn::make('source_article')->placeholder('-'),
                 Tables\Columns\TextColumn::make('namespace')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('regulatory_version')->label('Version')->toggleable(),
-                Tables\Columns\TextColumn::make('effective_from')->date()->toggleable(),
-                Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open')->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_from', false)->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open')->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category')->options(fn () => RegulatoryTerm::query()->distinct()->orderBy('category')->pluck('category', 'category')->all()),
@@ -76,7 +75,7 @@ final class CimaTermResource extends Resource
     /** "New effective version" - the only way to change a regulatory row. */
     public static function versionAction(array $fields, array $labelFields = []): Actions\Action
     {
-        return Actions\Action::make('newVersion')->label('New effective version')->icon(Heroicon::OutlinedDocumentDuplicate)
+        return Actions\Action::make('newVersion')->label('New effective version')->icon('lucide-files')
             ->visible(fn () => static::canAccessCima())
             ->fillForm(fn ($record) => collect($fields)->mapWithKeys(fn ($f) => [$f => $record->{$f}])->all() + ['effective_from' => now()->addDay()->toDateString()])
             ->schema(array_merge(

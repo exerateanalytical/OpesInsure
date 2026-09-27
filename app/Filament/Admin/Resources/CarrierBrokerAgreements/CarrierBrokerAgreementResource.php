@@ -97,9 +97,9 @@ final class CarrierBrokerAgreementResource extends Resource
             Tables\Columns\TextColumn::make('agreement_number')->label(__('web_experience.sections.number'))->searchable()->copyable(),
             Tables\Columns\TextColumn::make('carrier.party.display_name')->label(__('web_experience.meta.carrier')),
             Tables\Columns\TextColumn::make('partner.party.display_name')->label(__('web_experience.sections.broker')),
-            Tables\Columns\TextColumn::make('effective_from')->label(__('web_experience.sections.effective_from'))->date(),
-            Tables\Columns\TextColumn::make('effective_until')->label(__('web_experience.sections.effective_until'))->date()->placeholder('—'),
-            Tables\Columns\TextColumn::make('status')->label(__('web_experience.status.label'))->badge()->color(fn (string $state) => \App\Application\WebExperiences\RecordSummary::toneFor($state)),
+            \App\Filament\Shared\Columns::date('effective_from', false)->label(__('web_experience.sections.effective_from')),
+            \App\Filament\Shared\Columns::date('effective_until', false)->label(__('web_experience.sections.effective_until'))->placeholder('—'),
+            \App\Filament\Shared\Columns::status('status')->label(__('web_experience.status.label')),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['DRAFT' => 'DRAFT', 'ACTIVE' => 'ACTIVE', 'SUSPENDED' => 'SUSPENDED', 'TERMINATED' => 'TERMINATED', 'EXPIRED' => 'EXPIRED']),
         ])->recordActions([Actions\ViewAction::make()]), 'agreements');

@@ -14,7 +14,7 @@
             <label class="text-sm">{{ __('dashboards.reports.as_of') }}<input type="date" wire:model.live="asOf" class="{{ $in }}" /></label>
         </div>
         <div class="mt-3 flex items-center gap-3">
-            <x-filament::button wire:click="exportCsv" icon="heroicon-o-arrow-down-tray" color="gray">{{ __('dashboards.reports.export_csv') }}</x-filament::button>
+            <x-filament::button wire:click="exportCsv" icon="lucide-download" color="gray">{{ __('dashboards.reports.export_csv') }}</x-filament::button>
             <span wire:loading class="text-sm text-gray-500">{{ __('dashboards.states.loading') }}</span>
         </div>
     </x-filament::section>

@@ -15,7 +15,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -30,7 +29,7 @@ final class CimaProductMappingResource extends Resource
 
     protected static ?string $model = ProductRegulatoryMapping::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-link';
 
     protected static ?string $navigationLabel = 'Product mapping';
 
@@ -46,7 +45,7 @@ final class CimaProductMappingResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('propose')->label('Propose mapping')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('propose')->label('Propose mapping')->icon('lucide-plus')
             ->visible(fn () => static::canAccessCima())
             ->schema([
                 Forms\Components\Select::make('insurance_product_id')->label('Product (version)')->required()->searchable()
@@ -76,9 +75,9 @@ final class CimaProductMappingResource extends Resource
             Tables\Columns\TextColumn::make('branch_code')->label('CIMA branch')->formatStateUsing(fn (string $state) => static::branchOptions(true)[$state] ?? $state)->wrap(),
             Tables\Columns\TextColumn::make('relationship_type')->label('Type')->badge()->color(fn (string $state) => match ($state) { 'PRIMARY' => 'primary', 'COMPLEMENTARY' => 'warning', default => 'gray' }),
             Tables\Columns\TextColumn::make('source')->badge()->color(fn (string $state) => $state === 'ADMIN' ? 'success' : 'gray'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'ACTIVE' => 'success', 'PENDING_APPROVAL' => 'warning', default => 'gray' }),
-            Tables\Columns\TextColumn::make('effective_from')->date(),
-            Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open'),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('effective_from', false),
+            \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open'),
         ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(['ACTIVE' => 'Active', 'PENDING_APPROVAL' => 'Pending approval', 'SUPERSEDED' => 'Superseded', 'REJECTED' => 'Rejected']),
@@ -86,18 +85,18 @@ final class CimaProductMappingResource extends Resource
                 Tables\Filters\SelectFilter::make('source')->options(['CLASS_DEFAULT' => 'Class default (automatic)', 'ADMIN' => 'Admin override']),
             ])
             ->recordActions([
-                Actions\Action::make('approve')->label('Approve')->icon(Heroicon::OutlinedCheck)->color('success')->requiresConfirmation()
+                Actions\Action::make('approve')->label('Approve')->icon('lucide-check')->color('success')->requiresConfirmation()
                     ->visible(fn (ProductRegulatoryMapping $m) => $m->status === 'PENDING_APPROVAL')
                     ->action(function (ProductRegulatoryMapping $m) {
                         if (ServiceValidation::run(fn () => app(CimaProductMappingService::class)->approve($m, auth()->user()))) {
                             Notification::make()->title('Mapping approved')->success()->send();
                         }
                     }),
-                Actions\Action::make('reject')->label('Reject')->icon(Heroicon::OutlinedXMark)->color('danger')
+                Actions\Action::make('reject')->label('Reject')->icon('lucide-x')->color('danger')
                     ->visible(fn (ProductRegulatoryMapping $m) => $m->status === 'PENDING_APPROVAL')
                     ->schema([Forms\Components\Textarea::make('reason')->required()->minLength(5)])
                     ->action(fn (ProductRegulatoryMapping $m, array $data) => ServiceValidation::run(fn () => app(CimaProductMappingService::class)->reject($m, auth()->user(), $data['reason']))),
-                Actions\Action::make('retire')->label('Retire')->icon(Heroicon::OutlinedArchiveBox)->color('gray')
+                Actions\Action::make('retire')->label('Retire')->icon('lucide-archive')->color('gray')
                     ->visible(fn (ProductRegulatoryMapping $m) => $m->status === 'ACTIVE')
                     ->schema([Forms\Components\Textarea::make('reason')->required()->minLength(5)])
                     ->action(fn (ProductRegulatoryMapping $m, array $data) => ServiceValidation::run(fn () => app(CimaProductMappingService::class)->retire($m, auth()->user(), $data['reason']))),

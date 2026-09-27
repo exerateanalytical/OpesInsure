@@ -6,7 +6,6 @@ namespace App\Application\Providers\Workspace\Filament\Pages;
 
 use App\Interfaces\Http\Errors\ApiProblemException;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -16,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
  */
 final class EligibilityPage extends ProviderWorkspacePage
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMagnifyingGlass;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-search';
 
     protected static ?int $navigationSort = 2;
 

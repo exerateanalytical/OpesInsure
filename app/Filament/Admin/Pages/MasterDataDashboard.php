@@ -8,12 +8,11 @@ use App\Application\MasterData\MasterDataQualityReport;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 
 /** MDM-001 Master data dashboard and MDM-012 data sources (provenance breakdown). */
 final class MasterDataDashboard extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartPie;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-chart-pie';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Master data';
 

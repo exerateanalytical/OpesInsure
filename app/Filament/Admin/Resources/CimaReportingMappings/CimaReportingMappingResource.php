@@ -15,7 +15,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -26,7 +25,7 @@ final class CimaReportingMappingResource extends Resource
 
     protected static ?string $model = RegulatoryReportingMapping::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-arrow-left-right';
 
     protected static ?string $navigationLabel = 'Reporting mapping';
 
@@ -36,7 +35,7 @@ final class CimaReportingMappingResource extends Resource
 
     public static function createAction(): Actions\Action
     {
-        return Actions\Action::make('map')->label('Add reporting mapping')->icon(Heroicon::OutlinedPlus)
+        return Actions\Action::make('map')->label('Add reporting mapping')->icon('lucide-plus')
             ->visible(fn () => static::canAccessCima())
             ->schema([
                 Forms\Components\Select::make('subject_type')->options(['INSURANCE_LINE' => 'Normalized class (insurance line)', 'INSURANCE_PRODUCT' => 'Product'])->required()->live(),
@@ -62,9 +61,9 @@ final class CimaReportingMappingResource extends Resource
             Tables\Columns\TextColumn::make('subject_type')->badge(),
             Tables\Columns\TextColumn::make('subject_code')->label('Class / product')->searchable(),
             Tables\Columns\TextColumn::make('reporting_category_code')->label('Article 411 category')->fontFamily('mono'),
-            Tables\Columns\TextColumn::make('status')->badge(),
-            Tables\Columns\TextColumn::make('effective_from')->date(),
-            Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open'),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('effective_from', false),
+            \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open'),
         ])
             ->recordActions([
                 Actions\Action::make('end')->label('End mapping')->color('gray')->requiresConfirmation()

@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
@@ -24,7 +23,7 @@ final class MasterDataDomainResource extends Resource
 
     protected static ?string $model = MasterDataDomain::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layers';
 
     protected static ?string $navigationLabel = 'Domains';
 
@@ -54,7 +53,7 @@ final class MasterDataDomainResource extends Resource
             Tables\Columns\TextColumn::make('values')->label('Values')->state(fn ($record) => \App\Models\MasterData\MasterDataValue::where('domain_code', $record->code)->count()),
             Tables\Columns\TextColumn::make('catalog_version')->label('Version')->badge(),
             Tables\Columns\TextColumn::make('source_file')->label('File')->toggleable(),
-            Tables\Columns\TextColumn::make('status')->badge(),
+            \App\Filament\Shared\Columns::status('status'),
             Tables\Columns\TextColumn::make('updated_at')->since()->label('Changed'),
         ])->recordActions([Actions\EditAction::make(),
             Actions\Action::make('values')->label('Values')->url(fn ($record) => MasterDataValueResource::getUrl('index', ['filters' => ['domain_code' => ['value' => $record->code]]])),

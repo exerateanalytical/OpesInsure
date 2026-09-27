@@ -19,7 +19,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,7 +35,7 @@ final class MasterDataValueResource extends Resource
 
     protected static ?string $model = MasterDataValue::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-list';
 
     protected static ?string $navigationLabel = 'Values';
 
@@ -98,7 +97,7 @@ final class MasterDataValueResource extends Resource
                 Tables\Columns\TextColumn::make('label_en')->label('EN')->searchable(),
                 Tables\Columns\TextInputColumn::make('label_fr')->label('FR')->searchable()->rules(['required', 'max:255']),
                 Tables\Columns\TextColumn::make('parent_code')->label('Parent')->placeholder('—')->toggleable(),
-                Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'ACTIVE' ? 'success' : 'gray'),
+                \App\Filament\Shared\Columns::status('status'),
                 Tables\Columns\TextColumn::make('source_type')->label('Source')->badge()->toggleable(),
                 Tables\Columns\TextColumn::make('usage_count')->label('Uses')->sortable()->toggleable(),
                 Tables\Columns\IconColumn::make('is_seeded')->label('Seeded')->boolean()->toggleable(),
@@ -117,16 +116,16 @@ final class MasterDataValueResource extends Resource
             ->recordActions([
                 Actions\EditAction::make(),
                 Actions\Action::make('toggle')->label(fn (MasterDataValue $v) => $v->status === 'ACTIVE' ? 'Deactivate' : 'Reactivate')
-                    ->icon(fn (MasterDataValue $v) => $v->status === 'ACTIVE' ? Heroicon::OutlinedNoSymbol : Heroicon::OutlinedCheck)
+                    ->icon(fn (MasterDataValue $v) => $v->status === 'ACTIVE' ? 'lucide-ban' : 'lucide-check')
                     ->requiresConfirmation()->action(fn (MasterDataValue $v) => $v->update(['status' => $v->status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'])),
-                Actions\Action::make('alias')->label('Add alias')->icon(Heroicon::OutlinedTag)
+                Actions\Action::make('alias')->label('Add alias')->icon('lucide-tag')
                     ->schema([
                         Forms\Components\TextInput::make('alias')->required()->maxLength(255),
                         Forms\Components\Select::make('alias_type')->options(['ALIAS' => 'Alias', 'ABBREVIATION' => 'Abbreviation'])->default('ALIAS'),
                         Forms\Components\Select::make('locale')->options(['en' => 'English', 'fr' => 'French']),
                     ])
                     ->action(fn (MasterDataValue $v, array $data) => MasterDataAlias::create(['value_id' => $v->id] + $data)),
-                Actions\Action::make('merge')->label('Request merge into…')->icon(Heroicon::OutlinedArrowsRightLeft)->color('warning')
+                Actions\Action::make('merge')->label('Request merge into…')->icon('lucide-arrow-left-right')->color('warning')
                     ->visible(fn (MasterDataValue $v) => $v->status === 'ACTIVE' && $v->tenant_id === null)
                     ->modalDescription('Maker-checker (REQ-MDM-007): another admin approves under Master data → Merge requests. On approval this value becomes INACTIVE and redirects to the target; its code and labels become aliases of the target.')
                     ->schema(fn (MasterDataValue $v) => [Forms\Components\Select::make('into')->label('Keep this value')->required()->searchable()
@@ -140,7 +139,7 @@ final class MasterDataValueResource extends Resource
                     }),
             ])
             ->headerActions([
-                Actions\Action::make('export')->label('Export')->icon(Heroicon::OutlinedArrowDownTray)
+                Actions\Action::make('export')->label('Export')->icon('lucide-download')
                     ->schema([
                         Forms\Components\Select::make('domain')->options(fn () => MasterDataList::distinct()->orderBy('domain_code')->pluck('domain_code', 'domain_code')->all())->required()->searchable()->live(),
                         Forms\Components\Select::make('list')->options(fn (Get $get) => MasterDataList::where('domain_code', $get('domain'))->pluck('code', 'code')->all())->placeholder('All lists'),

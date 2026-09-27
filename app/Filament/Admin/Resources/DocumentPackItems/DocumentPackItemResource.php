@@ -10,7 +10,6 @@ use App\Models\DocumentCatalogue\DocumentPack;
 use App\Models\DocumentCatalogue\DocumentPackItem;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -21,7 +20,7 @@ final class DocumentPackItemResource extends Resource
 
     protected static ?string $model = DocumentPackItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-list';
 
     protected static ?string $navigationLabel = 'Pack items';
 
@@ -40,7 +39,7 @@ final class DocumentPackItemResource extends Resource
             Tables\Columns\TextColumn::make('documentType.name_fr')->label('Document')->wrap(),
             Tables\Columns\TextColumn::make('requirement')->badge()->color(fn (string $state) => $state === 'REQUIRED' ? 'success' : 'gray'),
             Tables\Columns\TextColumn::make('condition_note')->label('Condition')->placeholder('-')->wrap(),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'ACTIVE' ? 'success' : 'gray'),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('document_pack_id')->label('Pack')->searchable()->options(fn () => DocumentPack::orderBy('code')->pluck('code', 'id')->all()),
             Tables\Filters\SelectFilter::make('requirement')->options(array_combine(

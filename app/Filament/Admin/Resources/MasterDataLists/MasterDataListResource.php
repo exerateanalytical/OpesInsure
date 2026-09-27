@@ -12,7 +12,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
@@ -24,7 +23,7 @@ final class MasterDataListResource extends Resource
 
     protected static ?string $model = MasterDataList::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-list-ordered';
 
     protected static ?string $navigationLabel = 'Lists';
 
@@ -58,7 +57,7 @@ final class MasterDataListResource extends Resource
             Tables\Columns\TextColumn::make('workflow_status')->label('Owner status')->badge()->placeholder('—')
                 ->state(fn ($record) => once(fn () => app(\App\Application\MasterData\WorkflowDataStatuses::class)->byList())[$record->domain_code.'.'.$record->code]['status'] ?? null)
                 ->color(fn (?string $state) => match ($state) { 'PENDING_SOURCE', 'CONFIG_REQUIRED' => 'warning', 'UNVERIFIED', 'DEMO_ONLY' => 'danger', 'VERIFIED' => 'success', default => 'gray' }),
-            Tables\Columns\TextColumn::make('source_type')->badge()->toggleable(), Tables\Columns\TextColumn::make('version')->toggleable(), Tables\Columns\TextColumn::make('status')->badge(),
+            Tables\Columns\TextColumn::make('source_type')->badge()->toggleable(), Tables\Columns\TextColumn::make('version')->toggleable(), \App\Filament\Shared\Columns::status('status'),
         ])->filters([Tables\Filters\SelectFilter::make('domain_code')->label('Domain')->options(fn () => \App\Models\MasterData\MasterDataDomain::orderBy('code')->pluck('code', 'code')->all())->searchable()])
             ->recordActions([Actions\EditAction::make(), Actions\Action::make('values')->label('Values')->url(fn ($record) => MasterDataValueResource::getUrl('index', ['filters' => ['list_id' => ['value' => $record->id]]]))]);
     }

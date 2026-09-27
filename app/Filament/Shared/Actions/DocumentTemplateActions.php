@@ -27,18 +27,18 @@ final class DocumentTemplateActions
 
     public static function submit(): Action
     {
-        return self::step('templateSubmit', 'DRAFT', 'heroicon-o-paper-airplane', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->submit($t, auth()->user()));
+        return self::step('templateSubmit', 'DRAFT', 'lucide-send', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->submit($t, auth()->user()));
     }
 
     public static function approve(): Action
     {
-        return self::step('templateApprove', 'REVIEW', 'heroicon-o-check', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->approve($t, auth()->user()))
+        return self::step('templateApprove', 'REVIEW', 'lucide-check', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->approve($t, auth()->user()))
             ->hidden(fn (DocumentTemplate $record) => self::systemSeeded($record));
     }
 
     public static function publish(): Action
     {
-        return WorkflowAction::make('templatePublish', self::PERMISSION)->icon('heroicon-o-globe-alt')->color('success')->requiresConfirmation()
+        return WorkflowAction::make('templatePublish', self::PERMISSION)->icon('lucide-globe')->color('success')->requiresConfirmation()
             ->visible(fn (DocumentTemplate $record) => $record->status === 'APPROVED')
             ->schema([DatePicker::make('effective_from')->label(__('workflow_actions.fields.effective_from'))])
             ->action(fn (Action $action, DocumentTemplate $record, array $data) => WorkflowAction::run($action, self::PERMISSION,
@@ -48,13 +48,13 @@ final class DocumentTemplateActions
     /** System-seeded templates (ProviderDocumentTemplateSeeder): the administrator is the checker, approve + publish at once. */
     public static function approvePublish(): Action
     {
-        return self::step('templateApprovePublish', 'REVIEW', 'heroicon-o-bolt', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->approveAndPublishSystem($t, auth()->user()))
+        return self::step('templateApprovePublish', 'REVIEW', 'lucide-zap', fn (DocumentTemplate $t) => app(DocumentTemplateService::class)->approveAndPublishSystem($t, auth()->user()))
             ->color('success')->visible(fn (DocumentTemplate $record) => $record->status === 'REVIEW' && self::systemSeeded($record));
     }
 
     public static function retire(): Action
     {
-        return WorkflowAction::make('templateRetire', self::PERMISSION)->icon('heroicon-o-archive-box-x-mark')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('templateRetire', self::PERMISSION)->icon('lucide-archive-x')->color('danger')->requiresConfirmation()
             ->visible(fn (DocumentTemplate $record) => $record->status !== 'RETIRED')
             ->schema([TextInput::make('reason')->label(__('workflow_actions.fields.reason'))->required()->minLength(5)->maxLength(500)])
             ->action(fn (Action $action, DocumentTemplate $record, array $data) => WorkflowAction::run($action, self::PERMISSION,

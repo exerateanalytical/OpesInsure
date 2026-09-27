@@ -14,7 +14,6 @@ use BackedEnum;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -28,7 +27,7 @@ final class MasterDataMergeRequestResource extends Resource
 
     protected static ?string $model = MasterDataMergeRequest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-arrow-left-right';
 
     protected static ?string $navigationLabel = 'Merge requests';
 
@@ -49,20 +48,20 @@ final class MasterDataMergeRequestResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->modifyQueryUsing(fn ($query) => $query->with(['from', 'into']))->defaultSort('created_at', 'desc')->columns([
-            Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
+            \App\Filament\Shared\Columns::date('created_at')->sortable(),
             Tables\Columns\TextColumn::make('list')->state(fn ($record) => "{$record->domain_code}.{$record->list_code}"),
             Tables\Columns\TextColumn::make('from.label_en')->label('Retire')->description(fn ($record) => $record->from?->code),
             Tables\Columns\TextColumn::make('into.label_en')->label('Keep')->description(fn ($record) => $record->into?->code),
             Tables\Columns\TextColumn::make('reason')->wrap()->placeholder('—'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'MERGED' => 'success', 'REJECTED' => 'danger', 'PENDING' => 'warning', default => 'gray' }),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['PENDING' => 'Pending', 'MERGED' => 'Merged', 'REJECTED' => 'Rejected'])->default('PENDING'),
         ])->recordActions([
-            Actions\Action::make('approve')->label('Approve merge')->color('success')->icon(Heroicon::OutlinedCheck)->requiresConfirmation()
+            Actions\Action::make('approve')->label('Approve merge')->color('success')->icon('lucide-check')->requiresConfirmation()
                 ->visible(fn ($record) => self::canDecide($record))
                 ->schema([Forms\Components\Textarea::make('note')->maxLength(500)])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(MasterDataMergeService::class)->approveRequest($record, auth()->user(), $data['note'] ?? null))),
-            Actions\Action::make('reject')->label('Reject')->color('danger')->icon(Heroicon::OutlinedXMark)
+            Actions\Action::make('reject')->label('Reject')->color('danger')->icon('lucide-x')
                 ->visible(fn ($record) => self::canDecide($record))
                 ->schema([Forms\Components\Textarea::make('note')->required()->minLength(3)->maxLength(500)])
                 ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(MasterDataMergeService::class)->rejectRequest($record, auth()->user(), $data['note']))),

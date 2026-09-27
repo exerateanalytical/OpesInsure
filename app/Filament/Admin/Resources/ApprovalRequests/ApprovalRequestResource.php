@@ -11,7 +11,6 @@ use BackedEnum;
 use Filament\Actions;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +20,7 @@ final class ApprovalRequestResource extends Resource
 {
     protected static ?string $model = ApprovalRequest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-badge-check';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Approvals';
 
@@ -89,8 +88,8 @@ final class ApprovalRequestResource extends Resource
             Tables\Columns\TextColumn::make('reason')->wrap()->limit(80),
             Tables\Columns\TextColumn::make('requester.full_name')->label('Requested by'),
             Tables\Columns\TextColumn::make('approvals_count')->label('Level')->formatStateUsing(fn ($state, $record) => $state.' / '.$record->required_approvals),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn ($state) => match ($state) { 'PENDING' => 'warning', 'APPROVED', 'AUTO_APPROVED' => 'success', 'REJECTED' => 'danger', default => 'gray' }),
-            Tables\Columns\TextColumn::make('created_at')->dateTime(),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('created_at'),
         ])->filters([
             Tables\Filters\SelectFilter::make('status')->options(['PENDING' => 'Pending', 'APPROVED' => 'Approved', 'REJECTED' => 'Rejected', 'CANCELLED' => 'Cancelled', 'AUTO_APPROVED' => 'Auto-approved'])->default('PENDING'),
             Tables\Filters\SelectFilter::make('action_code')->options(fn () => collect(\App\Application\Approvals\ApprovalActionCatalogue::ACTIONS)->mapWithKeys(fn ($a, $k) => [$k => $k])->all()),

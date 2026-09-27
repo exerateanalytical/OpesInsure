@@ -15,7 +15,7 @@
 </form>
 @if (($this->result['eligible'] ?? false) && auth()->user()->hasPermission('provider.preauth.create'))
     <div data-action="eligibility-to-preauth">
-        <x-filament::button tag="a" color="gray" icon="heroicon-o-clipboard-document-check"
+        <x-filament::button tag="a" color="gray" icon="lucide-clipboard-check"
             :href="\App\Application\Providers\Workspace\Filament\Pages\PreauthorizationsPage::getUrl(array_filter(['policy_id' => $this->result['policy_id'] ?? $this->policy_id, 'member_ref' => $this->member_ref, 'service_code' => $this->service_code]), panel: 'provider')">
             {{ __('provider_workspace.screens.new_preauthorization') }}
         </x-filament::button>

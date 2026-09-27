@@ -16,7 +16,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -26,7 +25,7 @@ final class CimaBranchResource extends Resource
 
     protected static ?string $model = RegulatoryBranch::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layers';
 
     protected static ?string $navigationLabel = 'Branch register (Art. 328)';
 
@@ -47,8 +46,8 @@ final class CimaBranchResource extends Resource
                 Tables\Columns\IconColumn::make('complementary_covers_allowed')->label('Complementary')->boolean(),
                 Tables\Columns\IconColumn::make('is_compulsory')->label('Compulsory')->boolean(),
                 Tables\Columns\TextColumn::make('regulatory_version')->label('Version')->toggleable(),
-                Tables\Columns\TextColumn::make('effective_from')->date()->toggleable(),
-                Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open')->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_from', false)->toggleable(),
+                \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open')->toggleable(),
             ])
             ->filters([Tables\Filters\SelectFilter::make('business_family')->options(['IARD' => 'IARD', 'LIFE' => 'Life']), Tables\Filters\TernaryFilter::make('reserved')])
             ->recordActions([Actions\ViewAction::make(), static::versionAction(['label_fr', 'label_en', 'compulsory_basis', 'legal_reference'])]);
@@ -79,7 +78,7 @@ final class CimaBranchResource extends Resource
     /** "New effective version" - the only way to change a regulatory row. */
     public static function versionAction(array $fields, array $labelFields = []): Actions\Action
     {
-        return Actions\Action::make('newVersion')->label('New effective version')->icon(Heroicon::OutlinedDocumentDuplicate)
+        return Actions\Action::make('newVersion')->label('New effective version')->icon('lucide-files')
             ->visible(fn () => static::canAccessCima())
             ->fillForm(fn ($record) => collect($fields)->mapWithKeys(fn ($f) => [$f => $record->{$f}])->all() + ['effective_from' => now()->addDay()->toDateString()])
             ->schema(array_merge(

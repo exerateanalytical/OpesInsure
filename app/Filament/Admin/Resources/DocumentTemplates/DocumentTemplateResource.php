@@ -23,7 +23,6 @@ use Filament\Infolists;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -38,13 +37,26 @@ final class DocumentTemplateResource extends Resource
 
     protected static ?string $model = DocumentTemplate::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-files';
 
     protected static ?string $navigationLabel = 'Templates';
 
     protected static ?int $navigationSort = 304;
 
     protected static ?string $slug = 'document-engine/templates';
+
+    /** Templates awaiting approval (REVIEW), shown on the navigation item so they are easy to find. */
+    public static function getNavigationBadge(): ?string
+    {
+        $n = DocumentTemplate::where('status', 'REVIEW')->count();
+
+        return $n > 0 ? (string) $n : null;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Pending approval';
+    }
 
     public static function canCreate(): bool
     {
@@ -99,10 +111,13 @@ final class DocumentTemplateResource extends Resource
             Tables\Columns\TextColumn::make('language')->badge(),
             Tables\Columns\TextColumn::make('insurance_class')->placeholder('any'),
             Tables\Columns\TextColumn::make('version'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => match ($state) { 'PUBLISHED' => 'success', 'DRAFT', 'REVIEW' => 'warning', 'APPROVED' => 'info', default => 'gray' }),
-            Tables\Columns\TextColumn::make('effective_from')->date(),
-            Tables\Columns\TextColumn::make('effective_until')->date()->placeholder('Open'),
+            \App\Filament\Shared\Columns::status('status'),
+            \App\Filament\Shared\Columns::date('effective_from', false),
+            \App\Filament\Shared\Columns::date('effective_until', false)->placeholder('Open'),
         ])->filters([
+            // The 12 system-seeded provider templates wait here for "Approve & publish".
+            Tables\Filters\Filter::make('pending_approval')->label('Pending approval')->toggle()
+                ->query(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where('status', 'REVIEW')),
             Tables\Filters\SelectFilter::make('status')->options(array_combine(['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED', 'RETIRED'], ['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED', 'RETIRED'])),
             Tables\Filters\SelectFilter::make('ownership')->options(array_combine(DocumentTemplateService::OWNERSHIPS, DocumentTemplateService::OWNERSHIPS)),
             Tables\Filters\SelectFilter::make('language')->options(['FR' => 'FR', 'EN' => 'EN', 'BILINGUAL' => 'BILINGUAL']),
@@ -157,7 +172,7 @@ final class DocumentTemplateResource extends Resource
     /** @param  ?Closure(mixed): array<string, mixed>  $state  unsaved designer state (edit page) */
     public static function previewAction(?Closure $state = null): Actions\Action
     {
-        return Actions\Action::make('previewPdf')->label('Preview PDF')->icon(Heroicon::OutlinedEye)->color('gray')
+        return Actions\Action::make('previewPdf')->label('Preview PDF')->icon('lucide-eye')->color('gray')
             ->action(function (DocumentTemplate $record, $livewire) use ($state) {
                 $d = $state ? $state($livewire) : [];
                 $pdf = self::previewPdf($record, $d['content'] ?? null, $d['title_en'] ?? null, $d['title_fr'] ?? null);

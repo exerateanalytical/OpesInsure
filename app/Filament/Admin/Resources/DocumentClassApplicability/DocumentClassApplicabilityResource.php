@@ -9,7 +9,6 @@ use App\Filament\Admin\Resources\DocumentTypes\DocumentTypeResource;
 use App\Models\DocumentCatalogue\DocumentTypeClassApplicability;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -20,7 +19,7 @@ final class DocumentClassApplicabilityResource extends Resource
 
     protected static ?string $model = DocumentTypeClassApplicability::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layout-grid';
 
     protected static ?string $navigationLabel = 'Class applicability';
 
@@ -40,7 +39,7 @@ final class DocumentClassApplicabilityResource extends Resource
             Tables\Columns\TextColumn::make('documentType.name_fr')->label('Document')->wrap(),
             Tables\Columns\TextColumn::make('documentType.category')->label('Category')->badge()->color('gray'),
             Tables\Columns\TextColumn::make('source'),
-            Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => $state === 'ACTIVE' ? 'success' : 'gray'),
+            \App\Filament\Shared\Columns::status('status'),
         ])->filters([
             Tables\Filters\SelectFilter::make('class_code')->label('Class')->searchable()->options(fn () => DocumentTypeClassApplicability::query()->distinct()->orderBy('class_code')->pluck('class_code', 'class_code')->all()),
         ])->recordActions([DocumentTypeResource::deactivateAction()]);
