@@ -20,6 +20,8 @@ final class WebExperienceServiceProvider extends ServiceProvider
     {
         $this->app->register(InsurerPanelProvider::class);
         $this->app->register(BrokerPanelProvider::class);
+        // UI audit 2026-09-27: one consistent, bilingual sidebar for every panel (see LocalizedNavigationManager).
+        $this->app->scoped(\Filament\Navigation\NavigationManager::class, fn () => new \App\Filament\Shared\LocalizedNavigationManager);
     }
 
     public function boot(): void

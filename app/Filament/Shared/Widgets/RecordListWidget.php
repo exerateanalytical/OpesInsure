@@ -41,7 +41,7 @@ abstract class RecordListWidget extends Widget
         $u = auth()->user();
 
         return $u instanceof User && rescue(fn () => app(TenantContext::class)->id(), null, false) !== null
-            && (static::$permission === null || (bool) rescue(fn () => $u->hasPermission(static::$permission), false, false));
+            && (static::$permission === null || \App\Application\WebExperiences\PortalAuthorization::allowsRead($u, static::$permission));
     }
 
     /** Link to the record in the current panel (view page, else edit page) when that resource is registered there. */

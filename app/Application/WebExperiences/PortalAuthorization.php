@@ -18,7 +18,32 @@ use Filament\Facades\Filament;
  */
 final class PortalAuthorization
 {
+    /**
+     * Read permissions the insurer roles hold under their carrier.* names (RoleCatalogue::CARRIER_*_PERMISSIONS),
+     * accepted wherever the generic read permission is checked for a list or dashboard widget.
+     */
+    public const EQUIVALENT_READS = [
+        'policies.read' => ['carrier.issuance.read'],
+        'claims.read' => ['claims.view', 'carrier.claims.read'],
+        'claims.view' => ['carrier.claims.read'],
+        'quotes.read' => ['carrier.quote_requests.view'],
+    ];
+
+    /** True when the user holds the permission or one of its EQUIVALENT_READS. */
+    public static function allowsRead(User $user, string $permission): bool
+    {
+        foreach ([$permission, ...(self::EQUIVALENT_READS[$permission] ?? [])] as $p) {
+            if ((bool) rescue(fn () => $user->hasPermission($p), false, false)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public const READ_PERMISSIONS = [
+        // Checked with allowsRead(), so the carrier.* equivalents count too (without them CARRIER_SUPER_ADMIN /
+        // CARRIER_ADMIN / CARRIER_STAFF saw no Policies or Claims in /insurer).
         Policy::class => 'policies.read',
         Claim::class => 'claims.view',
         Quote::class => 'quotes.read',
@@ -67,7 +92,7 @@ final class PortalAuthorization
         }
 
         $tenantId = app(TenantContext::class)->id();
-        if ($tenantId === null || ! $user->hasPermission($permission)) {
+        if ($tenantId === null || ! self::allowsRead($user, $permission)) {
             return false;
         }
 

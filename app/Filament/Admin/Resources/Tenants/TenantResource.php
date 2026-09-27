@@ -5,7 +5,7 @@ use App\Application\Tenancy\TenantLifecycleService;use App\Filament\Admin\Concer
 
 final class TenantResource extends Resource
 {
-    protected static ?string $model=Tenant::class;protected static string|BackedEnum|null $navigationIcon=Heroicon::OutlinedBuildingOffice2;protected static ?string $navigationLabel='Organizations';protected static ?string $modelLabel='organization';protected static ?string $pluralModelLabel='organizations';protected static ?int $navigationSort=10;
+    protected static ?string $model=Tenant::class;protected static string|BackedEnum|null $navigationIcon=Heroicon::OutlinedBuildingOffice2;protected static ?string $navigationLabel='Organizations';protected static ?string $modelLabel='organization';protected static ?string $pluralModelLabel='organizations';protected static ?int $navigationSort=10;protected static string|\UnitEnum|null$navigationGroup='Administration';
     public static function form(Schema $schema):Schema{return $schema->components([
         \Filament\Schemas\Components\Section::make('Legal identity')->columns(2)->schema([
             Forms\Components\Select::make('type')->options(fn(?Tenant$record)=>\App\Application\Tenancy\OrganizationStructureService::tenantTypeOptions()+($record&&$record->type==='AGENCY'?['AGENCY'=>'Agency (legacy)']:[]))->required()->native(false),
