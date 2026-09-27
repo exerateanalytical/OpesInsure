@@ -686,8 +686,8 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
 // Agent C14 — REQ-CLM-014 claim closure checklist, closure reasons, reopening (maker-checker) (App\Application\Claims\Closure).
 Route::prefix('v1/claims')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
     $c = \App\Application\Claims\Closure\Http\ClaimClosureController::class;
-    Route::get('{claim}/closure/checklist', [$c, 'checklist'])->middleware('permission:claims.read')->whereUuid('claim');
-    Route::get('{claim}/closure/history', [$c, 'history'])->middleware('permission:claims.read')->whereUuid('claim');
+    Route::get('{claim}/closure/checklist', [$c, 'checklist'])->middleware('permission:claims.view')->whereUuid('claim');
+    Route::get('{claim}/closure/history', [$c, 'history'])->middleware('permission:claims.view')->whereUuid('claim');
     Route::post('{claim}/close', [$c, 'close'])->middleware('permission:claims.close')->whereUuid('claim');
     Route::post('{claim}/reopen-requests', [$c, 'requestReopen'])->middleware('permission:claims.reopen.request')->whereUuid('claim');
     Route::post('reopen-requests/{request}/approve', [$c, 'approveReopen'])->middleware('permission:claims.reopen.approve')->whereUuid('request');

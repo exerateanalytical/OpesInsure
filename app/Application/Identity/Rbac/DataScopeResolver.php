@@ -53,6 +53,29 @@ final class DataScopeResolver
         return $scopes->sortByDesc(fn (DataScope $s) => $s->rank())->first();
     }
 
+    /**
+     * TEAM scope members: the active users sharing one of the caller's team_codes in the tenant, or only the
+     * caller when they have no team (a team of one).
+     *
+     * @return list<string>
+     */
+    public function teamUserIds(User $user, ?string $tenantId = null): array
+    {
+        $tenantId ??= $this->context->id();
+        $teams = $this->memberships($user, $tenantId)->pluck('team_code')->filter()->unique()->values()->all();
+        if ($teams === []) {
+            return [(string) $user->getKey()];
+        }
+
+        return TenantMembership::where('tenant_id', $tenantId)->where('status', 'ACTIVE')->whereIn('team_code', $teams)->pluck('user_id')->unique()->values()->all();
+    }
+
+    /** @return list<string> branch ids of the caller's active memberships in the tenant (BRANCH scope). */
+    public function branchIds(User $user, ?string $tenantId = null): array
+    {
+        return $this->memberships($user, $tenantId ?? $this->context->id())->pluck('branch_id')->filter()->unique()->values()->all();
+    }
+
     /** @param array<string,string> $columns */
     public function apply(Builder $query, User $user, array $columns = []): Builder
     {
@@ -75,23 +98,17 @@ final class DataScopeResolver
                 }
 
                 // An unlinked insurer role is tenant-wide only inside an insurer's own tenant.
-                return Tenant::whereKey($tenantId)->value('type') === 'CARRIER' ? $query : $deny();
+                return in_array(Tenant::whereKey($tenantId)->value('type'), ['CARRIER', 'INSURER'], true) ? $query : $deny(); // INSURER = SCF name, CARRIER = legacy alias
             case DataScope::ORGANIZATION:
                 $partner = $this->parties->partnerForUser($user);
 
                 return $partner && $col('organization') ? $query->where($col('organization'), $partner->getKey()) : $deny();
             case DataScope::BRANCH:
-                $branches = $memberships->pluck('branch_id')->filter()->unique()->values()->all();
+                $branches = $this->branchIds($user, $tenantId);
 
                 return $branches !== [] && $col('branch') ? $query->whereIn($col('branch'), $branches) : $deny();
             case DataScope::TEAM:
-                $teams = $memberships->pluck('team_code')->filter()->unique()->values()->all();
-                if ($teams === [] || ! $col('assigned')) {
-                    return $col('assigned') ? $query->where($col('assigned'), $user->getKey()) : $deny();
-                }
-                $userIds = TenantMembership::where('tenant_id', $tenantId)->where('status', 'ACTIVE')->whereIn('team_code', $teams)->pluck('user_id')->unique()->values()->all();
-
-                return $query->whereIn($col('assigned'), $userIds);
+                return $col('assigned') ? $query->whereIn($col('assigned'), $this->teamUserIds($user, $tenantId)) : $deny();
             case DataScope::ASSIGNED:
                 return $col('assigned') ? $query->where($col('assigned'), $user->getKey()) : $deny();
             case DataScope::OWN:

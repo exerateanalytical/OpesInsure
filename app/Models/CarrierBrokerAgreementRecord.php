@@ -47,6 +47,10 @@ final class CarrierBrokerAgreementRecord extends Model
         if ($tenant === null) {
             return $q->whereRaw('1 = 0');
         }
+        // Owner decision 2026-09-27: a broker user sees only their own company's agreements (not the tenant's other partners).
+        if (($own = PortalScope::brokerPartnerId()) !== null) {
+            return $own === '' ? $q->whereRaw('1 = 0') : $q->where('partner_id', $own);
+        }
 
         return $q->where(fn (Builder $w) => $w
             ->whereIn('partner_id', Partner::query()->where('tenant_id', $tenant)->select('id'))

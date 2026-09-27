@@ -23,6 +23,7 @@ final class CarrierBrokerAgreementController
         $d = $r->validate(['carrier_id' => 'nullable|uuid', 'partner_id' => 'nullable|uuid', 'status' => 'nullable|string|max:24']);
         $q = DB::table('carrier_broker_agreements as a')->join('partners as p', 'p.id', '=', 'a.partner_id')
             ->when(! $this->isPlatform(), fn ($q) => $q->where('p.tenant_id', $this->tenant->id()))
+            ->when($this->ownPartner($r), fn ($q, $own) => $q->where('a.partner_id', $own), fn ($q) => $this->ownPartner($r) === '' ? $q->whereRaw('1 = 0') : $q)
             ->when($d['carrier_id'] ?? null, fn ($q, $v) => $q->where('a.carrier_id', $v))
             ->when($d['partner_id'] ?? null, fn ($q, $v) => $q->where('a.partner_id', $v))
             ->when($d['status'] ?? null, fn ($q, $v) => $q->where('a.status', $v))
@@ -86,9 +87,27 @@ final class CarrierBrokerAgreementController
 
     private function authorizePartner(string $partnerId): void
     {
+        $own = $this->ownPartner(request());
+        abort_if($own !== null && $own !== $partnerId, 404);
         if (! $this->isPlatform()) {
             abort_unless(DB::table('partners')->where(['id' => $partnerId, 'tenant_id' => $this->tenant->id()])->exists(), 404);
         }
+    }
+
+    /**
+     * Owner decision 2026-09-27: a caller whose only roles are partner roles (PartnerBook::isBookScoped, e.g. BROKER_ADMIN)
+     * sees only their own company's agreements, even in a shared tenant. null = no partner narrowing; '' = none.
+     */
+    private function ownPartner(Request $r): ?string
+    {
+        $book = app(\App\Application\Partners\PartnerBook::class);
+
+        if (! $r->user() || ! $book->isBookScoped($r->user())) {
+            return null;
+        }
+        $partner = $book->partner($r->user())?->getKey();
+
+        return $partner === null && \App\Application\Partners\BookScope::tenantIsCompany() ? null : (string) $partner;
     }
 
     private function isPlatform(): bool

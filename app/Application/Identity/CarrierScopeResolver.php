@@ -56,7 +56,7 @@ final class CarrierScopeResolver
         $isPrivileged = $memberships->contains(fn ($m) => RoleCatalogue::defaultScope((string) $m->role_code) === DataScope::TENANT
             && ! in_array($m->role_code, ['CUSTOMER', 'AGENT', 'BROKER_STAFF', 'BROKER_ADMIN'], true));
 
-        if ($isCarrierRole && ! $isPrivileged && Tenant::whereKey($tenantId)->value('type') !== 'CARRIER') {
+        if ($isCarrierRole && ! $isPrivileged && ! in_array(Tenant::whereKey($tenantId)->value('type'), ['CARRIER', 'INSURER'], true)) {
             throw new AuthorizationException('Your insurer account is not linked to a carrier yet.');
         }
 

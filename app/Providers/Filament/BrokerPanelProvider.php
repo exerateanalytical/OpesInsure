@@ -60,6 +60,9 @@ final class BrokerPanelProvider extends PanelProvider
                 ->icon('lucide-target')->group('partner_workspace')->sort(4)->visible(fn (): bool => $can('crm.leads.read')),
             NavigationItem::make('workspace_commissions')->label(fn (): string => __('partner_portal.workspace.commissions'))->url('/account/commissions')
                 ->icon('lucide-piggy-bank')->group('partner_workspace')->sort(5)->visible(fn (): bool => $can('broker.finance.read')),
+            // Owner decision 2026-09-27: book reports (the tenant-wide ReportsPage producers are not granted to broker roles).
+            NavigationItem::make('workspace_reports')->label(fn (): string => __('dashboards.reports.title'))->url('/account/reports')
+                ->icon('lucide-bar-chart-3')->group('partner_workspace')->sort(6)->visible(fn (): bool => $can('broker.portal.read')),
         ];
     }
 }

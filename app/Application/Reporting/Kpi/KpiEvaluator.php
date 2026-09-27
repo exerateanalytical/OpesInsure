@@ -59,7 +59,8 @@ final class KpiEvaluator
     private function recordSet(string $tenantId, array $kpi, array $period, array $filters): Builder
     {
         $q = KpiQueryRegistry::get($kpi['query_key']);
-        $b = KpiQueryRegistry::base($kpi['query_key'], $tenantId);
+        // Inside the insurer / broker portal the record set is narrowed to the caller's carrier or book (no-op elsewhere).
+        $b = \App\Application\WebExperiences\PortalScope::narrowTable(KpiQueryRegistry::base($kpi['query_key'], $tenantId), (string) ($q['sources'][0] ?? ''));
         foreach ([(array) ($kpi['filters'] ?? []), $filters] as $set) {
             foreach ($set as $name => $value) {
                 $column = $q['filters'][$name] ?? throw ValidationException::withMessages(["filters.{$name}" => "Filter {$name} is not permitted on {$kpi['query_key']}."]);

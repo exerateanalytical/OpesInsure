@@ -19,7 +19,7 @@ final class MobileWorkspaceController
 {
     private const MODULES = [
         ['key' => 'policies', 'title' => 'Policies', 'permission' => null, 'icon' => 'FileText'],
-        ['key' => 'claims', 'title' => 'Claims', 'permission' => 'claims.read', 'icon' => 'ShieldAlert'],
+        ['key' => 'claims', 'title' => 'Claims', 'permission' => 'claims.view', 'icon' => 'ShieldAlert'],
         ['key' => 'payments', 'title' => 'Payments', 'permission' => 'ledger.read', 'icon' => 'CreditCard'],
         ['key' => 'support', 'title' => 'Support cases', 'permission' => 'support.manage', 'icon' => 'LifeBuoy'],
         ['key' => 'compliance', 'title' => 'Compliance', 'permission' => 'compliance.read', 'icon' => 'Scale'],

@@ -9,7 +9,7 @@ final class OpenClaimsWidget extends KpiRecordListWidget
 {
     protected static ?int $sort = 4;
 
-    protected static ?string $permission = 'claims.read';
+    protected static ?string $permission = 'claims.view';
 
     protected static string $kpi = 'claims.open';
 

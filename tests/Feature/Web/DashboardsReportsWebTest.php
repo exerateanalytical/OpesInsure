@@ -68,7 +68,7 @@ it('widgets are tenant-scoped and hidden without their permission or tenant', fu
     Livewire::test(RecentActivityWidget::class)->assertOk();
     expect(app(PremiumCollectedChartWidget::class)->series()['labels'])->toHaveCount(6);
 
-    $this->actingAs(dashUser($this->mine, 'LIMITED', ['claims.read']));
+    $this->actingAs(dashUser($this->mine, 'LIMITED', ['claims.view']));
     expect(ExpiringPoliciesWidget::canView())->toBeFalse()->and(OpenClaimsWidget::canView())->toBeTrue();
     app(TenantContext::class)->clear();
     expect(OpenClaimsWidget::canView())->toBeFalse();
@@ -86,7 +86,7 @@ it('reports screen runs the catalogue producers with filters, exports CSV, and s
     $page->set('from', 'not-a-date')->assertSee('data-state="INVALID"', false);
 
     // No reporting permission → no access; tampering with the report key cannot reach another family.
-    $this->actingAs(dashUser($this->mine, 'NOREPORTS', ['claims.read']));
+    $this->actingAs(dashUser($this->mine, 'NOREPORTS', ['claims.view']));
     expect(ReportsPage::canAccess())->toBeFalse();
 });
 

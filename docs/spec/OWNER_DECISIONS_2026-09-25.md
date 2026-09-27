@@ -81,3 +81,10 @@ Stored at database/data/workflow_institutional_data_master_2026.json.
 - D2 yes: retire the placeholder /portal/{portal} page (redirect to the right panel).
 - D3 yes: adopt Lucide icons (composer package allowed).
 - D4 yes: build the missing broker and carrier web sections (contracts, bordereaux, settlements, receivables, staff), each with a tenant and permission review.
+
+## RBAC: broker and carrier company scope (owner, 2026-09-27)
+Answers G1–G3 of docs/UI_AUDIT_BROKER_AGENT_2026-09-27.md. Implemented matrix: docs/spec/RBAC_MATRIX_BROKER_CARRIER.md.
+1. BROKER_ADMIN sees everything about their own broker company: all quotes, proposals, policies, claims, reports, commissions, statements, documents, staff and renewals across the whole company book. The same applies to CARRIER_ADMIN / CARRIER_SUPER_ADMIN for their own insurer.
+2. BROKER_ADMIN sees their carrier agreements and commission terms (`distribution.agreements.view`; the agreement products carry the commission terms).
+3. Scope of the other roles (proposed and accepted): BROKER_SUPERVISOR sees the team book (DataScope::TEAM); BROKER_STAFF and AGENT see only their own assigned or attributed clients (DataScope::ASSIGNED).
+4. G3: `claims.view` is the single claim-read permission; `claims.read` is retired and renamed in stored roles.

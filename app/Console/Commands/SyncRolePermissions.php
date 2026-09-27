@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
  * exists never receives permissions added to RoleCatalogue later. This command tops every existing tenant role
  * up with its missing catalogue defaults. Additive only: custom grants are never removed, wildcard roles and
  * codes unknown to the catalogue are left untouched. Idempotent.
+ *
+ * Retired codes (RoleCatalogue::RENAMED_PERMISSIONS, e.g. claims.read → claims.view) are rewritten to their canonical
+ * code in EVERY role, custom ones included, so a grant keeps working under its new name (nothing is widened).
  */
 final class SyncRolePermissions extends Command
 {
@@ -24,6 +27,7 @@ final class SyncRolePermissions extends Command
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
+        $this->renameRetired($dry);
         $changed = 0;
         $added = 0;
         Role::query()->whereIn('code', RoleCatalogue::codes())
@@ -52,5 +56,20 @@ final class SyncRolePermissions extends Command
         $this->info(($dry ? 'Dry run. ' : '')."Roles updated: {$changed}. Permissions added: {$added}.");
 
         return self::SUCCESS;
+    }
+
+    private function renameRetired(bool $dry): void
+    {
+        foreach (RoleCatalogue::RENAMED_PERMISSIONS as $old => $new) {
+            Role::query()->whereJsonContains('permissions', $old)
+                ->when($this->option('tenant'), fn ($q, $t) => $q->where('tenant_id', $t))
+                ->orderBy('id')->each(function (Role $role) use ($dry, $old, $new): void {
+                    $this->line((($dry ? '[dry-run] ' : '')."{$role->tenant_id} {$role->code}: {$old} → {$new}"));
+                    if (! $dry) {
+                        $perms = array_map(fn ($p) => $p === $old ? $new : $p, array_values((array) $role->permissions));
+                        $role->forceFill(['permissions' => array_values(array_unique($perms))])->save();
+                    }
+                });
+        }
     }
 }
