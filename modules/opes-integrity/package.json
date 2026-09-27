@@ -1,0 +1,9 @@
+{
+  "name": "opes-integrity",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Play Integrity (Android) and App Attest / DeviceCheck (iOS) tokens for OpesInsure. The server decides the verdict.",
+  "license": "UNLICENSED",
+  "author": "Opesware",
+  "homepage": "https://insurance.opesdatacenter.tech"
+}

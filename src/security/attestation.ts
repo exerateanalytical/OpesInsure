@@ -7,7 +7,8 @@
  * crashes: it simply reports "UNAVAILABLE_MANAGED_RUNTIME" and the server's
  * risk policy decides (LIMIT / step-up), never the client.
  *
- * Native addition for the next APK: a module named "OpesIntegrity" exposing
+ * Native side: local Expo module modules/opes-integrity ("OpesIntegrity"; needs
+ * PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER at build time, else rejects NOT_CONFIGURED) exposing
  *   requestToken(nonce: string): Promise<string>   // Play Integrity / App Attest token
  *   localSignals(): Promise<{ debuggable?: boolean; emulator?: boolean; hooked?: boolean; rooted?: boolean }>
  * Those local signals are hints only; the verdict is the server's.

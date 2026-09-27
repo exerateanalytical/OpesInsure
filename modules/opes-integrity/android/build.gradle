@@ -1,0 +1,33 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.opesintegrity'
+version = '1.0.0'
+
+// Google Cloud project number linked to the app in Play Console, supplied at
+// build time (EAS env / secret PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER). Never
+// hard-coded: when absent, requestToken rejects with NOT_CONFIGURED and the
+// server applies its "unavailable" policy.
+def cloudProjectNumber = (System.getenv('PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER') ?: '0').trim()
+if (!(cloudProjectNumber ==~ /\d{1,18}/)) {
+  cloudProjectNumber = '0'
+}
+
+android {
+  namespace "expo.modules.opesintegrity"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+    buildConfigField "long", "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER", "${cloudProjectNumber}L"
+    consumerProguardFiles 'consumer-rules.pro'
+  }
+  buildFeatures {
+    buildConfig true
+  }
+}
+
+dependencies {
+  implementation 'com.google.android.play:integrity:1.4.0'
+}
