@@ -13,6 +13,7 @@ return [
         'Document catalogue' => 'Catalogue documentaire', 'Vehicle master data' => 'Référentiel véhicules', 'Master data' => 'Données de référence', 'Reinsurance & co-insurance' => 'Réassurance et coassurance',
     ],
     'labels' => [
+        'Refunds' => 'Remboursements', 'Mobile money clearing' => 'Compensation Mobile Money',
         'Quote requests' => 'Demandes de cotation', 'Referrals' => 'Renvois de souscription', 'Co-insurance' => 'Coassurance', 'Reinsurance treaties' => 'Traités de réassurance',
         'Reinsurance cessions' => 'Cessions en réassurance', 'KYC reviews' => 'Contrôles KYC', 'Cashier sessions' => 'Sessions de caisse', 'Exchange rates' => 'Taux de change',
         'Sticker stock' => 'Stock de vignettes', 'Payment requests' => 'Demandes de paiement', 'Customers' => 'Clients', 'Organisation settings' => 'Paramètres de l’organisation', 'Contracts & delegated authority' => 'Conventions et délégations',

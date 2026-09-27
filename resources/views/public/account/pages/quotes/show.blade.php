@@ -122,6 +122,35 @@ Opes.page(function (ctx) {
     return b;
   }
 
+  /** Save the side-by-side comparison (POST /quote-comparisons) or decline the offers (POST /quotes/{id}/decline, own quote only). */
+  function tools(live) {
+    var save = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-save-compare': '' }, Opes.icon('check'), T.save_compare);
+    save.addEventListener('click', function () {
+      Opes.busy(save, true);
+      Opes.api('/quote-comparisons', { method: 'POST', body: { quote_id: id, offer_ids: live.slice(0, 5).map(function (o) { return o.id; }) } })
+        .then(function () { Opes.busy(save, false); Opes.alert(T.compare_saved, 'ok'); })
+        .catch(function (e) { Opes.busy(save, false); Opes.alert(e.message); });
+    });
+    var no = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-decline': '' }, Opes.icon('x'), T.decline_quote);
+    no.addEventListener('click', function () {
+      var codes = ['PRICE_TOO_HIGH', 'COVER_NOT_SUITABLE', 'LOST_TO_COMPETITOR', 'CUSTOMER_DECLINED', 'OTHER'];
+      var form = h('form', { method: 'dialog' }, h('h2', null, T.decline_q),
+        h('label', { class: 'afield-s' }, h('select', { name: 'reason_code', required: true }, codes.map(function (c) { return h('option', { value: c }, T['dr_' + c] || c); }))),
+        h('label', { class: 'afield-s' }, h('textarea', { name: 'note', maxlength: 1000, rows: 3 })),
+        h('div', { class: 'btnbar' }, h('button', { type: 'submit', class: 'dbtn dbtn-outline sm', value: 'cancel', formnovalidate: true }, T.cancel_quote), h('button', { type: 'submit', class: 'dbtn dbtn-primary sm', value: 'ok', 'data-decline-send': '' }, T.decline_quote)));
+      var dlg = h('dialog', { class: 'cl-dlg' }, form);
+      form.addEventListener('submit', function (e) {
+        if (e.submitter && e.submitter.value === 'cancel') return;
+        e.preventDefault(); dlg.close();
+        var body = { reason_code: form.elements.reason_code.value }; if (form.elements.note.value.trim()) body.note = form.elements.note.value.trim();
+        Opes.api('/quotes/' + id + '/decline', { method: 'POST', body: body }).then(function () { Opes.alert(T.declined, 'ok'); return load(); }).catch(function (e2) { Opes.alert(e2.message); });
+      });
+      dlg.addEventListener('close', function () { if (dlg.parentNode) dlg.remove(); });
+      document.body.appendChild(dlg); dlg.showModal();
+    });
+    return h('div', { class: 'bactions', style: 'margin-top:12px' }, live.length >= 2 ? save : null, no);
+  }
+
   function render() {
     var live = B.liveOffers(offers);
     chosen = B.pickOffer(offers, params);
@@ -140,6 +169,7 @@ Opes.page(function (ctx) {
       return;
     }
     Opes.clear(box).appendChild(h('div', { class: 'boffers' }, sorted(live).map(card)));
+    if (!quote.is_expired && !live.some(function (o) { return o.status === 'ACCEPTED'; })) box.appendChild(tools(live));
     Opes.clear($('[data-detail]')).appendChild(table(sorted(live)));
   }
   $('[data-sort]').addEventListener('change', function () { if (quote) render(); });

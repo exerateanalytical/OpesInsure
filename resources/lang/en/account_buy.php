@@ -127,5 +127,9 @@ return [
         'col_quote' => 'Quote', 'col_product' => 'Product', 'col_risk' => 'Insured', 'col_status' => 'Status', 'col_created' => 'Created', 'col_expires' => 'Valid until', 'col_action' => '',
         'resume' => 'Resume', 'open' => 'Open', 'no_quotes' => 'You have no quotes yet.', 'start_quote' => 'Get a quote', 'prev' => 'Previous', 'next' => 'Next',
         'saved' => 'Your quote was saved. Resume it any time from this list.', 'expired' => 'Expired',
+        'cancel_quote' => 'Cancel', 'cancel_q' => 'Cancel this quote? Its offers will be withdrawn.', 'cancelled' => 'Quote cancelled.',
+        'decline_quote' => 'Not interested', 'decline_q' => 'Tell us why you are declining these offers', 'declined' => 'Quote declined. Thank you for the feedback.',
+        'save_compare' => 'Save comparison', 'compare_saved' => 'Comparison saved.',
+        'dr_CUSTOMER_DECLINED' => 'I changed my mind', 'dr_PRICE_TOO_HIGH' => 'Price too high', 'dr_COVER_NOT_SUITABLE' => 'Cover not suitable', 'dr_LOST_TO_COMPETITOR' => 'I found another offer', 'dr_OTHER' => 'Other',
     ],
 ];

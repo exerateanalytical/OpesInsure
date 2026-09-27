@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Shared\Pages\Registers;
 
+use App\Filament\Shared\Actions\QuoteActions;
 use App\Filament\Shared\Pages\RegisterPage;
+use Filament\Tables\Table;
 
-/** Read-only register of carrier quote requests (UI audit 2026-09-27). */
+/**
+ * Register of carrier quote requests (UI audit 2026-09-27). Insurer users with carrier.quote_requests.respond take a
+ * request into work or decline it from the row (QuoteActions::carrierStart / carrierDecline, same service and carrier
+ * scoping as POST carrier/quote-requests/{r}/start|decline). Offers are still recorded through the API / broker on-behalf.
+ */
 final class QuoteRequestsRegister extends RegisterPage
 {
     protected static string|\BackedEnum|null $navigationIcon = 'lucide-inbox';
@@ -24,4 +30,9 @@ final class QuoteRequestsRegister extends RegisterPage
     protected static ?string $group = 'Underwriting';
 
     protected static array $columns = ['request_number' => ['text', 'number'], 'status' => ['status', 'status'], 'channel' => ['text', 'channel'], 'requested_at' => ['date', 'requested'], 'response_due_at' => ['date', 'due'], 'responded_at' => ['date', 'responded'], 'decline_reason_code' => ['text', 'reason']];
+
+    public function table(Table $table): Table
+    {
+        return parent::table($table)->recordActions([QuoteActions::carrierStart(), QuoteActions::carrierDecline()]);
+    }
 }

@@ -52,7 +52,7 @@ return [
             'renew_note' => 'Le renouvellement se règle sur une nouvelle offre de renouvellement. Votre assureur ou agent vous contactera avant l’échéance.',
             'pay_now' => 'Payer maintenant', 'retry' => 'Réessayer', 'new_pay' => 'Effectuer un autre paiement',
         ],
-        'pays' => ['date' => 'Date', 'for' => 'Objet', 'method' => 'Moyen', 'ref' => 'Référence', 'amount' => 'Montant', 'status' => 'Statut', 's_total' => 'Total payé', 's_count' => 'Paiements effectués', 's_failed' => 'Échoués', 's_pending' => 'En attente', 'no_receipt' => 'Le reçu est émis une fois le paiement effectué.'],
+        'pays' => ['retry_done' => 'Une nouvelle demande de paiement a été envoyée sur votre téléphone.', 'date' => 'Date', 'for' => 'Objet', 'method' => 'Moyen', 'ref' => 'Référence', 'amount' => 'Montant', 'status' => 'Statut', 's_total' => 'Total payé', 's_count' => 'Paiements effectués', 's_failed' => 'Échoués', 's_pending' => 'En attente', 'no_receipt' => 'Le reçu est émis une fois le paiement effectué.'],
         'docs' => [
             's_total' => 'Total des documents', 's_total_d' => 'Tous vos documents', 's_active' => 'Documents actifs', 's_active_d' => 'Valides et à jour', 's_exp' => 'Expirent bientôt', 's_exp_d' => 'Sous 30 jours', 's_old' => 'Expirés / remplacés', 's_old_d' => 'Plus valides', 's_rcpt' => 'Reçus de paiement', 's_rcpt_d' => 'Pour les paiements effectués',
             'tabs' => ['all' => 'Tous les documents', 'policy' => 'Documents de police', 'payment' => 'Documents de paiement', 'claim' => 'Documents de sinistre', 'cert' => 'Attestations et vignettes', 'other' => 'Autres documents'],

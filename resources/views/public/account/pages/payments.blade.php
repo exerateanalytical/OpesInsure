@@ -56,6 +56,17 @@ Opes.page(function () {
         if (OP.ok(x)) return h('div', { class: 'op-acts' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { OP.openReceipt(x.id); } }, Opes.icon('download'), T.receipt),
           h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-refund': x.id, onclick: function () { refund(x); } }, Opes.icon('refresh'), RF.btn));
         var p = byProp[x.proposal_id];
+        if (String(x.status).toUpperCase() === 'FAILED') {
+          // REQ-PAY-008: a new attempt under the same payment (retry limits and no-double-charge guards server-side).
+          var rb = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-retry': x.id }, Opes.icon('refresh'), T.pay.retry);
+          rb.addEventListener('click', function () {
+            Opes.busy(rb, true);
+            Opes.api('/mobile/payments/' + encodeURIComponent(x.id) + '/retry', { method: 'POST', body: {} })
+              .then(function () { Opes.alert(Y.retry_done, 'ok'); rb.remove(); })
+              .catch(function (e3) { Opes.busy(rb, false); Opes.alert(e3.message); });
+          });
+          return rb;
+        }
         if (p && String(p.status).toUpperCase() === 'PAYMENT_PENDING') return OP.btn(T.pay.retry, '/account/payments/new?proposal=' + x.proposal_id, 'dbtn-outline sm', 'refresh');
         return h('small', { class: 'op-muted' }, '—');
       }]

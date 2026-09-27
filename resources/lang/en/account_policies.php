@@ -52,7 +52,7 @@ return [
             'renew_note' => 'Renewal payments are made on a new renewal offer. Your insurer or agent will contact you before the policy ends.',
             'pay_now' => 'Pay now', 'retry' => 'Retry', 'new_pay' => 'Make another payment',
         ],
-        'pays' => ['date' => 'Date', 'for' => 'For', 'method' => 'Method', 'ref' => 'Reference', 'amount' => 'Amount', 'status' => 'Status', 's_total' => 'Total paid', 's_count' => 'Completed payments', 's_failed' => 'Failed', 's_pending' => 'Pending', 'no_receipt' => 'A receipt is issued once the payment completes.'],
+        'pays' => ['retry_done' => 'A new payment prompt was sent to your phone.', 'date' => 'Date', 'for' => 'For', 'method' => 'Method', 'ref' => 'Reference', 'amount' => 'Amount', 'status' => 'Status', 's_total' => 'Total paid', 's_count' => 'Completed payments', 's_failed' => 'Failed', 's_pending' => 'Pending', 'no_receipt' => 'A receipt is issued once the payment completes.'],
         'docs' => [
             's_total' => 'Total Documents', 's_total_d' => 'All your documents', 's_active' => 'Active Documents', 's_active_d' => 'Valid and up to date', 's_exp' => 'Expiring Soon', 's_exp_d' => 'Within 30 days', 's_old' => 'Expired / replaced', 's_old_d' => 'No longer valid', 's_rcpt' => 'Payment Receipts', 's_rcpt_d' => 'For completed payments',
             'tabs' => ['all' => 'All Documents', 'policy' => 'Policy Documents', 'payment' => 'Payment Documents', 'claim' => 'Claims Documents', 'cert' => 'Certificates & Stickers', 'other' => 'Other Documents'],

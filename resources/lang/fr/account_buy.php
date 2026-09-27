@@ -122,5 +122,9 @@ return [
         'col_quote' => 'Devis', 'col_product' => 'Produit', 'col_risk' => 'Assuré', 'col_status' => 'Statut', 'col_created' => 'Créé le', 'col_expires' => 'Valable jusqu\'au', 'col_action' => '',
         'resume' => 'Reprendre', 'open' => 'Ouvrir', 'no_quotes' => 'Vous n\'avez encore aucun devis.', 'start_quote' => 'Obtenir un devis', 'prev' => 'Précédent', 'next' => 'Suivant',
         'saved' => 'Votre devis est enregistré. Reprenez-le à tout moment depuis cette liste.', 'expired' => 'Expiré',
+        'cancel_quote' => 'Annuler', 'cancel_q' => 'Annuler ce devis ? Ses offres seront retirées.', 'cancelled' => 'Devis annulé.',
+        'decline_quote' => 'Pas intéressé', 'decline_q' => 'Dites-nous pourquoi vous refusez ces offres', 'declined' => 'Devis refusé. Merci pour votre retour.',
+        'save_compare' => 'Enregistrer la comparaison', 'compare_saved' => 'Comparaison enregistrée.',
+        'dr_CUSTOMER_DECLINED' => 'J\'ai changé d\'avis', 'dr_PRICE_TOO_HIGH' => 'Prix trop élevé', 'dr_COVER_NOT_SUITABLE' => 'Garanties inadaptées', 'dr_LOST_TO_COMPETITOR' => 'J\'ai trouvé une autre offre', 'dr_OTHER' => 'Autre',
     ],
 ];

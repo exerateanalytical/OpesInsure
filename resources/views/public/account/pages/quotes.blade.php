@@ -24,6 +24,30 @@ Opes.page(function (ctx) {
     if (st === 'ACCEPTED') return [B.qurl(q.id, 'review'), T.resume];
     return [B.qurl(q.id), T.resume];
   }
+  /** Resume: POST /mobile/quotes/{id}/resume checks the quote can still be resumed (not expired / closed), then opens it. */
+  function resumeBtn(q, r, expired) {
+    if (expired) return h('a', { class: 'dbtn dbtn-outline sm', href: r[0] }, r[1], Opes.icon('arrow'));
+    var b = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-resume': q.id }, r[1], Opes.icon('arrow'));
+    b.addEventListener('click', function () {
+      Opes.busy(b, true);
+      Opes.api('/mobile/quotes/' + encodeURIComponent(q.id) + '/resume', { method: 'POST', body: {} })
+        .then(function () { location.href = r[0]; })
+        .catch(function (e) { Opes.busy(b, false); Opes.alert(e.message); });
+    });
+    return b;
+  }
+  /** Cancel: DELETE /mobile/quotes/{id} (QuoteService::cancel, own quotes only); open offers are withdrawn. */
+  function cancelBtn(q) {
+    var b = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-cancel': q.id }, Opes.icon('x'), T.cancel_quote);
+    b.addEventListener('click', function () {
+      if (!window.confirm(T.cancel_q)) return;
+      Opes.busy(b, true);
+      Opes.api('/mobile/quotes/' + encodeURIComponent(q.id), { method: 'DELETE' })
+        .then(function () { Opes.alert(T.cancelled, 'ok'); load(); })
+        .catch(function (e) { Opes.busy(b, false); Opes.alert(e.message); });
+    });
+    return b;
+  }
   function load() {
     Opes.loading(box);
     Opes.api('/mobile/quotes', { raw: true, query: { page: page } }).then(function (j) {
@@ -40,7 +64,7 @@ Opes.page(function (ctx) {
             h('td', null, expired ? Opes.chip('EXPIRED', T.expired) : Opes.chip(q.status)),
             h('td', null, Opes.date(q.created_at)),
             h('td', null, Opes.date(q.expires_at)),
-            h('td', null, h('a', { class: 'dbtn dbtn-outline sm', href: r[0] }, r[1], Opes.icon('arrow'))));
+            h('td', null, h('div', { class: 'op-acts', style: 'display:flex;gap:6px;flex-wrap:wrap' }, resumeBtn(q, r, expired), expired || /^(CANCELLED|DECLINED|ACCEPTED|CONVERTED|EXPIRED|BOUND)$/.test(String(q.status).toUpperCase()) ? null : cancelBtn(q))));
         })))));
       if (last > 1) box.appendChild(h('div', { class: 'bpager' },
         page > 1 ? h('a', { class: 'dbtn dbtn-outline sm', href: '?page=' + (page - 1) }, T.prev) : null,

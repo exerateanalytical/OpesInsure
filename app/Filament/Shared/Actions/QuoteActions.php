@@ -7,6 +7,9 @@ namespace App\Filament\Shared\Actions;
 use App\Application\CarrierOperations\QuoteRequests\Models\CarrierQuoteRequest;
 use App\Application\CarrierOperations\QuoteRequests\QuoteRequestService;
 use App\Application\Distribution\Execution\ExecutionContext;
+use App\Application\Identity\CarrierScopeResolver;
+use App\Application\Quotes\QuoteComparisonService;
+use App\Domain\Tenancy\TenantContext;
 use App\Application\Partners\PartnerBook;
 use App\Application\Quotes\Adapters\ManualQuoteProvider;
 use App\Application\Quotes\Adapters\QuoteProviderRegistry;
@@ -22,6 +25,7 @@ use App\Models\Tenant;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -37,13 +41,25 @@ use Illuminate\Support\Facades\DB;
  *   requestOverride       POST quotes/{q}/offers/{o}/premium-overrides                      quotes.premium_override.request            QuotePremiumOverrideService::request
  *   decideOverride        POST quotes/{q}/offers/{o}/premium-overrides/{x}/decision         quotes.premium_override.approve            QuotePremiumOverrideService::decide
  *   convertToProposal     POST quotes/{q}/offers/{o}/accept + POST proposals                (routes have no permission gate)           QuoteService::accept + ProposalService::create
+ *   generate              POST quotes/{q}/generate                                          quotes.manage                              QuoteService::generate
+ *   decline               POST quotes/{q}/decline                                           quotes.manage                              QuoteService::decline
+ *   cancel                POST quotes/{q}/cancel                                            quotes.manage                              QuoteService::cancel
+ *   applyOverride         POST quotes/{q}/offers/{o}/premium-overrides/{x}/apply            quotes.premium_override.approve            QuotePremiumOverrideService::applyEffective
+ *   saveComparison        POST quote-comparisons                                            quotes.read                                QuoteComparisonService::save
+ *   cancelCarrierRequest  POST quotes/{q}/carrier-requests/{r}/cancel                       quotes.carrier_requests.create             QuoteRequestService::cancel
+ *   declineCarrierOnBehalf POST quotes/{q}/carrier-requests/{r}/decline-on-behalf           quotes.carrier_requests.record_on_behalf   QuoteRequestService::decline (BROKER_ON_BEHALF)
+ *   carrierStart          POST carrier/quote-requests/{r}/start      (insurer register)     carrier.quote_requests.respond             QuoteRequestService::start
+ *   carrierDecline        POST carrier/quote-requests/{r}/decline    (insurer register)     carrier.quote_requests.respond             QuoteRequestService::decline (INSURER_PORTAL)
+ * The carrier-side actions resolve the request inside the tenant and, for insurer users, their own carrier (CarrierScopeResolver),
+ * exactly as QuoteRequestController::carrierScoped.
  * Partner users only act on quotes of clients in their own book (PartnerBook::assertInBook), as the API.
  */
 final class QuoteActions
 {
     public static function group(): ActionGroup
     {
-        return ActionGroup::make([self::rate(), self::send(), self::requestCarrierQuote(), self::recordCarrierOffer(), self::requestOverride(), self::decideOverride(), self::convertToProposal()])
+        return ActionGroup::make([self::rate(), self::send(), self::requestCarrierQuote(), self::recordCarrierOffer(), self::requestOverride(), self::decideOverride(), self::applyOverride(), self::convertToProposal(),
+            self::saveComparison(), self::generate(), self::cancelCarrierRequest(), self::declineCarrierOnBehalf(), self::decline(), self::cancel()])
             ->label(__('workflow_actions.quote_group'))->icon('lucide-zap')->button();
     }
 
@@ -172,6 +188,138 @@ final class QuoteActions
 
                 return app(ProposalService::class)->create(Tenant::findOrFail($q->tenant_id), $offer->refresh(), ['quote_offer_id' => $offer->id, 'party_id' => $q->party_id], auth()->user());
             }));
+    }
+
+    public static function generate(): Action
+    {
+        $p = 'quotes.manage';
+
+        return WorkflowAction::make('quoteGenerate', $p)->icon('lucide-file-text')->requiresConfirmation()
+            ->action(fn (Action $action, Quote $record) => WorkflowAction::run($action, $p, fn () => app(QuoteService::class)->generate(self::book($record), auth()->user())));
+    }
+
+    public static function decline(): Action
+    {
+        $p = 'quotes.manage';
+
+        return WorkflowAction::make('quoteDecline', $p)->icon('lucide-thumbs-down')->color('danger')->requiresConfirmation()
+            ->schema([
+                Select::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->options(WorkflowAction::options(QuoteService::DECLINE_REASONS, 'quote_decline'))->required(),
+                Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(1000),
+            ])
+            ->action(fn (Action $action, Quote $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(QuoteService::class)->decline(self::book($record), $data['reason_code'], filled($data['note'] ?? null) ? $data['note'] : null, auth()->user())));
+    }
+
+    public static function cancel(): Action
+    {
+        $p = 'quotes.manage';
+
+        return WorkflowAction::make('quoteCancel', $p)->icon('lucide-circle-x')->color('danger')->requiresConfirmation()
+            ->action(fn (Action $action, Quote $record) => WorkflowAction::run($action, $p, fn () => app(QuoteService::class)->cancel(self::book($record), auth()->user())));
+    }
+
+    public static function applyOverride(): Action
+    {
+        $p = 'quotes.premium_override.approve';
+        $withOverride = fn (Quote $q) => $q->offers()->whereNotNull('premium_override_id');
+
+        return WorkflowAction::make('quoteApplyOverride', $p)->icon('lucide-check-check')->requiresConfirmation()
+            ->visible(fn (Quote $record) => $withOverride($record)->exists())
+            ->schema([Select::make('offer_id')->label(__('workflow_actions.fields.offer'))->required()->options(fn (Quote $record) => self::offerOptions($withOverride($record)->get()))])
+            ->action(function (Action $action, Quote $record, array $data) use ($p, $withOverride) {
+                $q = self::book($record);
+                $offer = $withOverride($q)->findOrFail($data['offer_id']);
+
+                return WorkflowAction::run($action, $p, fn () => app(QuotePremiumOverrideService::class)->applyEffective($q, $offer, (string) $offer->premium_override_id));
+            });
+    }
+
+    public static function saveComparison(): Action
+    {
+        $p = 'quotes.read';
+
+        return WorkflowAction::make('quoteSaveComparison', $p)->icon('lucide-columns-3')
+            ->visible(fn (Quote $record) => $record->offers()->exists())
+            ->schema([CheckboxList::make('offer_ids')->label(__('workflow_actions.fields.offers'))->options(fn (Quote $record) => self::offerOptions($record->offers()->get()))
+                ->maxItems(QuoteComparisonService::MAX)])
+            ->action(fn (Action $action, Quote $record, array $data) => WorkflowAction::run($action, $p,
+                fn () => app(QuoteComparisonService::class)->save(self::book($record), array_values($data['offer_ids'] ?? []), auth()->user())));
+    }
+
+    public static function cancelCarrierRequest(): Action
+    {
+        $p = 'quotes.carrier_requests.create';
+        $open = fn (Quote $q) => CarrierQuoteRequest::where('quote_id', $q->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES);
+
+        return WorkflowAction::make('quoteCancelCarrierRequest', $p)->icon('lucide-ban')->color('danger')->requiresConfirmation()
+            ->visible(fn (Quote $record) => $open($record)->exists())
+            ->schema([
+                Select::make('request_id')->label(__('workflow_actions.fields.carrier_request'))->required()->options(fn (Quote $record) => $open($record)->pluck('request_number', 'id')),
+                Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->minLength(3)->maxLength(500),
+            ])
+            ->action(function (Action $action, Quote $record, array $data) use ($p) {
+                $req = CarrierQuoteRequest::where('quote_id', self::book($record)->id)->findOrFail($data['request_id']);
+
+                return WorkflowAction::run($action, $p, fn () => app(QuoteRequestService::class)->cancel($req, auth()->user(), $data['reason']));
+            });
+    }
+
+    public static function declineCarrierOnBehalf(): Action
+    {
+        $p = 'quotes.carrier_requests.record_on_behalf';
+        $open = fn (Quote $q) => CarrierQuoteRequest::where('quote_id', $q->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES);
+
+        return WorkflowAction::make('quoteDeclineCarrierOnBehalf', $p)->icon('lucide-file-x')->requiresConfirmation()
+            ->visible(fn (Quote $record) => $open($record)->exists())
+            ->schema([
+                Select::make('request_id')->label(__('workflow_actions.fields.carrier_request'))->required()->options(fn (Quote $record) => $open($record)->pluck('request_number', 'id')),
+                TextInput::make('decline_reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
+                Select::make('evidence_document_id')->label(__('workflow_actions.fields.evidence_document'))->required()->searchable()
+                    ->options(fn (Quote $record) => DB::table('documents')->where('tenant_id', $record->tenant_id)->latest()->limit(200)->pluck('id', 'id')),
+                Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(2000),
+            ])
+            ->action(function (Action $action, Quote $record, array $data) use ($p) {
+                $req = CarrierQuoteRequest::where('quote_id', self::book($record)->id)->findOrFail($data['request_id']);
+                $d = array_filter(collect($data)->except('request_id')->all(), fn ($v) => filled($v));
+
+                return WorkflowAction::run($action, $p, fn () => app(QuoteRequestService::class)->decline($req, $d, auth()->user(), 'BROKER_ON_BEHALF'));
+            });
+    }
+
+    /** Insurer work queue (QuoteRequestsRegister row action): take the request into work. */
+    public static function carrierStart(): Action
+    {
+        $p = 'carrier.quote_requests.respond';
+
+        return WorkflowAction::make('carrierQuoteStart', $p)->icon('lucide-play')->requiresConfirmation()
+            ->visible(fn ($record) => ($record->status ?? null) === 'REQUESTED')
+            ->action(fn (Action $action, $record) => WorkflowAction::run($action, $p,
+                fn () => app(QuoteRequestService::class)->start(self::carrierRequest($record), auth()->user())));
+    }
+
+    /** Insurer work queue: decline to quote (source INSURER_PORTAL). */
+    public static function carrierDecline(): Action
+    {
+        $p = 'carrier.quote_requests.respond';
+
+        return WorkflowAction::make('carrierQuoteDecline', $p)->icon('lucide-thumbs-down')->color('danger')->requiresConfirmation()
+            ->visible(fn ($record) => in_array($record->status ?? null, CarrierQuoteRequest::OPEN_STATES, true))
+            ->schema([
+                TextInput::make('decline_reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
+                Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(2000),
+            ])
+            ->action(fn (Action $action, $record, array $data) => WorkflowAction::run($action, $p, fn () => app(QuoteRequestService::class)->decline(
+                self::carrierRequest($record), array_filter($data, fn ($v) => filled($v)), auth()->user(), 'INSURER_PORTAL')));
+    }
+
+    /** Same scoping as QuoteRequestController::carrierScoped: the tenant, and the insurer user's own carrier. */
+    private static function carrierRequest(mixed $record): CarrierQuoteRequest
+    {
+        $tenantId = app(TenantContext::class)->id();
+        $carrierId = app(CarrierScopeResolver::class)->carrierIdFor(auth()->user(), $tenantId);
+
+        return CarrierQuoteRequest::where('tenant_id', $tenantId)->when($carrierId, fn ($q) => $q->where('carrier_id', $carrierId))->findOrFail(WorkflowAction::id($record));
     }
 
     private static function book(Quote $quote): Quote
