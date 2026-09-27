@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
+use App\Application\Documents\Letterhead\LetterheadResolver;
 use App\Models\Claim;
 use App\Models\Policy;
 use App\Models\Quote;
@@ -39,6 +40,7 @@ final class PartnerWorkspaceShapes
         return [
             'id' => $c->id, 'claim_number' => $c->claim_number, 'policy_id' => $c->policy_id, 'policy_number' => $c->policy?->policy_number,
             'customer_name' => $c->claimant?->display_name ?? $c->policy?->party?->display_name ?? 'Claimant', 'status' => $c->status, 'priority' => $c->priority,
+            'carrier_name' => $c->policy?->carrier?->party?->display_name, 'carrier_logo_url' => LetterheadResolver::carrierLogoUrl($c->policy?->carrier_id),
             'estimated_loss_minor' => $c->estimated_loss_minor !== null ? (int) $c->estimated_loss_minor : null,
             'approved_amount_minor' => $c->approved_amount_minor !== null ? (int) $c->approved_amount_minor : null, 'currency' => $c->currency,
             'loss_occurred_at' => $c->loss_occurred_at?->toIso8601String(), 'submitted_at' => $c->submitted_at?->toIso8601String(),
@@ -52,7 +54,8 @@ final class PartnerWorkspaceShapes
         return [
             'id' => $p->id, 'proposal_number' => $p->proposal_number, 'customer_id' => TenantCustomer::where(['tenant_id' => $tenantId, 'party_id' => $p->party_id])->value('id'),
             'customer_name' => $p->party?->display_name ?? 'Client', 'status' => $p->status, 'line_code' => $o?->quote?->line_code,
-            'carrier_name' => $o?->carrier?->party?->display_name, 'total_minor' => $o ? (int) $o->total_minor : null, 'currency' => $o?->currency ?? 'XAF',
+            'carrier_name' => $o?->carrier?->party?->display_name, 'carrier_logo_url' => LetterheadResolver::carrierLogoUrl($o?->carrier_id), 'policy_id' => $p->issuedPolicyId(),
+            'total_minor' => $o ? (int) $o->total_minor : null, 'currency' => $o?->currency ?? 'XAF',
             'submitted_at' => $p->submitted_at?->toIso8601String(), 'decided_at' => $p->decided_at?->toIso8601String(), 'created_at' => $p->created_at?->toIso8601String(),
         ];
     }

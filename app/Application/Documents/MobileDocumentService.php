@@ -60,9 +60,15 @@ final class MobileDocumentService
     ) {
     }
 
-    public function list(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
+    /** Optional owner filter (the app's ?owner_type=POLICY|CLAIM&owner_id=). */
+    public function list(User $user, string $tenantId, int $perPage = 20, ?string $ownerType = null, ?string $ownerId = null): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->orderByDesc('created_at')->paginate($perPage);
+        $column = ['POLICY' => 'policy_id', 'CLAIM' => 'claim_id'][strtoupper((string) $ownerType)] ?? null;
+
+        return $this->ownedQuery($user, $tenantId)
+            ->when($column && $ownerId && Str::isUuid($ownerId), fn ($q) => $q->where($column, $ownerId))
+            ->orderByDesc('created_at')->paginate($perPage)
+            ->through(fn (Document $d) => $this->present($d));
     }
 
     public function show(string $documentId, User $user, string $tenantId): Document
@@ -100,11 +106,39 @@ final class MobileDocumentService
             'occurred_at' => now(),
         ]);
 
-        return [
+        return array_merge($this->present($document), [
             'id' => $document->id,
             'url' => $signed->url,
+            // The app opens signed_url (SecureDocument contract); url kept for older builds.
+            'signed_url' => $signed->url,
             'expires_at' => $signed->expiresAt,
-        ];
+        ]);
+    }
+
+    /**
+     * App-facing row (SecureDocument in the mobile app): the stored document plus owner_type/owner_id,
+     * label, status, issued_at, expires_at and share_reference. Raw keys are kept for older builds.
+     *
+     * @return array<string, mixed>
+     */
+    public function present(Document $d): array
+    {
+        [$ownerType, $ownerId] = match (true) {
+            $d->claim_id !== null => ['CLAIM', $d->claim_id],
+            $d->policy_id !== null => ['POLICY', $d->policy_id],
+            default => ['PARTY', $d->party_id],
+        };
+
+        return array_merge($d->toArray(), [
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
+            'label' => $d->title ?? Str::headline(strtolower((string) ($d->document_type_code ?? $d->category))),
+            'status' => $d->status ?? $d->verification_status,
+            'issued_at' => ($d->issued_at ?? $d->created_at)?->toIso8601String(),
+            'expires_at' => $d->valid_until?->toIso8601String(),
+            'share_reference' => $d->document_number ?? $d->verification_code ?? strtoupper(substr((string) $d->id, -8)),
+            'signed_url' => null,
+        ]);
     }
 
     /**

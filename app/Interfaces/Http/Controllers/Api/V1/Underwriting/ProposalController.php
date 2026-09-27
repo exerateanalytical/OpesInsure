@@ -19,6 +19,8 @@ final class ProposalController
  public function show(string$proposal,ProposalService$s):JsonResponse{$p=$this->proposal($proposal)->load(['offer.product','disclosureSchema','disclosureResponse','documents.document','underwritingCase.referrals','underwritingCase.decisions','payments']);$data=$p->toArray();
   /* REQ-PRP-002/003 (additive): server-listed requirements and questions; disclosure_schema kept for app 1.3.0 even when the questions come from a PROPOSAL question set. */
   $data['disclosure_schema']=$data['disclosure_schema']??['questions'=>$s->questions($p)];$data['questions']=$s->questions($p);$data['required_documents']=$s->requiredDocuments($p);$data['blueprint_state']=ProposalMachine::blueprintState($p->status);$data['available_transitions']=$s->availableEvents($p,request()->user());
+  /* Mobile contract (additive): issued policy link and insurer logo, as on GET /mobile/proposals rows. */
+  $data['policy_id']=$p->issuedPolicyId();$data['carrier_logo_url']=\App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($p->offer?->carrier_id);
   return response()->json(['data'=>$data]);}
  public function answer(Request$r,string$proposal,ProposalService$s):JsonResponse{$d=$r->validate(['answers'=>'required|array']);return response()->json(['data'=>$s->answer($this->bookProposal($proposal),$d['answers'],$r->user())]);}
  public function attest(Request$r,string$proposal,ProposalService$s):JsonResponse{return response()->json(['data'=>$s->attest($this->bookProposal($proposal),$r->user())]);}

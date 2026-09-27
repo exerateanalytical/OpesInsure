@@ -28,7 +28,7 @@ final class PartnerBookQuery
     /** Claims on policies held by the book (same rule as GET /mobile/partner/broker/claims). @param list<string> $book @return Collection<int, Claim> */
     public function claims(string $tenantId, array $book): Collection
     {
-        return Claim::with(['policy.party', 'claimant'])->where('tenant_id', $tenantId)->whereHas('policy', fn ($p) => $p->whereIn('party_id', $book))
+        return Claim::with(['policy.party', 'policy.carrier.party', 'claimant'])->where('tenant_id', $tenantId)->whereHas('policy', fn ($p) => $p->whereIn('party_id', $book))
             ->orderByDesc('submitted_at')->limit(100)->get();
     }
 

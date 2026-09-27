@@ -408,7 +408,41 @@ final class QuoteService
 
     public function ownedList(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->orderByDesc('created_at')->paginate($perPage);
+        return $this->ownedQuery($user, $tenantId)->with(['offers.product', 'riskAsset'])->orderByDesc('created_at')->paginate($perPage)
+            ->through(fn (Quote $q) => array_merge($q->withoutRelations()->toArray(), $this->listSummary($q)));
+    }
+
+    /**
+     * Mobile quote-history row fields (CustomerQuoteSummary in the app): offer count, cheapest total, the
+     * cheapest offer's product name, a vehicle label and whether "resume" is allowed (assertResumable rules).
+     *
+     * @return array<string, mixed>
+     */
+    public function listSummary(Quote $quote): array
+    {
+        $cheapest = $quote->offers->sortBy('total_minor')->first();
+        $facts = (array) ($quote->risk_facts ?? []);
+        $vehicle = trim(implode(' ', array_filter([$facts['make'] ?? null, $facts['model'] ?? null], 'is_string')));
+        $plate = $facts['registration_number'] ?? $facts['plate_number'] ?? null;
+
+        return [
+            'offer_count' => $quote->offers->count(),
+            'lowest_total_minor' => $cheapest ? (int) $cheapest->total_minor : null,
+            'product_name' => $cheapest?->product?->name,
+            'vehicle_label' => $quote->riskAsset?->display_name ?? (implode(' · ', array_filter([$vehicle, is_string($plate) ? $plate : null])) ?: null),
+            'can_resume' => $this->isResumable($quote),
+        ];
+    }
+
+    public function isResumable(Quote $quote): bool
+    {
+        try {
+            $this->assertResumable($quote);
+
+            return true;
+        } catch (ValidationException) {
+            return false;
+        }
     }
 
     public function owned(string $quoteId, User $user, string $tenantId): Quote

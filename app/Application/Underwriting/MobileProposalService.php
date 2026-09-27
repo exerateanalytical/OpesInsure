@@ -33,13 +33,19 @@ final class MobileProposalService
 
         return [
             'id' => $p->id,
+            // Additive (app ProposalSummary): list subtitle, totals and dates read by proposals/index.
+            'proposal_number' => $p->proposal_number,
+            'quote_offer_id' => $p->quote_offer_id,
+            'terms_snapshot' => $p->terms_snapshot,
+            'submitted_at' => $p->submitted_at?->toIso8601String(),
+            'decided_at' => $p->decided_at?->toIso8601String(),
             'status' => $p->status,
             'line_code' => $p->offer?->quote?->line_code,
             'quote_id' => $p->offer?->quote_id,
             'product_name' => $p->offer?->product?->name,
             'carrier_name' => $p->offer?->carrier?->party?->display_name,
             'carrier_logo_url' => \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($p->offer?->carrier_id),
-            'policy_id' => \App\Models\Policy::where('proposal_id', $p->id)->value('id'),
+            'policy_id' => $p->issuedPolicyId(),
             'total_minor' => (int) ($terms['total_minor'] ?? $p->offer?->total_minor ?? 0),
             'currency' => $terms['currency'] ?? $p->offer?->currency ?? 'XAF',
             'counter_offer' => $counter,

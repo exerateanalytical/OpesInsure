@@ -26,12 +26,12 @@ final class MobileWalletService
 
     public function wallet(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->with(['carrier.party', 'proposal.offer.product', 'proposal.offer.quote'])->orderByDesc('issued_at')->paginate($perPage);
+        return $this->ownedQuery($user, $tenantId)->with(['carrier.party', 'proposal.offer.product', 'proposal.offer.quote.riskAsset'])->orderByDesc('issued_at')->paginate($perPage);
     }
 
     public function policy(string $policyId, User $user, string $tenantId): Policy
     {
-        return $this->owned($policyId, $user, $tenantId)->load(['carrier.party', 'certificates', 'fulfilmentOrder', 'proposal.offer.product', 'proposal.offer.quote']);
+        return $this->owned($policyId, $user, $tenantId)->load(['carrier.party', 'certificates', 'fulfilmentOrder', 'proposal.offer.product', 'proposal.offer.quote.riskAsset']);
     }
 
     /**
@@ -71,6 +71,12 @@ final class MobileWalletService
             'carrier_phone' => $policy->carrier?->party?->contacts()->where('type', 'PHONE')->value('normalized_value'),
             'product_name' => $product?->name,
             'line_code' => $product?->line_code ?? $policy->proposal?->offer?->quote?->line_code,
+            // Insured object (app WalletPolicy.risk_asset): motor detection and the claim/policy subtitle.
+            'risk_asset' => ($asset = $policy->proposal?->offer?->quote?->riskAsset) ? [
+                'id' => $asset->id,
+                'label' => $asset->display_name,
+                'registration_number' => $asset->facts['registration_number'] ?? $asset->facts['plate_number'] ?? null,
+            ] : null,
             'days_to_expiry' => $policy->coverage_ends_at ? (int) floor(now()->diffInDays($policy->coverage_ends_at, false)) : null,
         ];
     }
