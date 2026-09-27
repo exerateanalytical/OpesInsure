@@ -107,6 +107,6 @@ final class ProductDocumentRequirementResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListProductDocumentRequirements::route('/')];
+        return ['index' => Pages\ListProductDocumentRequirements::route('/'), 'view' => Pages\ViewProductDocumentRequirement::route('/{record}')];
     }
 }

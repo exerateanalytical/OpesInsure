@@ -201,7 +201,6 @@ final class PhysicalSecurityAssetResource extends Resource
         return [
             'index' => Pages\ListPhysicalSecurityAssets::route('/'),
             'create' => Pages\CreatePhysicalSecurityAsset::route('/create'),
-            'edit' => Pages\EditPhysicalSecurityAsset::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditPhysicalSecurityAsset::route('/{record}/edit'), 'view' => Pages\ViewPhysicalSecurityAsset::route('/{record}')];
     }
 }

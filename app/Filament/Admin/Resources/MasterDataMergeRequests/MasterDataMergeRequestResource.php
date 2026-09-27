@@ -79,7 +79,6 @@ final class MasterDataMergeRequestResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMasterDataMergeRequests::route('/'),
-        ];
+            'index' => Pages\ListMasterDataMergeRequests::route('/'), 'view' => Pages\ViewMasterDataMergeRequest::route('/{record}')];
     }
 }

@@ -103,6 +103,6 @@ final class VehicleGenerationResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleGenerations::route('/')];
+        return ['index' => Pages\ListVehicleGenerations::route('/'), 'view' => Pages\ViewVehicleGeneration::route('/{record}')];
     }
 }

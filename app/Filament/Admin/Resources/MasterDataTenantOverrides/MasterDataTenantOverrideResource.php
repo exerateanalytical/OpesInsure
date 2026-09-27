@@ -80,7 +80,6 @@ final class MasterDataTenantOverrideResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMasterDataTenantOverrides::route('/'),
-        ];
+            'index' => Pages\ListMasterDataTenantOverrides::route('/'), 'view' => Pages\ViewMasterDataTenantOverride::route('/{record}')];
     }
 }

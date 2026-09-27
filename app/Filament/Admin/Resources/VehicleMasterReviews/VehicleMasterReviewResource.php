@@ -111,6 +111,6 @@ final class VehicleMasterReviewResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleMasterReviews::route('/')];
+        return ['index' => Pages\ListVehicleMasterReviews::route('/'), 'view' => Pages\ViewVehicleMasterReview::route('/{record}')];
     }
 }

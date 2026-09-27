@@ -157,7 +157,6 @@ final class MasterDataValueResource extends Resource
         return [
             'index' => Pages\ListMasterDataValues::route('/'),
             'create' => Pages\CreateMasterDataValue::route('/create'),
-            'edit' => Pages\EditMasterDataValue::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditMasterDataValue::route('/{record}/edit'), 'view' => Pages\ViewMasterDataValue::route('/{record}')];
     }
 }

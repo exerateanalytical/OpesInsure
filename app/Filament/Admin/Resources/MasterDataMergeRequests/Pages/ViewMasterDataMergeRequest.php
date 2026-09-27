@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\MasterDataMergeRequests\Pages;
 
 use App\Filament\Admin\Resources\MasterDataMergeRequests\MasterDataMergeRequestResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListMasterDataMergeRequests extends ListRecords
+final class ViewMasterDataMergeRequest extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = MasterDataMergeRequestResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

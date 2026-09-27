@@ -9,6 +9,8 @@ use Filament\Resources\Pages\ListRecords;
 
 final class ListVehicleGenerations extends ListRecords
 {
+    use \App\Filament\Shared\Concerns\OpensViewPage;
+
     protected static string $resource = VehicleGenerationResource::class;
 
     protected function getHeaderActions(): array

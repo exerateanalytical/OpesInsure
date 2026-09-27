@@ -96,6 +96,6 @@ final class VehicleModelResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleModels::route('/')];
+        return ['index' => Pages\ListVehicleModels::route('/'), 'view' => Pages\ViewVehicleModel::route('/{record}')];
     }
 }

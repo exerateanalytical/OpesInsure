@@ -123,6 +123,6 @@ final class VehicleMakeResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleMakes::route('/')];
+        return ['index' => Pages\ListVehicleMakes::route('/'), 'view' => Pages\ViewVehicleMake::route('/{record}')];
     }
 }

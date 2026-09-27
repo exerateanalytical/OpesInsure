@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\MasterDataTenantOverrides\Pages;
 
 use App\Filament\Admin\Resources\MasterDataTenantOverrides\MasterDataTenantOverrideResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListMasterDataTenantOverrides extends ListRecords
+final class ViewMasterDataTenantOverride extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = MasterDataTenantOverrideResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

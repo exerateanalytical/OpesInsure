@@ -67,7 +67,6 @@ final class MasterDataListResource extends Resource
     {
         return [
             'index' => Pages\ListMasterDataLists::route('/'),
-            'edit' => Pages\EditMasterDataList::route('/{record}/edit'),
-        ];
+            'edit' => Pages\EditMasterDataList::route('/{record}/edit'), 'view' => Pages\ViewMasterDataList::route('/{record}')];
     }
 }

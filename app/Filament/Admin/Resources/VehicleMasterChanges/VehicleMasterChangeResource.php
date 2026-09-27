@@ -52,6 +52,6 @@ final class VehicleMasterChangeResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleMasterChanges::route('/')];
+        return ['index' => Pages\ListVehicleMasterChanges::route('/'), 'view' => Pages\ViewVehicleMasterChange::route('/{record}')];
     }
 }

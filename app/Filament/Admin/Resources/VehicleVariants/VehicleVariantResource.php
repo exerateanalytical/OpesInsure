@@ -118,6 +118,6 @@ final class VehicleVariantResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleVariants::route('/')];
+        return ['index' => Pages\ListVehicleVariants::route('/'), 'view' => Pages\ViewVehicleVariant::route('/{record}')];
     }
 }

@@ -59,6 +59,6 @@ final class VehicleReferenceValueResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListVehicleReferenceValues::route('/')];
+        return ['index' => Pages\ListVehicleReferenceValues::route('/'), 'view' => Pages\ViewVehicleReferenceValue::route('/{record}')];
     }
 }

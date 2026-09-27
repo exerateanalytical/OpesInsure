@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\VehicleMasterChanges\Pages;
 
 use App\Filament\Admin\Resources\VehicleMasterChanges\VehicleMasterChangeResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListVehicleMasterChanges extends ListRecords
+final class ViewVehicleMasterChange extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = VehicleMasterChangeResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\VehicleReferenceValues\Pages;
 
 use App\Filament\Admin\Resources\VehicleReferenceValues\VehicleReferenceValueResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListVehicleReferenceValues extends ListRecords
+final class ViewVehicleReferenceValue extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = VehicleReferenceValueResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }

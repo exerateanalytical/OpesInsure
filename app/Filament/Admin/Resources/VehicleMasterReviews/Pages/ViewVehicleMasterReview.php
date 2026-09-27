@@ -5,16 +5,9 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\VehicleMasterReviews\Pages;
 
 use App\Filament\Admin\Resources\VehicleMasterReviews\VehicleMasterReviewResource;
-use Filament\Resources\Pages\ListRecords;
+use App\Filament\Shared\Pages\RecordDetailPage;
 
-final class ListVehicleMasterReviews extends ListRecords
+final class ViewVehicleMasterReview extends RecordDetailPage
 {
-    use \App\Filament\Shared\Concerns\OpensViewPage;
-
     protected static string $resource = VehicleMasterReviewResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [];
-    }
 }
