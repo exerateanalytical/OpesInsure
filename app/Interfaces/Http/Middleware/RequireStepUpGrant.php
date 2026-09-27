@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Middleware;
 
-use App\Application\Security\MobileStepUpService;
-use App\Domain\Tenancy\TenantContext;
+use App\Application\Security\StepUpGate;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,20 +33,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class RequireStepUpGrant
 {
-    public function __construct(private MobileStepUpService $stepUp)
+    public function __construct(private StepUpGate $gate)
     {
     }
 
     public function handle(Request $request, Closure $next, string $purpose): Response
     {
-        $token = $request->header('X-Step-Up-Grant');
-        $user = $request->user();
-
-        if (! $token || ! $user || ! $this->stepUp->consume($user, app(TenantContext::class)->id(), $purpose, $token)) {
-            return response()->json([
-                'message' => __('wave12.step_up_required'),
-                'code' => 'STEP_UP_REQUIRED',
-            ], 401);
+        if (! $this->gate->passes($request, $purpose)) {
+            return StepUpGate::denied();
         }
 
         return $next($request);

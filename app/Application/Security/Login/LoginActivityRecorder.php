@@ -62,6 +62,7 @@ final class LoginActivityRecorder
             'user_agent_hash' => $request?->userAgent() ? hash('sha256', (string) $request->userAgent()) : null,
             'country_code' => $country, 'latitude' => $lat, 'longitude' => $lng, 'new_device' => $newDevice,
             'anomaly_flags' => json_encode($flags), 'occurred_at' => now(),
+            'outcome' => 'SUCCESS', 'event_type' => 'LOGIN', 'app_version' => ClientContext::appVersion($request), 'masked_ip' => ClientContext::maskIp($ip),
         ]);
 
         if ($flags !== []) {
@@ -71,6 +72,28 @@ final class LoginActivityRecorder
         }
 
         return $flags;
+    }
+
+    /**
+     * Mobile audit B2: a non-sign-in security event on the same timeline (failed sign-in / OTP, password change,
+     * logout, sign-out-everywhere, device revocation, session expiry, step-up, attestation failure). Never throws.
+     */
+    public function recordEvent(User $user, string $eventType, string $outcome = 'SUCCESS', ?string $method = null, ?string $deviceId = null, ?Request $request = null): void
+    {
+        try {
+            $request ??= request();
+            $ip = (string) ($request?->ip() ?? '');
+            $device = $deviceId ? DB::table('user_devices')->where('id', $deviceId)->first(['name', 'platform']) : null;
+            DB::table('login_activities')->insert([
+                'id' => (string) Str::uuid(), 'user_id' => $user->id, 'method' => $method ? mb_substr($method, 0, 24) : null, 'device_id' => $deviceId,
+                'device_fingerprint_hash' => null, 'device_name' => $device->name ?? null, 'platform' => $device->platform ?? null,
+                'ip_hash' => $ip !== '' ? hash('sha256', $ip) : null, 'user_agent_hash' => $request?->userAgent() ? hash('sha256', (string) $request->userAgent()) : null,
+                'country_code' => $this->geo($request)[2], 'latitude' => null, 'longitude' => null, 'new_device' => false, 'anomaly_flags' => json_encode([]), 'occurred_at' => now(),
+                'outcome' => $outcome, 'event_type' => $eventType, 'app_version' => ClientContext::appVersion($request), 'masked_ip' => ClientContext::maskIp($ip),
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     /** @return array{0: ?float, 1: ?float, 2: ?string} */

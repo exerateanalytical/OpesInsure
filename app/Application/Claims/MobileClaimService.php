@@ -56,7 +56,13 @@ final class MobileClaimService
 
         $claim->setAttribute('carrier_logo_url', \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($claim->policy?->carrier_id));
 
-        return $claim->setAttribute('can_withdraw', self::canWithdraw($claim));
+        return $claim->setAttribute('can_withdraw', self::canWithdraw($claim))->setAttribute('allowed_actions', app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forClaim($claim, $user));
+    }
+
+    /** A settlement offer (claim decision) exists for the customer to accept or reject. */
+    public static function hasSettlementOffer(Claim $claim): bool
+    {
+        return DB::table('claim_decisions')->where('claim_id', $claim->id)->exists();
     }
 
     public static function canWithdraw(Claim $claim): bool

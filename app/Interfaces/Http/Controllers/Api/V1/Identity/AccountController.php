@@ -57,6 +57,8 @@ final class AccountController
         $user->forceFill(['password' => $d['password']])->save();
         // Ends every session: Passport access tokens and mobile refresh tokens.
         $service->revokeAllSessions($user);
+        app(\App\Application\Security\Login\LoginActivityRecorder::class)->recordEvent($user, 'PASSWORD_CHANGED', 'SUCCESS', 'password', null, $r);
+        app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'PASSWORD_CHANGED');
 
         return response()->json(['data' => ['password_changed' => true, 'sessions_revoked' => true]]);
     }

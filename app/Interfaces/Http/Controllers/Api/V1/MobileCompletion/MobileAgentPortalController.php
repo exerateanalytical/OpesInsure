@@ -58,7 +58,10 @@ final class MobileAgentPortalController
         $data = $request->validate(['full_name' => 'sometimes|string|min:3|max:120', 'national_id_number' => 'sometimes|nullable|string|max:40', 'momo_phone_e164' => 'sometimes|string|max:32']);
         $partner = $this->partners->resolve($request->user());
         $compliance = $partner->compliance ?? [];
-        if (isset($data['momo_phone_e164'])) {
+        // Mobile audit B5: changing the payout destination needs a PAYOUT_DESTINATION_CHANGE step-up grant.
+        $payoutChanged = isset($data['momo_phone_e164']) && $data['momo_phone_e164'] !== ($compliance['momo_phone_e164'] ?? null);
+        if ($payoutChanged) {
+            app(\App\Application\Security\StepUpGate::class)->assert($request, 'PAYOUT_DESTINATION_CHANGE');
             $compliance['momo_phone_e164'] = $data['momo_phone_e164'];
         }
         if (array_key_exists('national_id_number', $data) && $data['national_id_number']) {
@@ -77,6 +80,9 @@ final class MobileAgentPortalController
         $this->audit->record('agent.profile.updated', 'partner', $partner->id, ['fields' => array_keys($data)]);
 
         return response()->json(['data' => $this->profileOf($partner->refresh(), $request)]);
+        if ($payoutChanged) {
+            app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($request->user(), 'PAYOUT_DESTINATION_CHANGED', app(TenantContext::class)->id());
+        }
     }
 
     public function clients(Request $request): JsonResponse
@@ -91,7 +97,10 @@ final class MobileAgentPortalController
     {
         $t = app(TenantContext::class)->id();
 
-        return response()->json(['data' => $this->clientOf($this->intake->show($customer, $request->user(), $t), $t)]);
+        $client = $this->intake->show($customer, $request->user(), $t);
+        $party = \App\Models\Party::find($client->party_id ?? null);
+
+        return response()->json(['data' => $this->clientOf($client, $t) + ['allowed_actions' => $party ? app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forParty($party, $request->user()) : []]]);
     }
 
     public function createClient(Request $request): JsonResponse

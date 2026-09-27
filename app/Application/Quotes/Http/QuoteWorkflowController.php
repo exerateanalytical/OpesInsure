@@ -32,8 +32,10 @@ final class QuoteWorkflowController
 
     public function amend(Request $r, string $quote): JsonResponse
     {
-        $d = $r->validate(['risk_facts' => 'required|array']);
-        $q = $this->quotes->amend($this->quote($r, $quote, 'quotes.manage'), $d['risk_facts'], $r->user());
+        $d = $r->validate(['risk_facts' => 'required|array', ...\App\Domain\Geo\Coordinates::RULES]);
+        // Top-level risk location (decimal degrees) is stored with the risk answers.
+        $facts = array_merge($d['risk_facts'], \App\Domain\Geo\Coordinates::pick($d));
+        $q = $this->quotes->amend($this->quote($r, $quote, 'quotes.manage'), $facts, $r->user());
 
         return response()->json(['data' => $this->quotes->envelope($q)]);
     }

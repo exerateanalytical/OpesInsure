@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\PartnerAgentWorkspaceController as Agent;
 use App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\PartnerBrokerWorkspaceController as Broker;
 use App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\PartnerCarrierWorkspaceController as Carrier;
+use App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\PartnerStaffSecurityController as StaffSecurity;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,3 +62,8 @@ Route::post('mobile/partner/carrier/issuance/{issuance}/approve', [Carrier::clas
 Route::post('mobile/partner/carrier/issuance/{issuance}/reject', [Carrier::class, 'rejectIssuance'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
 Route::get('mobile/partner/carrier/payments', [Carrier::class, 'payments'])->middleware('permission:carrier.finance.read');
 Route::get('mobile/partner/carrier/partners', [Carrier::class, 'partners'])->middleware('permission:carrier.dashboard.read');
+
+// ------------------------------------------------------------------ staff security (mobile audit B4)
+Route::get('partner/staff/{user}/security', [StaffSecurity::class, 'show'])->whereUuid('user')->middleware('permission:staff.security.read');
+Route::post('partner/staff/{user}/suspend-access', [StaffSecurity::class, 'suspendAccess'])->whereUuid('user')->middleware(['permission:staff.security.manage', 'throttle:10,1']);
+Route::post('partner/staff/{user}/force-reauth', [StaffSecurity::class, 'forceReauth'])->whereUuid('user')->middleware(['permission:staff.security.manage', 'throttle:10,1']);

@@ -27,6 +27,8 @@ final class MobileLogoutAllController
         $refresh = MobileRefreshToken::where('user_id', $user->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
 
         $audit->record('mobile.session.revoked_all', 'user', $user->id, ['access_tokens' => $access, 'refresh_tokens' => $refresh]);
+        app(\App\Application\Security\Login\LoginActivityRecorder::class)->recordEvent($user, 'SIGN_OUT_EVERYWHERE', 'SUCCESS', null, null, $request);
+        app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'SIGNED_OUT_EVERYWHERE');
 
         return response()->json(['data' => ['revoked' => true, 'access_tokens_revoked' => $access, 'refresh_tokens_revoked' => $refresh]]);
     }

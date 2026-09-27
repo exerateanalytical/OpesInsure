@@ -26,7 +26,7 @@ final class MobileQuoteController
     {
         $q = $this->quotes->markViewed($this->quotes->owned($quote, $request->user(), $this->tenant()), $request->user());
 
-        return response()->json(['data' => $this->quotes->envelope($q)]);
+        return response()->json(['data' => $this->quotes->envelope($q) + ['allowed_actions' => app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forQuote($q, $request->user())]]);
     }
 
     public function resume(string $quote, Request $request): JsonResponse

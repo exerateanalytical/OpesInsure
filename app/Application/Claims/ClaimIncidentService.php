@@ -24,7 +24,7 @@ final class ClaimIncidentService
     public static function rules(): array
     {
         return [
-            'incident_type' => 'sometimes|string|max:64', 'police_report_number' => 'nullable|string|max:120', 'latitude' => 'nullable|numeric|between:-90,90', 'longitude' => 'nullable|numeric|between:-180,180',
+            'incident_type' => 'sometimes|string|max:64', 'police_report_number' => 'nullable|string|max:120', ...\App\Domain\Geo\Coordinates::RULES,
             'injuries_reported' => 'sometimes|boolean', 'vehicle_drivable' => 'sometimes|boolean', 'towing_required' => 'sometimes|boolean', 'declaration_confirmed' => 'sometimes|boolean',
         ];
     }

@@ -28,6 +28,11 @@ final class MobileAccountController
             'platform' => $d->platform,
             'last_seen_at' => $d->last_seen_at?->toIso8601String(),
             'current' => $current ? $d->device_fingerprint === $current : $d->id === $latest,
+            // B1 detail; approx_location is server-derived (edge geo-IP), never GPS.
+            'model' => $d->model, 'os_version' => $d->os_version, 'app_version' => $d->app_version,
+            'first_seen_at' => ($d->first_seen_at ?? $d->created_at)?->toIso8601String(), 'last_auth_method' => $d->last_auth_method,
+            'attestation_status' => $d->attestation_status ?? 'UNVERIFIED',
+            'approx_location' => \App\Application\Security\Login\ClientContext::formatLocation($d->approx_country, $d->approx_city),
         ])->values()]);
     }
 
@@ -37,6 +42,7 @@ final class MobileAccountController
         $row->update(['revoked_at' => now()]);
         DB::table('mobile_refresh_tokens')->where('device_id', $row->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
         $audit->record('mobile.device.revoked', 'user_device', $row->id, []);
+        app(\App\Application\Security\Login\LoginActivityRecorder::class)->recordEvent($request->user(), 'DEVICE_REVOKED', 'SUCCESS', null, $row->id, $request);
 
         return response()->json(['data' => ['id' => $row->id, 'revoked' => true]]);
     }
@@ -45,7 +51,15 @@ final class MobileAccountController
     {
         $data = $request->validate(['full_name' => 'required|string|min:3|max:120', 'email' => 'nullable|email:rfc|max:190']);
         $user = $request->user();
+        // Mobile audit B5: the sign-in / recovery e-mail is a security detail — changing it needs PROFILE_SECURITY_CHANGE.
+        $emailChanged = isset($data['email']) && mb_strtolower((string) $data['email']) !== mb_strtolower((string) $user->email);
+        if ($emailChanged) {
+            app(\App\Application\Security\StepUpGate::class)->assert($request, 'PROFILE_SECURITY_CHANGE');
+        }
         $user->forceFill(['full_name' => $data['full_name'], 'email' => $data['email'] ?? $user->email])->save();
+        if ($emailChanged) {
+            app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'IDENTITY_CHANGED');
+        }
         if ($user->party) {
             $user->party->update(['display_name' => $data['full_name']]);
         }

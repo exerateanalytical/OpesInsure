@@ -10,7 +10,7 @@ final class QuoteController
 {
     public function store(Request $request,QuoteService $service,TenantContext $context):JsonResponse
     {
-        $data=$request->validate(['customer_id'=>'required|uuid','line_code'=>'required|string|max:32','risk_asset_id'=>'nullable|uuid','channel'=>'required|in:B2C,AGENT,BROKER','risk_facts'=>'required|array']);
+        $data=$request->validate(['customer_id'=>'required|uuid','line_code'=>'required|string|max:32','risk_asset_id'=>'nullable|uuid','channel'=>'required|in:B2C,AGENT,BROKER','risk_facts'=>'required|array',...\App\Domain\Geo\Coordinates::RULES]);/* Top-level risk location (decimal degrees) is stored with the risk answers. */$data['risk_facts']=array_merge($data['risk_facts'],\App\Domain\Geo\Coordinates::pick($data));unset($data['latitude'],$data['longitude']);
         /* The mobile session exposes the tenant customer id as customer_id, while QuoteService keys customers by party — accept either. */$partyId=\App\Models\TenantCustomer::where('tenant_id',$context->id())->where('id',$data['customer_id'])->value('party_id')??$data['customer_id'];/* A customer may only quote for themselves (audit A1). */app(\App\Application\Identity\OwnershipScope::class)->assertOwnParty($request->user(),$partyId);/* Partners quote only for their own book (owner decision). */app(\App\Application\Partners\PartnerBook::class)->assertInBook($request->user(),$partyId);$quote=$service->submit(Tenant::findOrFail($context->id()),$partyId,$data,$request->user());
         return response()->json(['data'=>$quote],202);
     }

@@ -71,7 +71,9 @@ final class MobileBrokerOpsController
         $c = $this->clientQuery($request, $t)->where('tenant_customers.id', $customer)->first();
         abort_unless($c, 404);
 
-        return response()->json(['data' => $this->clientOf($c, $t) + ['policies_detail' => Policy::with('carrier.party')->where('tenant_id', $t)->where('party_id', $c->party_id)->orderByDesc('issued_at')->get()->map(fn ($p) => $this->productionOf($p))->values()]]);
+        $party = \App\Models\Party::find($c->party_id);
+
+        return response()->json(['data' => $this->clientOf($c, $t) + ['allowed_actions' => $party ? app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forParty($party, $request->user()) : [], 'policies_detail' => Policy::with('carrier.party')->where('tenant_id', $t)->where('party_id', $c->party_id)->orderByDesc('issued_at')->get()->map(fn ($p) => $this->productionOf($p))->values()]]);
     }
 
     public function production(Request $request): JsonResponse

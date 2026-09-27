@@ -59,7 +59,9 @@ return [
         // COMMISSION_WITHDRAWAL and CLAIM_SETTLEMENT_DECISION (both to be
         // adopted by their owning batches once those endpoints exist — see
         // the batch report for the exact middleware to add).
-        'purposes' => ['PAYMENT_REFUND_REQUEST', 'COMMISSION_WITHDRAWAL', 'CLAIM_SETTLEMENT_DECISION'],
+        // Mobile audit B5: PAYOUT_DESTINATION_CHANGE (agent momo number), PROFILE_SECURITY_CHANGE (account e-mail),
+        // SIGN_OUT_EVERYWHERE (auth/mobile/logout-all).
+        'purposes' => ['PAYMENT_REFUND_REQUEST', 'COMMISSION_WITHDRAWAL', 'CLAIM_SETTLEMENT_DECISION', 'PAYOUT_DESTINATION_CHANGE', 'PROFILE_SECURITY_CHANGE', 'SIGN_OUT_EVERYWHERE'],
     ],
 
     'telemetry' => [
@@ -70,7 +72,7 @@ return [
         'events' => [
             'APP_LAUNCHED', 'APP_CRASHED', 'APP_FOREGROUNDED', 'APP_BACKGROUNDED',
             'SCREEN_VIEWED', 'API_ERROR', 'NETWORK_TIMEOUT', 'JS_EXCEPTION',
-            'PAYMENT_FAILED', 'OFFLINE_SYNC_FAILED', 'STEP_UP_CHALLENGE_FAILED',
+            'PAYMENT_FAILED', 'OFFLINE_SYNC_FAILED', 'STEP_UP_CHALLENGE_FAILED', 'PUSH_REGISTRATION_FAILED',
             'FORCE_UPDATE_SHOWN', 'MAINTENANCE_SHOWN', 'DEVICE_RISK_LIMITED',
         ],
         // Attribute values must additionally be scalar (string/int/float/bool)

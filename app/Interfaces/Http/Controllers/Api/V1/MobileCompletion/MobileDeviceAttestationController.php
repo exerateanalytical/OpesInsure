@@ -56,10 +56,22 @@ final class MobileDeviceAttestationController
             $reasons[] = 'ATTESTATION_FAILED';
         }
         $action = array_intersect(['COMPROMISED_RUNTIME', 'ATTESTATION_FAILED'], $reasons) !== [] ? 'LIMIT' : 'ALLOW';
+        // B1/B6: the verdict is kept on the device row (PASS / FAIL / UNVERIFIED — an unconfigured verifier is never a pass).
+        $user = $request->user();
+        $fingerprint = $request->header('X-Device-Fingerprint');
+        $device = \App\Models\UserDevice::where('user_id', $user->id)->whereNull('revoked_at')
+            ->when($fingerprint, fn ($q) => $q->where('device_fingerprint', $fingerprint))->orderByDesc('last_seen_at')->first();
+        $device?->forceFill(['attestation_status' => $verdict->verdict])->save();
+        if ($verdict->verdict === 'FAIL') {
+            app(\App\Application\Security\Login\LoginActivityRecorder::class)->recordEvent($user, 'ATTESTATION_FAILED', 'FAILED', $data['provider'], $device?->id, $request);
+            app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'INTEGRITY_FAILURE');
+        }
+        // CONFIG_REQUIRED: no verifier / no credentials for this provider on the server (security_centre.attestation.*).
+        $configStatus = array_intersect(['NOT_CONFIGURED', 'ATTESTATION_UNAVAILABLE'], $verdict->reasons) !== [] ? 'CONFIG_REQUIRED' : 'CONFIGURED';
         $id = (string) Str::uuid();
         $audit->record('security.device.assessed', 'user', $request->user()->id, ['assessment_id' => $id, 'action' => $action, 'reasons' => $reasons, 'platform' => $data['platform'], 'provider' => $data['provider'], 'attestation_verdict' => $verdict->verdict]);
 
         return response()->json(['data' => ['assessment_id' => $id, 'action' => $action, 'reasons' => $reasons ?: ['NO_RISK_SIGNALS'], 'expires_at' => now()->addHours(12)->toIso8601String(),
-            'attestation' => ['verdict' => $verdict->verdict, 'reasons' => $verdict->reasons]]], 201);
+            'attestation' => ['verdict' => $verdict->verdict, 'reasons' => $verdict->reasons, 'config_status' => $configStatus]]], 201);
     }
 }

@@ -681,6 +681,12 @@ return [
         'provider_portal.finance.view' => ['description' => 'View provider remittances and payment status.', 'suggested_roles' => ['PROVIDER_ADMIN', 'BILLING_OFFICER', 'FINANCE_USER']],
     ],
 
+    // Mobile audit B4: an organisation admin's view of a colleague's account security and the containment actions.
+    'staff_security' => [
+        'staff.security.read' => ['description' => 'View a colleague\'s account security (status, last sign-in, active sessions, security state).', 'suggested_roles' => ['BROKER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
+        'staff.security.manage' => ['description' => 'Suspend a colleague\'s access or force them to sign in again.', 'suggested_roles' => ['BROKER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN']],
+    ],
+
     // Agent R — legacy route permissions that were enforced by routes/*.php `permission:` middleware but never catalogued.
     // suggested_roles = roles that already hold them by default (explicitly or via '*'); no grant was changed.
     'legacy_catalogue' => [

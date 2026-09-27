@@ -32,6 +32,12 @@ final class ProposalMachine
     /** Answers may change in these states (re-attestation required afterwards). */
     public const ANSWERABLE = ['DRAFT', 'DISCLOSURES_PENDING', 'DOCUMENTS_PENDING', 'INFORMATION_REQUIRED'];
 
+    /** No more supporting documents once closed, approved or awaiting payment. */
+    public const DOCUMENTS_LOCKED = [...self::TERMINAL, 'PAYMENT_PENDING', 'APPROVED'];
+
+    /** Events the proposer (customer or their intermediary) triggers; every other event is the underwriter's. */
+    public const PROPOSER_EVENTS = ['submit', 'resubmit', 'withdraw', 'accept_counteroffer', 'decline_counteroffer'];
+
     public const BLUEPRINT = [
         'DRAFT' => 'DRAFT', 'DISCLOSURES_PENDING' => 'DRAFT', 'DOCUMENTS_PENDING' => 'DRAFT',
         'SUBMITTED' => 'SUBMITTED', 'UNDER_REVIEW' => 'REVIEWING', 'INFORMATION_REQUIRED' => 'INFORMATION_REQUIRED', 'RESUBMITTED' => 'RESUBMITTED',

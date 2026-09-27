@@ -49,7 +49,7 @@ it('wallet list and policy detail carry the WalletPolicy fields', function () {
     $c = mobileContractCustomer();
 
     assertMobileKeys($this->getJson('/api/v1/mobile/wallet', $c['h']), 'data.0', mobilePolicyKeys());
-    assertMobileKeys($this->getJson("/api/v1/mobile/wallet/policies/{$c['policy']->id}", $c['h']), 'data', [...mobilePolicyKeys(), 'certificates', 'documents', 'certificate', 'delivery']);
+    assertMobileKeys($this->getJson("/api/v1/mobile/wallet/policies/{$c['policy']->id}", $c['h']), 'data', [...mobilePolicyKeys(), 'certificates', 'documents', 'certificate', 'delivery', 'allowed_actions']);
     assertMobileKeys($this->getJson("/api/v1/mobile/policies/{$c['policy']->id}/documents", $c['h']), 'data', ['policy', 'groups', 'packs', 'pack_download_url']);
 });
 
@@ -57,6 +57,7 @@ it('quote detail returns quote + ranked offers, and quote history carries the su
     $c = mobileContractCustomer();
 
     $r = $this->getJson("/api/v1/quotes/{$c['quote']->id}", $c['h']);
+    expect($r->json('data.allowed_actions'))->toBeArray();
     assertMobileKeys($r, 'data.quote', ['id', 'party_id', 'line_code', 'status', 'currency', 'risk_facts', 'expires_at', 'version', 'risk_asset_id', 'lifecycle_state', 'quote_number']);
     assertMobileKeys($r, 'data.offers.0', ['id', 'quote_id', 'carrier_id', 'product_id', 'premium_minor', 'tax_minor', 'fee_minor', 'total_minor', 'currency', 'status', 'valid_until', 'coverage_snapshot', 'ranking_reasons', 'carrier', 'product', 'carrier_logo_url']);
 
@@ -72,7 +73,7 @@ it('proposal list rows and proposal detail carry the Proposal fields', function 
 
     assertMobileKeys($this->getJson('/api/v1/mobile/proposals', $c['h']), 'data.0', ['id', 'proposal_number', 'status', 'terms_snapshot', 'quote_offer_id', 'policy_id', 'product_name', 'carrier_name', 'carrier_logo_url', 'total_minor', 'currency', 'submitted_at', 'decided_at', 'created_at', 'updated_at']);
     $detail = $this->getJson("/api/v1/proposals/{$c['proposal']->id}", $c['h']);
-    assertMobileKeys($detail, 'data', ['id', 'proposal_number', 'status', 'terms_snapshot', 'quote_offer_id', 'policy_id', 'carrier_logo_url', 'submitted_at', 'decided_at', 'created_at', 'offer', 'documents', 'required_documents', 'underwriting_case', 'payments', 'disclosure_schema']);
+    assertMobileKeys($detail, 'data', ['id', 'proposal_number', 'status', 'terms_snapshot', 'quote_offer_id', 'policy_id', 'carrier_logo_url', 'submitted_at', 'decided_at', 'created_at', 'offer', 'documents', 'required_documents', 'underwriting_case', 'payments', 'disclosure_schema', 'allowed_actions']);
     expect($detail->json('data.policy_id'))->toBe($c['policy']->id);
 });
 
@@ -81,7 +82,7 @@ it('claim list and claim detail carry the Claim fields', function () {
     $keys = ['id', 'claim_number', 'policy_id', 'status', 'incident_at', 'incident_location', 'description', 'created_at', 'policy', 'carrier_logo_url'];
 
     assertMobileKeys($this->getJson('/api/v1/mobile/claims', $c['h']), 'data.data.0', $keys);
-    assertMobileKeys($this->getJson("/api/v1/mobile/claims/{$c['claim']->id}", $c['h']), 'data', [...$keys, 'can_withdraw']);
+    assertMobileKeys($this->getJson("/api/v1/mobile/claims/{$c['claim']->id}", $c['h']), 'data', [...$keys, 'can_withdraw', 'allowed_actions']);
 });
 
 it('documents list, detail and access carry the SecureDocument fields', function () {
@@ -126,4 +127,17 @@ it('the institution directory is public and carries the Institution fields', fun
     $r = $this->getJson('/api/v1/public/institutions?type=insurer');
     assertMobileKeys($r, 'data.0', ['id', 'type', 'name', 'initials', 'logo_url', 'letterhead_available', 'legal_footer', 'city', 'code', 'phone', 'website', 'products', 'canonical_id', 'legal_name', 'short_name', 'insurer_code', 'branch', 'regulator_sequence', 'product_families', 'is_official_register', 'licensed', 'contacts', 'head_office']);
     assertMobileKeys($this->getJson("/api/v1/public/institutions/{$f['carrier']->id}"), 'data', ['id', 'type', 'name', 'products', 'contacts', 'branches']);
+});
+
+it('capabilities, payment detail and customer profile carry the A1 / location fields', function () {
+    $c = mobileContractCustomer();
+    $payment = makeMobileTestPayment($c['proposal'], $c['tenant']);
+
+    $caps = $this->getJson('/api/v1/mobile/capabilities', $c['h']);
+    assertMobileKeys($caps, 'data', ['data_scope', 'modules']);
+    assertMobileKeys($caps, 'data.modules.policies', ['view', 'actions']);
+    assertMobileKeys($this->getJson("/api/v1/mobile/payments/{$payment->id}", $c['h']), 'data', ['id', 'status', 'amount_minor', 'currency', 'allowed_actions']);
+    assertMobileKeys($this->getJson('/api/v1/mobile/account/customer-profile', $c['h']), 'data', ['party_id', 'full_name', 'address_line1', 'city', 'region', 'country_code', 'latitude', 'longitude', 'allowed_actions']);
+    assertMobileKeys($this->getJson('/api/v1/mobile/account/devices', $c['h']), 'data', []);
+    assertMobileKeys($this->getJson('/api/v1/me/security/login-activity', $c['h']), 'data', []);
 });

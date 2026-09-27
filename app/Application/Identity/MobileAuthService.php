@@ -130,6 +130,11 @@ final class MobileAuthService
         RateLimiter::clear($failKey);
 
         return $this->issueSession($user, $deviceFingerprint, $ip, $deviceName, $platform, 'password');
+                // B2/B3: failed sign-in on the user's security timeline; the third failure in the window alerts them.
+                $this->security()->recordEvent($user, 'LOGIN_FAILED', 'FAILED', 'password');
+                if (! $demo && RateLimiter::attempts($failKey) === 3) {
+                    app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'REPEATED_FAILED_SIGN_INS');
+                }
     }
 
     /**
@@ -174,6 +179,8 @@ final class MobileAuthService
     public function revokeAllSessions(User $user): void
     {
         MobileRefreshToken::where('user_id', $user->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
+        $this->security()->recordEvent($user, 'PASSWORD_CHANGED', 'SUCCESS', 'password_reset');
+        app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'PASSWORD_CHANGED');
         Passport::token()->newQuery()->where('user_id', $user->id)->update(['revoked' => true]);
     }
 
@@ -301,6 +308,9 @@ final class MobileAuthService
         // this OTP check is exactly the phone-ownership proof that status
         // exists to require, so a correct code promotes them here rather
         // than needing a separate activation step nothing else provides.
+            if ($lookup?->user_id && ($failed = User::find($lookup->user_id))) {
+                $this->security()->recordEvent($failed, 'OTP_FAILED', 'FAILED', 'otp');
+            }
         if (! $user || ! in_array($user->status, ['ACTIVE', 'PENDING_VERIFICATION'], true)) {
             throw ValidationException::withMessages(['code' => __('wave12.otp_invalid')]);
         }
@@ -342,11 +352,26 @@ final class MobileAuthService
             $device->security_metadata = ['last_ip_hash' => hash('sha256', $ip)];
             $device->save();
             // REQ-SEC-001 login activity + anomaly flags (never blocks the sign-in).
-            app(\App\Application\Security\Login\LoginActivityRecorder::class)->record($user, $method, $device->id, $deviceFingerprint, $deviceName, $platform, $isNewDevice, $ip);
+            $flags = $this->security()->record($user, $method, $device->id, $deviceFingerprint, $deviceName, $platform, $isNewDevice, $ip);
+            if (in_array('NEW_DEVICE', $flags, true)) {
+                app(\App\Application\Security\Alerts\SecurityAlerts::class)->send($user, 'NEW_DEVICE');
+            }
 
             [$accessToken, $refreshToken, $expiresIn] = $this->issueTokenPair($user, $device->id, (string) Str::uuid());
 
             $this->audit->record('mobile.session.created', 'user', $user->id, ['device_id' => $device->id, 'method' => $method]);
+            // B1: device detail. Model / OS / app version as the app reports them; location server-derived only.
+            $request = request();
+            $device->first_seen_at ??= now();
+            $device->last_auth_method = mb_substr($method, 0, 32);
+            $device->model = \App\Application\Security\Login\ClientContext::model($request) ?? $device->model;
+            $device->os_version = \App\Application\Security\Login\ClientContext::osVersion($request) ?? $device->os_version;
+            $device->app_version = \App\Application\Security\Login\ClientContext::appVersion($request) ?? $device->app_version;
+            [$country, $city] = \App\Application\Security\Login\ClientContext::approxLocation($request);
+            if ($country !== null || $city !== null) {
+                $device->approx_country = $country;
+                $device->approx_city = $city;
+            }
 
             return [
                 'access_token' => $accessToken,
@@ -437,6 +462,12 @@ final class MobileAuthService
      * success, null on a wrong code.
      */
     private function checkCode(?VerificationChallenge $challenge, string $code, array $purposes): ?string
+        $this->security()->recordEvent($user, 'LOGOUT');
+    }
+
+    private function security(): \App\Application\Security\Login\LoginActivityRecorder
+    {
+        return app(\App\Application\Security\Login\LoginActivityRecorder::class);
     {
         $this->assertChallengeUsable($challenge, $purposes);
 

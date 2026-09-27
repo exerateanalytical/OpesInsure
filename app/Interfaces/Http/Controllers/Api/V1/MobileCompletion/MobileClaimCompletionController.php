@@ -104,8 +104,7 @@ final class MobileClaimCompletionController
     {
         $data = $request->validate(['decision' => 'required|in:ACCEPT,REJECT']);
         $c = $this->owned($claim, $request);
-        $decision = DB::table('claim_decisions')->where('claim_id', $c->id)->orderByDesc('created_at')->first();
-        abort_unless($decision, 422, 'There is no settlement offer to decide on yet.');
+        abort_unless(\App\Application\Claims\MobileClaimService::hasSettlementOffer($c), 422, 'There is no settlement offer to decide on yet.');
         $details = $c->loss_details ?? [];
         $details['settlement'] = array_merge($details['settlement'] ?? [], ['customer_decision' => $data['decision'], 'decided_at' => now()->toIso8601String()]);
         $c->update(['loss_details' => $details, 'version' => $c->version + 1]);
@@ -121,7 +120,7 @@ final class MobileClaimCompletionController
     {
         $data = $request->validate(['reason' => 'required|string|min:10|max:4000']);
         $c = $this->owned($claim, $request);
-        abort_unless(in_array($c->status, ['DECLINED', 'PARTIALLY_APPROVED', 'PAID', 'CLOSED'], true), 422, 'Only a decided claim can be appealed.');
+        abort_unless(in_array($c->status, \App\Domain\Claims\ClaimMachine::APPEALABLE, true), 422, 'Only a decided claim can be appealed.');
         $dispute = ClaimDispute::firstOrCreate(['claim_id' => $c->id, 'status' => 'OPEN'], ['reference' => 'DSP-'.strtoupper(Str::random(12)), 'reason_code' => 'CUSTOMER_APPEAL', 'statement' => $data['reason'], 'opened_by' => $request->user()->id]);
         if (in_array($c->status, ['DECLINED', 'PARTIALLY_APPROVED'], true)) {
             $c->update(['status' => 'DISPUTED', 'version' => $c->version + 1]);

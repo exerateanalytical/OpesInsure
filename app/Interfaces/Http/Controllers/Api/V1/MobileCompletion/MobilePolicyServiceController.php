@@ -77,11 +77,9 @@ final class MobilePolicyServiceController
     {
         $tenantId = app(TenantContext::class)->id();
         $policyModel = $this->wallet->policy($policy, $request->user(), $tenantId);
-        $terms = $policyModel->terms_snapshot ?? [];
-        $original = $policyModel->proposal?->offer?->quote;
-        $lineCode = $original?->line_code ?? ($terms['line_code'] ?? null);
-        $facts = $original?->risk_facts ?? ($terms['risk_facts'] ?? []);
-        abort_unless($lineCode && $facts, 422, 'This policy has no rateable risk facts on record.');
+        $source = MobileWalletService::renewalSource($policyModel);
+        abort_unless($source !== null, 422, 'This policy has no rateable risk facts on record.');
+        ['line_code' => $lineCode, 'risk_facts' => $facts, 'quote' => $original] = $source;
 
         $quote = $quotes->submit(Tenant::findOrFail($tenantId), $policyModel->party_id, ['line_code' => $lineCode, 'risk_asset_id' => $original?->risk_asset_id, 'channel' => 'B2C', 'risk_facts' => $facts], $request->user());
         $quote->update(['comparison_context' => ['renewal_of_policy_id' => $policyModel->id]]);

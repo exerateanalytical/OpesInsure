@@ -218,7 +218,9 @@ it('revokes every access and refresh token of the user on logout-all', function 
     }
     Passport::actingAs($f['user']);
 
-    $r = $this->postJson('/api/v1/auth/mobile/logout-all')->assertOk();
+    $this->postJson('/api/v1/auth/mobile/logout-all')->assertStatus(401)->assertJsonPath('code', 'STEP_UP_REQUIRED');
+    $grant = issueMobileStepUpGrant($f['user'], $f['tenant'], 'SIGN_OUT_EVERYWHERE');
+    $r = $this->postJson('/api/v1/auth/mobile/logout-all', [], stepUpHeaderFor($grant['token']))->assertOk();
     expect($r->json('data.revoked'))->toBeTrue()
         ->and(DB::table('oauth_access_tokens')->where('user_id', $f['user']->id)->where('revoked', false)->count())->toBe(0)
         ->and(MobileRefreshToken::where('user_id', $f['user']->id)->whereNull('revoked_at')->count())->toBe(0);

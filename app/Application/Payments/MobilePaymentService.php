@@ -46,7 +46,7 @@ final class MobilePaymentService
     {
         $intent = $this->owned($paymentId, $user, $tenantId);
 
-        if ($intent->status !== 'FAILED') {
+        if (! self::isRetryable($intent)) {
             throw ValidationException::withMessages(['status' => __('wave12.payment_not_retryable')]);
         }
 
@@ -137,6 +137,11 @@ final class MobilePaymentService
      * CUSTOMER_REQUEST, idempotency key = supplied header/body key or a
      * deterministic per-payment/user/day key so a double tap can't open two.
      */
+    public static function isRetryable(PaymentIntentRecord $intent): bool
+    {
+        return $intent->status === 'FAILED';
+    }
+
     public function requestRefund(string $paymentId, array $data, User $user, string $tenantId): Refund
     {
         $intent = $this->owned($paymentId, $user, $tenantId);

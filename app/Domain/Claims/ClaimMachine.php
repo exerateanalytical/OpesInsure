@@ -35,6 +35,9 @@ final class ClaimMachine
     /** Stored statuses from which the claimant may still withdraw (before assessment, decision or payment). */
     public const WITHDRAWABLE = ['SUBMITTED', 'ACKNOWLEDGED', 'EVIDENCE_PENDING'];
 
+    /** A decided claim the customer may appeal (mobile claims/{claim}/appeals). */
+    public const APPEALABLE = ['DECLINED', 'PARTIALLY_APPROVED', 'PAID', 'CLOSED'];
+
     private static ?StateMachineDefinition $machine = null;
 
     public static function blueprintState(string $status): string

@@ -38,7 +38,9 @@ final class MobileCustomerAccountController
 
     public function profile(Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->presentProfile($this->party($request))]);
+        $party = $this->party($request);
+
+        return response()->json(['data' => $this->presentProfile($party) + ['allowed_actions' => app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forParty($party, $request->user())]]);
     }
 
     /**
@@ -51,6 +53,9 @@ final class MobileCustomerAccountController
             'address_line1' => 'sometimes|nullable|string|max:255',
             'city' => 'sometimes|nullable|string|max:120',
             'region' => 'sometimes|nullable|string|max:120',
+            // Top-level address coordinates (decimal degrees), stored on the HOME party_addresses row.
+            'latitude' => 'sometimes|'.\App\Domain\Geo\Coordinates::RULES['latitude'],
+            'longitude' => 'sometimes|'.\App\Domain\Geo\Coordinates::RULES['longitude'],
             'occupation' => 'sometimes|nullable|string|max:120',
             'date_of_birth' => 'sometimes|nullable|date|before:today|after:1900-01-01',
             'beneficiaries' => 'sometimes|array|max:10',
@@ -81,12 +86,14 @@ final class MobileCustomerAccountController
             }
             $party->update(['profile' => $profile, 'legal_identity' => $identity]);
 
-            if (array_intersect_key($data, array_flip(['address_line1', 'city', 'region']))) {
+            if (array_intersect_key($data, array_flip(['address_line1', 'city', 'region', 'latitude', 'longitude']))) {
                 $address = DB::table('party_addresses')->where(['party_id' => $party->id, 'type' => 'HOME'])->first();
                 $values = [
                     'line1' => array_key_exists('address_line1', $data) ? $data['address_line1'] : ($address->line1 ?? null),
                     'city' => array_key_exists('city', $data) ? ($data['city'] ?? '') : ($address->city ?? ''),
                     'region' => array_key_exists('region', $data) ? $data['region'] : ($address->region ?? null),
+                    'latitude' => array_key_exists('latitude', $data) ? \App\Domain\Geo\Coordinates::pick($data)['latitude'] : ($address->latitude ?? null),
+                    'longitude' => array_key_exists('longitude', $data) ? \App\Domain\Geo\Coordinates::pick($data)['longitude'] : ($address->longitude ?? null),
                     'updated_at' => now(),
                 ];
                 if ($address) {
@@ -98,7 +105,7 @@ final class MobileCustomerAccountController
         });
         $this->audit->record('customer.profile.updated', 'party', $party->id, ['fields' => array_keys($data)]);
 
-        return response()->json(['data' => $this->presentProfile($party->refresh())]);
+        return response()->json(['data' => $this->presentProfile($party->refresh()) + ['allowed_actions' => app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forParty($party, $request->user())]]);
     }
 
     public function consents(Request $request): JsonResponse
@@ -200,6 +207,8 @@ final class MobileCustomerAccountController
             'city' => $address->city ?? null,
             'region' => $address->region ?? null,
             'country_code' => $address->country_code ?? 'CM',
+            'latitude' => isset($address->latitude) ? (float) $address->latitude : null,
+            'longitude' => isset($address->longitude) ? (float) $address->longitude : null,
             'beneficiaries' => $profile['beneficiaries'] ?? [],
         ];
     }

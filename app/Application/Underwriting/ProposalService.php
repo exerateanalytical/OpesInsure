@@ -203,7 +203,7 @@ final class ProposalService
         if ($d->tenant_id !== $p->tenant_id || $d->party_id !== $p->party_id) {
             throw ValidationException::withMessages(['document_id' => __('wave3.document_ownership')]);
         }
-        if (in_array($p->status, [...ProposalMachine::TERMINAL, 'PAYMENT_PENDING', 'APPROVED'], true)) {
+        if (in_array($p->status, ProposalMachine::DOCUMENTS_LOCKED, true)) {
             throw ValidationException::withMessages(['status' => __('wave3.proposal_closed')]);
         }
         $req = $this->requirements->uploadable($p, $requirementCode);

@@ -353,7 +353,7 @@ final class QuoteService
 
     public function cancel(Quote $quote, ?User $actor): Quote
     {
-        if (! in_array(QuoteMachine::stateOf($quote), ['DRAFT', 'REFERRED', ...QuoteMachine::PRICED], true)) {
+        if (! $this->isCancellable($quote)) {
             throw ValidationException::withMessages(['status' => __('wave2.quote_not_cancellable')]);
         }
 
@@ -432,6 +432,11 @@ final class QuoteService
             'vehicle_label' => $quote->riskAsset?->display_name ?? (implode(' · ', array_filter([$vehicle, is_string($plate) ? $plate : null])) ?: null),
             'can_resume' => $this->isResumable($quote),
         ];
+    }
+
+    public function isCancellable(Quote $quote): bool
+    {
+        return in_array(QuoteMachine::stateOf($quote), ['DRAFT', 'REFERRED', ...QuoteMachine::PRICED], true);
     }
 
     public function isResumable(Quote $quote): bool
@@ -515,6 +520,8 @@ final class QuoteService
     {
         // Master-data codes validated ("Other" filed for review) and legacy tariff facts derived (RiskFactsProcessor).
         $facts = app(RiskFactsProcessor::class)->process($line->code, $facts, $tenantId, $actor?->id);
+        // Risk location in the answers (decimal degrees; whichever entry point supplied it).
+        $facts = array_merge($facts, \App\Domain\Geo\Coordinates::pick($facts, 'risk_facts.'));
         // Vehicle master: the 28-value vehicle_usage feeds the tariff's usage_type until tariffs rate on it directly.
         if (strtoupper((string) $line->code) === 'MOTOR') {
             MotorRiskSchema::validateVehicleFacts($facts);

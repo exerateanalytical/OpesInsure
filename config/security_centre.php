@@ -15,6 +15,8 @@ return [
             'latitude' => env('SECURITY_GEO_LAT_HEADER'),
             'longitude' => env('SECURITY_GEO_LNG_HEADER'),
             'country' => env('SECURITY_GEO_COUNTRY_HEADER'),
+            // Mobile audit B1: approximate device city (edge/CDN geo-IP header). Never GPS.
+            'city' => env('SECURITY_GEO_CITY_HEADER'),
         ],
         // PLATFORM_PROVISIONAL threshold: travel faster than this between two
         // geolocated logins is flagged as impossible travel.
@@ -32,7 +34,9 @@ return [
     'attestation' => [
         'play_integrity' => [
             'enabled' => (bool) env('PLAY_INTEGRITY_ENABLED', false),
-            'package_name' => env('PLAY_INTEGRITY_PACKAGE_NAME'),
+            'package_name' => env('PLAY_INTEGRITY_PACKAGE_NAME', 'com.opesware.opesinsure'),
+            // Base64url SHA-256 of the release signing certificate(s), comma-separated (appIntegrity.certificateSha256Digest).
+            'certificate_sha256' => array_values(array_filter(explode(',', (string) env('PLAY_INTEGRITY_CERT_SHA256', '')))),
             // Short-lived OAuth access token for the Play Integrity API. Minting
             // it from a service account is an operations concern (deploy note).
             'access_token' => env('PLAY_INTEGRITY_ACCESS_TOKEN'),

@@ -23,7 +23,9 @@ final class MobilePaymentController
 
     public function show(string $payment, Request $request, MobilePaymentService $service): JsonResponse
     {
-        return response()->json(['data' => $service->show($payment, $request->user(), app(TenantContext::class)->id())]);
+        $intent = $service->show($payment, $request->user(), app(TenantContext::class)->id());
+
+        return response()->json(['data' => $intent->setAttribute('allowed_actions', app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forPayment($intent, $request->user()))]);
     }
 
     public function retry(string $payment, Request $request, MobilePaymentService $service): JsonResponse

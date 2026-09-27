@@ -49,6 +49,7 @@ final class MobileWalletService
         $policy->load('certificates');
 
         return array_merge($policy->toArray(), $this->summary($policy), [
+            'allowed_actions' => app(\App\Application\Mobile\Capabilities\CapabilityResolver::class)->forPolicy($policy, $user),
             'documents' => $this->documents->documentsPayload($policy),
             'certificate' => $this->certificatePayload($policy),
             'delivery' => $policy->fulfilmentOrder ? [
@@ -58,6 +59,22 @@ final class MobileWalletService
                 'sla_due_at' => $policy->fulfilmentOrder->sla_due_at?->toIso8601String(),
             ] : null,
         ]);
+    }
+
+    /**
+     * What a renewal quote re-rates (POST policies/{policy}/renewal-quote): the original quote's line and risk facts,
+     * else the terms snapshot's. Null when the policy has nothing rateable on record.
+     *
+     * @return array{line_code: string, risk_facts: array, quote: ?\App\Models\Quote}|null
+     */
+    public static function renewalSource(Policy $policy): ?array
+    {
+        $terms = $policy->terms_snapshot ?? [];
+        $original = $policy->proposal?->offer?->quote;
+        $lineCode = $original?->line_code ?? ($terms['line_code'] ?? null);
+        $facts = $original?->risk_facts ?? ($terms['risk_facts'] ?? []);
+
+        return $lineCode && $facts ? ['line_code' => (string) $lineCode, 'risk_facts' => (array) $facts, 'quote' => $original] : null;
     }
 
     /** @return array<string, mixed> list-row fields shared by the list and the detail */

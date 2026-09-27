@@ -25,7 +25,8 @@ final class SecurityCentreController
     private static function activity(object $a): array
     {
         return ['id' => $a->id, 'user_id' => $a->user_id, 'method' => $a->method, 'device_id' => $a->device_id, 'device_name' => $a->device_name, 'platform' => $a->platform,
-            'country_code' => $a->country_code, 'new_device' => (bool) $a->new_device, 'anomaly_flags' => json_decode($a->anomaly_flags, true), 'occurred_at' => $a->occurred_at];
+            'country_code' => $a->country_code, 'new_device' => (bool) $a->new_device, 'anomaly_flags' => json_decode($a->anomaly_flags, true), 'occurred_at' => $a->occurred_at,
+            'outcome' => $a->outcome ?? 'SUCCESS', 'event_type' => $a->event_type ?? 'LOGIN', 'app_version' => $a->app_version ?? null, 'masked_ip' => $a->masked_ip ?? null];
     }
 
     /** The signed-in user's own sign-in history. */

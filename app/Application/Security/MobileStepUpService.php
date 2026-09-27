@@ -151,13 +151,13 @@ final class MobileStepUpService
      * protected action itself then rejects for an unrelated reason (e.g. a
      * validation error on the refund amount).
      */
-    public function consume(User $user, string $tenantId, string $purpose, string $rawToken): bool
+    public function consume(User $user, ?string $tenantId, string $purpose, string $rawToken): bool
     {
         $grant = StepUpGrant::where('token_hash', hash('sha256', $rawToken))->first();
 
         if (! $grant
             || $grant->user_id !== $user->id
-            || $grant->tenant_id !== $tenantId
+            || ($tenantId !== null && $grant->tenant_id !== $tenantId)
             || $grant->purpose !== $purpose
             || $grant->consumed_at !== null
             || $grant->expires_at->isPast()

@@ -46,13 +46,16 @@ final class PlayIntegrityVerifier implements DeviceAttestationVerifier
         if (($p['requestDetails']['requestPackageName'] ?? null) !== $c['package_name']) {
             $reasons[] = 'PACKAGE_MISMATCH';
         }
-        if (($p['appIntegrity']['appRecognitionVerdict'] ?? null) !== 'PLAY_RECOGNIZED') {
-            $reasons[] = 'APP_NOT_RECOGNIZED';
+        $digests = array_filter((array) ($c['certificate_sha256'] ?? []));
+        if ($digests !== [] && array_intersect($digests, (array) ($p['appIntegrity']['certificateSha256Digest'] ?? [])) === []) {
+            $reasons[] = 'CERTIFICATE_MISMATCH';
         }
+        // Sideloaded builds are never PLAY_RECOGNIZED: noted, but the verdict rests on the device-integrity signals.
+        $notes = ($p['appIntegrity']['appRecognitionVerdict'] ?? null) === 'PLAY_RECOGNIZED' ? [] : ['APP_NOT_RECOGNIZED'];
         if (! in_array('MEETS_DEVICE_INTEGRITY', (array) ($p['deviceIntegrity']['deviceRecognitionVerdict'] ?? []), true)) {
             $reasons[] = 'DEVICE_INTEGRITY_NOT_MET';
         }
 
-        return $reasons === [] ? new AttestationVerdict(AttestationVerdict::PASS, ['PLAY_INTEGRITY_OK']) : new AttestationVerdict(AttestationVerdict::FAIL, $reasons);
+        return $reasons === [] ? new AttestationVerdict(AttestationVerdict::PASS, ['PLAY_INTEGRITY_OK', ...$notes]) : new AttestationVerdict(AttestationVerdict::FAIL, [...$reasons, ...$notes]);
     }
 }
