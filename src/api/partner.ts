@@ -198,6 +198,7 @@ export const AgentWorkspaceApi = {
         line_code: x.line_code ?? p?.line_code ?? null,
         premium_minor: x.premium_minor ?? p?.premium_minor ?? null,
         issued_at: x.issued_at ?? p?.issued_at ?? null,
+        policy_status: x.policy_status ?? p?.status ?? null,
         // Never a producer dimension for an independent agent (COM-008).
         producer_id: null,
         producer_name: null,

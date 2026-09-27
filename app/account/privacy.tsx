@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View, Linking, Modal } from "react-native";
 import { router } from "expo-router";
-import { BarChart3, ChevronRight, Download, FileText, Lock, Megaphone, MessageCircle, Pencil, ShieldCheck, Trash2, UsersRound } from "lucide-react-native";
+import { BarChart3, ChevronRight, Download, FileText, Lock, Megaphone, MessageCircle, Pencil, ShieldCheck, Trash2, UsersRound, ClipboardList, FileSignature, Gavel, HandCoins, History } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { PrivacyApi } from "@/api/account";
 import type { Purpose } from "@/api/account";
@@ -15,6 +15,11 @@ import { LocationAutofillSetting } from "@/components/forms/LocationAutofill";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { roleToPortal, useSession } from "@/store/session";
+import { useRuntime } from "@/store/runtime";
+import { legalLinks } from "@/config/environment";
+import { AgentButton, AgentCard, AgentNavRow, AgentSection, AgentShell, AgentSkeleton } from "@/components/agent";
+import { agentColors as ac, agentLayout as AL, agentType as AT } from "@/theme/agent";
 
 const PURPOSES: { code: Purpose; icon: LucideIcon; tint: Tint }[] = [
   { code: "MARKETING", icon: Megaphone, tint: "gold" },
@@ -31,6 +36,10 @@ const PURPOSES: { code: Purpose; icon: LucideIcon; tint: Tint }[] = [
  */
 export default function Privacy() {
   const { t, date } = useTranslation();
+  const isAgent = useSession((st) => roleToPortal(st.activeWorkspace?.role_code) === "agent");
+  const links = legalLinks(useRuntime((st) => st.bootstrap?.legal));
+  const [showConsents, setShowConsents] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const q = useLoad(() => PrivacyApi.consents(), []);
   const dsr = useLoad(() => PrivacyApi.requests(), []);
   const [values, setValues] = useState<Record<string, boolean>>({});
@@ -75,6 +84,148 @@ export default function Privacy() {
       params: { category: "PRIVACY_REQUEST", subject: t("privacyCorrectionSubject"), body: t("privacyCorrectionBody") },
     });
 
+  if (isAgent) {
+    // Screen 10 (AGENT_UI_SPEC_V2 §9.10): same consent/DSR logic as below, agent styling.
+    const open = (url: string) => {
+      setMsg(null);
+      Linking.openURL(url).catch(() => setMsg({ text: t("openLinkFailed"), ok: false }));
+    };
+    const docs: { icon: LucideIcon; label: string; url?: string }[] = [
+      { icon: ShieldCheck, label: t("privacyPolicy"), url: links.privacy },
+      { icon: FileText, label: t("termsOfUse"), url: links.terms },
+      { icon: FileSignature, label: t("agentDocAgreement") },
+      { icon: HandCoins, label: t("agentDocCommission") },
+      { icon: Gavel, label: t("agentDocComplaints") },
+    ];
+    return (
+      <AgentShell variant="drilldown" title={t("agentPrivacyLegal")}>
+        <AgentSection title={t("privacyLegalDocs")}>
+          <AgentCard padded={false}>
+            {docs.map((d, i) => (
+              <AgentNavRow
+                key={d.label}
+                divider={i > 0}
+                icon={d.icon}
+                title={d.label}
+                subtitle={d.url ? null : t("agentAvailableSoon")}
+                chevron={!!d.url}
+                onPress={d.url ? () => open(d.url as string) : undefined}
+              />
+            ))}
+          </AgentCard>
+        </AgentSection>
+
+        <AgentSection title={t("agentDataPrivacy")}>
+          <AgentCard padded={false}>
+            <AgentNavRow divider={false} icon={Download} title={t("agentDownloadData")} subtitle={t("privacyExport")} busy={busy === "EXPORT"} onPress={() => void requestDsr("EXPORT")} />
+            <AgentNavRow icon={Pencil} title={t("privacyCorrection")} subtitle={t("agentCorrectionSub")} onPress={correction} />
+            <AgentNavRow
+              icon={History}
+              title={t("agentConsentHistory")}
+              subtitle={t("privacyConsentPrefs")}
+              chevron={false}
+              right={<ChevronRight size={18} color={ac.muted} style={{ transform: [{ rotate: showConsents ? "90deg" : "0deg" }] }} />}
+              onPress={() => setShowConsents((v) => !v)}
+            />
+            {showConsents ? (
+              <View style={agentStyles.consents}>
+                {q.loading && !q.data ? <AgentSkeleton rows={2} height={48} /> : null}
+                {q.error && !q.data ? <ErrorState error={q.error} onRetry={q.reload} /> : null}
+                <View style={agentStyles.consentRow}>
+                  <Lock size={18} color={ac.secondary} />
+                  <View style={styles.flex}>
+                    <Text style={agentStyles.consentTitle}>{t("privacyProcessing")}</Text>
+                    <Text style={agentStyles.consentMeta}>{t("privacyRequired")}</Text>
+                  </View>
+                </View>
+                {(q.data ? PURPOSES : []).map((p) => {
+                  const row = q.data?.find((c) => c.purpose === p.code);
+                  return (
+                    <View key={p.code} style={agentStyles.consentRow}>
+                      <p.icon size={18} color={ac.navy} />
+                      <View style={styles.flex}>
+                        <Text style={agentStyles.consentTitle}>{t(`consent_${p.code}`)}</Text>
+                        <Text style={agentStyles.consentMeta}>
+                          {row?.updated_at ? t("agentConsentUpdated", { date: date(row.updated_at, true) }) : t("agentNeverRecorded")}
+                          {row?.notice_version ? ` · v${row.notice_version}` : ""}
+                        </Text>
+                      </View>
+                      <Switch
+                        accessibilityLabel={t(`consent_${p.code}`)}
+                        value={!!values[p.code]}
+                        onValueChange={(v) => setValues((st) => ({ ...st, [p.code]: v }))}
+                        trackColor={{ true: ac.actionBlue, false: ac.borderStrong }}
+                        thumbColor={ac.surface}
+                      />
+                    </View>
+                  );
+                })}
+                {q.data ? <AgentButton label={t("privacySaveConsents")} loading={busy === "save"} disabled={!dirty} onPress={() => void save()} /> : null}
+                <LocationAutofillSetting />
+              </View>
+            ) : null}
+          </AgentCard>
+          {msg ? (
+            <Text accessibilityLiveRegion="polite" accessibilityRole={msg.ok ? undefined : "alert"} style={msg.ok ? agentStyles.notice : agentStyles.error}>
+              {msg.text}
+            </Text>
+          ) : null}
+          {(dsr.data ?? []).length ? (
+            <AgentCard padded={false}>
+              {(dsr.data ?? []).map((r, i) => (
+                <View key={r.id} style={[agentStyles.dsrRow, i > 0 && agentStyles.divider]}>
+                  <View style={styles.flex}>
+                    <Text style={agentStyles.consentTitle}>{t(r.type === "EXPORT" ? "privacyExport" : "privacyDelete")}</Text>
+                    <Text style={agentStyles.consentMeta}>
+                      {r.reference ?? ""}
+                      {r.created_at ? ` · ${date(r.created_at)}` : ""}
+                      {r.due_on ? ` · ${t("privacyDue", { date: date(r.due_on) })}` : ""}
+                    </Text>
+                  </View>
+                  <StatusChip label={r.status} tone={["COMPLETED", "FULFILLED"].includes(r.status) ? "success" : "info"} />
+                </View>
+              ))}
+            </AgentCard>
+          ) : null}
+        </AgentSection>
+
+        <AgentSection title={t("agentDangerZone")}>
+          <AgentCard tone="danger" style={agentStyles.danger}>
+            <View style={agentStyles.consentRow}>
+              <Trash2 size={22} color={ac.danger} />
+              <View style={styles.flex}>
+                <Text style={[agentStyles.consentTitle, { color: ac.danger }]}>{t("deleteAccount")}</Text>
+                <Text style={agentStyles.consentMeta}>{t("privacyRetentionNote")}</Text>
+              </View>
+            </View>
+            <AgentButton label={t("deleteAccount")} variant="danger" icon={Trash2} loading={busy === "DELETE"} onPress={() => setConfirmDelete(true)} />
+          </AgentCard>
+        </AgentSection>
+
+        <Modal visible={confirmDelete} transparent animationType="slide" onRequestClose={() => setConfirmDelete(false)}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("cancel")} style={agentStyles.scrim} onPress={() => setConfirmDelete(false)} />
+          <View style={agentStyles.sheet} accessibilityViewIsModal>
+            <View style={agentStyles.grabber} />
+            <Text accessibilityRole="header" style={agentStyles.sheetTitle}>{t("agentDeleteConfirmTitle")}</Text>
+            <Text style={agentStyles.sheetBody}>{t("agentDeleteConfirmBody")}</Text>
+            <Text style={agentStyles.consentMeta}>{t("privacyRetentionNote")}</Text>
+            <AgentButton
+              label={t("agentDeleteConfirm")}
+              variant="danger"
+              icon={Trash2}
+              loading={busy === "DELETE"}
+              onPress={() => {
+                setConfirmDelete(false);
+                void requestDsr("DELETE");
+              }}
+            />
+            <AgentButton label={t("agentDeleteWebPage")} variant="secondary" icon={ClipboardList} onPress={() => open(links.accountDeletion)} />
+            <AgentButton label={t("cancel")} variant="secondary" onPress={() => setConfirmDelete(false)} />
+          </View>
+        </Modal>
+      </AgentShell>
+    );
+  }
   return (
     <Screen
       footer={
@@ -164,6 +315,32 @@ function NavRow({ icon, tint, label, onPress, busy, danger }: { icon: LucideIcon
     </Pressable>
   );
 }
+const agentStyles = StyleSheet.create({
+  consents: { padding: AL.cardPadding, gap: 12, borderTopWidth: 1, borderTopColor: ac.border },
+  consentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  consentTitle: { ...AT.cardTitle, color: ac.text },
+  consentMeta: { ...AT.secondary, color: ac.secondary },
+  dsrRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: AL.cardPadding },
+  divider: { borderTopWidth: 1, borderTopColor: ac.border },
+  notice: { ...AT.secondary, color: ac.success },
+  error: { ...AT.secondary, color: ac.danger },
+  danger: { gap: 14 },
+  scrim: { flex: 1, backgroundColor: "rgba(7,54,86,0.35)" },
+  sheet: {
+    backgroundColor: ac.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: AL.screenPadding,
+    paddingBottom: 32,
+    gap: 12,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+  },
+  grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: ac.borderStrong, marginBottom: 4 },
+  sheetTitle: { ...AT.sectionTitle, color: ac.danger },
+  sheetBody: { ...AT.body, color: ac.text },
+});
 const styles = StyleSheet.create({
   navRow: { minHeight: 56 },
   pressed: { opacity: 0.85 },

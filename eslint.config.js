@@ -9,6 +9,7 @@ const expoConfig = require("eslint-config-expo/flat");
  * checkboxes). Brackets/parentheses are escaped (they are glob syntax). Shrink the list as screens migrate; never grow it for a CTA.
  */
 const PRESSABLE_ALLOWLIST = [
+  "app/account/login-activity.tsx",
   "app/\\(auth\\)/role.tsx",
   "app/\\(auth\\)/sign-in.tsx",
   "app/\\(auth\\)/sign-up.tsx",
@@ -21,6 +22,7 @@ const PRESSABLE_ALLOWLIST = [
   "app/account/privacy.tsx",
   "app/account/security.tsx",
   "app/agent/sales/new.tsx",
+  "app/agent/wallet.tsx",
   "app/checkout.tsx",
   "app/claim/\\[id\\]/appeal.tsx",
   "app/claim/\\[id\\]/evidence.tsx",

@@ -105,6 +105,17 @@ export default function RootLayout() {
               approve claims and money too), not only customers. */}
           <Stack.Screen name="account/security" />
           <Stack.Screen name="account/devices" />
+          {/* Agent account home (AGENT_UI_SPEC_V2) links here too: profile, language,
+              notification settings, privacy, KYC and support serve every signed-in role. */}
+          <Stack.Screen name="account/profile" />
+          <Stack.Screen name="account/language" />
+          <Stack.Screen name="account/notifications" />
+          <Stack.Screen name="account/privacy" />
+          <Stack.Screen name="onboarding/kyc" />
+          <Stack.Screen name="support/index" />
+          <Stack.Screen name="support/new" />
+          <Stack.Screen name="support/[id]" />
+          <Stack.Screen name="support/faq" />
           <Stack.Screen name="system/status" />
           {/* REQ-SRC-001: results are permission- and scope-filtered server-side. */}
           <Stack.Screen name="search" />
@@ -149,13 +160,8 @@ export default function RootLayout() {
           <Stack.Screen name="claim/[id]/timeline" />
           <Stack.Screen name="claim/[id]/information" />
           <Stack.Screen name="claim/[id]/decision" />
-          <Stack.Screen name="account/profile" />
-          <Stack.Screen name="account/language" />
-          <Stack.Screen name="account/notifications" />
-          <Stack.Screen name="account/privacy" />
           <Stack.Screen name="account/beneficiaries" />
           <Stack.Screen name="account/payment-methods" />
-          <Stack.Screen name="onboarding/kyc" />
           <Stack.Screen name="assets/index" />
           <Stack.Screen name="assets/new" />
           <Stack.Screen name="assets/[id]" />
@@ -181,10 +187,6 @@ export default function RootLayout() {
           <Stack.Screen name="services/[id]" />
           <Stack.Screen name="notifications/index" />
           <Stack.Screen name="notifications/[id]" />
-          <Stack.Screen name="support/index" />
-          <Stack.Screen name="support/new" />
-          <Stack.Screen name="support/[id]" />
-          <Stack.Screen name="support/faq" />
         </Stack.Protected>
         <Stack.Protected guard={agent}>
           <Stack.Screen name="agent/index" />

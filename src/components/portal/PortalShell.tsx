@@ -27,6 +27,7 @@ import { useTranslation } from "@/i18n";
 import { LegalLinks } from "@/components/LegalLinks";
 import { BuildStamp } from "@/components/BuildStamp";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { agentColors, agentLayout } from "@/theme/agent";
 
 export type PortalKey = "agent" | "broker" | "carrier";
 export type PortalTab = { label: string; icon: LucideIcon; href: string };
@@ -92,22 +93,37 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
   const insets = useSafeAreaInsets();
   const { td } = useTranslation();
   // Longest matching prefix wins, so /agent/clients/123 highlights "Clients".
+  // Earnings detail pages live outside /agent/wallet but belong to the Earnings tab.
+  const tabPath = /^\/agent\/(commissions|withdrawals?)(\/|$)/.test(pathname) ? "/agent/wallet" : pathname;
   const active = tabs.reduce<PortalTab | undefined>(
     (best, t) =>
-      (pathname === t.href || pathname.startsWith(`${t.href}/`)) &&
+      (tabPath === t.href || tabPath.startsWith(`${t.href}/`)) &&
       (!best || t.href.length > best.href.length)
         ? t
         : best,
     undefined,
   );
+  // Commercial Agent portal: locked bar (docs/AGENT_UI_SPEC_V2.md §8) —
+  // 72 tall + safe area, active #D89209, inactive #073656, 22px icons.
+  const agent = tabs[0]?.href === "/agent";
   return (
     <View
       accessibilityRole="tablist"
-      style={[s.tabBar, { paddingBottom: space.x2 + insets.bottom }]}
+      style={[
+        s.tabBar,
+        agent && s.agentTabBar,
+        { paddingBottom: (agent ? 0 : space.x2) + insets.bottom },
+      ]}
     >
       {tabs.map((t) => {
         const selected = active?.href === t.href;
-        const tint = selected ? colors.gold600 : colors.navy800;
+        const tint = agent
+          ? selected
+            ? agentColors.gold
+            : agentColors.navy
+          : selected
+            ? colors.gold600
+            : colors.navy800;
         const label = td(`portalTab_${t.label}`, t.label);
         return (
           <Pressable
@@ -118,10 +134,10 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
             onPress={() => {
               if (pathname !== t.href) router.navigate(t.href as never);
             }}
-            style={s.tab}
+            style={[s.tab, agent && s.agentTab]}
           >
-            <View style={[s.tabIndicator, selected && s.tabIndicatorOn]} />
-            <t.icon size={24} color={tint} strokeWidth={selected ? 2.2 : 1.9} />
+            <View style={[s.tabIndicator, selected && (agent ? s.agentIndicatorOn : s.tabIndicatorOn)]} />
+            <t.icon size={agent ? 22 : 24} color={tint} strokeWidth={selected ? 2.2 : 1.9} />
             {/* A11Y-006: two lines + capped scaling so long FR labels wrap instead of clipping. */}
             <Text numberOfLines={2} maxFontSizeMultiplier={1.4} style={[s.tabLabel, { color: tint }, selected && s.tabLabelOn]}>
               {label}
@@ -405,6 +421,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
+  agentTabBar: { paddingTop: 0, borderTopColor: agentColors.border, backgroundColor: agentColors.surface },
+  agentTab: { height: agentLayout.bottomNavHeight },
+  agentIndicatorOn: { backgroundColor: agentColors.gold },
   tabLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2, textAlign: "center" },
   // Selected tab is also bolder (and has the indicator bar), not colour alone.
   tabLabelOn: { fontFamily: "Inter_700Bold" },

@@ -84,7 +84,7 @@ async function signIn(page, account = 0) {
 /** Resolves `{policy}`, `{claim}`, … placeholders in a route from live data. */
 async function resolveRoute(page, route) {
   if (!route.includes("{")) return route;
-  const ids = await page.evaluate(async (API) => {
+  const ids = await page.evaluate(async (API, route) => {
     const tok = sessionStorage.getItem("opesinsure.access_token");
     const tenant = sessionStorage.getItem("opesinsure.tenant_id");
     const get = async (p) => {
@@ -98,7 +98,7 @@ async function resolveRoute(page, route) {
       }
     };
     const pub = async (p) => ((await (await fetch(API + p)).json()).data ?? []);
-    const [wallet, claims, payments, proposals, quotes, cases, insurers] = await Promise.all([
+    const [wallet, claims, payments, proposals, quotes, cases, insurers, agentCommissions, agentWithdrawals] = await Promise.all([
       get("/mobile/wallet"),
       get("/mobile/claims"),
       get("/mobile/payments"),
@@ -106,6 +106,9 @@ async function resolveRoute(page, route) {
       get("/mobile/quotes"),
       get("/mobile/support/cases"),
       pub("/public/institutions?type=insurer"),
+      // Agent portal only (other roles get [] from the 403).
+      route.includes("{commission}") ? get("/mobile/agent/commissions") : [],
+      route.includes("{withdrawal}") ? get("/mobile/agent/withdrawals") : [],
     ]);
     const active = wallet.find((p) => p.status === "ACTIVE") ?? wallet[0];
     const withProducts = insurers.find((i) => (i.products ?? []).length > 1) ?? insurers[0];
@@ -119,8 +122,10 @@ async function resolveRoute(page, route) {
       quote: quotes[0]?.id,
       ticket: cases[0]?.id,
       insurer: withProducts?.id,
+      commission: agentCommissions[0]?.id,
+      withdrawal: agentWithdrawals[0]?.id,
     };
-  }, API);
+  }, API, route);
   return route.replace(/\{(\w+)\}/g, (m, k) => ids[k] ?? m);
 }
 

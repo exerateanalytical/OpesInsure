@@ -1,0 +1,250 @@
+import React, { ReactNode, useCallback, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router, useFocusEffect } from "expo-router";
+import { ArrowLeft, Bell, UserRound } from "lucide-react-native";
+import { NotificationsApi } from "@/api/client";
+import { PortalTabBar } from "@/components/portal/PortalShell";
+import { agentTabs } from "@/components/portal/tabs";
+import { useSession } from "@/store/session";
+import { useTranslation } from "@/i18n";
+import { CONTENT_MAX_WIDTH } from "@/theme/tokens";
+import { agentColors as c, agentIcon, agentLayout as L, agentType as T } from "@/theme/agent";
+
+/** Initials for the avatar ("Jean Paul Mbarga" -> "JM"). */
+export const agentInitials = (name?: string | null) => {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "")).toUpperCase();
+};
+
+export function AgentAvatar({ name, size = 40 }: { name?: string | null; size?: number }) {
+  const initials = agentInitials(name);
+  return (
+    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
+      {initials ? (
+        <Text style={[s.avatarText, { fontSize: Math.round(size * 0.36) }]}>{initials}</Text>
+      ) : (
+        <UserRound size={Math.round(size * 0.5)} color={c.navy} strokeWidth={agentIcon.stroke} />
+      )}
+    </View>
+  );
+}
+
+/** Unread count for the header bell (GET /mobile/notifications), refreshed on focus. */
+function useUnread() {
+  const [count, setCount] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      NotificationsApi.list()
+        .then((rows) => live && setCount(rows.filter((n) => !n.read).length))
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, []),
+  );
+  return count;
+}
+
+function OperationalHeader() {
+  const { t } = useTranslation();
+  const name = useSession((st) => st.bootstrap?.user.full_name);
+  const unread = useUnread();
+  return (
+    <View style={s.header}>
+      <View style={s.brand}>
+        <Text style={s.wordmark} accessibilityRole="header">
+          OPES<Text style={{ color: c.gold }}>INSURE</Text>
+        </Text>
+        <Text style={s.portalName}>{t("agentPortalName")}</Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={unread ? `${t("portalNotifTitle")}, ${t("unreadCount", { count: unread })}` : t("portalNotifTitle")}
+        hitSlop={4}
+        onPress={() => router.push("/agent/notifications")}
+        style={({ pressed }) => [s.iconBtn, pressed && s.pressed]}
+      >
+        <Bell size={agentIcon.nav} color={c.navy} strokeWidth={agentIcon.stroke} />
+        {unread > 0 ? (
+          <View style={s.badge}>
+            <Text style={s.badgeText}>{unread > 99 ? "99+" : unread}</Text>
+          </View>
+        ) : null}
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("agentProfileTitle")}
+        hitSlop={4}
+        onPress={() => router.push("/agent/account")}
+        style={({ pressed }) => [s.avatarBtn, pressed && s.pressed]}
+      >
+        <AgentAvatar name={name} size={40} />
+      </Pressable>
+    </View>
+  );
+}
+
+function DrillHeader({ title, onBack, right }: { title: string; onBack?: () => void; right?: ReactNode }) {
+  const { t } = useTranslation();
+  const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/agent")));
+  return (
+    <View style={s.header}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("back")}
+        hitSlop={4}
+        onPress={back}
+        style={({ pressed }) => [s.iconBtn, s.plain, pressed && s.pressed]}
+      >
+        <ArrowLeft size={agentIcon.nav} color={c.navy} strokeWidth={agentIcon.stroke} />
+      </Pressable>
+      <Text accessibilityRole="header" style={s.drillTitle} numberOfLines={2}>
+        {title}
+      </Text>
+      <View style={s.drillRight}>{right}</View>
+    </View>
+  );
+}
+
+/**
+ * Agent-portal screen frame (spec §7). `variant="operational"` = wordmark +
+ * "Commercial Agent Portal" + bell (unread badge) + avatar -> /agent/account.
+ * `variant="drilldown"` = back arrow + centred `title`. Bottom navigation is
+ * the locked agent bar unless `hideNav`; `footer` (e.g. a sticky Save button)
+ * is pinned above it.
+ */
+export function AgentShell({
+  variant = "operational",
+  title = "",
+  onBack,
+  headerRight,
+  children,
+  footer,
+  hideNav = false,
+  scroll = true,
+  refreshing,
+  onRefresh,
+  contentStyle,
+}: {
+  variant?: "operational" | "drilldown";
+  /** Drill-down title (centred). */
+  title?: string;
+  onBack?: () => void;
+  /** Drill-down only: optional right-side element (e.g. a filter icon). */
+  headerRight?: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  hideNav?: boolean;
+  /** false when the body is a FlatList that scrolls itself. */
+  scroll?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
+  const header =
+    variant === "operational" ? <OperationalHeader /> : <DrillHeader title={title} onBack={onBack} right={headerRight} />;
+  const body = <View style={[s.body, !scroll && s.flex, contentStyle]}>{children}</View>;
+  return (
+    <SafeAreaView edges={["top"]} style={s.safe}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={s.headerWrap}>{header}</View>
+        {scroll ? (
+          <ScrollView
+            style={s.flex}
+            contentContainerStyle={s.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={c.actionBlue} /> : undefined
+            }
+          >
+            {body}
+          </ScrollView>
+        ) : (
+          body
+        )}
+        {footer ? <View style={s.footer}>{footer}</View> : null}
+        {hideNav ? null : <PortalTabBar tabs={agentTabs} />}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: c.page },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.8 },
+  headerWrap: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+  header: {
+    minHeight: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: L.screenPadding,
+    paddingVertical: 8,
+  },
+  brand: { flex: 1 },
+  wordmark: { fontFamily: "Inter_700Bold", fontSize: 18, lineHeight: 22, color: c.navy, letterSpacing: 0.4 },
+  portalName: { ...T.caption, color: c.secondary },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  plain: { borderWidth: 0, backgroundColor: "transparent" },
+  badge: {
+    position: "absolute",
+    top: 4,
+    right: 3,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: c.danger,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: c.surface,
+  },
+  badgeText: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12, color: c.surface },
+  avatarBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  avatar: { backgroundColor: c.blueTint, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: c.borderStrong },
+  avatarText: { fontFamily: "Inter_700Bold", color: c.navy },
+  drillTitle: { ...T.sectionTitle, color: c.heading, flex: 1, textAlign: "center" },
+  drillRight: { width: 44, alignItems: "flex-end" },
+  scroll: { flexGrow: 1, paddingBottom: 32 },
+  body: {
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+    paddingHorizontal: L.screenPadding,
+    paddingTop: 8,
+    gap: L.sectionGap,
+  },
+  footer: {
+    paddingHorizontal: L.screenPadding,
+    paddingVertical: 12,
+    backgroundColor: c.surface,
+    borderTopWidth: 1,
+    borderTopColor: c.border,
+  },
+});

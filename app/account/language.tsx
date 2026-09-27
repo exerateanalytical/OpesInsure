@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Bell, CheckCircle2, Circle, Languages } from "lucide-react-native";
+import { Bell, CheckCircle2, Circle, Languages, Banknote, CalendarDays, Clock3, Globe2 } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
 import { Button, Card, Screen } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
-import { useSession } from "@/store/session";
+import { useSession, roleToPortal } from "@/store/session";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { AgentButton, AgentCard, AgentNavRow, AgentSection, AgentShell } from "@/components/agent";
+import { TimezonePicker } from "@/components/TimezonePicker";
+import { useTimezone } from "@/store/timezone";
+import { agentColors as ac, agentLayout as AL, agentType as AT } from "@/theme/agent";
 
 /**
  * Language & communication. The choice is saved to the server
@@ -15,7 +19,9 @@ import { useTranslation } from "@/i18n";
  * Channels and topics live on the notification-preferences screen.
  */
 export default function Language() {
-  const { t } = useTranslation();
+  const { t, date, language } = useTranslation();
+  const isAgent = useSession((s) => roleToPortal(s.activeWorkspace?.role_code) === "agent");
+  const timeZone = useTimezone((s) => s.timezone);
   const current = useSession((s) => s.language);
   const setLanguage = useSession((s) => s.setLanguage);
   const [value, setValue] = useState<"en" | "fr">(current);
@@ -36,6 +42,59 @@ export default function Language() {
       setBusy(false);
     }
   };
+  if (isAgent) {
+    // Screen 09 (AGENT_UI_SPEC_V2 §9.9): same state and save as below, agent styling.
+    const now = new Date();
+    const timeExample = new Intl.DateTimeFormat(language === "fr" ? "fr-CM" : "en-CM", { timeStyle: "short", timeZone }).format(now);
+    return (
+      <AgentShell
+        variant="drilldown"
+        title={t("agentLangRegion")}
+        footer={<AgentButton label={t("agentSaveChanges")} loading={busy} disabled={value === current} onPress={() => void save()} />}
+      >
+        <Text style={agentStyles.lead}>{t("agentLangRegionLead")}</Text>
+        <AgentSection title={t("language")}>
+          <View style={agentStyles.segment} accessibilityRole="radiogroup">
+            {(
+              [
+                ["en", "English"],
+                ["fr", "Français"],
+              ] as const
+            ).map(([code, label]) => {
+              const on = value === code;
+              return (
+                <Pressable
+                  key={code}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: on }}
+                  accessibilityLabel={label}
+                  onPress={() => setValue(code)}
+                  style={[agentStyles.segItem, on && agentStyles.segOn]}
+                >
+                  <Text style={[agentStyles.segText, on && agentStyles.segTextOn]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {error ? <Text accessibilityRole="alert" style={agentStyles.error}>{error}</Text> : null}
+          {saved ? <Text accessibilityLiveRegion="polite" style={agentStyles.notice}>{t("savedToAccount")}</Text> : null}
+        </AgentSection>
+        <AgentSection title={t("agentRegionSection")}>
+          <AgentCard padded={false}>
+            <AgentNavRow divider={false} chevron={false} icon={Globe2} title={t("agentCountry")} subtitle={t("agentCountryValue")} />
+            <AgentNavRow chevron={false} icon={Banknote} title={t("agentCurrency")} subtitle={t("agentCurrencyValue")} />
+            <AgentNavRow chevron={false} icon={CalendarDays} title={t("agentDateFormat")} subtitle={date(now.toISOString())} />
+            <AgentNavRow chevron={false} icon={Clock3} title={t("agentTimeFormat")} subtitle={`${t("agentTimeFormat24")} · ${timeExample}`} />
+          </AgentCard>
+        </AgentSection>
+        {/* TimezonePicker carries its own "Time zone" title — no second heading. */}
+        <TimezonePicker />
+        <AgentCard padded={false}>
+          <AgentNavRow divider={false} icon={Bell} title={t("langNotifPrefs")} subtitle={t("langChannelsBody")} onPress={() => router.push("/account/notifications")} />
+        </AgentCard>
+      </AgentShell>
+    );
+  }
   return (
     <Screen
       footer={
@@ -78,6 +137,16 @@ export default function Language() {
     </Screen>
   );
 }
+const agentStyles = StyleSheet.create({
+  lead: { ...AT.body, color: ac.secondary },
+  segment: { flexDirection: "row", padding: 4, gap: 4, borderRadius: AL.inputRadius, backgroundColor: ac.surface, borderWidth: 1, borderColor: ac.border },
+  segItem: { flex: 1, minHeight: 48, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  segOn: { backgroundColor: ac.actionBlue },
+  segText: { ...AT.button, color: ac.navy },
+  segTextOn: { color: ac.surface },
+  error: { ...AT.secondary, color: ac.danger },
+  notice: { ...AT.secondary, color: ac.success },
+});
 const styles = StyleSheet.create({
   card: { borderRadius: radius.feature, padding: space.x2 },
   segment: { flexDirection: "row", gap: space.x2 },

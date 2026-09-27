@@ -7,14 +7,28 @@ import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
 import { owedAmount, paidAmount, stageOf, type CommissionRow } from "./commissionFilters";
+import { AgentCommissionDetail } from "./AgentCommissionDetail";
 
 /**
  * Record-level commission view (COM-007), shared by agent and broker. Shows
  * every attribution field the server returned; missing fields render "—"
  * rather than being guessed on the device.
  */
-export function CommissionDetail({ row, onOpenPolicy }: { row: CommissionRow; onOpenPolicy?: (policyId: string) => void }) {
+export function CommissionDetail({
+  row,
+  onOpenPolicy,
+  onWithdraw,
+  variant = "default",
+}: {
+  row: CommissionRow;
+  onOpenPolicy?: (policyId: string) => void;
+  /** Agent only: offered when this commission has an available balance. */
+  onWithdraw?: () => void;
+  /** "agent" = Commercial Agent v2 layout (AGENT_UI_SPEC_V2 screen 07); same data rules. */
+  variant?: "default" | "agent";
+}) {
   const { t, td } = useTranslation();
+  if (variant === "agent") return <AgentCommissionDetail row={row} onOpenPolicy={onOpenPolicy} onWithdraw={onWithdraw} />;
   const outstanding = owedAmount(row);
   return (
     <>

@@ -641,5 +641,56 @@
  {
   "name": "security-devices",
   "route": "/account/devices"
+ },
+ {
+  "name": "agentkit-account",
+  "route": "/agent/account"
+ },
+ {
+  "name": "agentkit-language",
+  "route": "/account/language",
+  "via": {
+   "route": "/agent/account",
+   "click": "Language & region|Langue et région",
+   "clickPrefix": "Language & region|Langue et région"
+  }
+ },
+ {
+  "name": "agentkit-privacy",
+  "route": "/account/privacy",
+  "via": {
+   "route": "/agent/account",
+   "click": "Privacy & legal|Confidentialité et mentions légales",
+   "clickPrefix": "Privacy & legal|Confidentialité et mentions légales"
+  }
+ },
+ {
+  "name": "earnings-agent",
+  "route": "/agent/wallet"
+ },
+ {
+  "name": "earnings-filters",
+  "route": "/agent/wallet",
+  "after": {
+   "click": "Filters|Filtres",
+   "times": 1
+  }
+ },
+ {
+  "name": "earnings-commission",
+  "route": "/agent/commissions/{commission}"
+ },
+ {
+  "name": "earnings-withdrawal",
+  "route": "/agent/withdrawals/{withdrawal}"
+ },
+ {
+  "name": "earnings-request",
+  "route": "/agent/withdrawal"
+ },
+ {
+  "name": "earnings-broker",
+  "route": "/broker/commissions",
+  "account": 1
  }
 ]

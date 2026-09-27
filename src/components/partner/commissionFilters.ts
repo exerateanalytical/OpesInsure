@@ -52,6 +52,8 @@ export type CommissionRow = {
   currency: string;
   policy_id?: string | null;
   policy_number?: string | null;
+  /** Status of the linked policy (joined from the book), when known. */
+  policy_status?: string | null;
   /** Sale links, when the server sends them (commission per sale). */
   proposal_id?: string | null;
   quote_id?: string | null;

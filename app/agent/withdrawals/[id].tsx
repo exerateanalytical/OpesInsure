@@ -1,56 +1,113 @@
 import React from "react";
-import { Text } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { LifeBuoy, WalletCards } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
-import { AppHeader, Card, Money, Screen, SectionTitle, StatusChip } from "@/components/ui";
-import { DetailRow } from "@/components/design";
-import { Step } from "@/components/FlowPrimitives";
-import { EmptyState, StatePanel } from "@/components/StatePanel";
-import { AgentApi } from "@/api/client";
-import { humanize } from "@/api/partner";
+import { AgentButton, AgentCard, AgentEmptyState, AgentSection, AgentShell, AgentSkeleton, HeritageAccent } from "@/components/agent";
+import { AgentApi, type AgentWithdrawal } from "@/api/client";
+import { money } from "@/api/partner";
+import { isWithdrawalTerminalFailure, maskPhone, providerLabel, WITHDRAWAL_FLOW, withdrawalReached, withdrawalVocab } from "@/components/partner/agentEarnings";
+import { KV, Timeline, WithdrawalChip, withdrawalWord } from "@/components/partner/AgentEarningsUi";
 import { formatDisplayDate, useTranslation } from "@/i18n";
-import { colors, type } from "@/theme/tokens";
+import { agentColors as c, agentLayout as L, agentType as T } from "@/theme/agent";
 
-const FLOW = ["REQUESTED", "APPROVED", "PROCESSING", "PAID"] as const;
-const FAILED = new Set(["FAILED", "REJECTED", "CANCELLED", "REVERSED"]);
+/** Optional fields the server may add; each one renders only when present. */
+type WithdrawalExtra = AgentWithdrawal & {
+  reference?: string | null;
+  payout_number?: string | null;
+  failure_reason?: string | null;
+  reason?: string | null;
+  transaction_reference?: string | null;
+  estimated_settlement_at?: string | null;
+  estimated_settlement_text?: string | null;
+  reviewed_at?: string | null;
+  processing_at?: string | null;
+  paid_at?: string | null;
+  failed_at?: string | null;
+};
 
-/** AGT-006: one withdrawal of the signed-in agent's partner (server-scoped list). */
+/** AGT-006: one withdrawal of the signed-in agent's partner (server-scoped list). Spec v2 screen 08. */
 export default function AgentWithdrawalDetail() {
   const { t, td } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useLoad(async () => (await AgentApi.withdrawals()).find((w) => w.id === id) ?? null, [id]);
+  const q = useLoad(async () => ((await AgentApi.withdrawals()).find((w) => w.id === id) ?? null) as WithdrawalExtra | null, [id]);
+  const w = q.data;
+  const word = (s: Parameters<typeof withdrawalWord>[0]) => td(`agentSt_${withdrawalWord(s).replace(/\s+/g, "")}`, withdrawalWord(s));
   return (
-    <Screen>
-      <AppHeader title={t("wdDetailTitle")} back />
-      <StatePanel {...q} onRetry={q.reload}>
-        {(w) => {
-          if (!w) return <EmptyState title={t("pdNotFound")} message={t("pdNotFoundBody")} />;
-          const x = w as typeof w & { reference?: string | null; failure_reason?: string | null; transaction_reference?: string | null; paid_at?: string | null };
-          const reached = FLOW.indexOf(w.status as (typeof FLOW)[number]);
+    <AgentShell variant="drilldown" title={t("ernWdTitle")} refreshing={q.loading && !!q.data} onRefresh={q.reload}>
+      {q.loading && !q.data ? (
+        <AgentSkeleton rows={5} height={56} />
+      ) : q.error ? (
+        <AgentEmptyState icon={WalletCards} title={t("ernLoadError")} body={t("loadErrorBody")} actionLabel={t("ernRetry")} onAction={q.reload} />
+      ) : !w ? (
+        <AgentEmptyState icon={WalletCards} title={t("pdNotFound")} body={t("ernNotFound")} />
+      ) : (
+        (() => {
+          const v = withdrawalVocab(w.status);
+          const failed = isWithdrawalTerminalFailure(v);
+          const reached = withdrawalReached(v);
+          const ref = w.payout_number ?? w.reference ?? w.id.slice(0, 8).toUpperCase();
+          const stamps = [w.requested_at, w.reviewed_at, w.processing_at, w.paid_at];
+          const steps: Parameters<typeof Timeline>[0]["steps"] = failed
+            ? [
+                { label: word("requested"), date: formatDisplayDate(w.requested_at, true), state: "done" },
+                { label: word(v), date: w.failed_at ? formatDisplayDate(w.failed_at, true) : null, state: "failed", note: w.failure_reason ?? w.reason ?? t("ernWdFailedBody") },
+              ]
+            : WITHDRAWAL_FLOW.map((st, i) => ({
+                label: word(st),
+                date: stamps[i] ? formatDisplayDate(stamps[i], true) : null,
+                state: i < reached || (i === reached && v === "paid") ? "done" : i === reached ? "current" : "todo",
+              }));
+          const settlement = w.estimated_settlement_at ? formatDisplayDate(w.estimated_settlement_at, true) : w.estimated_settlement_text ?? null;
           return (
-            <>
-              <Card feature>
-                <StatusChip label={td(`withdrawalStatus_${w.status}`, humanize(w.status))} tone={w.status === "PAID" ? "success" : FAILED.has(w.status) ? "danger" : "warning"} />
-                <Money amount={w.amount_minor / 100} size="large" />
-                <DetailRow label={t("wdReference")} value={x.reference ?? w.id.slice(0, 8).toUpperCase()} />
-                <DetailRow label={t("wdDestination")} value={`${w.provider === "orange_money" ? "Orange Money" : w.provider === "mtn_momo" ? "MTN MoMo" : w.provider} · ${w.destination_phone}`} />
-                <DetailRow label={t("wdRequested")} value={formatDisplayDate(w.requested_at, true)} />
-                <DetailRow label={t("wdTransaction")} value={x.transaction_reference} />
-                <DetailRow label={t("wdPaidAt")} value={x.paid_at ? formatDisplayDate(x.paid_at, true) : null} />
-              </Card>
-              <SectionTitle title={t("wdProgress")} />
-              <Card>
-                {FAILED.has(w.status) ? (
-                  <Text style={{ ...type.body, color: colors.dangerText }}>{x.failure_reason ?? t("wdFailedBody")}</Text>
-                ) : (
-                  FLOW.map((s, i) => <Step key={s} label={td(`withdrawalStatus_${s}`, humanize(s))} complete={reached >= i} />)
-                )}
-              </Card>
-              <Text style={{ ...type.meta, color: colors.neutral600 }}>{t("wdNoFeeNotice")}</Text>
-            </>
+            <View style={s.wrap}>
+              <View style={s.hero}>
+                <HeritageAccent variant="pattern" size={180} opacity={0.06} style={s.art} />
+                <WithdrawalChip status={w.status} />
+                <Text style={s.amount} numberOfLines={1} adjustsFontSizeToFit>{money(w.amount_minor)}</Text>
+              </View>
+              <AgentCard>
+                <KV first label={t("ernWdId")} value={ref} />
+                <KV label={t("ernWdMethod")} value={providerLabel(w.provider)} />
+                <KV label={t("ernWdAccount")} value={maskPhone(w.destination_phone)} />
+                <KV label={t("ernWdRequested")} value={formatDisplayDate(w.requested_at, true)} />
+                {settlement && !failed && v !== "paid" ? <KV label={t("ernWdSettlement")} value={settlement} /> : null}
+                {w.transaction_reference ? <KV label={t("wdTransaction")} value={w.transaction_reference} /> : null}
+              </AgentCard>
+              <AgentSection title={t("ernWdStatusTimeline")}>
+                <AgentCard>
+                  <Timeline steps={steps} />
+                </AgentCard>
+              </AgentSection>
+              <AgentButton
+                variant="secondary"
+                icon={LifeBuoy}
+                label={t("ernWdContact")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/support/new",
+                    params: {
+                      category: "PAYMENT",
+                      reference: ref,
+                      subject: t("ernWdSupportSubject", { ref }),
+                      body: t("ernWdSupportBody", { ref, amount: money(w.amount_minor), date: formatDisplayDate(w.requested_at, true) }),
+                    },
+                  })
+                }
+              />
+              <Text style={s.notice}>{t("wdNoFeeNotice")}</Text>
+            </View>
           );
-        }}
-      </StatePanel>
-    </Screen>
+        })()
+      )}
+    </AgentShell>
   );
 }
+
+const s = StyleSheet.create({
+  wrap: { gap: L.sectionGap },
+  hero: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: L.cardRadius, padding: 20, gap: 8, alignItems: "flex-start", overflow: "hidden" },
+  art: { position: "absolute", right: -30, top: -30 },
+  amount: { ...T.heroAmount, color: c.heading },
+  notice: { ...T.caption, color: c.muted },
+});
