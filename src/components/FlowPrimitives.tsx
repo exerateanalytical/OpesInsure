@@ -3,6 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChevronRight, LucideIcon } from "lucide-react-native";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { ripple } from "@/components/ui";
+import { AgentIconBadge } from "@/components/agent/primitives";
+import { usePartnerLook } from "@/hooks/usePartnerLook";
+import { agentColors as ac, agentType as aT } from "@/theme/agent";
 export function FlowRow({
   title,
   subtitle,
@@ -16,16 +19,22 @@ export function FlowRow({
   icon: LucideIcon;
   onPress?: () => void;
 }) {
+  // Partner portals: pronounced icon tile + agent type scale.
+  const partner = !!usePartnerLook();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [s.row, pressed && s.pressed]}>
-      <View style={s.icon}>
-        <Icon size={29} color={colors.navy800} />
-      </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [s.row, partner && s.partnerRow, pressed && s.pressed]}>
+      {partner ? (
+        <AgentIconBadge icon={Icon} />
+      ) : (
+        <View style={s.icon}>
+          <Icon size={29} color={colors.navy800} />
+        </View>
+      )}
       <View style={s.copy}>
-        <Text style={s.title}>{title}</Text>
-        {subtitle ? <Text style={s.sub}>{subtitle}</Text> : null}
+        <Text style={[s.title, partner && s.partnerTitle]}>{title}</Text>
+        {subtitle ? <Text style={[s.sub, partner && s.partnerSub]}>{subtitle}</Text> : null}
         {status ? (
-          <Text style={s.status}>{status.replaceAll("_", " ")}</Text>
+          <Text style={[s.status, partner && s.partnerStatus]}>{status.replaceAll("_", " ")}</Text>
         ) : null}
       </View>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><ChevronRight size={20} color={colors.neutral400} /></View>
@@ -48,6 +57,10 @@ export function Step({
 }
 const s = StyleSheet.create({
   pressed: { opacity: 0.85 },
+  partnerRow: { minHeight: 68, borderBottomColor: ac.border },
+  partnerTitle: { ...aT.cardTitle, color: ac.heading },
+  partnerSub: { ...aT.secondary, color: ac.secondary },
+  partnerStatus: { ...aT.caption, color: ac.actionBlue },
   row: {
     minHeight: 78,
     flexDirection: "row",

@@ -12,6 +12,7 @@ import { agentColors as ac, agentType as aT } from "@/theme/agent";
 import { FilterToolbar, runList, totals, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
+import { usePartnerLook } from "@/hooks/usePartnerLook";
 import { colors, space, type } from "@/theme/tokens";
 
 /** Initials for an insurer without a logo ("SanlamAllianz Cameroun" -> "SC"). */
@@ -103,7 +104,7 @@ export function FilteredList<T extends { id: string }>({
   mark?: (r: T) => { logoUrl?: string | null; name?: string | null } | null;
   /** Primary list action rendered above the toolbar (e.g. "Report a claim"). */
   action?: React.ReactNode;
-  /** "agent" = Commercial Agent spec v2 rows (AgentCard, navy icons, agent chips). Broker/customer keep "default". */
+  /** "agent" = Commercial Agent spec v2 rows (AgentCard, icon tiles, agent chips). Partner routes (/broker, /carrier) get it automatically. */
   variant?: "default" | "agent";
 }) {
   const { t } = useTranslation();
@@ -111,7 +112,9 @@ export function FilteredList<T extends { id: string }>({
   const run = (v: FilterValues) => runList(rows, { values: v, text: f.query, matchers, haystack, sorters });
   const shown = run(f.values);
   const sum = amount ? totals(shown, amount) : null;
-  if (variant === "agent") {
+  // Broker / insurer lists take the agent rows too (insurer-logo rows keep MarkRow).
+  const partner = usePartnerLook();
+  if (variant === "agent" || (partner && !mark)) {
     return (
       <>
         {action}

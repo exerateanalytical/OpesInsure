@@ -27,7 +27,7 @@
  *                   `opacity` clamped 0.03–0.08, `style` to position). Decorative, a11y-hidden.
  *  AgentAvatar      Initials avatar (`name`, `size`). agentInitials(name) helper.
  */
-export { AgentShell, AgentAvatar, agentInitials } from "./AgentShell";
+export { AgentShell, AgentAvatar, AgentPageHeader, agentInitials } from "./AgentShell";
 export type { PartnerPortal } from "./AgentShell";
 export { PartnerHome } from "./PartnerHome";
 export type { PartnerHomeLink } from "./PartnerHome";

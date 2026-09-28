@@ -129,6 +129,50 @@ function DrillHeader({ portal, title, onBack, right }: { portal: PartnerPortal; 
 }
 
 /**
+ * The agent-kit header for a screen that is still built on the shared Screen (broker and
+ * insurer pages via AppHeader): operational header + page title, or the drill-down header.
+ * Renders inside an already padded body, so it carries no horizontal padding of its own.
+ */
+export function AgentPageHeader({
+  portal,
+  title,
+  subtitle,
+  back = false,
+  right,
+}: {
+  portal: PartnerPortal;
+  title: string;
+  subtitle?: string;
+  back?: boolean;
+  right?: ReactNode;
+}) {
+  if (back) {
+    return (
+      <View style={s.pageHead}>
+        <View style={s.embedded}>
+          <DrillHeader portal={portal} title={title} right={right} />
+        </View>
+        {subtitle ? <Text style={[s.pageSub, s.center]}>{subtitle}</Text> : null}
+      </View>
+    );
+  }
+  return (
+    <View style={s.pageHead}>
+      <View style={s.embedded}>
+        <OperationalHeader portal={portal} />
+      </View>
+      <View style={s.pageTitleRow}>
+        <View style={s.flex}>
+          <Text accessibilityRole="header" style={s.pageTitle}>{title}</Text>
+          {subtitle ? <Text style={s.pageSub}>{subtitle}</Text> : null}
+        </View>
+        {right}
+      </View>
+    </View>
+  );
+}
+
+/**
  * Agent-portal screen frame (spec §7). `variant="operational"` = wordmark +
  * "Commercial Agent Portal" + bell (unread badge) + avatar -> /agent/account.
  * `variant="drilldown"` = back arrow + centred `title`. Bottom navigation is
@@ -256,4 +300,10 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: c.border,
   },
+  pageHead: { gap: 12 },
+  embedded: { marginHorizontal: -L.screenPadding },
+  pageTitleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  pageTitle: { ...T.screenTitle, color: c.heading },
+  pageSub: { ...T.secondary, color: c.secondary, marginTop: 2 },
+  center: { textAlign: "center" },
 });

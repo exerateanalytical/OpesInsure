@@ -19,6 +19,9 @@ import { CONTENT_MAX_WIDTH, authRadius, authType, colors, radius, space, type } 
 import { formatXaf, useTranslation } from "@/i18n";
 import { highContrast, useHighContrast } from "@/theme/contrast";
 import { BrandHeader } from "@/components/design";
+import { AgentPageHeader } from "@/components/agent/AgentShell";
+import { usePartnerLook } from "@/hooks/usePartnerLook";
+import { agentColors as ac, agentLayout as AL } from "@/theme/agent";
 
 /** Design sign-in button (sampled #003AA0->#004FCD gradient midpoint). */
 const BRAND_BLUE = "#0045B8";
@@ -40,6 +43,8 @@ export function Screen({
   footer?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  // Broker / insurer / agent routes render on the Commercial Agent kit page.
+  const partner = !!usePartnerLook();
   // Without a footer the screen owns the bottom inset so the last button is
   // never hidden under the Android nav bar / iOS home indicator.
   const bottom = footer ? 0 : insets.bottom;
@@ -47,9 +52,9 @@ export function Screen({
   // list (FlatList) can take the remaining height and scroll by itself.
   // Content is capped at CONTENT_MAX_WIDTH and centred on tablets/foldables
   // so cards do not stretch edge to edge on wide screens.
-  const body = <View style={[styles.screenBody, styles.contentWidth, !scroll && styles.flex, style]}>{children}</View>;
+  const body = <View style={[styles.screenBody, partner && styles.partnerBody, styles.contentWidth, !scroll && styles.flex, style]}>{children}</View>;
   return (
-    <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView edges={["top"]} style={[styles.safe, partner && styles.partnerSafe]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : keyboardAvoid || footer ? "height" : undefined}
@@ -100,6 +105,8 @@ export function AppHeader({
   back?: boolean;
   action?: ReactNode;
 }) {
+  const partner = usePartnerLook();
+  if (partner) return <AgentPageHeader portal={partner} title={title} subtitle={subtitle} back={back} right={back ? action : undefined} />;
   return <BrandHeader title={title} subtitle={subtitle} back={back} right={action ?? null} />;
 }
 
@@ -129,6 +136,8 @@ export function Card({
   onPress?: () => void;
   accessibilityLabel?: string;
 }) {
+  const partner = !!usePartnerLook();
+  const look = partner && styles.partnerCard;
   if (onPress) {
     return (
       <Pressable
@@ -136,14 +145,14 @@ export function Card({
         accessibilityLabel={accessibilityLabel}
         onPress={onPress}
         android_ripple={ripple()}
-        style={({ pressed }) => [styles.card, feature && styles.featureCard, pressed && styles.cardPressed, style]}
+        style={({ pressed }) => [styles.card, feature && styles.featureCard, look, pressed && styles.cardPressed, style]}
       >
         {children}
       </Pressable>
     );
   }
   return (
-    <View style={[styles.card, feature && styles.featureCard, style]}>
+    <View style={[styles.card, feature && styles.featureCard, look, style]}>
       {children}
     </View>
   );
@@ -437,6 +446,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1 },
   screenBody: { paddingHorizontal: space.x5, gap: space.x6 },
+  partnerSafe: { backgroundColor: ac.page },
+  partnerBody: { paddingHorizontal: AL.screenPadding, paddingTop: 4, gap: AL.sectionGap },
+  // Agent kit card: white, 1px #E9EAEB, radius 18, no shadow or ochre edge.
+  partnerCard: { borderColor: ac.border, borderRadius: AL.cardRadius, borderTopWidth: 1, borderTopColor: ac.border, shadowOpacity: 0, elevation: 0 },
   contentWidth: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
   cardPressed: { opacity: 0.9, borderColor: colors.neutral300 },
   header: {
