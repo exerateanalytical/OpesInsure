@@ -17,6 +17,7 @@
  *                   i18n keys agentSt_<WordWithoutSpaces>. `tone?` overrides success|warning|danger|info|neutral.
  *  AgentButton      `variant` primary (blue, 52h, radius 14) | secondary (outline) | danger (outline);
  *                   `icon?`, `loading?`, `disabled?`.
+ *  AgentCountBadge  Numeric pill for a row's `right` (`count`, `tone` warning|danger|neutral).
  *  AgentEmptyState  `icon`, `title`, `body`, optional `actionLabel` + `onAction`.
  *  AgentSkeleton    Loading placeholder rows (`rows`, `height`).
  *  HeritageAccent   The one brand-art moment per screen (`variant` africa|pattern|network, `size`,
@@ -30,6 +31,7 @@ export {
   AgentNavRow,
   AgentStatusChip,
   AgentButton,
+  AgentCountBadge,
   AgentEmptyState,
   AgentSkeleton,
   HeritageAccent,

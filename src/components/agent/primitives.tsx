@@ -209,6 +209,19 @@ export function AgentNavRow({
 }
 
 /* ------------------------------------------------------------------ */
+/* AgentCountBadge — numeric pill for queue rows (pass as `right`)     */
+/* ------------------------------------------------------------------ */
+export function AgentCountBadge({ count, tone = "neutral" }: { count: number; tone?: "warning" | "danger" | "neutral" }) {
+  const bg = tone === "danger" ? c.dangerBg : tone === "warning" ? c.warningBg : c.surfaceSoft;
+  const fg = tone === "danger" ? c.danger : tone === "warning" ? c.warning : c.secondary;
+  return (
+    <View style={[s.countBadge, { backgroundColor: bg }]}>
+      <Text style={[s.countText, { color: fg }]}>{count > 99 ? "99+" : count}</Text>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* AgentButton — primary / secondary / danger                          */
 /* ------------------------------------------------------------------ */
 export function AgentButton({
@@ -436,4 +449,6 @@ const s = StyleSheet.create({
   },
   skelIcon: { width: 22, height: 22, borderRadius: 6, backgroundColor: c.surfaceSoft },
   skelLine: { height: 10, borderRadius: 5, backgroundColor: c.surfaceSoft },
+  countBadge: { minWidth: 28, height: 24, paddingHorizontal: 8, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  countText: { fontSize: 12, lineHeight: 16, fontFamily: "Inter_700Bold" },
 });
