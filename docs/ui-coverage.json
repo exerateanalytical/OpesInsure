@@ -1,21 +1,21 @@
 {
-    "generated_at": "2026-09-28T21:39:24+01:00",
+    "generated_at": "2026-09-28T23:08:12+01:00",
     "totals": {
         "actions": 890,
-        "covered": 394,
-        "uncovered": 496,
-        "coverage_pct": 44.3,
+        "covered": 402,
+        "uncovered": 488,
+        "coverage_pct": 45.2,
         "ui_relevant_actions": 865,
-        "ui_relevant_covered": 391,
-        "ui_coverage_pct": 45.2,
+        "ui_relevant_covered": 399,
+        "ui_coverage_pct": 46.1,
         "uncovered_by_classification": {
             "CUSTOMER_WEB_NEEDED": 20,
             "MOBILE_ONLY_OK": 16,
-            "STAFF_DESKTOP_NEEDED": 451,
+            "STAFF_DESKTOP_NEEDED": 443,
             "SYSTEM_ONLY": 9
         },
         "covered_via": {
-            "filament": 341,
+            "filament": 349,
             "account_portal": 67
         }
     },
@@ -6200,9 +6200,11 @@
                 "throttle:10,1"
             ],
             "domain": "clients",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13159,9 +13161,11 @@
                 "permission:parties.relationships.manage"
             ],
             "domain": "ownership-interests",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13211,9 +13215,11 @@
                 "permission:parties.match.review"
             ],
             "domain": "parties",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13236,9 +13242,11 @@
                 "permission:parties.relationships.manage"
             ],
             "domain": "parties",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13900,9 +13908,11 @@
                 "permission:parties.match.review"
             ],
             "domain": "party-match-candidates",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13953,9 +13963,11 @@
                 "permission:parties.merge.approve"
             ],
             "domain": "party-merges",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13978,9 +13990,11 @@
                 "permission:parties.merge.approve"
             ],
             "domain": "party-merges",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/PartyActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -19802,9 +19816,11 @@
                 "App\\Interfaces\\Http\\Middleware\\DeprecatedRouteAlias:renewals/seed,REQ-DUP-010"
             ],
             "domain": "renewals",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/RenewalActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -19831,6 +19847,7 @@
             ],
             "domain": "renewals",
             "filament_entry": [
+                "Shared/Actions/RenewalActions.php",
                 "Admin/Resources/Renewals/Pages/ViewRenewal.php"
             ],
             "portal_entry": false,
@@ -19860,6 +19877,7 @@
             ],
             "domain": "renewals",
             "filament_entry": [
+                "Shared/Actions/RenewalActions.php",
                 "Admin/Resources/Renewals/Pages/ViewRenewal.php"
             ],
             "portal_entry": false,
@@ -19889,6 +19907,7 @@
             ],
             "domain": "renewals",
             "filament_entry": [
+                "Shared/Actions/RenewalActions.php",
                 "Admin/Resources/Renewals/Pages/ViewRenewal.php"
             ],
             "portal_entry": false,
