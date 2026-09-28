@@ -72,7 +72,48 @@ final class LetterheadResolver
             return null;
         }
 
-        return 'data:'.$a->{$kind.'_mime'}.';base64,'.base64_encode($bytes);
+        return self::embedUri($bytes, (string) $a->{$kind.'_mime'});
+    }
+
+    /**
+     * Data URI of artwork for the document shell (dompdf). WebP is served as-is on the web and in the app, but
+     * is converted to PNG here (GD) so every PDF/preview renderer gets a format it handles; when GD cannot
+     * decode WebP the document falls back to the text wordmark instead of a broken image.
+     */
+    public static function embedUri(string $bytes, string $mime): ?string
+    {
+        if ($mime === 'image/webp') {
+            static $png = [];
+            $key = hash('sha256', $bytes);
+            if (! array_key_exists($key, $png)) {
+                $png[$key] = self::webpToPng($bytes);
+            }
+            if ($png[$key] === null) {
+                return null;
+            }
+            [$bytes, $mime] = [$png[$key], 'image/png'];
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($bytes);
+    }
+
+    private static function webpToPng(string $webp): ?string
+    {
+        if (! function_exists('imagecreatefromwebp') || ! (gd_info()['WebP Support'] ?? false)) {
+            return null;
+        }
+        $im = @imagecreatefromstring($webp);
+        if ($im === false) {
+            return null;
+        }
+        imagealphablending($im, false);
+        imagesavealpha($im, true);
+        ob_start();
+        $ok = imagepng($im, null, 6);
+        $png = (string) ob_get_clean();
+        imagedestroy($im);
+
+        return $ok && $png !== '' ? $png : null;
     }
 
     /**

@@ -62,12 +62,12 @@ final class LetterheadActions
         return [
             Section::make('Artwork')->columns(2)->schema([
                 Forms\Components\TextInput::make('current')->label('Current version')->disabled()->dehydrated(false)->columnSpanFull(),
-                Forms\Components\FileUpload::make('logo')->label('Logo (PNG, JPG or SVG, max 512 KB, min 64x32 px)')
+                Forms\Components\FileUpload::make('logo')->label('Logo (PNG, JPG, WebP or SVG, max 512 KB, min 64x32 px)')
                     ->disk(self::UPLOAD_DISK)->directory(self::UPLOAD_DIR)->visibility('private')
-                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])->maxSize(512),
-                Forms\Components\FileUpload::make('header')->label('Letterhead header image (optional, PNG/JPG/SVG, max 1 MB, min 600x60 px)')
+                    ->acceptedFileTypes(LetterheadService::ACCEPTED_MIMES)->maxSize(512),
+                Forms\Components\FileUpload::make('header')->label('Letterhead header image (optional, PNG/JPG/WebP/SVG, max 1 MB, min 600x60 px)')
                     ->disk(self::UPLOAD_DISK)->directory(self::UPLOAD_DIR)->visibility('private')
-                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])->maxSize(1024),
+                    ->acceptedFileTypes(LetterheadService::ACCEPTED_MIMES)->maxSize(1024),
                 Forms\Components\Toggle::make('remove_logo')->label('Remove the current logo'),
                 Forms\Components\Toggle::make('remove_header')->label('Remove the current header image'),
                 Forms\Components\ColorPicker::make('brand_color')->label('Brand colour')->regex('/^#[0-9A-Fa-f]{6}$/'),
@@ -124,7 +124,7 @@ final class LetterheadActions
             if ($bytes = self::uploaded($data[$kind] ?? null, false)) {
                 $f = app(LetterheadService::class)->inspect($bytes, $kind);
 
-                return 'data:'.$f['mime'].';base64,'.base64_encode($f['bytes']);
+                return LetterheadResolver::embedUri($f['bytes'], $f['mime']);
             }
 
             return empty($data['remove_'.$kind]) ? LetterheadResolver::dataUri($cur, $kind) : null;

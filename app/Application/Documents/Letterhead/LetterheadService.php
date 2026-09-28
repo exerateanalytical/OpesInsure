@@ -22,6 +22,12 @@ final class LetterheadService
 {
     public const OWNERS = ['CARRIER', 'TENANT'];
 
+    /** Accepted raster artwork (mime => stored extension). WebP is converted to PNG when embedded in PDFs (LetterheadResolver::embedUri). */
+    public const RASTER_EXT = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+
+    /** Upload allow-list for the admin / insurer letterhead forms. */
+    public const ACCEPTED_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+
     public const TEXT_FIELDS = ['brand_color', 'registered_address', 'rccm', 'niu', 'licence_reference', 'contact_phone', 'contact_email', 'website', 'footer_text_en', 'footer_text_fr', 'public_display', 'authorized_by', 'authorized_on', 'authorization_source', 'authorization_note'];
 
     public function __construct(private readonly AuditWriter $audit) {}
@@ -79,7 +85,9 @@ final class LetterheadService
             'owner_type' => $ownerType, 'owner_id' => $ownerId, 'version' => $asset->version, 'status' => $asset->status,
             'logo_sha256' => $asset->logo_sha256, 'header_sha256' => $asset->header_sha256, 'public_display' => $asset->public_display,
             'authorized_by' => $asset->authorized_by, 'authorized_on' => $asset->authorized_on?->toDateString(), 'authorization_source' => $asset->authorization_source,
-        ], $asset->authorization_note);
+            // Free text (up to 2000 chars): metadata, not the 64-char reason_code column.
+            'authorization_note' => $asset->authorization_note,
+        ]);
         self::forgetPublicCache();
 
         return $asset;
@@ -182,15 +190,15 @@ final class LetterheadService
         }
         $info = @getimagesizefromstring($bytes);
         $mime = is_array($info) ? ($info['mime'] ?? null) : null;
-        if (! in_array($mime, ['image/png', 'image/jpeg'], true)) {
-            $fail('The '.$kind.' must be a PNG, JPG or SVG image.');
+        if (! in_array($mime, array_keys(self::RASTER_EXT), true)) {
+            $fail('The '.$kind.' must be a PNG, JPG, WebP or SVG image.');
         }
         [$w, $h] = [(int) $info[0], (int) $info[1]];
         if ($w < $rules['min_width'] || $h < $rules['min_height'] || $w > $rules['max_width'] || $h > $rules['max_height']) {
             $fail(sprintf('The %s must be between %dx%d and %dx%d pixels (got %dx%d).', $kind, $rules['min_width'], $rules['min_height'], $rules['max_width'], $rules['max_height'], $w, $h));
         }
 
-        return ['bytes' => $bytes, 'mime' => $mime, 'ext' => $mime === 'image/png' ? 'png' : 'jpg', 'sha256' => hash('sha256', $bytes), 'width' => $w, 'height' => $h];
+        return ['bytes' => $bytes, 'mime' => $mime, 'ext' => self::RASTER_EXT[$mime], 'sha256' => hash('sha256', $bytes), 'width' => $w, 'height' => $h];
     }
 
     /** @return array{0: ?int, 1: ?int} */
