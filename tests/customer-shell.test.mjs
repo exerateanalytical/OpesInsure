@@ -94,8 +94,11 @@ test("claim screens no longer test the wrong status names", () => {
 
 test("claim evidence uses the real upload contracts, including video", () => {
   const api = read("src/api/customer.ts");
-  assert.match(api, /"\/mobile\/documents"/);
-  assert.match(api, /file_base64/);
+  // Photos / PDFs go through the shared storeDocument (POST /mobile/documents, duplicate-safe).
+  const store = read("src/api/documentUpload.ts");
+  assert.match(store, /"\/mobile\/documents"/);
+  assert.match(store, /file_base64/);
+  assert.match(api, /storeDocument\("CLAIM_EVIDENCE"/);
   assert.match(api, /"\/mobile\/uploads"/);
   assert.match(api, /chunks\/\$\{index\}/);
   assert.match(api, /upload_session_id/);

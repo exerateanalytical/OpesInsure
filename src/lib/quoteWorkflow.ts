@@ -274,7 +274,8 @@ export function comparisonRows(c: QuoteComparison, language = "en", words: { inc
 
 // --- Proposal lifecycle (REQ-PRP-001…005) --------------------------------------
 
-export type ChecklistDocument = { code: string; label?: string; name?: unknown; mandatory?: boolean; status?: string | null };
+/** satisfied_by: UPLOAD (the customer sends a file) | PROPOSAL_FORM (met by answering the questions). */
+export type ChecklistDocument = { code: string; label?: string; name?: unknown; mandatory?: boolean; status?: string | null; satisfied_by?: string | null };
 
 /** required_documents[].status → tone + i18n key (propDoc_<STATUS>). */
 export function requiredDocumentInfo(status: string | null | undefined): { key: string; tone: Tone; done: boolean } {

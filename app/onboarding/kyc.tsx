@@ -11,6 +11,7 @@ import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
+import { storeDocument } from "@/api/documentUpload";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
@@ -72,8 +73,9 @@ export default function Kyc() {
   const attach = () =>
     run("attach", async () => {
       if (!photo || !purpose) throw new Error(t("kycChooseTypeFirst"));
-      const doc = await CustomerApi.uploadDocument({ category: "KYC_IDENTITY", mime_type: photo.mime, file_base64: photo.base64 });
-      await CustomerApi.attachKycDocument(doc.id, purpose);
+      // An ID photo already on file (same content) is reused instead of failing as a duplicate.
+      const documentId = await storeDocument("KYC_IDENTITY", { base64: photo.base64, mime: photo.mime });
+      await CustomerApi.attachKycDocument(documentId, purpose);
       setPhoto(null);
       setPurpose(null);
       q.setData(await CustomerApi.kyc());

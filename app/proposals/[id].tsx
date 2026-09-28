@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import * as DocumentPicker from "expo-document-picker";
-import { CheckCircle2, FileText, FileUp, Hourglass, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
+import { Camera, CheckCircle2, FileText, FileUp, Hourglass, Images, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, DetailRow, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
@@ -14,36 +13,34 @@ import { useInsurance } from "@/store/insurance";
 import { humanize, localized, proposalStatusInfo } from "@/lib/purchase";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, space, type } from "@/theme/tokens";
-import { translateNow, useTranslation } from "@/i18n";
-import { withoutRelock } from "@/lib/appLock";
+import { useTranslation } from "@/i18n";
 import { ProposalChecklist, ProposalLifecycleApi } from "@/api/workflow";
 import { canWithdrawProposal, requiredDocumentInfo } from "@/lib/quoteWorkflow";
+import { CustomerApi } from "@/api/customer";
+import { pickUpload, storeDocument, type PickSource } from "@/api/documentUpload";
+import { useLoad } from "@/hooks/useLoad";
+import { kycAutoAttachments } from "@/lib/proposalDocuments";
 
-/** Reads a picked file as base64 without extra native modules. */
-async function readAsBase64(uri: string): Promise<string> {
-  const blob = await (await fetch(uri)).blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error(translateNow("prFileUnreadable")));
-    reader.onloadend = () => resolve(String(reader.result ?? "").replace(/^data:[^,]*,/, ""));
-    reader.readAsDataURL(blob);
-  });
-}
-
-type Requirement = { code: string; label: string; mandatory: boolean; status?: string; notes?: string | null };
+type Requirement = { code: string; label: string; mandatory: boolean; status?: string; notes?: string | null; form: boolean };
 
 function requirementsOf(p: Proposal, language: string, checklist?: ProposalChecklist | null): Requirement[] {
   // The Batch 6 checklist carries each requirement's own status; older payloads only list them.
-  const listed: Requirement[] = (checklist?.required_documents?.length ? checklist.required_documents : p.required_documents ?? []).map((r) => ({
-    code: r.code,
-    label: r.label ?? (localized(r.name, language) || humanize(r.code)),
-    mandatory: r.mandatory !== false,
-    status: r.status && !["MISSING", "REQUIRED"].includes(String(r.status).toUpperCase()) ? String(r.status) : undefined,
-  }));
+  // The catalogue can list one code twice (variants): one row per code.
+  const listed: Requirement[] = [];
+  for (const r of checklist?.required_documents?.length ? checklist.required_documents : p.required_documents ?? []) {
+    if (listed.some((x) => x.code === r.code)) continue;
+    listed.push({
+      code: r.code,
+      label: r.label ?? (localized(r.name, language) || humanize(r.code)),
+      mandatory: r.mandatory !== false,
+      status: r.status && !["MISSING", "REQUIRED"].includes(String(r.status).toUpperCase()) ? String(r.status) : undefined,
+      form: String(r.satisfied_by ?? "").toUpperCase() === "PROPOSAL_FORM",
+    });
+  }
   for (const d of p.documents ?? []) {
     const hit = listed.find((r) => r.code === d.requirement_code);
     if (hit) Object.assign(hit, { status: hit.status ?? d.status, notes: d.review_notes });
-    else listed.push({ code: d.requirement_code, label: humanize(d.requirement_code), mandatory: true, status: d.status, notes: d.review_notes });
+    else listed.push({ code: d.requirement_code, label: humanize(d.requirement_code), mandatory: true, status: d.status, notes: d.review_notes, form: false });
   }
   return listed;
 }
@@ -62,6 +59,8 @@ export default function ProposalDetail() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<unknown>(null);
   const [checklist, setChecklist] = useState<ProposalChecklist | null>(null);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<unknown>(null);
 
@@ -91,16 +90,18 @@ export default function ProposalDetail() {
     return () => clearInterval(t);
   }, [id, info.stage, loadProposal]);
 
-  const upload = async (code: string) => {
+  // Take a photo, pick one from the gallery, or choose a PDF/image file; then link it to the requirement.
+  const upload = async (code: string, source: PickSource) => {
     if (!p || uploading) return;
     setUploadError(null);
-    const picked = await withoutRelock(() => DocumentPicker.getDocumentAsync({ type: ["image/jpeg", "image/png", "application/pdf"], copyToCacheDirectory: true }));
-    const asset = picked.canceled ? null : picked.assets?.[0];
-    if (!asset) return;
+    setNotice(null);
     setUploading(code);
     try {
-      const mime = asset.mimeType ?? (asset.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
-      await ProposalsApi.uploadDocument(p.id, { requirement_code: code, mime_type: mime, file_base64: await readAsBase64(asset.uri) });
+      const file = await pickUpload(source);
+      if (!file) return;
+      const documentId = await storeDocument(`PROPOSAL_${code}`, file);
+      await ProposalsApi.linkDocument(p.id, documentId, code);
+      setChoosing(null);
       await load();
     } catch (e) {
       setUploadError(e);
@@ -108,6 +109,33 @@ export default function ProposalDetail() {
       setUploading(null);
     }
   };
+
+  // A verified ID on file is linked automatically to any identity requirement (once per screen visit).
+  const kyc = useLoad(() => CustomerApi.kyc().catch(() => null), []);
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!p || !kyc.data || autoTried.current || !allowedAction(p, "attach_document", true)) return;
+    const rows = (checklist?.required_documents?.length ? checklist.required_documents : p.required_documents ?? []).map((r) => ({ code: r.code, status: r.status, satisfied_by: r.satisfied_by }));
+    const links = kycAutoAttachments(rows, kyc.data);
+    if (!rows.length) return;
+    autoTried.current = true;
+    if (!links.length) return;
+    void (async () => {
+      let linked = 0;
+      for (const l of links) {
+        try {
+          await ProposalsApi.linkDocument(p.id, l.document_id, l.requirement_code);
+          linked++;
+        } catch {
+          // The server decides what a document may satisfy; a refused link simply leaves the upload button.
+        }
+      }
+      if (linked) {
+        setNotice(t("prIdAutoAttached"));
+        await load();
+      }
+    })();
+  }, [p, checklist, kyc.data, load, t]);
 
   const contactSupport = async () => {
     const c = await SupportContactsApi.get();
@@ -224,12 +252,24 @@ export default function ProposalDetail() {
                   <View key={r.code} style={st.req}>
                     <DetailRow label={r.mandatory ? r.label : `${r.label} ${t("prDocOptional")}`} valueNode={<StatusChip label={td(doc.key, r.status ?? "")} tone={doc.tone} />} />
                     {r.notes ? <Text style={ps.meta}>{r.notes}</Text> : null}
-                    {!ok && canUpload ? (
-                      <Button label={r.status && !rejected ? t("prReplace") : t("prUpload")} icon={FileUp} variant="secondary" loading={uploading === r.code} disabled={!!uploading} onPress={() => void upload(r.code)} />
+                    {r.form ? (
+                      !ok ? <Text style={ps.meta}>{t("prDocByForm")}</Text> : null
+                    ) : !ok && canUpload ? (
+                      choosing === r.code ? (
+                        <View style={st.choices}>
+                          <Button label={t("prTakePhoto")} icon={Camera} variant="secondary" loading={uploading === r.code} disabled={!!uploading} onPress={() => void upload(r.code, "camera")} />
+                          <Button label={t("evidenceFromLibrary")} icon={Images} variant="secondary" disabled={!!uploading} onPress={() => void upload(r.code, "library")} />
+                          <Button label={t("prChooseFile")} icon={FileUp} variant="tertiary" disabled={!!uploading} onPress={() => void upload(r.code, "file")} />
+                          <Button label={t("cancel")} variant="tertiary" disabled={!!uploading} onPress={() => setChoosing(null)} />
+                        </View>
+                      ) : (
+                        <Button label={r.status && !rejected ? t("prReplace") : t("prUpload")} icon={FileUp} variant="secondary" disabled={!!uploading} onPress={() => setChoosing(r.code)} />
+                      )
                     ) : null}
                   </View>
                 );
               })}
+              {notice ? <Text accessibilityLiveRegion="polite" style={st.notice}>{notice}</Text> : null}
               {uploadError ? <Text accessibilityRole="alert" style={st.error}>{uploadError instanceof Error ? uploadError.message : t("prUploadFailed")}</Text> : null}
             </Card>
           ) : null}
@@ -247,4 +287,6 @@ export default function ProposalDetail() {
 const st = StyleSheet.create({
   req: { gap: space.x1, paddingVertical: space.x1, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.neutral200 },
   error: { ...type.meta, color: colors.dangerText },
+  notice: { ...type.meta, color: colors.successText },
+  choices: { gap: space.x2 },
 });

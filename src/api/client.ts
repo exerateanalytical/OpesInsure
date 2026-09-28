@@ -785,6 +785,8 @@ export type ProposalRequirement = {
   mandatory?: boolean;
   /** Batch 6 checklist: MISSING | REQUIRED | UPLOADED | REVIEWING | ACCEPTED | REJECTED | EXPIRED. */
   status?: string | null;
+  /** UPLOAD (customer sends a file) | PROPOSAL_FORM (met by answering the questions). */
+  satisfied_by?: string | null;
 };
 export type ProposalDocumentLink = {
   id: string;
@@ -1474,32 +1476,16 @@ export const ProposalsApi = {
   list: (page = 1) => apiPage<ProposalSummary>("/mobile/proposals", page),
   show: (id: string) => api<Proposal>(`/proposals/${id}`),
   /**
-   * Two steps: register the file (POST /mobile/documents), then link it to
-   * the proposal requirement (POST /proposals/{id}/documents).
+   * Links a stored document of the customer (a new upload, or one already on file such as a verified ID)
+   * to a proposal requirement: POST /proposals/{id}/documents. Store files with storeDocument()
+   * (src/api/documentUpload.ts), which reuses an identical file instead of failing as a duplicate.
    */
-  async uploadDocument(
-    id: string,
-    input: { requirement_code: string; mime_type: string; file_base64: string },
-  ) {
-    const doc = await api<{ id: string }>("/mobile/documents", {
+  linkDocument: (id: string, documentId: string, requirementCode: string) =>
+    api<ProposalDocumentLink>(`/proposals/${id}/documents`, {
       method: "POST",
-      body: JSON.stringify({
-        category: `PROPOSAL_${input.requirement_code}`.slice(0, 48),
-        mime_type: input.mime_type,
-        file_base64: input.file_base64,
-      }),
-      timeoutMs: 60000,
+      body: JSON.stringify({ document_id: documentId, requirement_code: requirementCode }),
       idempotent: true,
-    });
-    return api<ProposalDocumentLink>(`/proposals/${id}/documents`, {
-      method: "POST",
-      body: JSON.stringify({
-        document_id: doc.id,
-        requirement_code: input.requirement_code,
-      }),
-      idempotent: true,
-    });
-  },
+    }),
 };
 
 export type RiskSchemaPayload = {

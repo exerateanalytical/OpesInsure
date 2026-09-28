@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { api, type Claim, type CustomerNotification, type EvidenceRequirement } from "./client";
 import { rows, type Institution } from "./extra";
+import { storeDocument } from "./documentUpload";
 import type { KycRequirement } from "@/lib/kyc";
 
 /**
@@ -132,18 +133,7 @@ export const CustomerApi = {
     }),
 
   // --- Files -----------------------------------------------------------
-  /** POST /mobile/documents — JPEG, PNG or PDF as base64. */
-  uploadDocument: (payload: {
-    category: string;
-    mime_type: "application/pdf" | "image/jpeg" | "image/png";
-    file_base64: string;
-  }) =>
-    api<{ id: string }>("/mobile/documents", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      idempotent: true,
-      timeoutMs: 60000,
-    }),
+  // POST /mobile/documents: storeDocument() in ./documentUpload (reuses an identical stored file).
   /** Resumable upload (used for video evidence, video/mp4 only). */
   startUpload: (payload: {
     resource_type: string;
@@ -231,14 +221,10 @@ export async function uploadClaimEvidence(
   } else {
     const mime_type =
       mime === "application/pdf" ? "application/pdf" : mime === "image/png" ? "image/png" : "image/jpeg";
-    const document = await CustomerApi.uploadDocument({
-      category: "CLAIM_EVIDENCE",
-      mime_type,
-      file_base64: base64,
-    });
+    const documentId = await storeDocument("CLAIM_EVIDENCE", { mime: mime_type, base64 });
     onProgress?.(0.8);
     await CustomerApi.attachClaimEvidence(claimId, {
-      document_id: document.id,
+      document_id: documentId,
       evidence_type: evidenceType,
       purpose: "CLAIM_EVIDENCE",
     });
