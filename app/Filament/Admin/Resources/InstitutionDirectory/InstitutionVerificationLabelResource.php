@@ -17,7 +17,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** EN/FR display labels of the verification statuses shown by the app and website (audited). */
-final class InstitutionVerificationLabelResource extends Resource
+final class InstitutionVerificationLabelResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

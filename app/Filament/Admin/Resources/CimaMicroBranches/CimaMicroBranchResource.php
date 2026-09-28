@@ -19,7 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class CimaMicroBranchResource extends Resource
+final class CimaMicroBranchResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

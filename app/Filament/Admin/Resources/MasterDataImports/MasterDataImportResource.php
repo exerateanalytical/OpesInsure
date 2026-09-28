@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Storage;
  * Targets: master-data values, vehicle generations, vehicle variants (more register in ImportTargetRegistry).
  * Existing records are never overwritten; batches are never deleted.
  */
-final class MasterDataImportResource extends Resource
+final class MasterDataImportResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

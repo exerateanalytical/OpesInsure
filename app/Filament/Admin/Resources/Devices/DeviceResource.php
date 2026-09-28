@@ -1,7 +1,7 @@
 <?php
 namespace App\Filament\Admin\Resources\Devices;
 use App\Application\Identity\AccountSecurityService;use App\Filament\Admin\Concerns\ServiceValidation;use App\Filament\Admin\Resources\Devices\Pages;use App\Models\UserDevice;use BackedEnum;use Filament\Actions;use Filament\Notifications\Notification;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;
-final class DeviceResource extends Resource
+final class DeviceResource extends \App\Filament\Shared\LocalizedResource
 {
 protected static?string$model=UserDevice::class;protected static string|BackedEnum|null$navigationIcon='lucide-monitor';protected static?string$navigationLabel='Trusted devices';protected static?int$navigationSort=15;protected static string|\UnitEnum|null$navigationGroup='Administration';
 public static function form(Schema$s):Schema{return$s->components([]);}

@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
  * Edits go through InstitutionDirectoryService: audited, reason required,
  * sources kept, and the deploy seeder never overwrites an admin edit.
  */
-final class InstitutionProfileResource extends Resource
+final class InstitutionProfileResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

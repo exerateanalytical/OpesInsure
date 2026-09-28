@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-CAS-001 / REQ-CAL-001 - Tasks (navigation group "Cases & tasks"). */
-final class CaseTaskResource extends Resource
+final class CaseTaskResource extends \App\Filament\Shared\LocalizedResource
 {
     use CasesAccess;
 

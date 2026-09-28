@@ -19,7 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-POL-004 failed / paid-not-issued issuance queue (same data and permissions as GET /issuance-exceptions). */
-final class IssuanceExceptionResource extends Resource
+final class IssuanceExceptionResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = IssuanceException::class;
 

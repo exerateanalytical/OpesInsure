@@ -23,7 +23,7 @@ use Filament\Tables\Table;
  * automatically; overrides are proposed here (maker) and approved by a
  * different admin (checker). Mappings are never deleted, only retired.
  */
-final class CimaProductMappingResource extends Resource
+final class CimaProductMappingResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

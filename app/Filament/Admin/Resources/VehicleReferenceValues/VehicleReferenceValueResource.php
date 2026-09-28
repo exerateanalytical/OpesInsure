@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** EN/FR labels, order and activation of the vehicle enumerations (codes are canonical). */
-final class VehicleReferenceValueResource extends Resource
+final class VehicleReferenceValueResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

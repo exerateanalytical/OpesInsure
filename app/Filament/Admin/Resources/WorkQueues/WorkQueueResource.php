@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-CAS-001 / REQ-CAL-001 - Queues (navigation group "Cases & tasks"). */
-final class WorkQueueResource extends Resource
+final class WorkQueueResource extends \App\Filament\Shared\LocalizedResource
 {
     use CasesAccess;
 

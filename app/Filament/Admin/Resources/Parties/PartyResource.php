@@ -1,7 +1,7 @@
 <?php
 namespace App\Filament\Admin\Resources\Parties;
 use App\Filament\Admin\Resources\Parties\Pages;use App\Models\Party;use BackedEnum;use Filament\Actions;use Filament\Forms;use Filament\Infolists;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;
-final class PartyResource extends Resource
+final class PartyResource extends \App\Filament\Shared\LocalizedResource
 {
 /** Audit 2026-09-27 #8: outside the platform tenant, only this organisation's own customers. */
 public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder{$query=parent::getEloquentQuery();$tenant=app(\App\Domain\Tenancy\TenantContext::class)->id();return app(\App\Application\Identity\Rbac\PlatformAuthority::class)->isPlatformTenant($tenant)?$query:$query->whereHas('customers',fn($q)=>$q->where('tenant_id',$tenant));}

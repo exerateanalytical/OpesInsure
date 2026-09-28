@@ -19,7 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class CimaLegalReferenceResource extends Resource
+final class CimaLegalReferenceResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

@@ -3,7 +3,7 @@ namespace App\Filament\Admin\Resources\Tenants;
 
 use App\Application\Tenancy\TenantLifecycleService;use App\Filament\Admin\Concerns\ServiceValidation;use App\Filament\Admin\Resources\Tenants\Pages;use App\Models\Tenant;use BackedEnum;use Filament\Actions;use Filament\Forms;use Filament\Notifications\Notification;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;use Illuminate\Database\Eloquent\Builder;
 
-final class TenantResource extends Resource
+final class TenantResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model=Tenant::class;protected static string|BackedEnum|null $navigationIcon='lucide-building-2';protected static ?string $navigationLabel='Organizations';protected static ?string $modelLabel='organization';protected static ?string $pluralModelLabel='organizations';protected static ?int $navigationSort=10;protected static string|\UnitEnum|null$navigationGroup='Administration';
     public static function form(Schema $schema):Schema{return $schema->components([

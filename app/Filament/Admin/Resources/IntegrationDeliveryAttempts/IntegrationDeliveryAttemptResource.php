@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * controlled-replay surface — attempts are created only by
  * WebhookDeliveryService, never through this Resource's own form.
  */
-final class IntegrationDeliveryAttemptResource extends Resource
+final class IntegrationDeliveryAttemptResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = IntegrationDeliveryAttempt::class;
     protected static string|BackedEnum|null $navigationIcon = 'lucide-triangle-alert';

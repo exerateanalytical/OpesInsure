@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-PAY-011 mobile-money clearing batches (GET /api/v1/clearing/batches); actions in ClearingActions. */
-final class ClearingBatchResource extends Resource
+final class ClearingBatchResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = ClearingBatch::class;
 

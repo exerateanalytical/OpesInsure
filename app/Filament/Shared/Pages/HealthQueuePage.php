@@ -99,7 +99,12 @@ abstract class HealthQueuePage extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $cols = array_map(fn (string $c) => ($c === 'status' ? TextColumn::make($c)->badge() : TextColumn::make($c))->label(str_replace('_', ' ', ucfirst($c))), $this->columns());
+        // Money columns (*_minor) through the shared FCFA formatter with a plain label ("Billed", not "Billed minor").
+        $cols = array_map(fn (string $c) => match (true) {
+            $c === 'status' => TextColumn::make($c)->badge()->label('Status'),
+            str_ends_with($c, '_minor') => \App\Filament\Shared\Columns::money($c, 'currency', ucfirst(str_replace('_', ' ', substr($c, 0, -6)))),
+            default => TextColumn::make($c)->label(str_replace('_', ' ', ucfirst($c))),
+        }, $this->columns());
 
         return $table
             ->records(function (array $filters): array {

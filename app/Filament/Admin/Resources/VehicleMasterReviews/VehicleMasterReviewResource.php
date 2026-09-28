@@ -24,7 +24,7 @@ use Filament\Tables\Table;
  * (MASTER_DATA_REVIEW_REQUIRED). Approve as a new make/model or merge into an
  * existing one; reviewer and time are recorded.
  */
-final class VehicleMasterReviewResource extends Resource
+final class VehicleMasterReviewResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

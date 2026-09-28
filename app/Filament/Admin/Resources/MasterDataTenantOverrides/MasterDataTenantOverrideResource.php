@@ -24,7 +24,7 @@ use Filament\Tables\Table;
  * code — never change the value's meaning. Private tenant values are listed under Values (tenant column).
  * Writes go through MasterDataOverrideService (change log + catalog_version bump).
  */
-final class MasterDataTenantOverrideResource extends Resource
+final class MasterDataTenantOverrideResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

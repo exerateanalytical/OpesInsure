@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** WF-081 / REQ-RBAC-005 — the one approval inbox. Decisions go through ApprovalService (maker-checker, SoD, matrix). */
-final class ApprovalRequestResource extends Resource
+final class ApprovalRequestResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = ApprovalRequest::class;
 

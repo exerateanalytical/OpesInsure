@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-CAS-001 / REQ-CAL-001 - Calendar exceptions (navigation group "Cases & tasks"). */
-final class CalendarExceptionResource extends Resource
+final class CalendarExceptionResource extends \App\Filament\Shared\LocalizedResource
 {
     use CasesAccess;
 

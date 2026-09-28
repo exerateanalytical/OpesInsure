@@ -17,7 +17,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Canonical Insurance Document Type Registry (owner 220 register + subtypes + evidence). Read-only; deactivate only. */
-final class DocumentTypeResource extends Resource
+final class DocumentTypeResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentCatalogueAccess;
 

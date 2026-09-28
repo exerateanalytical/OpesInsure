@@ -28,6 +28,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class, fn () => new TenantContext);
+        $this->app->extend('translator', function (\Illuminate\Translation\Translator $t) {
+            $safe = new \App\Support\LabelSafeTranslator($t->getLoader(), $t->getLocale());
+            $safe->setFallback($t->getFallback());
+
+            return $safe;
+        });
 
         // Admin-editable platform settings (Filament "Platform settings").
         $this->app->singleton(\App\Application\Settings\PlatformSettings::class);

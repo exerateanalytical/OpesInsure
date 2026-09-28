@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
 
 /** Controlled lists: labels, hierarchy (parent list), "Other / Not listed" fallback and status. */
-final class MasterDataListResource extends Resource
+final class MasterDataListResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

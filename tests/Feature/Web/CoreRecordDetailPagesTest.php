@@ -80,7 +80,10 @@ test('REQ-UI-002 core detail pages refuse a panel user whose role does not grant
     $finance = coreDetailUser($f['tenant'], 'FINANCE_ADMIN');
     $urls = coreDetailUrls($f);
 
-    foreach (['policy', 'document', 'party', 'customer', 'partner'] as $name) {
+    // Claims staff hold policies.read (RoleCatalogue): they may open the policy behind a claim, read-only (UI QA 2026-09-27).
+    $this->actingAs($claimsOfficer)->get($urls['policy'][0])->assertOk();
+    $this->flushSession();
+    foreach (['document', 'party', 'customer', 'partner'] as $name) {
         $this->actingAs($claimsOfficer)->get($urls[$name][0])->assertForbidden();
         $this->flushSession();
     }

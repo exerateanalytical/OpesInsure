@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
  * MDM-014 Export · MDM-019 Translation management (untranslated filter,
  * inline French label). Values are deactivated, never deleted.
  */
-final class MasterDataValueResource extends Resource
+final class MasterDataValueResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

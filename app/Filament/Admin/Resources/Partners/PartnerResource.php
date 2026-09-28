@@ -1,7 +1,7 @@
 <?php
 namespace App\Filament\Admin\Resources\Partners;
 use App\Application\Audit\AuditWriter;use App\Filament\Admin\Resources\Partners\Pages;use App\Models\Partner;use BackedEnum;use Filament\Actions;use Filament\Forms;use Filament\Infolists;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;
-final class PartnerResource extends Resource
+final class PartnerResource extends \App\Filament\Shared\LocalizedResource
 {
 protected static?string$model=Partner::class;protected static string|BackedEnum|null$navigationIcon='lucide-store';protected static string|\UnitEnum|null$navigationGroup='Customers & partners';protected static?int$navigationSort=23;
 public static function form(Schema$s):Schema{return$s->components([\Filament\Schemas\Components\Section::make('Partner profile')->columnSpanFull()->columns(2)->schema([Forms\Components\Select::make('tenant_id')->relationship('tenant','legal_name')->searchable()->preload(),Forms\Components\Select::make('party_id')->relationship('party','display_name')->searchable()->preload()->required(),Forms\Components\Select::make('type')->options(['AGENT'=>'Freelance agent','BROKER'=>'Corporate broker','CARRIER'=>'Insurance carrier'])->required()->native(false),Forms\Components\Select::make('status')->options(['PENDING'=>'Pending licence review','ACTIVE'=>'Active','SUSPENDED'=>'Suspended','REJECTED'=>'Rejected'])->default('PENDING')->required()->disabled(fn(?Partner$p)=>$p!==null)->native(false)])]);}

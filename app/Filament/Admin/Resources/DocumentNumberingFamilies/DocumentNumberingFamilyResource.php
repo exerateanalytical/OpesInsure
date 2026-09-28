@@ -18,7 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** DOC-ADM-012 numbering families: continuous, gap-free counters per tenant + family (counters are never editable here). */
-final class DocumentNumberingFamilyResource extends Resource
+final class DocumentNumberingFamilyResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

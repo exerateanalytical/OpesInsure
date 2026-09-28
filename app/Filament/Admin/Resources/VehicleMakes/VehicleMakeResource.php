@@ -23,7 +23,7 @@ use Filament\Tables\Table;
  * duplicate make into the canonical one, deactivate. Changes are recorded in
  * vehicle_master_changes and survive reseeding (admin_modified_at).
  */
-final class VehicleMakeResource extends Resource
+final class VehicleMakeResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

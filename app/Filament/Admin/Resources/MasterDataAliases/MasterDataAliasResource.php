@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** MDM-006 Aliases and abbreviations (EN/FR, merged codes, tenant aliases) used by search. */
-final class MasterDataAliasResource extends Resource
+final class MasterDataAliasResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

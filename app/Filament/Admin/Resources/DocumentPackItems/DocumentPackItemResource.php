@@ -14,7 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Pack items across all packs (requirement + condition per document). */
-final class DocumentPackItemResource extends Resource
+final class DocumentPackItemResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentCatalogueAccess;
 

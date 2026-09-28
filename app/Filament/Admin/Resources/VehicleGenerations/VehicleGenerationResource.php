@@ -22,7 +22,7 @@ use Filament\Tables\Table;
  * only from admins (here), imports, or approved reviews; nothing is inferred.
  * Edit / deactivate only, never deleted.
  */
-final class VehicleGenerationResource extends Resource
+final class VehicleGenerationResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

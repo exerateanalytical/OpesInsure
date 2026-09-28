@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use App\Filament\Admin\Resources\MasterDataValues\MasterDataValueResource;
 
 /** MDM-002 Domains · MDM-017 catalog versions (per-domain catalog_version drives app sync). */
-final class MasterDataDomainResource extends Resource
+final class MasterDataDomainResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

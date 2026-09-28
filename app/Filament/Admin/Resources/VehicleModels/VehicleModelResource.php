@@ -18,7 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Vehicle models: add, alias, rename, mark historical, deactivate. Never deleted. */
-final class VehicleModelResource extends Resource
+final class VehicleModelResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

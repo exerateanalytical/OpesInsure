@@ -26,7 +26,7 @@ use Filament\Tables\Table;
  * generation. Starts empty; admins or imports fill it. Attributes are
  * restricted to the vehicle reference codes. Never deleted.
  */
-final class VehicleVariantResource extends Resource
+final class VehicleVariantResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

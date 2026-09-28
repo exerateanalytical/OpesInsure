@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-CAS-001 / REQ-CAL-001 - Business hours (navigation group "Cases & tasks"). */
-final class BusinessHoursResource extends Resource
+final class BusinessHoursResource extends \App\Filament\Shared\LocalizedResource
 {
     use CasesAccess;
 

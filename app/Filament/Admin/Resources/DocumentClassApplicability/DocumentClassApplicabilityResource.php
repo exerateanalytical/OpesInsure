@@ -13,7 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Which document types apply to which insurance class (derived from the class packs). */
-final class DocumentClassApplicabilityResource extends Resource
+final class DocumentClassApplicabilityResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentCatalogueAccess;
 

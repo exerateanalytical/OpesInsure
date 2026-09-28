@@ -18,7 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** DOC-ADM-016 generated documents registry (+ carrier original upload, revoke/replace request). Never deletes; restricted security levels hidden without the level permission. */
-final class GeneratedDocumentResource extends Resource
+final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

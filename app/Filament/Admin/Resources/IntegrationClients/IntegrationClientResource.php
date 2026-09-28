@@ -17,7 +17,7 @@ use Filament\Tables\Table;
  * again after initial secure issuance," which a Filament create form
  * can't honor well. Lifecycle transitions happen here as actions instead.
  */
-final class IntegrationClientResource extends Resource
+final class IntegrationClientResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = IntegrationClient::class;
     protected static string|BackedEnum|null $navigationIcon = 'lucide-server';

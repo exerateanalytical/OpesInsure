@@ -18,7 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** DOC-ADM-015 issuance rules: OpesInsure renders an insurer document only when that insurer configured OPES_GENERATED/HYBRID and authorized rendering. */
-final class DocumentIssuanceProfileResource extends Resource
+final class DocumentIssuanceProfileResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

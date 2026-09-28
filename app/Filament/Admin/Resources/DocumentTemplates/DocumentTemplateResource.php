@@ -31,7 +31,7 @@ use Filament\Tables\Table;
  * 009 version history (view page). Workflow DRAFT → REVIEW → APPROVED →
  * PUBLISHED → RETIRED through DocumentTemplateService (maker-checker).
  */
-final class DocumentTemplateResource extends Resource
+final class DocumentTemplateResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

@@ -21,7 +21,7 @@ use Filament\Tables\Table;
  * MDM-011 Merge records — REQ-MDM-007 maker-checker queue (approval action entity.merge). Requests are raised from
  * Values ("Request merge into…", "Possible duplicates" filter = MDM-010); a different admin approves or rejects here.
  */
-final class MasterDataMergeRequestResource extends Resource
+final class MasterDataMergeRequestResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

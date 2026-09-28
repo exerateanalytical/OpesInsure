@@ -19,7 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class CimaReportingCategoryResource extends Resource
+final class CimaReportingCategoryResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

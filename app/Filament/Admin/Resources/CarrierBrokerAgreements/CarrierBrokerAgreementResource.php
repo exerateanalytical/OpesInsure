@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  * Visibility = CarrierBrokerAgreementController::index (platform tenant: all;
  * otherwise partner in tenant; insurer portal: + own carrier).
  */
-final class CarrierBrokerAgreementResource extends Resource
+final class CarrierBrokerAgreementResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = CarrierBrokerAgreementRecord::class;
 

@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** MDM-008 Pending suggestions · MDM-009 Suggestion review · MDM-010 Duplicate detection. "Other / Not listed" entries never block the transaction; approve as new, merge (text becomes an alias) or reject. */
-final class MasterDataReviewResource extends Resource
+final class MasterDataReviewResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

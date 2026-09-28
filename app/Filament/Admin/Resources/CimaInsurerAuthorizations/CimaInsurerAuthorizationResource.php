@@ -23,7 +23,7 @@ use Filament\Tables\Table;
  * Recorded from regulator evidence (source + reference mandatory), approved by
  * a second admin. Only ACTIVE authorizations unlock product publication.
  */
-final class CimaInsurerAuthorizationResource extends Resource
+final class CimaInsurerAuthorizationResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

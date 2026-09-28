@@ -21,7 +21,7 @@ use Filament\Tables\Table;
  * the mobile app (App\Interfaces\Http\Controllers\Api\V1\Runtime\MobileIssueReportController).
  * There is no create/edit form — a report only ever originates from the app.
  */
-final class MobileIssueReportResource extends Resource
+final class MobileIssueReportResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = MobileIssueReport::class;
 

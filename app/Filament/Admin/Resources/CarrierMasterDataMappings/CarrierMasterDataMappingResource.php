@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** MDM-015 Carrier mappings: insurer codes/classes for canonical values (e.g. occupation → insurer risk class, location → insurer zone). Meaning of the canonical value never changes. */
-final class CarrierMasterDataMappingResource extends Resource
+final class CarrierMasterDataMappingResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

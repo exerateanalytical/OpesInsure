@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
  * ESR ADM-029 / REQ-RBAC-006 — central approval matrix. Read-only table; every change is proposed as an
  * approval_matrix.change request and applied only after a different user approves it in the inbox.
  */
-final class ApprovalMatrixRuleResource extends Resource
+final class ApprovalMatrixRuleResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = ApprovalMatrixRule::class;
 

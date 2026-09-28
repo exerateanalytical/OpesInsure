@@ -1,7 +1,7 @@
 <?php
 namespace App\Filament\Admin\Resources\Customers;
 use App\Application\Customers\CustomerService;use App\Filament\Admin\Concerns\ServiceValidation;use App\Filament\Admin\Resources\Customers\Pages;use App\Models\TenantCustomer;use BackedEnum;use Filament\Actions;use Filament\Forms;use Filament\Infolists;use Filament\Notifications\Notification;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;
-final class CustomerResource extends Resource
+final class CustomerResource extends \App\Filament\Shared\LocalizedResource
 {
 /** Audit 2026-09-27 #8: outside the platform tenant, only this organisation's own customers. */
 public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder{$query=parent::getEloquentQuery();$tenant=app(\App\Domain\Tenancy\TenantContext::class)->id();return app(\App\Application\Identity\Rbac\PlatformAuthority::class)->isPlatformTenant($tenant)?$query:$query->where('tenant_id',$tenant);}

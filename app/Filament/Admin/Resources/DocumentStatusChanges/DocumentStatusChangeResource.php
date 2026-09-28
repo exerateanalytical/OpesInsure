@@ -18,7 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** DOC-ADM-017 revocation / replacement queue: maker-checker decisions (requester cannot decide). */
-final class DocumentStatusChangeResource extends Resource
+final class DocumentStatusChangeResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

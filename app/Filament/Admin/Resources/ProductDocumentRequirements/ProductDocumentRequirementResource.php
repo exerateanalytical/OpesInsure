@@ -25,7 +25,7 @@ use Filament\Tables\Table;
  * and insurer level overrides. Maker proposes, a different admin approves;
  * rows are retired, never deleted. Platform matrix and packs are unchanged.
  */
-final class ProductDocumentRequirementResource extends Resource
+final class ProductDocumentRequirementResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentCatalogueAccess;
 

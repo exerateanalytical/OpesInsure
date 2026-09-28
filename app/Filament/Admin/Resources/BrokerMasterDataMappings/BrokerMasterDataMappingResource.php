@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** MDM-016 Broker mappings: a broker's internal codes for canonical values. */
-final class BrokerMasterDataMappingResource extends Resource
+final class BrokerMasterDataMappingResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

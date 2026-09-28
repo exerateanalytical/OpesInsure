@@ -17,7 +17,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Document packs per insurance class and lifecycle stage (+ universal packs). Read-only; deactivate only. */
-final class DocumentPackResource extends Resource
+final class DocumentPackResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentCatalogueAccess;
 

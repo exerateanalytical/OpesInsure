@@ -12,7 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** Read-only change history of the vehicle master (seeding, admin edits, merges, reviews). */
-final class VehicleMasterChangeResource extends Resource
+final class VehicleMasterChangeResource extends \App\Filament\Shared\LocalizedResource
 {
     use VehicleMasterAccess;
 

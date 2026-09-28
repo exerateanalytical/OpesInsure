@@ -1,7 +1,7 @@
 <?php
 namespace App\Filament\Admin\Resources\Memberships;
 use App\Application\Identity\MembershipService;use App\Filament\Admin\Concerns\ServiceValidation;use App\Filament\Admin\Resources\Memberships\Pages;use App\Models\TenantMembership;use BackedEnum;use Filament\Actions;use Filament\Forms;use Filament\Notifications\Notification;use Filament\Resources\Resource;use Filament\Schemas\Schema;use Filament\Tables;use Filament\Tables\Table;
-final class MembershipResource extends Resource
+final class MembershipResource extends \App\Filament\Shared\LocalizedResource
 {
 protected static?string$model=TenantMembership::class;protected static string|BackedEnum|null$navigationIcon='lucide-users-round';protected static?string$navigationLabel='Access & roles';
 /** D4: in the broker portal this is the read-only staff list of the portal tenant only. */

@@ -26,7 +26,7 @@ final class Columns
     public static function money(string $name, string $currencyAttribute = 'currency', ?string $label = null): TextColumn
     {
         return TextColumn::make($name)->label($label)->alignEnd()
-            ->formatStateUsing(fn ($state, $record) => Money::display($state === null ? null : (int) $state, $record?->{$currencyAttribute} ?: 'XAF'));
+            ->formatStateUsing(fn ($state, $record) => Money::display($state === null ? null : (int) $state, data_get($record, $currencyAttribute) ?: 'XAF'));
     }
 
     public static function date(string $name, bool $withTime = true, ?string $label = null): TextColumn
@@ -52,7 +52,7 @@ final class Columns
     {
         $v = $state instanceof \BackedEnum ? (string) $state->value : (string) $state;
 
-        return $v === '' ? '—' : ucfirst(strtolower(str_replace('_', ' ', $v)));
+        return $v === '' ? '—' : LocalizedResource::t(ucfirst(strtolower(str_replace('_', ' ', $v))));
     }
 
     /** Panel-wide defaults: viewer timezone for every date column, status tones for every badge column. */
@@ -61,6 +61,13 @@ final class Columns
         // Lazy: resolved when a column renders, i.e. after the panel tenant middleware has run.
         FilamentTimezone::set(fn () => rescue(fn () => app(TimezoneResolver::class)->forUser(auth()->user()), null, false) ?: null);
         TextColumn::configureUsing(fn (TextColumn $c) => $c->color(fn ($state) => $c->isBadge() ? RecordInfolist::color($state) : null));
+        // One FR/EN layer for every label (explicit or generated from the attribute name): the
+        // English label is the key in resources/lang/fr.json, so untranslated resources still read in French.
+        \Filament\Tables\Columns\Column::configureUsing(fn ($c) => $c->translateLabel());
+        \Filament\Tables\Filters\BaseFilter::configureUsing(fn ($f) => $f->translateLabel());
+        \Filament\Forms\Components\Field::configureUsing(fn ($f) => $f->translateLabel());
+        \Filament\Infolists\Components\Entry::configureUsing(fn ($e) => $e->translateLabel());
+        \Filament\Actions\Action::configureUsing(fn ($a) => $a->translateLabel());
         // Every table: newest first when it declares no sort of its own, and the one EN/FR empty state
         // (resources that set their own heading/description/icon or defaultSort still override these).
         Table::configureUsing(fn (Table $t) => $t

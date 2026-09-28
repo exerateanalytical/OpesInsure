@@ -26,7 +26,7 @@ use Illuminate\Validation\ValidationException;
  * VERIFIED by a different administrator than the one who recorded it; until then the controls stay CONFIG_REQUIRED.
  * Rows are never deleted: retire them.
  */
-final class PhysicalSecurityAssetResource extends Resource
+final class PhysicalSecurityAssetResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 

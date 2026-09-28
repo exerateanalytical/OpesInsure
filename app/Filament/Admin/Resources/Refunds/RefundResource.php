@@ -17,7 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /** REQ-PAY-009 / WF-063 refund queue (GET /api/v1/refunds); workflow actions on the detail page (RefundActions). */
-final class RefundResource extends Resource
+final class RefundResource extends \App\Filament\Shared\LocalizedResource
 {
     protected static ?string $model = Refund::class;
 

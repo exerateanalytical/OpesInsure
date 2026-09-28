@@ -19,7 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** PLT-CIMA-012 normalized class / product → Article 411 reporting category. Effective-dated; ended, never deleted. */
-final class CimaReportingMappingResource extends Resource
+final class CimaReportingMappingResource extends \App\Filament\Shared\LocalizedResource
 {
     use CimaRegulatoryAccess;
 

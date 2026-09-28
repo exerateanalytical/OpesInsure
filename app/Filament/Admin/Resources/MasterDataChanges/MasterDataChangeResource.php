@@ -16,7 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 /** MDM-017 Version history · MDM-018 Audit: every seed, edit, deactivation, merge and review decision. */
-final class MasterDataChangeResource extends Resource
+final class MasterDataChangeResource extends \App\Filament\Shared\LocalizedResource
 {
     use MasterDataAccess;
 

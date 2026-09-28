@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Read-only log of public verification lookups (QR page and API). Only hashes are stored: the reference, token and
  * requester fingerprint are never shown in clear. Lookups of documents above the viewer's security level are hidden.
  */
-final class VerificationLookupResource extends Resource
+final class VerificationLookupResource extends \App\Filament\Shared\LocalizedResource
 {
     use DocumentEngineAccess;
 
