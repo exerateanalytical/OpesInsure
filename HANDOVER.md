@@ -13,11 +13,11 @@ This document is the single entry point. Every statement below was checked again
 | Item | State |
 |---|---|
 | Production URL | https://insurance.opesdatacenter.tech |
-| Live release | `r20260928-212833`, built from commit **`58f5636`**, deployed 2026-09-28 21:28 |
+| Live release | `r20260928-230043`, built from commit **`8fbd324`**, deployed 2026-09-28 23:00 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
 | Code on `master` not yet deployed | None. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
-| Desktop UI coverage of backend write actions | **44.3%** (394 of 890), live and on `master`. Measured by `php artisan ui:coverage` (§7). |
+| Desktop UI coverage of backend write actions | **50.4%** (449 of 890), live and on `master`. Measured by `php artisan ui:coverage` (§7). |
 | Audit copy of deployed code | `OpesInsure_web_deployed_r20260927-174612_bcde791.zip` in the project root (§14) |
 
 **Summary.** The backend (domain services, database, API, tests) is extensive and mature. The staff desktop UI is behind it: about 60% of state-changing backend actions still have no screen or button. §7 has the measured list and the plan to close it. Production cannot leave demo mode until an SMS provider, MTN MoMo credentials and a malware scanner are configured on the server. Only the owner can supply those.
@@ -131,7 +131,8 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | r20260928-163923 | f92c660 | **All of master deployed:** UI build-out batches 1–5 (coverage 39.3%), step-up rollout hold, mobile items A1/B1–B6, 4 migrations (rehearsed), platform audit batch 1 (`27b055a`: invitation role ceiling, platform-only tenant lifecycle, /admin restricted to platform/operations roles, Party/Customer scoped outside the platform tenant). Backup `opesinsure-20260928-1626.sql.gz`. Full suite not re-run on this exact commit (owner ordered deploy); targeted suites green. Known non-regression: DemoMobileAccountSeeder phone collision during demo-seed. |
 | r20260928-191516 | 4e0ca34 | **French panels and UI QA defects:** one FR/EN label layer (columns, fields, entries, filters, actions, status badges, resource titles) through `resources/lang/fr.json` (~5,100 entries); `LocalizedResource` base for all 113 resources; `LabelSafeTranslator`; filter button "0" badge hidden; insurer health queue money in FCFA; claims staff can open policies read-only (`policies.read`). |
 | r20260928-194521 | 4d82f32 | **Hotfix:** four search selects crashed when typing (`$s`/`$q` not injectable; seen in the production log); product-owner and document-policy pickers now scoped to the tenant. Architecture test guards the parameter name. |
-| **r20260928-212833 (LIVE)** | **58f5636** | **UI batches 6–7:** KYC reviews (11 actions), AML screening hits / lists / transaction monitoring / STR reports (four eyes, `cases.str.view` only), Screen party + Rate AML risk, compliance case findings / corrective actions / evidence, DSR receive, privileged access request, governance registers page, fraud alert, regulatory report runs. French for section headings, tabs and notifications. UI coverage **44.3%** (ratchet raised). Panel test set 887 passed, 0 failed. |
+| r20260928-212833 | 58f5636 | **UI batches 6–7:** KYC reviews (11 actions), AML screening hits / lists / transaction monitoring / STR reports (four eyes, `cases.str.view` only), Screen party + Rate AML risk, compliance case findings / corrective actions / evidence, DSR receive, privileged access request, governance registers page, fraud alert, regulatory report runs. French for section headings, tabs and notifications. UI coverage **44.3%** (ratchet raised). Panel test set 887 passed, 0 failed. |
+| **r20260928-230043 (LIVE)** | **8fbd324** | **UI batches 8–10:** party stewardship (duplicate scan, ownership, merge decide/reverse, register client), renewal case generation (`renewals.manage`), commissions, partner statements/adjustments, payouts, carrier and broker settlements, bordereaux (47 actions, maker-checker kept; portals read-only per D4). Fix: party search selects crashed on submit. UI coverage **50.4%**. |
 
 ---
 
@@ -169,14 +170,14 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 - **Measurement:** `php artisan ui:coverage --md=docs/ui-coverage-summary.md` lists every non-GET `/api/v1` action and whether a Filament action or `/account` page calls it. Method and caveats are in `docs/UI_COVERAGE_2026-09-27.md`.
 - **Today:** 885–890 write actions. **27.5% covered on the live release, 39.3% on `master`.**
 - **Uncovered after wave 1:** mostly STAFF_DESKTOP_NEEDED, then CUSTOMER_WEB_NEEDED, plus a small number of MOBILE_ONLY_OK and SYSTEM_ONLY actions (webhooks, callbacks).
-- **Ratchet:** `tests/Architecture/UiCoverageRatchetTest.php` fails if coverage falls below the recorded floor (44.3 / 45.2). Raise the floor after each batch.
+- **Ratchet:** `tests/Architecture/UiCoverageRatchetTest.php` fails if coverage falls below the recorded floor (50.4 / 51.6). Raise the floor after each batch.
 
 **Build plan:** batches of about 20 actions, in `docs/UI_COVERAGE_2026-09-27.md` §batches.
 
 | Status | Batches |
 |---|---|
-| Done | 1–7 |
-| Next (wave 2) | 8 parties, 9–10 commissions/payouts/statements/settlements/bordereaux, 11 documents/underwriting, 12 support/complaints |
+| Done | 1–10 |
+| Next (wave 2) | 11 documents/underwriting, 12 support/complaints |
 | Then | 13 account/security, 14–15 finance, 16–17 provider portal, 18 catalogue, 19 master data, 20 reinsurance, 21 document governance/legacy migrations, 22 regulatory/distribution, 23–33 long tail |
 
 **Known UI defects not yet fixed:**
