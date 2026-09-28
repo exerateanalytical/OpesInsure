@@ -68,6 +68,16 @@ final class Columns
         \Filament\Forms\Components\Field::configureUsing(fn ($f) => $f->translateLabel());
         \Filament\Infolists\Components\Entry::configureUsing(fn ($e) => $e->translateLabel());
         \Filament\Actions\Action::configureUsing(fn ($a) => $a->translateLabel());
+        \Filament\Schemas\Components\Tabs\Tab::configureUsing(fn ($t) => $t->translateLabel());
+        \Filament\Schemas\Components\Fieldset::configureUsing(fn ($f) => $f->translateLabel());
+        \Filament\Schemas\Components\Wizard\Step::configureUsing(fn ($s) => $s->translateLabel());
+        // Section headings are passed to make() before configureUsing runs, so translate the stored text.
+        \Filament\Schemas\Components\Section::configureUsing(function (\Filament\Schemas\Components\Section $s): void {
+            $heading = (fn () => $this->heading)->call($s);
+            if (is_string($heading) && $heading !== '') {
+                $s->heading(LocalizedResource::t($heading));
+            }
+        });
         // Every table: newest first when it declares no sort of its own, and the one EN/FR empty state
         // (resources that set their own heading/description/icon or defaultSort still override these).
         Table::configureUsing(fn (Table $t) => $t

@@ -26,12 +26,13 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
  */
 final class WorkflowAction
 {
-    public static function make(string $name, ?string $permission): Action
+    /** $lang: the lang group holding "{name}.label" / ".help" / ".done" (one file per area, e.g. kyc_actions). */
+    public static function make(string $name, ?string $permission, string $lang = 'workflow_actions'): Action
     {
         return Action::make($name)
-            ->label(__("workflow_actions.{$name}.label"))
-            ->modalHeading(__("workflow_actions.{$name}.label"))
-            ->modalDescription(fn () => self::optional("workflow_actions.{$name}.help"))
+            ->label(__("{$lang}.{$name}.label"))
+            ->modalHeading(__("{$lang}.{$name}.label"))
+            ->modalDescription(fn () => self::optional("{$lang}.{$name}.help"))
             ->modalSubmitActionLabel(__('workflow_actions.confirm'))
             ->authorize(fn (): bool => self::allowed($permission));
     }
@@ -89,7 +90,7 @@ final class WorkflowAction
         return (string) (is_array($record) ? $record['id'] : $record->id);
     }
 
-    private static function optional(string $key): ?string
+    public static function optional(string $key): ?string
     {
         $t = __($key);
 

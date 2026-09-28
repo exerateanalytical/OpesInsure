@@ -17,6 +17,16 @@ it('translates resource titles, generated column labels and status badges for a 
         ->and(Columns::humanise('ACTIVE'))->toBe('Actif');
 });
 
+it('translates section headings, tabs and notification titles for a French user', function () {
+    app()->setLocale('fr');
+
+    expect(\Filament\Schemas\Components\Section::make('Audit & history')->getHeading())->toBe(__('Audit & history'))
+        ->and(__('Audit & history'))->not->toBe('Audit & history')
+        ->and(\Filament\Schemas\Components\Tabs\Tab::make('Overview')->getLabel())->toBe(__('Overview'))
+        ->and(\Filament\Notifications\Notification::make()->title('Customer status updated')->getTitle())->toBe(__('Customer status updated'))
+        ->and(\Filament\Notifications\Notification::make()->title('No such text 42')->getTitle())->toBe('No such text 42');
+});
+
 it('keeps English unchanged and Title Case for an English user', function () {
     app()->setLocale('en');
 

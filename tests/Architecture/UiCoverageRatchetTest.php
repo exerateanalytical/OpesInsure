@@ -7,8 +7,8 @@
 
 use Illuminate\Support\Facades\Artisan;
 
-const UI_COVERAGE_FLOOR_PCT = 39.3;
-const UI_RELEVANT_COVERAGE_FLOOR_PCT = 40.1;
+const UI_COVERAGE_FLOOR_PCT = 44.3;
+const UI_RELEVANT_COVERAGE_FLOOR_PCT = 45.2;
 
 test('ui:coverage does not drop below the recorded floor', function () {
     expect(Artisan::call('ui:coverage', ['--no-write' => true]))->toBe(0);
