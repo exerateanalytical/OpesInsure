@@ -40259,7 +40259,7 @@
                                 "properties": {
                                     "tenant_id": {
                                         "type": "string",
-                                        "x-rules": "required|uuid|exists:tenants,id"
+                                        "x-rules": "sometimes|uuid"
                                     },
                                     "recipient_email": {
                                         "type": "string",
@@ -40283,7 +40283,6 @@
                                     }
                                 },
                                 "required": [
-                                    "tenant_id",
                                     "recipient_email",
                                     "recipient_phone_e164",
                                     "carrier_id"

@@ -85,7 +85,7 @@ final class PublicInstitutionController
             return response()->json(['data' => $this->insurerOf($carrier), 'meta' => ['source' => $this->source()]]);
         }
         if ($broker = $this->brokers()->find($institution)) {
-            return response()->json(['data' => $this->brokerOf($broker), 'meta' => ['source' => $this->source()]]);
+            return response()->json(['data' => $this->brokerOf($broker) + $this->affiliationsOf($broker), 'meta' => ['source' => $this->source()]]);
         }
 
         abort(404);
@@ -117,12 +117,75 @@ final class PublicInstitutionController
         return Partner::query()->where('type', 'BROKER')->where('status', 'ACTIVE')->with('party.contacts');
     }
 
-    /** Official register rows first in regulator order, then others by name. */
+    /**
+     * Official register rows first in regulator order, then others by name. Register order is
+     * kept even for featured brokers; clients put `featured` rows first themselves.
+     */
     private function ordered(Collection $rows): Collection
     {
         [$official, $other] = $rows->partition(fn (array $r) => $r['is_official_register']);
 
         return $official->sortBy('regulator_sequence')->concat($other->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE))->values();
+    }
+
+    /**
+     * Insurers a broker is appointed by and the products it may offer, from its ACTIVE,
+     * in-period, non-demo carrier_broker_agreements. A line without a product id covers every
+     * ACTIVE product of that carrier in the line. Empty lists when nothing is recorded.
+     *
+     * @return array{affiliated_insurers: list<array<string, mixed>>, products: list<array<string, mixed>>}
+     */
+    private function affiliationsOf(Partner $p): array
+    {
+        $today = now()->toDateString();
+        $agreements = DB::table('carrier_broker_agreements')
+            ->where('partner_id', $p->id)->where('status', 'ACTIVE')->where('is_demo', false)
+            ->where('effective_from', '<=', $today)
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $today))
+            ->get(['id', 'carrier_id']);
+        if ($agreements->isEmpty()) {
+            return ['affiliated_insurers' => [], 'products' => []];
+        }
+
+        $lines = DB::table('carrier_broker_agreement_products')->whereIn('agreement_id', $agreements->pluck('id'))->where('status', 'ACTIVE')
+            ->get(['agreement_id', 'line_code', 'insurance_product_id']);
+        $carrierOf = $agreements->pluck('carrier_id', 'id');
+        $carriers = $this->carriers()->whereIn('id', $agreements->pluck('carrier_id')->unique())->get()->keyBy('id');
+        $this->loadDirectory($carriers->values());
+
+        $insurers = [];
+        $products = [];
+        foreach ($lines as $line) {
+            $carrier = $carriers->get($carrierOf[$line->agreement_id] ?? null);
+            if (! $carrier) {
+                continue;
+            }
+            $insurer = $this->insurerOf($carrier);
+            $insurers[$carrier->id] ??= ['id' => $carrier->id, 'name' => $insurer['name'], 'initials' => $insurer['initials'], 'logo_url' => $insurer['logo_url'], 'lines' => []];
+            $insurers[$carrier->id]['lines'][$line->line_code] = $line->line_code;
+            $offered = $carrier->products->filter(fn ($prod) => $line->insurance_product_id
+                ? $prod->id === $line->insurance_product_id
+                : $prod->line_code === $line->line_code);
+            foreach ($offered as $prod) {
+                $products[$prod->id] = ['id' => $prod->id, 'name' => $prod->name, 'line_code' => $prod->line_code, 'carrier_id' => $carrier->id, 'carrier_name' => $insurer['name']];
+            }
+        }
+
+        return [
+            'affiliated_insurers' => collect($insurers)->map(fn ($i) => ['lines' => array_values($i['lines'])] + $i)->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
+            'products' => collect($products)->sortBy([['line_code', 'asc'], ['name', 'asc']])->values()->all(),
+        ];
+    }
+
+    /** Brokers the platform features (owner, 2026-09-28), matched on the normalized register name. */
+    private const FEATURED_BROKERS = ['ASSUR EXPERT D&G SARL'];
+
+    private function isFeatured(Partner $p): bool
+    {
+        $names = array_map(fn ($n) => Register::normalize($n), self::FEATURED_BROKERS);
+
+        return collect([$p->trade_name, $p->legal_name, $p->party?->display_name])->filter()
+            ->contains(fn ($n) => in_array(Register::normalize($n), $names, true));
     }
 
     private function matches(array $row, string $q): bool
@@ -216,6 +279,7 @@ final class PublicInstitutionController
             'licence_number' => $p->licence_number,
             'licence_expires_on' => $p->licence_expires_on?->toDateString(),
             'regulator_number' => $p->regulator_sequence,
+            'featured' => $this->isFeatured($p),
             // Broker register rows are not linked to an organisation letterhead yet.
             'logo_url' => null,
             'letterhead_available' => false,
