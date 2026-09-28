@@ -15,6 +15,7 @@ import { CustomerApi } from "@/api/customer";
 import type { Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
 import { matchesQuery } from "@/lib/customerLogic";
+import { featuredFirst } from "@/lib/institutions";
 import { activeFilterCount, FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
 import { applyExploreFilters, exploreSections, listParam } from "@/components/customer/exploreFilters";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -67,13 +68,14 @@ export default function Explore() {
         .slice(0, 8),
     [providers.data],
   );
-  // Licensed brokers in regulator order (max 10) for the brokers carousel.
+  // Featured brokers first, then licensed brokers in regulator order (max 10) for the brokers carousel.
   const featuredBrokers = useMemo(
     () =>
-      (providers.data ?? [])
-        .filter((p: Institution) => p.type === "broker")
-        .sort((x, y) => (x.regulator_number ?? 9999) - (y.regulator_number ?? 9999))
-        .slice(0, 10),
+      featuredFirst(
+        (providers.data ?? [])
+          .filter((p: Institution) => p.type === "broker")
+          .sort((x, y) => (x.regulator_number ?? 9999) - (y.regulator_number ?? 9999)),
+      ).slice(0, 10),
     [providers.data],
   );
   const shown = useMemo(

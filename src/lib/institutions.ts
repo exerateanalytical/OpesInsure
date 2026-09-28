@@ -44,6 +44,36 @@ export function filterBrokers<T extends BrokerLike>(rows: T[], query: string): T
   return rows.filter((r) => hit(q, r.name, r.city, r.canonical_id));
 }
 
+/**
+ * Brokers the platform features (owner, 2026-09-28). The server `featured` flag wins once
+ * GET /public/institutions sends it; until then these register names are featured.
+ */
+export const FEATURED_BROKER_NAMES = ["ASSUR EXPERT D&G SARL"] as const;
+
+const squash = (value: string) => fold(value).replace(/[^a-z0-9&]/g, "");
+
+export function isFeaturedBroker(row: { name: string; featured?: boolean | null }): boolean {
+  if (typeof row.featured === "boolean") return row.featured;
+  const n = squash(row.name);
+  return FEATURED_BROKER_NAMES.some((f) => squash(f) === n);
+}
+
+/** Featured brokers first; everything else keeps its incoming (regulator) order. */
+export function featuredFirst<T extends { name: string; featured?: boolean | null }>(rows: T[]): T[] {
+  return [...rows.filter(isFeaturedBroker), ...rows.filter((r) => !isFeaturedBroker(r))];
+}
+
+type AffiliationProduct = { id: string; name: string; line_code: string; carrier_id?: string | null; carrier_name?: string | null };
+
+/** Products a broker offers, grouped by line (lines alphabetical, products by name). */
+export function productsByLine<T extends AffiliationProduct>(products: T[] | null | undefined): { line: string; products: T[] }[] {
+  const groups = new Map<string, T[]>();
+  for (const p of products ?? []) groups.set(p.line_code, [...(groups.get(p.line_code) ?? []), p]);
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([line, list]) => ({ line, products: [...list].sort((x, y) => x.name.localeCompare(y.name)) }));
+}
+
 export function registerCounts(rows: InsurerLike[]) {
   const official = rows.filter((r) => r.is_official_register);
   return {

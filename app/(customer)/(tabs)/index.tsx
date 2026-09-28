@@ -203,18 +203,19 @@ export default function CustomerHome() {
           style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
         >
           <HeritagePattern variant="ndop" opacity={0.08} />
-          <View style={styles.ctaThumb}>
-            <ShieldCheck size={28} color={colors.gold500} />
-          </View>
-          <View style={styles.ctaCopy}>
-            <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
-            <Text style={styles.ctaBody}>{t("homeCtaBody")}</Text>
-            <View style={styles.ctaButton}>
-              <Text style={styles.ctaButtonText}>{t("propGetQuote")}</Text>
+          <View style={styles.ctaTop}>
+            <View style={styles.ctaThumb}>
+              <ShieldCheck size={28} color={colors.gold500} />
+            </View>
+            <View style={styles.ctaCopy}>
+              <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
+              <Text style={styles.ctaBody}>{t("homeCtaBody")}</Text>
             </View>
           </View>
-          <View style={styles.ctaChevron}>
-            <ArrowRight size={18} color={colors.white} />
+          {/* Bottom-right action; the whole card stays the touch target. */}
+          <View style={styles.ctaButton}>
+            <Text style={styles.ctaButtonText} numberOfLines={1}>{t("propGetQuote")}</Text>
+            <ArrowRight size={16} color={colors.navy950} strokeWidth={2.4} />
           </View>
         </Pressable>
 
@@ -544,8 +545,6 @@ const styles = StyleSheet.create({
   // Same metrics as PolicyListCard (the other cards on this screen): 12dp padding,
   // 56dp tile with a 28dp icon, 17dp title, 13/12dp meta, 36dp chevron.
   cta: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: space.x3,
     borderRadius: radius.feature,
     // Design promo navy (sampled #00255C), darker than navy900.
@@ -555,13 +554,22 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: space.x3,
   },
+  ctaTop: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   ctaThumb: { width: 56, height: 56, borderRadius: radius.card, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
   ctaCopy: { flex: 1, gap: 3, minWidth: 0 },
-  ctaTitle: { ...type.cardTitle, fontSize: 17, lineHeight: 22, color: colors.white },
+  ctaTitle: { ...type.cardTitle, fontSize: 18, lineHeight: 24, color: colors.white },
   ctaBody: { ...type.meta, color: colors.blue100 },
-  ctaButton: { alignSelf: "flex-start", backgroundColor: colors.gold500, borderRadius: radius.pill, paddingHorizontal: space.x3, paddingVertical: 4, marginTop: 4 },
-  ctaButtonText: { ...type.meta, fontSize: 12, lineHeight: 16, fontFamily: "Inter_600SemiBold", color: colors.navy950 },
-  ctaChevron: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" },
+  ctaButton: {
+    alignSelf: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 44,
+    backgroundColor: colors.gold500,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.x4,
+  },
+  ctaButtonText: { ...type.label, fontSize: 15, lineHeight: 20, fontFamily: "Inter_700Bold", color: colors.navy950 },
   quickRow: { flexDirection: "row", gap: space.x3 },
   section: { ...type.cardTitle, color: colors.navy950, marginBottom: -space.x2 },
   category: {

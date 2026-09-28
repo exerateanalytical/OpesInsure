@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, Star } from "lucide-react-native";
 import { AppHeader, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { BrandArt } from "@/components/design/BrandArt";
@@ -10,7 +10,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { useListFilters, type FilterSection } from "@/components/filters";
 import { InstitutionsApi, type Institution } from "@/api/extra";
 import { useTranslation } from "@/i18n";
-import { REGISTER_SOURCE_KEY, filterBrokers } from "@/lib/institutions";
+import { REGISTER_SOURCE_KEY, featuredFirst, filterBrokers, isFeaturedBroker } from "@/lib/institutions";
 import { colors, space, type } from "@/theme/tokens";
 
 const NO_SECTIONS: FilterSection[] = [];
@@ -23,7 +23,7 @@ export default function Brokers() {
   const query = flt.text;
   const setQuery = flt.setText;
   const q = useLoad(() => InstitutionsApi.list("broker"), []);
-  const filtered = useMemo(() => filterBrokers(q.data ?? [], flt.query), [q.data, flt.query]);
+  const filtered = useMemo(() => featuredFirst(filterBrokers(q.data ?? [], flt.query)), [q.data, flt.query]);
   const official = (q.data ?? []).filter((b) => b.is_official_register).length;
 
   return (
@@ -74,16 +74,23 @@ export default function Brokers() {
 
 function BrokerRow({ broker }: { broker: Institution }) {
   const { t } = useTranslation();
+  const featured = isFeaturedBroker(broker);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={broker.name}
+      accessibilityLabel={featured ? `${broker.name}, ${t("brokerFeatured")}` : broker.name}
       onPress={() => router.push({ pathname: "/institutions/broker/[id]", params: { id: broker.id } })}
     >
-      <Card>
+      <Card style={featured ? styles.featuredCard : undefined}>
         <View style={styles.row}>
           <InstitutionMark logoUrl={institutionLogo(broker)} initials={broker.initials} size={42} />
           <View style={styles.copy}>
+            {featured ? (
+              <View style={styles.featured}>
+                <Star size={12} color={colors.navy950} fill={colors.navy950} />
+                <Text style={styles.featuredText}>{t("brokerFeatured")}</Text>
+              </View>
+            ) : null}
             <Text style={styles.name}>{broker.name}</Text>
             <Text style={styles.meta}>
               {[
@@ -110,4 +117,16 @@ const styles = StyleSheet.create({
   name: { ...type.label, color: colors.navy950 },
   meta: { ...type.meta, color: colors.neutral600 },
   source: { ...type.meta, color: colors.neutral500, textAlign: "center" },
+  featuredCard: { borderColor: colors.gold500, borderWidth: 1.5 },
+  featured: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.gold500,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  featuredText: { ...type.caption, fontFamily: "Inter_700Bold", color: colors.navy950 },
 });

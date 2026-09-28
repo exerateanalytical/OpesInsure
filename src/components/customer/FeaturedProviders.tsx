@@ -13,7 +13,9 @@ import {
 import { router, useFocusEffect } from "expo-router";
 import { CONTENT_MAX_WIDTH, ripple } from "@/components/ui";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
+import { Star } from "lucide-react-native";
 import type { Institution } from "@/api/extra";
+import { isFeaturedBroker } from "@/lib/institutions";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -99,11 +101,14 @@ export function FeaturedProviders({ providers, kind = "insurer" }: { providers: 
       >
         {providers.map((p) => {
           const count = p.products?.length ?? 0;
+          const star = kind === "broker" && isFeaturedBroker(p);
           const meta =
             kind === "broker"
-              ? p.regulator_number
-                ? t("regulatorNumber", { number: p.regulator_number })
-                : t("broker")
+              ? star
+                ? t("brokerFeatured")
+                : p.regulator_number
+                  ? t("regulatorNumber", { number: p.regulator_number })
+                  : t("broker")
               : count
                 ? count === 1
                   ? t("productsCountOne")
@@ -116,7 +121,7 @@ export function FeaturedProviders({ providers, kind = "insurer" }: { providers: 
               accessibilityLabel={`${p.name}. ${meta}`}
               onPress={() => router.push({ pathname: kind === "broker" ? "/institutions/broker/[id]" : "/institutions/insurer/[id]", params: { id: p.id } })}
               android_ripple={ripple()}
-              style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.card, { width: cardWidth }, star && styles.starCard, pressed && styles.pressed]}
             >
               <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={52} />
               <View style={styles.nameBox}>
@@ -124,9 +129,16 @@ export function FeaturedProviders({ providers, kind = "insurer" }: { providers: 
                   {p.name}
                 </Text>
               </View>
-              <Text style={styles.meta} numberOfLines={1}>
-                {meta}
-              </Text>
+              {star ? (
+                <View style={styles.star}>
+                  <Star size={11} color={colors.navy950} fill={colors.navy950} />
+                  <Text style={styles.starText} numberOfLines={1}>{meta}</Text>
+                </View>
+              ) : (
+                <Text style={styles.meta} numberOfLines={1}>
+                  {meta}
+                </Text>
+              )}
             </Pressable>
           );
         })}
@@ -161,6 +173,9 @@ const styles = StyleSheet.create({
   nameBox: { height: 36, justifyContent: "center", alignSelf: "stretch" },
   name: { ...type.label, fontSize: 13, lineHeight: 18, fontFamily: "Inter_600SemiBold", color: colors.navy950, textAlign: "center" },
   meta: { ...type.meta, fontSize: 12, lineHeight: 16, color: colors.neutral600, textAlign: "center" },
+  starCard: { borderColor: colors.gold500, borderWidth: 1.5 },
+  star: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.gold500, borderRadius: radius.pill, paddingHorizontal: space.x2, paddingVertical: 2 },
+  starText: { ...type.caption, fontSize: 11, lineHeight: 14, fontFamily: "Inter_700Bold", color: colors.navy950 },
   dots: { flexDirection: "row", justifyContent: "center", gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.neutral200 },
   dotActive: { width: 16, backgroundColor: colors.blue600 },

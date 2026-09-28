@@ -141,7 +141,16 @@ export const ClaimRecordsApi = {
 };
 
 // --- Public institution directory ---------------------------------------
-export type InstitutionProduct = { id: string; name: string; line_code: string };
+export type InstitutionProduct = {
+  id: string;
+  name: string;
+  line_code: string;
+  /** Broker rows: the insurer that carries this product. */
+  carrier_id?: string | null;
+  carrier_name?: string | null;
+};
+/** An insurer a broker holds an ACTIVE carrier_broker_agreement with. */
+export type AffiliatedInsurer = { id: string; name: string; initials: string; logo_url?: string | null; lines?: string[] };
 export type Institution = {
   id: string;
   type: "insurer" | "broker";
@@ -157,6 +166,10 @@ export type Institution = {
   phone?: string | null;
   website?: string | null;
   products?: InstitutionProduct[];
+  /** Brokers: insurers the broker is appointed by (absent until the server sends it). */
+  affiliated_insurers?: AffiliatedInsurer[];
+  /** Brokers the platform features (sorted first, badge). */
+  featured?: boolean | null;
   licence_number?: string | null;
   licence_expires_on?: string | null;
   // Official DGTCFM/MINFI register fields (null for non-register rows).
