@@ -216,9 +216,9 @@ test("Batch 6 copy exists in English and French", () => {
   }
 });
 
-test("1.5.1 native build: in-app document viewer depends on webview, file-system and sharing", () => {
+test("1.5.2 native build: in-app document viewer depends on webview, file-system and sharing", () => {
   const pkg = JSON.parse(read("package.json"));
-  assert.equal(pkg.version, "1.5.1");
+  assert.equal(pkg.version, "1.5.2");
   for (const dep of ["react-native-webview", "expo-file-system", "expo-sharing"]) assert.ok(pkg.dependencies[dep], dep);
   assert.equal(pkg.dependencies["expo-print"], undefined);
   const viewer = read("app/documents/view.tsx");

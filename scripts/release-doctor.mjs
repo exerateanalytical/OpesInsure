@@ -34,8 +34,10 @@ if (app.expo.version !== pkg.version) errors.push(`VERSION_MISMATCH:app.json=${a
 if (app.expo.runtimeVersion?.policy !== "appVersion") errors.push("RUNTIME_POLICY_NOT_APPVERSION");
 // OPS-03: OTA updates must be code-signed; the certificate (public) is committed, the private key never is.
 const updates = app.expo.updates ?? {};
-if (!updates.codeSigningCertificate || !existsSync(updates.codeSigningCertificate)) errors.push("OTA_CODE_SIGNING_CERTIFICATE_MISSING");
-if (updates.codeSigningMetadata?.alg !== "rsa-v1_5-sha256" || !updates.codeSigningMetadata?.keyid) errors.push("OTA_CODE_SIGNING_METADATA_INVALID");
+// OTA code signing is paused: EAS did not serve signed updates to APK 1.5.1 (see docs/HANDOVER_AGENT_UI_V2_2026-09-28.md).
+// Re-enable (certs/certificate.pem + keyid "main") only after confirming the Expo plan supports end-to-end code signing.
+if (updates.codeSigningCertificate && !existsSync(updates.codeSigningCertificate)) errors.push("OTA_CODE_SIGNING_CERTIFICATE_MISSING");
+if (updates.codeSigningCertificate && (updates.codeSigningMetadata?.alg !== "rsa-v1_5-sha256" || !updates.codeSigningMetadata?.keyid)) errors.push("OTA_CODE_SIGNING_METADATA_INVALID");
 if (existsSync("keys") || existsSync("certs/private-key.pem")) errors.push("OTA_PRIVATE_KEY_IN_PROJECT(move it to ~/.opesinsure-keys/codesigning)");
 // PERF-001: keep Hermes + New Architecture in every release build.
 if (app.expo.newArchEnabled !== true) errors.push("NEW_ARCHITECTURE_DISABLED");

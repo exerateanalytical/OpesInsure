@@ -2,7 +2,7 @@
     "expo": {
         "name": "OpesInsure",
         "slug": "opesinsure",
-        "version": "1.5.1",
+        "version": "1.5.2",
         "orientation": "portrait",
         "scheme": "opesinsure",
         "userInterfaceStyle": "light",
@@ -154,12 +154,7 @@
         "updates": {
             "url": "https://u.expo.dev/257a3907-e58d-442b-914f-984d74c96767",
             "fallbackToCacheTimeout": 0,
-            "checkAutomatically": "ON_LOAD",
-            "codeSigningCertificate": "./certs/certificate.pem",
-            "codeSigningMetadata": {
-                "keyid": "main",
-                "alg": "rsa-v1_5-sha256"
-            }
+            "checkAutomatically": "ON_LOAD"
         },
         "platforms": [
             "ios",
