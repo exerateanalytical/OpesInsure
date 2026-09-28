@@ -1,12 +1,10 @@
 import React, { useMemo } from "react";
 import { useLoad } from "@/hooks/useLoad";
-import { PortalScreen } from "@/components/portal/PortalShell";
-import { agentTabs } from "@/components/portal/tabs";
-import { StatePanel } from "@/components/StatePanel";
 import { router } from "expo-router";
-import { ContactRound, Plus } from "lucide-react-native";
-import { AppHeader, Button, Card } from "@/components/ui";
-import { FlowRow } from "@/components/FlowPrimitives";
+import { ContactRound, SearchX, UserPlus } from "lucide-react-native";
+import { AgentButton, AgentCard, AgentEmptyState, AgentShell } from "@/components/agent";
+import { AgentListRow } from "@/components/partner/AgentListUi";
+import { BookLoad, BookTitle } from "@/components/partner/AgentBookUi";
 import { AgentApi } from "@/api/client";
 import { AgentWorkspaceApi, type PartnerPolicy } from "@/api/partner";
 import { applyFilters, FilterToolbar, useListFilters } from "@/components/filters";
@@ -14,6 +12,7 @@ import { portfolioHaystack, portfolioMatchers, portfolioSections } from "@/compo
 import { useTranslation } from "@/i18n";
 const NO_POLICIES: PartnerPolicy[] = [];
 
+/** Customers tab (AGENT_UI_SPEC_V2 operational list): search + one filter icon, rows open the customer 360. */
 export default function AgentClients() {
   const { t, td } = useTranslation();
   const q = useLoad(() => AgentApi.clients(), []);
@@ -25,36 +24,36 @@ export default function AgentClients() {
   const matchers = useMemo(() => portfolioMatchers(policies), [policies]);
   const f = useListFilters("agent.clients", sections);
   const x = applyFilters(rows, f.values, matchers, f.query, portfolioHaystack);
+  const add = () => router.push("/agent/clients/new");
   return (
-    <PortalScreen tabs={agentTabs}>
-      <AppHeader
-        title={t("agClientPortfolio")}
-        subtitle={t("agOriginEnforced")}
-      />
-      <Button
-        label={t("agRegisterClient")}
-        icon={Plus}
-        onPress={() => router.push("/agent/clients/new")}
-      />
-      <FilterToolbar filters={f} sections={sections} count={(v) => applyFilters(rows, v, matchers, f.text, portfolioHaystack).length} placeholder={t("fltSearchClients")} resultCount={f.active ? x.length : undefined} />
-      <StatePanel {...q} onRetry={q.reload}>
+    <AgentShell refreshing={q.loading && !!q.data} onRefresh={() => { q.reload(); pol.reload(); }}>
+      <BookTitle title={t("agClientPortfolio")} subtitle={t("agOriginEnforced")} />
+      <AgentButton label={t("agRegisterClient")} icon={UserPlus} onPress={add} />
+      <BookLoad q={q} icon={ContactRound} emptyTitle={t("agkNoCustomers")} emptyBody={t("agkNoCustomersBody")} emptyAction={t("agRegisterClient")} onEmptyAction={add}>
         {() => (
           <>
-          <Card>
-            {x.map((c) => (
-              <FlowRow
-                key={c.id}
-                icon={ContactRound}
-                title={c.full_name}
-                subtitle={[c.phone_e164, c.city].filter(Boolean).join(" · ")}
-                status={c.kyc_status}
-                onPress={() => router.push(`/agent/clients/${c.id}`)}
-              />
-            ))}
-          </Card>
+            <FilterToolbar filters={f} sections={sections} count={(v) => applyFilters(rows, v, matchers, f.text, portfolioHaystack).length} placeholder={t("fltSearchClients")} resultCount={f.active ? x.length : undefined} />
+            {x.length === 0 ? (
+              <AgentEmptyState icon={SearchX} title={t("fltNoMatches")} body={t("fltNoMatchesBody")} actionLabel={t("fltClearAll")} onAction={f.clear} />
+            ) : (
+              <AgentCard padded={false}>
+                {x.map((c, i) => (
+                  <AgentListRow
+                    key={c.id}
+                    first={i === 0}
+                    icon={ContactRound}
+                    title={c.full_name}
+                    subtitle={[c.phone_e164, c.city].filter(Boolean).join(" · ")}
+                    status={c.kyc_status}
+                    statusLabel={td(`kycStatus_${c.kyc_status}`, c.kyc_status?.replaceAll("_", " "))}
+                    onPress={() => router.push(`/agent/clients/${c.id}`)}
+                  />
+                ))}
+              </AgentCard>
+            )}
           </>
         )}
-      </StatePanel>
-    </PortalScreen>
+      </BookLoad>
+    </AgentShell>
   );
 }

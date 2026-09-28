@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, StyleSheet, Text } from "react-native";
-import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { StyleSheet, Text } from "react-native";
+import { FileSignature, Users } from "lucide-react-native";
+import { TextField } from "@/components/ui";
+import { OptionGroup } from "@/components/forms/OptionGroup";
+import { SelectField } from "@/components/forms/SelectField";
+import { AgentButton, AgentCard, AgentEmptyState, AgentShell, AgentSkeleton } from "@/components/agent";
 import { AgentApi, AgentClient } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
-import { StatePanel } from "@/components/StatePanel";
-import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { agentColors as c, agentLayout as L, agentType as T } from "@/theme/agent";
 // The product name is sent as-is to the server; only its label is translated.
 const products = [
   { value: "Motor Third Party", key: "agMotorThirdParty" },
@@ -14,6 +17,7 @@ const products = [
   { value: "Travel", key: "catTravel" },
   { value: "Health", key: "catHealth" },
 ] as const;
+/** Assisted sale (spec v2 form): client, product, payment phone; sticky primary action. */
 export default function AgentSaleNew() {
   const { t } = useTranslation();
   const { customerId } = useLocalSearchParams<{ customerId?: string }>();
@@ -26,108 +30,68 @@ export default function AgentSaleNew() {
   const [phone, setPhone] = useState("+237");
   useEffect(() => {
     if (!customerId || !q.data) return;
-    const c = q.data.find((v) => v.id === customerId);
-    if (c) setPhone(c.phone_e164);
+    const found = q.data.find((v) => v.id === customerId);
+    if (found) setPhone(found.phone_e164);
   }, [customerId, q.data]);
+  const create = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const x = await AgentApi.createSale({
+        customer_id: client,
+        product,
+        payment_phone_e164: phone,
+      });
+      router.replace(`/agent/sales/${x.id}`);
+    } catch {
+      setError(t("agSaleFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
-    <Screen>
-      <AppHeader
-        title={t("agAssistedSale")}
-        subtitle={t("agClientAuthorizes")}
-        back
-      />
-      <Card>
-        <Text style={s.label}>{t("agClient")}</Text>
-        {q.loading || q.error || clients.length === 0 ? (
-          <StatePanel
-            {...q}
-            onRetry={q.reload}
-            loadingLabel={t("agLoadingClients")}
-            emptyTitle={t("agNoClients")}
-            emptyMessage={t("agNoClientsBody")}
-          >
-            {() => null}
-          </StatePanel>
-        ) : null}
-        {clients.map((c) => (
-          <Pressable
-            key={c.id}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: client === c.id }}
-            style={[s.option, client === c.id && s.selected]}
-            onPress={() => {
-              setClient(c.id);
-              setPhone(c.phone_e164);
+    <AgentShell
+      variant="drilldown"
+      title={t("agAssistedSale")}
+      hideNav
+      footer={<AgentButton icon={FileSignature} label={t("agCreateQuoteReview")} disabled={!client || phone.length < 8} loading={busy} onPress={() => void create()} />}
+    >
+      <Text style={s.sub}>{t("agClientAuthorizes")}</Text>
+      {q.loading && !q.data ? (
+        <AgentSkeleton rows={3} height={56} />
+      ) : q.error ? (
+        <AgentEmptyState icon={Users} title={t("loadErrorTitle")} body={t("loadErrorBody")} actionLabel={t("retry")} onAction={q.reload} />
+      ) : clients.length === 0 ? (
+        <AgentEmptyState icon={Users} title={t("agNoClients")} body={t("agNoClientsBody")} />
+      ) : null}
+      <AgentCard style={s.form}>
+        {clients.length ? (
+          <SelectField
+            label={t("agClient")}
+            value={client}
+            options={clients.map((x) => ({ value: x.id, label: x.full_name, subtitle: x.phone_e164 }))}
+            onChange={(id) => {
+              setClient(id);
+              const x = clients.find((v) => v.id === id);
+              if (x) setPhone(x.phone_e164);
             }}
-          >
-            <Text style={s.optionText}>
-              {c.full_name} · {c.phone_e164}
-            </Text>
-          </Pressable>
-        ))}
-        <Text style={s.label}>{t("cfProduct")}</Text>
-        {products.map(({ value: p, key }) => (
-          <Pressable
-            key={p}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: product === p }}
-            style={[s.option, product === p && s.selected]}
-            onPress={() => setProduct(p)}
-          >
-            <Text style={s.optionText}>{t(key)}</Text>
-          </Pressable>
-        ))}
-        <TextField
-          label={t("agClientPaymentPhone")}
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-        />
-        <Text style={s.note}>
-          {t("agNeverPin")}
-        </Text>
-        <Button
-          label={t("agCreateQuoteReview")}
-          disabled={!client || phone.length < 8}
-          loading={busy}
-          onPress={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              const x = await AgentApi.createSale({
-                customer_id: client,
-                product,
-                payment_phone_e164: phone,
-              });
-              router.replace(`/agent/sales/${x.id}`);
-            } catch {
-              setError(t("agSaleFailed"));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
-        {error ? (
-          <Text accessibilityRole="alert" style={s.error}>
-            {error}
-          </Text>
+          />
         ) : null}
-      </Card>
-    </Screen>
+        <OptionGroup label={t("cfProduct")} value={product} options={products.map(({ value, key }) => ({ value, label: t(key) }))} onChange={setProduct} />
+        <TextField label={t("agClientPaymentPhone")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      </AgentCard>
+      <Text style={s.note}>{t("agNeverPin")}</Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={s.error}>
+          {error}
+        </Text>
+      ) : null}
+    </AgentShell>
   );
 }
 const s = StyleSheet.create({
-  label: { ...type.label, color: colors.navy950 },
-  option: {
-    minHeight: 48,
-    padding: space.x3,
-    borderWidth: 1,
-    borderColor: colors.neutral300,
-    borderRadius: radius.control,
-    justifyContent: "center",
-  },
-  optionText: { ...type.body, color: colors.navy950 },
-  note: { ...type.meta, color: colors.neutral600 },
-  error: { ...type.meta, color: colors.dangerText },
-  selected: { borderColor: colors.blue600, backgroundColor: colors.blue50 },
+  sub: { ...T.secondary, color: c.secondary },
+  form: { gap: L.subsectionGap },
+  note: { ...T.secondary, color: c.secondary },
+  error: { ...T.body, color: c.danger },
 });

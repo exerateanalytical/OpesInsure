@@ -13,6 +13,7 @@ export default function AgentPolicyDetail() {
       loadClaims={AgentWorkspaceApi.claims}
       loadDocuments={AgentWorkspaceApi.clientDocuments}
       canAssist
+      variant="agent"
     />
   );
 }

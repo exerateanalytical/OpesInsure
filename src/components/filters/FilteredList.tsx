@@ -5,6 +5,10 @@ import { Card, ripple } from "@/components/ui";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { OperationsList } from "@/components/OperationsList";
 import { EmptyState } from "@/components/StatePanel";
+import { AgentCard, AgentEmptyState } from "@/components/agent";
+import { AgentListRow } from "@/components/partner/AgentListUi";
+import { SearchX } from "lucide-react-native";
+import { agentColors as ac, agentType as aT } from "@/theme/agent";
 import { FilterToolbar, runList, totals, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
@@ -20,7 +24,7 @@ export const initialsOf = (name?: string | null) =>
     .join("") || "?";
 
 /** List row with the insurer's InstitutionMark instead of an icon (same layout as FlowRow). */
-function MarkRow({ title, subtitle, status, mark, onPress }: Omit<Row, "id"> & { mark: { logoUrl?: string | null; name?: string | null }; onPress?: () => void }) {
+function MarkRow({ title, subtitle, status, mark, onPress }: Pick<Row, "title" | "subtitle" | "status"> & { mark: { logoUrl?: string | null; name?: string | null }; onPress?: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={[title, subtitle, status].filter(Boolean).join(", ")} onPress={onPress} android_ripple={ripple()} style={({ pressed }) => [st.row, pressed && { opacity: 0.85 }]}>
       <InstitutionMark logoUrl={mark.logoUrl} initials={initialsOf(mark.name)} />
@@ -44,7 +48,16 @@ const st = StyleSheet.create({
   status: { ...type.meta, color: colors.blue700 },
 });
 
-type Row = { id: string; title: string; subtitle: string; status: string };
+type Row = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  /** Agent variant: raw server status code (chip tone / locked vocabulary). */
+  statusCode?: string | null;
+  /** Agent variant: amount shown strongest on the right. */
+  amount?: string | null;
+};
 
 /**
  * App-wide list standard (customer, agent, broker, carrier): search + filter sheet + active pills + clear all +
@@ -68,6 +81,7 @@ export function FilteredList<T extends { id: string }>({
   initial,
   mark,
   action,
+  variant = "default",
 }: {
   /** Filter memory key, e.g. "broker.renewals". */
   list: string;
@@ -89,12 +103,49 @@ export function FilteredList<T extends { id: string }>({
   mark?: (r: T) => { logoUrl?: string | null; name?: string | null } | null;
   /** Primary list action rendered above the toolbar (e.g. "Report a claim"). */
   action?: React.ReactNode;
+  /** "agent" = Commercial Agent spec v2 rows (AgentCard, navy icons, agent chips). Broker/customer keep "default". */
+  variant?: "default" | "agent";
 }) {
   const { t } = useTranslation();
   const f = useListFilters(list, sections, initial);
   const run = (v: FilterValues) => runList(rows, { values: v, text: f.query, matchers, haystack, sorters });
   const shown = run(f.values);
   const sum = amount ? totals(shown, amount) : null;
+  if (variant === "agent") {
+    return (
+      <>
+        {action}
+        <FilterToolbar filters={f} sections={sections} count={(v) => run(v).length} resultCount={shown.length} placeholder={placeholder} />
+        {sum && shown.length ? (
+          <Text accessibilityLiveRegion="polite" style={{ ...aT.secondary, color: ac.secondary }}>
+            {totalLabel ? totalLabel(money(sum.total), sum.count) : `${t("fltTotalFiltered", { count: sum.count })}: ${money(sum.total)}`}
+          </Text>
+        ) : null}
+        {shown.length === 0 ? (
+          <AgentEmptyState icon={SearchX} title={t("fltNoMatches")} body={t("fltNoMatchesBody")} actionLabel={t("fltClearAll")} onAction={f.clear} />
+        ) : (
+          <AgentCard padded={false}>
+            {shown.map((r, i) => {
+              const row = render(r);
+              return (
+                <AgentListRow
+                  key={r.id}
+                  first={i === 0}
+                  icon={icon}
+                  title={row.title}
+                  subtitle={row.subtitle}
+                  status={row.statusCode ?? row.status}
+                  statusLabel={row.status}
+                  amount={row.amount}
+                  onPress={onPress ? () => onPress(r) : undefined}
+                />
+              );
+            })}
+          </AgentCard>
+        )}
+      </>
+    );
+  }
   return (
     <>
       {action}
@@ -110,7 +161,7 @@ export function FilteredList<T extends { id: string }>({
         <Card>
           {shown.map((r) => {
             const m = mark(r);
-            const row = render(r);
+            const { statusCode: _c, amount: _a, ...row } = render(r);
             return m ? (
               <MarkRow key={r.id} {...row} mark={m} onPress={onPress ? () => onPress(r) : undefined} />
             ) : (
@@ -125,7 +176,10 @@ export function FilteredList<T extends { id: string }>({
             const r = shown.find((x) => x.id === id);
             if (r) onPress(r);
           } : undefined}
-          rows={shown.map((r) => ({ id: r.id, ...render(r) }))}
+          rows={shown.map((r) => {
+            const { statusCode: _c, amount: _a, ...row } = render(r);
+            return { id: r.id, ...row };
+          })}
         />
       )}
     </>

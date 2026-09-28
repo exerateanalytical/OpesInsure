@@ -98,7 +98,7 @@ async function resolveRoute(page, route) {
       }
     };
     const pub = async (p) => ((await (await fetch(API + p)).json()).data ?? []);
-    const [wallet, claims, payments, proposals, quotes, cases, insurers, agentCommissions, agentWithdrawals] = await Promise.all([
+    const [wallet, claims, payments, proposals, quotes, cases, insurers, agentCommissions, agentWithdrawals, agentLeads, agentClients, agentPolicies] = await Promise.all([
       get("/mobile/wallet"),
       get("/mobile/claims"),
       get("/mobile/payments"),
@@ -109,6 +109,9 @@ async function resolveRoute(page, route) {
       // Agent portal only (other roles get [] from the 403).
       route.includes("{commission}") ? get("/mobile/agent/commissions") : [],
       route.includes("{withdrawal}") ? get("/mobile/agent/withdrawals") : [],
+      route.includes("{lead}") ? get("/mobile/partner/agent/leads") : [],
+      route.includes("{agentClient}") ? get("/mobile/agent/clients") : [],
+      route.includes("{agentPolicy}") ? get("/mobile/partner/agent/policies") : [],
     ]);
     const active = wallet.find((p) => p.status === "ACTIVE") ?? wallet[0];
     const withProducts = insurers.find((i) => (i.products ?? []).length > 1) ?? insurers[0];
@@ -124,6 +127,9 @@ async function resolveRoute(page, route) {
       insurer: withProducts?.id,
       commission: agentCommissions[0]?.id,
       withdrawal: agentWithdrawals[0]?.id,
+      lead: agentLeads[0]?.id,
+      agentClient: agentClients[0]?.id,
+      agentPolicy: agentPolicies[0]?.id,
     };
   }, API, route);
   return route.replace(/\{(\w+)\}/g, (m, k) => ids[k] ?? m);

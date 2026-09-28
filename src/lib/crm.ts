@@ -18,6 +18,9 @@ export function leadMoves(status: string, nextStatuses: string[] | null | undefi
 
 export const isOpenLead = (status: string) => OPEN_LEAD_STAGES.includes(status);
 
+/** Chip tone for a lead stage: won = success, lost = neutral (not a failure), open = info. */
+export const leadTone = (status: string): "success" | "neutral" | "info" => (status === "CONVERTED" ? "success" : status === "LOST" ? "neutral" : "info");
+
 /** LOST needs a reason. */
 export function leadMoveError(to: string | null, lostReason: string): "reason" | null {
   return to === "LOST" && !lostReason.trim() ? "reason" : null;

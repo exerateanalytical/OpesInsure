@@ -692,5 +692,86 @@
   "name": "earnings-broker",
   "route": "/broker/commissions",
   "account": 1
+ },
+ {
+  "name": "agrest-home",
+  "route": "/agent"
+ },
+ {
+  "name": "agrest-leads",
+  "route": "/agent/leads"
+ },
+ {
+  "name": "agrest-lead",
+  "route": "/agent/leads/{lead}"
+ },
+ {
+  "name": "agrest-lead-new",
+  "route": "/agent/leads/new"
+ },
+ {
+  "name": "agrest-inbox",
+  "route": "/agent/notifications"
+ },
+ {
+  "name": "agrest-offline",
+  "route": "/agent/offline"
+ },
+ {
+  "name": "agrest-verification",
+  "route": "/agent/onboarding"
+ },
+ {
+  "name": "agrest-catalogue",
+  "route": "/agent/catalogue"
+ },
+ {
+  "name": "agent-customers",
+  "route": "/agent/clients"
+ },
+ {
+  "name": "agent-customer",
+  "route": "/agent/clients/{agentClient}"
+ },
+ {
+  "name": "agent-customer-new",
+  "route": "/agent/clients/new"
+ },
+ {
+  "name": "agent-policies",
+  "route": "/agent/policies"
+ },
+ {
+  "name": "agent-policy",
+  "route": "/agent/policies/{agentPolicy}"
+ },
+ {
+  "name": "agent-renewals",
+  "route": "/agent/renewals"
+ },
+ {
+  "name": "agent-proposals",
+  "route": "/agent/proposals"
+ },
+ {
+  "name": "agrest-quotes",
+  "route": "/agent/quotes"
+ },
+ {
+  "name": "agrest-claims",
+  "route": "/agent/claims"
+ },
+ {
+  "name": "agrest-sale-new",
+  "route": "/agent/sales/new"
+ },
+ {
+  "name": "agrest-quote-detail",
+  "route": "/agent/quotes",
+  "after": {
+   "click": "Jean-Paul Nkoulou",
+   "clickPrefix": "Jean-Paul Nkoulou",
+   "times": 1
+  }
  }
 ]

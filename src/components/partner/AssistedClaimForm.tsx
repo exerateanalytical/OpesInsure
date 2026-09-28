@@ -1,5 +1,11 @@
 import React, { useRef, useState } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { ShieldAlert } from "lucide-react-native";
+import { AgentButton, AgentCard, AgentEmptyState } from "@/components/agent";
+import { KV } from "@/components/partner/AgentEarningsUi";
+import { OptionGroup } from "@/components/forms/OptionGroup";
+import { SelectField } from "@/components/forms/SelectField";
+import { agentColors as ac, agentLayout as aL, agentType as aT } from "@/theme/agent";
 import * as Crypto from "expo-crypto";
 import { Button, Card, Chip, ChipRow, TextField } from "@/components/ui";
 import { DetailRow } from "@/components/design";
@@ -30,11 +36,17 @@ export function AssistedClaimForm({
   initialPolicyId,
   submit,
   onFiled,
+  variant = "default",
+  shell,
 }: {
   policies: ClaimablePolicy[];
   initialPolicyId?: string;
   submit: (payload: AssistedClaimPayload) => Promise<{ id: string }>;
   onFiled: (claimId: string) => void;
+  /** "agent" = Commercial Agent spec v2 form; the broker keeps "default". */
+  variant?: "default" | "agent";
+  /** Agent variant: frames the form body with its sticky primary button (e.g. AgentShell footer). */
+  shell?: (body: React.ReactNode, footer: React.ReactNode) => React.ReactElement;
 }) {
   const { t } = useTranslation();
   const [policyId, setPolicyId] = useState(policies.find((p) => p.id === initialPolicyId)?.id ?? (policies.length === 1 ? policies[0]!.id : ""));
@@ -48,6 +60,58 @@ export function AssistedClaimForm({
   const p = policies.find((x) => x.id === policyId);
   const lossMs = Date.parse(`${date}T12:00:00`);
   const valid = !!p && description.trim().length >= 10 && !Number.isNaN(lossMs) && lossMs <= Date.now();
+  const file = async () => {
+    if (!p) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await submit({
+        policy_id: p.id,
+        claimant_party_id: p.party_id,
+        loss_occurred_at: new Date(lossMs).toISOString(),
+        loss_details: { description: description.trim() },
+        loss_location: location.trim() || undefined,
+        estimated_loss_minor: Number(amount) > 0 ? Math.round(Number(amount) * 100) : undefined,
+        idempotency_key: key.current,
+      });
+      onFiled(res.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("pdFileClaimFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (variant === "agent") {
+    const frame = shell ?? ((b: React.ReactNode, f: React.ReactNode) => <>{b}{f}</>);
+    if (!policies.length) return frame(<AgentEmptyState icon={ShieldAlert} title={t("pdNotFound")} body={t("pdNotFoundBody")} />, null);
+    const options = policies.map((x) => ({ value: x.id, label: `${x.policy_number ?? "—"} · ${x.customer_name}` }));
+    return frame(
+      <>
+        {policies.length > 1 ? (
+          <AgentCard style={as.card}>
+            {policies.length <= 4 ? (
+              <OptionGroup label={t("brPickPolicy")} value={policyId} options={options} onChange={setPolicyId} />
+            ) : (
+              <SelectField label={t("brPickPolicy")} value={policyId} options={options} onChange={setPolicyId} />
+            )}
+          </AgentCard>
+        ) : null}
+        <AgentCard>
+          <KV first label={t("policies")} value={p?.policy_number ?? null} />
+          <KV label={t("pcCustomer")} value={p?.customer_name ?? null} />
+        </AgentCard>
+        <AgentCard style={as.card}>
+          <TextField label={t("pdLossDate")} placeholder="2026-09-27" value={date} onChangeText={setDate} />
+          <TextField label={t("pdWhatHappened")} multiline value={description} onChangeText={setDescription} />
+          <TextField label={t("pdLossLocation")} value={location} onChangeText={setLocation} />
+          <TextField label={t("mdAmountFcfa")} keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        </AgentCard>
+        {error ? <Text style={as.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text> : null}
+        <Text style={as.hint}>{t("pdFileClaimHint")}</Text>
+      </>,
+      <AgentButton label={t("pdFileClaimForCustomer")} accessibilityLabel={`${t("pdFileClaimForCustomer")}. ${t("pdFileClaimHint")}`} disabled={!valid} loading={busy} onPress={() => void file()} />,
+    );
+  }
   if (!policies.length) return <EmptyState title={t("pdNotFound")} message={t("pdNotFoundBody")} />;
   return (
     <Card>
@@ -73,28 +137,14 @@ export function AssistedClaimForm({
         hint={t("pdFileClaimHint")}
         disabled={!valid}
         loading={busy}
-        onPress={async () => {
-          if (!p) return;
-          setBusy(true);
-          setError(null);
-          try {
-            const res = await submit({
-              policy_id: p.id,
-              claimant_party_id: p.party_id,
-              loss_occurred_at: new Date(lossMs).toISOString(),
-              loss_details: { description: description.trim() },
-              loss_location: location.trim() || undefined,
-              estimated_loss_minor: Number(amount) > 0 ? Math.round(Number(amount) * 100) : undefined,
-              idempotency_key: key.current,
-            });
-            onFiled(res.id);
-          } catch (e) {
-            setError(e instanceof Error ? e.message : t("pdFileClaimFailed"));
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onPress={() => void file()}
       />
     </Card>
   );
 }
+
+const as = StyleSheet.create({
+  card: { gap: aL.subsectionGap },
+  error: { ...aT.body, color: ac.danger },
+  hint: { ...aT.secondary, color: ac.secondary },
+});

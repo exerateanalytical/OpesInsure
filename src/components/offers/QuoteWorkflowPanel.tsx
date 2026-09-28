@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { AgentButton, AgentCard, AgentSection, AgentSkeleton } from "@/components/agent";
+import { KV } from "@/components/partner/AgentEarningsUi";
+import { AgentRawChip } from "@/components/partner/AgentListUi";
+import { agentColors as ac, agentLayout as aL, agentType as aT } from "@/theme/agent";
 import { openDocument } from "@/components/documents/openDocument";
 import { router } from "expo-router";
 import { Columns3, FileDown, FileText, Send, XCircle } from "lucide-react-native";
@@ -14,12 +18,24 @@ import { canDeclineQuote, hasQuoteDocument, QUOTE_DECLINE_REASONS, quoteOutcome,
 
 
 /** "Sent to insurer" summary from GET quotes/{id}/carrier-requests; renders nothing for auto-rated quotes. */
-export function SentToInsurerCard({ quoteId }: { quoteId: string }) {
+export function SentToInsurerCard({ quoteId, variant = "default" }: { quoteId: string; variant?: "default" | "agent" }) {
   const { t } = useTranslation();
   const f = useFormatters();
   const q = useLoad(() => QuoteWorkflowApi.carrierRequests(quoteId).catch(() => []), [quoteId]);
   const sent = sentToInsurer(q.data);
   if (!sent) return null;
+  if (variant === "agent") {
+    return (
+      <AgentSection title={t("qwSentTitle")}>
+        <AgentCard style={as.card}>
+          <Text style={as.body}>{sent.waiting ? t("qwSentWaiting", { count: sent.waiting }) : t("qwSentAllAnswered")}</Text>
+          {sent.nextDueAt ? <Text style={as.meta}>{t("qwSentDue", { date: f.dateTime(sent.nextDueAt) })}</Text> : null}
+          {sent.offered ? <Text style={as.meta}>{t("qwSentOffered", { count: sent.offered })}</Text> : null}
+          {sent.declined ? <Text style={as.meta}>{t("qwSentDeclined", { count: sent.declined })}</Text> : null}
+        </AgentCard>
+      </AgentSection>
+    );
+  }
   return (
     <Card>
       <SectionHeading icon={Send} title={t("qwSentTitle")} />
@@ -35,7 +51,7 @@ export function SentToInsurerCard({ quoteId }: { quoteId: string }) {
  * Batch 6 quote workflow block shared by customer and partner quote screens: quote number + lifecycle
  * state, sent-to-insurer, PDF, comparison and decline. Reads the canonical GET quotes/{id}.
  */
-export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteId: string; offerCount?: number; onDeclined?: (q: WorkflowQuote) => void }) {
+export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined, variant = "default" }: { quoteId: string; offerCount?: number; onDeclined?: (q: WorkflowQuote) => void; /** "agent" = Commercial Agent spec v2 styling; customer/broker keep "default". */ variant?: "default" | "agent" }) {
   const { t, td } = useTranslation();
   const q = useLoad(() => QuoteWorkflowApi.show(quoteId), [quoteId]);
   const quote = q.data?.quote ?? null;
@@ -46,7 +62,7 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
   const [busy, setBusy] = useState<"pdf" | "decline" | null>(null);
   const [error, setError] = useState<{ e: unknown; fallback: string } | null>(null);
 
-  if (!quote) return q.error ? <ErrorCard error={q.error} fallback={t("qwLoadFailed")} onRetry={() => void q.reload()} /> : null;
+  if (!quote) return q.error ? <ErrorCard error={q.error} fallback={t("qwLoadFailed")} onRetry={() => void q.reload()} /> : variant === "agent" ? <AgentSkeleton rows={4} height={56} /> : null;
   const outcome = quoteOutcome(quote);
 
   const pdf = async () => {
@@ -77,6 +93,50 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
     }
   };
 
+  if (variant === "agent") {
+    return (
+      <>
+        <AgentCard style={as.card}>
+          <AgentRawChip raw={outcome ?? quote.lifecycle_state ?? quote.status} label={td(quoteStateKey(quote), quote.lifecycle_state ?? quote.status)} />
+          <Text style={as.number}>{quote.quote_number ?? t("qwQuoteSummary")}</Text>
+          {quote.lifecycle_state ? <KV first label={t("qwStage")} value={td(`quoteLifecycle_${String(quote.lifecycle_state).toUpperCase()}`, quote.lifecycle_state)} /> : null}
+          {outcome === "DECLINED" ? (
+            <Text accessibilityRole="alert" style={as.danger}>
+              {[t("qwDeclinedTitle"), quote.decline_reason_code ? td(`qwDeclineReason_${quote.decline_reason_code}`, quote.decline_reason_code) : null, t("qwDeclinedBody")].filter(Boolean).join(" — ")}
+            </Text>
+          ) : null}
+          {!hasQuoteDocument(quote) && !outcome ? <Text style={as.meta}>{t("qwDocumentNotReady")}</Text> : null}
+        </AgentCard>
+        {hasQuoteDocument(quote) ? (
+          <AgentButton label={t("qwDocumentOpen")} icon={FileDown} variant="secondary" loading={busy === "pdf"} disabled={!!busy} onPress={() => void pdf()} />
+        ) : null}
+        {offers >= 2 && outcome !== "DECLINED" ? (
+          <AgentButton label={t("qwCompare")} icon={Columns3} variant="secondary" disabled={!!busy} onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: quoteId } })} />
+        ) : null}
+        <SentToInsurerCard quoteId={quoteId} variant="agent" />
+        {canDeclineQuote(quote) ? (
+          declining ? (
+            <AgentSection title={t("qwDeclineTitle")}>
+              <AgentCard style={as.card}>
+                <PickerField
+                  label={t("qwDeclineTitle")}
+                  value={reason}
+                  options={QUOTE_DECLINE_REASONS.map((r) => ({ value: r, label: t(`qwDeclineReason_${r}`) }))}
+                  onChange={setReason}
+                />
+                <TextField label={t("qwDeclineNote")} value={note} onChangeText={setNote} multiline maxLength={1000} />
+                <AgentButton label={t("qwDeclineConfirm")} variant="danger" loading={busy === "decline"} disabled={!reason || !!busy} onPress={() => void decline()} />
+                <AgentButton label={t("cancel")} variant="secondary" disabled={!!busy} onPress={() => setDeclining(false)} />
+              </AgentCard>
+            </AgentSection>
+          ) : (
+            <AgentButton label={t("qwDecline")} icon={XCircle} variant="danger" disabled={!!busy} onPress={() => setDeclining(true)} />
+          )
+        ) : null}
+        {error ? <ErrorCard error={error.e} fallback={error.fallback} /> : null}
+      </>
+    );
+  }
   return (
     <>
       <Card>
@@ -123,3 +183,11 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined }: { quoteI
     </>
   );
 }
+
+const as = StyleSheet.create({
+  card: { gap: aL.rowGap },
+  number: { ...aT.sectionTitle, color: ac.heading },
+  body: { ...aT.body, color: ac.text },
+  meta: { ...aT.secondary, color: ac.secondary },
+  danger: { ...aT.body, color: ac.danger },
+});

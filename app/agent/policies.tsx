@@ -2,30 +2,24 @@ import React from "react";
 import { router } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
-import { PortalScreen } from "@/components/portal/PortalShell";
-import { agentTabs } from "@/components/portal/tabs";
-import { StatePanel } from "@/components/StatePanel";
-import { AppHeader } from "@/components/ui";
+import { AgentShell } from "@/components/agent";
+import { BookLoad, BookTitle } from "@/components/partner/AgentBookUi";
 import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
-import { AgentWorkspaceApi, money, shortDate } from "@/api/partner";
+import { AgentWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
+/** Policies tab (AGENT_UI_SPEC_V2 operational list): search + one filter icon, rows open the policy detail. */
 export default function AgentPolicies() {
   const { t, td } = useTranslation();
   const q = useLoad(() => AgentWorkspaceApi.policies(), []);
   return (
-    <PortalScreen tabs={agentTabs}>
-      <AppHeader title={t("policies")} subtitle={t("agPoliciesSubtitle")} />
-      <StatePanel
-        {...q}
-        onRetry={q.reload}
-        loadingLabel={t("policiesLoading")}
-        emptyTitle={t("policiesEmpty")}
-        emptyMessage={t("agNoPoliciesBody")}
-      >
+    <AgentShell refreshing={q.loading && !!q.data} onRefresh={q.reload}>
+      <BookTitle title={t("policies")} subtitle={t("agPoliciesSubtitle")} />
+      <BookLoad q={q} icon={FileText} emptyTitle={t("policiesEmpty")} emptyBody={t("agNoPoliciesBody")}>
         {(x) => (
           <FilteredList
+            variant="agent"
             list="agent.policies"
             rows={x}
             {...listSpec(x, t, {
@@ -45,14 +39,22 @@ export default function AgentPolicies() {
             icon={FileText}
             amount={(p) => p.premium_minor}
             render={(p) => ({
-              title: `${p.policy_number ?? "Pending number"} · ${p.customer_name}`,
-              subtitle: `${p.carrier_name} · ${money(p.premium_minor)} · ends ${shortDate(p.coverage_ends_at)}`,
-              status: p.status,
+              title: p.customer_name,
+              subtitle: [
+                p.policy_number ?? t("agkPendingNumber"),
+                p.carrier_name,
+                p.coverage_ends_at ? t("agkEnds", { date: shortDate(p.coverage_ends_at) }) : null,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+              amount: money(p.premium_minor),
+              statusCode: p.status,
+              status: td(`policyStatus_${p.status}`, humanize(p.status)),
             })}
             onPress={(p) => router.push({ pathname: "/agent/policies/[id]", params: { id: p.id } })}
           />
         )}
-      </StatePanel>
-    </PortalScreen>
+      </BookLoad>
+    </AgentShell>
   );
 }

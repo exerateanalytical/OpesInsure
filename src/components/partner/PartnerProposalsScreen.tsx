@@ -9,6 +9,9 @@ import { byDate, byNumber, byText, optionsFrom, periodMatcher, periodSection, so
 import { PartnerProposal, humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { FilteredList } from "./FilteredList";
+import { AgentShell } from "@/components/agent";
+import { BookLoad, bookStyles } from "./AgentBookUi";
+import { Text } from "react-native";
 import { saleCommissionLine } from "./SaleCommission";
 import type { CommissionRow } from "./commissionFilters";
 
@@ -60,6 +63,50 @@ export function PartnerProposalsScreen({
     ],
     [rows, t, td],
   );
+  const subtitle = (p: PartnerProposal) =>
+    [
+      p.carrier_name,
+      shortDate(when(p)),
+      // Commission per sale once issued (policy id); before issuance only a server estimate would show.
+      p.policy_id ? saleCommissionLine(ledger.data, { policyId: p.policy_id, proposalId: p.id }, t) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  const open = (p: PartnerProposal) => {
+    if (p.policy_id) router.push(`/${portal}/policies/${p.policy_id}` as never);
+    else if (p.customer_id) router.push(`/${portal}/clients/${p.customer_id}` as never);
+  };
+  if (portal === "agent") {
+    // Commercial Agent spec v2: drill-down shell (proposals is not a bottom-nav tab), kit rows and states.
+    return (
+      <AgentShell variant="drilldown" title={t("ptProposals")} refreshing={q.loading && !!q.data} onRefresh={q.reload}>
+        <Text style={bookStyles.body}>{t("ptProposalsSubtitle")}</Text>
+        <BookLoad q={q} icon={FileSignature} emptyTitle={t("ptNoProposals")} emptyBody={t("ptNoProposalsBody")}>
+          {() => (
+            <FilteredList
+              variant="agent"
+              list="agent.proposals"
+              rows={rows}
+              sections={sections}
+              matchers={matchers}
+              haystack={haystack}
+              sorters={sorters}
+              icon={FileSignature}
+              amount={(p) => p.total_minor}
+              onPress={open}
+              render={(p) => ({
+                title: p.customer_name,
+                subtitle: [p.proposal_number, subtitle(p)].filter(Boolean).join(" · "),
+                amount: p.total_minor !== null ? money(p.total_minor) : null,
+                statusCode: p.status,
+                status: td(`proposalStatus_${p.status}`, humanize(p.status)),
+              })}
+            />
+          )}
+        </BookLoad>
+      </AgentShell>
+    );
+  }
   return (
     <PortalScreen tabs={tabs}>
       <AppHeader title={t("ptProposals")} subtitle={t("ptProposalsSubtitle")} />

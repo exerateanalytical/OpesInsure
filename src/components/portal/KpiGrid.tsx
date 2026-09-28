@@ -9,6 +9,7 @@ import { useTranslation } from "@/i18n";
 import type { CopyKey as TranslationKey } from "@/i18n/strings";
 import { useCapabilities } from "@/store/capabilities";
 import { hrefVisible } from "@/lib/capabilities";
+import { agentColors as ac, agentIcon, agentLayout as AL, agentType as AT } from "@/theme/agent";
 
 export type DashboardMetric = { label: string; value: string; tone?: string; key?: string; href?: string };
 
@@ -25,7 +26,17 @@ const URGENT = new Set(["warning", "danger"]);
  * new server metric is never hidden. Access to each queue is still enforced
  * server-side; this only links.
  */
-export function KpiGrid({ metrics, routes }: { metrics: DashboardMetric[]; routes: Record<string, KpiRoute> }) {
+export function KpiGrid({
+  metrics,
+  routes,
+  variant = "default",
+}: {
+  metrics: DashboardMetric[];
+  routes: Record<string, KpiRoute>;
+  /** "agent" = Commercial Agent spec v2 look (src/theme/agent.ts); broker/carrier keep the default. */
+  variant?: "default" | "agent";
+}) {
+  const ag = variant === "agent";
   const { t } = useTranslation();
   const grid = useColumns({ minItem: 150 });
   const caps = useCapabilities((s) => s.caps);
@@ -42,17 +53,17 @@ export function KpiGrid({ metrics, routes }: { metrics: DashboardMetric[]; route
     const body = (
       <>
         <View style={s.head}>
-          {isUrgent ? <AlertTriangle size={16} color={colors.warningText} /> : null}
-          <Text style={s.meta}>{label}</Text>
+          {isUrgent ? <AlertTriangle size={16} color={ag ? ac.warning : colors.warningText} strokeWidth={ag ? agentIcon.stroke : undefined} /> : null}
+          <Text style={[s.meta, ag && a.meta]}>{label}</Text>
         </View>
         <View style={s.valueRow}>
-          <Text style={s.value}>{m.value}</Text>
-          {href ? <ChevronRight size={18} color={colors.neutral600} /> : null}
+          <Text style={[s.value, ag && a.value]}>{m.value}</Text>
+          {href ? <ChevronRight size={18} color={ag ? ac.muted : colors.neutral600} strokeWidth={ag ? agentIcon.stroke : undefined} /> : null}
         </View>
-        {isUrgent ? <Text style={s.flag}>{t("kpiNeedsAttention")}</Text> : null}
+        {isUrgent ? <Text style={[s.flag, ag && a.flag]}>{t("kpiNeedsAttention")}</Text> : null}
       </>
     );
-    const style = [s.metric, grid.item, isUrgent && s.urgent];
+    const style = [s.metric, grid.item, ag && a.metric, isUrgent && (ag ? a.urgent : s.urgent)];
     return href ? (
       <Card
         key={m.label}
@@ -70,12 +81,12 @@ export function KpiGrid({ metrics, routes }: { metrics: DashboardMetric[]; route
   };
 
   return (
-    <View style={s.wrap}>
+    <View style={[s.wrap, ag && a.wrap]}>
       {urgent.length ? (
         <>
-          <Text accessibilityRole="header" style={s.section}>{t("kpiNeedsAttention")}</Text>
+          <Text accessibilityRole="header" style={[s.section, ag && a.section]}>{ag ? t("kpiNeedsAttention").toUpperCase() : t("kpiNeedsAttention")}</Text>
           <View style={grid.row}>{urgent.map(card)}</View>
-          <Text accessibilityRole="header" style={s.section}>{t("kpiOverview")}</Text>
+          <Text accessibilityRole="header" style={[s.section, ag && a.section]}>{ag ? t("kpiOverview").toUpperCase() : t("kpiOverview")}</Text>
         </>
       ) : null}
       <View style={grid.row}>{rest.map(card)}</View>
@@ -93,4 +104,15 @@ const s = StyleSheet.create({
   valueRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x2 },
   value: { ...type.sectionTitle, color: colors.navy950, flexShrink: 1 },
   flag: { ...type.caption, color: colors.warningText },
+});
+
+/** variant="agent": white card, 1px #E9EAEB, radius 18, no shadow; amber only for "needs attention". */
+const a = StyleSheet.create({
+  wrap: { gap: 12 },
+  metric: { backgroundColor: ac.surface, borderWidth: 1, borderColor: ac.border, borderRadius: AL.cardRadius, padding: 14, minHeight: 88, shadowOpacity: 0, elevation: 0 },
+  urgent: { borderColor: ac.warning, backgroundColor: ac.warningBg },
+  section: { ...AT.caption, color: ac.secondary, letterSpacing: 0.6 },
+  meta: { ...AT.caption, color: ac.secondary },
+  value: { ...AT.sectionTitle, fontSize: 20, lineHeight: 26, color: ac.heading, flexShrink: 1 },
+  flag: { ...AT.caption, color: ac.warning },
 });
