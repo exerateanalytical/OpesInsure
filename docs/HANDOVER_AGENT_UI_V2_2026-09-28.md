@@ -4,10 +4,14 @@
 |---|---|
 | Spec | `docs/AGENT_UI_SPEC_V2.md` (owner-locked; visual master = Agent Profile) |
 | Tokens | `src/theme/agent.ts` (colours, type, layout, icon sizes, locked status vocabulary) |
-| Commit | `ff2979c` on master |
-| Over-the-air update | **`1e528a72`** "agent_ui_v2", runtime **1.5.1**, signed |
-| Checks | `npm run verify`: typecheck, lint 0 errors, **280/280 tests** |
-| Who gets it | Phones on APK **1.5.1** (restart the app twice). Phones on 1.5.0 get it only after installing 1.5.1: https://expo.dev/artifacts/eas/WZVe63pN2B98Po3sEHi4GaoT0RHItgslkW-6DMDi83M.apk |
+| Kit | `src/components/agent/` (import from `@/components/agent`) |
+| Current APK | **1.5.2** (build 21, md5 317e85eb2741f4261ec6a1e46b142485, ~71 MB), served by https://insurance.opesdatacenter.tech/download/android |
+| Latest over-the-air update | **`56c390f8`** "agent_portal_full_restyle", runtime 1.5.2, commit `aea6ab5` |
+| Checks | `npm run verify`: typecheck, lint 0 errors, **280/280 tests**; update endpoint for 1.5.2 returns 200 |
+| How to see it | On APK 1.5.2, fully close and reopen the app twice (first launch downloads, second applies). |
+
+## 0. Why 1.5.1 received nothing (resolved)
+APK 1.5.1 was built to accept only **signed** over-the-air updates. Expo's update service returned "no update" (HTTP 204) for runtime 1.5.1, so every update published for 1.5.1 (CarFront icon, agent UI v2) never reached phones. A 1.5.1 phone cannot be fixed over the air. **APK 1.5.2** removes the signing requirement; the endpoint now answers 200 and updates arrive. Signed updates stay off on the current Expo plan (opeswares-team, 19 USD/month) until the plan is confirmed to support EAS Update code signing. The signing key remains saved outside the repo (`C:/Users/PC/.opesinsure-keys/codesigning/`).
 
 ## 1. What was built
 
@@ -38,9 +42,25 @@ Screens 02, 03, 04, 09 and 10 are shared with customers: one implementation, age
 - Agents were silently redirected away from profile editing, language, notification settings, privacy, KYC and support because those routes were customer-only; they are now open to every signed-in user.
 - Earnings tab highlight on detail pages; hard-edged pattern on the earnings hero.
 
+### Full portal restyle (update `56c390f8`)
+Every remaining agent page now uses the kit and spec (operational header or back + centred title, white cards, navy outline icons, amount-first rows, one filter icon per list, sticky primary buttons, spec states). Nothing removed; broker screens sharing components keep their look via optional `variant="agent"`.
+
+| Area | Screens |
+|---|---|
+| Home | `/agent`: navy welcome hero (one heritage moment), Needs attention + Overview KPI cards (amounts no longer truncated), Quick actions (New sale, Add a lead, Search, What I can sell), Workspace rows, offline sync nudge |
+| Leads | list (search + filter icon, Open/Converted/Lost in the sheet), lead detail (stage, follow-up, convert), new lead |
+| Customers | list (KYC chips), customer 360 (profile card, policies, proposals, claims, documents, sticky "Start assisted sale"), register client |
+| Policies | list (premium first), policy detail (renewal, claims, documents), renewals, proposals; expiring chips amber |
+| Quotes & sales | quotes list, quote detail, new assisted sale (client via searchable dropdown), sale detail (lifecycle timeline, commission, sticky payment action) |
+| Claims | claims list, claim detail, file a claim |
+| Other | notifications inbox, offline queue, agent information & payout (step-up kept), product catalogue |
+
+Shared helpers added: `src/components/partner/AgentListUi.tsx` (agent list row, status to locked-vocabulary chip), `src/components/partner/AgentBookUi.tsx` (title, load/empty/error states), `src/components/filters/FilteredList.tsx` `variant="agent"`.
+
 ## 2. Checked
 Agent (+237600000101) at 360/390/430: profile, language, privacy, notification settings, security, login activity, earnings, filters, commission detail, withdrawal detail, request withdrawal — no overflow, no clipped text. Broker earnings still render. Customer versions of the shared screens pass the layout checks.
-Not captured: session detail and login event detail screens. Nothing run on a real phone.
+Full restyle: all 22 remaining agent screens captured at 390 (Home, policies, new sale also at 360) with no overflow and no clipped text.
+Not seen with real data (the demo agent has no leads, sales or claims, and its customers have no linked records): lead detail, sale detail, claim detail, file a claim, and populated customer 360 / policy detail sections. Session detail and login event detail were not captured. Nothing run on a real phone; please check these on the device.
 
 ## 3. Decisions for you
 - **"Sign out all other sessions":** the backend can only sign out everywhere, including this phone, so the button says "Sign out everywhere". An "others only" endpoint is listed below.
