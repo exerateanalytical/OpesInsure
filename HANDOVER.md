@@ -13,7 +13,7 @@ This document is the single entry point. Every statement below was checked again
 | Item | State |
 |---|---|
 | Production URL | https://insurance.opesdatacenter.tech |
-| Live release | `r20260928-163923`, built from commit **`f92c660`**, deployed 2026-09-28 17:40 |
+| Live release | `r20260928-194521`, built from commit **`4d82f32`**, deployed 2026-09-28 19:45 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
 | Code on `master` not yet deployed | None. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
@@ -128,7 +128,9 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | r20260927-091032 | bbd29f7 | **Hotfix:** claim/policy header actions lost the tenant on Livewire round-trips. Also adds claim payments, disputes and recoveries. |
 | r20260928-145520 | bcde791 + 7e161c9 controller only | **Hotfix on top of r20260927-174612:** public broker profile returns `affiliated_insurers`, `products` (from ACTIVE non-demo carrier_broker_agreements) and `featured` (ASSUR EXPERT D&G SARL). Only `PublicInstitutionController.php` changed; master's later commits are still NOT deployed. |
 | r20260927-174612 | bcde791 | **Access and portals:**<ul><li>broker/insurer RBAC and data scoping</li><li>insurer portal screens</li><li>provider portal access fix (every provider role had been refused)</li><li>partner workspace (My Book, assisted claims, documents, staff)</li><li>customer account (KYC, privacy, step-up settlement/refund)</li><li>header actions for quote, proposal, party, partner and policy</li><li>documents (tamper check, verification log, insurer logo upload)</li><li>design-consistency sweep</li><li>mobile API contract fixes</li><li>FNOL coordinates</li></ul> |
-| **r20260928-163923 (LIVE)** | **f92c660** | **All of master deployed:** UI build-out batches 1–5 (coverage 39.3%), step-up rollout hold, mobile items A1/B1–B6, 4 migrations (rehearsed), platform audit batch 1 (`27b055a`: invitation role ceiling, platform-only tenant lifecycle, /admin restricted to platform/operations roles, Party/Customer scoped outside the platform tenant). Backup `opesinsure-20260928-1626.sql.gz`. Full suite not re-run on this exact commit (owner ordered deploy); targeted suites green. Known non-regression: DemoMobileAccountSeeder phone collision during demo-seed. |
+| r20260928-163923 | f92c660 | **All of master deployed:** UI build-out batches 1–5 (coverage 39.3%), step-up rollout hold, mobile items A1/B1–B6, 4 migrations (rehearsed), platform audit batch 1 (`27b055a`: invitation role ceiling, platform-only tenant lifecycle, /admin restricted to platform/operations roles, Party/Customer scoped outside the platform tenant). Backup `opesinsure-20260928-1626.sql.gz`. Full suite not re-run on this exact commit (owner ordered deploy); targeted suites green. Known non-regression: DemoMobileAccountSeeder phone collision during demo-seed. |
+| r20260928-191516 | 4e0ca34 | **French panels and UI QA defects:** one FR/EN label layer (columns, fields, entries, filters, actions, status badges, resource titles) through `resources/lang/fr.json` (~5,100 entries); `LocalizedResource` base for all 113 resources; `LabelSafeTranslator`; filter button "0" badge hidden; insurer health queue money in FCFA; claims staff can open policies read-only (`policies.read`). |
+| **r20260928-194521 (LIVE)** | **4d82f32** | **Hotfix:** four search selects crashed when typing (`$s`/`$q` not injectable; seen in the production log); product-owner and document-policy pickers now scoped to the tenant. Architecture test guards the parameter name. |
 
 ---
 
@@ -177,12 +179,8 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | Then | 13 account/security, 14–15 finance, 16–17 provider portal, 18 catalogue, 19 master data, 20 reinsurance, 21 document governance/legacy migrations, 22 regulatory/distribution, 23–33 long tail |
 
 **Known UI defects not yet fixed:**
-- **French:** many column headers, page titles and status badges in `/admin`, `/insurer` and `/broker` are still English. This is the largest visible gap.
-- **Provider dashboard:** KPI labels are English and upper-case.
-- **Insurer health lists:** show raw minor-unit columns.
-- **Filter button:** always shows a "0" badge.
-- **CLAIMS_MANAGER** sees the policy list but gets a 403 on policy detail.
-- **Insurer policy detail:** layout nits (trailing divider, date wrap).
+- **French, remaining:** section headings inside forms and detail pages (`Section::make('...')`), select option lists and notification texts are still English. Labels, columns, filters, actions, badges and page titles are French since `4e0ca34`. New English labels need an entry in `resources/lang/fr.json`.
+- **Fixed 2026-09-28:** filter "0" badge; provider dashboard KPI labels; insurer health raw minor-unit columns; claims manager policy 403 (now read-only access).
 - **Payment screens are admin-only.** Payment records aren't carrier-scoped yet, so they can't be shown in `/insurer`.
 - **Provider departments/service units** have no UI (API only).
 - **Browser verification:** only by one automated crawl (about 680 page views, `docs/UI_VISUAL_QA_2026-09-27.md`), not a human walkthrough.
