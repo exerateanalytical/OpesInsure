@@ -21,7 +21,8 @@ import {
   Building2,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { AgentApi, AuthApi, KycApi } from "@/api/client";
+import { AgentApi, AuthApi } from "@/api/client";
+import { CustomerApi } from "@/api/customer";
 import type { AgentProfile } from "@/api/client";
 import {
   AgentAvatar,
@@ -61,8 +62,8 @@ const agentStatusWord = (s?: string | null): AgentStatusKey | null => {
   }
 };
 
-const verificationWord = (status?: string | null): AgentStatusKey => {
-  const p = kycPhase(status).phase;
+const verificationWord = (status?: string | null, expiresAt?: string | null): AgentStatusKey => {
+  const p = kycPhase(status, expiresAt).phase;
   if (p === "approved") return "Verified";
   if (p === "rejected" || p === "expired") return "Rejected";
   if (p === "in_review" || p === "pending_approval") return "Pending";
@@ -82,7 +83,8 @@ export default function AgentAccount() {
   const workspace = useSession((st) => st.activeWorkspace);
   const signOut = useSession((st) => st.signOut);
   const profile = useLoad(() => AgentApi.profile() as Promise<AgentProfileExtra>, []);
-  const kyc = useLoad(() => KycApi.profile(), []);
+  // GET /mobile/kyc/profile answers {identifiers, submission}; the badge follows the latest submission.
+  const kyc = useLoad(() => CustomerApi.kyc(), []);
   const p = profile.data;
   const notProvided = t("agentNotProvided");
 
@@ -108,14 +110,14 @@ export default function AgentAccount() {
   };
 
   const status = agentStatusWord(p?.status ?? user?.status);
-  const verification = kyc.data ? verificationWord(kyc.data.status) : null;
+  const verification = kyc.data ? verificationWord(kyc.data.submission?.status, kyc.data.submission?.expires_at) : null;
   const fullName = p?.full_name || user?.full_name || notProvided;
   const facts: { icon: LucideIcon; label: string; value: string | null | undefined }[] = [
     { icon: IdCard, label: t("agentIdLabel"), value: p?.agent_code },
     { icon: Phone, label: t("agentPhoneLabel"), value: user?.phone_e164 },
     { icon: Mail, label: t("agentEmailLabel"), value: user?.email ?? p?.email },
     { icon: Building2, label: t("agentParentLabel"), value: p?.parent_entity_name ?? workspace?.tenant_name },
-    { icon: MapPin, label: t("agentRegionLabel"), value: p?.region ?? kyc.data?.city },
+    { icon: MapPin, label: t("agentRegionLabel"), value: p?.region },
   ];
 
   return (

@@ -1544,14 +1544,6 @@ export const VehiclesApi = {
     }),
 };
 
-export type KycProfile = {
-  status: string;
-  legal_name: string;
-  date_of_birth?: string;
-  national_id_number?: string;
-  city?: string;
-  rejection_reason?: string | null;
-};
 export type RiskAsset = {
   id: string;
   type: string;
@@ -1641,27 +1633,8 @@ export type StickerDelivery = {
   tracking_code: string;
   timeline: { label: string; occurred_at: string; complete: boolean }[];
 };
-export const KycApi = {
-  profile: () => api<KycProfile>("/mobile/kyc/profile"),
-  saveProfile: (payload: Partial<KycProfile>) =>
-    api<KycProfile>("/mobile/kyc/profile", {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-      idempotent: true,
-    }),
-  uploadDocument: (form: FormData) =>
-    api<{ id: string; status: string }>("/mobile/kyc/documents", {
-      method: "POST",
-      body: form,
-      timeoutMs: 45000,
-      idempotent: true,
-    }),
-  submit: () =>
-    api<KycProfile>("/mobile/kyc/submission", {
-      method: "POST",
-      idempotent: true,
-    }),
-};
+// KYC lives in CustomerApi (src/api/customer.ts: kyc, addIdentifier, attachKycDocument, submitKyc),
+// typed to the real /mobile/kyc/* answers ({identifiers, submission}).
 export const AssetsApi = {
   list: () => api<RiskAsset[]>("/mobile/assets"),
   show: (id: string) => api<RiskAsset>(`/mobile/assets/${id}`),

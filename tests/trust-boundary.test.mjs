@@ -133,13 +133,14 @@ test("customer core completion routes are protected and API backed", () => {
   ])
     assert.match(layout, new RegExp(route.replace(/[\[\]]/g, "\\$&")));
   for (const api of [
-    "KycApi",
     "AssetsApi",
     "DisclosureApi",
     "PaymentsApi",
     "WalletApi",
   ])
     assert.match(client, new RegExp(`export const ${api}`));
+  // KYC is served by CustomerApi, typed to the real {identifiers, submission} answer.
+  assert.match(read("src/api/customer.ts"), /kyc: \(\) => api<KycState>\("\/mobile\/kyc\/profile"\)/);
 });
 test("customer core demo fixtures cover all five flows", () => {
   const demo = JSON.parse(

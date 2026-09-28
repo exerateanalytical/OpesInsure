@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
+  BadgeCheck,
+  CheckCircle2,
+  Circle,
   Bell,
   Building2,
   CarFront,
@@ -37,7 +40,10 @@ import { Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
 import { useSession } from "@/store/session";
-import { AuthApi, KycApi, SupportContactsApi } from "@/api/client";
+import { AccountApi, AuthApi, SupportContactsApi } from "@/api/client";
+import { CustomerApi } from "@/api/customer";
+import { kycPhase } from "@/lib/kyc";
+import { profileCompletion } from "@/lib/profileCompletion";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
@@ -120,22 +126,27 @@ export default function Profile() {
       setVerifyState("error");
     }
   };
-  // KYC status and profile completeness come from GET /mobile/kyc/profile + the session user.
-  const kyc = useLoad(() => KycApi.profile());
+  // Completion is computed only from server data (KYC case + customer profile + session user),
+  // and refreshed whenever the tab regains focus (e.g. back from verification or personal info).
+  const kyc = useLoad(() => CustomerApi.kyc());
+  const personal = useLoad(() => AccountApi.customerProfile());
   const contacts = useLoad(() => SupportContactsApi.get());
-  const kycStatus = kyc.data?.status?.toUpperCase() ?? null;
-  const kycTone = kycStatus === "VERIFIED" || kycStatus === "APPROVED" ? "success" : kycStatus === "REJECTED" ? "danger" : kycStatus === "SUBMITTED" || kycStatus === "UNDER_REVIEW" || kycStatus === "REVIEWING" ? "info" : "warning";
-  const checks = [
-    !!user?.full_name,
-    !!user?.phone_e164,
-    !!user?.email && !emailUnverified,
-    !!kyc.data?.legal_name,
-    !!kyc.data?.date_of_birth,
-    !!kyc.data?.national_id_number,
-    !!kyc.data?.city,
-    kycTone === "success",
-  ];
-  const completion = kyc.data ? Math.round((checks.filter(Boolean).length / checks.length) * 100) : null;
+  const hydrate = useSession((s) => s.hydrate);
+  const reloadKyc = kyc.reload;
+  const reloadPersonal = personal.reload;
+  useFocusEffect(
+    useCallback(() => {
+      void reloadKyc();
+      void reloadPersonal();
+      void hydrate();
+    }, [reloadKyc, reloadPersonal, hydrate]),
+  );
+  const sub = kyc.data?.submission ?? null;
+  const kycState = sub ? kycPhase(sub.status, sub.expires_at) : null;
+  const kycStatus = sub ? (kycState?.phase === "expired" ? "EXPIRED" : sub.status.toUpperCase()) : null;
+  const kycTone = kycState?.tone ?? "warning";
+  const completion = profileCompletion({ user, profile: personal.data, kyc: kyc.data });
+  const nextStep = completion?.steps.find((s) => s.state === "todo");
   const role = workspace?.role_code ? td(`role_${workspace.role_code}`, workspace.role_code) : null;
   return (
     <Screen>
@@ -194,26 +205,60 @@ export default function Profile() {
           </Pressable>
         ) : null}
       </Card>
-      {completion !== null && completion < 100 ? (
+      {completion && completion.complete ? (
+        <View style={styles.completeDone} accessibilityRole="summary">
+          <BadgeCheck size={22} color={colors.successText} />
+          <View style={styles.flex}>
+            <Text style={styles.completionTitle}>{t("profileCompleteDone")}</Text>
+            <Text style={styles.completionBody}>{t("profileCompleteDoneBody")}</Text>
+          </View>
+        </View>
+      ) : completion ? (
         <View style={styles.completion}>
           <View style={styles.completionRow}>
-          <View style={styles.ring} accessibilityLabel={t("profileCompletionA11y", { percent: completion })}>
-            <Text style={styles.ringText}>{completion}%</Text>
+            <View style={styles.ring} accessibilityLabel={t("profileCompletionA11y", { percent: completion.percent })}>
+              <Text style={styles.ringText}>{completion.percent}%</Text>
+            </View>
+            <View style={styles.flex}>
+              <Text style={styles.completionTitle}>{t("profileCompletion")}</Text>
+              <Text style={styles.completionBody}>{t("profileCompletionSteps", { done: completion.done, total: completion.total })}</Text>
+            </View>
           </View>
-          <View style={styles.flex}>
-            <Text style={styles.completionTitle}>{t("profileCompletion")}</Text>
-            <Text style={styles.completionBody}>{t("profileCompletionBody")}</Text>
-          </View>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push("/onboarding/kyc")}
-            style={({ pressed }) => [styles.completeBtn, pressed && styles.pressed]}
-          >
-            <Text style={styles.completeText}>{t("profileCompleteCta")}</Text>
-            <ArrowRight size={16} color={colors.blue600} />
-          </Pressable>
+          {completion.steps.map((s) => (
+            <Pressable
+              key={s.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${t(`profileStep_${s.key}`)}, ${t(`profileStepState_${s.state}`)}`}
+              disabled={s.state === "done"}
+              onPress={() => router.push(s.href as never)}
+              style={({ pressed }) => [styles.stepRow, pressed && styles.pressed]}
+            >
+              {s.state === "done" ? (
+                <CheckCircle2 size={20} color={colors.successText} />
+              ) : s.state === "waiting" ? (
+                <Clock3 size={20} color={colors.blue600} />
+              ) : (
+                <Circle size={20} color={colors.neutral400} />
+              )}
+              <Text style={[styles.stepText, s.state === "done" && styles.stepDone]}>{t(`profileStep_${s.key}`)}</Text>
+              <Text style={[styles.stepState, s.state === "todo" && styles.stepTodo]}>{t(`profileStepState_${s.state}`)}</Text>
+            </Pressable>
+          ))}
+          {nextStep ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(nextStep.href as never)}
+              style={({ pressed }) => [styles.completeBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.completeText}>{t("profileCompleteCta")}</Text>
+              <ArrowRight size={16} color={colors.blue600} />
+            </Pressable>
+          ) : null}
         </View>
+      ) : kyc.error || personal.error ? (
+        <Pressable accessibilityRole="button" onPress={() => { void kyc.reload(); void personal.reload(); }} style={styles.completion}>
+          <Text style={styles.completionBody}>{t("profileCompletionUnknown")}</Text>
+        </Pressable>
       ) : null}
       {groups.map((group) => (
         <Card key={group.title} style={styles.groupCard}>
@@ -331,6 +376,12 @@ const styles = StyleSheet.create({
   completionBody: { ...type.meta, color: colors.neutral600 },
   completeBtn: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.blue100 },
   completeText: { ...type.label, color: colors.blue600 },
+  completeDone: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.successSoft, borderWidth: 1, borderColor: colors.successSoft },
+  stepRow: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 40 },
+  stepText: { ...type.body, color: colors.navy950, flex: 1 },
+  stepDone: { color: colors.neutral600 },
+  stepState: { ...type.meta, color: colors.neutral600 },
+  stepTodo: { color: colors.blue600, fontFamily: "Inter_600SemiBold" },
   help: { flexDirection: "row", alignItems: "center", gap: space.x3, padding: space.x4, borderRadius: radius.feature, backgroundColor: colors.blue50 },
   helpActions: { flexDirection: "row", gap: space.x2 },
   helpBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.navy900, alignItems: "center", justifyContent: "center" },
