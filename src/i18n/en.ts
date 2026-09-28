@@ -3160,6 +3160,8 @@ export const en = {
   kpiOpenClaims: "Open claims",
   kpiSettlementsNet: "Settlements (net)",
   prioTitle: "Needs your attention ({count})",
+  prioViewAll: "View all",
+  prioShowLess: "Show less",
   prioPaymentFailed: "Payment failed",
   prioPaymentFailedBody: "Your premium payment did not go through. Open it to retry.",
   prioPaymentAwaiting: "Payment awaiting confirmation",

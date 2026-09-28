@@ -3149,6 +3149,8 @@ export const fr: Record<keyof typeof en, string> = {
   kpiOpenClaims: "Sinistres ouverts",
   kpiSettlementsNet: "Règlements (net)",
   prioTitle: "À traiter ({count})",
+  prioViewAll: "Tout voir",
+  prioShowLess: "Réduire",
   prioPaymentFailed: "Paiement échoué",
   prioPaymentFailedBody: "Le paiement de votre prime n'a pas abouti. Ouvrez-le pour réessayer.",
   prioPaymentAwaiting: "Paiement en attente de confirmation",
