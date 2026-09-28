@@ -6,6 +6,7 @@ import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { SectionHeading } from "@/components/design";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { BrandArt } from "@/components/design/BrandArt";
+import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { InstitutionsApi, type Institution } from "@/api/extra";
@@ -118,6 +119,9 @@ function Insurers({ broker }: { broker: Institution }) {
 function Policies({ broker }: { broker: Institution }) {
   const { t, td } = useTranslation();
   const groups = productsByLine(broker.products);
+  // Logos from the broker's own insurer list, falling back to the public insurer directory.
+  const logoFor = useInsurerLogos();
+  const insurerOf = (id?: string | null) => (broker.affiliated_insurers ?? []).find((c) => c.id === id);
   return (
     <>
       <SectionHeading title={t("brokerPolicies")} icon={FileText} />
@@ -137,6 +141,11 @@ function Policies({ broker }: { broker: Institution }) {
                 }
                 style={({ pressed }) => [styles.row, i > 0 && styles.divider, pressed && styles.pressed]}
               >
+                <InstitutionMark
+                  logoUrl={logoFor(p.carrier_id, p.carrier_name, insurerOf(p.carrier_id)?.logo_url)}
+                  initials={insurerOf(p.carrier_id)?.initials ?? (p.carrier_name ?? "").slice(0, 2).toUpperCase()}
+                  size={36}
+                />
                 <View style={styles.flex}>
                   <Text style={styles.rowTitle}>{p.name}</Text>
                   {p.carrier_name ? <Text style={styles.meta}>{p.carrier_name}</Text> : null}

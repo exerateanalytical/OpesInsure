@@ -24,7 +24,8 @@ export function InstitutionMark({
       <View style={[styles.box, styles.logoBox, box]}>
         <Image
           source={{ uri: url }}
-          style={{ width: size - 8, height: size - 8 }}
+          // Directory logos are 512px squares with generous margins: keep the inset small so they read.
+          style={{ width: size - 4, height: size - 4 }}
           resizeMode="contain"
           accessibilityIgnoresInvertColors
           onError={() => setFailed(true)}
