@@ -181,6 +181,7 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 **Known UI defects not yet fixed:**
 - **French, remaining:** section headings inside forms and detail pages (`Section::make('...')`), select option lists and notification texts are still English. Labels, columns, filters, actions, badges and page titles are French since `4e0ca34`. New English labels need an entry in `resources/lang/fr.json`.
 - **Fixed 2026-09-28:** filter "0" badge; provider dashboard KPI labels; insurer health raw minor-unit columns; claims manager policy 403 (now read-only access).
+- **Insurer policy detail:** layout nits (trailing divider, date wrap).
 - **Payment screens are admin-only.** Payment records aren't carrier-scoped yet, so they can't be shown in `/insurer`.
 - **Provider departments/service units** have no UI (API only).
 - **Browser verification:** only by one automated crawl (about 680 page views, `docs/UI_VISUAL_QA_2026-09-27.md`), not a human walkthrough.
