@@ -1,21 +1,21 @@
 {
-    "generated_at": "2026-09-28T23:08:12+01:00",
+    "generated_at": "2026-09-28T23:33:20+01:00",
     "totals": {
         "actions": 890,
-        "covered": 402,
-        "uncovered": 488,
-        "coverage_pct": 45.2,
+        "covered": 449,
+        "uncovered": 441,
+        "coverage_pct": 50.4,
         "ui_relevant_actions": 865,
-        "ui_relevant_covered": 399,
-        "ui_coverage_pct": 46.1,
+        "ui_relevant_covered": 446,
+        "ui_coverage_pct": 51.6,
         "uncovered_by_classification": {
             "CUSTOMER_WEB_NEEDED": 20,
             "MOBILE_ONLY_OK": 16,
-            "STAFF_DESKTOP_NEEDED": 443,
+            "STAFF_DESKTOP_NEEDED": 396,
             "SYSTEM_ONLY": 9
         },
         "covered_via": {
-            "filament": 349,
+            "filament": 396,
             "account_portal": 67
         }
     },
@@ -1148,9 +1148,11 @@
                 "permission:bordereaux.prepare"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1175,9 +1177,11 @@
                 "permission:bordereaux.confirm"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1202,9 +1206,11 @@
                 "permission:bordereaux.approve"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1229,9 +1235,11 @@
                 "permission:bordereaux.confirm"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1256,9 +1264,11 @@
                 "permission:bordereaux.submit"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1282,9 +1292,11 @@
                 "App\\Interfaces\\Http\\Middleware\\DeprecatedRouteAlias:bordereaux,REQ-DUP-008"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1308,9 +1320,11 @@
                 "App\\Interfaces\\Http\\Middleware\\DeprecatedRouteAlias:bordereaux/{bordereau}/submit,REQ-DUP-008"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1335,9 +1349,11 @@
                 "App\\Interfaces\\Http\\Middleware\\DeprecatedRouteAlias:bordereaux/{bordereau}/acknowledge,REQ-DUP-008"
             ],
             "domain": "bordereaux",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/BordereauActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1384,9 +1400,11 @@
                 "permission:settlement.prepare"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1409,7 +1427,8 @@
             ],
             "domain": "broker-settlements",
             "filament_entry": [
-                "Shared/Actions/ClaimActions.php"
+                "Shared/Actions/ClaimActions.php",
+                "Shared/Actions/SettlementActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -1435,7 +1454,8 @@
             ],
             "domain": "broker-settlements",
             "filament_entry": [
-                "Shared/Actions/ClaimActions.php"
+                "Shared/Actions/ClaimActions.php",
+                "Shared/Actions/SettlementActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -1462,7 +1482,8 @@
             "domain": "broker-settlements",
             "filament_entry": [
                 "Shared/Actions/ClaimCaseActions.php",
-                "Shared/Actions/HealthProviderActions.php"
+                "Shared/Actions/HealthProviderActions.php",
+                "Shared/Actions/SettlementActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -1487,9 +1508,11 @@
                 "permission:settlement.confirm"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1511,9 +1534,11 @@
                 "permission:settlement.submit"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1535,9 +1560,11 @@
                 "permission:settlement.reconcile"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1560,7 +1587,8 @@
             ],
             "domain": "broker-settlements",
             "filament_entry": [
-                "Shared/Actions/ClaimActions.php"
+                "Shared/Actions/ClaimActions.php",
+                "Shared/Actions/SettlementActions.php"
             ],
             "portal_entry": false,
             "covered": true,
@@ -1585,9 +1613,11 @@
                 "permission:settlement.prepare"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -1609,9 +1639,11 @@
                 "permission:settlement.confirm"
             ],
             "domain": "broker-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2120,9 +2152,11 @@
                 "permission:settlement.prepare"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2148,9 +2182,11 @@
                 "permission:settlement.approve"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2176,9 +2212,11 @@
                 "permission:settlement.confirm"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2204,9 +2242,11 @@
                 "permission:settlement.confirm"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2232,9 +2272,11 @@
                 "permission:settlement.reverse"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -2260,9 +2302,11 @@
                 "permission:settlement.submit"
             ],
             "domain": "carrier-settlements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/SettlementActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6503,9 +6547,11 @@
                 "permission:statements.prepare"
             ],
             "domain": "commission-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6527,9 +6573,11 @@
                 "permission:commission.manage"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6551,9 +6599,11 @@
                 "permission:commission.approve"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6575,9 +6625,11 @@
                 "permission:commission.manage"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6599,9 +6651,11 @@
                 "permission:commission.vest"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6623,9 +6677,11 @@
                 "permission:commission.vest"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6647,9 +6703,11 @@
                 "permission:commission.approve"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -6671,9 +6729,11 @@
                 "permission:commission.clawback"
             ],
             "domain": "commissions",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -9630,9 +9690,11 @@
                 "permission:commission.manage"
             ],
             "domain": "financial-distribution",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -9653,9 +9715,11 @@
                 "permission:commission.approve"
             ],
             "domain": "financial-distribution",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -9676,9 +9740,11 @@
                 "permission:commission.accrue"
             ],
             "domain": "financial-distribution",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -9700,9 +9766,11 @@
                 "permission:commission.clawback"
             ],
             "domain": "financial-distribution",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -9724,9 +9792,11 @@
                 "permission:commission.vest"
             ],
             "domain": "financial-distribution",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/CommissionActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13325,9 +13395,11 @@
                 "permission:payout.approve"
             ],
             "domain": "partner-payouts",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13352,9 +13424,11 @@
                 "permission:payout.process"
             ],
             "domain": "partner-payouts",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13379,9 +13453,11 @@
                 "permission:payout.process"
             ],
             "domain": "partner-payouts",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13406,9 +13482,11 @@
                 "permission:payout.process"
             ],
             "domain": "partner-payouts",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13433,9 +13511,11 @@
                 "permission:payout.reverse"
             ],
             "domain": "partner-payouts",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13457,9 +13537,11 @@
                 "permission:commission.statements.adjustments.approve"
             ],
             "domain": "partner-statement-adjustments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13481,9 +13563,11 @@
                 "permission:commission.statements.adjustments.approve"
             ],
             "domain": "partner-statement-adjustments",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13504,9 +13588,11 @@
                 "permission:statements.prepare"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13528,9 +13614,11 @@
                 "permission:commission.statements.adjust"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13552,9 +13640,11 @@
                 "permission:statements.approve"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13576,9 +13666,11 @@
                 "permission:commission.statements.dispute"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13599,9 +13691,11 @@
                 "permission:payout.request"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13623,9 +13717,11 @@
                 "permission:statements.publish"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
@@ -13647,9 +13743,11 @@
                 "permission:commission.statements.dispute.resolve"
             ],
             "domain": "partner-statements",
-            "filament_entry": [],
+            "filament_entry": [
+                "Shared/Actions/StatementPayoutActions.php"
+            ],
             "portal_entry": false,
-            "covered": false,
+            "covered": true,
             "classification": "STAFF_DESKTOP_NEEDED"
         },
         {
