@@ -13,11 +13,11 @@ This document is the single entry point. Every statement below was checked again
 | Item | State |
 |---|---|
 | Production URL | https://insurance.opesdatacenter.tech |
-| Live release | `r20260927-174612`, built from commit **`bcde791`**, deployed 2026-09-27 17:46 |
+| Live release | `r20260928-163923`, built from commit **`f92c660`**, deployed 2026-09-28 17:40 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
-| Code on `master` not yet deployed | `bcde791..5c2684d`: 11 commits (see §6). Full suite **not run**: stopped at handover. Unverified. |
+| Code on `master` not yet deployed | None. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
-| Desktop UI coverage of backend write actions | **39.3%** on `master` (350 of 890), 27.5% on the live release. Measured by `php artisan ui:coverage` (§7). |
+| Desktop UI coverage of backend write actions | **39.3%** (350 of 890), live and on `master`. Measured by `php artisan ui:coverage` (§7). |
 | Audit copy of deployed code | `OpesInsure_web_deployed_r20260927-174612_bcde791.zip` in the project root (§14) |
 
 **Summary.** The backend (domain services, database, API, tests) is extensive and mature. The staff desktop UI is behind it: about 60% of state-changing backend actions still have no screen or button. §7 has the measured list and the plan to close it. Production cannot leave demo mode until an SMS provider, MTN MoMo credentials and a malware scanner are configured on the server. Only the owner can supply those.
@@ -126,8 +126,9 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | r20260926-191117 | 2ea5d75 | **Document security D1–D4:**<ul><li>security matrix and 15-step issuance gate</li><li>secure A4 shell for all PDFs</li><li>220/220 canonical document specs linked</li><li>provider documents</li><li>Ed25519 signing live</li></ul> |
 | r20260927-023336 | a99d539 | **UI build-out 1:**<ul><li>detail pages for all resources</li><li>shared workflow actions</li><li>letterhead, template, seal and settings screens</li><li>provider portal forms, dashboards and reports</li></ul> |
 | r20260927-091032 | bbd29f7 | **Hotfix:** claim/policy header actions lost the tenant on Livewire round-trips. Also adds claim payments, disputes and recoveries. |
-| **r20260928-145520 (LIVE)** | **bcde791 + 7e161c9 controller only** | **Hotfix on top of r20260927-174612:** public broker profile returns `affiliated_insurers`, `products` (from ACTIVE non-demo carrier_broker_agreements) and `featured` (ASSUR EXPERT D&G SARL). Only `PublicInstitutionController.php` changed; master's later commits are still NOT deployed. |
+| r20260928-145520 | bcde791 + 7e161c9 controller only | **Hotfix on top of r20260927-174612:** public broker profile returns `affiliated_insurers`, `products` (from ACTIVE non-demo carrier_broker_agreements) and `featured` (ASSUR EXPERT D&G SARL). Only `PublicInstitutionController.php` changed; master's later commits are still NOT deployed. |
 | r20260927-174612 | bcde791 | **Access and portals:**<ul><li>broker/insurer RBAC and data scoping</li><li>insurer portal screens</li><li>provider portal access fix (every provider role had been refused)</li><li>partner workspace (My Book, assisted claims, documents, staff)</li><li>customer account (KYC, privacy, step-up settlement/refund)</li><li>header actions for quote, proposal, party, partner and policy</li><li>documents (tamper check, verification log, insurer logo upload)</li><li>design-consistency sweep</li><li>mobile API contract fixes</li><li>FNOL coordinates</li></ul> |
+| **r20260928-163923 (LIVE)** | **f92c660** | **All of master deployed:** UI build-out batches 1–5 (coverage 39.3%), step-up rollout hold, mobile items A1/B1–B6, 4 migrations (rehearsed), platform audit batch 1 (`27b055a`: invitation role ceiling, platform-only tenant lifecycle, /admin restricted to platform/operations roles, Party/Customer scoped outside the platform tenant). Backup `opesinsure-20260928-1626.sql.gz`. Full suite not re-run on this exact commit (owner ordered deploy); targeted suites green. Known non-regression: DemoMobileAccountSeeder phone collision during demo-seed. |
 
 ---
 
