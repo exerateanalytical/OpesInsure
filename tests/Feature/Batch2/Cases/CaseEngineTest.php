@@ -387,6 +387,8 @@ it('REQ-CAL-001: calendar admin API adds hours/exceptions and answers business-t
 it('REQ-CAS-001: Filament "Cases & tasks" screens render and respect case confidentiality', function () {
     $str = casesOpen('STR', ['title' => 'Hidden STR']);
     $gap = casesOpen('CONFIG_GAP', ['title' => 'Visible gap']);
+    // /admin is the platform back office (audit 2026-09-27 #8): these operators sit in the platform tenant.
+    $this->tenant->update(['type' => 'PLATFORM']);
     // Platform admin: configuration screens only; case records are business data (REQ-RBAC-004).
     $this->actingAs(makeAuthTestSystemAdmin($this->tenant), 'web');
     foreach (['/admin/case-types', '/admin/work-queues', '/admin/work-queues/create', '/admin/business-hours', '/admin/calendar-exceptions'] as $url) {
@@ -404,7 +406,12 @@ it('REQ-CAS-001: Filament "Cases & tasks" screens render and respect case confid
 
     $this->flushSession();
     app('auth')->forgetGuards();
-    $this->actingAs(makeAuthTestUser($this->tenant, ['cases.view'], 'BROKER_STAFF'), 'web');
+    $this->actingAs(makeAuthTestUser($this->tenant, ['cases.view'], 'CLAIMS_OFFICER'), 'web');
     $this->get('/admin/case-records')->assertOk()->assertSee($gap->case_number)->assertDontSee($str->case_number);
     $this->get('/admin/case-types')->assertForbidden();
+
+    $this->flushSession();
+    app('auth')->forgetGuards();
+    $this->actingAs(makeAuthTestUser($this->tenant, ['cases.view'], 'BROKER_STAFF'), 'web');
+    $this->get('/admin/case-records')->assertForbidden();
 });

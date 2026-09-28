@@ -528,7 +528,9 @@ it('verifies the phone from inside a session without touching the password', fun
 it('only accepts an invitation against a verified contact', function () {
     $tenant = App\Models\Tenant::create(['type' => 'BROKER', 'legal_name' => 'Invite Org W3', 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en']);
     $admin = makeMobileTestUser('+237670007010');
-    makeMobileTestWorkspace($admin, ['identity.invite'], 'PLATFORM_ADMIN');
+    // A platform admin (membership in a PLATFORM tenant) may invite into another organisation.
+    [$adminTenant] = makeMobileTestWorkspace($admin, ['identity.invite'], 'PLATFORM_ADMIN');
+    $adminTenant->update(['type' => 'PLATFORM']);
     $invitee = User::create(['full_name' => 'Unverified', 'phone_e164' => '+237670007011', 'password' => 'Mine12345', 'locale' => 'en', 'status' => 'ACTIVE']);
 
     $token = app(App\Application\Identity\InvitationService::class)->issue($tenant, $admin, null, '+237670007011', 'AGENT')['token'] ?? null;

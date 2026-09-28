@@ -73,6 +73,6 @@ final class DistributionController
 
     private function isPlatform(): bool
     {
-        return DB::table('tenants')->where('id', $this->tenant->id())->value('type') === 'PLATFORM';
+        return app(\App\Application\Identity\Rbac\PlatformAuthority::class)->isPlatformTenant($this->tenant->id());
     }
 }

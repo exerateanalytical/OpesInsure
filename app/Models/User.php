@@ -22,7 +22,28 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function devices(): HasMany { return $this->hasMany(UserDevice::class); }
     public function mfaMethods(): HasMany { return $this->hasMany(MfaMethod::class); }
     public function party(): BelongsTo { return $this->belongsTo(Party::class); }
-    public function canAccessPanel(Panel $panel): bool { return $this->status === 'ACTIVE' && $this->memberships()->where('status', 'ACTIVE')->whereIn('role_code', ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER', 'BROKER_STAFF', 'AGENT'])->exists(); }
+    /**
+     * /admin is the platform back office: only platform staff roles held in a
+     * PLATFORM-type tenant. Agents and broker staff use /account and /broker;
+     * every other panel decides entry with PortalAccess.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($this->status !== 'ACTIVE') {
+            return false;
+        }
+        if ($panel->getId() !== 'admin') {
+            return app(\App\Application\WebExperiences\PortalAccess::class)->allows($this, $panel->getId());
+        }
+
+        // Operations roles (claims/finance/compliance) may belong to an insurer
+        // tenant (E9) and work that insurer's files here; the panel resolves to
+        // their tenant and Party/Customer lists are scoped to it outside the
+        // platform tenant. Agents and broker staff are not back-office users.
+        return $this->memberships()->where('status', 'ACTIVE')
+            ->whereIn('role_code', ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER', 'CLAIMS_OFFICER'])
+            ->exists();
+    }
     public function getFilamentName(): string { return $this->full_name; }
 
     /**

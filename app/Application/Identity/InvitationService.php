@@ -27,6 +27,7 @@ final class InvitationService
         if (($email === null) === ($phone === null)) {
             throw ValidationException::withMessages(['recipient' => __('wave0.invitation_one_recipient')]);
         }
+        app(Rbac\PlatformAuthority::class)->assertMayGrant($actor, $tenant->id, $roleCode);
 
         $duplicate = TenantInvitation::query()->where('tenant_id', $tenant->id)->where('status', 'PENDING')
             ->where(fn ($q) => $email ? $q->where('recipient_email', mb_strtolower($email)) : $q->where('recipient_phone_e164', $phone))->exists();
