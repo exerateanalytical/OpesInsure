@@ -42,7 +42,7 @@ final class CarrierMasterDataMappingResource extends \App\Filament\Shared\Locali
     public static function valueSelect(): Forms\Components\Select
     {
         return Forms\Components\Select::make('value_id')->label('Canonical value')->required()->searchable()
-            ->getSearchResultsUsing(fn (string $s) => \App\Models\MasterData\MasterDataValue::where('search_text', 'like', '%'.\App\Application\MasterData\MasterDataNormalizer::normalize($s).'%')->limit(50)->get()->mapWithKeys(fn ($v) => [$v->id => "{$v->domain_code}.{$v->list_code}: {$v->label_en} ({$v->code})"])->all())
+            ->getSearchResultsUsing(fn (string $search) => \App\Models\MasterData\MasterDataValue::where('search_text', 'like', '%'.\App\Application\MasterData\MasterDataNormalizer::normalize($search).'%')->limit(50)->get()->mapWithKeys(fn ($v) => [$v->id => "{$v->domain_code}.{$v->list_code}: {$v->label_en} ({$v->code})"])->all())
             ->getOptionLabelUsing(fn ($id) => ($v = \App\Models\MasterData\MasterDataValue::find($id)) ? "{$v->domain_code}.{$v->list_code}: {$v->label_en}" : null);
     }
 

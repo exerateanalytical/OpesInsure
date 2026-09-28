@@ -163,7 +163,7 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
                 Actions\Action::make('carrierUpload')->label('Upload carrier document')->icon('lucide-upload')
                     ->schema([
                         Forms\Components\Select::make('policy_id')->label('Policy')->searchable()->required()
-                            ->getSearchResultsUsing(fn (string $s) => \App\Models\Policy::where('policy_number', 'ilike', "%{$s}%")->limit(20)->pluck('policy_number', 'id')->all()),
+                            ->getSearchResultsUsing(fn (string $search) => \App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id())->where('policy_number', 'ilike', "%{$search}%")->limit(20)->pluck('policy_number', 'id')->all()),
                         Forms\Components\Select::make('document_type_code')->label('Document type')->options(fn () => collect(app(DocumentRegister::class)->types())->mapWithKeys(fn ($t) => [$t['code'] => $t['id'].' · '.$t['name_en']])->all())->searchable()->required(),
                         Forms\Components\DatePicker::make('issue_date')->required(),
                         Forms\Components\TextInput::make('carrier_document_number')->maxLength(100),

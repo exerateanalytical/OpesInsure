@@ -75,7 +75,7 @@ final class ViewInsuranceProduct extends ViewRecord
                 ->fillForm(fn () => $gov->state($this->record)->only(['owner_user_id', 'target_market', 'prohibited_market', 'next_review_date']))
                 ->schema([
                     Select::make('owner_user_id')->label(__('product_builder.actions.owner'))->searchable()
-                        ->getSearchResultsUsing(fn (string $q) => \App\Models\User::where('full_name', 'ilike', "%{$q}%")->limit(20)->pluck('full_name', 'id')->all())
+                        ->getSearchResultsUsing(fn (string $search) => \App\Models\User::whereHas('memberships', fn ($m) => $m->where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id())->where('status', 'ACTIVE'))->where('full_name', 'ilike', "%{$search}%")->limit(20)->pluck('full_name', 'id')->all())
                         ->getOptionLabelUsing(fn ($id) => \App\Models\User::find($id)?->full_name),
                     TagsInput::make('target_market')->label(__('product_builder.governance.target_market')),
                     TagsInput::make('prohibited_market')->label(__('product_builder.governance.prohibited_market')),

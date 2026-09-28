@@ -32,7 +32,7 @@ final class MasterDataAliasResource extends \App\Filament\Shared\LocalizedResour
     {
         return $schema->components([Section::make('Alias')->columns(2)->schema([
             Forms\Components\Select::make('value_id')->label('Value')->required()->searchable()
-                ->getSearchResultsUsing(fn (string $s) => \App\Models\MasterData\MasterDataValue::where('search_text', 'like', '%'.\App\Application\MasterData\MasterDataNormalizer::normalize($s).'%')->limit(50)->get()->mapWithKeys(fn ($v) => [$v->id => "{$v->domain_code}.{$v->list_code}: {$v->label_en} ({$v->code})"])->all())
+                ->getSearchResultsUsing(fn (string $search) => \App\Models\MasterData\MasterDataValue::where('search_text', 'like', '%'.\App\Application\MasterData\MasterDataNormalizer::normalize($search).'%')->limit(50)->get()->mapWithKeys(fn ($v) => [$v->id => "{$v->domain_code}.{$v->list_code}: {$v->label_en} ({$v->code})"])->all())
                 ->getOptionLabelUsing(fn ($id) => ($v = \App\Models\MasterData\MasterDataValue::find($id)) ? "{$v->domain_code}.{$v->list_code}: {$v->label_en}" : null),
             Forms\Components\TextInput::make('alias')->required()->maxLength(255),
             Forms\Components\Select::make('alias_type')->options(['ALIAS' => 'Alias', 'ABBREVIATION' => 'Abbreviation', 'MERGED_CODE' => 'Merged code'])->default('ALIAS'),
