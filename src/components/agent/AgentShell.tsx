@@ -16,7 +16,10 @@ import { router, useFocusEffect } from "expo-router";
 import { ArrowLeft, Bell, UserRound } from "lucide-react-native";
 import { NotificationsApi } from "@/api/client";
 import { PortalTabBar } from "@/components/portal/PortalShell";
-import { agentTabs } from "@/components/portal/tabs";
+import { agentTabs, brokerTabs, carrierTabs } from "@/components/portal/tabs";
+import type { PortalTab } from "@/components/portal/PortalShell";
+import { BrandMark } from "@/components/BrandMark";
+import type { CopyKey } from "@/i18n/strings";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
 import { CONTENT_MAX_WIDTH } from "@/theme/tokens";
@@ -59,23 +62,28 @@ function useUnread() {
   return count;
 }
 
-function OperationalHeader() {
+/** The three partner portals share this frame; each keeps its own bottom bar and routes. */
+export type PartnerPortal = "agent" | "broker" | "carrier";
+const PORTAL: Record<PartnerPortal, { name: CopyKey; tabs: PortalTab[] }> = {
+  agent: { name: "agentPortalName", tabs: agentTabs },
+  broker: { name: "brokerPortalName", tabs: brokerTabs },
+  carrier: { name: "carrierPortalName", tabs: carrierTabs },
+};
+
+function OperationalHeader({ portal }: { portal: PartnerPortal }) {
   const { t } = useTranslation();
   const name = useSession((st) => st.bootstrap?.user.full_name);
   const unread = useUnread();
   return (
     <View style={s.header}>
-      <View style={s.brand}>
-        <Text style={s.wordmark} accessibilityRole="header">
-          OPES<Text style={{ color: c.gold }}>INSURE</Text>
-        </Text>
-        <Text style={s.portalName}>{t("agentPortalName")}</Text>
+      <View style={s.brand} accessibilityRole="header">
+        <BrandMark size={36} wordSize={18} caption={t(PORTAL[portal].name)} />
       </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={unread ? `${t("portalNotifTitle")}, ${t("unreadCount", { count: unread })}` : t("portalNotifTitle")}
         hitSlop={4}
-        onPress={() => router.push("/agent/notifications")}
+        onPress={() => router.push(`/${portal}/notifications` as never)}
         style={({ pressed }) => [s.iconBtn, pressed && s.pressed]}
       >
         <Bell size={agentIcon.nav} color={c.navy} strokeWidth={agentIcon.stroke} />
@@ -89,7 +97,7 @@ function OperationalHeader() {
         accessibilityRole="button"
         accessibilityLabel={t("agentProfileTitle")}
         hitSlop={4}
-        onPress={() => router.push("/agent/account")}
+        onPress={() => router.push(`/${portal}/account` as never)}
         style={({ pressed }) => [s.avatarBtn, pressed && s.pressed]}
       >
         <AgentAvatar name={name} size={40} />
@@ -98,9 +106,9 @@ function OperationalHeader() {
   );
 }
 
-function DrillHeader({ title, onBack, right }: { title: string; onBack?: () => void; right?: ReactNode }) {
+function DrillHeader({ portal, title, onBack, right }: { portal: PartnerPortal; title: string; onBack?: () => void; right?: ReactNode }) {
   const { t } = useTranslation();
-  const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/agent")));
+  const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace(`/${portal}` as never)));
   return (
     <View style={s.header}>
       <Pressable
@@ -128,6 +136,7 @@ function DrillHeader({ title, onBack, right }: { title: string; onBack?: () => v
  * is pinned above it.
  */
 export function AgentShell({
+  portal = "agent",
   variant = "operational",
   title = "",
   onBack,
@@ -140,6 +149,8 @@ export function AgentShell({
   onRefresh,
   contentStyle,
 }: {
+  /** Which partner portal this frame serves (header caption, bell/avatar routes, bottom bar). */
+  portal?: PartnerPortal;
   variant?: "operational" | "drilldown";
   /** Drill-down title (centred). */
   title?: string;
@@ -156,7 +167,7 @@ export function AgentShell({
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const header =
-    variant === "operational" ? <OperationalHeader /> : <DrillHeader title={title} onBack={onBack} right={headerRight} />;
+    variant === "operational" ? <OperationalHeader portal={portal} /> : <DrillHeader portal={portal} title={title} onBack={onBack} right={headerRight} />;
   const body = <View style={[s.body, !scroll && s.flex, contentStyle]}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} style={s.safe}>
@@ -178,7 +189,7 @@ export function AgentShell({
           body
         )}
         {footer ? <View style={s.footer}>{footer}</View> : null}
-        {hideNav ? null : <PortalTabBar tabs={agentTabs} />}
+        {hideNav ? null : <PortalTabBar tabs={PORTAL[portal].tabs} />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -198,8 +209,6 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   brand: { flex: 1 },
-  wordmark: { fontFamily: "Inter_700Bold", fontSize: 18, lineHeight: 22, color: c.navy, letterSpacing: 0.4 },
-  portalName: { ...T.caption, color: c.secondary },
   iconBtn: {
     width: 44,
     height: 44,

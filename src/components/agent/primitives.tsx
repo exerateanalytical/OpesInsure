@@ -150,6 +150,55 @@ export function AgentStatusChip({
 }
 
 /* ------------------------------------------------------------------ */
+/* AgentIconBadge — pronounced icon on a platform-colour tile          */
+/* ------------------------------------------------------------------ */
+export type AgentIconTone = "brand" | "navy" | "gold" | "success" | "warning" | "danger";
+const ICON_TONE: Record<AgentIconTone, { bg: string; fg: string }> = {
+  brand: { bg: c.blueTint, fg: c.actionBlue },
+  navy: { bg: c.deepNavy, fg: c.gold },
+  gold: { bg: c.softGold, fg: c.gold },
+  success: { bg: c.successBg, fg: c.success },
+  warning: { bg: c.warningBg, fg: c.warning },
+  danger: { bg: c.dangerBg, fg: c.danger },
+};
+export function AgentIconBadge({ icon: Icon, tone = "brand", size = 40 }: { icon: LucideIcon; tone?: AgentIconTone; size?: number }) {
+  const t = ICON_TONE[tone];
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), backgroundColor: t.bg, alignItems: "center", justifyContent: "center" }}
+    >
+      <Icon size={Math.round(size * 0.52)} color={t.fg} strokeWidth={2.2} />
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* AgentActionTiles — 2-column quick-action tiles (Home)               */
+/* ------------------------------------------------------------------ */
+export type AgentAction = { key: string; title: string; subtitle: string; icon: LucideIcon; onPress: () => void };
+export function AgentActionTiles({ actions }: { actions: AgentAction[] }) {
+  return (
+    <View style={s.tiles}>
+      {actions.map((a) => (
+        <Pressable
+          key={a.key}
+          accessibilityRole="button"
+          accessibilityLabel={`${a.title}, ${a.subtitle}`}
+          onPress={a.onPress}
+          style={({ pressed }) => [s.tile, pressed && s.tilePressed]}
+        >
+          <AgentIconBadge icon={a.icon} tone="navy" size={44} />
+          <Text style={s.tileTitle} numberOfLines={2}>{a.title}</Text>
+          <Text style={s.tileSub} numberOfLines={2}>{a.subtitle}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* AgentNavRow                                                         */
 /* ------------------------------------------------------------------ */
 export function AgentNavRow({
@@ -165,8 +214,11 @@ export function AgentNavRow({
   busy = false,
   chevron = true,
   accessibilityLabel,
+  iconTone,
 }: {
   icon: LucideIcon;
+  /** Icon tile colour; defaults to brand blue (danger rows use danger). */
+  iconTone?: AgentIconTone;
   title: string;
   subtitle?: string | null;
   /** Optional chip from the locked vocabulary. */
@@ -182,7 +234,6 @@ export function AgentNavRow({
   chevron?: boolean;
   accessibilityLabel?: string;
 }) {
-  const tint = danger ? c.danger : agentIcon.color;
   return (
     <Pressable
       accessibilityRole="button"
@@ -192,7 +243,7 @@ export function AgentNavRow({
       onPress={onPress}
       style={({ pressed }) => [s.row, divider && s.rowDivider, pressed && s.rowPressed]}
     >
-      <Icon size={agentIcon.row} color={tint} strokeWidth={agentIcon.stroke} />
+      <AgentIconBadge icon={Icon} tone={iconTone ?? (danger ? "danger" : "brand")} />
       <View style={s.rowText}>
         <Text style={[s.rowTitle, danger && { color: c.danger }]}>{title}</Text>
         {subtitle ? <Text style={s.rowSub}>{subtitle}</Text> : null}
@@ -327,7 +378,7 @@ export function AgentEmptyState({
   return (
     <AgentCard style={s.empty}>
       <View style={s.emptyIcon}>
-        <Icon size={28} color={c.navy} strokeWidth={agentIcon.stroke} />
+        <Icon size={28} color={c.actionBlue} strokeWidth={2.2} />
       </View>
       <Text accessibilityRole="header" style={s.emptyTitle}>{title}</Text>
       <Text style={s.emptyBody}>{body}</Text>
@@ -447,8 +498,23 @@ const s = StyleSheet.create({
     borderColor: c.border,
     backgroundColor: c.surface,
   },
-  skelIcon: { width: 22, height: 22, borderRadius: 6, backgroundColor: c.surfaceSoft },
+  skelIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.surfaceSoft },
   skelLine: { height: 10, borderRadius: 5, backgroundColor: c.surfaceSoft },
   countBadge: { minWidth: 28, height: 24, paddingHorizontal: 8, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   countText: { fontSize: 12, lineHeight: 16, fontFamily: "Inter_700Bold" },
+  tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  tile: {
+    flexBasis: "46%",
+    flexGrow: 1,
+    minHeight: 124,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: L.cardRadius,
+    padding: L.cardPadding,
+    gap: 6,
+  },
+  tilePressed: { opacity: 0.85 },
+  tileTitle: { ...T.cardTitle, color: c.heading, marginTop: 6 },
+  tileSub: { ...T.caption, color: c.secondary },
 });

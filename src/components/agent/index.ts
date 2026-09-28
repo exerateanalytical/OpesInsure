@@ -17,6 +17,9 @@
  *                   i18n keys agentSt_<WordWithoutSpaces>. `tone?` overrides success|warning|danger|info|neutral.
  *  AgentButton      `variant` primary (blue, 52h, radius 14) | secondary (outline) | danger (outline);
  *                   `icon?`, `loading?`, `disabled?`.
+ *  AgentActionTiles 2-column quick-action tiles (`actions`: key/title/subtitle/icon/onPress).
+ *  AgentIconBadge   Pronounced icon on a platform-colour tile (`icon`, `tone` brand|navy|gold|success|warning|danger, `size`).
+ *                   AgentNavRow uses it; pass `iconTone` on a row to change the tile colour.
  *  AgentCountBadge  Numeric pill for a row's `right` (`count`, `tone` warning|danger|neutral).
  *  AgentEmptyState  `icon`, `title`, `body`, optional `actionLabel` + `onAction`.
  *  AgentSkeleton    Loading placeholder rows (`rows`, `height`).
@@ -25,16 +28,21 @@
  *  AgentAvatar      Initials avatar (`name`, `size`). agentInitials(name) helper.
  */
 export { AgentShell, AgentAvatar, agentInitials } from "./AgentShell";
+export type { PartnerPortal } from "./AgentShell";
+export { PartnerHome } from "./PartnerHome";
+export type { PartnerHomeLink } from "./PartnerHome";
 export {
   AgentSection,
   AgentCard,
   AgentNavRow,
   AgentStatusChip,
   AgentButton,
+  AgentActionTiles,
   AgentCountBadge,
+  AgentIconBadge,
   AgentEmptyState,
   AgentSkeleton,
   HeritageAccent,
   agentStatusKey,
 } from "./primitives";
-export type { AgentChipTone, AgentStatusKey } from "./primitives";
+export type { AgentAction, AgentChipTone, AgentIconTone, AgentStatusKey } from "./primitives";

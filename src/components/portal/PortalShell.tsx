@@ -103,9 +103,9 @@ export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
         : best,
     undefined,
   );
-  // Commercial Agent portal: locked bar (docs/AGENT_UI_SPEC_V2.md §8) —
+  // Partner portals (agent, broker, insurer): locked bar (docs/AGENT_UI_SPEC_V2.md §8) —
   // 72 tall + safe area, active #D89209, inactive #073656, 22px icons.
-  const agent = tabs[0]?.href === "/agent";
+  const agent = ["/agent", "/broker", "/carrier"].includes(tabs[0]?.href ?? "");
   return (
     <View
       accessibilityRole="tablist"

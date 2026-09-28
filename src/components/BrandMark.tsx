@@ -3,6 +3,9 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { colors, type } from "@/theme/tokens";
 
 const logo = require("../../assets/icon.png");
+/** The platform logo at header size (256px copy of the app icon). Every in-app
+ * lockup uses this so the customer, agent, broker and insurer apps match. */
+export const PLATFORM_LOGO = require("../../assets/brand/platform_logo.png");
 
 /** One tagline for every lockup (splash, onboarding, auth, in-app header). */
 export const BRAND_TAGLINE = "INSURANCE FOR A BRIGHTER TOMORROW";
@@ -24,18 +27,32 @@ export function BrandMark({
   compact = false,
   inverse = false,
   size = 36,
+  caption,
+  wordSize,
 }: {
   compact?: boolean;
   inverse?: boolean;
   size?: number;
+  /** Small line under the wordmark (e.g. the portal name in a dashboard header). */
+  caption?: string;
+  /** Wordmark font size; defaults to scale with `size`. */
+  wordSize?: number;
 }) {
+  const fontSize = wordSize ?? Math.max(20, size * 0.55);
   return (
-    <View style={styles.row} accessible accessibilityRole="image" accessibilityLabel="OpesInsure">
-      <Image source={logo} style={{ width: size, height: size, borderRadius: size * 0.22 }} resizeMode="contain" />
+    <View style={styles.row} accessible accessibilityRole="image" accessibilityLabel={caption ? `OpesInsure, ${caption}` : "OpesInsure"}>
+      <Image source={size > 72 ? logo : PLATFORM_LOGO} style={{ width: size, height: size, borderRadius: size * 0.22 }} resizeMode="contain" accessibilityIgnoresInvertColors />
       {!compact && (
-        <Text style={[styles.name, { color: inverse ? WORDMARK.inkInverse : WORDMARK.ink, fontSize: Math.max(20, size * 0.55) }]}>
-          Opes<Text style={{ color: inverse ? WORDMARK.accentInverse : WORDMARK.accent }}>Insure</Text>
-        </Text>
+        <View style={styles.rowText}>
+          <Text style={[styles.name, { color: inverse ? WORDMARK.inkInverse : WORDMARK.ink, fontSize, lineHeight: Math.round(fontSize * 1.2) }]} numberOfLines={1}>
+            Opes<Text style={{ color: inverse ? WORDMARK.accentInverse : WORDMARK.accent }}>Insure</Text>
+          </Text>
+          {caption ? (
+            <Text style={[styles.caption, inverse && styles.taglineInverse]} numberOfLines={1}>
+              {caption}
+            </Text>
+          ) : null}
+        </View>
       )}
     </View>
   );
@@ -71,7 +88,9 @@ export function EntryLockup({ iconSize = 112, inverse = false, tagline = BRAND_T
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
+  row: { flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 },
+  rowText: { flexShrink: 1 },
+  caption: { fontFamily: "Inter_500Medium", fontSize: 12, lineHeight: 16, color: colors.neutral600 },
   name: { ...type.cardTitle, lineHeight: undefined },
   stack: { alignItems: "center", gap: 4, alignSelf: "stretch" },
   icon: {

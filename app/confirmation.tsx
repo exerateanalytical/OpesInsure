@@ -13,8 +13,8 @@ import { useFormatters } from "@/hooks/useFormatters";
 import { openableUrl } from "@/lib/purchase";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { PLATFORM_LOGO } from "@/components/BrandMark";
 
-const mark = require("../assets/brand/mark.png");
 
 export default function Confirmation() {
   const params = useLocalSearchParams<{ proposalId?: string }>();
@@ -161,7 +161,7 @@ export default function Confirmation() {
 
           <View style={st.certCard}>
             <View style={st.certArt} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <Image source={mark} style={st.certMark} resizeMode="contain" accessibilityIgnoresInvertColors />
+              <Image source={PLATFORM_LOGO} style={st.certMark} resizeMode="contain" accessibilityIgnoresInvertColors />
               <Text style={st.certArtTitle}>{t("cfCertLabel").toUpperCase()}</Text>
               <View style={st.certLine} />
               <View style={[st.certLine, { width: "55%" }]} />
@@ -242,7 +242,7 @@ const st = StyleSheet.create({
   cardTitle: { ...type.cardTitle, color: colors.navy950 },
   certCard: { flexDirection: "row", gap: space.x4, backgroundColor: colors.blue50, borderRadius: radius.feature, padding: space.x4, alignItems: "center" },
   certArt: { width: 128, height: 128, borderRadius: radius.control, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.gold100, alignItems: "center", justifyContent: "center", gap: 6, padding: space.x2, overflow: "hidden" },
-  certMark: { width: 28, height: 28 },
+  certMark: { width: 28, height: 28, borderRadius: 6 },
   certArtTitle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 13, letterSpacing: 0.8, color: colors.navy950, textAlign: "center" },
   certLine: { width: "70%", height: 3, borderRadius: 2, backgroundColor: colors.neutral200 },
   certSeal: { position: "absolute", right: 8, bottom: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold500, alignItems: "center", justifyContent: "center" },

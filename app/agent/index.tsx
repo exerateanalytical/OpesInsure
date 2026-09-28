@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   BadgeCheck,
@@ -19,9 +19,11 @@ import {
 import { useLoad } from "@/hooks/useLoad";
 import { KpiGrid, type KpiRoute } from "@/components/portal/KpiGrid";
 import {
+  AgentActionTiles,
   AgentCard,
   AgentCountBadge,
   AgentEmptyState,
+  AgentIconBadge,
   AgentNavRow,
   AgentSection,
   AgentShell,
@@ -49,7 +51,7 @@ import {
   recentActivity,
   returnedApplications,
 } from "@/lib/agentHome";
-import { agentColors as c, agentIcon, agentLayout as L, agentType as T } from "@/theme/agent";
+import { agentColors as c, agentLayout as L, agentType as T } from "@/theme/agent";
 
 /** Overview: the four book figures; each opens its queue (server still authorizes it). */
 const KPI_ROUTES: Record<string, KpiRoute> = {
@@ -166,7 +168,7 @@ export default function AgentHome() {
         ) : attention.length === 0 ? (
           <AgentCard>
             <View style={s.clear}>
-              <BadgeCheck size={agentIcon.row} color={c.success} strokeWidth={agentIcon.stroke} />
+              <AgentIconBadge icon={BadgeCheck} tone="success" />
               <View style={s.clearText}>
                 <Text style={s.clearTitle}>{t("agHomeAllClear")}</Text>
                 <Text style={s.clearBody}>{t("agHomeAllClearBody")}</Text>
@@ -183,6 +185,7 @@ export default function AgentHome() {
                   icon={cfg.icon}
                   title={t(`agAttn_${a.key}` as CopyKey)}
                   subtitle={t(`agAttn_${a.key}Sub` as CopyKey)}
+                  iconTone={cfg.tone}
                   right={<AgentCountBadge count={a.count} tone={cfg.tone} />}
                   accessibilityLabel={`${t(`agAttn_${a.key}` as CopyKey)}: ${a.count}`}
                   divider={i > 0}
@@ -205,21 +208,9 @@ export default function AgentHome() {
       </AgentSection>
 
       <AgentSection title={t("agHomeQuickActions")}>
-        <View style={s.tiles}>
-          {QUICK.filter((a) => visible(a.href)).map((a) => (
-            <Pressable
-              key={a.href}
-              accessibilityRole="button"
-              accessibilityLabel={`${t(a.label)}, ${t(a.subtitle)}`}
-              onPress={() => go(a.href)}
-              style={({ pressed }) => [s.tile, pressed && s.pressed]}
-            >
-              <a.icon size={agentIcon.row} color={agentIcon.color} strokeWidth={agentIcon.stroke} />
-              <Text style={s.tileTitle} numberOfLines={2}>{t(a.label)}</Text>
-              <Text style={s.tileSub} numberOfLines={2}>{t(a.subtitle)}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <AgentActionTiles
+          actions={QUICK.filter((a) => visible(a.href)).map((a) => ({ key: a.href, title: t(a.label), subtitle: t(a.subtitle), icon: a.icon, onPress: () => go(a.href) }))}
+        />
       </AgentSection>
 
       <AgentSection title={t("agHomeWorkQueues")}>
@@ -265,7 +256,6 @@ export default function AgentHome() {
 }
 
 const s = StyleSheet.create({
-  pressed: { opacity: 0.85 },
   hero: { backgroundColor: c.deepNavy, borderRadius: L.cardRadius, padding: 20, gap: 6, overflow: "hidden" },
   heroArt: { position: "absolute", right: -36, top: -24 },
   goldRule: { width: 28, height: 3, borderRadius: 2, backgroundColor: c.gold, marginBottom: 6 },
@@ -276,18 +266,4 @@ const s = StyleSheet.create({
   clearText: { flex: 1, gap: 2 },
   clearTitle: { ...T.cardTitle, color: c.heading },
   clearBody: { ...T.secondary, color: c.secondary },
-  tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  tile: {
-    flexBasis: "46%",
-    flexGrow: 1,
-    minHeight: 112,
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: L.cardRadius,
-    padding: L.cardPadding,
-    gap: 6,
-  },
-  tileTitle: { ...T.cardTitle, color: c.heading, marginTop: 4 },
-  tileSub: { ...T.caption, color: c.secondary },
 });

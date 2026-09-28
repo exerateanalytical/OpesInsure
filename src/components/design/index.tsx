@@ -6,7 +6,7 @@
  * All pure RN + lucide + existing tokens (OTA-safe).
  */
 import React, { ReactNode, useState } from "react";
-import { WORDMARK } from "@/components/BrandMark";
+import { PLATFORM_LOGO, WORDMARK } from "@/components/BrandMark";
 import { Image, LayoutChangeEvent, Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardVisible } from "@/hooks/useKeyboardVisible";
@@ -17,7 +17,7 @@ import { ripple } from "@/components/ui";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
-const mark = require("../../../assets/brand/mark.png");
+
 const network = require("../../../assets/brand/header_network.png");
 const wave = require("../../../assets/brand/header_wave.png");
 
@@ -25,12 +25,12 @@ const wave = require("../../../assets/brand/header_wave.png");
 // Brand header
 // ---------------------------------------------------------------------------
 
-/** Centered logo lockup: dotted-Africa mark, "OpesInsure" wordmark, gold tagline. */
+/** Centered logo lockup: platform logo (app icon), "OpesInsure" wordmark, gold tagline. */
 export function BrandLockup({ size = 40, compact = false }: { size?: number; compact?: boolean }) {
   const { t } = useTranslation();
   return (
     <View style={s.lockup} accessible accessibilityRole="image" accessibilityLabel="OpesInsure">
-      <Image source={mark} style={{ width: size, height: size }} resizeMode="contain" accessibilityIgnoresInvertColors />
+      <Image source={PLATFORM_LOGO} style={{ width: size, height: size, borderRadius: size * 0.22 }} resizeMode="contain" accessibilityIgnoresInvertColors />
       <View style={s.lockupText}>
         <Text style={[s.wordmark, compact && s.wordmarkCompact]} numberOfLines={1} adjustsFontSizeToFit>
           Opes<Text style={s.wordmarkGold}>Insure</Text>
