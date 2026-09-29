@@ -13,11 +13,11 @@ This document is the single entry point. Every statement below was checked again
 | Item | State |
 |---|---|
 | Production URL | https://insurance.opesdatacenter.tech |
-| Live release | `r20260929-001813`, built from commit **`818be34`**, deployed 2026-09-29 00:18 |
+| Live release | `r20260929-114317`, built from commit **`72e5973`**, deployed 2026-09-29 11:43 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
 | Code on `master` not yet deployed | None. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
-| Desktop UI coverage of backend write actions | **50.4%** (449 of 890), live and on `master`. Measured by `php artisan ui:coverage` (§7). |
+| Desktop UI coverage of backend write actions | **~94.6%** (842 of 890), live and on `master`. Measured by `php artisan ui:coverage` (§7). |
 | Audit copy of deployed code | `OpesInsure_web_deployed_r20260927-174612_bcde791.zip` in the project root (§14) |
 
 **Summary.** The backend (domain services, database, API, tests) is extensive and mature. The staff desktop UI is behind it: about 60% of state-changing backend actions still have no screen or button. §7 has the measured list and the plan to close it. Production cannot leave demo mode until an SMS provider, MTN MoMo credentials and a malware scanner are configured on the server. Only the owner can supply those.
@@ -134,6 +134,7 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | r20260928-212833 | 58f5636 | **UI batches 6–7:** KYC reviews (11 actions), AML screening hits / lists / transaction monitoring / STR reports (four eyes, `cases.str.view` only), Screen party + Rate AML risk, compliance case findings / corrective actions / evidence, DSR receive, privileged access request, governance registers page, fraud alert, regulatory report runs. French for section headings, tabs and notifications. UI coverage **44.3%** (ratchet raised). Panel test set 887 passed, 0 failed. |
 | r20260928-230043 | 8fbd324 | **UI batches 8–10:** party stewardship (duplicate scan, ownership, merge decide/reverse, register client), renewal case generation (`renewals.manage`), commissions, partner statements/adjustments, payouts, carrier and broker settlements, bordereaux (47 actions, maker-checker kept; portals read-only per D4). Fix: party search selects crashed on submit. UI coverage **50.4%**. |
 | r20260929-001813 | 818be34 | **Canonical document templates:** all 220 documents built from the owner specs (shells S1–S5, zones A–G, field-data spec, security matrix), 660 templates (BILINGUAL/FR/EN) **PUBLISHED** with owner approval 2026-09-28 via `opesinsure:seed-canonical-templates` (optimize hook, idempotent). Secure A4 shell: letterhead, QR + code + hash, seal, guilloche, microtext, tier badges, page X/Y. Demo watermark only on demo-flagged records. No sample text. Physical features (UV, hologram, secure paper, SEAL-01 artwork) print as "Non configuré / Not configured" until configured. |
+| **r20260929-114317 (LIVE)** | **72e5973** | **Launch release (owner: portals functional, D4 lifted, launch 2026-10-02):** UI batches 11–33 (coverage ~94.6%); /insurer, /broker, /provider and /account fully functional, RBAC-exact and own-organisation only (docs/spec/PORTAL_WRITE_RULES.md); RBAC grants migration `rbac_launch_portal_grants`; delegated-authority four-eyes (`created_by`); security: POST /tenants platform-admin only, fulfilment orders need `fulfilments.manage`, ledger reversal tenant-checked; web MoMo/Orange payments now prompt the customer. **Full suite 2,413 passed / 5 failed, all 5 fixed and re-run green before deploy.** |
 | **r20260929-073531 (LIVE)** | **b1b8d39** | **Issuance honours chosen cover terms:** `PaymentIssuanceTrigger::coveragePeriod` uses `proposals.cover_terms` (start rule/date via `CoverTermsService::resolveStart`, never before today; MONTH/DAY duration) instead of always today + 12 months. Travel and renewal periods unchanged. = r20260929-001813 + this one file. Later master commits (`efc1f43`, `95c2de0`) are NOT in this release. Backup `opesinsure-20260929-0732.sql.gz`. Mobile OTA `a425651c` lets customers choose the start date. |
 
 ---
@@ -339,3 +340,12 @@ Reports: `docs/UI_AUDIT_*_2026-09-27.md` (admin/insurer, broker/agent, customer,
 | Document security plan | `docs/spec/canonical/DOCUMENT_SECURITY_COMPLETION_PLAN.md` |
 | UI audits | `docs/UI_AUDIT_ADMIN_INSURER_2026-09-27.md`, `docs/UI_AUDIT_BROKER_AGENT_2026-09-27.md`, `docs/UI_AUDIT_CUSTOMER_2026-09-27.md`, `docs/UI_AUDIT_PROVIDER_2026-09-27.md`, `docs/UI_VISUAL_QA_2026-09-27.md` |
 | Earlier working notes (superseded by this file) | `docs/HANDOVER_2026-09-27_WEB_BACKEND.md`, `docs/WEB_APP_HANDOVER_2026-09-26.md`, `docs/SESSION_HANDOFF.md` |
+
+
+## Launch blockers only the owner can clear (2026-09-29)
+
+1. **ClamAV not installed/configured on production** (`CLAMAV_HOST` empty, clamav-daemon inactive): every customer upload (claim photos, documents) is held and cannot be attached.
+2. **MTN MoMo credentials**: production log shows `MTN MoMo authentication failed`; mobile-money payments cannot complete.
+3. **Agent/broker insurer agreements**: quotes only offer insurers with an ACTIVE agreement; set them up for every live broker and agent.
+4. **Mobile app payment fix** (`mobile app/src/store/insurance.ts`, initiate on PENDING_CUSTOMER) is written but uncommitted — ship it with the next app build.
+5. Step-up rollout hold (`mobile_runtime.step_up.not_enforced_yet`) — empty it once the step-up-aware app is live.
