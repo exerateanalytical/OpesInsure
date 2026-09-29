@@ -13,7 +13,7 @@ This document is the single entry point. Every statement below was checked again
 | Item | State |
 |---|---|
 | Production URL | https://insurance.opesdatacenter.tech |
-| Live release | `r20260928-230043`, built from commit **`8fbd324`**, deployed 2026-09-28 23:00 |
+| Live release | `r20260929-001813`, built from commit **`818be34`**, deployed 2026-09-29 00:18 |
 | Test status of live release | Full suite **2,070 passed, 0 failed** before deploy |
 | Code on `master` not yet deployed | None. |
 | Demo mode | **ON.** The owner has ordered it OFF. That is blocked because no SMS/OTP provider is configured (§10). |
@@ -132,7 +132,8 @@ config/              includes permissions.php, mobile_runtime.php, demo.php
 | r20260928-191516 | 4e0ca34 | **French panels and UI QA defects:** one FR/EN label layer (columns, fields, entries, filters, actions, status badges, resource titles) through `resources/lang/fr.json` (~5,100 entries); `LocalizedResource` base for all 113 resources; `LabelSafeTranslator`; filter button "0" badge hidden; insurer health queue money in FCFA; claims staff can open policies read-only (`policies.read`). |
 | r20260928-194521 | 4d82f32 | **Hotfix:** four search selects crashed when typing (`$s`/`$q` not injectable; seen in the production log); product-owner and document-policy pickers now scoped to the tenant. Architecture test guards the parameter name. |
 | r20260928-212833 | 58f5636 | **UI batches 6–7:** KYC reviews (11 actions), AML screening hits / lists / transaction monitoring / STR reports (four eyes, `cases.str.view` only), Screen party + Rate AML risk, compliance case findings / corrective actions / evidence, DSR receive, privileged access request, governance registers page, fraud alert, regulatory report runs. French for section headings, tabs and notifications. UI coverage **44.3%** (ratchet raised). Panel test set 887 passed, 0 failed. |
-| **r20260928-230043 (LIVE)** | **8fbd324** | **UI batches 8–10:** party stewardship (duplicate scan, ownership, merge decide/reverse, register client), renewal case generation (`renewals.manage`), commissions, partner statements/adjustments, payouts, carrier and broker settlements, bordereaux (47 actions, maker-checker kept; portals read-only per D4). Fix: party search selects crashed on submit. UI coverage **50.4%**. |
+| r20260928-230043 | 8fbd324 | **UI batches 8–10:** party stewardship (duplicate scan, ownership, merge decide/reverse, register client), renewal case generation (`renewals.manage`), commissions, partner statements/adjustments, payouts, carrier and broker settlements, bordereaux (47 actions, maker-checker kept; portals read-only per D4). Fix: party search selects crashed on submit. UI coverage **50.4%**. |
+| **r20260929-001813 (LIVE)** | **818be34** | **Canonical document templates:** all 220 documents built from the owner specs (shells S1–S5, zones A–G, field-data spec, security matrix), 660 templates (BILINGUAL/FR/EN) **PUBLISHED** with owner approval 2026-09-28 via `opesinsure:seed-canonical-templates` (optimize hook, idempotent). Secure A4 shell: letterhead, QR + code + hash, seal, guilloche, microtext, tier badges, page X/Y. Demo watermark only on demo-flagged records. No sample text. Physical features (UV, hologram, secure paper, SEAL-01 artwork) print as "Non configuré / Not configured" until configured. |
 
 ---
 
@@ -258,7 +259,7 @@ Reports: `docs/UI_AUDIT_*_2026-09-27.md` (admin/insurer, broker/agent, customer,
 | 3 | **No ClamAV** (`CLAMAV_HOST` unset) | Mobile claim-evidence and KYC uploads end as FAILED (fail-closed) | Install ClamAV on the server and set `CLAMAV_HOST`. Needs owner approval. |
 | 4 | **Play Integrity** | Device attestation reports CONFIG_REQUIRED | `PLAY_INTEGRITY_ENABLED`, `PLAY_INTEGRITY_ACCESS_TOKEN`, `PLAY_INTEGRITY_CERT_SHA256` |
 | 5 | **Seal artwork** | Document enforcement stays OFF | Upload the seal in Admin → Physical security assets and have a second admin verify it. Then set `DOCUMENT_ENFORCE_CONTROLS=true`. |
-| 6 | **12 provider document templates** in REVIEW | Provider documents use unapproved templates | Admin → Document templates → "Pending approval" → Approve & publish |
+| 6 | ~~12 provider document templates in REVIEW~~ | Done 2026-09-29: all 220 canonical documents published | — |
 | 7 | `SECURITY_GEO_CITY_HEADER` | Device list has no approximate city | Name of the edge geo-IP header |
 
 ---
