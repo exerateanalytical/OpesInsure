@@ -32,6 +32,7 @@ final class QuoteDocumentRenderer
         // D3: canonical secure shell (QUOTE master shell); quote number and stored offers unchanged.
         return app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
             'type_code' => 'INSURANCE_QUOTE', 'shell' => 'TPL-SHELL-QUOTE-001', 'number' => (string) ($quote->quote_number ?? $quote->id),
+            'demo' => \App\Application\Documents\DemoDocumentMark::forRecords($quote, $tenant),
             'issuer_name' => $tenant?->type === 'BROKER' ? (string) $tenant->legal_name : 'OpesInsure', 'letterhead' => $letterhead,
             'title_en' => 'Quotation', 'title_fr' => 'Devis', 'label' => 'QUOTE '.$quote->line_code, 'status' => 'ISSUED',
             'values' => array_filter(['party.name' => $quote->party?->display_name, 'policy.product' => $quote->line_code, 'policy.effective_until' => $quote->expires_at?->toIso8601String()]),

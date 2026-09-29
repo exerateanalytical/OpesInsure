@@ -5,7 +5,7 @@
   @page { margin: 118px 40px 78px 40px; }
   .zone-a { position: fixed; top: -104px; left: 0; right: 0; height: 96px; }
   .zone-g { position: fixed; bottom: -66px; left: 0; right: 0; height: 58px; border-top: 1px solid {{ $familyColor }}; font-size: 7.5px; color: #5b6b7d; }
-  .zone-g .pageno:after { content: counter(page) " / " counter(pages); }
+  /* Page X / Y is drawn on the PDF canvas by DocumentShellView::pdf() (dompdf does not resolve counter(pages)). */
   .guil { position: absolute; top: 0; left: 0; width: 100%; height: 46px; }
   .micro { font-size: 3.2px; letter-spacing: 0.2px; color: {{ $familyColor }}; white-space: nowrap; overflow: hidden; line-height: 4px; }
   .wm { position: fixed; top: 40%; left: -10%; width: 120%; text-align: center; transform: rotate(-30deg); font-size: 30px; font-weight: bold; color: {{ $familyColor }}; z-index: -1; }
@@ -22,12 +22,14 @@
   .pending { color: #9a6b00; font-style: italic; }
   .verify { border: 1px solid {{ $familyColor }}; padding: 6px; position: relative; }
   .anticopy { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-  .seal { width: 96px; height: 96px; }
+  .seal { width: 76px; height: 76px; }
+  .zone-e table.grid td { padding: 2px 5px; font-size: 8.5px; }
+  .zone-e table.grid td.k { width: 30%; }
   .tier { display: inline-block; border: 1px solid {{ $familyColor }}; color: {{ $familyColor }}; padding: 1px 6px; font-size: 8px; border-radius: 8px; }
-  .statement { font-size: 12px; line-height: 1.5; text-align: center; margin: 10px 30px; }
+  .statement { font-size: 11px; line-height: 1.4; text-align: center; margin: 6px 24px; }
 </style>
 </head>
-<body>@include('pdf._demo_overlay')
+<body>@php($H = fn ($v) => match ((string) $v) { 'PENDING_VERIFICATION' => $L('À vérifier', 'To be verified'), 'CONFIG_REQUIRED' => $L('Non configuré', 'Not configured'), default => str_replace(['PENDING_VERIFICATION', 'CONFIG_REQUIRED'], [$L('à vérifier', 'to be verified'), $L('non configuré', 'not configured')], (string) $v) })@include('pdf._demo_overlay')
 
 {{-- Zone A — header security band (fixed: repeated on every page). --}}
 <div class="zone-a">
@@ -51,10 +53,10 @@
 <div class="zone-g">
   @if($microtext)<div class="micro">{{ $microtext }}</div>@endif
   <table style="width:100%"><tr>
-    <td>@if(!empty($letterhead['footer_lines']))@include('pdf._letterhead_footer')@else{{ $L('Siège social', 'Registered office') }}: <span class="pending">{{ $footer['registered_office'] }}</span> · {{ $L('Contact', 'Contact') }}: <span class="pending">{{ $footer['contact'] }}</span><br>@endif
+    <td>@if(!empty($letterhead['footer_lines']))@include('pdf._letterhead_footer')@else{{ $L('Siège social', 'Registered office') }}: <span class="pending">{{ $H($footer['registered_office']) }}</span> · {{ $L('Contact', 'Contact') }}: <span class="pending">{{ $H($footer['contact']) }}</span><br>@endif
       {{ $L('Modèle', 'Template') }} {{ $footer['template'] }} · {{ $shellCode }} · {{ $footer['classification'] }}<br>
       {{ $L('Le statut du registre OpesInsure fait foi ; le QR n\'est qu\'un pointeur de vérification.', 'The OpesInsure registry status is authoritative; the QR is only a verification pointer.') }}</td>
-    <td style="text-align:right;width:18%">{{ $L('Page', 'Page') }} <span class="pageno"></span></td>
+    <td style="text-align:right;width:18%"><span class="pageno"></span></td>
   </tr></table>
 </div>
 
@@ -68,7 +70,7 @@
   <div class="zone-title">{{ $L('Identification du document', 'Document identity') }}</div>
   <table class="grid">
     @foreach(array_chunk($identity, 2) as $pair)
-      <tr>@foreach($pair as $r)<td class="k">{{ $r['label'] }}</td><td>@if($r['value'] === 'PENDING_VERIFICATION')<span class="pending">{{ $r['value'] }}</span>@elseif(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td>@endforeach</tr>
+      <tr>@foreach($pair as $r)<td class="k" style="width:21%">{{ $r['label'] }}</td><td style="width:29%">@if($r['value'] === 'PENDING_VERIFICATION')<span class="pending">{{ $H($r['value']) }}</span>@elseif(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td>@endforeach</tr>
     @endforeach
   </table>
 </div>
@@ -86,6 +88,14 @@
   <div class="zone-title">{{ $L('Parties et risque', 'Parties and risk') }}</div>
   <table class="grid">@foreach($party as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
   @if(!empty($mappedParty))<table class="grid" style="margin-top:4px">@foreach($mappedParty as $r)<tr><td class="k">{{ $r['label'] }}</td><td>{{ $r['value'] }}</td></tr>@endforeach</table>@endif
+  @if(!empty($templateParty))
+    <table class="grid" style="margin-top:4px">
+      @foreach(array_chunk($templateParty, 2) as $pair)
+        <tr>@foreach($pair as $r)<td class="k" style="width:22%">{{ $r['label'] }}</td><td style="width:28%" @if(count($pair) === 1) colspan="3" @endif>@if($r['recorded']){{ $r['value'] }}@else<span class="muted">{{ $r['value'] }}</span>@endif</td>@endforeach</tr>
+      @endforeach
+    </table>
+  @endif
+  @foreach(($templateTables ?? []) as $t)@if($t['zone'] === 'C')@include('pdf._field_table', ['t' => $t])@endif @endforeach
   @if(!empty($vehicle))
     <table class="grid" style="margin-top:4px">@foreach($vehicle as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if(!empty($r['strong']))<strong style="font-size:13px">{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
   @endif
@@ -117,7 +127,7 @@
   @endif
   @if(!empty($premium))
     <h2>{{ $L('Prime', 'Premium') }}</h2>
-    <table class="grid">@foreach($premium as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if($r['value'] === 'PENDING_VERIFICATION')<span class="pending">{{ $r['value'] }}</span>@elseif(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
+    <table class="grid">@foreach($premium as $r)<tr><td class="k">{{ $r['label'] }}</td><td>@if($r['value'] === 'PENDING_VERIFICATION')<span class="pending">{{ $H($r['value']) }}</span>@elseif(!empty($r['strong']))<strong>{{ $r['value'] }}</strong>@else{{ $r['value'] }}@endif</td></tr>@endforeach</table>
   @endif
   @if(!empty($payment))
     <h2>{{ $L('Paiement', 'Payment') }}</h2>
@@ -127,47 +137,65 @@
     <h2>{{ $L('Détails', 'Details') }}</h2>
     <table class="grid">@foreach($mappedContent as $r)<tr><td class="k">{{ $r['label'] }}</td><td>{{ $r['value'] }}</td></tr>@endforeach</table>
   @endif
+  @if(!empty($templateContent))
+    <h2>{{ $L('Informations du document', 'Document particulars') }}</h2>
+    <table class="grid">
+      @foreach(array_chunk($templateContent, 2) as $pair)
+        <tr>@foreach($pair as $r)<td class="k" style="width:22%">{{ $r['label'] }}</td><td style="width:28%" @if(count($pair) === 1) colspan="3" @endif>@if($r['recorded']){{ $r['value'] }}@else<span class="muted">{{ $r['value'] }}</span>@endif</td>@endforeach</tr>
+      @endforeach
+    </table>
+  @endif
+  @foreach(($templateTables ?? []) as $t)@if($t['zone'] === 'D')@include('pdf._field_table', ['t' => $t])@endif @endforeach
   @if(!empty($changes))
     <h2>{{ $L('Modifications', 'Changes') }}</h2>
     <table class="grid">@foreach($changes as $r)<tr><td class="k">{{ $r['label'] }}</td><td>{{ $r['value'] }}</td></tr>@endforeach</table>
   @endif
-  @if(!empty($pending))
+  @if(!empty($pending) && empty($templateContent) && empty($templateParty))
     <h2>{{ $L('Données à vérifier', 'Data pending verification') }}</h2>
-    <p class="small pending">{{ implode(' · ', $pending) }} — {{ $L('aucune source canonique : non inventé', 'no canonical source: not invented') }} (PENDING_VERIFICATION)</p>
+    <p class="small pending">{{ implode(' · ', $pending) }} — {{ $L('aucune source vérifiée : non renseigné', 'no verified source: not recorded') }}</p>
   @endif
   @foreach($notices as $n)<p class="small muted">{{ $n }}</p>@endforeach
 </div>
 
-<table style="width:100%;margin-top:10px;page-break-inside:avoid"><tr>
+<table class="zone-e" style="width:100%;margin-top:8px;page-break-inside:avoid"><tr>
   {{-- Zone E — authorization / signature. --}}
-  <td style="width:58%;vertical-align:top">
+  <td style="width:48%;vertical-align:top">
     <div class="zone-title">{{ $L('Autorisation / signature', 'Authorization / signature') }}</div>
     <table class="grid">
       <tr><td class="k">{{ $L('Émetteur', 'Issuer') }}</td><td><strong>{{ $authorization['issuer'] }}</strong> — {{ $authorization['role'] }}</td></tr>
-      <tr><td class="k">{{ $L('Réf. d\'autorisation', 'Authorization ref.') }}</td><td>@if($authorization['authorization_reference'] === 'PENDING_VERIFICATION')<span class="pending">PENDING_VERIFICATION</span>@else{{ $authorization['authorization_reference'] }}@endif</td></tr>
+      <tr><td class="k">{{ $L('Réf. d\'autorisation', 'Authorization ref.') }}</td><td>@if($authorization['authorization_reference'] === 'PENDING_VERIFICATION')<span class="pending">{{ $H('PENDING_VERIFICATION') }}</span>@else{{ $authorization['authorization_reference'] }}@endif</td></tr>
       @if($authorization['signatory'])<tr><td class="k">{{ $L('Signataire', 'Signatory') }}</td><td>{{ $authorization['signatory'] }}</td></tr>@endif
-      @if($authorization['digital_signature'])<tr><td class="k">{{ $L('Signature numérique', 'Digital signature') }}</td><td>@if($authorization['digital_signature'] === 'CONFIG_REQUIRED')<span class="pending">CONFIG_REQUIRED</span>@else{{ $authorization['digital_signature'] }}@endif</td></tr>@endif
-      @if($authorization['maker_checker'])<tr><td class="k">{{ $L('Double contrôle', 'Maker-checker') }}</td><td>{{ $authorization['maker_checker'] }}</td></tr>@endif
+      @if($authorization['digital_signature'])<tr><td class="k">{{ $L('Signature numérique', 'Digital signature') }}</td><td>@if($authorization['digital_signature'] === 'CONFIG_REQUIRED')<span class="pending">{{ $H('CONFIG_REQUIRED') }}</span>@else{{ $authorization['digital_signature'] }}@endif</td></tr>@endif
+      @if($authorization['maker_checker'])<tr><td class="k">{{ $L('Double contrôle', 'Maker-checker') }}</td><td>{{ $H($authorization['maker_checker']) }}</td></tr>@endif
       <tr><td class="k">{{ $L('Horodatage (UTC)', 'Timestamp (UTC)') }}</td><td>{{ $authorization['timestamp'] }}</td></tr>
     </table>
   </td>
-  <td style="width:14%;text-align:center;vertical-align:middle">
+  <td style="width:12%;text-align:center;vertical-align:top">
     @if($seal)<img class="seal" src="{{ $seal }}" alt="{{ $seals[0]['code'] ?? 'SEAL-02' }}">@endif
     @foreach($seals as $s)<div class="small muted">{{ $s['code'] }} {{ $s['label'] }}</div>@endforeach
-    @if(!empty($sealPending))<div class="small pending">{{ implode(', ', $sealPending) }}: CONFIG_REQUIRED</div>@endif
-    @if(!empty($physicalProfiles))<div class="small pending">{{ $L('Impression sécurisée', 'Secure print') }}: {{ implode(' · ', $physicalProfiles) }} — {{ $L('original numérique', 'digital original') }}</div>@endif
   </td>
-  {{-- Zone F — verification block. --}}
-  <td style="width:28%;vertical-align:top">
+  {{-- Zone F — verification block (QR beside the code, hash and instructions: compact height). --}}
+  <td style="width:40%;vertical-align:top">
     <div class="verify">
       @if($antiCopy)<img class="anticopy" src="{{ $antiCopy }}" alt="">@endif
-      @if($qr)<div style="text-align:center"><img class="qr" style="width:92px;height:92px" src="{{ $qr }}" alt="QR"></div>@endif
-      <div style="text-align:center;font-weight:bold">{{ $L('SCANNER POUR VÉRIFIER', 'SCAN TO VERIFY') }}</div>
-      <div class="small">{{ $L('Code', 'Code') }}: <strong>{{ $verificationCode }}</strong></div>
-      <div class="small">{{ $verifyUrl }}</div>
-      <div class="small">SHA-256 #{{ $hashFragment }}</div>
-      <div class="small muted">{{ $L('Validité déterminée par le statut en ligne (VALIDE / RÉVOQUÉ / REMPLACÉ).', 'Validity is determined by the live status (VALID / REVOKED / SUPERSEDED).') }}</div>
+      <table style="width:100%;border-collapse:collapse"><tr>
+        @if($qr)<td style="width:84px;vertical-align:top;padding:0"><img class="qr" style="width:80px;height:80px" src="{{ $qr }}" alt="QR"></td>@endif
+        <td style="vertical-align:top;padding:0 0 0 6px">
+          <div style="font-weight:bold;font-size:9px">{{ $L('SCANNER POUR VÉRIFIER', 'SCAN TO VERIFY') }}</div>
+          <div class="small">{{ $L('Code', 'Code') }}: <strong>{{ $verificationCode }}</strong></div>
+          <div class="small">{{ $verifyUrl }}</div>
+          <div class="small">SHA-256 #{{ $hashFragment }}</div>
+        </td>
+      </tr></table>
+      <div class="small muted" style="margin-top:2px">{{ $L('Validité déterminée par le statut en ligne (VALIDE / RÉVOQUÉ / REMPLACÉ).', 'Validity is determined by the live status (VALID / REVOKED / SUPERSEDED).') }}</div>
     </div>
   </td>
-</tr></table>
+</tr>
+@if(!empty($sealPending) || !empty($physicalProfiles))
+<tr><td colspan="3" class="small pending" style="padding-top:2px">
+  @if(!empty($sealPending)){{ $L('Sceaux', 'Seals') }} {{ implode(', ', $sealPending) }} : {{ $H('CONFIG_REQUIRED') }}.@endif
+  @if(!empty($physicalProfiles)) {{ $L('Impression sécurisée', 'Secure print') }}: {{ $H(implode(' · ', $physicalProfiles)) }} — {{ $L('original numérique', 'digital original') }}.@endif
+</td></tr>
+@endif
+</table>
 </body></html>

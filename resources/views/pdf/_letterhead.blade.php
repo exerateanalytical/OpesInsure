@@ -15,6 +15,12 @@
       <td style="padding:0;vertical-align:middle"><div class="brand lh-wordmark" style="color:{{ $lhColor }};font-weight:bold">{{ $lhName }}</div></td>
     </tr></table>
   @endif
+  @if(!empty($lh['platform']))
+    <div class="lh-platform" style="font-size:7.5px;color:#5b6b7d;margin-top:1px">
+      @if(!empty($lh['platform']['logo']))<img src="{{ $lh['platform']['logo'] }}" alt="OpesInsure" style="max-height:11px;max-width:60px;vertical-align:middle"> @endif
+      {{ $lhT('Émis via la plateforme OpesInsure', 'Issued through the OpesInsure platform') }}
+    </div>
+  @endif
   @if(!empty($lh['cobrand']))
     <div class="lh-cobrand" style="font-size:8px;color:#5b6b7d;margin-top:1px">
       @if(!empty($lh['cobrand']['logo']))<img src="{{ $lh['cobrand']['logo'] }}" alt="{{ $lh['cobrand']['name'] }}" style="max-height:14px;max-width:70px;vertical-align:middle"> @endif

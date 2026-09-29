@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Documents\Letterhead;
 
 use App\Models\Letterhead\LetterheadAsset;
+use App\Models\Policy;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -135,7 +136,16 @@ final class LetterheadResolver
             $cobrand = ['role' => 'INTERMEDIARY', 'name' => $intermediary['name'], 'licence' => $intermediary['licence'] ?? null, 'asset' => self::current('TENANT', $tenantId)];
         }
 
+        // Fallback: an insurer / broker without its own artwork keeps its name as a wordmark, and the document carries the
+        // OpesInsure platform letterhead mark ("issued through") — never the platform logo in place of the issuer's.
+        $platform = null;
+        if ($issuerType !== 'PLATFORM' && ($issuerAsset === null || (self::dataUri($issuerAsset, 'logo') === null && self::dataUri($issuerAsset, 'header') === null))) {
+            $platformAsset = self::current('TENANT', self::platformTenantId());
+            $platform = ['name' => 'OpesInsure', 'logo' => self::dataUri($platformAsset, 'logo')];
+        }
+
         return [
+            'platform' => $platform,
             'issuer' => ['name' => $issuerName, 'logo' => self::dataUri($issuerAsset, 'logo'), 'header' => self::dataUri($issuerAsset, 'header')],
             'cobrand' => $cobrand ? ['role' => $cobrand['role'], 'name' => $cobrand['name'], 'licence' => $cobrand['licence'] ?? null, 'logo' => self::dataUri($cobrand['asset'], 'logo')] : null,
             'footer_lines' => $issuerAsset?->footerLines() ?? [],
@@ -145,7 +155,7 @@ final class LetterheadResolver
     }
 
     /** Letterhead of a policy document rendered on behalf of its insurer (legacy certificate / schedule / receipt views). */
-    public static function forPolicy(\App\Models\Policy $policy): array
+    public static function forPolicy(Policy $policy): array
     {
         $policy->loadMissing(['carrier.party', 'tenant']);
         $carrierName = $policy->carrier?->party?->display_name ?? 'Insurer';

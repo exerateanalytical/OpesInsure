@@ -166,7 +166,7 @@ final class DocumentTemplateResource extends \App\Filament\Shared\LocalizedResou
         $letterhead = LetterheadResolver::forDocument($issuer, $name, $carrierId, $issuer === 'INSURER' ? $name : null, $tenantId, null);
 
         return app(SecureShellRenderer::class)->specimen($t->document_type_code, $name, $letterhead, $sections,
-            $titleEn ?: $t->title_en, $titleFr ?: $t->title_fr, (string) $t->language);
+            $titleEn ?: $t->title_en, $titleFr ?: $t->title_fr, (string) $t->language, DocumentEngine::shellContent($content ?? (array) $t->content, $vars));
     }
 
     /** @param  ?Closure(mixed): array<string, mixed>  $state  unsaved designer state (edit page) */

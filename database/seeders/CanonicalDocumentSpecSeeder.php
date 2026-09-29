@@ -30,6 +30,33 @@ final class CanonicalDocumentSpecSeeder extends Seeder
 
     private const REQUIREMENT_RANK = ['PENDING_VERIFICATION' => 0, 'NOT_REQUIRED' => 1, 'OPTIONAL' => 2, 'CONFIGURABLE' => 3, 'REQUIRED' => 4];
 
+    /**
+     * Master shell of the documents of the same family as the five master-shell documents (spec: "Master Shell + Security
+     * Tier + Document Family Components"; the JSON names a shell only for DOC-001/017/022/036/190). Applied only where the
+     * catalogue has no shell yet (never overwrites). CERTIFICATE / MOTOR print the certification statement, so they are
+     * given only to documents that evidence current cover (not cancellation, duplicate or notice documents).
+     */
+    public const FAMILY_SHELLS = [
+        // Quote family
+        'DOC-002' => 'TPL-SHELL-QUOTE-001', 'DOC-152' => 'TPL-SHELL-QUOTE-001',
+        // Policy schedule family
+        'DOC-016' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-024' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-026' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        'DOC-039' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-040' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        'DOC-112' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-113' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-114' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        'DOC-120' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-121' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-122' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        'DOC-132' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-142' => 'TPL-SHELL-POLICY-SCHEDULE-001', 'DOC-144' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        'DOC-148' => 'TPL-SHELL-POLICY-SCHEDULE-001',
+        // Policy certificate family (current-cover evidence)
+        'DOC-023' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-045' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-050' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        'DOC-051' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-052' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        'DOC-119' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-124' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-125' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        'DOC-126' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-127' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-130' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        'DOC-133' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-134' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-138' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        'DOC-139' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-143' => 'TPL-SHELL-POLICY-CERTIFICATE-001', 'DOC-145' => 'TPL-SHELL-POLICY-CERTIFICATE-001',
+        // Motor attestation family
+        'DOC-037' => 'TPL-SHELL-MOTOR-ATTESTATION-001', 'DOC-038' => 'TPL-SHELL-MOTOR-ATTESTATION-001', 'DOC-055' => 'TPL-SHELL-MOTOR-ATTESTATION-001',
+    ];
+
     /** Stored documents.security_level restrictiveness (DocumentRegister::SECURITY_LEVELS). */
     private const LEVEL_RANK = ['PUBLIC_VERIFIABLE' => 0, 'CUSTOMER_PRIVATE' => 1, 'INSURER_CONFIDENTIAL' => 2, 'INTERNAL' => 2, 'FINANCIAL_RESTRICTED' => 3, 'MEDICAL_RESTRICTED' => 4, 'REGULATORY' => 4];
 
@@ -140,7 +167,7 @@ final class CanonicalDocumentSpecSeeder extends Seeder
             $update = [
                 'canonical_spec_id' => $row->canonical_spec_id ?: $p['spec_id'], 'security_tier' => $tier, 'security_tier_ceiling' => $ceiling,
                 'security_controls' => json_encode($controls), 'confidentiality_class' => $class, 'access_profiles' => json_encode($p['access_profiles']),
-                'master_shell_code' => $row->master_shell_code ?: ($p['shells'][0] ?? null), 'security_level' => $level,
+                'master_shell_code' => $row->master_shell_code ?: ($p['shells'][0] ?? self::FAMILY_SHELLS[$p['spec_id']] ?? null), 'security_level' => $level,
             ];
             $canon = new \App\Application\Shared\CanonicalJson();
             $changed = array_filter($update, fn ($v, $k) => in_array($k, ['security_controls', 'access_profiles'], true)

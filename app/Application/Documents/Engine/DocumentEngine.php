@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Application\Documents\Engine;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Documents\DemoDocumentMark;
+use App\Application\Documents\Letterhead\LetterheadResolver;
 use App\Application\Documents\Security\DocumentFieldRequirements;
 use App\Application\Documents\Security\DocumentSecurityProfile;
 use App\Application\Documents\Security\DocumentSigner;
+use App\Application\Documents\Security\IssuanceGate;
 use App\Application\Documents\Security\VerificationCredentials;
 use App\Application\Notifications\CustomerNotifier;
 use App\Application\Shared\CanonicalJson;
@@ -21,12 +24,12 @@ use App\Models\Policy;
 use App\Models\PolicyTransaction;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use chillerlan\QRCode\Common\EccLevel;
 use chillerlan\QRCode\Output\QROutputInterface;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -68,7 +71,7 @@ final class DocumentEngine
     ) {}
 
     /**
-     * @param array{transaction?: PolicyTransaction, claim?: Claim, payment?: PaymentIntentRecord, cover_note?: bool, preauth?: object, extension?: object, subject?: array{type: string, key: string, label: string}, valid_from?: string, valid_until?: string} $ctx
+     * @param  array{transaction?: PolicyTransaction, claim?: Claim, payment?: PaymentIntentRecord, cover_note?: bool, preauth?: object, extension?: object, subject?: array{type: string, key: string, label: string}, valid_from?: string, valid_until?: string}  $ctx
      */
     public function fire(string $trigger, Policy $policy, array $ctx = [], ?User $actor = null): DocumentPackManifest
     {
@@ -151,7 +154,7 @@ final class DocumentEngine
             $policy = isset($ctx['policy']) && $ctx['policy'] instanceof Policy
                 ? Policy::with(['carrier.party', 'party', 'tenant', 'proposal.offer.product', 'proposal.offer.quote'])->findOrFail($ctx['policy']->id)
                 // No policy (contract, tariff, settlement): a transient, never-saved issuing context.
-                : (new Policy())->forceFill(['tenant_id' => $ctx['tenant_id'], 'carrier_id' => $ctx['carrier_id'] ?? null, 'currency' => $ctx['currency'] ?? 'XAF', 'version' => 0]);
+                : (new Policy)->forceFill(['tenant_id' => $ctx['tenant_id'], 'carrier_id' => $ctx['carrier_id'] ?? null, 'currency' => $ctx['currency'] ?? 'XAF', 'version' => 0]);
             $label = self::PROVIDER_LABELS[$trigger].' '.$ctx['subject']['label'];
             $out = [];
             foreach ($codes as $code) {
@@ -351,7 +354,7 @@ final class DocumentEngine
         $transaction = $ctx['transaction'] ?? null;
         $claim = $ctx['claim'] ?? null;
         // Letterhead (issuer + co-branding artwork); its version and file hashes are frozen into the snapshot and provenance.
-        $letterhead = \App\Application\Documents\Letterhead\LetterheadResolver::forDocument($issuer, $issuerName, $policy->carrier_id, $carrierName, $policy->tenant_id, $broker);
+        $letterhead = LetterheadResolver::forDocument($issuer, $issuerName, $policy->carrier_id, $carrierName, $policy->tenant_id, $broker);
 
         // Security profile (never below the catalogue's canonical floor).
         $evidence = $transaction instanceof PolicyTransaction && $transaction->approved_by && $transaction->approved_by !== $transaction->requested_by
@@ -380,13 +383,13 @@ final class DocumentEngine
         }
         // Security Matrix §9 issuance gate (steps 1-6, 10, 11 before numbering): FAIL always refuses; CONFIG_REQUIRED /
         // PENDING_VERIFICATION refuse only under DOCUMENT_ENFORCE_CONTROLS. Recorded on the document (security_controls.issuance_gate).
-        $gate = \App\Application\Documents\Security\IssuanceGate::evaluate($policy, $template, $security, [
+        $gate = IssuanceGate::evaluate($policy, $template, $security, [
             'issuer' => $issuer, 'issuer_authorized' => $issuer !== 'INSURER' || self::mayRenderForInsurer($profile), 'claim' => $claim, 'transaction' => $transaction,
             'missing_fields' => $missing, 'field_enforcement' => (string) config('document_security.field_enforcement', 'block'),
             // D4: a provider document's source is its provider event (contract, tariff, settlement ...), not a policy.
             'provider_source' => isset($ctx['provider_id']) && ! empty($ctx['subject']['key']) ? $ctx['subject']['key'] : null,
         ]);
-        $refused = \App\Application\Documents\Security\IssuanceGate::refusals($gate, (bool) config('document_security.enforce_controls'));
+        $refused = IssuanceGate::refusals($gate, (bool) config('document_security.enforce_controls'));
         if ($refused !== []) {
             throw new DocumentIssuanceBlocked('BLOCKED_ISSUANCE_GATE', $refused, 'Security issuance gate refused: '.implode('; ', $refused));
         }
@@ -433,15 +436,18 @@ final class DocumentEngine
         $qr = null;
         if ($security['controls']['qr']['status'] === 'APPLIED' || ! $profile || $profile->qr_enabled) {
             // The QR carries only the verifier URL + random token (crypto spec §11): no identity, no amounts.
-            $qr = (new QRCode(new QROptions(['outputType' => QROutputInterface::MARKUP_SVG, 'outputBase64' => true, 'eccLevel' => \chillerlan\QRCode\Common\EccLevel::M, 'addQuietzone' => true])))->render($verifyUrl);
+            $qr = (new QRCode(new QROptions(['outputType' => QROutputInterface::MARKUP_SVG, 'outputBase64' => true, 'eccLevel' => EccLevel::M, 'addQuietzone' => true])))->render($verifyUrl);
         }
-        $bytes = Pdf::loadView('pdf.engine-shell', DocumentShellView::data([
+        // Safety rule: the DEMONSTRATION overlay only on documents of demo-flagged records (policy, insurer, tenant, party, claim).
+        $demoRecord = DemoDocumentMark::forRecords($policy, $policy->carrier, $policy->tenant, $policy->party, $claim) || ! empty($ctx['is_demo']);
+        $bytes = DocumentShellView::pdf(DocumentShellView::data([
             'lang' => $lang, 'template' => $template, 'type' => $type, 'security' => $security, 'values' => $values, 'requirements' => $requirements,
             'number' => $number['number'], 'issuerName' => $issuerName, 'carrierName' => $carrierName, 'intermediary' => $broker, 'policy' => $policy, 'product' => $product,
             'subject' => $subject, 'subjectFacts' => $subjectFacts, 'label' => $label, 'issuedAt' => $issuedAt, 'verification' => $verification, 'qr' => $qr,
             'verifyUrl' => $verifyBase, 'sections' => $sections, 'contentHash' => $contentHash, 'profile' => $profile, 'claim' => $claim, 'transaction' => $transaction,
             'coverages' => (array) ($values['coverage.lines'] ?? []), 'status' => $certificateLike ? 'VALID' : 'ISSUED', 'letterhead' => $letterhead,
-        ]))->setPaper('a4')->output();
+            'templateContent' => self::shellContent((array) ($template->content ?? []), $vars), 'demo' => $demoRecord,
+        ]));
 
         $sha = hash('sha256', $bytes);
         $signature = $this->signer->sign([
@@ -456,13 +462,13 @@ final class DocumentEngine
 
         $status = $profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED');
 
-        $gate = \App\Application\Documents\Security\IssuanceGate::finalize($gate, [
+        $gate = IssuanceGate::finalize($gate, [
             'number' => $number['number'], 'content_hash' => $contentHash, 'token_hash' => VerificationCredentials::tokenHash($token), 'pdf_bytes' => $bytes, 'sha256' => $sha,
             'stored_bytes' => Storage::disk((string) config('lifecycle.documents_disk', 'local'))->get($key), 'in_transaction' => DB::transactionLevel() > 0, 'status' => $status,
         ]);
         if ($gate['failed'] !== []) {
             Storage::disk((string) config('lifecycle.documents_disk', 'local'))->delete($key);
-            throw new \RuntimeException('Security issuance gate failed after rendering: '.implode('; ', \App\Application\Documents\Security\IssuanceGate::refusals($gate, false)));
+            throw new \RuntimeException('Security issuance gate failed after rendering: '.implode('; ', IssuanceGate::refusals($gate, false)));
         }
         $security['controls']['issuance_gate'] = $gate;
 
@@ -476,13 +482,15 @@ final class DocumentEngine
             'policy_transaction_id' => $transaction?->id, 'renewal_of_policy_id' => $trigger === 'RENEWAL_ISSUED' ? $policy->previous_policy_id : null, 'claim_id' => $claim?->id,
             'subject_type' => $subject ? $subjectType : null, 'subject_key' => $subject['key'] ?? null, 'subject_label' => $subject['label'] ?? null,
             'title' => $template->title_en, 'issuer_type' => $issuer, 'issuer_carrier_id' => $policy->carrier_id, 'issuer_tenant_id' => $policy->tenant_id,
-            'language' => $lang, 'document_origin' => match ($issuer) { 'INSURER' => 'INSURER', 'BROKER' => 'BROKER', default => 'SYSTEM' },
+            'language' => $lang, 'document_origin' => match ($issuer) {
+                'INSURER' => 'INSURER', 'BROKER' => 'BROKER', default => 'SYSTEM'
+            },
             'document_stage' => $this->stage($type, $trigger), 'security_level' => $type['security_level'], 'status' => $status,
             'numbering_family' => $number['family'], 'document_number' => $number['number'], 'document_sequence' => $number['sequence'],
             'verification_code' => $verification, 'generation_trigger' => $trigger, 'issued_at' => $issuedAt,
             'valid_from' => $ctx['valid_from'] ?? ($certificateLike ? $policy->coverage_starts_at : null), 'valid_until' => $ctx['valid_until'] ?? ($certificateLike ? $policy->coverage_ends_at : null),
             'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label,
-                'demo_watermark' => \App\Application\Documents\DemoDocumentMark::active(), 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']],
+                'demo_watermark' => $demoRecord, 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']],
             'uploaded_by' => $actor?->id,
         ]);
         // Canonical security record (columns of migration 2026_10_12_900001; frozen by the immutability trigger).
@@ -639,6 +647,21 @@ final class DocumentEngine
         }
 
         return ['', []];
+    }
+
+    /**
+     * Template content handed to the shell (fields + notices) with the same placeholder substitution as the sections.
+     *
+     * @param  array<string, mixed>  $content
+     * @param  array<string, string>  $vars
+     * @return array<string, mixed>
+     */
+    public static function shellContent(array $content, array $vars): array
+    {
+        $content['notices'] = array_values(array_map(fn ($n) => is_array($n)
+            ? ['en' => strtr((string) ($n['en'] ?? ''), $vars), 'fr' => strtr((string) ($n['fr'] ?? ''), $vars)] : $n, (array) ($content['notices'] ?? [])));
+
+        return $content;
     }
 
     /**

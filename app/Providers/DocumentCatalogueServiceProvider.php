@@ -13,6 +13,8 @@ final class DocumentCatalogueServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->optimizes(optimize: 'opesinsure:seed-document-catalogue', key: 'document-catalogue');
+        // Owner-approved canonical templates DOC-001..220 (needs the catalogue above; registered after it).
+        $this->optimizes(optimize: 'opesinsure:seed-canonical-templates', key: 'canonical-templates');
 
         if (! $this->app->routesAreCached()) {
             Route::middleware('api')->prefix('api')->group(base_path('routes/document_catalogue.php'));

@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Application\Documents;
 
+use Illuminate\Database\Eloquent\Model;
+
 /**
- * Owner decision (2026-09-25): production keeps demo mode ON, so every document rendered while demo mode is on
- * carries a large "DEMONSTRATION / DÉMONSTRATION — NOT VALID INSURANCE" overlay (resources/views/pdf/_demo_overlay).
- * All PDF renderers (DocumentEngine, CertificateService, PolicyDocumentService, MobilePaymentService receipts,
- * QuoteDocumentRenderer) include it.
+ * Safety rule: a document generated from a DEMO-FLAGGED record (is_demo on the policy, its insurer, its tenant or its
+ * party) carries a large "DEMONSTRATION / DÉMONSTRATION — NOT VALID INSURANCE" overlay (resources/views/pdf/_demo_overlay);
+ * a document of a real record prints clean, whatever the demo-mode setting. Every PDF renderer goes through the one
+ * canonical shell (pdf.engine-shell), which passes the record's flag ($demoRecord) to the overlay.
+ *
+ * Only a rendering with no record context at all (html(null): a bare view render) falls back to the demo-mode setting.
  */
 final class DemoDocumentMark
 {
@@ -16,15 +20,37 @@ final class DemoDocumentMark
 
     public const TEXT_FR = 'DÉMONSTRATION — NE VAUT PAS ASSURANCE';
 
+    /** Demo mode setting (used only when no record context is available). */
     public static function active(): bool
     {
         return (bool) config('demo.enabled');
     }
 
-    /** The overlay markup (empty when demo mode is off). */
-    public static function html(): string
+    /** True when any of the given records (policy, carrier, tenant, party …) is flagged is_demo. */
+    public static function forRecords(mixed ...$records): bool
     {
-        if (! self::active()) {
+        foreach ($records as $r) {
+            if ($r instanceof Model && (bool) $r->getAttribute('is_demo')) {
+                return true;
+            }
+            if (is_object($r) && ! $r instanceof Model && ! empty($r->is_demo)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Should the overlay be printed: the record flag when known, else the demo-mode setting. */
+    public static function applies(?bool $demoRecord): bool
+    {
+        return $demoRecord ?? self::active();
+    }
+
+    /** The overlay markup (empty for a real record). */
+    public static function html(?bool $demoRecord = null): string
+    {
+        if (! self::applies($demoRecord)) {
             return '';
         }
         $t = htmlspecialchars(self::TEXT, ENT_QUOTES, 'UTF-8');

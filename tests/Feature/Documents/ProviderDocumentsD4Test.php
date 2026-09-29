@@ -216,7 +216,10 @@ it('D4: without an insurer issuance authorization nothing is numbered (AWAITING_
 });
 
 it('D4 templates: 12 provider templates are seeded PLATFORM/REVIEW by the system author with spec content; one-step approve-publish is for seeded templates only', function () {
-    $seeded = DocumentTemplate::where('created_by', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)->get();
+    // The canonical template seeders (DOC-001..220) share the system author; count the provider seeder's own lineages.
+    $providerSeeded = fn () => DocumentTemplate::where('created_by', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)
+        ->where('content->source', \Database\Seeders\ProviderDocumentTemplateSeeder::SOURCE);
+    $seeded = $providerSeeded()->get();
     expect($seeded)->toHaveCount(12)->and($seeded->pluck('status')->unique()->all())->toBe(['PUBLISHED'])
         ->and($seeded->pluck('ownership')->unique()->all())->toBe(['PLATFORM']);
     $eob = $seeded->firstWhere('document_type_code', 'EXPLANATION_OF_BENEFITS');
@@ -225,7 +228,7 @@ it('D4 templates: 12 provider templates are seeded PLATFORM/REVIEW by the system
 
     // Re-seeding never touches or duplicates an existing lineage.
     $this->artisan('opesinsure:seed-document-catalogue')->assertSuccessful();
-    expect(DocumentTemplate::where('created_by', \Database\Seeders\ProviderDocumentTemplateSeeder::SYSTEM_USER_ID)->count())->toBe(12);
+    expect($providerSeeded()->count())->toBe(12);
 
     // A regular template cannot use the one-step path (normal maker-checker).
     $other = app(DocumentTemplateService::class)->createDraft(['document_type_code' => 'EXPLANATION_OF_BENEFITS', 'ownership' => 'PLATFORM', 'language' => 'FR', 'content' => ['sections' => []]], $this->admin);

@@ -110,6 +110,7 @@ final class MobilePaymentService
         // D3: canonical secure shell (RECEIPT master shell); same receipt number and data.
         $bytes = app(\App\Application\Documents\Engine\SecureShellRenderer::class)->render([
             'type_code' => 'PAYMENT_RECEIPT', 'shell' => 'TPL-SHELL-PREMIUM-RECEIPT-001', 'number' => (string) $receipt['receipt_number'],
+            'demo' => \App\Application\Documents\DemoDocumentMark::forRecords($intent, $carrier),
             'issuer_name' => (string) ($receipt['carrier_name'] ?? 'OpesInsure'), 'letterhead' => $letterhead, 'currency' => $receipt['currency'],
             'title_en' => 'Payment receipt', 'title_fr' => 'Reçu de paiement', 'label' => 'PAYMENT '.$receipt['status'], 'issued_at' => $receipt['issued_at'] ?? now(),
             'values' => array_filter([

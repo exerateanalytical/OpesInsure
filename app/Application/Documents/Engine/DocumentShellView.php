@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Documents\Engine;
 
 use App\Application\DocumentCatalogue\CanonicalFieldDictionary;
-use App\Application\Documents\DemoDocumentMark;
 use App\Application\Documents\Security\DocumentVerificationPresenter;
 use App\Application\Documents\Security\SecurityArtwork;
 use App\Application\Documents\Security\VerificationCredentials;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 /**
  * View model of the zoned A4 master layout (resources/views/pdf/engine-shell.blade.php):
@@ -31,7 +32,9 @@ final class DocumentShellView
     public static function data(array $in): array
     {
         $lang = $in['lang'];
-        $L = fn (string $fr, string $en) => match ($lang) { 'EN' => $en, 'FR' => $fr, default => $fr.' / '.$en };
+        $L = fn (string $fr, string $en) => match ($lang) {
+            'EN' => $en, 'FR' => $fr, default => $fr.' / '.$en
+        };
         $v = $in['values'];
         $security = $in['security'];
         $controls = $security['controls'];
@@ -44,9 +47,9 @@ final class DocumentShellView
         $color = SecurityArtwork::FAMILY_COLORS[$family] ?? SecurityArtwork::FAMILY_COLORS['DEFAULT'];
         $seed = $family.'|'.$in['number'];
         $money = fn ($minor, $cur = null) => $minor === null ? null : number_format(((int) $minor) / 100, 0, '.', ' ').' '.($cur ?? $policy->currency);
-        $date = fn (?string $iso, bool $time = false) => $iso ? \Carbon\Carbon::parse($iso)->setTimezone(config('app.timezone'))->format($time ? 'd/m/Y H:i' : 'd/m/Y') : null;
+        $date = fn (?string $iso, bool $time = false) => $iso ? Carbon::parse($iso)->setTimezone(config('app.timezone'))->format($time ? 'd/m/Y H:i' : 'd/m/Y') : null;
         $label = fn (string $key) => $L(CanonicalFieldDictionary::KEYS[$key][1] ?? $key, CanonicalFieldDictionary::KEYS[$key][0] ?? $key);
-        $row = fn (string $key, $value, bool $strong = false) => ['label' => $label($key), 'value' => $value, 'strong' => $strong];
+        $row = fn (string $key, $value, bool $strong = false) => ['label' => $label($key), 'value' => self::humanCode($value, $L), 'strong' => $strong];
         $claim = $in['claim'];
         $tx = $in['transaction'];
         $facts = (array) $in['subjectFacts'];
@@ -61,7 +64,10 @@ final class DocumentShellView
             $row('policy.effective_from', $date($v['policy.effective_from'] ?? null)),
             $row('policy.effective_until', $date($v['policy.effective_until'] ?? null)),
             ['label' => $L('Agence', 'Branch'), 'value' => self::PENDING, 'strong' => false],
-            $row('document.template_version', $in['template']->code.' v'.$in['template']->version),
+            // Short form in Zone B (canonical spec id + language + version); the full lineage code stays in Zone G.
+            $row('document.template_version', str_contains((string) $in['template']->code, '|')
+                ? trim(($security['canonical_spec_id'] ?? $code).' '.($in['template']->language ?? '')).' v'.$in['template']->version
+                : $in['template']->code.' v'.$in['template']->version),
             $row('document.status', $in['status']),
         ]));
 
@@ -83,6 +89,12 @@ final class DocumentShellView
             if (($v['risk.model_year'] ?? null) !== null) {
                 $vehicle[] = ['label' => $L('Année modèle', 'Model year'), 'value' => $v['risk.model_year'], 'strong' => false];
             }
+        }
+
+        // The vehicle rows already identify the risk: the flattened risk summary would repeat them.
+        if ($vehicle !== [] && ! ($in['subject']['label'] ?? null)) {
+            $riskLabel = $label('risk.summary');
+            $party = array_values(array_filter($party, fn ($r) => $r['label'] !== $riskLabel));
         }
 
         // Zone D — transaction content.
@@ -164,15 +176,17 @@ final class DocumentShellView
         // Physical profiles (§4): printed as a statement, never simulated (§10: no decorative hologram / UV).
         $physical = [];
         foreach ((array) ($controls['uv']['profiles'] ?? []) as $ps => $st) {
-            $physical[] = $ps.' '.$st['status'];
+            $physical[$st['status']][] = $ps;
         }
+        // One compact line per status ("PS-01, PS-02: CONFIG_REQUIRED") so Zone E keeps its height.
+        $physical = array_values(array_map(fn ($codes, $st) => implode(', ', $codes).': '.$st, $physical, array_keys($physical)));
         $overlay = $security['profiles']['status_overlay'] ?? null;
         $wv = (string) ($controls['watermark']['variant'] ?? '');
         if ($overlay === null && str_starts_with($wv, 'STATUS:')) {
             $overlay = substr($wv, 7);
         }
         $env = app()->environment();
-        $envMark = DemoDocumentMark::active() ? null : match (true) {
+        $envMark = ! empty($in['demo']) ? null : match (true) {
             in_array($env, ['production'], true) => null,
             in_array($env, ['local', 'development'], true) => 'DEVELOPMENT — NOT VALID',
             $env === 'sandbox' => 'SANDBOX',
@@ -181,8 +195,64 @@ final class DocumentShellView
 
         // D2 mapped field rules (MAPPED_PLATFORM_SOURCE): rendered in their zone only when the platform holds a value.
         $mappedRows = self::mappedRows((array) ($in['requirements']['mapped'] ?? []), $v, $label, $money);
+        // Canonical template fields (TEMPLATE_CONTENT_CONTRACT §2): every spec field of the document, in its zone.
+        $content = (array) ($in['templateContent'] ?? []);
+        // A key the template declares is printed once, with the template's bilingual label (not the mapped-rule bullet).
+        $tplKeys = array_column(array_filter((array) ($content['fields'] ?? []), 'is_array'), 'key');
+        foreach (['C', 'D'] as $z) {
+            $mappedRows[$z] = array_values(array_filter($mappedRows[$z], fn ($r) => ! in_array($r['key'] ?? null, $tplKeys, true)));
+        }
+        // Fixed zones print these keys; a template field is skipped only when its key was actually printed there.
+        $notRecorded = $L('Non renseigné', 'Not recorded');
+        $fill = fn (array $rows) => array_map(fn ($r) => ($r['value'] ?? null) === null || $r['value'] === '' ? ['value' => $notRecorded] + $r : $r, $rows);
+        $identity = $fill($identity);
+        $party = $fill($party);
+        $printed = ['policy.effective_from', 'policy.effective_until', 'party.name', 'policy.insurer'];
+        foreach ([[$policy->policy_number, 'policy.number'], [$claim, 'claim.number'], [$tx, 'endorsement.number'], [$premium, 'premium.gross'], [$premium, 'premium.taxes'],
+            [$in['coverages'], 'coverage.lines'], [$changes, 'endorsement.changes']] as [$shown, $key]) {
+            if (! empty($shown)) {
+                $printed[] = $key;
+            }
+        }
+        $partyLabels = array_column($party, 'label');
+        foreach (['policy.product', 'risk.summary'] as $key) {
+            if (in_array($label($key), $partyLabels, true)) {
+                $printed[] = $key;
+            }
+        }
+        if (in_array($label('policy.product'), $partyLabels, true) && ($v['policy.insurance_class'] ?? null)) {
+            $printed[] = 'policy.insurance_class';
+        }
+        foreach (['risk.registration_number', 'risk.vin', 'risk.make', 'risk.model', 'risk.usage'] as $key) {
+            if (in_array($label($key), array_column($vehicle, 'label'), true)) {
+                $printed[] = $key;
+            }
+        }
+        if ($vehicle !== [] && ($v['risk.model_year'] ?? null) !== null) {
+            $printed[] = 'risk.model_year';
+        }
+        if ($vehicle !== []) {
+            $printed[] = 'risk.summary'; // the vehicle rows are the insured risk
+        }
+        foreach (['payment.reference', 'payment.amount', 'payment.paid_at', 'payment.method', 'payment.status'] as $key) {
+            if (in_array($label($key), array_column($payment, 'label'), true)) {
+                $printed[] = $key;
+            }
+        }
+        $tplRows = self::templateFieldRows((array) ($content['fields'] ?? []), $v, $L, $money,
+            array_merge(array_column($mappedRows['C'], 'label'), array_column($mappedRows['D'], 'label')), $printed);
+        foreach ((array) ($content['notices'] ?? []) as $n) {
+            $text = match ($lang) {
+                'EN' => $n['en'] ?? '', 'FR' => $n['fr'] ?? '', default => trim(($n['fr'] ?? '').' / '.($n['en'] ?? ''), ' /')
+            };
+            if ($text !== '') {
+                $notices[] = $text;
+            }
+        }
+        $demoRecord = (bool) ($in['demo'] ?? false);
 
         return [
+            'templateParty' => $tplRows['C'], 'templateContent' => $tplRows['D'], 'templateTables' => $tplRows['T'], 'printedKeys' => array_values(array_unique($printed)), 'demoRecord' => $demoRecord,
             'mappedParty' => $mappedRows['C'], 'mappedContent' => $mappedRows['D'],
             'lang' => $lang, 'shell' => $shell, 'shellCode' => $shellCode, 'L' => $L,
             'titleFr' => $in['template']->title_fr, 'titleEn' => $in['template']->title_en, 'documentNumber' => $in['number'],
@@ -203,7 +273,8 @@ final class DocumentShellView
             'hashFragment' => substr((string) $in['contentHash'], 0, 16), 'money' => $money,
             'footer' => [
                 'registered_office' => self::PENDING, 'contact' => self::PENDING,
-                'template' => $in['template']->code.' v'.$in['template']->version.' ('.$in['template']->ownership.')',
+                // Readable reference (the lineage key "CODE|PLATFORM|-|-|-|-|BILINGUAL" stays in the registry).
+                'template' => trim(($security['canonical_spec_id'] ?? '').' '.strtok((string) $in['template']->code, '|')).' v'.$in['template']->version,
                 'classification' => $class.' · '.implode('/', (array) $security['access_profiles']).($watermark ? ' · '.$watermark['profile'] : ''),
             ],
         ];
@@ -231,7 +302,7 @@ final class DocumentShellView
                 continue;
             }
             $seen[$key] = true;
-            $value = self::format($values[$key] ?? null, $key, $money);
+            $value = self::cell($values[$key] ?? null, $key, $money, null);
             if ($value === null) {
                 continue; // absent: never a blank placeholder
             }
@@ -241,13 +312,119 @@ final class DocumentShellView
                     $zone = 'C';
                 }
             }
-            $out[$zone][] = ['label' => isset(CanonicalFieldDictionary::KEYS[$key]) ? $label($key) : ucfirst((string) $bullet), 'value' => $value, 'strong' => false];
+            $out[$zone][] = ['label' => isset(CanonicalFieldDictionary::KEYS[$key]) ? $label($key) : ucfirst((string) $bullet), 'value' => $value, 'strong' => false, 'key' => $key];
         }
 
         return $out;
     }
 
-    private static function format(mixed $v, string $key, callable $money): ?string
+    /**
+     * Render the shell to PDF bytes (dompdf). "Page X / Y" is drawn on the canvas after layout: dompdf's CSS
+     * counter(pages) is not resolved in generated content (it printed "1 / 0"), the canvas page_text is.
+     *
+     * @param  array<string, mixed>  $data  self::data()
+     */
+    public static function pdf(array $data, string $paper = 'a4'): string
+    {
+        $pdf = Pdf::loadView('pdf.engine-shell', $data)->setPaper($paper);
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
+        $text = 'Page {PAGE_NUM} / {PAGE_COUNT}'; // same word in French and English
+        $canvas->page_text($canvas->get_width() - 40 - 70, $canvas->get_height() - 30, $text, $font, 7.5, [0.2, 0.25, 0.32]);
+
+        return $dompdf->output();
+    }
+
+    /**
+     * @param  array<int, array{key?: string, label_en?: string, label_fr?: string, zone?: string, format?: string}>  $fields
+     * @param  array<string, mixed>  $values
+     * @param  array<int, string>  $alreadyLabelled  labels printed by the mapped-field rows
+     * @param  ?array<int, string>  $printed  keys the fixed zones actually printed (null: the static SHOWN list)
+     * @return array{C: list<array<string, mixed>>, D: list<array<string, mixed>>, T: list<array{label: string, key: string, zone: string, columns: list<string>, rows: list<list<string>>, recorded: bool, value: string}>}
+     */
+    public static function templateFieldRows(array $fields, array $values, callable $L, callable $money, array $alreadyLabelled = [], ?array $printed = null): array
+    {
+        $out = ['C' => [], 'D' => [], 'T' => []];
+        $seen = [];
+        $notRecorded = $L('Non renseigné', 'Not recorded');
+        foreach ($fields as $f) {
+            $key = (string) ($f['key'] ?? '');
+            $labelText = $L((string) ($f['label_fr'] ?? $f['label_en'] ?? $key), (string) ($f['label_en'] ?? $key));
+            if ($key === '' || in_array($key, $printed ?? self::SHOWN, true) || isset($seen[$key.'|'.$labelText]) || in_array($labelText, $alreadyLabelled, true)
+                || preg_match('/^(document|verification|template|confidentiality)\./', $key)) {
+                continue;
+            }
+            $seen[$key.'|'.$labelText] = true;
+            $zone = ($f['zone'] ?? 'D') === 'C' ? 'C' : 'D';
+            if (($f['format'] ?? null) === 'table') {
+                // Multi-row value (dependants, beneficiaries, census, movements ...): list of rows, one column per declared column key.
+                $columns = array_values(array_filter((array) ($f['columns'] ?? []), 'is_array'));
+                $rows = [];
+                foreach (array_values(array_filter((array) ($values[$key] ?? []), 'is_array')) as $item) {
+                    $cells = [];
+                    foreach ($columns as $c) {
+                        $ck = (string) ($c['key'] ?? $c[0] ?? '');
+                        $cells[] = self::cell($item[$ck] ?? null, $ck, $money, $c['format'] ?? $c[3] ?? null) ?? '—';
+                    }
+                    $rows[] = $cells;
+                }
+                $out['T'][] = ['label' => $labelText, 'key' => $key, 'zone' => $zone, 'recorded' => $rows !== [], 'value' => $rows === [] ? $notRecorded : '',
+                    'columns' => array_map(fn ($c) => $L((string) ($c['label_fr'] ?? $c[2] ?? $c['label_en'] ?? $c[1] ?? ''), (string) ($c['label_en'] ?? $c[1] ?? '')), $columns), 'rows' => $rows];
+
+                continue;
+            }
+            $value = self::cell($values[$key] ?? null, $key, $money, $f['format'] ?? null);
+            $out[$zone][] = ['label' => $labelText, 'value' => $value === null ? $notRecorded : self::humanCode($value, $L), 'key' => $key, 'recorded' => $value !== null];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Stored codes ("PRIVATE", "ISSUED", "THIRD_PARTY_ONLY") read as words on the printed page, in the document's
+     * language(s) through the shared FR dictionary (resources/lang/fr.json). Registration numbers, VINs, currencies
+     * and markers such as PENDING_VERIFICATION are left as they are.
+     */
+    public static function humanCode(mixed $value, callable $L): mixed
+    {
+        if (! is_string($value) || ! preg_match('/^[A-Z]{4,}(_[A-Z]+)*$/', $value) || in_array($value, [self::PENDING, 'CONFIG_REQUIRED'], true)) {
+            return $value;
+        }
+        $en = ucfirst(strtolower(str_replace('_', ' ', $value)));
+        $fr = app('translator')->get($en, [], 'fr');
+
+        return $L(is_string($fr) ? $fr : $en, $en);
+    }
+
+    /** One formatted value (format hint money | date | datetime | text, else inferred from the key / ISO date). */
+    private static function cell(mixed $raw, string $key, callable $money, ?string $hint): ?string
+    {
+        $hint = in_array($hint, ['money', 'date', 'datetime', 'text'], true) ? $hint : null;
+        if (is_string($raw) && ($hint === 'date' || $hint === 'datetime' || ($hint === null && preg_match('/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/', $raw)))) {
+            try {
+                $raw = Carbon::parse($raw)->setTimezone(config('app.timezone'))->format($hint === 'datetime' ? 'd/m/Y H:i' : 'd/m/Y');
+            } catch (\Throwable) {
+                // not a date: printed as recorded
+            }
+        }
+
+        return self::format($raw, $key, $money, $hint);
+    }
+
+    /**
+     * Integer amounts in minor units are printed as money when the key names an amount (TEMPLATE_CONTENT_CONTRACT §2):
+     * premium.*, *_minor, or a last segment naming an amount (gross, net, balance, retention, ceded premium, loss ...).
+     */
+    public const MONEY_KEY_PATTERN = '/(^premium\.|_minor$|amount|premium|gross|(^|[._])net($|_)|balance|retention|ceded|prior_payments|payments?$|loss|fees?$|taxes?$|total|value|limit|deductible|sum_insured|refund|excess|reserve|settlement\.|recovery|commission|levy|levies|price|cost|due$|outstanding)/';
+
+    public static function isMoneyKey(string $key): bool
+    {
+        return ! preg_match('/(count|number|_no$|percent|pct|rate|ratio|year|days|months|share$)/', $key) && (bool) preg_match(self::MONEY_KEY_PATTERN, $key);
+    }
+
+    private static function format(mixed $v, string $key, callable $money, ?string $hint = null): ?string
     {
         if ($v === null || $v === '' || $v === [] || $v === false) {
             return null;
@@ -255,7 +432,7 @@ final class DocumentShellView
         if (is_bool($v)) {
             return 'Yes / Oui';
         }
-        if (is_int($v) && (str_starts_with($key, 'premium.') || str_ends_with($key, '_minor') || str_contains($key, 'amount'))) {
+        if (is_int($v) && ($hint === 'money' || ($hint === null && self::isMoneyKey($key)))) {
             return $money($v);
         }
         if (is_scalar($v)) {

@@ -1,1 +1,1 @@
-{!! \App\Application\Documents\DemoDocumentMark::html() !!}
+{!! \App\Application\Documents\DemoDocumentMark::html($demoRecord ?? null) !!}

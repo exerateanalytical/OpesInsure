@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Documents\Engine;
 
+use App\Application\Documents\DemoDocumentMark;
 use App\Application\Documents\Security\DocumentSecurityProfile;
 use App\Models\Policy;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -11,6 +12,7 @@ use chillerlan\QRCode\Common\EccLevel;
 use chillerlan\QRCode\Output\QROutputInterface;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use Illuminate\Support\Carbon;
 
 /**
  * D3 (DOCUMENT_SECURITY_COMPLETION_PLAN): the one entry point for PDFs rendered outside the pack engine
@@ -49,7 +51,7 @@ final class SecureShellRenderer
         $qr = $qrUrl ? (new QRCode(new QROptions(['outputType' => QROutputInterface::MARKUP_SVG, 'outputBase64' => true, 'eccLevel' => EccLevel::M, 'addQuietzone' => true])))->render($qrUrl) : null;
         $policy = $s['policy'] ?? null;
         $policyView = $policy ?? (object) ['policy_number' => null, 'version' => 0, 'currency' => $s['currency'] ?? 'XAF', 'proposal' => null];
-        $issuedAt = \Illuminate\Support\Carbon::parse($s['issued_at'] ?? now());
+        $issuedAt = Carbon::parse($s['issued_at'] ?? now());
         $values = (array) ($s['values'] ?? []);
         $sections = (array) ($s['sections'] ?? []);
         $templateRef = (string) ($s['template_ref'] ?? 'SYSTEM '.$s['type_code']);
@@ -64,9 +66,13 @@ final class SecureShellRenderer
             'issuedAt' => $issuedAt, 'verification' => $verification !== '' ? $verification : '—', 'qr' => $qr, 'verifyUrl' => $verifyBase,
             'sections' => $sections, 'contentHash' => $contentHash, 'profile' => null, 'claim' => $s['claim'] ?? null, 'transaction' => null,
             'coverages' => (array) ($s['coverages'] ?? []), 'status' => $s['status'] ?? 'ISSUED', 'letterhead' => $s['letterhead'] ?? null,
+            // Template content (TEMPLATE_CONTENT_CONTRACT §2): field rows and notices, as in the engine path.
+            'templateContent' => (array) ($s['template_content'] ?? []),
+            // Demo watermark only for demo-flagged records (caller's flag, else the policy / insurer / tenant / claim flags).
+            'demo' => (bool) ($s['demo'] ?? DemoDocumentMark::forRecords($policy, $policy?->carrier, $policy?->tenant, $s['claim'] ?? null)),
         ]);
 
-        return Pdf::loadView('pdf.engine-shell', $data)->setPaper($s['paper'] ?? 'a4')->output();
+        return DocumentShellView::pdf($data, $s['paper'] ?? 'a4');
     }
 
     /**
@@ -76,9 +82,10 @@ final class SecureShellRenderer
      * @param  ?array<string, mixed>  $letterhead  LetterheadResolver::forDocument() shape
      * @param  list<array{heading: ?string, paragraphs: list<string>}>  $sections
      */
-    public function specimen(string $typeCode, string $issuerName, ?array $letterhead, array $sections = [], ?string $titleEn = null, ?string $titleFr = null, string $lang = 'BILINGUAL'): string
+    public function specimen(string $typeCode, string $issuerName, ?array $letterhead, array $sections = [], ?string $titleEn = null, ?string $titleFr = null, string $lang = 'BILINGUAL', ?array $templateContent = null): string
     {
         return $this->render(array_filter([
+            'template_content' => $templateContent,
             'type_code' => $typeCode, 'number' => 'SPECIMEN', 'verification' => '', 'qr_url' => false, 'issuer_name' => $issuerName,
             'letterhead' => $letterhead, 'sections' => $sections, 'status' => 'SPECIMEN', 'label' => 'SPÉCIMEN — SANS VALEUR / SPECIMEN — NOT VALID',
             'lang' => $lang, 'template_ref' => 'SPECIMEN '.$typeCode, 'title_en' => $titleEn ?: null, 'title_fr' => $titleFr ?: null,
