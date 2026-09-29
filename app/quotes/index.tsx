@@ -159,7 +159,6 @@ export default function QuoteHistory() {
                 {typeof q.lowest_total_minor === "number" ? (
                   <View style={s.priceBox}>
                     <Text style={s.price}>{(q.offer_count ?? 0) > 1 ? t("quotesFromPrice", { price: f.xaf(q.lowest_total_minor) }) : f.xaf(q.lowest_total_minor)}</Text>
-                    <Text style={s.meta}>{t("quotesPerYear")}</Text>
                   </View>
                 ) : null}
               </View>
@@ -197,14 +196,17 @@ export default function QuoteHistory() {
                 ) : (
                   <Button size="small" variant="gold" icon={ArrowRight} iconPosition="left" label={t("quotesResume")} onPress={open} style={[s.btnFlex, s.btnGrow, narrow && s.fullRow]} />
                 )}
-                <Button
-                  size="small"
-                  variant="secondary"
-                  icon={ArrowLeftRight}
-                  label={t("quotesCompare")}
-                  onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: q.id } })}
-                  style={s.btnFlex}
-                />
+                {/* Comparing needs two live offers on a quote that has not ended (declined, cancelled, expired, accepted). */}
+                {(q.offer_count ?? 0) >= 2 && !outcome && String(q.status).toUpperCase() !== "REFERRED" ? (
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    icon={ArrowLeftRight}
+                    label={t("quotesCompare")}
+                    onPress={() => router.push({ pathname: "/quote/compare", params: { quoteId: q.id } })}
+                    style={s.btnFlex}
+                  />
+                ) : null}
                 <Button
                   size="small"
                   variant="danger"

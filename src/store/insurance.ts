@@ -10,11 +10,14 @@ import {
   Quote,
   QuoteOffer,
   QuoteResult,
+  ProposalsApi,
   QuotesApi,
   TokenVault,
 } from "@/api/client";
+import { QuoteWorkflowApi } from "@/api/workflow";
 import * as Crypto from "expo-crypto";
-import { forgetProposalSlots, paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
+import { copyText, forgetProposalSlots, paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
+import { proposalForOffer } from "@/lib/offerChoice";
 import { SecureJson } from "@/security/secureJson";
 
 type Network = "mtn_momo" | "orange_money";
@@ -23,6 +26,13 @@ export type InsuredPerson =
   | { mode: "other"; full_name: string; date_of_birth: string; relationship: string };
 
 const RECENT_PROPOSALS = "opesinsure.recent_proposals";
+
+/** App language for the store's fallback messages; wired by src/i18n (no import cycle through the session store). */
+let languageOf: () => string = () => "en";
+export const setInsuranceLanguage = (fn: () => string) => {
+  languageOf = fn;
+};
+const say = (key: string) => copyText(languageOf(), key);
 const FAILED = ["FAILED", "EXPIRED", "CANCELLED"];
 
 /** Proposal ids this device created — the fallback for "My applications". */
@@ -83,6 +93,8 @@ type State = {
   policy: Policy | null;
   /** Payment attempt number per proposal (drives the idempotency key). */
   paymentAttempts: Record<string, number>;
+  /** Offer accepted on this device for the open quote and the application it opened. */
+  accepted: { quoteId: string; offerId: string; proposalId: string } | null;
   busy: boolean;
   error: string | null;
   setProduct: (v: string) => void;
@@ -91,9 +103,11 @@ type State = {
   setInsured: (v: InsuredPerson) => void;
   setQuoteResult: (q: Quote, o: QuoteOffer[]) => void;
   loadQuote: (id: string) => Promise<QuoteResult>;
-  submitQuote: (customerId: string, coords?: { latitude?: number; longitude?: number }) => Promise<QuoteResult>;
+  /** Creates and rates a quote; with `amendQuoteId` the existing quote is amended (PATCH) and re-rated instead. */
+  submitQuote: (customerId: string, coords?: { latitude?: number; longitude?: number }, opts?: { amendQuoteId?: string | null }) => Promise<QuoteResult>;
   rerateQuote: (id: string) => Promise<QuoteResult>;
-  selectOffer: (v: QuoteOffer) => Promise<void>;
+  /** Accepts the offer and returns its application (created, or the one already open for it). */
+  selectOffer: (v: QuoteOffer) => Promise<Proposal>;
   setProposal: (v: Proposal) => void;
   loadProposal: (id: string) => Promise<Proposal>;
   requestPayment: (v: Network, p: string) => Promise<void>;
@@ -118,11 +132,20 @@ const initial = {
   purchase: null,
   policy: null,
   paymentAttempts: {},
+  accepted: null,
   busy: false,
   error: null,
 };
 
-const message = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
+const message = (e: unknown, fallbackKey: string) => (e instanceof Error && e.message ? e.message : say(fallbackKey));
+
+/** Purchase state that belongs to the previously open quote; dropped when another quote is opened. */
+const QUOTE_SCOPED = { selectedOffer: null, proposal: null, payment: null, purchase: null, accepted: null } as const;
+
+/** ApiError worth retrying as a new quote (amend refused: not owner-scoped, gone, wrong state), not a risk-facts validation error. */
+const amendRefused = (e: unknown) =>
+  e instanceof ApiError &&
+  (e.status === 403 || e.status === 404 || e.status === 409 || (e.status === 422 && !Object.keys(e.fields ?? {}).some((k) => k.startsWith("risk_facts"))));
 
 /** /mobile/quotes/{id} returns {quote, offers, summary?}; /quotes/{id} returns {quote, offers}. */
 function asResult(x: Partial<QuoteResult> | null | undefined): QuoteResult | null {
@@ -136,27 +159,29 @@ export const useInsurance = create<State>((set, get) => ({
   setRiskFacts: (riskFacts) => set({ riskFacts }),
   setRiskAsset: (riskAssetId) => set({ riskAssetId }),
   setInsured: (insured) => set({ insured }),
-  setQuoteResult: (quote, offers) => set({ quote, offers, product: quote.line_code?.toLowerCase() ?? get().product }),
+  setQuoteResult: (quote, offers) =>
+    set({ ...(get().quote?.id === quote.id ? {} : QUOTE_SCOPED), quote, offers, product: quote.line_code?.toLowerCase() ?? get().product }),
 
   async loadQuote(id) {
     set({ busy: true, error: null });
     try {
       let result = asResult(await QuotesApi.show(id).catch(() => null));
       if (!result) result = asResult(await InsuranceApi.quote(id));
-      if (!result) throw new Error("Quote could not be loaded.");
-      set({ quote: result.quote, offers: result.offers, product: result.quote.line_code?.toLowerCase() ?? null, busy: false });
+      if (!result) throw new Error(say("insQuoteLoadFailed"));
+      const scoped = get().quote?.id === result.quote.id ? {} : QUOTE_SCOPED;
+      set({ ...scoped, quote: result.quote, offers: result.offers, product: result.quote.line_code?.toLowerCase() ?? null, busy: false });
       return result;
     } catch (e) {
-      set({ busy: false, error: message(e, "Quote could not be loaded.") });
+      set({ busy: false, error: message(e, "insQuoteLoadFailed") });
       throw e;
     }
   },
 
-  async submitQuote(customerId, coords) {
+  async submitQuote(customerId, coords, opts) {
     set({ busy: true, error: null });
     try {
       const line_code = String(get().product ?? "").toUpperCase();
-      if (!line_code) throw new Error("Choose an insurance product.");
+      if (!line_code) throw new Error(say("insChooseProduct"));
       const insured = get().insured;
       const risk_facts = {
         ...get().riskFacts,
@@ -165,19 +190,31 @@ export const useInsurance = create<State>((set, get) => ({
             ? { relationship: "SELF" }
             : { relationship: insured.relationship, full_name: insured.full_name, date_of_birth: insured.date_of_birth },
       };
+      const point = coords?.latitude != null && coords?.longitude != null ? { latitude: coords.latitude, longitude: coords.longitude } : {};
+      // Edit quote: amend the same quote (its offers are superseded) and re-rate, so no duplicate quote is left behind.
+      if (opts?.amendQuoteId) {
+        try {
+          await QuoteWorkflowApi.amend(opts.amendQuoteId, risk_facts, point);
+          const result = await InsuranceApi.rateQuote(opts.amendQuoteId);
+          set({ ...QUOTE_SCOPED, quote: result.quote, offers: result.offers, busy: false });
+          return result;
+        } catch (e) {
+          if (!amendRefused(e)) throw e;
+        }
+      }
       const quote = await InsuranceApi.createQuote({
         customer_id: customerId,
         line_code,
         channel: "B2C",
         risk_facts,
         ...(get().riskAssetId ? { risk_asset_id: get().riskAssetId! } : {}),
-        ...(coords?.latitude != null && coords?.longitude != null ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
+        ...point,
       });
       const result = await InsuranceApi.rateQuote(quote.id);
-      set({ quote: result.quote, offers: result.offers, busy: false });
+      set({ ...QUOTE_SCOPED, quote: result.quote, offers: result.offers, busy: false });
       return result;
     } catch (e) {
-      set({ busy: false, error: message(e, "Quote unavailable.") });
+      set({ busy: false, error: message(e, "insQuoteUnavailable") });
       throw e;
     }
   },
@@ -189,24 +226,53 @@ export const useInsurance = create<State>((set, get) => ({
       set({ quote: result.quote, offers: result.offers, busy: false });
       return result;
     } catch (e) {
-      set({ busy: false, error: message(e, "The quote could not be re-rated.") });
+      set({ busy: false, error: message(e, "insRerateFailed") });
       throw e;
     }
   },
 
-  /** Accept the offer, then open (or reuse) the proposal for it. */
+  /**
+   * Accept the offer, then open (or reuse) the proposal for it. Returns that proposal so callers
+   * never read a stale one from the store. A second call while one runs is refused (callers keep
+   * their own busy state on the buttons); a repeat for the offer already accepted here returns the
+   * same application.
+   */
   async selectOffer(selectedOffer) {
     const quote = get().quote;
-    if (!quote) throw new Error("Quote context is missing.");
-    if (get().busy) return;
+    if (!quote || (selectedOffer.quote_id && selectedOffer.quote_id !== quote.id)) throw new Error(say("insQuoteMissing"));
+    const done = get().accepted;
+    const current = get().proposal;
+    if (done && done.offerId === selectedOffer.id && current?.id === done.proposalId) return current;
+    if (get().busy) throw new Error(say("insBusy"));
     set({ busy: true, error: null });
     try {
-      await InsuranceApi.acceptOffer(quote.id, selectedOffer.id);
-      const proposal = await InsuranceApi.createProposal({ quote_offer_id: selectedOffer.id, party_id: quote.party_id });
+      if (String(selectedOffer.status ?? "").toUpperCase() !== "ACCEPTED") await InsuranceApi.acceptOffer(quote.id, selectedOffer.id);
+      let proposal: Proposal;
+      try {
+        proposal = await InsuranceApi.createProposal({ quote_offer_id: selectedOffer.id, party_id: quote.party_id });
+      } catch (e) {
+        // 422 quote_offer_id "proposal_exists": the application was opened before (earlier attempt, another device).
+        if (!(e instanceof ApiError && e.status === 422 && "quote_offer_id" in (e.fields ?? {}))) throw e;
+        const existing = proposalForOffer((await ProposalsApi.list(1).catch(() => null))?.items, selectedOffer.id);
+        if (!existing) throw e;
+        proposal = await InsuranceApi.proposal(existing);
+      }
       await RecentProposals.add(proposal.id);
-      set({ selectedOffer, proposal, payment: null, purchase: null, busy: false });
+      const accepted = { ...selectedOffer, status: "ACCEPTED" };
+      set({
+        selectedOffer: accepted,
+        proposal,
+        payment: null,
+        purchase: null,
+        accepted: { quoteId: quote.id, offerId: selectedOffer.id, proposalId: proposal.id },
+        // Mirror the server: the quote is accepted and this offer is the chosen one.
+        quote: { ...quote, status: "ACCEPTED" },
+        offers: get().offers.map((o) => (o.id === selectedOffer.id ? accepted : o)),
+        busy: false,
+      });
+      return proposal;
     } catch (e) {
-      set({ busy: false, error: message(e, "Offer could not be selected.") });
+      set({ busy: false, error: message(e, "insSelectFailed") });
       throw e;
     }
   },
@@ -229,7 +295,7 @@ export const useInsurance = create<State>((set, get) => ({
    */
   async requestPayment(provider, payer_phone_e164) {
     const proposal = get().proposal;
-    if (!proposal) throw new Error("Proposal is not ready for payment.");
+    if (!proposal) throw new Error(say("insProposalNotReady"));
     if (get().busy) return;
     set({ busy: true, error: null });
     try {
@@ -242,7 +308,7 @@ export const useInsurance = create<State>((set, get) => ({
         attempt += 1;
       }
       set({ paymentAttempts: { ...get().paymentAttempts, [proposal.id]: attempt } });
-      if (!created) throw new Error("Payment request failed.");
+      if (!created) throw new Error(say("insPaymentFailed"));
       await TokenVault.setPendingPayment(created.id);
       let payment = created;
       // POST /payments answers PENDING_CUSTOMER (not CREATED): the operator is only prompted by initiate, so
@@ -260,7 +326,7 @@ export const useInsurance = create<State>((set, get) => ({
       }
       set({ payment, purchase: null, busy: false });
     } catch (e) {
-      set({ busy: false, error: message(e, "Payment request failed.") });
+      set({ busy: false, error: message(e, "insPaymentFailed") });
       throw e;
     }
   },
@@ -275,7 +341,7 @@ export const useInsurance = create<State>((set, get) => ({
 
   async refreshPayment() {
     const current = get().payment;
-    if (!current) throw new Error("Payment reference is missing.");
+    if (!current) throw new Error(say("insPaymentMissing"));
     const payment = await InsuranceApi.payment(current.id);
     set({ payment });
     if (FAILED.includes(payment.status)) {

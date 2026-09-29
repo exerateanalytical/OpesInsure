@@ -31,7 +31,7 @@ export const statusAfterNetworkFailure = (previous: ContinuityStatus): Continuit
   previous === "authenticated" ? "authenticated" : "error";
 
 /** Paths that are real in-app deep links (opened from email, SMS, QR, web). */
-const DEEP_LINK = /^\/(\(auth\)\/(invitation|sign-in)|verify|institutions|policy|claim|payments|notifications|support|quotes|proposals|delivery|documents)(?=\/|\?|#|$)/;
+const DEEP_LINK = /^\/(\(auth\)\/(invitation|sign-in)|verify|institutions|policy|claim|payments|notifications|support|quotes|quote\/(?:offers|compare)|quote-comparison|proposals|delivery|documents)(?=\/|\?|#|$)/;
 
 /**
  * Maps an incoming system URL to an expo-router path.

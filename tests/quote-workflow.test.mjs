@@ -8,7 +8,6 @@ import {
   canWithdrawProposal,
   catalogueName,
   commissionPercent,
-  comparisonRows,
   groupCatalogue,
   hasQuoteDocument,
   isAnswersLocked,
@@ -26,6 +25,8 @@ import {
   toMinor,
 } from "../src/lib/quoteWorkflow.ts";
 import { API_ERROR_COPY } from "../src/lib/apiErrors.ts";
+import { comparisonTable } from "../src/lib/offerComparison.ts";
+import { copyText } from "../src/lib/purchase.ts";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 const NOW = Date.parse("2026-09-25T10:00:00Z");
@@ -130,7 +131,8 @@ test("carrier offer: total = premium + tax + fees and the breakdown must sum to 
   assert.equal(API_ERROR_COPY.VALIDITY_IN_PAST, "errValidityInPast");
 });
 
-test("comparison rows cover premium, tax, fees, total, limits, deductibles and exclusions", () => {
+// The server comparison and the device fallback share one table builder (src/lib/offerComparison.ts).
+test("comparison rows cover premium, tax, fees, total, validity, limits, deductibles and exclusions", () => {
   const cmp = {
     id: "c1",
     quote_id: "q1",
@@ -142,13 +144,17 @@ test("comparison rows cover premium, tax, fees, total, limits, deductibles and e
     coverages: [{ code: "TPL", name: "Third party", by_offer: [{ offer_id: "o1", included: true, limit_minor: 5000, deductible_minor: 100 }, { offer_id: "o2", included: false }] }],
     exclusions: [{ code: "RACING", name: "Racing", by_offer: [{ offer_id: "o1", applies: true }, { offer_id: "o2", applies: false }] }],
   };
-  const rows = comparisonRows(cmp, "fr", { included: "Inclus", notIncluded: "Non inclus", applies: "Exclu", none: "—" });
-  assert.deepEqual(rows.map((r) => r.key), ["insurer", "premium_minor", "tax_minor", "fee_minor", "total_minor", "limit:TPL", "deductible:TPL", "exclusion:RACING"]);
-  assert.equal(rows[0].cells[1].text, "Beta · Auto");
-  assert.deepEqual(rows[4].cells.map((c) => c.best), [false, true]);
-  assert.deepEqual(rows[5].cells, [{ minor: 5000 }, { text: "Non inclus" }]);
-  assert.deepEqual(rows[6].cells, [{ minor: 100 }, { text: "Non inclus" }]);
-  assert.deepEqual(rows[7].cells.map((c) => c.text), ["Exclu", "—"]);
+  const { columns, rows } = comparisonTable(cmp, { language: "fr", now: NOW });
+  const fr = (k) => copyText("fr", k);
+  assert.deepEqual(rows.map((r) => r.key), ["premium", "tax", "fees", "total", "valid_until", "section:limits", "limit:TPL", "section:deductibles", "deductible:TPL", "section:exclusions", "exclusion:RACING"]);
+  assert.deepEqual(rows.slice(0, 4).map((r) => r.label), [fr("sumPremium"), fr("sumTaxes"), fr("sumFees"), fr("sumTotalPayable")]);
+  assert.deepEqual(columns.map((c) => [c.name, c.product]), [["Alpha", "Auto+"], ["Beta", "Auto"]]);
+  assert.deepEqual(rows[3].cells.map((c) => c.best), [false, true]);
+  // Equal fees are not "best" for anyone.
+  assert.deepEqual(rows[2].cells.map((c) => c.best), [false, false]);
+  assert.deepEqual(rows[6].cells.map((c) => c.minor ?? c.text), [5000, fr("cmpNotIncluded")]);
+  assert.deepEqual(rows[8].cells.map((c) => c.minor ?? c.text), [100, fr("cmpNotIncluded")]);
+  assert.deepEqual(rows[10].cells.map((c) => c.text), [fr("cmpApplies"), fr("cmpNone")]);
 });
 
 test("proposal lifecycle: document statuses, withdraw, resubmit and the answers-locked 422", () => {
@@ -197,9 +203,11 @@ test("Batch 6 screens exist, are registered behind the right guards and call the
   assert.match(read("src/components/offers/PartnerQuoteScreen.tsx"), /QuoteWorkflowPanel/);
   assert.match(read("app/quote/questions.tsx"), /isAnswersLocked\(e\)/);
   assert.match(read("app/proposals/[id].tsx"), /ProposalLifecycleApi\.withdraw/);
-  // One comparison table for both the offer screen and the saved comparison.
-  assert.match(read("app/quote/compare.tsx"), /<CompareTable/);
-  assert.match(read("app/quote-comparison/[id].tsx"), /<CompareTable/);
+  // One comparison: customers are redirected from the old link to quote/compare; partners get the same card read-only.
+  assert.match(read("app/quote/compare.tsx"), /<QuoteComparisonView/);
+  assert.match(read("app/quote-comparison/[id].tsx"), /<Redirect href=\{\{ pathname: "\/quote\/compare", params: \{ quoteId: id \} \}\} \/>/);
+  assert.match(read("app/quote-comparison/[id].tsx"), /<QuoteComparisonView/);
+  assert.match(read("src/components/offers/QuoteComparisonView.tsx"), /<CompareTable/);
 });
 
 test("Batch 6 copy exists in English and French", () => {

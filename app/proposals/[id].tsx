@@ -16,6 +16,7 @@ import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { ProposalChecklist, ProposalLifecycleApi } from "@/api/workflow";
 import { canWithdrawProposal, requiredDocumentInfo } from "@/lib/quoteWorkflow";
+import { proposalQuoteId } from "@/lib/offerChoice";
 import { CustomerApi } from "@/api/customer";
 import { pickUpload, storeDocument, type PickSource } from "@/api/documentUpload";
 import { useLoad } from "@/hooks/useLoad";
@@ -57,7 +58,6 @@ export default function ProposalDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const loadProposal = useInsurance((s) => s.loadProposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
-  const quote = useInsurance((s) => s.quote);
   const f = useFormatters();
   const [p, setP] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -224,6 +224,9 @@ export default function ProposalDetail() {
 
   const decision = p?.underwriting_case?.decisions?.[p.underwriting_case.decisions.length - 1];
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
+  // "Compare other offers" reopens this application's own quote (reloaded by id), never whatever quote is in memory.
+  const sourceQuoteId = proposalQuoteId(p);
+  const ownOffer = p && selectedOffer && (selectedOffer.id === p.quote_offer_id || selectedOffer.id === p.terms_snapshot?.offer_id) ? selectedOffer : null;
 
   const primary = p ? (
     p?.policy_id ? (
@@ -287,14 +290,14 @@ export default function ProposalDetail() {
               <Button label={t("prCounterDecline")} variant="secondary" loading={answering === "decline"} disabled={!!answering} onPress={declineCounter} />
               {answerError ? <ErrorCard error={answerError} fallback={t("prCounterFailed")} /> : null}
               <Button label={t("prContactQuestions")} variant="tertiary" onPress={() => void contactSupport()} />
-              {quote ? <Button label={t("prCompareOthers")} variant="tertiary" onPress={() => router.replace("/quote/offers")} /> : null}
+              {sourceQuoteId ? <Button label={t("prCompareOthers")} variant="tertiary" onPress={() => router.replace({ pathname: "/quote/offers", params: { quoteId: sourceQuoteId } })} /> : null}
             </Card>
           ) : null}
 
           {info.stage === "declined" ? (
             <Card>
               <Banner icon={XCircle} tint="red" title={t("prDeclined")} body={decision?.notes ?? undefined} />
-              {quote ? <Button label={t("prCompareOthers")} onPress={() => router.replace("/quote/offers")} /> : null}
+              {sourceQuoteId ? <Button label={t("prCompareOthers")} onPress={() => router.replace({ pathname: "/quote/offers", params: { quoteId: sourceQuoteId } })} /> : null}
               <Button label={t("prNewQuote")} variant="secondary" onPress={() => router.replace("/quote/product")} />
             </Card>
           ) : null}
@@ -303,7 +306,7 @@ export default function ProposalDetail() {
             <CoverStartCard proposalId={p.id} rule={checklist.cover_term_rule} terms={checklist.cover_terms} onSaved={() => void load()} />
           ) : null}
 
-          <ProposalSummary proposal={p} offer={selectedOffer} />
+          <ProposalSummary proposal={p} offer={ownOffer} />
 
           {canUpload || reqs.length ? (
             <Card>

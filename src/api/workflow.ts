@@ -70,6 +70,9 @@ const post =(body?: unknown) => ({ method: "POST", body: body === undefined ? un
 export const QuoteWorkflowApi = {
   /** Canonical GET quotes/{q}: {quote (lifecycle_state, quote_number), offers}. */
   show: (id: string) => api<{ quote: WorkflowQuote; offers: QuoteOffer[] }>(`/quotes/${id}`),
+  /** PATCH quotes/{q} (WF-010): new risk facts, live offers superseded, quote back to DRAFT for re-rating. */
+  amend: (id: string, risk_facts: Record<string, unknown>, point: { latitude?: number; longitude?: number } = {}) =>
+    api<unknown>(`/quotes/${id}`, { method: "PATCH", body: JSON.stringify({ risk_facts, ...point }), idempotent: true }),
   decline: (id: string, reason_code: string, note?: string) => api<WorkflowQuote>(`/quotes/${id}/decline`, post({ reason_code, ...(note?.trim() ? { note: note.trim() } : {}) })),
   carrierRequests: (quoteId: string) => api<CarrierQuoteRequest[]>(`/quotes/${quoteId}/carrier-requests`),
   compare: (quote_id: string, offer_ids?: string[]) => api<QuoteComparison>("/quote-comparisons", post({ quote_id, ...(offer_ids?.length ? { offer_ids } : {}) })),

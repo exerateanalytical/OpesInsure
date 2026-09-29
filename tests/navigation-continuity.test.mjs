@@ -9,7 +9,8 @@ import {
   statusAfterNetworkFailure,
 } from "../src/lib/navigationContinuity.ts";
 import { clampPage, nextPage, pageFromOffset, previousPage, tapAllowed } from "../src/lib/pager.ts";
-import { coverLevel, filterOffers, insurerSummary, sortOffers, compareRows } from "../src/lib/purchase.ts";
+import { coverLevel, filterOffers, insurerSummary, sortOffers } from "../src/lib/purchase.ts";
+import { comparisonFromOffers, comparisonTable } from "../src/lib/offerComparison.ts";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 
@@ -136,18 +137,24 @@ test("offers: every insurer summarised, filters and sorts", () => {
   assert.deepEqual(sortOffers(list, "excess").map((o) => o.id), ["3", "4", "2", "1"]);
   // carrier.id fallback when carrier_id is missing.
   assert.deepEqual(filterOffers([{ ...list[0], carrier_id: "", carrier: { id: "axa" } }], { providers: ["axa"] }).length, 1);
-  // Optional API fields only appear when supplied.
-  const rows = compareRows(list);
+  // Optional API fields only appear when supplied (comparison built from the rated offers).
+  const table = (offers) => comparisonTable(comparisonFromOffers("q", offers), { offers }).rows;
+  const rows = table(list);
   assert.ok(rows.some((r) => r.key === "level"));
   assert.ok(!rows.some((r) => r.key === "rating"));
-  const rated = compareRows([offer("5", "a", 1, ["RC"], 0, { payment_options: ["MTN_MOMO"], carrier: { rating: "A", claims_settlement_days: 12 } }), list[0]]);
+  const extra = [offer("5", "a", 1, ["RC"], 0, { payment_options: ["MTN_MOMO"], carrier: { rating: "A", claims_settlement_days: 12 } }), list[0]];
+  const rated = table(extra);
   assert.ok(rated.some((r) => r.key === "rating") && rated.some((r) => r.key === "claims_days") && rated.some((r) => r.key === "payment"));
+  assert.equal(rated.find((r) => r.key === "payment").cells[0].text, "MTN MoMo");
   assert.deepEqual(filterOffers(list, { paymentMethods: ["MTN_MOMO"] }), []);
 });
 
-test("compare screen accepts every visible offer, not only three", () => {
+// Owner rule since the compare-flow fixes: at most three offers side by side (MAX_COMPARE), "Compare all"
+// compares the three best-priced ones; the limit is one shared constant, never a literal.
+test("compare screen shows at most MAX_COMPARE offers and has no hard-coded limit", () => {
   const compare = read("app/quote/compare.tsx");
   assert.doesNotMatch(compare, /\.slice\(0, 3\)/);
+  assert.match(compare, /MAX_COMPARE/);
   const offers = read("app/quote/offers.tsx");
   assert.match(offers, /t\("ofCompareAll"/);
   assert.match(offers, /ofInsurersAnswered/);

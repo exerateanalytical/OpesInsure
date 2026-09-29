@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 // Pure helpers are dependency-free TypeScript, loaded with Node's type stripping.
 import {
-  compareRows,
   filterOffers,
   isProviderNotConfigured,
   normalizeCoverage,
@@ -22,6 +21,7 @@ import {
   openableUrl,
 } from "../src/lib/purchase.ts";
 import { buildFacts, localRiskSchema, normalizeRiskSchema, validateStep } from "../src/lib/riskSchema.ts";
+import { comparisonFromOffers, comparisonTable } from "../src/lib/offerComparison.ts";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 
@@ -81,10 +81,10 @@ test("offers sort by price/cover and filter by provider, premium and excess", ()
   assert.deepEqual(filterOffers(list, { providers: ["x", "y"] }).map((o) => o.id), ["1", "2"]);
   assert.deepEqual(filterOffers(list, { maxPremiumMinor: 200 }).map((o) => o.id), ["2", "3"]);
   assert.deepEqual(filterOffers(list, { maxExcessMinor: 50 }).map((o) => o.id), ["1", "2"]);
-  const rows = compareRows(list.slice(0, 2));
+  const { rows } = comparisonTable(comparisonFromOffers("q", list.slice(0, 2)), { offers: list.slice(0, 2) });
   const total = rows.find((r) => r.key === "total");
   assert.equal(total.cells[1].best, true);
-  assert.ok(rows.some((r) => r.key === "cover:A"));
+  assert.ok(rows.some((r) => r.key === "limit:A") && rows.some((r) => r.key === "deductible:A"));
 });
 
 test("validity countdown and expiry", () => {
@@ -223,6 +223,8 @@ test("screens use the fixed contracts", () => {
   // 1.3.x: every insurer is listed vertically (the one-card carousel read
   // as "only one insurer"); see tests/navigation-continuity.test.mjs.
   assert.doesNotMatch(read("app/quote/offers.tsx"), /snapToInterval/);
-  assert.match(read("app/quote/offers.tsx"), /insurerSummary\(offers\)/);
-  assert.match(read("app/quote/compare.tsx"), /compareRows/);
+  assert.match(read("app/quote/offers.tsx"), /insurerSummary\(offers, /);
+  // Server comparison first, the device-built table only as the fallback.
+  assert.match(read("app/quote/compare.tsx"), /QuoteWorkflowApi\.compare\(quote\.id, wanted\)/);
+  assert.match(read("app/quote/compare.tsx"), /comparisonFromOffers/);
 });

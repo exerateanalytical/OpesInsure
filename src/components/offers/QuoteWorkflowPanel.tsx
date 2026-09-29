@@ -110,7 +110,7 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined, variant = 
         {hasQuoteDocument(quote) ? (
           <AgentButton label={t("qwDocumentOpen")} icon={FileDown} variant="secondary" loading={busy === "pdf"} disabled={!!busy} onPress={() => void pdf()} />
         ) : null}
-        {offers >= 2 && outcome !== "DECLINED" ? (
+        {offers >= 2 && (!outcome || outcome === "ACCEPTED") ? (
           <AgentButton label={t("qwCompare")} icon={Columns3} variant="secondary" disabled={!!busy} onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: quoteId } })} />
         ) : null}
         <SentToInsurerCard quoteId={quoteId} variant="agent" />
@@ -156,7 +156,7 @@ export function QuoteWorkflowPanel({ quoteId, offerCount, onDeclined, variant = 
         ) : !outcome ? (
           <Text style={ps.meta}>{t("qwDocumentNotReady")}</Text>
         ) : null}
-        {offers >= 2 && outcome !== "DECLINED" ? (
+        {offers >= 2 && (!outcome || outcome === "ACCEPTED") ? (
           <Button label={t("qwCompare")} icon={Columns3} variant="secondary" disabled={!!busy} onPress={() => router.push({ pathname: "/quote-comparison/[id]", params: { id: quoteId } })} />
         ) : null}
       </Card>

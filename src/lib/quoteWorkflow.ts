@@ -193,10 +193,19 @@ export function buildCarrierOffer(input: OfferInput, now = Date.now()): { ok: tr
 
 // --- Quote comparison (REQ-DST-003) ---------------------------------------------
 
+/**
+ * POST/GET quote-comparisons payload (QuoteComparisonService::dimensions + present). Rows for the
+ * customer comparison table are built by comparisonTable() in src/lib/offerComparison.ts.
+ */
 export type ComparisonOffer = {
   offer_id: string;
+  rank?: number | null;
   carrier?: string | null;
+  carrier_id?: string | null;
+  /** Not sent by QuoteComparisonService today; the logo comes from the rated offer or the insurer directory. */
+  carrier_logo_url?: string | null;
   product?: unknown;
+  product_id?: string | null;
   premium_minor: number;
   tax_minor: number;
   fee_minor: number;
@@ -216,9 +225,6 @@ export type QuoteComparison = {
   lowest_total_offer_id?: string | null;
 };
 
-export type CompareCell = { minor?: number | null; text?: string; best?: boolean };
-export type CompareRow = { key: string; label: string; section?: "price" | "limits" | "deductibles" | "exclusions"; cells: CompareCell[] };
-
 const nameOf = (n: unknown, language: string, fallback: string) => {
   if (typeof n === "string" && n) return n;
   if (n && typeof n === "object") {
@@ -228,49 +234,6 @@ const nameOf = (n: unknown, language: string, fallback: string) => {
   }
   return fallback;
 };
-
-/**
- * Rows for the comparison table: header, premium, tax, fees, total; then limits and deductibles per
- * coverage, then exclusions. `label` for dimension rows is an i18n key (resolved by the caller); coverage
- * and exclusion rows carry their own names.
- */
-export function comparisonRows(c: QuoteComparison, language = "en", words: { included: string; notIncluded: string; applies: string; none: string } = { included: "✓", notIncluded: "—", applies: "✗", none: "—" }): CompareRow[] {
-  const offers = c.offers ?? [];
-  const lowest = c.lowest_total_offer_id ?? null;
-  const money = (key: "premium_minor" | "tax_minor" | "fee_minor" | "total_minor", label: string): CompareRow => {
-    const min = Math.min(...offers.map((o) => o[key]));
-    return { key, label, section: "price", cells: offers.map((o) => ({ minor: o[key], best: key === "total_minor" ? o.offer_id === lowest || o[key] === min : false })) };
-  };
-  const rows: CompareRow[] = [
-    { key: "insurer", label: "cmpInsurer", cells: offers.map((o) => ({ text: [o.carrier, nameOf(o.product, language, "")].filter(Boolean).join(" · ") || "—" })) },
-    money("premium_minor", "cmpPremium"),
-    money("tax_minor", "cmpTax"),
-    money("fee_minor", "cmpFees"),
-    money("total_minor", "cmpTotal"),
-  ];
-  const cell = (covOffer: { included: boolean; limit_minor?: number | null; deductible_minor?: number | null } | undefined, field: "limit_minor" | "deductible_minor"): CompareCell => {
-    if (!covOffer || !covOffer.included) return { text: words.notIncluded };
-    const v = covOffer[field];
-    return v === null || v === undefined ? { text: field === "limit_minor" ? words.included : words.none } : { minor: v };
-  };
-  for (const cov of c.coverages ?? []) {
-    const by = (id: string) => cov.by_offer.find((b) => b.offer_id === id);
-    rows.push({ key: `limit:${cov.code}`, label: nameOf(cov.name, language, cov.code), section: "limits", cells: offers.map((o) => cell(by(o.offer_id), "limit_minor")) });
-  }
-  for (const cov of c.coverages ?? []) {
-    const by = (id: string) => cov.by_offer.find((b) => b.offer_id === id);
-    rows.push({ key: `deductible:${cov.code}`, label: nameOf(cov.name, language, cov.code), section: "deductibles", cells: offers.map((o) => cell(by(o.offer_id), "deductible_minor")) });
-  }
-  for (const ex of c.exclusions ?? []) {
-    rows.push({
-      key: `exclusion:${ex.code}`,
-      label: nameOf(ex.name, language, ex.code),
-      section: "exclusions",
-      cells: offers.map((o) => ({ text: ex.by_offer.find((b) => b.offer_id === o.offer_id)?.applies ? words.applies : words.none })),
-    });
-  }
-  return rows;
-}
 
 // --- Proposal lifecycle (REQ-PRP-001…005) --------------------------------------
 

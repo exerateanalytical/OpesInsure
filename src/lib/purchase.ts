@@ -234,9 +234,35 @@ export type OfferFilter = {
   maxExcessMinor?: number | null;
   coverLevels?: CoverLevel[];
   paymentMethods?: string[];
-  /** Only offers still selectable (status OFFERED / not expired). */
+  /** Only offers still selectable (status OFFERED and valid_until not passed at `now`). */
   selectableOnly?: boolean;
+  /** Clock for selectableOnly (defaults to Date.now()). */
+  now?: number;
 };
+
+/** Why an offer can no longer be chosen; null while it is OFFERED and still valid. */
+export type OfferBlock = "expired" | "accepted" | "declined" | "withdrawn" | "superseded" | "unavailable";
+
+export function offerBlock(o: { status?: string | null; valid_until?: string | null }, now: number = Date.now()): OfferBlock | null {
+  const s = String(o.status ?? "").toUpperCase();
+  if (s === "ACCEPTED") return "accepted";
+  if (s === "DECLINED") return "declined";
+  if (s === "WITHDRAWN" || s === "CANCELLED") return "withdrawn";
+  if (s === "SUPERSEDED") return "superseded";
+  if (s === "EXPIRED") return "expired";
+  if (s && s !== "OFFERED") return "unavailable";
+  return validityLeft(o.valid_until, now).expired ? "expired" : null;
+}
+
+/** Offers that can still be chosen (and so may be compared, highlighted or quoted "from"). */
+export const liveOffers = <T extends OfferLike>(offers: T[], now: number = Date.now()): T[] => filterOffers(offers, { selectableOnly: true, now });
+
+/** Localized label for a payment option code (payMethod_<CODE>, else the network name). */
+export function paymentMethodLabel(code: string, language?: string): string {
+  const key = `payMethod_${String(code).toUpperCase()}`;
+  const text = copyText(language, key);
+  return text !== key ? text : networkName(code);
+}
 
 /** Stable carrier key: carrier_id, else the eager-loaded carrier.id. */
 export const carrierKey = (o: { carrier_id?: string | null; carrier?: { id?: string } | null }) =>
@@ -315,95 +341,28 @@ export function filterOffers<T extends OfferLike>(offers: T[], f: OfferFilter): 
       const methods = offerPaymentMethods(o);
       if (!f.paymentMethods.some((m) => methods.includes(m))) return false;
     }
-    if (f.selectableOnly) {
-      const status = String((o as { status?: unknown }).status ?? "OFFERED").toUpperCase();
-      if (status !== "OFFERED") return false;
-    }
+    if (f.selectableOnly && offerBlock(o, f.now ?? Date.now())) return false;
     return true;
   });
 }
 
-/** One row per insurer (cheapest offer each): proves every insurer that
- * answered is on screen, not only the first card of a carousel. */
-export function insurerSummary<T extends OfferLike>(offers: T[]): { carrierId: string; name: string; offers: number; cheapest: T }[] {
-  const map = new Map<string, { carrierId: string; name: string; offers: number; cheapest: T }>();
+/** One row per insurer: proves every insurer that answered is on screen, not
+ * only the first card of a carousel. `cheapest` is the lowest still-choosable
+ * offer (null when every offer of the insurer expired or was withdrawn). */
+export function insurerSummary<T extends OfferLike>(offers: T[], language?: string, now: number = Date.now()): { carrierId: string; name: string; offers: number; cheapest: T | null; any: T }[] {
+  const map = new Map<string, { carrierId: string; name: string; offers: number; cheapest: T | null; any: T }>();
   for (const o of offers) {
     const key = carrierKey(o);
+    const live = !offerBlock(o, now);
     const row = map.get(key);
-    if (!row) map.set(key, { carrierId: key, name: providerName(o), offers: 1, cheapest: o });
+    if (!row) map.set(key, { carrierId: key, name: providerName(o, language), offers: 1, cheapest: live ? o : null, any: o });
     else {
       row.offers += 1;
-      if (o.total_minor < row.cheapest.total_minor) row.cheapest = o;
+      if (live && (!row.cheapest || o.total_minor < row.cheapest.total_minor)) row.cheapest = o;
     }
   }
-  return [...map.values()].sort((a, b) => a.cheapest.total_minor - b.cheapest.total_minor);
-}
-
-export type CompareCell = { text: string; minor?: number | null; best?: boolean };
-export type CompareRow = { key: string; label: string; cells: CompareCell[] };
-
-/**
- * Builds normalized comparison rows for 2–3 offers: price rows, excess,
- * then one row per coverage code seen in ANY offer (so a cover missing
- * from one insurer shows as "Not included" rather than disappearing).
- */
-export function compareRows(offers: OfferLike[], language: string = "en"): CompareRow[] {
-  const norm = offers.map((o) => normalizeCoverage(o.coverage_snapshot, language));
-  const money = (key: string, label: string, pick: (o: OfferLike, i: number) => number | null, lowerIsBetter = true): CompareRow => {
-    const values = offers.map(pick);
-    const present = values.filter((v): v is number => v !== null);
-    const best = present.length ? (lowerIsBetter ? Math.min(...present) : Math.max(...present)) : null;
-    return {
-      key,
-      label,
-      cells: values.map((v) => ({ text: v === null ? "—" : "", minor: v, best: present.length > 1 && v !== null && v === best })),
-    };
-  };
-  const rows: CompareRow[] = [
-    { key: "provider", label: tx(language, "ofInsurer"), cells: offers.map((o) => ({ text: providerName(o, language) })) },
-    { key: "product", label: tx(language, "cfProduct"), cells: offers.map((o) => ({ text: localized(o.product?.name, language) || tx(language, "insuranceOffer") })) },
-    money("premium", tx(language, "sumPremium"), (o) => o.premium_minor),
-    money("tax", tx(language, "sumTaxes"), (o) => o.tax_minor),
-    money("fees", tx(language, "sumFees"), (o) => o.fee_minor),
-    money("total", tx(language, "sumTotalPayable"), (o) => o.total_minor),
-    money("excess", tx(language, "sumExcess"), (_o, i) => norm[i]?.excessMinor ?? null),
-    {
-      key: "level",
-      label: tx(language, "ofCoverLevel"),
-      cells: offers.map((o) => ({ text: tx(language, ({ essential: "ofLevelEssential", standard: "ofLevelStandard", full: "ofLevelFull" } as const)[coverLevel(o, offers)]) })),
-    },
-  ];
-  // Only when the API supplies them (see the backend gap note).
-  if (offers.some((o) => carrierRating(o)))
-    rows.push({ key: "rating", label: tx(language, "cmpRowRating"), cells: offers.map((o) => ({ text: carrierRating(o) ?? "—" })) });
-  if (offers.some((o) => carrierClaimsDays(o) !== null))
-    rows.push({ key: "claims_days", label: tx(language, "cmpRowClaimsDays"), cells: offers.map((o) => { const d = carrierClaimsDays(o); return { text: d === null ? "—" : tx(language, "cmpDays", { count: d }) }; }) });
-  if (offers.some((o) => offerPaymentMethods(o).length))
-    rows.push({ key: "payment", label: tx(language, "ofPaymentOptions"), cells: offers.map((o) => ({ text: offerPaymentMethods(o).join(", ") || "—" })) });
-  const codes: { code: string; name: string }[] = [];
-  norm.forEach((n) =>
-    n.coverages.forEach((c) => {
-      if (!codes.some((x) => x.code === c.code)) codes.push({ code: c.code, name: c.name });
-    }),
-  );
-  for (const { code, name } of codes) {
-    rows.push({
-      key: `cover:${code}`,
-      label: name,
-      cells: norm.map((n) => {
-        const c = n.coverages.find((x) => x.code === code);
-        if (!c) return { text: tx(language, "cmpNotIncluded") };
-        const tag = c.optional && !c.mandatory ? tx(language, "cmpOptional") : tx(language, "sumIncluded");
-        return { text: tag, minor: c.limitMinor };
-      }),
-    });
-  }
-  rows.push({
-    key: "exclusions",
-    label: tx(language, "cmpRowExclusions"),
-    cells: norm.map((n) => ({ text: n.exclusions.length ? n.exclusions.map((e) => e.name).join(", ") : tx(language, "cmpNoneListed") })),
-  });
-  return rows;
+  const price = (r: { cheapest: T | null }) => r.cheapest?.total_minor ?? Number.MAX_SAFE_INTEGER;
+  return [...map.values()].sort((a, b) => price(a) - price(b) || a.name.localeCompare(b.name));
 }
 
 // --- Validity --------------------------------------------------------------

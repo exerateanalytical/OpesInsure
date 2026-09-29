@@ -15,6 +15,7 @@ import { useSession } from "@/store/session";
 import { useRuntime } from "@/store/runtime";
 import { legalLinks } from "@/config/environment";
 import { isProviderNotConfigured, proposalStatusInfo } from "@/lib/purchase";
+import { proposalQuoteId } from "@/lib/offerChoice";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -29,7 +30,6 @@ export default function Checkout() {
   const { proposalId, approved } = useLocalSearchParams<{ proposalId?: string; approved?: string }>();
   const proposal = useInsurance((s) => s.proposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
-  const quote = useInsurance((s) => s.quote);
   const loadProposal = useInsurance((s) => s.loadProposal);
   const request = useInsurance((s) => s.requestPayment);
   const busy = useInsurance((s) => s.busy);
@@ -100,6 +100,9 @@ export default function Checkout() {
   const phoneValid = /^\+237[26]\d{8}$/.test(phone);
   const canPay = payable && phoneValid && confirmDetails && acceptTerms && !busy;
   const total = proposal.terms_snapshot?.total_minor;
+  // "Change offer" reopens the offers of the quote this application was made from (not whatever quote is in memory).
+  const sourceQuoteId = proposalQuoteId(proposal);
+  const ownOffer = selectedOffer && (selectedOffer.id === proposal.quote_offer_id || selectedOffer.id === proposal.terms_snapshot?.offer_id) ? selectedOffer : null;
   const pay = async () => {
     if (busy) return;
     setPayError(null);
@@ -117,7 +120,7 @@ export default function Checkout() {
         payable ? (
           <CtaBar>
             <Button label={t("rrPay", { amount: f.xaf(total) })} icon={ArrowRight} loading={busy} disabled={!canPay} onPress={() => void pay()} />
-            {quote ? <Button label={t("rrChangeOffer")} variant="tertiary" disabled={busy} onPress={() => router.replace("/quote/offers")} /> : null}
+            {sourceQuoteId ? <Button label={t("rrChangeOffer")} variant="tertiary" disabled={busy} onPress={() => router.replace({ pathname: "/quote/offers", params: { quoteId: sourceQuoteId } })} /> : null}
           </CtaBar>
         ) : null
       }
@@ -126,7 +129,7 @@ export default function Checkout() {
       <QuoteSteps current={3} />
       {approved === "1" && payable ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
       {loadError ? <ErrorCard error={loadError} fallback={t("coStaleTerms")} onRetry={() => void load()} /> : null}
-      <ProposalSummary proposal={proposal} offer={selectedOffer} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
+      <ProposalSummary proposal={proposal} offer={ownOffer} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
       {!payable ? (
         <Card>
           <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />

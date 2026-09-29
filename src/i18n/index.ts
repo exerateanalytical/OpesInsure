@@ -3,6 +3,7 @@ import { useTimezone } from "@/store/timezone";
 import { copy, CopyKey, Language } from "@/i18n/strings";
 import { setApiErrorLocalizer, setApiLanguage } from "@/api/client";
 import { apiErrorCopyKey } from "@/lib/apiErrors";
+import { setInsuranceLanguage } from "@/store/insurance";
 
 export type Vars = Record<string, string | number>;
 
@@ -35,6 +36,8 @@ setApiErrorLocalizer((code, status) => {
 // Every request carries the app language, so server-rendered copy
 // (notification titles/bodies) comes back in it.
 setApiLanguage(() => useSession.getState().language);
+// Store fallback messages (quote / offer / payment) in the same language.
+setInsuranceLanguage(() => useSession.getState().language);
 
 export function useTranslation() {
   const language = useSession((state) => state.language);

@@ -70,9 +70,8 @@ export default function RenewalReview() {
     try {
       if (storeQuote?.id !== result.quote.id) setQuote(result.quote, result.offers);
       const linked = proposal && (proposal.quote_offer_id === offer.id || proposal.terms_snapshot?.offer_id === offer.id) ? proposal : null;
-      if (!linked) await choose(offer);
-      const current = useInsurance.getState().proposal;
-      if (!current) throw new Error(t("coLoadFailed"));
+      // selectOffer returns the application for THIS offer (never a stale one from the store).
+      const current = linked ?? (await choose(offer));
       const info = proposalStatusInfo(current.status, f.language);
       if (info.stage !== "payable") {
         setNotice(t("rrNeedsApplication"));

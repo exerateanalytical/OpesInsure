@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
-import { ArrowRight, CarFront, ClipboardList, Info, Plus, UserRound, Users } from "lucide-react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { ArrowRight, CarFront, ClipboardList, Info, Pencil, Plus, UserRound, Users } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, TintedIcon } from "@/components/design";
 import { CATEGORIES } from "@/components/customer/categories";
 import { Button, Card, Screen, TextField } from "@/components/ui";
@@ -13,7 +13,9 @@ import { assetTypesForLine } from "@/lib/crm";
 import { useInsurance, type InsuredPerson } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { humanize, unwrapPage } from "@/lib/purchase";
-import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
+import { allFields, buildFacts, clearedDependents, factsToValues, insuredFromFacts, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
+import { quoteOutcome } from "@/lib/quoteWorkflow";
+import { useOpenQuote } from "@/hooks/useQuoteFlow";
 import { useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { ContractField } from "@/components/forms/ContractField";
 import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
@@ -35,7 +37,16 @@ function prefillFromAsset(asset: RiskAsset): Record<string, string> {
   return out;
 }
 
+/**
+ * Risk questions -> review -> live offers. With `quoteId` ("Edit quote" from the offers or
+ * comparison screen) the form opens on the review, prefilled from that quote's risk facts, insured
+ * person and insured object; submitting amends and re-rates the same quote (PATCH quotes/{id}) and
+ * only creates a new one when the server refuses the amendment or another object is chosen.
+ */
 export default function Risk() {
+  const { quoteId } = useLocalSearchParams<{ quoteId?: string }>();
+  const editing = useOpenQuote(quoteId);
+  const editQuote = quoteId ? editing.quote : null;
   const product = useInsurance((s) => s.product);
   const busy = useInsurance((s) => s.busy);
   const storeError = useInsurance((s) => s.error);
@@ -49,6 +60,9 @@ export default function Risk() {
   const line = (product ?? "").toUpperCase();
   // Last device fix from the location autofill: sent as latitude/longitude on POST /quotes when present.
   const fixRef = useRef<DeviceFix | null>(null);
+  // Quote this screen already created (going back here from the offers re-rates it instead of adding another).
+  const createdRef = useRef<{ id: string; asset: string | null } | null>(null);
+  const prefilledRef = useRef<string | null>(null);
 
   const [schema, setSchema] = useState<RiskSchema | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(true);
@@ -98,6 +112,16 @@ export default function Risk() {
   const isReview = step === reviewIndex;
   const current = step > 0 && !isReview ? schema?.steps[step - 1] : undefined;
 
+  // Edit quote: prefill once from the saved quote, then open the review so every answer can be checked.
+  useEffect(() => {
+    if (!editQuote || !schema || prefilledRef.current === editQuote.id) return;
+    prefilledRef.current = editQuote.id;
+    setValues(factsToValues(schema, editQuote.risk_facts));
+    setInsured(insuredFromFacts(editQuote.risk_facts));
+    setRiskAsset(editQuote.risk_asset_id ?? null);
+    setStep(schema.steps.length + 1);
+  }, [editQuote, schema, setInsured, setRiskAsset]);
+
   const insuredError =
     insured.mode === "other" && (!insured.full_name.trim() || !insured.relationship || !isValidIsoDate(insured.date_of_birth))
       ? t("qtInsuredMissing")
@@ -120,12 +144,22 @@ export default function Risk() {
     if (!isReview || !customerId) return;
     setFacts(buildFacts(schema, values));
     setSubmitError(null);
+    // Amend the quote being edited (or the one created here) unless it ended or another insured object was chosen.
+    const asset = riskAssetId ?? null;
+    const amendQuoteId =
+      editQuote && !quoteOutcome(editQuote) && (editQuote.risk_asset_id ?? null) === asset
+        ? editQuote.id
+        : createdRef.current && createdRef.current.asset === asset
+          ? createdRef.current.id
+          : null;
     try {
-      const result = await submit(customerId, claimCoordinates(fixRef.current));
+      const result = await submit(customerId, claimCoordinates(fixRef.current), { amendQuoteId });
+      createdRef.current = { id: result.quote.id, asset };
       const status = String(result.quote.status).toUpperCase();
+      // replace: back from the offers never returns to this review step.
       if (status === "REFERRED" || (!result.offers.length && status !== "OFFERED"))
         router.replace({ pathname: "/quote/referral", params: { quoteId: result.quote.id } });
-      else router.push("/quote/offers");
+      else router.replace({ pathname: "/quote/offers", params: { quoteId: result.quote.id } });
     } catch (e) {
       setSubmitError(e);
     }
@@ -139,6 +173,15 @@ export default function Risk() {
   };
 
   const productName = product ? td(`qtProd_${product}`, humanize(product)) : undefined;
+
+  if (quoteId && !editQuote)
+    return (
+      <Screen>
+        <BrandHeader title={t("qtTitle")} subtitle={t("qtCoverDetails")} />
+        <QuoteSteps current={1} />
+        {editing.error ? <ErrorCard error={editing.error} fallback={t("qwLoadFailed")} onRetry={() => void editing.reload()} /> : <LoadingState label={t("qwLoading")} />}
+      </Screen>
+    );
 
   if (!line || (!schemaLoading && !schema))
     return (
@@ -169,6 +212,7 @@ export default function Risk() {
     >
       <BrandHeader title={t("qtTitle")} subtitle={productName ?? t("qtDetailsSub")} />
       <QuoteSteps current={1} />
+      {editQuote ? <Banner icon={Pencil} tint="gold" body={t("qtEditingQuote", { number: editQuote.quote_number ?? t("quote") })} /> : null}
       {productName ? (
         <View style={st.productCard}>
           <TintedIcon icon={CATEGORIES.find((c) => c.id === product)?.icon ?? CarFront} tint="gold" size={56} />

@@ -61,8 +61,12 @@ export function FiltersSheet({
   subtitle?: string;
   /** Rendered under the title (saved / recent filters). */
   header?: React.ReactNode;
-  /** Rendered after the sections (inputs the option tiles cannot express, e.g. amount ranges). */
-  footer?: React.ReactNode;
+  /**
+   * Rendered after the sections (inputs the option tiles cannot express, e.g. amount ranges). The
+   * function form edits the same draft, so those inputs apply with "Show results" and are reset
+   * with "Reset all" like every tile.
+   */
+  footer?: React.ReactNode | ((draft: FilterValues, setDraft: (update: (d: FilterValues) => FilterValues) => void) => React.ReactNode);
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<FilterValues>(value);
@@ -133,7 +137,7 @@ export function FiltersSheet({
               {s.kind === "period" ? <CustomRange value={draft[s.key]?.[0]} onChange={(v) => setDraft((d) => ({ ...d, [s.key]: [v] }))} /> : null}
             </View>
           ))}
-          {footer}
+          {typeof footer === "function" ? footer(draft, setDraft) : footer}
         </ScrollView>
         <View style={st.bar}>
           <View style={st.countRow} accessibilityLiveRegion="polite">

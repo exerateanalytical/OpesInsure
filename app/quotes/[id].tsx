@@ -18,6 +18,9 @@ import { quoteOutcome } from "@/lib/quoteWorkflow";
 
 /** Only in-app, customer-owned paths may come back from the server. */
 const SAFE_NEXT = /^\/(quote|proposals|checkout|payment|confirmation|policy)(\/|$|\?)/;
+/** Offers / comparison reload their quote by id after a restart: make sure a server next_path carries it. */
+const withQuoteId = (path: string, quoteId: string) =>
+  /^\/quote\/(offers|compare)(\?|$)/.test(path) && !/[?&]quoteId=/.test(path) ? `${path}${path.includes("?") ? "&" : "?"}quoteId=${encodeURIComponent(quoteId)}` : path;
 
 export default function QuoteDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,14 +70,15 @@ export default function QuoteDetail() {
         result = { quote: r.quote, offers: r.offers ?? [] };
         setQuoteResult(result.quote, result.offers);
       } else result = await loadQuote(r.quote_id ?? id);
-      if (r.next_path && SAFE_NEXT.test(r.next_path)) return router.push(r.next_path as Href);
-      if (String(result.quote.status).toUpperCase() === "REFERRED") return router.push({ pathname: "/quote/referral", params: { quoteId: id } });
-      router.push("/quote/offers");
+      const quoteId = result.quote.id;
+      if (r.next_path && SAFE_NEXT.test(r.next_path)) return router.push(withQuoteId(r.next_path, quoteId) as Href);
+      if (String(result.quote.status).toUpperCase() === "REFERRED") return router.push({ pathname: "/quote/referral", params: { quoteId } });
+      router.push({ pathname: "/quote/offers", params: { quoteId } });
     });
   const reRate = () =>
     run("rerate", async () => {
       await rerate(id);
-      router.push("/quote/offers");
+      router.push({ pathname: "/quote/offers", params: { quoteId: id } });
     });
   const remove = () =>
     Alert.alert(t("qtRemoveQ"), t("qtRemoveBody"), [

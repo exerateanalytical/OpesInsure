@@ -471,6 +471,54 @@ export function buildFacts(schema: RiskSchema, values: Record<string, string>) {
 /** Every field of a schema, flat (forms and wizards). */
 export const allFields = (schema: Pick<RiskSchema, "steps">) => schema.steps.flatMap((s) => s.fields);
 
+const asText = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v));
+
+/** One typed value back to the wizard string (money minor units -> FCFA, lists -> JSON). */
+function valueText(f: Pick<RiskField, "type">, v: unknown): string {
+  if (f.type === "money") return typeof v === "number" ? String(v / 100) : asText(v);
+  if (f.type === "boolean") return v === true || v === "true" ? "true" : "false";
+  if (f.type === "multi_select_master") return JSON.stringify(Array.isArray(v) ? v.map(String) : [String(v)]);
+  return asText(v);
+}
+
+/**
+ * Inverse of buildFacts for "Edit quote": the saved quote's risk facts back to wizard strings, so
+ * the form opens prefilled (text/code snapshots, "Other" texts and repeater rows included).
+ */
+export function factsToValues(schema: Pick<RiskSchema, "steps">, facts: Record<string, unknown> | null | undefined): Record<string, string> {
+  const src = facts ?? {};
+  const out: Record<string, string> = {};
+  for (const f of allFields(schema)) {
+    if (f.textKey && src[f.textKey] !== undefined && src[f.textKey] !== null) out[f.textKey] = asText(src[f.textKey]);
+    const v = src[f.key];
+    if (v === undefined || v === null) continue;
+    if (f.type === "repeater") {
+      const items = (Array.isArray(v) ? v : []).filter((x): x is Record<string, unknown> => !!x && typeof x === "object");
+      out[f.key] = JSON.stringify(
+        items.map((item) => {
+          const row: Record<string, string> = {};
+          for (const sub of f.itemFields ?? []) {
+            if (item[sub.key] !== undefined && item[sub.key] !== null) row[sub.key] = valueText(sub, item[sub.key]);
+            if (typeof item[`${sub.key}_other`] === "string") row[`${sub.key}_other`] = item[`${sub.key}_other`] as string;
+          }
+          return row;
+        }),
+      );
+    } else out[f.key] = valueText(f, v);
+    if (typeof src[`${f.key}_other`] === "string") out[`${f.key}_other`] = src[`${f.key}_other`] as string;
+  }
+  if (typeof src.vehicle_review_id === "string") out.vehicle_review_id = src.vehicle_review_id;
+  return out;
+}
+
+/** Who the saved quote insures (risk_facts.insured_person, written by the insurance store). */
+export function insuredFromFacts(facts: Record<string, unknown> | null | undefined): { mode: "self" } | { mode: "other"; full_name: string; date_of_birth: string; relationship: string } {
+  const p = (facts?.insured_person ?? null) as Record<string, unknown> | null;
+  const relationship = String(p?.relationship ?? "SELF");
+  if (!p || relationship.toUpperCase() === "SELF") return { mode: "self" };
+  return { mode: "other", full_name: asText(p.full_name), date_of_birth: asText(p.date_of_birth), relationship };
+}
+
 /**
  * Clearing a parent clears its children (region -> department -> city), their
  * "Other" text included, recursively. Returns the values to merge.

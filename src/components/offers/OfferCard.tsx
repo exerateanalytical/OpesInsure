@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
-import { ArrowRight, BadgeCheck, CalendarDays, CheckSquare, ChevronDown, ChevronUp, Clock3, Coins, ExternalLink, FileText, Receipt, ShieldCheck, Square, Star } from "lucide-react-native";
+import { ArrowRight, BadgeCheck, CalendarDays, CheckCircle2, CheckSquare, ChevronDown, ChevronUp, Clock3, Coins, ExternalLink, FileText, ShieldCheck, Square, Star } from "lucide-react-native";
 import { CheckList, MetaGrid } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
-import { ripple, StatusChip } from "@/components/ui";
+import { Button, ripple, StatusChip } from "@/components/ui";
+import { initialsOf } from "@/components/filters/FilteredList";
 import { InfoRow, Rule, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { QuoteOffer } from "@/api/client";
 import { carrierClaimsDays, carrierRating, coverLevel, localized, normalizeCoverage, providerName, validityLeft } from "@/lib/purchase";
+import { MAX_COMPARE, offerPeriod, periodCopy, type OfferChoice } from "@/lib/offerChoice";
 import { carrierLogo } from "@/lib/renewal";
 import { useInsurerLogo } from "@/components/offers/useInsurerLogo";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import type { CopyKey } from "@/i18n/strings";
 
 /** Re-renders every 30s so the validity countdown stays honest. */
 export function useNow(intervalMs = 30000) {
@@ -37,10 +40,29 @@ function carrierVerified(offer: QuoteOffer): boolean {
 }
 
 /**
+ * The one choose affordance for an offer, shared by the offer cards and the comparison columns:
+ * "Select Offer" while it can be chosen, "Selected — open application" for the accepted offer,
+ * otherwise disabled with the reason (expired, no longer available, another offer chosen).
+ */
+export function ChooseButton({ choice, best, selecting, opening, disabled, onSelect, onOpenApplication, style, compact }: { choice: OfferChoice; best?: boolean; selecting?: boolean; opening?: boolean; disabled?: boolean; onSelect: () => void; onOpenApplication?: () => void; style?: StyleProp<ViewStyle>; /** Narrow comparison column: no icon, tight padding. */ compact?: boolean }) {
+  const { t } = useTranslation();
+  if (compact) style = [st.compact, style];
+  if (choice.kind === "selected")
+    return <Button size="small" variant="primary" icon={compact ? undefined : CheckCircle2} label={t("ofSelectedOpen")} loading={opening} disabled={!onOpenApplication} onPress={onOpenApplication} style={style} />;
+  if (choice.kind === "blocked") {
+    const label = choice.reason === "expired" ? t("offerExpired") : choice.reason === "other_chosen" ? t("ofOtherChosen") : t("ofOfferUnavailable");
+    return <Button size="small" variant="secondary" label={label} disabled style={style} />;
+  }
+  return <Button size="small" variant={best ? "gold" : "primary"} icon={compact ? undefined : ArrowRight} label={t("roSelect")} loading={selecting} disabled={disabled} onPress={onSelect} style={style} />;
+}
+
+/**
  * One insurer's offer (design 20): logo, name, product, rating when stated,
- * price per year, cover / excess / validity trio, included cover as check
- * bullets, expandable price breakdown + exclusions + documents, then
- * "View Details" and "Select Offer". Every value comes from the rated offer.
+ * "Total payable" (with the cover period only when the offer states one) and
+ * its premium / taxes / fees breakdown, cover level / excess / validity,
+ * included cover as check bullets, expandable cover details + exclusions +
+ * documents, then "View Details" and the shared choose button. Every value
+ * comes from the rated offer.
  */
 export function OfferCard({
   offer,
@@ -48,9 +70,13 @@ export function OfferCard({
   badge,
   best,
   compareSelected,
+  compareFull,
   onToggleCompare,
+  choice,
   onSelect,
+  onOpenApplication,
   selecting,
+  opening,
   disabled,
   width,
   now,
@@ -62,9 +88,15 @@ export function OfferCard({
   /** Gold "Best Value" chip + gold select button (caller decides from stated limits). */
   best?: boolean;
   compareSelected?: boolean;
+  /** Three offers are already ticked: this tick is refused (onToggleCompare explains why). */
+  compareFull?: boolean;
+  /** Absent when the offer cannot be compared (not choosable). */
   onToggleCompare?: () => void;
+  choice: OfferChoice;
   onSelect: () => void;
+  onOpenApplication?: () => void;
   selecting?: boolean;
+  opening?: boolean;
   disabled?: boolean;
   width?: number;
   now: number;
@@ -87,13 +119,23 @@ export function OfferCard({
   // Two check columns only when every label is short enough to sit side by side on a phone.
   const twoColumns = shown.length > 1 && shown.every((n) => n.length <= 18);
   const expired = validity.expired;
+  const period = periodCopy(offerPeriod(offer));
+  const compareLabel = compareFull && !compareSelected ? t("ofCompareMaxA11y", { count: MAX_COMPARE }) : t("offerAddCompare");
   return (
     <View style={[st.card, best && st.cardBest, width ? { width } : null]}>
       {badge || onToggleCompare ? (
         <View style={ps.between}>
           {badge ? <StatusChip label={badge.label} tone={badge.tone} /> : <View />}
           {onToggleCompare ? (
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: !!compareSelected }} accessibilityLabel={t("offerAddCompare")} hitSlop={8} onPress={onToggleCompare} android_ripple={ripple()} style={st.compare}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: !!compareSelected, disabled: !!compareFull && !compareSelected }}
+              accessibilityLabel={compareLabel}
+              hitSlop={8}
+              onPress={onToggleCompare}
+              android_ripple={ripple()}
+              style={[st.compare, compareFull && !compareSelected && st.disabled]}
+            >
               {compareSelected ? <CheckSquare size={20} color={colors.blue600} /> : <Square size={20} color={colors.neutral500} />}
               <Text style={st.compareText}>{t("offerCompare")}</Text>
             </Pressable>
@@ -102,7 +144,7 @@ export function OfferCard({
       ) : null}
 
       <View style={st.head}>
-        <InstitutionMark logoUrl={logo} initials={name.slice(0, 2).toUpperCase()} size={56} />
+        <InstitutionMark logoUrl={logo} initials={initialsOf(name)} size={56} />
         <View style={st.flex}>
           <Pressable accessibilityRole="link" accessibilityLabel={name} hitSlop={4} onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })} style={st.nameRow}>
             <Text style={st.name}>{name}</Text>
@@ -123,17 +165,26 @@ export function OfferCard({
         </View>
         <View style={st.priceCol}>
           {best ? <StatusChip label={t("roBestValue")} tone="warning" /> : null}
-          <Text style={st.price} accessibilityLabel={f.xaf(offer.total_minor)}>{f.xaf(offer.total_minor)}</Text>
-          <Text style={st.perYear}>{t("ofPerYear")}</Text>
+          <Text style={st.priceLabel}>{t("sumTotalPayable")}</Text>
+          <Text style={st.price} accessibilityLabel={`${t("sumTotalPayable")} ${f.xaf(offer.total_minor)}${period ? ` ${t(period.key as CopyKey, period.vars)}` : ""}`}>{f.xaf(offer.total_minor)}</Text>
+          {period ? <Text style={st.period}>{t(period.key as CopyKey, period.vars)}</Text> : null}
         </View>
       </View>
 
+      <View style={st.breakdown} accessibilityRole="summary">
+        {([["sumPremium", offer.premium_minor], ["sumTaxes", offer.tax_minor], ["sumFees", offer.fee_minor]] as const).map(([key, minor], i) => (
+          <View key={key} style={[st.breakdownCell, i > 0 && st.breakdownDivider]}>
+            <Text style={st.breakdownLabel}>{t(key)}</Text>
+            <Text style={st.breakdownValue}>{f.xaf(minor)}</Text>
+          </View>
+        ))}
+      </View>
+
       <MetaGrid
-        columns={2}
+        columns={3}
         items={[
           { icon: ShieldCheck, label: t("ofCoverLevel"), value: level },
           { icon: Coins, label: t("sumExcess"), value: cover.excessMinor === null ? t("sumNotStated") : f.xaf(cover.excessMinor) },
-          { icon: Receipt, label: t("sumPremium"), value: f.xaf(offer.premium_minor) },
           { icon: expired ? Clock3 : CalendarDays, label: t("roValidity"), value: validity.label, tone: expired ? "danger" : undefined },
         ]}
       />
@@ -151,11 +202,7 @@ export function OfferCard({
         <View style={st.details}>
           <Rule />
           <Text style={st.section}>{t("ofOfferDetails")}</Text>
-          <InfoRow label={t("sumPremium")} value={f.xaf(offer.premium_minor)} />
-          <InfoRow label={t("sumTaxes")} value={f.xaf(offer.tax_minor)} />
-          <InfoRow label={t("sumFees")} value={f.xaf(offer.fee_minor)} />
-          <InfoRow label={t("sumTotalPayable")} value={f.xaf(offer.total_minor)} strong />
-          <InfoRow label={t("roValidity")} value={t("offerUntil", { validity: validity.label, date: f.dateTime(offer.valid_until) })} />
+          <InfoRow label={t("cmpRowValidUntil")} value={t("offerUntil", { validity: validity.label, date: f.dateTime(offer.valid_until) })} />
           <Text style={st.section}>{t("offerIncludedCover", { count: included.length })}</Text>
           {included.map((c) => (
             <View key={c.code} style={st.coverRow}>
@@ -197,28 +244,16 @@ export function OfferCard({
       ) : null}
 
       <View style={st.actions}>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} android_ripple={ripple()} style={({ pressed }) => [st.detailsBtn, pressed && st.pressed]}>
-          <Text style={st.detailsText}>{expanded ? t("roHideDetails") : t("roViewDetails")}</Text>
-          {expanded ? <ChevronUp size={18} color={colors.blue600} /> : <ChevronDown size={18} color={colors.blue600} />}
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={expired ? t("offerExpired") : t("roSelect")}
-          accessibilityState={{ disabled: !!disabled || expired, busy: !!selecting }}
-          disabled={disabled || expired || selecting}
-          onPress={onSelect}
-          android_ripple={ripple(true)}
-          style={({ pressed }) => [st.selectBtn, best && st.selectBtnGold, (disabled || expired) && st.disabled, pressed && st.pressed]}
-        >
-          {selecting ? (
-            <ActivityIndicator color={best ? colors.navy950 : colors.white} />
-          ) : (
-            <>
-              <Text style={[st.selectText, best && st.selectTextGold]}>{expired ? t("offerExpired") : t("roSelect")}</Text>
-              {!expired ? <ArrowRight size={18} color={best ? colors.navy950 : colors.white} /> : null}
-            </>
-          )}
-        </Pressable>
+        <Button
+          size="small"
+          variant="secondary"
+          icon={expanded ? ChevronUp : ChevronDown}
+          iconPosition="right"
+          label={expanded ? t("roHideDetails") : t("roViewDetails")}
+          onPress={() => setExpanded(!expanded)}
+          style={st.action}
+        />
+        <ChooseButton choice={choice} best={best} selecting={selecting} opening={opening} disabled={disabled} onSelect={onSelect} onOpenApplication={onOpenApplication} style={st.action} />
       </View>
     </View>
   );
@@ -226,7 +261,6 @@ export function OfferCard({
 
 const st = StyleSheet.create({
   flex: { flex: 1 },
-  pressed: { opacity: 0.9 },
   disabled: { opacity: 0.5 },
   card: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3, overflow: "hidden" },
   cardBest: { borderColor: colors.gold500 },
@@ -237,8 +271,14 @@ const st = StyleSheet.create({
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2, flexWrap: "wrap" },
   rating: { ...type.meta, color: colors.neutral700 },
   priceCol: { alignItems: "flex-end", gap: 2, maxWidth: "46%" },
+  priceLabel: { ...type.meta, color: colors.neutral600, textAlign: "right" },
   price: { ...type.sectionTitle, fontSize: 18, lineHeight: 24, color: colors.navy950, fontVariant: ["tabular-nums"], textAlign: "right" },
-  perYear: { ...type.meta, color: colors.neutral600 },
+  period: { ...type.meta, color: colors.neutral600 },
+  breakdown: { flexDirection: "row", borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.card, paddingVertical: space.x2 },
+  breakdownCell: { flex: 1, paddingHorizontal: space.x2, gap: 2 },
+  breakdownDivider: { borderLeftWidth: 1, borderLeftColor: colors.neutral200 },
+  breakdownLabel: { ...type.meta, color: colors.neutral600 },
+  breakdownValue: { ...type.label, color: colors.navy950, fontVariant: ["tabular-nums"] },
   covers: { backgroundColor: colors.blue50, borderRadius: radius.card, padding: space.x3, gap: space.x1 },
   more: { ...type.meta, color: colors.blue700 },
   details: { gap: space.x2 },
@@ -249,10 +289,7 @@ const st = StyleSheet.create({
   compare: { flexDirection: "row", alignItems: "center", gap: space.x1, paddingHorizontal: space.x2, minHeight: 40, borderRadius: radius.control, overflow: "hidden" },
   compareText: { ...type.label, color: colors.neutral700 },
   actions: { flexDirection: "row", gap: space.x2 },
-  detailsBtn: { flex: 1, minHeight: 48, borderWidth: 1.5, borderColor: colors.blue600, borderRadius: radius.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden" },
-  detailsText: { ...type.label, color: colors.blue600 },
-  selectBtn: { flex: 1, minHeight: 48, backgroundColor: colors.blue600, borderRadius: radius.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, overflow: "hidden" },
-  selectBtnGold: { backgroundColor: colors.gold500 },
-  selectText: { ...type.label, color: colors.white },
-  selectTextGold: { color: colors.navy950 },
+  // Two actions side by side on a 360 dp phone: tighter padding than a full-width button.
+  action: { flex: 1, paddingHorizontal: space.x2 },
+  compact: { paddingHorizontal: space.x1 },
 });

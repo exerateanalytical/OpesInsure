@@ -356,7 +356,7 @@ export default function GlobalSearch() {
           tint="blue"
           title={t("searchHelpTitle")}
           body={customer ? t("searchHelpBody") : t("searchHelpSupportBody")}
-          onPress={() => router.push((customer ? "/quote/compare" : "/support") as never)}
+          onPress={() => router.push(customer ? "/quotes" : "/support")}
           right={
             <View style={s.bannerCta}>
               <Text style={s.bannerCtaText}>{customer ? t("searchHelpCta") : t("helpComplaints")}</Text>

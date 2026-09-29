@@ -751,6 +751,8 @@ export type Proposal = {
     total_minor: number;
     currency: "XAF";
     offer_id?: string;
+    /** Quote the offer belonged to (ProposalService terms snapshot). */
+    quote_id?: string;
     coverage_snapshot?: Record<string, unknown>;
     coverage_starts_at?: string;
     coverage_ends_at?: string;
