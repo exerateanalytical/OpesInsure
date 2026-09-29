@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Camera, CheckCircle2, FileText, FileUp, Hourglass, Images, MessageSquareWarning, RefreshCcw, Undo2, XCircle } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, DetailRow, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
@@ -22,6 +22,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { kycAutoAttachments } from "@/lib/proposalDocuments";
 import { canChooseStart } from "@/lib/coverStart";
 import { CoverStartCard } from "@/components/purchase/CoverStartCard";
+import { hubForward, nextPurchaseStep, purchaseRoute, readyForTerms, termsAcceptedIn } from "@/lib/paymentRouting";
 
 /** ProposalMachine::ANSWERABLE — cover terms can only be changed while the application is being completed. */
 const ANSWERABLE = ["DRAFT", "DISCLOSURES_PENDING", "DOCUMENTS_PENDING", "INFORMATION_REQUIRED"];
@@ -95,6 +96,32 @@ export default function ProposalDetail() {
     return () => clearInterval(t);
   }, [id, info.stage, loadProposal]);
 
+  // Payable (straight-through approval, underwriter approval seen by the 30 s refresh, accepted
+  // counter-offer, or opened from a notification): go to payment automatically, once per visit and
+  // only while this screen is in front, so the hardware back returns here without looping.
+  const forwarded = useRef(false);
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const termsAccepted = termsAcceptedIn(checklist?.declarations);
+  // Documents complete (DOCUMENTS_PENDING, nothing blocking but the terms): accepting the terms submits it.
+  const termsNext = !!p && readyForTerms(p.status, checklist?.blocking);
+  // Set when an upload in this visit completed the documents: go on to the terms once.
+  const completedByUpload = useRef(false);
+  useEffect(() => {
+    if (!p || loading || !focused) return;
+    const target =
+      hubForward({ proposalId: p.id, status: p.status, policyId: p.policy_id, termsAccepted, forwarded: forwarded.current }) ??
+      (termsNext && completedByUpload.current && !forwarded.current ? purchaseRoute(p.id, "terms") : null);
+    if (!target) return;
+    forwarded.current = true;
+    router.push(target as never);
+  }, [p, loading, focused, termsAccepted, termsNext]);
+
   // Take a photo, pick one from the gallery, or choose a PDF/image file; then link it to the requirement.
   const upload = async (code: string, source: PickSource) => {
     if (!p || uploading) return;
@@ -107,6 +134,7 @@ export default function ProposalDetail() {
       const documentId = await storeDocument(`PROPOSAL_${code}`, file);
       await ProposalsApi.linkDocument(p.id, documentId, code);
       setChoosing(null);
+      completedByUpload.current = true;
       await load();
     } catch (e) {
       setUploadError(e);
@@ -203,9 +231,11 @@ export default function ProposalDetail() {
     ) : info.stage === "disclosures" && allowedAction(p, "answer_disclosures", true) ? (
       <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
     ) : info.stage === "payable" ? (
-      <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/quote/terms", params: { proposalId: p.id } })} />
+      <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push(purchaseRoute(p.id, nextPurchaseStep(p.status, termsAccepted) ?? "terms") as never)} />
     ) : info.stage === "paid" ? (
       <Button label={t("prTrackIssuance")} onPress={() => router.push({ pathname: "/confirmation", params: { proposalId: p.id } })} />
+    ) : termsNext ? (
+      <Button label={t("prContinueTerms")} icon={CheckCircle2} onPress={() => router.push(purchaseRoute(p.id, "terms") as never)} />
     ) : info.stage === "review" || info.stage === "documents" ? (
       <Button label={t("pmRefresh")} icon={RefreshCcw} variant="secondary" loading={loading} onPress={() => void load()} />
     ) : null
@@ -232,6 +262,7 @@ export default function ProposalDetail() {
             <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />
             <Text style={ps.body}>{info.message}</Text>
             {info.stage === "review" ? <Banner icon={Hourglass} tint="blue" body={t("prAutoCheck")} /> : null}
+            {info.stage === "payable" && !p.policy_id ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
           </Card>
 
           {info.stage === "information" ? (

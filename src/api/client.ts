@@ -1700,7 +1700,8 @@ export const DisclosureApi = {
       idempotent: true,
     }),
   acceptTerms: (proposalId: string, accepted: boolean) =>
-    api<{ accepted: boolean; accepted_at: string }>(
+    // The server answers with the application's status after acceptance (it submits a DOCUMENTS_PENDING application).
+    api<{ accepted: boolean; accepted_at: string; proposal_id?: string; status?: string }>(
       `/proposals/${proposalId}/terms`,
       { method: "POST", body: JSON.stringify({ accepted }), idempotent: true },
     ),

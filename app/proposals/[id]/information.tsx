@@ -11,6 +11,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { localized, humanize } from "@/lib/purchase";
 import { canResubmitProposal, requiredDocumentInfo } from "@/lib/quoteWorkflow";
+import { ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 
 /** Answer an underwriter's information request (GET proposals/{p}/checklist), then POST resubmit. */
 export default function ProposalInformationRequest() {
@@ -20,6 +21,8 @@ export default function ProposalInformationRequest() {
   const [response, setResponse] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  // The answer and the documents on file are shown read-only before the application is resubmitted.
+  const [reviewing, setReviewing] = useState(false);
   const c = q.data;
   const request = c?.information_request;
   const allowed = c ? canResubmitProposal(c.status, c.available_transitions, c.blocking) : false;
@@ -42,9 +45,11 @@ export default function ProposalInformationRequest() {
   return (
     <Screen
       footer={
-        open ? (
+        open && reviewing ? (
+          <ReviewFooter label={t("prInfoResubmit")} icon={Send} loading={busy} disabled={!allowed} onConfirm={() => void resubmit()} onBack={() => setReviewing(false)} />
+        ) : open ? (
           <CtaBar>
-            <Button label={t("prInfoResubmit")} icon={Send} loading={busy} disabled={!allowed || busy} onPress={() => void resubmit()} />
+            <Button label={t("reviewContinue")} disabled={!allowed} onPress={() => { setError(null); setReviewing(true); }} />
           </CtaBar>
         ) : null
       }
@@ -55,7 +60,22 @@ export default function ProposalInformationRequest() {
       {c && !open ? (
         <EmptyState title={t("prInfoNone")} message={td(`proposalMsg_${String(c.status).toUpperCase()}`, c.status)} action={t("prAll")} onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id } })} />
       ) : null}
-      {c && open ? (
+      {c && open && reviewing ? (
+        <>
+          <ReviewIntro />
+          <ReviewSection icon={MessageSquareWarning} title={t("prInfoTitle")} onEdit={() => setReviewing(false)}>
+            <ReviewRow first label={t("prInfoResponse")} value={response.trim()} />
+          </ReviewSection>
+          {c.required_documents.length ? (
+            <ReviewSection icon={FileText} title={t("prInfoDocs")} onEdit={() => setReviewing(false)}>
+              {c.required_documents.map((d, i) => (
+                <ReviewRow key={d.code} first={i === 0} label={d.label ?? (localized(d.name, language) || humanize(d.code))} value={td(requiredDocumentInfo(d.status).key, d.status ?? "")} />
+              ))}
+            </ReviewSection>
+          ) : null}
+          {error ? <ErrorCard error={error} fallback={t("prInfoFailed")} /> : null}
+        </>
+      ) : c && open ? (
         <>
           <Card>
             <SectionHeading icon={MessageSquareWarning} title={t("prInfoItems")} />

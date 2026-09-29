@@ -59,6 +59,7 @@ export default function Beneficiaries() {
           title={t("benTitle")}
           submitLabel={t("benProfileSave")}
           disabled={!allowedAction(profile.data, "update_profile", true)}
+          review={{ intro: t("benReviewIntro"), confirmLabel: t("benConfirmSave") }}
           onSubmit={async (payload) => {
             // An emptied list is sent as [] and clears the beneficiaries.
             profile.setData(await AccountApi.updateCustomerProfile(payload));

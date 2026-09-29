@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text } from "react-native";
-import { Link2, Paperclip } from "lucide-react-native";
+import { StyleSheet } from "react-native";
+import { LifeBuoy, Link2, Paperclip } from "lucide-react-native";
+import { ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar } from "@/components/design";
 import { CustomerApi } from "@/api/customer";
@@ -9,7 +10,7 @@ import { WalletApi } from "@/api/client";
 import { SelectField } from "@/components/forms/SelectField";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { radius, space } from "@/theme/tokens";
 
 const CATEGORIES = [
   "GENERAL_SUPPORT",
@@ -49,6 +50,8 @@ export default function NewSupport() {
   const [policyId, setPolicyId] = useState<string | null>(null);
   const policies = useLoad(() => (params.policyId || params.claimId || params.paymentId ? Promise.resolve([]) : WalletApi.all(2)), []);
   const [error, setError] = useState<string | null>(null);
+  // The case is shown read-only for a last check before it is created.
+  const [reviewing, setReviewing] = useState(false);
   const linked = params.claimId
     ? t("supportLinkedClaim", { ref: params.reference ?? params.claimId })
     : params.paymentId
@@ -79,22 +82,41 @@ export default function NewSupport() {
     }
   };
 
+  const relatedPolicy = policyId ? policies.data?.find((p) => p.id === policyId) : null;
+  const submitLabel = category === "FORMAL_COMPLAINT" ? t("supportSubmitComplaint") : t("supportCreate");
+
   return (
     <Screen
       footer={
-        <CtaBar>
-          {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-          <Button
-            label={category === "FORMAL_COMPLAINT" ? t("supportSubmitComplaint") : t("supportCreate")}
-            loading={busy}
-            disabled={subject.trim().length < 4 || description.trim().length < 15}
-            onPress={() => void submit()}
-          />
-        </CtaBar>
+        reviewing ? (
+          <ReviewFooter label={submitLabel} loading={busy} error={error} onConfirm={() => void submit()} onBack={() => setReviewing(false)} />
+        ) : (
+          <CtaBar>
+            <Button
+              label={t("reviewContinue")}
+              disabled={subject.trim().length < 4 || description.trim().length < 15}
+              onPress={() => {
+                setError(null);
+                setReviewing(true);
+              }}
+            />
+          </CtaBar>
+        )
       }
     >
       <BrandHeader title={t("supportNewTitle")} subtitle={t("supportNeverShare")} back right="help" />
       {linked ? <Banner icon={Link2} tint="blue" body={linked} /> : null}
+      {reviewing ? (
+        <>
+          <ReviewIntro />
+          <ReviewSection icon={LifeBuoy} title={t("supportReviewTitle")} onEdit={() => setReviewing(false)}>
+            <ReviewRow first label={t("supportCategory")} value={td(`supportCategory_${category}`, category)} />
+            {relatedPolicy ? <ReviewRow label={t("supportRelatedPolicy")} value={relatedPolicy.policy_number} /> : null}
+            <ReviewRow label={t("supportSubject")} value={subject.trim()} />
+            <ReviewRow label={t("supportDescribe")} value={description.trim()} />
+          </ReviewSection>
+        </>
+      ) : (
       <Card style={s.card}>
         <SelectField
           label={t("supportCategory")}
@@ -124,11 +146,11 @@ export default function NewSupport() {
         />
         <Banner icon={Paperclip} tint="neutral" title={t("supportAttach")} body={t("supportAttachAfterBody")} />
       </Card>
+      )}
     </Screen>
   );
 }
 const s = StyleSheet.create({
   card: { borderRadius: radius.feature, gap: space.x4 },
   area: { minHeight: 120, textAlignVertical: "top", paddingTop: 12 },
-  error: { ...type.meta, color: colors.dangerText },
 });

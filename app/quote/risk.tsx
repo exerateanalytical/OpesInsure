@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, CarFront, Info, Plus, UserRound, Users } from "lucide-react-native";
+import { ArrowRight, CarFront, ClipboardList, Info, Plus, UserRound, Users } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, TintedIcon } from "@/components/design";
 import { CATEGORIES } from "@/components/customer/categories";
 import { Button, Card, Screen, TextField } from "@/components/ui";
@@ -10,7 +10,7 @@ import { DateField, ErrorCard, QuoteSteps, Stepper, purchaseStyles as ps } from 
 import { AssetsApi, CatalogueApi, RiskAsset } from "@/api/client";
 import { RiskAssetTypesApi } from "@/api/crm";
 import { assetTypesForLine } from "@/lib/crm";
-import { useInsurance } from "@/store/insurance";
+import { useInsurance, type InsuredPerson } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { humanize, unwrapPage } from "@/lib/purchase";
 import { allFields, buildFacts, clearedDependents, isFieldVisible, isValidIsoDate, localRiskSchema, normalizeRiskSchema, RiskField, RiskSchema, validateStep } from "@/lib/riskSchema";
@@ -21,6 +21,7 @@ import { claimCoordinates } from "@/lib/deviceLocation";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
 import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
+import { ReviewIntro, SchemaReviewSection } from "@/components/review/ReviewSummary";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
@@ -88,12 +89,14 @@ export default function Risk() {
       .catch(() => setAssets([]));
   }, [line, loadSchema]);
 
-  // Step 0 is "who / what is insured"; schema steps follow.
+  // Step 0 is "who / what is insured"; schema steps follow; the last step is the read-only review.
   const { t, td, language } = useTranslation();
   const stepTitle = (s?: { title: string; titleFr?: string }) => (s ? (language === "fr" && s.titleFr ? s.titleFr : s.title) : undefined);
-  const steps = useMemo(() => [t("qtInsured"), ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language, t]);
-  const current = step > 0 ? schema?.steps[step - 1] : undefined;
-  const isLast = step === steps.length - 1;
+  const formSteps = useMemo(() => [t("qtInsured"), ...(schema?.steps.map((s) => (language === "fr" && s.titleFr ? s.titleFr : s.title)) ?? [])], [schema, language, t]);
+  const steps = useMemo(() => [...formSteps, t("reviewStep")], [formSteps, t]);
+  const reviewIndex = formSteps.length;
+  const isReview = step === reviewIndex;
+  const current = step > 0 && !isReview ? schema?.steps[step - 1] : undefined;
 
   const insuredError =
     insured.mode === "other" && (!insured.full_name.trim() || !insured.relationship || !isValidIsoDate(insured.date_of_birth))
@@ -106,12 +109,15 @@ export default function Risk() {
       setErrors({});
       return setStep(1);
     }
-    if (!current || !schema) return;
-    const e = validateStep(current, values, language === "fr" ? "fr" : "en");
-    setErrors(e);
-    if (Object.keys(e).length) return;
-    if (!isLast) return setStep(step + 1);
-    if (!customerId) return;
+    if (!schema) return;
+    if (current) {
+      const e = validateStep(current, values, language === "fr" ? "fr" : "en");
+      setErrors(e);
+      if (Object.keys(e).length) return;
+      // The last questions step opens the review; nothing is sent before the customer confirms there.
+      return setStep(step + 1);
+    }
+    if (!isReview || !customerId) return;
     setFacts(buildFacts(schema, values));
     setSubmitError(null);
     try {
@@ -154,7 +160,7 @@ export default function Risk() {
             <View style={st.nav}>
               {step > 0 ? <View style={st.flex}><Button label={t("qtBack")} variant="secondary" disabled={busy} onPress={() => setStep(step - 1)} /></View> : null}
               <View style={st.flex}>
-                <Button label={isLast ? t("qtGetLiveOffers") : t("next")} icon={ArrowRight} loading={busy} disabled={isLast && !customerId} onPress={() => void next()} />
+                <Button label={isReview ? t("qtGetLiveOffers") : step === reviewIndex - 1 ? t("reviewContinue") : t("next")} icon={ArrowRight} loading={busy} disabled={isReview && !customerId} onPress={() => void next()} />
               </View>
             </View>
           </CtaBar>
@@ -235,6 +241,28 @@ export default function Risk() {
                 </>
               ) : null}
             </>
+          ) : isReview && schema ? (
+            <>
+              <ReviewIntro body={t("qtReviewIntro")} />
+              <SchemaReviewSection
+                icon={insured.mode === "other" ? Users : UserRound}
+                title={t("qtInsured")}
+                fields={insuredReviewFields(t, assets)}
+                values={insuredReviewValues(insured, riskAssetId)}
+                onEdit={() => setStep(0)}
+              />
+              {schema.steps.map((s, i) => (
+                <SchemaReviewSection
+                  key={s.key}
+                  icon={i === 0 ? CarFront : ClipboardList}
+                  tint={i === 0 ? "gold" : "blue"}
+                  title={stepTitle(s) ?? ""}
+                  fields={s.fields.map((f) => withReferenceOptions(f, reference))}
+                  values={values}
+                  onEdit={() => setStep(i + 1)}
+                />
+              ))}
+            </>
           ) : current ? (
             <Card>
               {stepTitle(current) ? <SectionHeading title={stepTitle(current) ?? ""} /> : null}
@@ -266,12 +294,32 @@ export default function Risk() {
             </Card>
           ) : null}
           {!customerId ? <Text accessibilityRole="alert" style={ps.error}>{t("qtNoCustomerIdentity")}</Text> : null}
-          {submitError || (storeError && isLast) ? <ErrorCard error={submitError ?? { message: storeError }} fallback={t("qtOffersNotCalculated")} onRetry={() => void next()} /> : null}
+          {submitError || (storeError && isReview) ? <ErrorCard error={submitError ?? { message: storeError }} fallback={t("qtOffersNotCalculated")} onRetry={() => void next()} /> : null}
           <Banner icon={Info} tint="blue" body={t("qtServerValidates")} />
         </>
       )}
     </Screen>
   );
+}
+
+/** "Who is insured" on the review, as schema fields so it reads like every other card (relationship from the master list). */
+function insuredReviewFields(t: ReturnType<typeof useTranslation>["t"], assets: RiskAsset[]): RiskField[] {
+  const other = { insured_who: ["other"] };
+  return [
+    { key: "insured_who", label: t("qtWhoCover"), type: "select", options: [{ value: "self", label: t("qtMe") }, { value: "other", label: t("qtSomeoneElse") }] },
+    { key: "full_name", label: t("fullName"), type: "text", visibleWhen: other },
+    { key: "relationship", label: t("qtRelationshipToYou"), type: "select_master", master: { domain: "persons", list: "relationship" }, visibleWhen: other },
+    { key: "date_of_birth", label: t("dateOfBirth"), type: "date", visibleWhen: other },
+    ...(assets.length ? [{ key: "risk_asset_id", label: t("qtSavedAsset"), type: "select" as const, options: assets.map((a) => ({ value: a.id, label: a.label || a.registration_number || t("qtSavedAsset") })) }] : []),
+  ];
+}
+
+function insuredReviewValues(insured: InsuredPerson, riskAssetId: string | null | undefined): Record<string, string> {
+  return {
+    insured_who: insured.mode,
+    ...(insured.mode === "other" ? { full_name: insured.full_name, relationship: insured.relationship, date_of_birth: insured.date_of_birth } : {}),
+    ...(riskAssetId ? { risk_asset_id: riskAssetId } : {}),
+  };
 }
 
 /** Localized options from the vehicle reference (EN/FR) for body type, fuel, usage, … */

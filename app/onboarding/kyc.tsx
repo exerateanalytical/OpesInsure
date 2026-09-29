@@ -8,6 +8,7 @@ import { Banner, BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/co
 import { BrandArt } from "@/components/design/BrandArt";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
+import { ReviewDocuments, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -45,6 +46,8 @@ export default function Kyc() {
   const [notice, setNotice] = useState<string | null>(null);
   // Identity numbers on file read as a summary; the form opens when none is on file or to add another.
   const [addingId, setAddingId] = useState(false);
+  // What will be sent for verification is shown read-only first (ID numbers masked, documents listed).
+  const [reviewing, setReviewing] = useState(false);
 
   const run = async (kind: "photo" | "attach" | "submit", fn: () => Promise<void>) => {
     setBusy(kind);
@@ -88,6 +91,7 @@ export default function Kyc() {
     run("submit", async () => {
       await CustomerApi.submitKyc();
       q.setData(await CustomerApi.kyc());
+      setReviewing(false);
       setNotice(t("kycSubmitted"));
     });
   const finish = () => router.replace("/(customer)/(tabs)");
@@ -117,6 +121,39 @@ export default function Kyc() {
           const ready = canSubmitKyc(editable, docs.length, requirements) && k.identifiers.length > 0;
           const reviewerNote = sub?.remediation_reason ?? (phase === "more_info" || phase === "rejected" ? sub?.notes : null);
           const expiringSoon = days !== null && days <= 30;
+          if (reviewing && editable && ready)
+            return (
+              <>
+                <ReviewIntro body={t("kycReviewIntro")} />
+                <ReviewSection icon={Fingerprint} title={t("kycStep1")} onEdit={() => setReviewing(false)}>
+                  {k.identifiers.map((i, n) => (
+                    <ReviewRow key={`${i.type}-${i.masked_value}`} first={n === 0} label={td(`idType_${i.type}`, i.type)} value={i.masked_value} />
+                  ))}
+                </ReviewSection>
+                <ReviewSection icon={IdCard} title={t("kycStep2")} onEdit={() => setReviewing(false)}>
+                  <ReviewDocuments files={docs.map((d) => ({ key: d.id, name: td(`kycPurpose_${d.purpose}`, d.purpose), meta: td(`scan_${d.scan_status}`, d.scan_status), icon: IdCard }))} />
+                </ReviewSection>
+                {requirements.length ? (
+                  <ReviewSection icon={ClipboardList} title={t("kycRequirementsTitle")} onEdit={() => setReviewing(false)}>
+                    {requirements.map((r, n) => (
+                      <ReviewRow
+                        key={`${r.requirement_code}-${r.applies_to ?? ""}`}
+                        first={n === 0}
+                        label={td(`kycReq_${r.requirement_code}`, r.requirement_code)}
+                        value={t(r.satisfied ? "kycReqSatisfied" : r.mandatory ? "kycReqMissing" : "kycReqOptional")}
+                      />
+                    ))}
+                  </ReviewSection>
+                ) : null}
+                <Button
+                  label={t(phase === "more_info" ? "kycResubmit" : restart ? "kycRenew" : "kycSubmit")}
+                  loading={busy === "submit"}
+                  disabled={!!busy}
+                  onPress={() => void submit()}
+                />
+                <Button label={t("reviewBackToForm")} variant="tertiary" disabled={!!busy} onPress={() => setReviewing(false)} />
+              </>
+            );
           return (
             <>
               <Card style={styles.card}>
@@ -246,10 +283,13 @@ export default function Kyc() {
                 <Button label={t("personalInformation")} icon={UserRound} variant="tertiary" onPress={() => router.push("/account/profile")} />
                 {editable ? (
                   <Button
-                    label={t(phase === "more_info" ? "kycResubmit" : restart ? "kycRenew" : "kycSubmit")}
-                    loading={busy === "submit"}
+                    label={t("reviewContinue")}
                     disabled={!ready || !!busy}
-                    onPress={() => void submit()}
+                    onPress={() => {
+                      setError(null);
+                      setNotice(null);
+                      setReviewing(true);
+                    }}
                   />
                 ) : null}
                 {editable && !ready ? <Text style={styles.meta}>{t("kycSubmitHint")}</Text> : null}

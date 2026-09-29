@@ -20,6 +20,10 @@ import { useTranslation } from "@/i18n";
 import { claimActionAllowed } from "@/lib/claimStatus";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
+import { ReviewDocuments, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
+
+/** A picked file waiting for the customer's confirmation before it is uploaded. */
+type PendingFile = { asset: { uri: string; mimeType?: string | null }; kind: string; name: string; size?: number | null };
 
 const MAX_VIDEO_SECONDS = 60;
 
@@ -44,12 +48,26 @@ export default function Evidence() {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingFile | null>(null);
   const allowed = claim.data ? claimActionAllowed("evidence", claim.data.status) : false;
   const policy = policies.find((p) => p.id === claim.data?.policy_id) ?? claimPolicy(claim.data);
   const list = items.data ?? [];
 
-  const upload = async (asset: { uri: string; mimeType?: string | null }, kind: string) => {
-    if (!id) return;
+  // Picking a file shows it first (thumbnail / file row and what it is for); Upload sends it.
+  const stage = (asset: { uri: string; mimeType?: string | null }, kind: string, name?: string | null, size?: number | null) => {
+    setError(null);
+    setNotice(null);
+    setPending({ asset, kind, name: name || td(`evidence_${kind}`, kind), size });
+    setPickerOpen(false);
+  };
+  const confirmPending = async () => {
+    if (!pending) return;
+    // A failed upload keeps the file on screen so the customer can retry.
+    if (await upload(pending.asset, pending.kind)) setPending((p) => (p === pending ? null : p));
+  };
+
+  const upload = async (asset: { uri: string; mimeType?: string | null }, kind: string): Promise<boolean> => {
+    if (!id) return false;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -58,8 +76,10 @@ export default function Evidence() {
       await uploadClaimEvidence(id, asset, requirement ?? kind, setProgress);
       setNotice(t("evidenceUploaded"));
       await Promise.all([items.reload(), requirements.reload()]);
+      return true;
     } catch (e) {
       setError(e instanceof Error && e.message !== "FILE_READ_FAILED" ? e.message : t("evidenceUploadFailed"));
+      return false;
     } finally {
       setBusy(false);
       setProgress(null);
@@ -79,9 +99,11 @@ export default function Evidence() {
     }));
     const asset = result.assets?.[0];
     if (!result.canceled && asset)
-      await upload(
+      stage(
         { uri: asset.uri, mimeType: asset.mimeType ?? (media === "videos" ? "video/mp4" : "image/jpeg") },
         media === "videos" ? "VIDEO" : "PHOTO",
+        asset.fileName,
+        asset.fileSize,
       );
   };
 
@@ -94,9 +116,11 @@ export default function Evidence() {
     const asset = result.assets?.[0];
     if (!result.canceled && asset) {
       const video = asset.type === "video";
-      await upload(
+      stage(
         { uri: asset.uri, mimeType: asset.mimeType ?? (video ? "video/mp4" : "image/jpeg") },
         video ? "VIDEO" : "PHOTO",
+        asset.fileName,
+        asset.fileSize,
       );
     }
   };
@@ -108,7 +132,7 @@ export default function Evidence() {
       multiple: false,
     }));
     const asset = result.assets?.[0];
-    if (!result.canceled && asset) await upload(asset, "DOCUMENT");
+    if (!result.canceled && asset) stage(asset, "DOCUMENT", asset.name, asset.size);
   };
 
   const declare = async () => {
@@ -151,7 +175,7 @@ export default function Evidence() {
       footer={
         inWizard ? (
           <CtaBar>
-            <Button label={t("continue")} icon={ArrowRight} disabled={busy} onPress={() => router.push({ pathname: "/claim/new/review" as never, params: { id } })} />
+            <Button label={t("continue")} icon={ArrowRight} disabled={busy || !!pending} onPress={() => router.push({ pathname: "/claim/new/review" as never, params: { id } })} />
           </CtaBar>
         ) : undefined
       }
@@ -197,6 +221,16 @@ export default function Evidence() {
                     </Pressable>
                   ))}
                 </View>
+              ) : null}
+              {pending ? (
+                <ReviewSection icon={pending.kind === "VIDEO" ? Video : pending.kind === "DOCUMENT" ? FileText : Camera} title={t("evidenceCheckFile")}>
+                  <ReviewDocuments
+                    files={[{ key: pending.asset.uri, name: pending.name, uri: pending.asset.uri, image: String(pending.asset.mimeType ?? "").startsWith("image/"), meta: formatBytes(pending.size) }]}
+                  />
+                  <ReviewRow label={t("evidenceFor")} value={requirement ? td(`evidence_${requirement}`, requirements.data?.find((r) => r.key === requirement)?.label ?? requirement) : td(`evidence_${pending.kind}`, pending.kind)} />
+                  <Button label={t("evidenceUploadThis")} icon={CloudUpload} loading={busy} disabled={busy} onPress={() => void confirmPending()} />
+                  <Button label={t("evidenceChooseAnother")} variant="tertiary" disabled={busy} onPress={() => { setPending(null); setPickerOpen(true); }} />
+                </ReviewSection>
               ) : null}
               {progress !== null ? (
                 <View style={styles.progress}>

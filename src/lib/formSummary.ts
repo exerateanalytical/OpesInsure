@@ -5,7 +5,7 @@
  * "12 March 1990", repeaters list one line per item. Pure: node-tested
  * (tests/form-summary.test.mjs).
  */
-import type { RiskField } from "./riskSchema.ts";
+import { isFieldVisible, type RiskField } from "./riskSchema.ts";
 import { OTHER, type Lang } from "./masterFields.ts";
 
 export type SummaryRow = {
@@ -15,11 +15,14 @@ export type SummaryRow = {
   value: string | null;
   /** Repeater rows (beneficiaries), one readable line each. */
   items?: string[];
+  /** Yes/no answers (boolean fields): the review shows them as a chip so a "No" is as visible as a "Yes". */
+  answer?: "yes" | "no";
 };
 
 /** Resolves a master-list code to its label (undefined when the list is not loaded or the code is unknown). */
 export type LabelResolver = (field: RiskField, code: string) => string | undefined;
-export type SummaryCopy = { other: string; yes: string; no: string };
+/** `money` formats whole FCFA (the app's formatXaf); without it amounts read "1 500 000 FCFA"-style digits. */
+export type SummaryCopy = { other: string; yes: string; no: string; money?: (fcfa: number) => string };
 
 export const fieldLabel = (f: Pick<RiskField, "label" | "labelFr">, lang: Lang) => (lang === "fr" && f.labelFr ? f.labelFr : f.label);
 
@@ -59,7 +62,19 @@ export function summarizeValue(f: RiskField, raw: string | undefined, values: Re
       return v === "true" ? copy.yes : copy.no;
     case "number":
       return /percent|_pct$/i.test(f.key) ? `${v}%` : v;
+    case "money": {
+      // Wizard values are whole FCFA as typed ("5 000 000"); the server gets minor units.
+      const n = Number(v.replace(/\s/g, "")); // \s includes the no-break spaces of fr-CM grouping
+      if (!Number.isFinite(n)) return v;
+      return copy.money ? copy.money(n) : `${n} FCFA`;
+    }
+    case "vehicle_make":
+    case "vehicle_model":
+      // Picker codes carry the chosen name in their snapshot key (make, model).
+      return (f.textKey ? String(values[f.textKey] ?? "").trim() : "") || humanizeCode(v);
     case "select":
+    case "vehicle_generation":
+    case "vehicle_variant":
       return f.options?.find((o) => o.value === v)?.label ?? humanizeCode(v);
     case "select_master":
       if (v === OTHER) return (values[`${f.key}_other`] ?? "").trim() || copy.other;
@@ -99,8 +114,24 @@ export function summarizeFields(fields: RiskField[], values: Record<string, stri
         const items = summarizeItems(f, values[f.key], lang, resolve, copy);
         return { key: f.key, label, value: items.length ? String(items.length) : null, items };
       }
-      return { key: f.key, label, value: summarizeValue(f, values[f.key], values, lang, resolve, copy) };
+      const value = summarizeValue(f, values[f.key], values, lang, resolve, copy);
+      return f.type === "boolean" && value ? { key: f.key, label, value, answer: values[f.key] === "true" ? ("yes" as const) : ("no" as const) } : { key: f.key, label, value };
     });
+}
+
+/**
+ * Review rows for a wizard step or form: only the fields the customer saw
+ * (visible_if / visibleWhen honoured), in the same order and with the same
+ * labels and option labels, codes in words.
+ */
+export function reviewRows(fields: RiskField[], values: Record<string, string>, lang: Lang, resolve: LabelResolver, copy: SummaryCopy): SummaryRow[] {
+  return summarizeFields(
+    fields.filter((f) => isFieldVisible(f, values)),
+    values,
+    lang,
+    resolve,
+    copy,
+  );
 }
 
 /** True when any of the keys holds a value (an empty JSON list counts as empty). */

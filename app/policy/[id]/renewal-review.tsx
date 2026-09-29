@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, CalendarDays, CheckSquare, CircleCheck, Lock, Smartphone, Square, ShieldAlert } from "lucide-react-native";
+import { ArrowRight, CalendarDays, CircleCheck, Lock, Smartphone, ShieldAlert } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { LoadingState } from "@/components/StatePanel";
-import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ConsentRow, ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
 import { InfoBox, Network, NetworkTiles, PriceRow, RenewalHero, RenewalSteps, TotalBand } from "@/components/policies/RenewalUi";
 import { useRenewal } from "@/hooks/useRenewal";
@@ -175,9 +175,10 @@ export default function RenewalReview() {
 
           <Card>
             <Text style={st.label}>{t("rrConsentTitle")}</Text>
-            <Consent checked={confirmDetails} onPress={() => setConfirmDetails(!confirmDetails)} label={t("rrConsentDetails")} />
-            <Consent
+            <ConsentRow checked={confirmDetails} disabled={busy} onPress={() => setConfirmDetails(!confirmDetails)} label={t("rrConsentDetails")} />
+            <ConsentRow
               checked={acceptTerms}
+              disabled={busy}
               onPress={() => setAcceptTerms(!acceptTerms)}
               label={t("rrConsentTerms")}
               trailing={
@@ -201,20 +202,6 @@ export default function RenewalReview() {
   );
 }
 
-function Consent({ checked, onPress, label, trailing }: { checked: boolean; onPress: () => void; label: string; trailing?: React.ReactNode }) {
-  return (
-    <View style={st.consentRow}>
-      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel={label} hitSlop={8} onPress={onPress} style={st.checkbox}>
-        {checked ? <CheckSquare size={24} color={colors.blue600} /> : <Square size={24} color={colors.neutral400} />}
-      </Pressable>
-      <Text style={[st.consentText, st.flex]}>
-        {label}
-        {trailing}
-      </Text>
-    </View>
-  );
-}
-
 const st = StyleSheet.create({
   flex: { flex: 1 },
   title: { ...type.cardTitle, color: colors.navy950 },
@@ -227,7 +214,5 @@ const st = StyleSheet.create({
   addons: { gap: 4 },
   secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
-  consentRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
-  checkbox: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
   consentText: { ...type.body, color: colors.neutral700 },
 });

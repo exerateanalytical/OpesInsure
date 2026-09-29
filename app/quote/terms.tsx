@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text } from "react-native";
-import { ArrowRight, FileDown, FileSignature, FileText } from "lucide-react-native";
-import { BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { ArrowRight, CheckCircle2, FileDown, FileSignature, FileText } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
 import { Button, Card, Screen } from "@/components/ui";
 import { ConsentRow, ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
@@ -11,6 +11,7 @@ import { openDocument, openDocumentUrl } from "@/components/documents/openDocume
 import { DisclosureApi, type Proposal } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { normalizeCoverage } from "@/lib/purchase";
+import { afterTermsRoute } from "@/lib/paymentRouting";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
 
@@ -22,7 +23,8 @@ import { colors, type } from "@/theme/tokens";
  */
 export default function Terms() {
   const { t, language } = useTranslation();
-  const params = useLocalSearchParams<{ proposalId?: string }>();
+  // approved=1: forwarded here because the application just became payable.
+  const params = useLocalSearchParams<{ proposalId?: string; approved?: string }>();
   const storeProposalId = useInsurance((s) => s.proposal?.id);
   const loadProposal = useInsurance((s) => s.loadProposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
@@ -54,8 +56,11 @@ export default function Terms() {
     setBusy(true);
     setError(null);
     try {
-      await DisclosureApi.acceptTerms(proposalId, true);
-      router.push({ pathname: "/checkout", params: { proposalId } });
+      const res = await DisclosureApi.acceptTerms(proposalId, true);
+      // Payable -> checkout; an application the acceptance just submitted for review -> its hub.
+      const next = afterTermsRoute(proposalId, res?.status);
+      if (next.pathname === "/checkout") router.push(next as never);
+      else router.replace(next as never);
     } catch {
       setError(t("qtAcceptanceFailed"));
     } finally {
@@ -68,12 +73,13 @@ export default function Terms() {
       footer={
         <CtaBar>
           {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
-          <Button label={t("qtContinuePayment")} icon={ArrowRight} disabled={!accepted || !proposal} loading={busy} onPress={() => void proceed()} />
+          <Button label={String(proposal?.status).toUpperCase() === "DOCUMENTS_PENDING" ? t("qtAcceptSubmit") : t("qtContinuePayment")} icon={ArrowRight} disabled={!accepted || !proposal} loading={busy} onPress={() => void proceed()} />
         </CtaBar>
       }
     >
       <BrandHeader title={t("qtTermsDeclarations")} subtitle={t("qtReviewBeforePayment")} />
       <QuoteSteps current={3} />
+      {params.approved === "1" ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
       {!proposal && !loadError ? <LoadingState label={t("prLoading")} /> : null}
       {loadError && !proposal ? <ErrorCard error={loadError} fallback={t("prLoadFailed")} onRetry={() => void load()} /> : null}
       {proposal ? (

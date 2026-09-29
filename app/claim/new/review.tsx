@@ -1,26 +1,26 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Calendar, Check, Clock3, FileText, Image as ImageIcon, LucideIcon, Mail, MapPin, Pencil, Phone, Sparkles, User } from "lucide-react-native";
-import { Button, ripple, Screen } from "@/components/ui";
-import { BrandHeader, CtaBar, TintedIcon, type Tint } from "@/components/design";
-import { InstitutionMark } from "@/components/InstitutionMark";
+import { ArrowRight, Check, FileText, Image as ImageIcon, User } from "lucide-react-native";
+import { Screen } from "@/components/ui";
+import { BrandHeader } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
-import { claimExtra, claimPolicy, evidenceIcon, evidenceIsPdf, insuredLabel, policyLine, policyTitle, productIcon, productTint, providerName } from "@/components/claims/claimProduct";
+import { ReviewDocuments, ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
+import { claimExtra, claimPolicy, evidenceIcon, formatBytes, insuredLabel, policyLine, policyTitle, productIcon, productTint, providerName } from "@/components/claims/claimProduct";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
-import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { ClaimsApi } from "@/api/client";
 import { ClaimRecordsApi } from "@/api/extra";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
  * New claim, step 4 of 4 (design 30): review the policy, incident, evidence
- * and contact details, confirm the declaration and submit. The claim record
+ * and contact details (shared review cards, each with Edit back to its step),
+ * confirm the declaration and submit. The claim record
  * already exists (created by step 2), so Submit sends the declaration
  * (PUT /mobile/claims/{id}/incident declaration_confirmed) and opens the claim.
  */
@@ -32,7 +32,6 @@ export default function NewClaimReview() {
   const claim = useLoad(() => ClaimsApi.show(id), [id]);
   const evidence = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
   const { policies } = usePolicies();
-  const logoFor = useInsurerLogo();
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -64,12 +63,7 @@ export default function NewClaimReview() {
 
   return (
     <Screen
-      footer={
-        <CtaBar>
-          <Button label={t("claimSubmitClaim")} icon={ArrowRight} loading={busy} onPress={() => void submit()} />
-          <Button variant="tertiary" label={t("claimSaveDraft")} onPress={open} />
-        </CtaBar>
-      }
+      footer={<ReviewFooter label={t("claimSubmitClaim")} icon={ArrowRight} loading={busy} onConfirm={() => void submit()} onBack={open} backLabel={t("claimSaveDraft")} />}
     >
       <BrandHeader title={t("claimReviewTitle")} subtitle={t("claimReviewSubtitle")} right="help" />
       <ClaimWizardSteps current={3} />
@@ -84,48 +78,34 @@ export default function NewClaimReview() {
           const files = evidence.data ?? [];
           return (
             <View style={s.stack}>
-              <ReviewCard icon={productIcon(title, line)} tint={productTint(title, line)} title={t("claimPolicyInformation")} onEdit={() => router.replace({ pathname: "/claim/new", params: { policyId: c.policy_id } })} editLabel={t("claimStepSelectPolicy")}>
-                <Text style={s.value}>{title}</Text>
-                {provider ? (
-                  <View style={s.line}>
-                    <InstitutionMark logoUrl={logoFor(c, policy)} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-                    <Text style={s.value}>{provider}</Text>
-                  </View>
-                ) : null}
-                {asset ? <Line icon={productIcon(title, line)} text={asset} /> : null}
-                {policy?.policy_number ? <Line icon={FileText} text={t("claimPolicyNo", { number: policy.policy_number })} /> : null}
-              </ReviewCard>
+              <ReviewIntro body={t("claimReviewIntro")} />
+              <ReviewSection icon={productIcon(title, line)} tint={productTint(title, line)} title={t("claimPolicyInformation")} onEdit={() => router.replace({ pathname: "/claim/new", params: { policyId: c.policy_id } })} editLabel={t("claimEdit")}>
+                <ReviewRow first label={t("claimPolicyLabel")} value={title} />
+                {provider ? <ReviewRow label={t("insurer")} value={provider} /> : null}
+                {asset ? <ReviewRow label={t("claimInsuredItem")} value={asset} /> : null}
+                {policy?.policy_number ? <ReviewRow label={t("claimPolicyNumberLabel")} value={policy.policy_number} /> : null}
+              </ReviewSection>
 
-              <ReviewCard icon={FileText} tint="gold" title={t("claimIncidentDetails")} onEdit={() => router.push({ pathname: "/claim/[id]/incident", params: { id } })} editLabel={t("claimStepIncident")}>
-                <Line icon={Calendar} text={date(c.incident_at)} />
-                {timeOf(c.incident_at) ? <Line icon={Clock3} text={timeOf(c.incident_at)} /> : null}
-                {c.incident_location ? <Line icon={MapPin} text={c.incident_location} /> : null}
-                {incidentType ? <Line icon={Sparkles} text={td(`incidentKind_${incidentType}`, incidentType)} /> : null}
-                {c.description ? <Line icon={FileText} text={c.description} /> : null}
-              </ReviewCard>
+              <ReviewSection icon={FileText} tint="gold" title={t("claimIncidentDetails")} onEdit={() => router.push({ pathname: "/claim/[id]/incident", params: { id } })} editLabel={t("claimEdit")}>
+                <ReviewRow first label={t("claimIncidentDate")} value={date(c.incident_at)} />
+                {timeOf(c.incident_at) ? <ReviewRow label={t("claimIncidentTime")} value={timeOf(c.incident_at)} /> : null}
+                <ReviewRow label={t("claimIncidentLocation")} value={c.incident_location} />
+                {incidentType ? <ReviewRow label={t("claimIncidentType")} value={td(`incidentKind_${incidentType}`, incidentType)} /> : null}
+                <ReviewRow label={t("reviewWhatHappened")} value={c.description} />
+              </ReviewSection>
 
-              <ReviewCard icon={ImageIcon} tint="green" title={t("claimEvidenceSection")} onEdit={() => router.push({ pathname: "/claim/[id]/evidence", params: { id, wizard: "1" } })} editLabel={t("claimStepEvidence")}>
-                <Text style={s.value}>{files.length ? t("claimFilesUploaded", { count: files.length }) : t("claimNoFilesYet")}</Text>
-                {files.length ? (
-                  <View style={s.thumbs}>
-                    {files.slice(0, 8).map((f) => {
-                      const Icon = evidenceIcon(f);
-                      const pdf = evidenceIsPdf(f);
-                      return (
-                        <View key={f.id} style={[s.thumb, pdf && s.thumbPdf]} accessible accessibilityLabel={td(`evidence_${f.evidence_type}`, f.evidence_type)}>
-                          <Icon size={tileIconSize(64)} color={pdf ? colors.white : colors.blue600} strokeWidth={tileIcon.stroke} />
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : null}
-              </ReviewCard>
+              <ReviewSection icon={ImageIcon} tint="green" title={t("claimEvidenceSection")} onEdit={() => router.push({ pathname: "/claim/[id]/evidence", params: { id, wizard: "1" } })} editLabel={t("claimEdit")}>
+                <ReviewDocuments
+                  empty={t("claimNoFilesYet")}
+                  files={files.map((f) => ({ key: f.id, name: td(`evidence_${f.evidence_type}`, f.evidence_type), meta: formatBytes(f.size_bytes) || null, icon: evidenceIcon(f) }))}
+                />
+              </ReviewSection>
 
-              <ReviewCard icon={User} tint="red" title={t("claimContactDetails")} onEdit={() => router.push("/account/profile")} editLabel={t("contactDetails")}>
-                {user?.full_name ? <Line icon={User} text={user.full_name} /> : null}
-                {user?.phone_e164 ? <Line icon={Phone} text={user.phone_e164} /> : null}
-                {user?.email ? <Line icon={Mail} text={user.email} /> : null}
-              </ReviewCard>
+              <ReviewSection icon={User} tint="red" title={t("claimContactDetails")} onEdit={() => router.push("/account/profile")} editLabel={t("claimEdit")}>
+                <ReviewRow first label={t("fullName")} value={user?.full_name} />
+                <ReviewRow label={t("partiesPhone")} value={user?.phone_e164} />
+                <ReviewRow label={t("email")} value={user?.email} />
+              </ReviewSection>
 
               <Pressable
                 accessibilityRole="checkbox"
@@ -147,54 +127,12 @@ export default function NewClaimReview() {
   );
 }
 
-function ReviewCard({ icon, tint, title, onEdit, editLabel, children }: { icon: LucideIcon; tint: Tint; title: string; onEdit: () => void; editLabel: string; children: React.ReactNode }) {
-  const { t } = useTranslation();
-  return (
-    <View style={s.card}>
-      <TintedIcon icon={icon} tint={tint} size={56} />
-      <View style={s.flex}>
-        <View style={s.cardHead}>
-          <Text accessibilityRole="header" style={[s.cardTitle, s.flex]}>{title}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${t("claimStepReview")}: ${editLabel}`} onPress={onEdit} hitSlop={8} android_ripple={ripple()} style={s.edit}>
-            <Pencil size={18} color={colors.blue600} />
-            <Text style={s.editText}>{t("claimEdit")}</Text>
-          </Pressable>
-        </View>
-        <View style={s.lines}>{children}</View>
-      </View>
-    </View>
-  );
-}
-
-function Line({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
-  return (
-    <View style={s.line}>
-      <Icon size={18} color={colors.navy800} />
-      <Text style={[s.value, s.flex]}>{text}</Text>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   stack: { gap: space.x3 },
-  flex: { flex: 1 },
-  card: { flexDirection: "row", gap: space.x3, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4 },
-  cardHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
-  cardTitle: { ...type.cardTitle, color: colors.navy950 },
-  edit: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingHorizontal: 4 },
-  editText: { ...type.label, color: colors.blue600 },
-  lines: { gap: 6, marginTop: 6 },
-  line: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
-  value: { ...type.body, color: colors.navy950 },
-  thumbs: { flexDirection: "row", flexWrap: "wrap", gap: space.x2, marginTop: 4 },
-  thumb: { width: 64, height: 64, borderRadius: radius.control, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center" },
-  thumbPdf: { backgroundColor: colors.danger },
   declaration: { flexDirection: "row", gap: space.x3, alignItems: "flex-start", backgroundColor: colors.blue50, borderRadius: radius.card, padding: space.x4, borderWidth: 1, borderColor: colors.blue50 },
   declarationError: { borderColor: colors.danger },
   declarationText: { ...type.body, color: colors.neutral800, flex: 1 },
   checkbox: { width: 26, height: 26, borderRadius: 7, borderWidth: 2, borderColor: colors.neutral300, backgroundColor: colors.white, alignItems: "center", justifyContent: "center", marginTop: 2 },
   checkboxOn: { backgroundColor: colors.blue600, borderColor: colors.blue600 },
   error: { ...type.meta, color: colors.dangerText },
-  draft: { alignSelf: "center", minHeight: 40, justifyContent: "center" },
-  draftText: { ...type.label, color: colors.blue600, textDecorationLine: "underline" },
 });

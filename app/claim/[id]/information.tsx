@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
-import { ArrowRight, Check, CircleAlert, FileText, Headphones, Info, Landmark, Upload } from "lucide-react-native";
+import { ArrowRight, Check, CircleAlert, FileText, Headphones, Info, Landmark, MessageSquareText, Upload } from "lucide-react-native";
 import { Button, Card, ripple, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, HeroCard, SectionHeading, TintedIcon, type HeroMeta } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ReviewDocuments, ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { claimPolicy, evidenceIcon, evidenceIsPdf, formatBytes, policyLine, policyTitle, productIcon, providerName, requirementMet } from "@/components/claims/claimProduct";
 import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { useLoad } from "@/hooks/useLoad";
@@ -44,6 +45,8 @@ export default function ClaimInformationRequest() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // What will be sent (files on the claim, anything still missing, the comment) is checked before sending.
+  const [reviewing, setReviewing] = useState(false);
   useFocusEffect(
     React.useCallback(() => {
       void requirements.reload();
@@ -79,6 +82,13 @@ export default function ClaimInformationRequest() {
     }
   };
 
+  const review = () => {
+    setTouched(true);
+    if (!agreed || !claim.data) return;
+    setError(null);
+    setReviewing(true);
+  };
+
   const submit = async () => {
     setTouched(true);
     if (!agreed || !claim.data) return;
@@ -103,9 +113,11 @@ export default function ClaimInformationRequest() {
   return (
     <Screen
       footer={
-        allowed ? (
+        allowed && reviewing ? (
+          <ReviewFooter label={t("infoReqSubmit")} icon={ArrowRight} loading={busy} onConfirm={() => void submit()} onBack={() => setReviewing(false)} />
+        ) : allowed ? (
           <CtaBar>
-            <Button label={t("infoReqSubmit")} icon={ArrowRight} variant="gold" loading={busy} disabled={!!uploading} onPress={() => void submit()} />
+            <Button label={t("reviewContinue")} icon={ArrowRight} variant="gold" disabled={!!uploading} onPress={review} />
             <Button
               label={t("claimContactClaimsSupport")}
               icon={Headphones}
@@ -117,6 +129,29 @@ export default function ClaimInformationRequest() {
       }
     >
       <BrandHeader title={t("infoReqTitle")} subtitle={t("infoReqSubtitle")} />
+      {allowed && reviewing ? (
+        <>
+          <ReviewIntro body={t("infoReqReviewIntro")} />
+          <ReviewSection icon={FileText} title={t("claimUploadedFiles", { count: files.length })} onEdit={() => setReviewing(false)}>
+            <ReviewDocuments
+              empty={t("claimNoEvidence")}
+              files={files.map((f) => ({ key: f.id, name: td(`evidence_${f.evidence_type}`, f.evidence_type), meta: [formatBytes(f.size_bytes), f.submitted_at ? date(f.submitted_at) : null].filter(Boolean).join(" · ") || null, icon: evidenceIcon(f) }))}
+            />
+          </ReviewSection>
+          {outstanding.length ? (
+            <ReviewSection icon={CircleAlert} tint="gold" title={t("infoReqStillMissing")} onEdit={() => setReviewing(false)}>
+              {outstanding.map((r, i) => (
+                <ReviewRow key={r.key} first={i === 0} label={r.label} value={r.status === "REJECTED" ? t("claimRequirementRejected") : r.required ? t("infoReqRequiredChip") : t("mdOptional")} />
+              ))}
+            </ReviewSection>
+          ) : null}
+          <ReviewSection icon={MessageSquareText} title={t("infoReqComments")} onEdit={() => setReviewing(false)}>
+            <ReviewRow first label={t("infoReqComments")} value={comment.trim()} />
+          </ReviewSection>
+          {error ? <ErrorCard error={error} fallback={t("actionFailed")} /> : null}
+        </>
+      ) : (
+      <>
       <StatePanel {...claim} onRetry={claim.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(c) => {
           const policy = policies.find((p) => p.id === c.policy_id) ?? claimPolicy(c);
@@ -241,6 +276,8 @@ export default function ClaimInformationRequest() {
       ) : null}
       {touched && !agreed ? <Text accessibilityRole="alert" style={s.error}>{t("claimDeclarationRequired")}</Text> : null}
       {error ? <ErrorCard error={error} fallback={t("actionFailed")} /> : null}
+      </>
+      )}
     </Screen>
   );
 }

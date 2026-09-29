@@ -50,6 +50,8 @@ export default function NewClaimIncident() {
         hide={id ? ["policy_id"] : []}
         submitLabel={t("continue")}
         submitIcon={ArrowRight}
+        // The incident is registered with the insurer on confirm: check it first.
+        review={{ intro: t("claimIncidentReviewIntro"), confirmLabel: t("claimIncidentConfirm"), title: t("claimIncidentDetails") }}
         flat
         onLocation={(f) => (fix.current = f)}
         footer={<Text style={styles.note}>{t("claimNewNote")}</Text>}

@@ -6,6 +6,8 @@ import { LoadingState } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ContractField } from "@/components/forms/ContractField";
 import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
+import { ReviewIntro, SchemaReviewSection } from "@/components/review/ReviewSummary";
+import { ClipboardList, Pencil } from "lucide-react-native";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { api } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -81,6 +83,7 @@ export function SchemaForm({
   submitIcon,
   onLocation,
   only,
+  review,
 }: {
   form: FormName;
   initialValues?: Record<string, string> | null;
@@ -103,6 +106,12 @@ export function SchemaForm({
    * null so the server really clears it.
    */
   only?: string[];
+  /**
+   * Check-before-submit: a valid form first shows a read-only review of the
+   * answers (same labels and option labels, Edit returns to the fields);
+   * onSubmit only runs when the customer confirms there.
+   */
+  review?: { intro?: string; confirmLabel?: string; title?: string };
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -112,6 +121,7 @@ export function SchemaForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<unknown>(null);
+  const [reviewing, setReviewing] = useState(false);
   const seedKey = useMemo(() => JSON.stringify(initialValues ?? {}), [initialValues]);
 
   useEffect(() => {
@@ -134,12 +144,17 @@ export function SchemaForm({
     const shown = schema.steps.map((s) => ({ ...s, fields: s.fields.filter((f) => inSection(f.key)) }));
     const e = Object.assign({}, ...shown.map((s) => validateStep(s, values, lang))) as Record<string, string>;
     setErrors(e);
-    if (Object.values(e).some(Boolean)) return;
+    if (Object.values(e).some(Boolean)) return setReviewing(false);
+    if (review && !reviewing) {
+      setSubmitError(null);
+      return setReviewing(true);
+    }
     setBusy(true);
     setSubmitError(null);
     try {
       const payload = buildFormPayload(schema, values, labels);
       await onSubmit(only ? sectionPayload(payload, fields, only) : payload, { values, schema });
+      setReviewing(false);
       if (resetOnSuccess) setValues(initialFormValues(schema));
     } catch (err) {
       setSubmitError(err);
@@ -147,6 +162,29 @@ export function SchemaForm({
       setBusy(false);
     }
   };
+
+  if (reviewing)
+    return (
+      <>
+        <ReviewIntro body={review?.intro} />
+        {schema.steps.map((step, i) => (
+          <SchemaReviewSection
+            key={step.key}
+            icon={ClipboardList}
+            title={(lang === "fr" && step.titleFr ? step.titleFr : step.title) || review?.title || t("reviewYourAnswers")}
+            fields={step.fields.filter((f) => inSection(f.key))}
+            values={values}
+            labels={labels}
+            tint={i === 0 ? "blue" : "gold"}
+            onEdit={() => setReviewing(false)}
+          />
+        ))}
+        {submitError ? <ErrorCard error={submitError} fallback={t("actionFailed")} onRetry={() => void submit()} /> : null}
+        {footer}
+        <Button label={review?.confirmLabel ?? submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
+        <Button label={t("reviewBackToForm")} icon={Pencil} variant="tertiary" disabled={busy} onPress={() => setReviewing(false)} />
+      </>
+    );
 
   return (
     <>
@@ -187,7 +225,7 @@ export function SchemaForm({
       {submitError ? <ErrorCard error={submitError} fallback={t("actionFailed")} onRetry={() => void submit()} /> : null}
       {Object.values(errors).some(Boolean) ? <Text accessibilityRole="alert" style={s.error}>{t("formFixErrors")}</Text> : null}
       {footer}
-      <Button label={submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
+      <Button label={review ? t("reviewContinue") : submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
     </>
   );
 }

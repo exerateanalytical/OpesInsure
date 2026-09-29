@@ -7,8 +7,8 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, FileText, Handshake, LifeBuoy, LucideIcon, ReceiptText, RefreshCw, ShieldAlert, ShieldCheck, Wallet } from "lucide-react-native";
-import type { Claim, WalletPolicy } from "@/api/client";
+import { ArrowRight, CreditCard, FileText, Handshake, LifeBuoy, LucideIcon, ReceiptText, RefreshCw, ShieldAlert, ShieldCheck, Wallet } from "lucide-react-native";
+import type { Claim, ProposalSummary, WalletPolicy } from "@/api/client";
 import type { CustomerQuote } from "@/api/customer";
 import { ripple, StatusChip } from "@/components/ui";
 import { SectionHeading, TintedIcon, type Tint } from "@/components/design";
@@ -18,9 +18,12 @@ import { useTranslation } from "@/i18n";
 import { claimStatusKey, claimTone } from "@/lib/claimStatus";
 import { quoteStateKey, quoteTone } from "@/lib/quoteWorkflow";
 import type { InProgressItem, SectionState } from "@/lib/homeFeed";
+import { purchaseRoute } from "@/lib/paymentRouting";
+import { localized } from "@/lib/purchase";
+import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
-export type HomeItem = InProgressItem<CustomerQuote, Claim, WalletPolicy>;
+export type HomeItem = InProgressItem<CustomerQuote, Claim, WalletPolicy, ProposalSummary>;
 
 /** i18n key for the time-of-day greeting. */
 export const greetingKey = (h = new Date().getHours()): "greetingMorning" | "greetingAfternoon" | "greetingEvening" =>
@@ -169,7 +172,8 @@ export function InProgressSection({
 }
 
 function InProgressRow({ item, divider }: { item: HomeItem; divider: boolean }) {
-  const { t, td, date } = useTranslation();
+  const { t, td, date, language } = useTranslation();
+  const f = useFormatters();
   let icon: LucideIcon;
   let tint: Tint;
   let title: string;
@@ -194,6 +198,17 @@ function InProgressRow({ item, divider }: { item: HomeItem; divider: boolean }) 
     meta = reported ? t("homeClaimReported", { date: date(reported) }) : "";
     chip = { label: td(claimStatusKey(c.status), c.status), tone: claimTone(c.status) };
     go = () => router.push({ pathname: "/claim/[id]", params: { id: c.id } });
+  } else if (item.kind === "application") {
+    // Approved application: "Pay now" opens the terms, which lead to checkout.
+    const a = item.application;
+    const product = localized(a.product_name, language) || a.proposal_number;
+    const total = a.terms_snapshot?.total_minor ?? (a as { total_minor?: number }).total_minor;
+    icon = CreditCard;
+    tint = "green";
+    title = t("payApplicationTitle", { product });
+    meta = typeof total === "number" && total > 0 ? t("payAmountDue", { amount: f.xaf(total) }) : a.proposal_number;
+    chip = { label: t("payNow"), tone: "success" };
+    go = () => router.push(purchaseRoute(a.id, "terms") as never);
   } else {
     const p = item.policy;
     icon = RefreshCw;

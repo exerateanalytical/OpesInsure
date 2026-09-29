@@ -9,6 +9,8 @@ import { handleStepUpRequired } from "@/security/step-up";
 import { useLoad } from "@/hooks/useLoad";
 import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, REFUND_REASONS, refundPayload } from "@/lib/purchase";
+import { ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
+import { Undo2 } from "lucide-react-native";
 import { useTranslation } from "@/i18n";
 
 export default function Refund() {
@@ -21,6 +23,8 @@ export default function Refund() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [result, setResult] = useState<RefundRequest | null>(null);
+  // The request is shown read-only before it is sent.
+  const [reviewing, setReviewing] = useState(false);
   // One key per refund request on this screen: re-submits after a timeout
   // or step-up return the same refund instead of opening a second one.
   const key = useRef(`refund:${id}:${Crypto.randomUUID()}`);
@@ -40,10 +44,28 @@ export default function Refund() {
     }
   };
 
+  const reasonLabel = reasonCode ? td(`refundReason_${reasonCode}`, REFUND_REASONS.find((r) => r.code === reasonCode)?.label ?? reasonCode) : null;
+
   return (
-    <Screen>
+    <Screen
+      footer={
+        !result && reviewing ? (
+          <ReviewFooter label={t("rfSubmit")} loading={busy} onConfirm={() => void submit()} onBack={() => setReviewing(false)} />
+        ) : undefined
+      }
+    >
       <AppHeader title={t("rfTitle")} subtitle={t("rfSubtitle")} back />
-      {result ? (
+      {!result && reviewing ? (
+        <>
+          <ReviewIntro />
+          <ReviewSection icon={Undo2} title={t("rfTitle")} onEdit={() => setReviewing(false)}>
+            <ReviewRow first label={t("rfFullAmount")} value={f.xaf(amount)} />
+            <ReviewRow label={t("rfReason")} value={reasonLabel} />
+            <ReviewRow label={t("rfTellMore")} value={reason.trim()} />
+          </ReviewSection>
+          {error ? <ErrorCard error={error} fallback={t("rfSubmitFailed")} onRetry={() => void submit()} /> : null}
+        </>
+      ) : result ? (
         <Card feature>
           <StatusChip label={td(`status_${result.status}`, humanize(result.status))} tone="info" />
           <Text style={ps.title}>{t("rfReceived")}</Text>
@@ -56,8 +78,7 @@ export default function Refund() {
           {payment.data ? <InfoRow label={t("rfFullAmount")} value={f.xaf(amount)} strong /> : payment.error ? <ErrorCard error={payment.error} fallback={t("rfPaymentFailed")} onRetry={() => void payment.reload()} /> : null}
           <PickerField label={t("rfReason")} value={reasonCode || undefined} options={REFUND_REASONS.map((r) => ({ value: r.code, label: td(`refundReason_${r.code}`, r.label) }))} onChange={setReasonCode} />
           <TextField label={t("rfTellMore")} multiline value={reason} onChangeText={setReason} hint={t("rfMin10")} editable={!busy} />
-          {error ? <ErrorCard error={error} fallback={t("rfSubmitFailed")} onRetry={() => void submit()} /> : null}
-          <Button label={t("rfSubmit")} loading={busy} disabled={!valid || busy} onPress={() => void submit()} />
+          <Button label={t("reviewContinue")} disabled={!valid || busy} onPress={() => { setError(null); setReviewing(true); }} />
         </Card>
       )}
     </Screen>

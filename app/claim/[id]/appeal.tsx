@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowRight, Check, CircleCheck, FileText, Headphones, Lock } from "lucide-react-native";
 import { Button, Card, Chip, ChipRow, ripple, Screen, StatusChip, TextField } from "@/components/ui";
+import { ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { BrandHeader, CtaBar, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -38,6 +39,8 @@ export default function Appeal() {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The appeal is shown read-only before it is sent.
+  const [reviewing, setReviewing] = useState(false);
   const composed = [kind ? `${t(kind)}.` : "", reason.trim(), outcome.trim() ? `${t("appealOutcome")}: ${outcome.trim()}` : ""].filter(Boolean).join("\n\n");
   const valid = !!kind && reason.trim().length >= 30 && agreed && composed.length <= MAX_STATEMENT;
   const submit = async () => {
@@ -60,7 +63,14 @@ export default function Appeal() {
       footer={
         claim.data ? (
           <CtaBar>
-            {allowed ? <Button label={t("appealSubmit")} icon={ArrowRight} loading={busy} disabled={!valid} onPress={() => void submit()} /> : null}
+            {allowed && reviewing ? (
+              <>
+                <Button label={t("appealSubmit")} icon={ArrowRight} loading={busy} disabled={!valid || busy} onPress={() => void submit()} />
+                <Button label={t("reviewBackToForm")} variant="tertiary" disabled={busy} onPress={() => setReviewing(false)} />
+              </>
+            ) : allowed ? (
+              <Button label={t("reviewContinue")} icon={ArrowRight} disabled={!valid} onPress={() => { setError(null); setReviewing(true); }} />
+            ) : null}
             <Button
               label={t("contactSupport")}
               icon={Headphones}
@@ -74,7 +84,18 @@ export default function Appeal() {
       <BrandHeader title={t("appealTitle")} subtitle={t("appealExplain")} />
       <StatePanel {...claim} onRetry={claim.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {(c) =>
-          allowed ? (
+          allowed && reviewing ? (
+            <>
+              <ReviewIntro />
+              <ReviewSection icon={FileText} title={t("appealTitle")} onEdit={() => setReviewing(false)}>
+                <ReviewRow first label={t("claimNumberLabel")} value={c.claim_number} />
+                <ReviewRow label={t("appealReasonKind")} value={kind ? t(kind) : null} />
+                <ReviewRow label={t("appealReason")} value={reason.trim()} />
+                <ReviewRow label={t("appealOutcome")} value={outcome.trim()} />
+              </ReviewSection>
+              {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
+            </>
+          ) : allowed ? (
             <>
               <View style={s.eligible}>
                 <View style={s.row}>

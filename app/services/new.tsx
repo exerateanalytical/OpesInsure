@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { CarFront, FileCheck, FilePen, FileX, LucideIcon, MapPin, ShieldCheck, Users } from "lucide-react-native";
+import { ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandHeader, CtaBar, RadioCard, SectionHeading } from "@/components/design";
 import { PolicyServicesApi } from "@/api/client";
@@ -36,6 +37,8 @@ export default function NewService() {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The request is shown read-only for a last check before it is sent.
+  const [reviewing, setReviewing] = useState(false);
   const choosable = policies.filter((p) => ["ACTIVE", "EXPIRING"].includes(String(p.status).toUpperCase()));
 
   const submit = async () => {
@@ -52,17 +55,33 @@ export default function NewService() {
     }
   };
 
+  const policy = policies.find((p) => p.id === policyId);
+  const valid = !!policyId && reason.trim().length >= MIN_REASON;
+
   return (
     <Screen
       footer={
-        <CtaBar>
-          {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-          <Button label={t("svcSubmit")} loading={busy} disabled={!policyId || reason.trim().length < MIN_REASON || busy} onPress={() => void submit()} />
-        </CtaBar>
+        reviewing ? (
+          <ReviewFooter label={t("svcSubmit")} loading={busy} error={error} onConfirm={() => void submit()} onBack={() => setReviewing(false)} />
+        ) : (
+          <CtaBar>
+            <Button label={t("reviewContinue")} disabled={!valid} onPress={() => { setError(null); setReviewing(true); }} />
+          </CtaBar>
+        )
       }
     >
       <BrandHeader title={t("svcNewTitle")} subtitle={t("svcNewSubtitle")} back right="help" />
-      {!params.policyId ? (
+      {reviewing ? (
+        <>
+          <ReviewIntro />
+          <ReviewSection icon={TYPE_ICON[typeValue]} title={t("svcReviewTitle")} onEdit={() => setReviewing(false)}>
+            <ReviewRow first label={t("svcWhichPolicy")} value={policy ? [policy.policy_number, policy.product_name].filter(Boolean).join(" · ") : null} />
+            <ReviewRow label={t("svcType")} value={td(`svcType_${typeValue}`, typeValue)} />
+            <ReviewRow label={t("svcReason")} value={reason.trim()} />
+          </ReviewSection>
+        </>
+      ) : null}
+      {reviewing ? null : !params.policyId ? (
         <Card style={s.card}>
           <SectionHeading icon={ShieldCheck} title={t("svcWhichPolicy")} />
           {loading && !policies.length ? <Text style={s.meta}>{t("loading")}</Text> : null}
@@ -74,6 +93,8 @@ export default function NewService() {
           </View>
         </Card>
       ) : null}
+      {reviewing ? null : (
+      <>
       <Card style={s.card}>
         <SectionHeading title={t("svcType")} />
         <View style={s.wrap} accessibilityRole="radiogroup">
@@ -86,6 +107,8 @@ export default function NewService() {
         <TextField label={t("svcReason")} multiline value={reason} onChangeText={setReason} style={s.area} hint={t(`svcHint_${typeValue}`)} />
         <Text style={s.meta}>{t("minChars", { count: MIN_REASON })}</Text>
       </Card>
+      </>
+      )}
     </Screen>
   );
 }

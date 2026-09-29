@@ -5,7 +5,9 @@ import { AlertTriangle, CreditCard, FileWarning, IdCard, RefreshCw, type LucideI
 import { Banner, type Tint } from "@/components/design";
 import { kycPhase } from "@/lib/kyc";
 import { daysUntil, isRenewalDue } from "@/lib/customerLogic";
-import type { Payment, Policy } from "@/api/client";
+import type { Payment, Policy, ProposalSummary } from "@/api/client";
+import { purchaseRoute } from "@/lib/paymentRouting";
+import { useFormatters } from "@/hooks/useFormatters";
 import type { KycState } from "@/api/customer";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -27,6 +29,8 @@ type Input = {
   claims: { id: string; status: string; claim_number?: string | null }[];
   policies: Policy[];
   kyc: KycState | null | undefined;
+  /** Applications awaiting payment (paymentRouting.payableApplications): "Pay now" opens the terms. */
+  applications?: ProposalSummary[];
 };
 
 /**
@@ -34,9 +38,21 @@ type Input = {
  * (a payment is never treated as paid from a client event). Each item links
  * to the record that resolves it and disappears once the server state moves on.
  */
-export function usePriorityItems({ payments, claims, policies, kyc }: Input): PriorityItem[] {
+export function usePriorityItems({ payments, claims, policies, kyc, applications }: Input): PriorityItem[] {
   const { t, date } = useTranslation();
+  const f = useFormatters();
   const items: PriorityItem[] = [];
+  for (const a of applications ?? []) {
+    const total = a.terms_snapshot?.total_minor ?? (a as { total_minor?: number }).total_minor;
+    items.push({
+      key: `apply-${a.id}`,
+      icon: CreditCard,
+      tint: "green",
+      title: t("payApprovedTitle"),
+      body: typeof total === "number" && total > 0 ? t("payApprovedBodyAmount", { amount: f.xaf(total) }) : t("payApprovedBody"),
+      go: () => router.push(purchaseRoute(a.id, "terms") as never),
+    });
+  }
   // Only the latest attempt per proposal counts: a failure followed by a success is resolved.
   const latest = new Map<string, Payment>();
   for (const p of payments) {

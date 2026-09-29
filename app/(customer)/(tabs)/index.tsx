@@ -21,12 +21,13 @@ import {
 import { usePolicies } from "@/hooks/usePolicies";
 import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
-import { PaymentsApi } from "@/api/client";
+import { PaymentsApi, ProposalsApi, type ProposalSummary } from "@/api/client";
 import { PriorityFeed, usePriorityItems } from "@/components/customer/PriorityFeed";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
 import { homeLayout, homePolicies, inProgressItems, inProgressSeeAll } from "@/lib/homeFeed";
+import { payableApplications } from "@/lib/paymentRouting";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const NO_FILTERS: FilterValues = { cat: [], prov: [], sort: ["best"] };
@@ -51,6 +52,8 @@ export default function CustomerHome() {
   // HOME-002/003: server payment + KYC state feed the priority block.
   const payments = useLoad(() => PaymentsApi.list());
   const kyc = useLoad(() => CustomerApi.kyc());
+  // Applications awaiting payment ("Pay now"). Optional: a failure never blocks Home.
+  const proposals = useLoad(() => ProposalsApi.list().then((x) => x.items).catch((): ProposalSummary[] => []));
 
   // Brand-new customers are offered the short profile/KYC step once.
   useEffect(() => {
@@ -62,11 +65,13 @@ export default function CustomerHome() {
   // Unread badge stays fresh when coming back from the inbox.
   const reloadNotifications = notifications.reload;
   const reloadPayments = payments.reload;
+  const reloadProposals = proposals.reload;
   useFocusEffect(
     useCallback(() => {
       void reloadNotifications();
       void reloadPayments();
-    }, [reloadNotifications, reloadPayments]),
+      void reloadProposals();
+    }, [reloadNotifications, reloadPayments, reloadProposals]),
   );
 
   const refresh = async () => {
@@ -78,12 +83,14 @@ export default function CustomerHome() {
       notifications.reload(),
       payments.reload(),
       kyc.reload(),
+      proposals.reload(),
     ]);
     setRefreshing(false);
   };
 
   const shown = homePolicies(policies.policies);
-  const feed = inProgressItems({ quotes: quotes.data, claims: claims.data, policies: policies.policies });
+  const payable = payableApplications(proposals.data, payments.data?.items);
+  const feed = inProgressItems({ quotes: quotes.data, claims: claims.data, policies: policies.policies, applications: payable });
   const quotesFailed = !!quotes.error && !quotes.data;
   const claimsFailed = !!claims.error && !claims.data;
   const layout = homeLayout({
@@ -107,6 +114,7 @@ export default function CustomerHome() {
     claims: claims.data ?? [],
     policies: policies.policies,
     kyc: kyc.data,
+    applications: payable,
   });
   const firstName = user?.full_name?.trim().split(/\s+/)[0];
   // A typed query runs the live global search (GET /search + marketplace);

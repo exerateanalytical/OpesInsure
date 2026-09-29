@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, BadgeCheck, ChevronRight, Lock, Pencil, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
-import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
-import { Button, Card, ripple, Screen, StatusChip, TextField } from "@/components/ui";
+import { ArrowRight, BadgeCheck, CheckCircle2, Lock, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
+import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
+import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { LoadingState } from "@/components/StatePanel";
 import { ConsentRow, ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
@@ -25,7 +26,7 @@ import { useTranslation } from "@/i18n";
  * MTN MoMo / Orange Money) and on to the /payment polling screen.
  */
 export default function Checkout() {
-  const { proposalId } = useLocalSearchParams<{ proposalId?: string }>();
+  const { proposalId, approved } = useLocalSearchParams<{ proposalId?: string; approved?: string }>();
   const proposal = useInsurance((s) => s.proposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
   const quote = useInsurance((s) => s.quote);
@@ -123,6 +124,7 @@ export default function Checkout() {
     >
       <BrandHeader title={t("coTitle")} subtitle={t("coSubtitle")} />
       <QuoteSteps current={3} />
+      {approved === "1" && payable ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
       {loadError ? <ErrorCard error={loadError} fallback={t("coStaleTerms")} onRetry={() => void load()} /> : null}
       <ProposalSummary proposal={proposal} offer={selectedOffer} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
       {!payable ? (
@@ -134,26 +136,11 @@ export default function Checkout() {
       ) : (
         <>
           {applicant ? (
-            <Card>
-              <SectionHeading
-                title={t("coApplicant")}
-                right={
-                  <Pressable accessibilityRole="button" accessibilityLabel={t("coApplicantEdit")} hitSlop={8} onPress={() => router.push("/account/profile")} android_ripple={ripple()} style={st.edit}>
-                    <Text style={st.editText}>{t("coEdit")}</Text>
-                    <Pencil size={16} color={colors.blue600} />
-                  </Pressable>
-                }
-              />
-              <Pressable accessibilityRole="button" accessibilityLabel={`${t("coApplicantEdit")}: ${applicant.full_name}`} onPress={() => router.push("/account/profile")} android_ripple={ripple()} style={st.applicant}>
-                <TintedIcon icon={UserRound} tint="blue" size={56} round />
-                <View style={st.flex}>
-                  <Text style={st.applicantName}>{applicant.full_name}</Text>
-                  {applicant.email ? <Text style={ps.meta}>{applicant.email}</Text> : null}
-                  {applicant.phone_e164 ? <Text style={ps.meta}>{applicant.phone_e164}</Text> : null}
-                </View>
-                <ChevronRight size={20} color={colors.navy800} />
-              </Pressable>
-            </Card>
+            <ReviewSection icon={UserRound} title={t("coApplicant")} onEdit={() => router.push("/account/profile")} editLabel={t("coEdit")}>
+              <ReviewRow first label={t("fullName")} value={applicant.full_name} />
+              {applicant.email ? <ReviewRow label={t("email")} value={applicant.email} /> : null}
+              {applicant.phone_e164 ? <ReviewRow label={t("partiesPhone")} value={applicant.phone_e164} /> : null}
+            </ReviewSection>
           ) : null}
           <Card>
             <SectionHeading
@@ -215,10 +202,6 @@ const st = StyleSheet.create({
   secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
   consentText: { ...type.body, color: colors.neutral700 },
-  edit: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: space.x2, overflow: "hidden" },
-  editText: { ...type.label, color: colors.blue600 },
-  applicant: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 56, overflow: "hidden" },
-  applicantName: { ...type.label, fontSize: 16, color: colors.navy950 },
   trust: { flexDirection: "row", justifyContent: "space-between", gap: space.x2 },
   trustItem: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
   trustText: { ...type.meta, color: colors.neutral700, flexShrink: 1 },

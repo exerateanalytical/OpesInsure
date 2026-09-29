@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Plus, Trash2, UserRound, UsersRound } from "lucide-react-native";
+import { Pencil, Plus, Trash2, UserRound, UsersRound } from "lucide-react-native";
+import { ReviewIntro, ReviewRow } from "@/components/review/ReviewSummary";
 import { TintedIcon } from "@/components/design";
 import { Button, Card, TextField } from "@/components/ui";
 import { ChoiceChips, errorMessage, Notice } from "@/components/portal/Workspace";
@@ -32,6 +33,8 @@ export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId
   const [showErrors, setShowErrors] = useState(false);
   const [msg, setMsg] = useState<{ text: string; tone: "ok" | "error" } | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // New designations are checked on a read-only review before they are saved.
+  const [reviewing, setReviewing] = useState(false);
   const history = useLoad(() => (historyOpen ? BeneficiaryApi.history(policyId) : Promise.resolve([])), [policyId, historyOpen]);
 
   const status = (q.error as { status?: number } | null)?.status;
@@ -41,6 +44,23 @@ export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId
   const issueText = (i: BeneficiaryIssue) =>
     i.code === "primaryTotal" || i.code === "contingentTotal" ? t(`benErr_${i.code}`, { total: i.total ?? 0 }) : t(`benErr_${i.code}`);
   const set = (idx: number, patch: Partial<BeneficiaryDraft>) => setEditing((rows) => (rows ?? []).map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  const save = async () => {
+    if (!editing) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      q.setData(await BeneficiaryApi.replace(policyId, { beneficiaries: beneficiaryPayload(editing), reason: reason.trim() }));
+      setEditing(null);
+      setReviewing(false);
+      setReason("");
+      if (historyOpen) void history.reload();
+      setMsg({ text: t("benSaved"), tone: "ok" });
+    } catch (e) {
+      setMsg({ text: errorMessage(e), tone: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Card>
@@ -99,7 +119,22 @@ export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId
         </>
       ) : null}
 
-      {editing ? (
+      {editing && reviewing ? (
+        <>
+          <ReviewIntro body={t("benReviewIntro")} />
+          {editing.map((r, i) => (
+            <ReviewRow
+              key={i}
+              first={i === 0}
+              label={`${i + 1}. ${t(r.designation === "PRIMARY" ? "benPrimary" : "benContingent")}`}
+              value={[r.full_name.trim() || "—", r.relationship ? td(`relationship_${r.relationship}`, r.relationship) : null, `${r.allocation_pct}%`].filter(Boolean).join(" · ")}
+            />
+          ))}
+          <ReviewRow label={t("benReason")} value={reason.trim()} />
+          <Button label={t("benConfirmSave")} loading={busy} onPress={() => void save()} />
+          <Button label={t("reviewBackToForm")} icon={Pencil} variant="tertiary" disabled={busy} onPress={() => setReviewing(false)} />
+        </>
+      ) : editing ? (
         <>
           {editing.map((r, i) => (
             <View key={i} style={s.editor}>
@@ -129,24 +164,12 @@ export function BeneficiariesSection({ policyId, hideTitle = false }: { policyId
               ))
             : null}
           <Button
-            label={t("benSave")}
-            loading={busy}
-            onPress={async () => {
+            label={t("reviewContinue")}
+            onPress={() => {
               setShowErrors(true);
               if (issues.length || !reason.trim()) return;
-              setBusy(true);
               setMsg(null);
-              try {
-                q.setData(await BeneficiaryApi.replace(policyId, { beneficiaries: beneficiaryPayload(editing), reason: reason.trim() }));
-                setEditing(null);
-                setReason("");
-                if (historyOpen) void history.reload();
-                setMsg({ text: t("benSaved"), tone: "ok" });
-              } catch (e) {
-                setMsg({ text: errorMessage(e), tone: "error" });
-              } finally {
-                setBusy(false);
-              }
+              setReviewing(true);
             }}
           />
           <Button label={t("cancel")} variant="tertiary" onPress={() => setEditing(null)} />

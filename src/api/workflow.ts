@@ -54,6 +54,8 @@ export type ProposalChecklist = {
   information_request?: { id: string; items: { code?: string; description: string }[]; message?: string | null; requested_at?: string; responded_at?: string | null } | null;
   available_transitions?: string[];
   blocking?: string[];
+  /** Declarations catalogue with this application's acceptance (TERMS_ACCEPTANCE once the terms screen was confirmed). */
+  declarations?: { code: string; accepted?: boolean; required_for_submit?: boolean }[];
   submission_count?: number;
   /** Chosen cover terms (null = defaults: start at issuance, 12 months, single payment). */
   cover_terms?: CoverTerms | null;

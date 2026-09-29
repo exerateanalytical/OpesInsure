@@ -3,6 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ambulance, Phone, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { RadioCard, SectionHeading } from "@/components/design";
+import { ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 import { ClaimsCompletionApi } from "@/api/client";
 import { usePolicies } from "@/hooks/usePolicies";
 import { useSession } from "@/store/session";
@@ -33,6 +34,10 @@ export default function Emergency() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Short confirm summary before the request goes out (the 112 call stays one tap away above).
+  const [confirming, setConfirming] = useState(false);
+  const valid = !!policyId && location.trim().length >= 4 && phone.length >= 8;
+  const chosen = options.find(([key]) => key === service)!;
 
   const request = async () => {
     if (!policyId || busy) return;
@@ -40,6 +45,7 @@ export default function Emergency() {
     setError(null);
     try {
       setReference((await ClaimsCompletionApi.requestEmergencyAssistance({ policy_id: policyId, service, location, callback_phone: phone })).reference);
+      setConfirming(false);
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : t("actionFailed"));
     } finally {
@@ -55,7 +61,7 @@ export default function Emergency() {
         <Text style={s.body}>{t("emBody")}</Text>
         <Button label={t("emCall")} icon={Phone} variant="danger" onPress={() => Linking.openURL("tel:112")} />
       </Card>
-      {active.length > 1 ? (
+      {active.length > 1 && !confirming ? (
         <Card>
           <SectionHeading icon={ShieldCheck} title={t("svcWhichPolicy")} />
           <View style={s.list} accessibilityRole="radiogroup">
@@ -66,6 +72,19 @@ export default function Emergency() {
         </Card>
       ) : null}
       {!loading && !active.length ? <Text style={s.body}>{t("emNoPolicy")}</Text> : null}
+      {confirming ? (
+        <>
+          <ReviewSection icon={chosen[1]} tint="red" title={t("emConfirmTitle")} onEdit={() => setConfirming(false)}>
+            <ReviewRow first label={t("emService")} value={t(chosen[2])} />
+            <ReviewRow label={t("svcWhichPolicy")} value={active.find((p) => p.id === policyId)?.policy_number} />
+            <ReviewRow label={t("emLocation")} value={location.trim()} />
+            <ReviewRow label={t("emCallback")} value={phone} />
+          </ReviewSection>
+          <Button label={t("emConfirmRequest")} variant="danger" loading={busy} disabled={!valid || busy} onPress={() => void request()} />
+          <Button label={t("reviewBackToForm")} variant="tertiary" disabled={busy} onPress={() => setConfirming(false)} />
+          {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
+        </>
+      ) : (
       <Card>
         {options.map(([key, Icon, label]) => (
           <Pressable
@@ -81,10 +100,11 @@ export default function Emergency() {
         ))}
         <TextField label={t("emLocation")} value={location} onChangeText={setLocation} />
         <TextField label={t("emCallback")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-        <Button label={t("emRequest")} loading={busy} disabled={!policyId || location.trim().length < 4 || phone.length < 8 || busy} onPress={() => void request()} />
+        <Button label={t("emRequest")} disabled={!valid || busy} onPress={() => { setError(null); setReference(""); setConfirming(true); }} />
         {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
         {reference ? <Text accessibilityLiveRegion="polite" style={s.ok}>{t("emReference", { reference })}</Text> : null}
       </Card>
+      )}
     </Screen>
   );
 }

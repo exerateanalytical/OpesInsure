@@ -1,7 +1,7 @@
 /**
  * Customer Home feed logic (app/(customer)/(tabs)/index.tsx): which policies
  * show, the merged "In progress" list (open quotes, active claims, renewals
- * due), where its "See all" goes, and which sections render while data loads,
+ * due, applications awaiting payment), where its "See all" goes, and which sections render while data loads,
  * fails or is empty. Pure; node-tested in tests/home-feed.test.mjs.
  */
 import { isActiveClaim, normalizeClaimStatus } from "./claimStatus.ts";
@@ -17,11 +17,16 @@ export const URGENT_RENEWAL_DAYS = 7;
 export type FeedQuote = { id: string; status?: string | null; can_resume?: boolean | null; offer_count?: number | null; created_at?: string | null };
 export type FeedClaim = { id: string; status?: string | null; created_at?: string | null; incident_at?: string | null };
 export type FeedPolicy = { id: string; status?: string | null; coverage_ends_at?: string | null };
+/** An application already known to be payable (src/lib/paymentRouting.ts payableApplications). */
+export type FeedApplication = { id: string; status?: string | null; updated_at?: string | null; created_at?: string | null };
 
-export type InProgressItem<Q extends FeedQuote = FeedQuote, C extends FeedClaim = FeedClaim, P extends FeedPolicy = FeedPolicy> =
+export type InProgressItem<Q extends FeedQuote = FeedQuote, C extends FeedClaim = FeedClaim, P extends FeedPolicy = FeedPolicy, A extends FeedApplication = FeedApplication> =
   | { kind: "quote"; key: string; at: number; urgent: boolean; quote: Q }
   | { kind: "claim"; key: string; at: number; urgent: boolean; claim: C }
-  | { kind: "renewal"; key: string; at: number; urgent: boolean; days: number; policy: P };
+  | { kind: "renewal"; key: string; at: number; urgent: boolean; days: number; policy: P }
+  | { kind: "application"; key: string; at: number; urgent: boolean; application: A };
+
+export type InProgressKinds = { quote: number; claim: number; renewal: number; application?: number };
 
 export const isOpenQuote = (q: FeedQuote) => !!q.can_resume || OPEN_QUOTE.test(String(q.status ?? "").toUpperCase());
 
@@ -40,15 +45,19 @@ const time = (iso: string | null | undefined) => {
  *  - urgent = renewal due within 7 days, claim waiting on the customer's
  *    evidence, or quote with offers ready;
  *  - a renewal counts as happening now (a sooner due date sorts first);
- *  - quotes by created_at, claims by reported date (created_at, else incident).
- * `total` / `kinds` count everything before the limit (for "See all").
+ *  - quotes by created_at, claims by reported date (created_at, else incident);
+ *  - an application awaiting payment ("Pay now") is always urgent.
+ * `total` / `kinds` count everything before the limit (for "See all");
+ * `kinds.application` is only present when applications were passed.
  */
-export function inProgressItems<Q extends FeedQuote, C extends FeedClaim, P extends FeedPolicy>(
-  input: { quotes?: Q[] | null; claims?: C[] | null; policies?: P[] | null },
+export function inProgressItems<Q extends FeedQuote, C extends FeedClaim, P extends FeedPolicy, A extends FeedApplication = FeedApplication>(
+  input: { quotes?: Q[] | null; claims?: C[] | null; policies?: P[] | null; applications?: A[] | null },
   now: Date = new Date(),
   limit = IN_PROGRESS_LIMIT,
-): { items: InProgressItem<Q, C, P>[]; total: number; kinds: { quote: number; claim: number; renewal: number } } {
-  const all: InProgressItem<Q, C, P>[] = [];
+): { items: InProgressItem<Q, C, P, A>[]; total: number; kinds: InProgressKinds } {
+  const all: InProgressItem<Q, C, P, A>[] = [];
+  for (const application of input.applications ?? [])
+    all.push({ kind: "application", key: `application:${application.id}`, at: time(application.updated_at) || time(application.created_at), urgent: true, application });
   for (const quote of input.quotes ?? []) {
     if (!isOpenQuote(quote)) continue;
     const offered = String(quote.status ?? "").toUpperCase().startsWith("OFFERED") || (quote.offer_count ?? 0) > 0;
@@ -65,20 +74,22 @@ export function inProgressItems<Q extends FeedQuote, C extends FeedClaim, P exte
     all.push({ kind: "renewal", key: `renewal:${policy.id}`, at: now.getTime() - days, urgent: days <= URGENT_RENEWAL_DAYS, days, policy });
   }
   all.sort((a, b) => Number(b.urgent) - Number(a.urgent) || b.at - a.at || a.key.localeCompare(b.key));
-  const kinds = { quote: 0, claim: 0, renewal: 0 };
-  for (const item of all) kinds[item.kind]++;
+  const kinds: InProgressKinds = { quote: 0, claim: 0, renewal: 0, ...(input.applications ? { application: 0 } : {}) };
+  for (const item of all) kinds[item.kind] = (kinds[item.kind] ?? 0) + 1;
   return { items: all.slice(0, limit), total: all.length, kinds };
 }
 
-export type SeeAllTarget = "/(customer)/(tabs)/policies" | "/(customer)/(tabs)/claims" | "/quotes";
+export type SeeAllTarget = "/(customer)/(tabs)/policies" | "/(customer)/(tabs)/claims" | "/quotes" | "/proposals";
 
 /**
  * "See all" of "In progress": the Policies tab when a renewal is due (that is
- * where renewals live), else the Claims tab when a claim is open, else /quotes.
+ * where renewals live), else the Claims tab when a claim is open, else
+ * /proposals when only applications awaiting payment are listed, else /quotes.
  */
-export function inProgressSeeAll(kinds: { quote: number; claim: number; renewal: number }): SeeAllTarget {
+export function inProgressSeeAll(kinds: InProgressKinds): SeeAllTarget {
   if (kinds.renewal > 0) return "/(customer)/(tabs)/policies";
   if (kinds.claim > 0) return "/(customer)/(tabs)/claims";
+  if ((kinds.application ?? 0) > 0 && kinds.quote === 0) return "/proposals";
   return "/quotes";
 }
 
