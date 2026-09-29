@@ -21651,6 +21651,10 @@
                                     "agreement_document_id": {
                                         "type": "string",
                                         "x-rules": "nullable|uuid"
+                                    },
+                                    "carrier_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
                                     }
                                 },
                                 "required": [
@@ -28682,6 +28686,56 @@
                 ]
             }
         },
+        "/api/v1/demo/records/{table}": {
+            "get": {
+                "operationId": "get_api_v1_demo_records_table",
+                "tags": [
+                    "demo"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PlatformConfiguration\\PlatformConfigurationController@demoRecords",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "platform.settings.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/developer/clients": {
             "get": {
                 "operationId": "get_api_v1_developer_clients",
@@ -28716,6 +28770,184 @@
                 ],
                 "x-permissions": [
                     "integrations.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/developer/clients/{client}/developers": {
+            "get": {
+                "operationId": "get_api_v1_developer_clients_client_developers",
+                "tags": [
+                    "developer"
+                ],
+                "summary": "App\\Application\\Integrations\\Developer\\Http\\DeveloperLinksController@index",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "integrations.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "post_api_v1_developer_clients_client_developers",
+                "tags": [
+                    "developer"
+                ],
+                "summary": "App\\Application\\Integrations\\Developer\\Http\\DeveloperLinksController@store",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "integrations.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "x-rules": "required|uuid|exists:users,id"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                },
+                                "required": [
+                                    "user_id"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/developer/clients/{client}/developers/{user}/revoke": {
+            "post": {
+                "operationId": "post_api_v1_developer_clients_client_developers_user_revoke",
+                "tags": [
+                    "developer"
+                ],
+                "summary": "App\\Application\\Integrations\\Developer\\Http\\DeveloperLinksController@destroy",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "integrations.revoke"
                 ],
                 "security": [
                     {
@@ -65453,6 +65685,520 @@
                 }
             }
         },
+        "/api/v1/platform/broker-onboarding/batches": {
+            "get": {
+                "operationId": "get_api_v1_platform_broker_onboarding_batches",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@index",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "post_api_v1_platform_broker_onboarding_batches",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@store",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "x-rules": "required|file|max:10240|mimes:csv,txt,xlsx"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}": {
+            "get": {
+                "operationId": "get_api_v1_platform_broker_onboarding_batches_batch",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}/approve": {
+            "post": {
+                "operationId": "post_api_v1_platform_broker_onboarding_batches_batch_approve",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@approve",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "note": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:500"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}/cancel": {
+            "post": {
+                "operationId": "post_api_v1_platform_broker_onboarding_batches_batch_cancel",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@cancel",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:500"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}/reject": {
+            "post": {
+                "operationId": "post_api_v1_platform_broker_onboarding_batches_batch_reject",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@reject",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "note": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:3|max:500"
+                                    }
+                                },
+                                "required": [
+                                    "note"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}/report": {
+            "get": {
+                "operationId": "get_api_v1_platform_broker_onboarding_batches_batch_report",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@report",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/platform/broker-onboarding/batches/{batch}/submit": {
+            "post": {
+                "operationId": "post_api_v1_platform_broker_onboarding_batches_batch_submit",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@submit",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "batch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:500"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/platform/broker-onboarding/template": {
+            "get": {
+                "operationId": "get_api_v1_platform_broker_onboarding_template",
+                "tags": [
+                    "platform"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Partners\\BrokerOnboardingController@template",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "tenant.manage",
+                    "identity.invite"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/platform/setup": {
             "get": {
                 "operationId": "get_api_v1_platform_setup",
@@ -76354,6 +77100,30 @@
                 }
             }
         },
+        "/api/v1/public/demo-accounts": {
+            "get": {
+                "operationId": "get_api_v1_public_demo_accounts",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Closure",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/v1/public/document-packs": {
             "get": {
                 "operationId": "get_api_v1_public_document_packs",
@@ -84400,6 +85170,10 @@
                                     "source_url": {
                                         "type": "string",
                                         "x-rules": "nullable|url|max:1024"
+                                    },
+                                    "carrier_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
                                     }
                                 },
                                 "required": [
@@ -84693,6 +85467,10 @@
                                         "x-rules": "nullable|string"
                                     },
                                     "wording_document_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
+                                    },
+                                    "carrier_id": {
                                         "type": "string",
                                         "x-rules": "nullable|uuid"
                                     }
@@ -85590,6 +86368,75 @@
                                     "days": {
                                         "type": "integer",
                                         "x-rules": "sometimes|integer|min:1|max:180"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/renewals/{renewal}/assignment": {
+            "post": {
+                "operationId": "post_api_v1_renewals_renewal_assignment",
+                "tags": [
+                    "renewals"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Policies\\RenewalController@reassign",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "renewal",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "renewals.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "assignee_id": {
+                                        "type": "string",
+                                        "x-rules": "present|nullable|uuid"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "sometimes|nullable|string|max:500"
                                     }
                                 }
                             }
