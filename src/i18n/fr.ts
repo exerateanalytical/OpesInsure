@@ -3896,4 +3896,18 @@ export const fr: Record<keyof typeof en, string> = {
   // Choix de police pour l'assistance d'urgence (session principale)
   emNoPolicy: "L'assistance d'urgence nécessite une police active. Vous pouvez toujours appeler le 112.",
   policiesLoadFailed: "Vos polices n'ont pas pu être chargées.",
+  // Refonte de l’accueil client (maquette approuvée, 2026-09-29)
+  homeGreetingTimeName: "{part}, {name}",
+  homeYourPolicies: "Vos polices",
+  homeInProgress: "En cours",
+  homeQuoteTitle: "Devis · {product}",
+  homeRenewalTitle: "Renouvellement · {number}",
+  homeClaimReported: "Déclaré le {date}",
+  homeRenewalDueIn: "Échéance dans {days} jours",
+  homeRenewalDueTomorrow: "Échéance demain",
+  homeRenewalDueToday: "Échéance aujourd’hui",
+  homeLoadFailed: "Chargement impossible",
+  homeFirstQuoteTitle: "Obtenez votre premier devis",
+  homeFirstQuoteBody: "Comparez les offres d’assureurs agréés en quelques minutes.",
+  homeSupport: "Assistance",
 };

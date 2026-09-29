@@ -240,14 +240,30 @@ test("customer tabs are Home | Explore | Policies | Claims | Profile", () => {
   assert.match(read("src/api/customer.ts"), /\/public\/institutions/);
 });
 
-test("home leads with Compare Insurance and covers every checklist card", () => {
+test("home follows the approved layout: greeting, search, priority, compare, categories, policies, in progress, quick actions", () => {
   const home = read("app/(customer)/(tabs)/index.tsx");
-  assert.match(home, /t\("compareInsurance"\)/);
-  assert.match(home, /SearchBar/);
-  for (const key of ["homeActivePolicies", "homeRenewals", "homeQuotesInProgress", "homeActiveClaims", "notifications", "homeHelp"])
-    assert.match(home, new RegExp(`t\\("${key}"\\)`), key);
-  assert.match(home, /isRenewalDue/);
+  const sections = read("src/components/customer/HomeSections.tsx");
+  // Order on screen.
+  const order = ["<HomeGreeting", "<SearchBar", "<PriorityFeed", "<CompareCard", "<CategoryStrip", "<HomePolicies", "<InProgressSection", "<QuickActions"];
+  const at = order.map((tag) => home.indexOf(tag));
+  for (const [i, pos] of at.entries()) assert.ok(pos > 0, `${order[i]} missing`);
+  assert.deepEqual([...at].sort((a, b) => a - b), at, "sections out of order");
+  // New customers get one first-quote card instead of the two sections.
+  assert.match(home, /layout\.firstQuote \? \(\s*<FirstQuoteCard \/>/);
+  assert.match(home, /inProgressItems\(|homeLayout\(|inProgressSeeAll\(/);
   assert.match(home, /takePendingOnboarding/);
+  // Removed blocks stay removed.
+  for (const gone of ["HomeCard", "CATEGORIES", "SupportContactsApi", "BrandArt", "homeHelp", "homeFindBrokerBody", "pdRenew", "\\u{1F44B}"])
+    assert.ok(!home.includes(gone), `home still has ${gone}`);
+  // Compare card: a11y label matches the visible texts; colours are tokens.
+  assert.match(sections, /accessibilityLabel=\{`\$\{t\("homeCtaTitle"\)\}\. \$\{t\("homeCtaBody"\)\}`\}/);
+  assert.doesNotMatch(sections + home, /#[0-9A-Fa-f]{3,8}\b|rgba\(/);
+  for (const key of ["homeYourPolicies", "homeInProgress", "homeQuickActions", "homeFirstQuoteTitle", "pdFileClaim", "homePayments", "homeFindBroker", "homeSupport"])
+    assert.match(sections, new RegExp(`"${key}"`), key);
+  for (const href of ["/claim/new", "/payments", "/institutions/brokers", "/support", "/quotes/[id]", "/claim/[id]", "/policy/[id]/renew"])
+    assert.ok(sections.includes(`"${href}"`), href);
+  assert.match(sections, /quoteStateKey\(q\)/);
+  assert.match(sections, /claimTone\(c\.status\)/);
   const cats = read("src/components/customer/categories.ts");
   for (const id of ["motor", "health", "travel", "home", "business", "life", "accident", "more"])
     assert.match(cats, new RegExp(`id: "${id}"`));

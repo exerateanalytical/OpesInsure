@@ -336,7 +336,7 @@ export const en = {
   homeSearchPlaceholder: "What insurance do you need?",
   homeCtaTitle: "Compare insurance",
   homeCtaBody: "Multiple providers. Better prices. A safer, brighter Africa.",
-  homeQuickActions: "Quick Actions",
+  homeQuickActions: "Quick actions",
   homeGetSupport: "Get Support",
   policyRenewsOn: "Renews on {date}",
   policyStartsOn: "Starts {date}",
@@ -3907,4 +3907,18 @@ export const en = {
   // Emergency assistance policy choice (main session)
   emNoPolicy: "Emergency assistance needs an active policy. You can still call 112.",
   policiesLoadFailed: "Your policies could not be loaded.",
+  // Customer Home redesign (owner-approved layout, 2026-09-29)
+  homeGreetingTimeName: "Good {part}, {name}",
+  homeYourPolicies: "Your policies",
+  homeInProgress: "In progress",
+  homeQuoteTitle: "Quote · {product}",
+  homeRenewalTitle: "Renewal · {number}",
+  homeClaimReported: "Reported {date}",
+  homeRenewalDueIn: "Due in {days} days",
+  homeRenewalDueTomorrow: "Due tomorrow",
+  homeRenewalDueToday: "Due today",
+  homeLoadFailed: "Couldn’t load",
+  homeFirstQuoteTitle: "Get your first quote",
+  homeFirstQuoteBody: "Compare offers from licensed insurers in a few minutes.",
+  homeSupport: "Support",
 };

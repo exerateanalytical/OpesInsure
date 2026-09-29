@@ -26,6 +26,9 @@ export const colors = {
   // Violet accent (claim next steps). purple700 on purple50 = 7.4:1 (AA).
   purple700: '#6D28D9', purple50: '#F3EEFE',
   danger: '#E02424', dangerText: '#B71C1C', dangerSoft: '#FDECEC',
+  // Promo navy (Home "Compare insurance" card), darker than navy900, and the
+  // translucent white tile that sits on it.
+  navyPromo: '#00255C', onNavyTint: 'rgba(255,255,255,0.1)',
 } as const;
 
 /** Heritage pattern palettes (src/components/HeritagePattern.tsx). */
