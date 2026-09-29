@@ -27,19 +27,20 @@ use Throwable;
  */
 final class LifecycleNotificationProducer
 {
-    private const CLAIM_LABELS = [
-        'SUBMITTED' => ['Claim received', 'We received claim %s. We will acknowledge it shortly.', 'INFO'],
-        'ACKNOWLEDGED' => ['Claim acknowledged', 'Claim %s has been acknowledged and assigned to a handler.', 'INFO'],
-        'EVIDENCE_PENDING' => ['Documents requested for your claim', 'The insurer needs more documents for claim %s. Open the claim to see what to upload.', 'WARNING'],
-        'ASSESSMENT' => ['Claim under assessment', 'Claim %s is being assessed.', 'INFO'],
-        'CARRIER_REVIEW' => ['Claim with the insurer', 'Claim %s is with the insurer for a decision.', 'INFO'],
-        'APPROVED' => ['Claim approved', 'Claim %s has been approved. Settlement is being prepared.', 'SUCCESS'],
-        'PARTIALLY_APPROVED' => ['Claim partially approved', 'Claim %s has been partially approved. Open it to review the settlement.', 'WARNING'],
-        'DECLINED' => ['Claim declined', 'Claim %s was declined. Open it to see the reason and your appeal options.', 'ERROR'],
-        'PAID' => ['Claim paid', 'The settlement for claim %s has been paid.', 'SUCCESS'],
-        'DISPUTED' => ['Appeal registered', 'Your appeal on claim %s is registered and will be reviewed.', 'INFO'],
-        'CLOSED' => ['Claim closed', 'Claim %s has been closed.', 'INFO'],
-        'REOPENED' => ['Claim reopened', 'Claim %s has been reopened.', 'INFO'],
+    /** Claim status => [NotificationCatalog code, severity]; copy in resources/lang/{en,fr}/customer_notifications.php. */
+    private const CLAIM_MESSAGES = [
+        'SUBMITTED' => ['claim_submitted', 'INFO'],
+        'ACKNOWLEDGED' => ['claim_acknowledged', 'INFO'],
+        'EVIDENCE_PENDING' => ['claim_evidence_pending', 'WARNING'],
+        'ASSESSMENT' => ['claim_assessment', 'INFO'],
+        'CARRIER_REVIEW' => ['claim_carrier_review', 'INFO'],
+        'APPROVED' => ['claim_approved', 'SUCCESS'],
+        'PARTIALLY_APPROVED' => ['claim_partially_approved', 'WARNING'],
+        'DECLINED' => ['claim_declined', 'ERROR'],
+        'PAID' => ['claim_paid', 'SUCCESS'],
+        'DISPUTED' => ['claim_disputed', 'INFO'],
+        'CLOSED' => ['claim_closed', 'INFO'],
+        'REOPENED' => ['claim_reopened', 'INFO'],
     ];
 
     public function __construct(private CustomerNotifier $notifier) {}
@@ -52,11 +53,11 @@ final class LifecycleNotificationProducer
             }
             if ($quote->status === 'OFFERED') {
                 $count = (int) ($quote->comparison_context['offer_count'] ?? $quote->offers()->count());
-                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', 'Your quotes are ready',
-                    $count === 1 ? '1 offer is ready to review.' : "{$count} offers from licensed insurers are ready to compare.", 'SUCCESS', "/quotes/{$quote->id}");
+                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE',
+                    ...NotificationCatalog::message($count === 1 ? 'quote_offers_ready_one' : 'quote_offers_ready', ['count' => $count]),
+                    severity: 'SUCCESS', path: "/quotes/{$quote->id}");
             } elseif ($quote->status === 'REFERRED') {
-                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', 'Your quote needs a closer look',
-                    'No instant offer matched your details. An underwriter will review your request.', 'INFO', "/quotes/{$quote->id}");
+                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', ...NotificationCatalog::message('quote_referred'), path: "/quotes/{$quote->id}");
             }
         });
     }
@@ -68,15 +69,15 @@ final class LifecycleNotificationProducer
                 return;
             }
             $path = "/proposals/{$proposal->id}";
-            [$title, $body, $severity] = match ($proposal->status) {
-                'SUBMITTED', 'UNDER_REVIEW' => ['Proposal under review', 'Your proposal has been submitted and is being reviewed by the insurer.', 'INFO'],
-                'APPROVED', 'PAYMENT_PENDING' => ['Proposal approved', 'Your proposal was approved. Complete payment to activate your cover.', 'SUCCESS'],
-                'COUNTEROFFERED' => ['Counter-offer available', 'The insurer has proposed revised terms. Review and accept or decline the counter-offer.', 'WARNING'],
-                'DECLINED' => ['Proposal declined', 'The insurer declined your proposal. You can compare other offers.', 'ERROR'],
-                default => [null, null, null],
+            [$code, $severity] = match ($proposal->status) {
+                'SUBMITTED', 'UNDER_REVIEW' => ['proposal_under_review', 'INFO'],
+                'APPROVED', 'PAYMENT_PENDING' => ['proposal_approved', 'SUCCESS'],
+                'COUNTEROFFERED' => ['proposal_counteroffer', 'WARNING'],
+                'DECLINED' => ['proposal_declined', 'ERROR'],
+                default => [null, null],
             };
-            if ($title) {
-                $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PROPOSAL', $title, $body, $severity, $path);
+            if ($code) {
+                $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PROPOSAL', ...NotificationCatalog::message($code), severity: $severity, path: $path);
             }
         });
     }
@@ -86,8 +87,8 @@ final class LifecycleNotificationProducer
         $this->safely(function () use ($case) {
             if ($case->wasChanged('status') && $case->status === 'AWAITING_INFORMATION') {
                 $proposal = $case->proposal;
-                $this->notifier->toParty($proposal?->party_id, $case->tenant_id, 'PROPOSAL', 'More information needed',
-                    'The underwriter needs more information about your proposal. Open it to respond.', 'WARNING', $proposal ? "/proposals/{$proposal->id}" : null);
+                $this->notifier->toParty($proposal?->party_id, $case->tenant_id, 'PROPOSAL', ...NotificationCatalog::message('proposal_information_needed'),
+                    severity: 'WARNING', path: $proposal ? "/proposals/{$proposal->id}" : null);
             }
         });
     }
@@ -98,9 +99,10 @@ final class LifecycleNotificationProducer
             if (! ($claim->wasRecentlyCreated || $claim->wasChanged('status')) || $claim->status === 'DRAFT') {
                 return;
             }
-            [$title, $body, $severity] = self::CLAIM_LABELS[$claim->status] ?? ['Claim update', 'Claim %s is now '.strtolower(str_replace('_', ' ', $claim->status)).'.', 'INFO'];
+            [$code, $severity] = self::CLAIM_MESSAGES[$claim->status] ?? ['claim_status_changed', 'INFO'];
             $party = $claim->claimant_party_id ?? $claim->policy?->party_id;
-            $this->notifier->toParty($party, $claim->tenant_id, 'CLAIM', $title, sprintf($body, $claim->claim_number), $severity, "/claim/{$claim->id}");
+            $this->notifier->toParty($party, $claim->tenant_id, 'CLAIM', ...NotificationCatalog::message($code, ['claim' => $claim->claim_number, 'status' => $claim->status]),
+                severity: $severity, path: "/claim/{$claim->id}");
         });
     }
 
@@ -109,9 +111,9 @@ final class LifecycleNotificationProducer
         $this->safely(function () use ($payment) {
             if ($payment->wasChanged('status') && in_array($payment->status, ['FAILED', 'EXPIRED'], true)) {
                 $proposal = $payment->proposal;
-                $this->notifier->toParty($proposal?->party_id, $payment->tenant_id, 'PAYMENT', 'Payment failed',
-                    $payment->status === 'EXPIRED' ? 'Your payment request expired before it was approved. You can try again from the payment screen.' : 'Your payment did not go through. No money was taken; you can retry from the payment screen.',
-                    'ERROR', "/payments/{$payment->id}");
+                $this->notifier->toParty($proposal?->party_id, $payment->tenant_id, 'PAYMENT',
+                    ...NotificationCatalog::message($payment->status === 'EXPIRED' ? 'payment_expired' : 'payment_failed'),
+                    severity: 'ERROR', path: "/payments/{$payment->id}");
             }
         });
     }
@@ -123,9 +125,8 @@ final class LifecycleNotificationProducer
             if (! $user || ! UserDevice::where('user_id', $user->id)->where('id', '!=', $device->id)->exists()) {
                 return; // first device ever: that's sign-up, not a new sign-in
             }
-            $name = $device->name ?: ($device->platform ?: 'a new device');
-            $this->notifier->toUser($user, null, 'SECURITY', 'New sign-in to your account',
-                "Your account was signed in on {$name}. If this wasn't you, change your password and sign out of all devices.", 'WARNING', '/security', true);
+            $this->notifier->toUser($user, null, 'SECURITY', ...NotificationCatalog::message('security_new_sign_in', ['device' => $device->name ?: $device->platform]),
+                severity: 'WARNING', path: '/security', forceSms: true);
         });
     }
 
@@ -133,8 +134,8 @@ final class LifecycleNotificationProducer
     {
         $this->safely(function () use ($user) {
             if ($user->wasChanged('password') && $user->getOriginal('password') !== null) {
-                $this->notifier->toUser($user, null, 'SECURITY', 'Your password was changed',
-                    "Your OpesInsure password was just changed. If this wasn't you, reset it now and sign out of all devices.", 'WARNING', '/security', true);
+                $this->notifier->toUser($user, null, 'SECURITY', ...NotificationCatalog::message('security_password_changed'),
+                    severity: 'WARNING', path: '/security', forceSms: true);
             }
         });
     }

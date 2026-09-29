@@ -8,6 +8,7 @@ use App\Application\Audit\AuditWriter;
 use App\Application\Authority\AuthorityOutcome;
 use App\Application\Authority\AuthorityService;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Application\Policies\CancellationCalculator;
 use App\Application\Policies\Chronology\PolicyChronologyWriter;
 use App\Application\Policies\PolicyServicingService;
@@ -91,10 +92,10 @@ final class CancellationService
 
             // The notice (or acknowledgement for an insured request) goes to the policyholder now.
             $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY',
-                $initiator === 'INSURER' ? 'Notice of cancellation' : 'Cancellation request received',
-                'Policy '.$policy->policy_number.' is due to be cancelled with effect from '.$effective->toDateString()
-                .'. Estimated refund: '.$transaction->refund_minor.' '.$policy->currency.' (minor units).',
-                $initiator === 'INSURER' ? 'WARNING' : 'INFO', null, $initiator === 'INSURER');
+                ...NotificationCatalog::message($initiator === 'INSURER' ? 'policy_cancellation_notice' : 'policy_cancellation_requested', [
+                    'policy' => $policy->policy_number, 'effective' => $effective->toDateString(), 'refund' => $transaction->refund_minor, 'currency' => $policy->currency,
+                ]),
+                severity: $initiator === 'INSURER' ? 'WARNING' : 'INFO', forceSms: $initiator === 'INSURER');
 
             $this->audit->record('policy.cancellation.requested', 'policy_cancellation', $case->id, [
                 'policy_id' => $policy->id, 'initiated_by' => $initiator, 'refund_minor' => $case->refund_minor, 'notice_days' => $noticeDays,
@@ -157,10 +158,11 @@ final class CancellationService
                 'refund_id' => $refundId, 'documents_revoked' => $revoked,
             ]);
 
-            $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY', 'Policy cancelled',
-                'Policy '.$policy->policy_number.' is cancelled with effect from '.$case->effective_at->toDateString()
-                .($case->refund_minor > 0 ? '. A refund of '.$case->refund_minor.' '.$case->currency.' (minor units) has been requested.' : '.'),
-                'WARNING', null, true);
+            $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY',
+                ...NotificationCatalog::message($case->refund_minor > 0 ? 'policy_cancelled_refund' : 'policy_cancelled', [
+                    'policy' => $policy->policy_number, 'effective' => $case->effective_at->toDateString(), 'refund' => $case->refund_minor, 'currency' => $case->currency,
+                ]),
+                severity: 'WARNING', forceSms: true);
             $this->audit->record('policy.cancelled', 'policy_cancellation', $case->id, [
                 'policy_id' => $policy->id, 'refund_id' => $refundId, 'documents_revoked' => $revoked, 'policy_version_id' => $versionId,
             ], $case->reason_code);

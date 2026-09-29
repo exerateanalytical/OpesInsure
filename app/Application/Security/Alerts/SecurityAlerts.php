@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Security\Alerts;
 
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\User;
 use Throwable;
 
@@ -17,17 +18,10 @@ final class SecurityAlerts
 {
     public const PATH = '/account/security';
 
-    /** code => [title, body] */
-    public const MESSAGES = [
-        'NEW_DEVICE' => ['New device signed in', 'Your account was just used on a new device. If this was not you, sign out everywhere and change your password.'],
-        'PASSWORD_CHANGED' => ['Password changed', 'Your password was changed. If this was not you, contact support right away.'],
-        'IDENTITY_CHANGED' => ['Account details changed', 'Your sign-in or contact details were changed. If this was not you, contact support right away.'],
-        'SIGNED_OUT_EVERYWHERE' => ['Signed out everywhere', 'All sessions on all devices were signed out.'],
-        'REPEATED_FAILED_SIGN_INS' => ['Failed sign-in attempts', 'Several failed sign-in attempts were made on your account.'],
-        'INTEGRITY_FAILURE' => ['Device integrity check failed', 'A device using your account failed the integrity check. Sensitive actions are limited on it.'],
-        'PAYOUT_DESTINATION_CHANGED' => ['Payout destination changed', 'The account your payouts are sent to was changed. If this was not you, contact support right away.'],
-        'ACCESS_SUSPENDED' => ['Access suspended', 'Your organisation suspended your access.'],
-        'REAUTH_REQUIRED' => ['Sign in again', 'Your organisation asked you to sign in again on every device.'],
+    /** Alert codes; the copy (EN/FR) is NotificationCatalog "security_alert_<code>" in resources/lang/{en,fr}/customer_notifications.php. */
+    public const CODES = [
+        'NEW_DEVICE', 'PASSWORD_CHANGED', 'IDENTITY_CHANGED', 'SIGNED_OUT_EVERYWHERE', 'REPEATED_FAILED_SIGN_INS',
+        'INTEGRITY_FAILURE', 'PAYOUT_DESTINATION_CHANGED', 'ACCESS_SUSPENDED', 'REAUTH_REQUIRED',
     ];
 
     public function __construct(private readonly CustomerNotifier $notifier) {}
@@ -35,8 +29,10 @@ final class SecurityAlerts
     public function send(User $user, string $code, ?string $tenantId = null): void
     {
         try {
-            [$title, $body] = self::MESSAGES[$code];
-            $this->notifier->toUser($user, $tenantId, 'SECURITY', $title, $body, 'WARNING', self::PATH);
+            if (! in_array($code, self::CODES, true)) {
+                throw new \InvalidArgumentException("Unknown security alert {$code}");
+            }
+            $this->notifier->toUser($user, $tenantId, 'SECURITY', ...NotificationCatalog::message('security_alert_'.strtolower($code)), severity: 'WARNING', path: self::PATH);
         } catch (Throwable $e) {
             report($e);
         }

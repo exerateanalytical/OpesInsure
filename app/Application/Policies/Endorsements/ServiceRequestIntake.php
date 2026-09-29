@@ -7,6 +7,7 @@ namespace App\Application\Policies\Endorsements;
 use App\Application\Audit\AuditWriter;
 use App\Models\Policy;
 use App\Models\User;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -42,7 +43,7 @@ final class ServiceRequestIntake
             ]);
             DB::table('policy_transaction_events')->insert(['id' => (string) Str::uuid(), 'policy_transaction_id' => $id, 'from_status' => null, 'to_status' => 'REQUESTED', 'reason_code' => 'CUSTOMER_REQUEST', 'actor_id' => $customer->id, 'metadata' => json_encode(['message' => $reason]), 'occurred_at' => now()]);
             $this->audit->record('policy.service.requested', 'policy_transaction', $id, ['type' => $type, 'channel' => $channel]);
-            UserNotification::notify($customer, 'SERVICE_REQUEST', 'Request received', 'We received your '.strtolower(str_replace('_', ' ', $type)).' request for policy '.($policy->policy_number ?? '').'. Our team will review it within 2 business days.', 'INFO', "/services/$id", $policy->tenant_id);
+            UserNotification::notify($customer, 'SERVICE_REQUEST', ...NotificationCatalog::message('service_request_received', ['service' => $type, 'policy' => $policy->policy_number ?? '']), path: "/services/$id", tenantId: $policy->tenant_id);
         });
 
         return $id;

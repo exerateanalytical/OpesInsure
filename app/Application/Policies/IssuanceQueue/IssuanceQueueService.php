@@ -6,6 +6,7 @@ namespace App\Application\Policies\IssuanceQueue;
 
 use App\Application\Audit\AuditWriter;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Application\Policies\PaymentIssuanceTrigger;
 use App\Models\PaymentIntentRecord;
 use App\Models\Policy;
@@ -56,10 +57,9 @@ final class IssuanceQueueService
         });
 
         if ($ex->customer_notified_at === null) {
-            $product = $proposal->offer?->product?->name ?? 'your cover';
-            $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PAYMENT', 'Payment received — policy issuance delayed',
-                "We received your payment for {$product} and it is safe. Issuing your policy is taking longer than expected; our team is handling it and will keep you informed.",
-                'WARNING', "/payments/{$payment->id}");
+            $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PAYMENT',
+                ...NotificationCatalog::message('payment_issuance_delayed', ['product' => $proposal->offer?->product?->name]),
+                severity: 'WARNING', path: "/payments/{$payment->id}");
             $ex->update(['customer_notified_at' => now()]);
         }
 

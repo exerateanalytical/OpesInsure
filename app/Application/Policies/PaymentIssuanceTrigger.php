@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Policies;
 
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Application\Policies\IssuanceQueue\IssuanceQueueService;
 use App\Application\Policies\IssuanceQueue\IssuanceTerritoryResolver;
 use App\Application\Rules\PremiumCover\PremiumCoverEvaluator;
@@ -162,10 +163,9 @@ final class PaymentIssuanceTrigger
 
         $this->queue->closeFor($proposal->id, 'ISSUANCE_REQUESTED', $request->id, $actor);
 
-        $product = $proposal->offer?->product?->name ?? 'your cover';
-        $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PAYMENT', 'Payment received — issuance in progress',
-            "We received your payment for {$product}. The insurer is issuing your policy; we'll notify you as soon as you're covered.",
-            'SUCCESS', "/payments/{$payment->id}");
+        $this->notifier->toParty($proposal->party_id, $proposal->tenant_id, 'PAYMENT',
+            ...NotificationCatalog::message('payment_issuance_in_progress', ['product' => $proposal->offer?->product?->name]),
+            severity: 'SUCCESS', path: "/payments/{$payment->id}");
 
         return $request;
     }

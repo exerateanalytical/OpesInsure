@@ -33,7 +33,7 @@ final class CustomerNotifier
     private const CATEGORY_PREFERENCE = ['PAYMENT' => 'payments', 'CLAIM' => 'claims', 'RENEWAL' => 'renewals'];
 
     /** @return int number of users notified */
-    public function toParty(?string $partyId, ?string $tenantId, string $type, string $title, string $body, string $severity = 'INFO', ?string $path = null, bool $forceSms = false): int
+    public function toParty(?string $partyId, ?string $tenantId, string $type, string $title, string $body, string $severity = 'INFO', ?string $path = null, bool $forceSms = false, ?string $code = null, array $params = []): int
     {
         if (! $partyId) {
             return 0;
@@ -48,16 +48,21 @@ final class CustomerNotifier
         }
 
         foreach ($users as $user) {
-            $this->toUser($user, $tenantId, $type, $title, $body, $severity, $path, $forceSms);
+            $this->toUser($user, $tenantId, $type, $title, $body, $severity, $path, $forceSms, $code, $params);
         }
 
         return $users->count();
     }
 
-    public function toUser(User $user, ?string $tenantId, string $type, string $title, string $body, string $severity = 'INFO', ?string $path = null, bool $forceSms = false): ?UserNotification
+    /**
+     * $code/$params: a NotificationCatalog message (use NotificationCatalog::message() to fill
+     * title, body, code and params). The inbox row keeps the English text plus the code; push
+     * and SMS go out in the user's language (users.locale).
+     */
+    public function toUser(User $user, ?string $tenantId, string $type, string $title, string $body, string $severity = 'INFO', ?string $path = null, bool $forceSms = false, ?string $code = null, array $params = []): ?UserNotification
     {
         try {
-            $notification = UserNotification::notify($user, $type, $title, $body, $severity, $path, $tenantId);
+            $notification = UserNotification::notify($user, $type, $title, $body, $severity, $path, $tenantId, $code, $params);
             if (! $notification->wasRecentlyCreated) {
                 return $notification; // de-duplicated: already told this user
             }
@@ -67,6 +72,9 @@ final class CustomerNotifier
             if ($categoryKey !== null && ! $prefs[$categoryKey]) {
                 return $notification; // inbox only — the user muted this category
             }
+
+            $local = $code ? NotificationCatalog::render($code, $params, NotificationCatalog::locale($user->locale)) : null;
+            [$title, $body] = [$local['title'] ?? $title, $local['body'] ?? $body];
 
             $hasPushToken = DB::table('user_push_tokens')->where('user_id', $user->id)->exists();
             if ($prefs['push'] && $hasPushToken) {

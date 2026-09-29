@@ -11,6 +11,7 @@ use App\Application\Policies\MobileWalletService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Claim;
 use App\Models\ClaimDispute;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -126,7 +127,7 @@ final class MobileClaimCompletionController
             $c->update(['status' => 'DISPUTED', 'version' => $c->version + 1]);
         }
         $this->audit->record('claim.appealed', 'claim', $c->id, ['dispute_id' => $dispute->id]);
-        UserNotification::notify($request->user(), 'CLAIM', 'Appeal received', "Your appeal on claim {$c->claim_number} was received (ref {$dispute->reference}). A claims officer will respond within 5 business days.", 'INFO', "/claim/{$c->id}", $c->tenant_id);
+        UserNotification::notify($request->user(), 'CLAIM', ...NotificationCatalog::message('claim_appeal_received', ['claim' => $c->claim_number, 'reference' => $dispute->reference]), path: "/claim/{$c->id}", tenantId: $c->tenant_id);
 
         return response()->json(['data' => $c->refresh()->load('policy')], 201);
     }

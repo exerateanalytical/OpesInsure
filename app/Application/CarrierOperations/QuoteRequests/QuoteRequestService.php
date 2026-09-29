@@ -11,6 +11,7 @@ use App\Application\Cases\CaseService;
 use App\Application\Cases\Models\WorkCase;
 use App\Application\Events\OutboxWriter;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Application\Quotes\QuoteMachine;
 use App\Application\Quotes\QuoteService;
 use App\Interfaces\Http\Errors\ApiProblemException;
@@ -87,11 +88,10 @@ final class QuoteRequestService
                 'case_id' => $case->id, 'queue_id' => $case->queue_id, 'response_due_at' => $case->due_at?->toIso8601String(),
             ]);
             if ($case->owner_user_id && ($owner = User::find($case->owner_user_id))) {
-                $this->notifier->toUser($owner, $quote->tenant_id, 'CARRIER_QUOTE_REQUEST', 'New manual quotation request',
-                    "Quote request {$request->request_number} is waiting for your offer.", 'INFO', "/carrier/quote-requests/{$request->id}");
+                $this->notifier->toUser($owner, $quote->tenant_id, 'CARRIER_QUOTE_REQUEST',
+                    ...NotificationCatalog::message('carrier_quote_request', ['request' => $request->request_number]), path: "/carrier/quote-requests/{$request->id}");
             }
-            $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', 'Your request was sent to an insurer',
-                'An insurer is preparing a personalised offer. We will tell you as soon as it arrives.', 'INFO', "/quotes/{$quote->id}");
+            $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', ...NotificationCatalog::message('quote_sent_to_insurer'), path: "/quotes/{$quote->id}");
 
             return $request->refresh();
         });
@@ -176,8 +176,7 @@ final class QuoteRequestService
             // An unpriced quote (DRAFT / RATING / REFERRED) becomes CALCULATED through the quote machine (6B); a priced one keeps its state.
             $quote = app(QuoteService::class)->manualOfferRecorded($quote, $actor);
             if ($wasOffered) { // status unchanged, so the lifecycle producer stays silent: tell the customer here.
-                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', 'A new insurer offer is ready',
-                    'An insurer has sent you a personalised offer to review.', 'SUCCESS', "/quotes/{$quote->id}");
+                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', ...NotificationCatalog::message('quote_new_offer'), severity: 'SUCCESS', path: "/quotes/{$quote->id}");
             }
 
             $this->audit->record('carrier_quote_request.offered', 'carrier_quote_request', $request->id, ['quote_offer_id' => $offer->id, 'source' => $source, 'total_minor' => $total]);
@@ -211,8 +210,7 @@ final class QuoteRequestService
             // Nothing else pending and no offer on the table: the quote is referred back to the distributor.
             $stillOpen = CarrierQuoteRequest::where('quote_id', $quote->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES)->exists();
             if (! $stillOpen && ! QuoteOffer::where('quote_id', $quote->id)->where('status', 'OFFERED')->exists()) {
-                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', 'The insurer could not offer cover',
-                    'The insurer declined to quote this risk. Your adviser will suggest alternatives.', 'WARNING', "/quotes/{$quote->id}");
+                $this->notifier->toParty($quote->party_id, $quote->tenant_id, 'QUOTE', ...NotificationCatalog::message('quote_declined'), severity: 'WARNING', path: "/quotes/{$quote->id}");
             }
             $this->audit->record('carrier_quote_request.declined', 'carrier_quote_request', $request->id, ['reason' => $d['decline_reason_code'], 'source' => $source]);
             $this->outbox->record('carrier_quote_request.declined', 'carrier_quote_request', $request->id, ['request_id' => $request->id, 'quote_id' => $quote->id, 'carrier_id' => $request->carrier_id, 'reason' => $d['decline_reason_code']]);

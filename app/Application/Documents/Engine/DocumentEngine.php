@@ -13,6 +13,7 @@ use App\Application\Documents\Security\DocumentSigner;
 use App\Application\Documents\Security\IssuanceGate;
 use App\Application\Documents\Security\VerificationCredentials;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Application\Shared\CanonicalJson;
 use App\Models\Claim;
 use App\Models\Document;
@@ -126,9 +127,8 @@ final class DocumentEngine
      */
     private function notifyCustomer(Policy $policy, int $count, string $label): void
     {
-        $title = $count === 1 ? 'New document available' : 'New documents available';
-        $body = sprintf('%d new document%s for policy %s (%s). Open your policy to view and download.', $count, $count === 1 ? '' : 's', (string) $policy->policy_number, $label);
-        $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'DOCUMENT', $title, $body, 'INFO', "/policy/{$policy->id}");
+        $message = NotificationCatalog::message($count === 1 ? 'document_new_one' : 'document_new_many', ['count' => $count, 'policy' => (string) $policy->policy_number, 'label' => $label]);
+        $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'DOCUMENT', ...$message, path: "/policy/{$policy->id}");
     }
 
     /**

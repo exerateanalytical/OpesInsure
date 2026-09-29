@@ -7,6 +7,7 @@ namespace App\Application\Accumulation;
 use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -53,8 +54,9 @@ final class LargeLossNotifier
         }
         $recipients = 0;
         foreach (User::whereIn('id', json_decode((string) $threshold->recipient_user_ids, true) ?: [])->get() as $user) {
-            $sent = $this->notifier->toUser($user, $tenantId, 'claim.large_loss', 'Large loss reported',
-                "Claim {$claim->claim_number} has a loss of {$amount} {$claim->currency} (minor units), at or above the large-loss threshold.", 'WARNING', "/claims/{$claimId}");
+            $sent = $this->notifier->toUser($user, $tenantId, 'claim.large_loss',
+                ...NotificationCatalog::message('claim_large_loss', ['claim' => $claim->claim_number, 'amount' => $amount, 'currency' => $claim->currency]),
+                severity: 'WARNING', path: "/claims/{$claimId}");
             $recipients += $sent ? 1 : 0;
         }
         DB::table('large_loss_notifications')->insert(['id' => (string) Str::uuid(), 'tenant_id' => $tenantId, 'claim_id' => $claimId, 'amount_minor' => $amount,

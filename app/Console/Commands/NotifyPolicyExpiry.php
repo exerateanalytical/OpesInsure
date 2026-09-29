@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\Policy;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -50,11 +51,12 @@ final class NotifyPolicyExpiry extends Command
                     if (! $inserted) {
                         return; // another run got here first
                     }
-                    $product = $policy->proposal?->offer?->product?->name ?? 'Your policy';
-                    $when = $days === 1 ? 'tomorrow' : "in {$days} days";
-                    $notifier->toParty($policy->party_id, $policy->tenant_id, 'RENEWAL', $days === 1 ? 'Your cover ends tomorrow' : "Your cover ends {$when}",
-                        "{$product} policy {$policy->policy_number} expires {$when} (".$policy->coverage_ends_at->format('d M Y').'). Renew now to stay covered.',
-                        $days <= 7 ? 'WARNING' : 'INFO', "/policy/{$policy->id}", true);
+                    $notifier->toParty($policy->party_id, $policy->tenant_id, 'RENEWAL',
+                        ...NotificationCatalog::message($days === 1 ? 'renewal_ends_tomorrow' : 'renewal_ends_in_days', [
+                            'product' => $policy->proposal?->offer?->product?->name, 'policy' => $policy->policy_number,
+                            'days' => $days, 'ends' => $policy->coverage_ends_at->toDateString(),
+                        ]),
+                        severity: $days <= 7 ? 'WARNING' : 'INFO', path: "/policy/{$policy->id}", forceSms: true);
                     $sent++;
                 });
         }

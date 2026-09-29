@@ -11,6 +11,7 @@ use App\Models\Policy;
 use App\Models\Proposal;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -80,7 +81,7 @@ final class DemoPurchaseSettler
         $requestModel = \App\Models\PolicyIssuanceRequest::where('proposal_id', $proposal->id)->firstOrFail();
         if (in_array($requestModel->status, ['REQUESTED', 'CARRIER_REVIEW'], true)) {
             $policy = $this->issuance->approve($requestModel, ['carrier_reference' => 'DEMO-'.strtoupper(Str::random(8))], $approver);
-            UserNotification::notify($customer, 'POLICY', 'Your policy is active', "Policy {$policy->policy_number} has been issued. Your certificate is ready in your wallet.", 'SUCCESS', "/policy/{$policy->id}", $tenant->id);
+            UserNotification::notify($customer, 'POLICY', ...NotificationCatalog::message('policy_active', ['policy' => $policy->policy_number]), severity: 'SUCCESS', path: "/policy/{$policy->id}", tenantId: $tenant->id);
         }
     }
 }

@@ -4,21 +4,28 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/** notifications/* screens — the signed-in user's own inbox only. */
+/**
+ * notifications/* screens — the signed-in user's own inbox only. Title/body
+ * come back in the app language (Accept-Language, else users.locale); see
+ * NotificationCatalog.
+ */
 final class MobileNotificationController
 {
     public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => UserNotification::where('user_id', $request->user()->id)->orderByDesc('created_at')->limit(100)->get()->map->toMobile()->values()]);
+        $locale = NotificationCatalog::requestLocale($request);
+
+        return response()->json(['data' => UserNotification::where('user_id', $request->user()->id)->orderByDesc('created_at')->limit(100)->get()->map(fn (UserNotification $n) => $n->toMobile($locale))->values()]);
     }
 
     public function show(string $notification, Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->owned($notification, $request)->toMobile()]);
+        return response()->json(['data' => $this->owned($notification, $request)->toMobile(NotificationCatalog::requestLocale($request))]);
     }
 
     public function markRead(string $notification, Request $request): JsonResponse
@@ -28,7 +35,7 @@ final class MobileNotificationController
             $row->update(['read_at' => now()]);
         }
 
-        return response()->json(['data' => $row->refresh()->toMobile()]);
+        return response()->json(['data' => $row->refresh()->toMobile(NotificationCatalog::requestLocale($request))]);
     }
 
     public function markAllRead(Request $request): JsonResponse

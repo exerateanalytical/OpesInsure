@@ -17,6 +17,7 @@ use App\Models\PolicyIssuanceRequest;
 use App\Models\Proposal;
 use App\Models\RenewalCase;
 use App\Application\Notifications\CustomerNotifier;
+use App\Application\Notifications\NotificationCatalog;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -444,10 +445,11 @@ final class PolicyIssuanceService
                 }
             }
 
-            $product = $proposal->offer?->product?->name ?? 'Your policy';
-            $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY', "You're covered",
-                "{$product} policy {$policy->policy_number} is active from ".$policy->coverage_starts_at->format('d M Y').'. Your certificate is in your wallet.',
-                'SUCCESS', "/policy/{$policy->id}");
+            $this->notifier->toParty($policy->party_id, $policy->tenant_id, 'POLICY',
+                ...NotificationCatalog::message('policy_issued', [
+                    'product' => $proposal->offer?->product?->name, 'policy' => $policy->policy_number, 'starts' => $policy->coverage_starts_at->toDateString(),
+                ]),
+                severity: 'SUCCESS', path: "/policy/{$policy->id}");
 
             return $policy;
         });
@@ -479,9 +481,8 @@ final class PolicyIssuanceService
             ]);
 
             $proposal = $request->proposal;
-            $this->notifier->toParty($proposal?->party_id, $request->tenant_id, 'POLICY', 'Issuance could not be completed',
-                'The insurer could not issue your policy. Our team will contact you about next steps, including a refund if applicable.',
-                'WARNING', $proposal ? "/proposals/{$proposal->id}" : null);
+            $this->notifier->toParty($proposal?->party_id, $request->tenant_id, 'POLICY', ...NotificationCatalog::message('policy_issuance_failed'),
+                severity: 'WARNING', path: $proposal ? "/proposals/{$proposal->id}" : null);
 
             return $request->refresh();
         });
