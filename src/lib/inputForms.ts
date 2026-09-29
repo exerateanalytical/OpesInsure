@@ -142,6 +142,8 @@ export function profileToValues(p: Record<string, unknown> | null | undefined): 
   return {
     date_of_birth: s(p.date_of_birth).slice(0, 10),
     occupation: s(p.occupation),
+    // Text typed under the picker's "Other" (server field since 2026-09-29).
+    occupation_other: s(p.occupation_other),
     region: s(p.region),
     city: s(p.city),
     address_line1: s(p.address_line1),
