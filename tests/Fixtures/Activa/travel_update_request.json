@@ -1,0 +1,27 @@
+{
+ "start_date": "2024-10-01",
+ "end_date": "2024-10-04",
+ "policy_holder": {
+  "id": 404017,
+  "title": "M",
+  "first_name": "teeest",
+  "last_name": "tesst",
+  "email": "tes@tes.fr",
+  "phone_number": "0661111111"
+ },
+ "beneficiaries": [
+  {
+   "id": 404018,
+   "title": "M",
+   "first_name": "Prenom1",
+   "last_name": "Nom1",
+   "email": "test@test.fr",
+   "passport_number": "N2222222",
+   "phone_number": "054785412",
+   "birth_date": "1952-01-12",
+   "destination_country": "SCHENGEN",
+   "residence_country": "CAMEROUN",
+   "nationality": "CENTRAFRICAINE"
+  }
+ ]
+}

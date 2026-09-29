@@ -1,0 +1,18 @@
+{
+ "marques": [
+  {
+   "codemarq": "TOY",
+   "libemarq": "TOYOTA"
+  },
+  {
+   "codemarq": "HYU",
+   "libemarq": "HYUNDAI"
+  }
+ ],
+ "usages": [
+  {
+   "codeusag": "01",
+   "libeusag": "Promenade et affaires"
+  }
+ ]
+}

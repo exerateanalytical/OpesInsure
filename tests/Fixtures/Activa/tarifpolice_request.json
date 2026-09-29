@@ -1,0 +1,45 @@
+{
+ "code_categorie": 0,
+ "dateeffe": "string",
+ "dateeche": "string",
+ "duree_Contrat": 0,
+ "statut_SocioProfessionnel": "string",
+ "marque_Vehicule": "string",
+ "date_de_mise_en_circulation": "string",
+ "carrosserie_Vehicule": "string",
+ "genre_Vehicule": "string",
+ "usage_Vehicule": "string",
+ "zone_de_Circulation": "string",
+ "type_Energie": "string",
+ "puissance_Fiscale_Carte_Grise": 0,
+ "charge_Utile_Vehicule": 0,
+ "cylindree": 0,
+ "vitesse_Vehicule": 0,
+ "nombre_de_places": 0,
+ "valeur_A_Neuf": 0,
+ "valeur_Venale": 0,
+ "attelage_Remorque": "string",
+ "coef_Bonus_Malus": 0,
+ "taux_Reduction": 0,
+ "flag_Turbo": "string",
+ "fla_Exotg": "string",
+ "transport_Matiere_Inflammable": "string",
+ "valeur_Accessoires": 0,
+ "accessoire_Intermediaire": 0,
+ "codtypav": 0,
+ "flag_Licence_Dta": "string",
+ "nombre_membre_famille": 0,
+ "nombre_enfants": 0,
+ "formcouv": "string",
+ "garanties": [
+  {
+   "codegarantie": "string",
+   "caracteristiques": [
+    {
+     "nomRubrique": "string",
+     "valeurRubrique": "string"
+    }
+   ]
+  }
+ ]
+}

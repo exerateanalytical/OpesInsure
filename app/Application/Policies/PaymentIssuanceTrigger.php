@@ -58,6 +58,8 @@ final class PaymentIssuanceTrigger
     /** Webhook / reconciliation entry point: never throws (a confirmed payment must never be undone). */
     public function afterPaymentSucceeded(PaymentIntentRecord $payment): ?PolicyIssuanceRequest
     {
+        // Carrier API connector (Activa): records the collection at the carrier once it holds the contract; never throws.
+        app(\App\Application\Integrations\Activa\ActivaHooks::class)->paymentSucceeded($payment);
         try {
             return $this->attempt($payment);
         } catch (Throwable $e) {

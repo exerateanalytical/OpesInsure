@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Schema;
  */
 final class OperationalExceptionQueue
 {
-    public const OPERATIONAL_SOURCES = ['failed_webhooks', 'dead_lettered_deliveries', 'failed_jobs', 'stuck_outbox', 'carrier_exchange_failures'];
+    public const OPERATIONAL_SOURCES = ['failed_webhooks', 'dead_lettered_deliveries', 'failed_jobs', 'stuck_outbox', 'carrier_exchange_failures', 'carrier_api_sync_failures'];
 
     /** Outbox messages still unpublished after this many dispatch attempts are "stuck". Mirrors the dispatcher's retry window. */
     public const STUCK_OUTBOX_ATTEMPTS = 3;
@@ -47,6 +47,7 @@ final class OperationalExceptionQueue
             }
             $sources[$source] = ['domain' => 'operations'] + match (true) {
                 $source === 'carrier_exchange_failures' => $this->carrierExchangeFailures($tenantId),
+                $source === 'carrier_api_sync_failures' => $this->carrierApiSyncFailures($tenantId),
                 ! $platformSources => ['available' => false, 'reason' => 'Platform-level source: requires operations.platform.view.', 'count' => 0, 'breakdown' => [], 'items' => []],
                 default => $this->{lcfirst(str_replace('_', '', ucwords($source, '_')))}(),
             };
@@ -109,5 +110,18 @@ final class OperationalExceptionQueue
         return ['available' => true, 'count' => (clone $base)->count(),
             'breakdown' => (clone $base)->selectRaw('m.status as k, count(*) as n')->groupBy('m.status')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
             'items' => (clone $base)->orderBy('m.updated_at')->limit(self::ITEM_LIMIT)->get(['m.id', 'm.claim_id', 'm.message_type', 'm.direction', 'm.status', 'm.failure_reason', 'm.updated_at'])->all()];
+    }
+
+    /** Carrier API connector (Activa) steps of this tenant's policies / payments that did not reach the carrier. */
+    private function carrierApiSyncFailures(string $tenantId): array
+    {
+        if (! Schema::hasTable('carrier_api_sync_records')) {
+            return ['available' => false, 'reason' => 'Table carrier_api_sync_records is not installed.', 'count' => 0, 'breakdown' => [], 'items' => []];
+        }
+        $base = DB::table('carrier_api_sync_records')->where('tenant_id', $tenantId)->whereIn('status', \App\Models\CarrierApiSyncRecord::FAILURES);
+
+        return ['available' => true, 'count' => (clone $base)->count(),
+            'breakdown' => (clone $base)->selectRaw('status as k, count(*) as n')->groupBy('status')->pluck('n', 'k')->map(fn ($n) => (int) $n)->all(),
+            'items' => (clone $base)->orderBy('updated_at')->limit(self::ITEM_LIMIT)->get(['id', 'policy_id', 'subject_type', 'subject_id', 'operation', 'status', 'attempts', 'last_error_code', 'next_attempt_at', 'updated_at'])->all()];
     }
 }

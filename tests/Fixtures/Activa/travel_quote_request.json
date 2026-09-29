@@ -1,0 +1,24 @@
+{
+ "context": {
+  "currency": "Franc CFA",
+  "country": "Cameroun",
+  "language": "fr"
+ },
+ "product_criteria": {
+  "category": "Offre_Standard_Voyage"
+ },
+ "travel": {
+  "destination_area": "Zone 1 : Schengen, Afrique, Moyen Orient",
+  "start_date": "2024-10-01",
+  "end_date": "2024-10-04",
+  "travelers": {
+   "composition": "single",
+   "types": {
+    "adult": 0,
+    "children": 0,
+    "senior": 1
+   },
+   "oldest_traveler_age": 71
+  }
+ }
+}

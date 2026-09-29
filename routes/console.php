@@ -73,3 +73,28 @@ Artisan::command('ops:readiness-report {--path= : output path relative to the pr
 
     return $this->option('fail-on-fail') && $data['summary']['fail'] > 0 ? 1 : 0;
 })->purpose('Write the automatable production-readiness report (REQ-OPS-004)');
+
+// Activa Assurances Cameroun carrier API (docs/integrations/activa). Everything below is a no-op until an Activa
+// connection has credentials (Integrations → Activa Assurances); once Activa accepts them, the backlog flows.
+Artisan::command('activa:reconcile {--limit=200 : max records per pass} {--include-failed : also retry FAILED / MAPPING_REQUIRED rows}', function (App\Application\Integrations\Activa\ActivaReconciliation $r) {
+    $s = $r->run((int) $this->option('limit'), (bool) $this->option('include-failed'));
+    $this->info(sprintf('Connections: %d. Probed: %d. Policies: %d. Payments: %d. Cancelled: %d. Updated: %d. Awaiting config: %d.', $s['connections'], $s['probed'], $s['policies'], $s['payments'], $s['cancelled'], $s['updated'], $s['skipped_config']));
+})->purpose('Sync issued policies / collected payments not yet on Activa\'s books and retry due failures.');
+Schedule::command('activa:reconcile')->everyTenMinutes()->withoutOverlapping()->onOneServer();
+
+Artisan::command('activa:reference-sync', function (App\Application\Integrations\Activa\ActivaReferenceDataSync $sync) {
+    $s = $sync->run();
+    $this->info(sprintf('Connections: %d. Received: %d. Created: %d. Updated: %d. Unchanged: %d. Retired: %d. Mapped: %d.', $s['connections'], $s['received'], $s['created'], $s['updated'], $s['unchanged'], $s['retired'], $s['mapped']));
+    foreach ($s['errors'] as $env => $code) {
+        $this->warn("{$env}: {$code}");
+    }
+})->purpose('Copy Activa referential data into carrier_reference_data and link it to master data (idempotent).');
+Schedule::command('activa:reference-sync')->dailyAt('01:30')->timezone('Africa/Douala')->withoutOverlapping()->onOneServer();
+
+Artisan::command('activa:test-connection', function (App\Application\Integrations\Activa\ActivaConnections $connections) {
+    foreach ($connections->all() as $c) {
+        foreach ($connections->test($c) as $service => $r) {
+            $this->line(sprintf('%-10s %-10s %-26s %s', $c->environment, $service, $r['state'], $r['http_status'] ?? '-'));
+        }
+    }
+})->purpose('Call every configured Activa service\'s auth operation and print OK / 401 per service (no secrets printed).');

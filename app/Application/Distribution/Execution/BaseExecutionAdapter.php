@@ -7,7 +7,8 @@ namespace App\Application\Distribution\Execution;
 /**
  * REQ-AOM-002 — shared behaviour of the MANUAL / CONFIGURED / HYBRID / REMOTE_API adapters.
  * Subclasses only declare their capability, mode, the OPES handler and the next action; the
- * REMOTE_API variant always answers INTEGRATION_UNAVAILABLE (interface + stub, no carrier API yet).
+ * REMOTE_API variant delegates to the carrier's API connector (RemoteCarrierConnectors, e.g. Activa) when one
+ * serves the carrier and this capability, and otherwise answers INTEGRATION_UNAVAILABLE.
  */
 abstract class BaseExecutionAdapter implements ExecutionAdapter
 {
@@ -18,6 +19,11 @@ abstract class BaseExecutionAdapter implements ExecutionAdapter
     public function execute(ExecutionContext $context): ExecutionOutcome
     {
         if ($this->executionMode() === 'REMOTE_API') {
+            $connector = app(RemoteCarrierConnectors::class)->for($context->carrierId);
+            if ($connector !== null && $connector->supports($this->capability())) {
+                return $connector->execute($this->capability(), $context);
+            }
+
             return new ExecutionOutcome(ExecutionOutcome::INTEGRATION_UNAVAILABLE, $this->capability(), 'REMOTE_API', static::class,
                 null, $this->nextAction(), 'INTEGRATION_UNAVAILABLE');
         }

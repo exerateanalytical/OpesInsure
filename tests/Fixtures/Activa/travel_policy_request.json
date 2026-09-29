@@ -1,0 +1,40 @@
+{
+ "subscription_country": "MG",
+ "language_code": "fr",
+ "quote_code": "string",
+ "agent_scope": "string",
+ "policy_holder": [
+  {
+   "title": "M",
+   "first_name": "Test",
+   "last_name": "TEST",
+   "birth_date": "1940-01-12",
+   "email": "test@tes.fr",
+   "phone_number": "054785412",
+   "is_policy_beneficiary": 0
+  }
+ ],
+ "beneficiaries": [
+  {
+   "first_name": "Prenom1",
+   "last_name": "Nom1",
+   "title": "M",
+   "email": "test@test.fr",
+   "passport_number": "N2222222",
+   "phone_number": "054785412",
+   "birth_date": "1952-01-12",
+   "destination_country": "SCHENGEN",
+   "residence_country": "CAMEROUN",
+   "nationality": "CENTRAFRICAINE"
+  }
+ ],
+ "consents": [
+  {}
+ ],
+ "payment": {
+  "type": "MANAGED_BY_PARTNER"
+ },
+ "addons": [
+  {}
+ ]
+}

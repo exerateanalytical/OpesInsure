@@ -30,9 +30,11 @@ final class CarrierDocumentService
     public function __construct(private DocumentRegister $register, private DocumentEngine $engine, private AuditWriter $audit) {}
 
     /**
-     * @param array{document_type_code: string, issue_date: string, carrier_document_number?: ?string, carrier_version?: ?string, language?: ?string, subject_key?: ?string, subject_label?: ?string, valid_until?: ?string, issuer?: ?string, claim_id?: ?string} $meta
+     * $actor is null when the original arrives from the carrier's API (source CARRIER_API, e.g. Activa's certificate).
+     *
+     * @param array{document_type_code: string, issue_date: string, carrier_document_number?: ?string, carrier_version?: ?string, language?: ?string, subject_key?: ?string, subject_label?: ?string, valid_until?: ?string, issuer?: ?string, claim_id?: ?string, source?: ?string} $meta
      */
-    public function upload(Policy $policy, string $bytes, string $mime, array $meta, User $actor): Document
+    public function upload(Policy $policy, string $bytes, string $mime, array $meta, ?User $actor): Document
     {
         $type = $this->register->type((string) ($meta['document_type_code'] ?? ''));
         $errors = [];
@@ -79,12 +81,12 @@ final class CarrierDocumentService
                 'title' => $type['name_en'], 'issuer_type' => $issuer, 'issuer_carrier_id' => $policy->carrier_id, 'issuer_tenant_id' => $policy->tenant_id,
                 'language' => $meta['language'] ?? 'FR', 'document_origin' => $issuer, 'document_stage' => $this->stageOf($type),
                 'security_level' => $type['security_level'], 'status' => $certificateLike ? 'VALID' : 'ISSUED',
-                'verification_code' => DocumentEngine::newVerificationCode(), 'generation_trigger' => 'CARRIER_UPLOAD',
+                'verification_code' => DocumentEngine::newVerificationCode(), 'generation_trigger' => ($meta['source'] ?? null) === 'CARRIER_API' ? 'CARRIER_API' : 'CARRIER_UPLOAD',
                 'issued_at' => $meta['issue_date'], 'valid_from' => $certificateLike ? $policy->coverage_starts_at : null,
                 'valid_until' => $meta['valid_until'] ?? ($certificateLike ? $policy->coverage_ends_at : null),
-                'is_carrier_original' => true, 'uploaded_by' => $actor->id,
-                'provenance' => ['source' => 'CARRIER_ORIGINAL', 'carrier_document_number' => $meta['carrier_document_number'] ?? null, 'carrier_version' => $meta['carrier_version'] ?? null,
-                    'issue_date' => $meta['issue_date'], 'uploaded_by' => $actor->id, 'uploaded_at' => now()->toIso8601String(), 'sha256' => $hash],
+                'is_carrier_original' => true, 'uploaded_by' => $actor?->id,
+                'provenance' => ['source' => ($meta['source'] ?? null) === 'CARRIER_API' ? 'CARRIER_API' : 'CARRIER_ORIGINAL', 'carrier_document_number' => $meta['carrier_document_number'] ?? null, 'carrier_version' => $meta['carrier_version'] ?? null,
+                    'issue_date' => $meta['issue_date'], 'uploaded_by' => $actor?->id, 'uploaded_at' => now()->toIso8601String(), 'sha256' => $hash],
             ]);
 
             $this->engine->supersedePrevious($policy, $doc, $actor, 'REPLACED');

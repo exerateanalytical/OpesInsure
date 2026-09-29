@@ -1,0 +1,22 @@
+{
+ "succes": true,
+ "message": "OK",
+ "documents": [
+  {
+   "nomDocument": "CONDITIONS_PARTICULIERES.pdf",
+   "typeDocument": "CONTRAT",
+   "lienAzure": "https://example.invalid/cp",
+   "nomFichier": "CONDITIONS_PARTICULIERES.pdf",
+   "dateCreation": "2026-10-01T10:00:00",
+   "tailleFichier": 1024
+  },
+  {
+   "nomDocument": "ATTESTATION_AUTO.pdf",
+   "typeDocument": "ATTESTATION",
+   "lienAzure": "https://example.invalid/att",
+   "nomFichier": "ATTESTATION_AUTO.pdf",
+   "dateCreation": "2026-10-01T10:00:00",
+   "tailleFichier": 900
+  }
+ ]
+}

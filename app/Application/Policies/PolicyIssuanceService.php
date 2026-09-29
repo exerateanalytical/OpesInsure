@@ -436,6 +436,8 @@ final class PolicyIssuanceService
             }
             // Document engine: the class pack for this lifecycle trigger (savepoint; never blocks issuance).
             app(\App\Application\Documents\Engine\DocumentEngine::class)->fireQuietly($policy->previous_policy_id ? 'RENEWAL_ISSUED' : 'POLICY_ISSUED', $policy, [], $actor);
+            // Carrier API connector (Activa): books the contract at the carrier after commit; never blocks issuance.
+            app(\App\Application\Integrations\Activa\ActivaHooks::class)->policyIssued($policy);
 
             if ($renewalCase && $renewalCase->status === 'QUOTED') {
                 try {

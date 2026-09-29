@@ -20,6 +20,12 @@ final readonly class ExecutionOutcome
 
     public const INTEGRATION_UNAVAILABLE = 'INTEGRATION_UNAVAILABLE';
 
+    /** REMOTE_API: the carrier's API performed the step; `data` holds its answer (ids, amounts — no secrets). */
+    public const CARRIER_EXECUTED = 'CARRIER_EXECUTED';
+
+    /** REMOTE_API preview: the carrier's API is connected and authenticated (nothing was sent). */
+    public const CARRIER_API_READY = 'CARRIER_API_READY';
+
     public function __construct(
         public string $status,
         public string $capability,
@@ -29,6 +35,7 @@ final readonly class ExecutionOutcome
         public ?string $nextAction = null,
         public ?string $errorCode = null,
         public ?string $fallbackMode = null,
+        public array $data = [],
     ) {}
 
     public function available(): bool
@@ -42,6 +49,6 @@ final readonly class ExecutionOutcome
         return [
             'status' => $this->status, 'capability' => $this->capability, 'execution_mode' => $this->executionMode, 'adapter' => $this->adapter,
             'handler' => $this->handler, 'next_action' => $this->nextAction, 'error_code' => $this->errorCode, 'fallback_mode' => $this->fallbackMode,
-        ];
+        ] + ($this->data !== [] ? ['data' => $this->data] : []);
     }
 }
