@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight } from "lucide-react-native";
+import { ArrowRight, ClipboardList } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { BrandHeader, CtaBar, HeroCard } from "@/components/design";
 import { claimPolicy, policyLine, policyTitle, productIcon, providerName } from "@/components/claims/claimProduct";
@@ -11,6 +11,8 @@ import { claimStatusKey, claimTone } from "@/lib/claimStatus";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { IncidentCoordinates } from "@/components/forms/LocationAutofill";
+import { ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
+import { formatCoords } from "@/lib/locationMatch";
 import { ApiError, ClaimIncidentDetails, ClaimsApi, ClaimsCompletionApi } from "@/api/client";
 import { OfflineVault } from "@/offline/vault";
 import { useLoad } from "@/hooks/useLoad";
@@ -32,6 +34,8 @@ export default function Incident() {
   const { data, setData: setX, loading, error, reload } = useLoad(() => ClaimsCompletionApi.incident(id), [id]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
+  // The edited details are shown read-only for a last check before they are saved.
+  const [reviewing, setReviewing] = useState(false);
   const save = async (x: ClaimIncidentDetails) => {
     setSaving(true);
     setSaveError(null);
@@ -71,11 +75,20 @@ export default function Incident() {
   return (
     <Screen
       footer={
-        data ? (
+        !data ? undefined : reviewing ? (
+          <ReviewFooter label={t("incidentSave")} loading={saving} onConfirm={() => void save(data)} onBack={() => setReviewing(false)} />
+        ) : (
           <CtaBar>
-            <Button label={t("incidentSave")} icon={ArrowRight} loading={saving} onPress={() => void save(data)} />
+            <Button
+              label={t("reviewBeforeSave")}
+              icon={ArrowRight}
+              onPress={() => {
+                setSaveError(null);
+                setReviewing(true);
+              }}
+            />
           </CtaBar>
-        ) : undefined
+        )
       }
     >
       <BrandHeader title={t("incidentTitle")} subtitle={t("incidentSubtitle")} right="help" />
@@ -90,7 +103,21 @@ export default function Incident() {
         />
       ) : null}
       <StatePanel loading={loading} error={error} data={data} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("incidentLoading")}>
-        {(x) => (
+        {(x) =>
+          reviewing ? (
+            <>
+              <ReviewIntro body={t("reviewSaveIntro")} />
+              <ReviewSection icon={ClipboardList} title={t("incidentTitle")} onEdit={() => setReviewing(false)}>
+                <ReviewRow first label={t("incidentType")} value={x.incident_type ? td(`incidentKind_${x.incident_type}`, x.incident_type) : null} />
+                <ReviewRow label={t("incidentPoliceNumber")} value={x.police_report_number?.trim() || null} />
+                <ReviewRow label={t("incidentReviewLocation")} value={x.latitude != null && x.longitude != null ? formatCoords({ latitude: x.latitude, longitude: x.longitude }) : null} />
+                {flags.map(([k, label]) => (
+                  <ReviewRow key={k} label={t(label)} answer={x[k] ? "yes" : "no"} />
+                ))}
+              </ReviewSection>
+              {saveError ? <ErrorCard error={saveError} fallback={t("errGeneric")} /> : null}
+            </>
+          ) : (
           <Card>
             <Text style={s.label}>{t("incidentType")}</Text>
             <View style={s.wrap} accessibilityRole="radiogroup">
@@ -133,7 +160,8 @@ export default function Incident() {
             ))}
             {saveError ? <ErrorCard error={saveError} fallback={t("errGeneric")} /> : null}
           </Card>
-        )}
+          )
+        }
       </StatePanel>
     </Screen>
   );

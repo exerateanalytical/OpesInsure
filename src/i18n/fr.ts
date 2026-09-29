@@ -3951,4 +3951,17 @@ export const fr: Record<keyof typeof en, string> = {
   payNow: "Payer",
   prContinueTerms: "Lire les conditions et envoyer",
   qtAcceptSubmit: "Accepter et envoyer ma demande",
+  // --- Vérifier avant d’enregistrer : modification de l’incident, ajout d’un bien, scan de la carte grise, témoin, report d’inspection, adresse de livraison, informations personnelles (2026-09-29) ---
+  reviewBeforeSave: "Vérifier avant d’enregistrer",
+  reviewSaveIntro: "Rien n’est encore enregistré. Vérifiez les informations, touchez Modifier pour changer quelque chose, puis confirmez en bas.",
+  incidentReviewLocation: "Lieu de l’incident (GPS)",
+  assetReviewType: "Type",
+  assetConfirmAdd: "Confirmer et ajouter",
+  scanReviewPhoto: "Photo de la carte grise",
+  scanReviewFields: "Informations extraites",
+  partiesConfirmAdd: "Confirmer et ajouter le témoin",
+  inspReviewTitle: "Demande de report",
+  inspReviewCurrent: "Rendez-vous actuel",
+  inspReviewRequested: "Horaire demandé",
+  contactEmailStepUpNote: "Changer d’e-mail vous demandera d’abord de confirmer votre identité.",
 };

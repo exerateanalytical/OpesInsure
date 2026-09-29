@@ -111,7 +111,7 @@ export function SchemaForm({
    * answers (same labels and option labels, Edit returns to the fields);
    * onSubmit only runs when the customer confirms there.
    */
-  review?: { intro?: string; confirmLabel?: string; title?: string };
+  review?: { intro?: string; confirmLabel?: string; title?: string; /** Label of the button that opens the review (default "Review before sending"). */ continueLabel?: string };
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -225,7 +225,7 @@ export function SchemaForm({
       {submitError ? <ErrorCard error={submitError} fallback={t("actionFailed")} onRetry={() => void submit()} /> : null}
       {Object.values(errors).some(Boolean) ? <Text accessibilityRole="alert" style={s.error}>{t("formFixErrors")}</Text> : null}
       {footer}
-      <Button label={review ? t("reviewContinue") : submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
+      <Button label={review ? review.continueLabel ?? t("reviewContinue") : submitLabel} icon={submitIcon} loading={busy} disabled={disabled || busy} onPress={() => void submit()} />
     </>
   );
 }

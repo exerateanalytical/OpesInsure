@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from "react";
 import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { CarFront, Package } from "lucide-react-native";
 import { Button, Card, Screen, TextField } from "@/components/ui";
 import { BrandHeader } from "@/components/design";
 import { ErrorCard, PickerField, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
+import { ReviewFooter, ReviewIntro, ReviewRows, ReviewSection, useReviewCopy } from "@/components/review/ReviewSummary";
 import { VehiclePicker, useVehicleReference } from "@/components/vehicles/VehiclePicker";
 import { AssetsApi } from "@/api/client";
 import { RiskAssetTypesApi } from "@/api/crm";
 import { duplicateAssetId } from "@/lib/crm";
+import { reviewRows } from "@/lib/formSummary";
+import type { RiskField } from "@/lib/riskSchema";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { modelYears, selectionLabel, VehicleSelection } from "@/lib/vehicles";
@@ -16,7 +20,7 @@ const opt = (rows?: { code: string; label: string }[]) => (rows ?? []).map((r) =
 
 /** Insured object: type from GET /risk-asset-types; vehicles use the vehicle picker, other types a name + reference. */
 export default function NewAsset() {
-  const { t, td } = useTranslation();
+  const { t, td, language } = useTranslation();
   const params = useLocalSearchParams<{ type?: string }>();
   const types = useLoad(() => RiskAssetTypesApi.list(), []);
   const [assetType, setAssetType] = useState<string>(String(params.type || "VEHICLE").toUpperCase());
@@ -29,10 +33,22 @@ export default function NewAsset() {
   const [details, setDetails] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
+  // What will be created is shown read-only for a last check before it is saved.
+  const [reviewing, setReviewing] = useState(false);
+  const copy = useReviewCopy();
   const years = useMemo(() => modelYears(reference?.model_years).map((y) => ({ value: y, label: y })), [reference]);
   const set = (k: string) => (v: string) => setDetails((d) => ({ ...d, [k]: v }));
 
   const typeOptions = (types.data?.length ? types.data : [{ code: "VEHICLE", label: t("assetVehicle") }]).map((x) => ({ value: x.code, label: td(`assetType_${x.code}`, x.label) }));
+  const typeLabel = typeOptions.find((o) => o.value === assetType)?.label ?? td(`assetType_${assetType}`, assetType);
+  const reg = (registration || vehicle?.registration_number || "").trim().toUpperCase();
+  const vehicleName = label.trim() || selectionLabel({ make: vehicle?.make, model: vehicle?.model }) || t("vehicleDefaultNickname");
+
+  const review = () => {
+    setSaveError(null);
+    setDuplicateId(null);
+    setReviewing(true);
+  };
 
   const saveObject = async () => {
     setSaving(true);
@@ -53,7 +69,6 @@ export default function NewAsset() {
     setSaving(true);
     setSaveError(null);
     setDuplicateId(null);
-    const reg = (registration || vehicle?.registration_number || "").trim().toUpperCase();
     try {
       const facts: Record<string, unknown> = {
         registration_number: reg,
@@ -67,7 +82,7 @@ export default function NewAsset() {
       };
       const merged = { year: vehicle?.year, body_type: vehicle?.body_type, powertrain: vehicle?.powertrain, vehicle_usage: vehicle?.vehicle_usage, ...details };
       for (const [k, v] of Object.entries(merged)) if (v) facts[k] = k === "year" ? Number(v) : v;
-      const a = await AssetsApi.createVehicle({ display_name: label.trim() || selectionLabel({ make: vehicle?.make, model: vehicle?.model }) || t("vehicleDefaultNickname"), registration_number: reg, facts });
+      const a = await AssetsApi.createVehicle({ display_name: vehicleName, registration_number: reg, facts });
       router.replace(`/assets/${a.id}/scan`);
     } catch (e) {
       // 409 duplicate vehicle: offer the existing asset instead of a second record.
@@ -86,6 +101,59 @@ export default function NewAsset() {
     </Card>
   ) : null;
 
+  if (reviewing) {
+    // The vehicle facts in words: make/model by name, option codes as their labels (formSummary).
+    const facts: [RiskField, string | undefined][] = [
+      [{ key: "make_code", label: t("vehicleMake"), type: "vehicle_make", textKey: "make" }, vehicle?.make_code || vehicle?.make],
+      [{ key: "model_code", label: t("vehicleModel"), type: "vehicle_model", textKey: "model" }, vehicle?.model_code || vehicle?.model],
+      [{ key: "generation", label: t("vehicleGeneration"), type: "text" }, vehicle?.generation],
+      [{ key: "year", label: t("vehicleYear"), type: "text" }, details.year ?? vehicle?.year],
+      [{ key: "variant", label: t("vehicleEngineVariant"), type: "text" }, vehicle?.variant],
+      [{ key: "body_type", label: t("vehicleBodyType"), type: "select", options: opt(reference?.body_types) }, details.body_type ?? vehicle?.body_type],
+      [{ key: "powertrain", label: t("vehicleFuel"), type: "select", options: opt(reference?.powertrains) }, details.powertrain ?? vehicle?.powertrain],
+      [{ key: "transmission", label: t("vehicleTransmission"), type: "select", options: opt(reference?.transmissions) }, details.transmission ?? vehicle?.transmission],
+      [{ key: "vehicle_usage", label: t("vehicleUsage"), type: "select", options: opt(reference?.usage_types) }, details.vehicle_usage ?? vehicle?.vehicle_usage],
+      [{ key: "vin", label: t("vehicleVin"), type: "text" }, vehicle?.vin],
+      [{ key: "engine_number", label: t("vehicleEngineNumber"), type: "text" }, vehicle?.engine_number],
+    ];
+    // Steps the picker skipped (no generation/variant data, no VIN typed) are left out.
+    const optional = ["generation", "variant", "vin", "engine_number"];
+    const shown = facts.filter(([f, v]) => !optional.includes(f.key) || !!v);
+    const values: Record<string, string> = { make: vehicle?.make ?? "", model: vehicle?.model ?? "", ...Object.fromEntries(shown.map(([f, v]) => [f.key, v ?? ""])) };
+    const rows = reviewRows(shown.map(([f]) => f), values, language === "fr" ? "fr" : "en", () => undefined, copy);
+    return (
+      <Screen
+        footer={
+          <ReviewFooter
+            label={isVehicle ? t("vehicleSaveAndScan") : t("assetConfirmAdd")}
+            loading={saving}
+            disabled={!!duplicateId}
+            onConfirm={() => void (isVehicle ? save() : saveObject())}
+            onBack={() => setReviewing(false)}
+          />
+        }
+      >
+        <BrandHeader title={isVehicle ? t("vehicleAddTitle") : t("assetAddTitle")} subtitle={isVehicle ? t("vehicleAddSubtitle") : t("assetAddSubtitle")} back right={null} />
+        <ReviewIntro body={t("reviewSaveIntro")} />
+        <ReviewSection icon={isVehicle ? CarFront : Package} title={typeLabel} onEdit={() => setReviewing(false)}>
+          <ReviewRows
+            rows={[
+              { key: "type", label: t("assetReviewType"), value: typeLabel },
+              ...(isVehicle
+                ? [...rows, { key: "registration", label: t("vehicleRegistration"), value: reg || null }, { key: "nickname", label: t("vehicleNickname"), value: vehicleName }]
+                : [
+                    { key: "name", label: t("assetDisplayName"), value: label.trim() || null },
+                    { key: "reference", label: t("assetReference"), value: registration.trim() || null },
+                  ]),
+            ]}
+          />
+        </ReviewSection>
+        {duplicate}
+        {saveError && !duplicateId ? <ErrorCard error={saveError} fallback={t("vehicleSaveError")} onRetry={() => void (isVehicle ? save() : saveObject())} /> : null}
+      </Screen>
+    );
+  }
+
   if (!isVehicle)
     return (
       <Screen>
@@ -96,9 +164,7 @@ export default function NewAsset() {
         <Card>
           <TextField label={t("assetDisplayName")} value={label} onChangeText={setLabel} />
           <TextField label={t("assetReference")} value={registration} onChangeText={setRegistration} />
-          {duplicate}
-          {saveError && !duplicateId ? <ErrorCard error={saveError} fallback={t("vehicleSaveError")} onRetry={() => void saveObject()} /> : null}
-          <Button label={t("assetSave")} loading={saving} disabled={!label.trim()} onPress={() => void saveObject()} />
+          <Button label={t("reviewBeforeSave")} disabled={!label.trim()} onPress={review} />
         </Card>
       </Screen>
     );
@@ -127,10 +193,8 @@ export default function NewAsset() {
       <Card>
         <TextField label={t("vehicleNickname")} value={label} onChangeText={setLabel} placeholder={t("vehicleDefaultNickname")} />
         <TextField label={t("vehicleRegistration")} autoCapitalize="characters" value={registration || vehicle?.registration_number || ""} onChangeText={setRegistration} placeholder="LT 000 AA" />
-        {duplicate}
-        {saveError && !duplicateId ? <ErrorCard error={saveError} fallback={t("vehicleSaveError")} onRetry={() => void save()} /> : null}
         {!vehicle?.model ? <Text style={ps.meta}>{t("vehicleChooseMakeFirst")}</Text> : null}
-        <Button label={t("vehicleSaveAndScan")} loading={saving} disabled={!(registration.trim() || vehicle?.registration_number) || !vehicle?.model} onPress={() => void save()} />
+        <Button label={t("reviewBeforeSave")} disabled={!(registration.trim() || vehicle?.registration_number) || !vehicle?.model} onPress={review} />
       </Card>
     </Screen>
   );

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
+import { MapPin } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
+import { CtaBar } from "@/components/design";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ReviewFooter, ReviewIntro, ReviewRows, ReviewSection } from "@/components/review/ReviewSummary";
 import { WalletApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
@@ -17,6 +20,8 @@ export default function Address() {
   const [x, setX] = useState<AddressForm | null>(null);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
+  // The address is shown read-only for a last check before it is saved.
+  const [reviewing, setReviewing] = useState(false);
   useEffect(() => {
     if (data)
       setX({
@@ -39,7 +44,23 @@ export default function Address() {
     }
   };
   return (
-    <Screen>
+    <Screen
+      footer={
+        !x ? undefined : reviewing ? (
+          <ReviewFooter label={t("addrSave")} loading={busy} onConfirm={() => void save(x)} onBack={() => setReviewing(false)} />
+        ) : (
+          <CtaBar>
+            <Button
+              label={t("reviewBeforeSave")}
+              onPress={() => {
+                setSaveError(null);
+                setReviewing(true);
+              }}
+            />
+          </CtaBar>
+        )
+      }
+    >
       <AppHeader title={t("addrTitle")} back />
       {!x ? (
         loading ? (
@@ -47,6 +68,14 @@ export default function Address() {
         ) : (
           <ErrorState error={error} onRetry={() => void reload()} />
         )
+      ) : reviewing ? (
+        <>
+          <ReviewIntro body={t("reviewSaveIntro")} />
+          <ReviewSection icon={MapPin} title={t("addrTitle")} onEdit={() => setReviewing(false)}>
+            <ReviewRows rows={FIELDS.map((k) => ({ key: k, label: td(`addr_${k}`, k), value: x[k].trim() || null }))} />
+          </ReviewSection>
+          {saveError ? <ErrorCard error={saveError} fallback={t("errGeneric")} /> : null}
+        </>
       ) : (
         <Card>
           {FIELDS.map((k) => (
@@ -58,8 +87,6 @@ export default function Address() {
               onChangeText={(v) => setX({ ...x, [k]: v })}
             />
           ))}
-          <Button label={t("addrSave")} loading={busy} onPress={() => void save(x)} />
-          {saveError ? <ErrorCard error={saveError} fallback={t("errGeneric")} /> : null}
         </Card>
       )}
     </Screen>

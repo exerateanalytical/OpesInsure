@@ -3962,4 +3962,17 @@ export const en = {
   payNow: "Pay now",
   prContinueTerms: "Review the terms and submit",
   qtAcceptSubmit: "Accept and submit my application",
+  // --- Review before saving: claim incident edit, add asset, registration scan, witness, inspection reschedule, delivery address, personal information (2026-09-29) ---
+  reviewBeforeSave: "Review before saving",
+  reviewSaveIntro: "Nothing is saved yet. Check the details, tap Edit to change something, then confirm at the bottom.",
+  incidentReviewLocation: "Incident location (GPS)",
+  assetReviewType: "Type",
+  assetConfirmAdd: "Confirm and add",
+  scanReviewPhoto: "Registration card photo",
+  scanReviewFields: "Extracted details",
+  partiesConfirmAdd: "Confirm and add witness",
+  inspReviewTitle: "Reschedule request",
+  inspReviewCurrent: "Current appointment",
+  inspReviewRequested: "Requested time",
+  contactEmailStepUpNote: "Changing your email asks you to confirm it’s you first.",
 };

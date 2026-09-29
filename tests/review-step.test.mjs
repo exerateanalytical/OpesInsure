@@ -99,3 +99,40 @@ test("every customer submit flow ends on a review", () => {
   // Renewal pays with the shared consent rows (no local duplicate).
   assert.doesNotMatch(read("app/policy/[id]/renewal-review.tsx"), /function Consent\(/);
 });
+
+test("save screens check the details before saving (shared review components only)", () => {
+  const screens = {
+    "app/claim/[id]/incident.tsx": ["ReviewIntro", "ReviewSection", "ReviewRow", "ReviewFooter"],
+    "app/assets/new.tsx": ["ReviewIntro", "ReviewSection", "ReviewRows", "ReviewFooter", "useReviewCopy"],
+    "app/delivery/[id]/address.tsx": ["ReviewIntro", "ReviewSection", "ReviewRows", "ReviewFooter"],
+    "app/account/profile.tsx": ["ReviewIntro", "ReviewSection", "ReviewRows"],
+    "app/assets/[id]/scan.tsx": ["ReviewIntro", "ReviewSection", "ReviewRows", "ReviewDocuments", "ReviewFooter"],
+    "app/claim/[id]/parties.tsx": ["ReviewSection", "ReviewRows"],
+    "app/claim/[id]/inspection.tsx": ["ReviewSection", "ReviewRows"],
+  };
+  for (const [file, parts] of Object.entries(screens)) {
+    const src = read(file);
+    assert.match(src, /from "@\/components\/review\/ReviewSummary"/, file);
+    for (const p of parts) assert.match(src, new RegExp(`<${p}\\b|\\b${p}\\(`), `${file} uses ${p}`);
+    assert.match(src, /const \[reviewing, setReviewing\] = useState\(false\)/, `${file} has a review step`);
+    assert.match(src, /setReviewing\(false\)/, `${file}: Edit returns to the form`);
+    assert.doesNotMatch(src, /function Review[A-Z]\w*\(/, `${file}: no local review component`);
+  }
+  // Vehicle facts read as names/labels through formSummary, not raw codes.
+  assert.match(read("app/assets/new.tsx"), /reviewRows\(/);
+  // Personal information: the server-form section passes review through, and the e-mail change keeps its step-up.
+  const profile = read("app/account/profile.tsx");
+  assert.match(profile, /<EditableSchemaSection[\s\S]*review=\{\{/);
+  assert.match(profile, /withStepUp\(accountProfileStepUpPurpose/);
+  assert.match(read("src/components/forms/SchemaSummary.tsx"), /review=\{review\}/);
+  assert.match(read("src/components/forms/SchemaForm.tsx"), /review\.continueLabel \?\? t\("reviewContinue"\)/);
+});
+
+test("review-before-save copy exists in English and French", () => {
+  const en = read("src/i18n/en.ts");
+  const fr = read("src/i18n/fr.ts");
+  for (const k of ["reviewBeforeSave", "reviewSaveIntro", "incidentReviewLocation", "assetReviewType", "assetConfirmAdd", "scanReviewPhoto", "scanReviewFields", "partiesConfirmAdd", "inspReviewTitle", "inspReviewCurrent", "inspReviewRequested", "contactEmailStepUpNote"]) {
+    assert.match(en, new RegExp(`\\n  ${k}: "`), `en ${k}`);
+    assert.match(fr, new RegExp(`\\n  ${k}: "`), `fr ${k}`);
+  }
+});

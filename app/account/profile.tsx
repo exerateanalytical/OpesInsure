@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CheckCircle2, IdCard, MailCheck, MapPin, UserRound, UsersRound } from "lucide-react-native";
+import { CheckCircle2, IdCard, MailCheck, MapPin, Pencil, UserRound, UsersRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
 import { Button, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader } from "@/components/design";
 import { ErrorState, LoadingState } from "@/components/StatePanel";
 import { EditableSchemaSection, SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
+import { ReviewIntro, ReviewRows, ReviewSection } from "@/components/review/ReviewSummary";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { useLoad } from "@/hooks/useLoad";
@@ -79,6 +80,8 @@ export default function Profile() {
           icon={MapPin}
           title={t("piAboutTitle")}
           submitLabel={t("profileSaveForm")}
+          // Save first shows the section's answers read-only; confirming saves them.
+          review={{ intro: t("reviewSaveIntro"), confirmLabel: t("benConfirmSave"), title: t("piAboutTitle"), continueLabel: t("reviewBeforeSave") }}
           disabled={!allowedAction(profile.data, "update_profile", true)}
           onLocation={(fix) => {
             fixRef.current = fix;
@@ -108,16 +111,20 @@ function ContactSection() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Save shows the new contact details read-only first; Confirm saves (step-up for an e-mail change).
+  const [reviewing, setReviewing] = useState(false);
   const emailOk = !email.trim() || /^\S+@\S+\.\S+$/.test(email.trim());
   const changed = name.trim() !== (user?.full_name ?? "") || (email.trim() || null) !== (user?.email ?? null);
   const phoneVerified = !!user?.phone_verified_at || user?.contacts_verified === true;
   const emailVerified = !!user?.email_verified_at || user?.contacts_verified === true;
+  const emailChanged = (email.trim() || null) !== (user?.email ?? null);
 
   const open = () => {
     setName(user?.full_name ?? "");
     setEmail(user?.email ?? "");
     setError(null);
     setSaved(false);
+    setReviewing(false);
     setEditing(true);
   };
   const save = async () => {
@@ -130,6 +137,7 @@ function ContactSection() {
       );
       if (done === STEP_UP_CANCELLED) return;
       await hydrate();
+      setReviewing(false);
       setEditing(false);
       setSaved(true);
     } catch (e) {
@@ -153,6 +161,25 @@ function ContactSection() {
       </>
     );
   }
+  if (reviewing) {
+    return (
+      <>
+        <ReviewIntro body={t("reviewSaveIntro")} />
+        <ReviewSection icon={UserRound} title={t("contactDetails")} onEdit={() => setReviewing(false)}>
+          <ReviewRows
+            rows={[
+              { key: "full_name", label: t("fullName"), value: name.trim() || null },
+              { key: "email", label: t("email"), value: email.trim() || null },
+            ]}
+          />
+        </ReviewSection>
+        {emailChanged && email.trim() ? <Text style={styles.note}>{t("contactEmailStepUpNote")}</Text> : null}
+        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+        <Button label={t("benConfirmSave")} loading={busy} onPress={() => void save()} />
+        <Button label={t("reviewBackToForm")} icon={Pencil} variant="tertiary" disabled={busy} onPress={() => setReviewing(false)} />
+      </>
+    );
+  }
   return (
     <SummaryCard icon={UserRound} title={t("contactDetails")} onCancel={() => setEditing(false)}>
       <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
@@ -167,7 +194,14 @@ function ContactSection() {
       />
       <SummaryField first label={t("personalMobile")} value={user?.phone_e164} right={user?.phone_e164 ? chip(phoneVerified) : null} note={t("phoneChangeNote")} />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      <Button label={t("saveChanges")} loading={busy} disabled={!changed || name.trim().length < 3 || !emailOk} onPress={() => void save()} />
+      <Button
+        label={t("saveChanges")}
+        disabled={!changed || name.trim().length < 3 || !emailOk}
+        onPress={() => {
+          setError(null);
+          setReviewing(true);
+        }}
+      />
     </SummaryCard>
   );
 }
@@ -177,4 +211,5 @@ const styles = StyleSheet.create({
   verify: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.warningSoft },
   verifyText: { ...type.label, color: colors.warningText, flex: 1 },
   error: { ...type.meta, color: colors.dangerText },
+  note: { ...type.meta, color: colors.neutral600 },
 });

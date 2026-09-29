@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { Pencil, UserPlus } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ReviewRows, ReviewSection } from "@/components/review/ReviewSummary";
 import { ClaimsCompletionApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
@@ -17,6 +19,8 @@ export default function Parties() {
   const [phone, setPhone] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<unknown>(null);
+  // The witness is shown read-only for a last check before it is added to the claim.
+  const [reviewing, setReviewing] = useState(false);
   const add = async () => {
     setAdding(true);
     setAddError(null);
@@ -25,6 +29,7 @@ export default function Parties() {
       setData([...(data ?? []), p]);
       setName("");
       setPhone("");
+      setReviewing(false);
     } catch (e) {
       setAddError(e);
     } finally {
@@ -48,13 +53,36 @@ export default function Parties() {
           </>
         )}
       </StatePanel>
+      {reviewing ? (
+        <>
+          <ReviewSection icon={UserPlus} title={t("partiesAddWitness")} onEdit={() => setReviewing(false)}>
+            <ReviewRows
+              rows={[
+                { key: "full_name", label: t("partiesFullName"), value: name.trim() || null },
+                { key: "phone_e164", label: t("partiesPhone"), value: phone.trim() || null },
+              ]}
+            />
+          </ReviewSection>
+          {addError ? <ErrorCard error={addError} fallback={t("errGeneric")} /> : null}
+          <Button label={t("partiesConfirmAdd")} icon={UserPlus} loading={adding} onPress={() => void add()} />
+          <Button label={t("reviewBackToForm")} icon={Pencil} variant="tertiary" disabled={adding} onPress={() => setReviewing(false)} />
+        </>
+      ) : (
       <Card>
         <Text style={s.title}>{t("partiesAddWitness")}</Text>
         <TextField label={t("partiesFullName")} value={name} onChangeText={setName} />
         <TextField label={t("partiesPhone")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-        <Button label={t("partiesAddWitness")} variant="secondary" loading={adding} disabled={name.trim().length < 3} onPress={() => void add()} />
-        {addError ? <ErrorCard error={addError} fallback={t("errGeneric")} /> : null}
+        <Button
+          label={t("reviewBeforeSave")}
+          variant="secondary"
+          disabled={name.trim().length < 3}
+          onPress={() => {
+            setAddError(null);
+            setReviewing(true);
+          }}
+        />
       </Card>
+      )}
       <Button label={t("partiesContinue")} onPress={() => router.push(`/claim/${id}/checklist`)} />
     </Screen>
   );
