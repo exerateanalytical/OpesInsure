@@ -42,6 +42,9 @@ final class UiCoverage extends Command
     /** @var array<string, list<string>> model short name => Filament resource files */
     private array $resourcesByModel = [];
 
+    /** @var array<string, list<string>> "ShortController@method" => files running it via ControllerCall::invoke (inline-logic routes) */
+    private array $controllerCalls = [];
+
     /** @var list<string> path regexes from account JS */
     private array $portalPaths = [];
 
@@ -149,6 +152,8 @@ final class UiCoverage extends Command
                 }
             }
         }
+        [$ctlClass, $ctlMethod] = str_contains($action, '@') ? explode('@', $action) : [$action, '__invoke'];
+        array_push($filament, ...($this->controllerCalls[class_basename($ctlClass).'@'.$ctlMethod] ?? []));
         $filament = array_values(array_unique($filament));
         $portal = $this->portalCalls($path);
         $covered = $filament !== [] || $portal;
@@ -259,9 +264,36 @@ final class UiCoverage extends Command
                 }
             }
         }
+        // Workspace portals (e.g. /provider) keep their Filament panels under app/Application/<Context>/Workspace/Filament.
+        foreach (glob(app_path('Application/*/Workspace/Filament'), GLOB_ONLYDIR) ?: [] as $dir) {
+            $rel = str_replace('\\', '/', substr($dir, strlen(app_path()) + 1));
+            foreach (File::allFiles($dir) as $f) {
+                $this->filament[$rel.'/'.str_replace('\\', '/', $f->getRelativePathname())] = $f->getContents();
+            }
+            // callWorkspace('<method>') runs that method of the workspace's API controller (referenced as X::class in the panel):
+            // it covers the controller route exactly like ControllerCall::invoke.
+            $panel = implode("\n", array_map(fn ($f) => $f->getContents(), File::allFiles($dir)));
+            preg_match_all('/\b(\w+Controller)::class/', $panel, $ctl);
+            foreach (File::allFiles($dir) as $f) {
+                if (preg_match_all("/callWorkspace\(\s*'(\w+)'/", $f->getContents(), $cw)) {
+                    foreach (array_unique($ctl[1]) as $controller) {
+                        foreach (array_unique($cw[1]) as $method) {
+                            if (method_exists($this->controllerFqcn($controller, $panel), $method)) {
+                                $this->controllerCalls[$controller.'@'.$method][] = $rel.'/'.str_replace('\\', '/', $f->getRelativePathname());
+                            }
+                        }
+                    }
+                }
+            }
+        }
         foreach ($this->filament as $file => $src) {
             if (preg_match('/protected static \?string \$model = \\\\?(?:App\\\\Models\\\\)?(\w+)::class/', $src, $mm)) {
                 $this->resourcesByModel[$mm[1]][] = $file;
+            }
+            if (preg_match_all("/ControllerCall::invoke\(\s*(\w+)::class,\s*'(\w+)'/", $src, $cc, PREG_SET_ORDER)) {
+                foreach ($cc as $hit) {
+                    $this->controllerCalls[$hit[1].'@'.$hit[2]][] = $file;
+                }
             }
             if (preg_match_all('/->(\w+)\s*\(/', $src, $m)) {
                 foreach (array_unique($m[1]) as $fn) {
@@ -269,6 +301,12 @@ final class UiCoverage extends Command
                 }
             }
         }
+    }
+
+    /** Resolve a short controller name via the `use` statements of the panel sources. */
+    private function controllerFqcn(string $short, string $src): string
+    {
+        return preg_match('/^use\s+([\w\\\\]+\\\\'.preg_quote($short, '/').');/m', $src, $m) ? $m[1] : $short;
     }
 
     private function loadPortalPaths(): void

@@ -285,7 +285,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('certificate-templates/{template}/approve', [CertificateController::class, 'approveTemplate'])->middleware('permission:certificates.templates.approve');
         Route::post('sticker-batches', [CertificateController::class, 'receiveBatch'])->middleware('permission:stickers.receive');
         Route::post('certificates/{certificate}/void', [CertificateController::class, 'void'])->middleware('permission:certificates.void');
-        Route::post('fulfilment-orders', [FulfilmentController::class, 'store']);
+        Route::post('fulfilment-orders', [FulfilmentController::class, 'store'])->middleware('permission:fulfilments.manage');
         Route::post('fulfilment-orders/{order}/transitions', [FulfilmentController::class, 'transition'])->middleware('permission:fulfilment.transition');
         Route::put('communication-preferences', [NotificationController::class, 'preference']);
         // 'notifications' POST is now registered by wave8.php under permission:communications.manage,

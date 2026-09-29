@@ -14,6 +14,6 @@ final class ListComplianceCases extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [ComplianceActions::caseOpen(), ComplianceActions::fraudAlert()];
+        return [ComplianceActions::caseOpen()]; // "Raise fraud alert" lives on the risk alerts list (ListRiskAlerts)
     }
 }

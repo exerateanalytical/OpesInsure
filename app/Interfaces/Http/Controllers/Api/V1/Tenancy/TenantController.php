@@ -10,6 +10,9 @@ final class TenantController
 {
     public function index(Request $r) { return response()->json(['data' => DB::table('tenants')->join('tenant_memberships','tenants.id','=','tenant_memberships.tenant_id')->where('tenant_memberships.user_id',$r->user()->id)->whereNull('tenants.deleted_at')->select('tenants.id','tenants.type','tenants.legal_name','tenants.trade_name','tenants.slug','tenants.status','tenants.primary_locale')->paginate(25)]); }
     public function store(Request $r, AuditWriter $audit) {
+        // Security 2026-09-29: creating an organisation (any type, PLATFORM included) is a platform-admin act;
+        // it used to be open to any signed-in user, who became TENANT_OWNER of a PLATFORM tenant.
+        abort_unless(app(\App\Application\Identity\Rbac\PlatformAuthority::class)->isPlatformAdmin($r->user()), 403, __('security.platform_only'));
         $d=$r->validate(['type'=>'required|in:BROKER,CARRIER,AGENCY,PLATFORM','legal_name'=>'required|string|max:160','trade_name'=>'nullable|string|max:160','slug'=>'required|alpha_dash|max:80|unique:tenants,slug','registration_number'=>'nullable|string|max:80','tax_number'=>'nullable|string|max:80','primary_locale'=>'required|in:en,fr']);
         $id=(string)Str::uuid();
         DB::transaction(function()use($d,$id,$r,$audit){DB::table('tenants')->insert([...$d,'id'=>$id,'status'=>'PENDING','country_code'=>'CM','currency'=>'XAF','settings'=>'{}','created_at'=>now(),'updated_at'=>now()]); DB::table('tenant_memberships')->insert(['id'=>(string)Str::uuid(),'tenant_id'=>$id,'user_id'=>$r->user()->id,'role_code'=>'TENANT_OWNER','status'=>'ACTIVE','created_at'=>now(),'updated_at'=>now()]); $audit->record('tenant.created','tenant',$id,['type'=>$d['type']]);});

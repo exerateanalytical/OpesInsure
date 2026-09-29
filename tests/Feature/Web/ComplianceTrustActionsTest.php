@@ -34,7 +34,7 @@ uses(RefreshDatabase::class);
 const CTA_PERMISSIONS = [
     'compliance.cases.read', 'compliance.cases.create', 'compliance.evidence.link', 'compliance.findings.manage', 'compliance.actions.manage', 'compliance.actions.verify',
     'compliance.dsr.receive', 'compliance.access.grant', 'compliance.governance.read', 'compliance.governance.manage', 'compliance.governance.approve',
-    'trust.fraud-alerts.create', 'trust.regulatory-reports.prepare', 'trust.regulatory-reports.acknowledge', 'trust.regulatory-reports.submit',
+    'trust.fraud-alerts.create', 'fraud.alert.create' /* opens the risk alerts list, where "Raise fraud alert" lives */, 'trust.regulatory-reports.prepare', 'trust.regulatory-reports.acknowledge', 'trust.regulatory-reports.submit',
 ];
 
 function ctaUser(string $tenantId, array $permissions, string $role = 'COMPLIANCE_ADMIN'): User
@@ -66,7 +66,8 @@ it('renders the compliance pages for a role with the permissions', function () {
         $this->get($url)->assertOk();
     }
     ctaAs($this->user, $this->tenant); // the HTTP requests leave the tenant context cleared
-    Livewire::test(ListComplianceCases::class)->assertActionVisible('caseOpen')->assertActionVisible('fraudAlert');
+    Livewire::test(ListComplianceCases::class)->assertActionVisible('caseOpen');
+    Livewire::test(\App\Filament\Admin\Resources\RiskAlerts\Pages\ListRiskAlerts::class)->assertActionVisible('fraudAlert');
     Livewire::test(ListDataSubjectRequests::class)->assertActionVisible('dsrReceive');
     Livewire::test(ListPrivilegedAccessGrants::class)->assertActionVisible('accessRequest');
     Livewire::test(ListRegulatoryReports::class)->assertActionVisible('reportPrepare');
@@ -82,7 +83,7 @@ it('refuses the pages and hides the actions without the permissions', function (
 
     // Read access only (also re-sets the tenant context the HTTP requests cleared): the pages render but no write action is offered.
     ctaAs(ctaUser($this->tenant, ['compliance.cases.read', 'compliance.dsr.receive', 'compliance.governance.read']), $this->tenant);
-    Livewire::test(ListComplianceCases::class)->assertActionHidden('caseOpen')->assertActionHidden('fraudAlert');
+    Livewire::test(ListComplianceCases::class)->assertActionHidden('caseOpen')->assertActionDoesNotExist('fraudAlert');
     Livewire::test(GovernanceRegisters::class)->assertActionHidden('governanceCreate');
     Livewire::test(ListPrivilegedAccessGrants::class)->assertActionHidden('accessRequest');
     Livewire::test(ListRegulatoryReports::class)->assertActionHidden('reportPrepare');
@@ -158,7 +159,7 @@ it('requests privileged access and raises a manual fraud alert', function () {
     ])->assertNotified(__('compliance_actions.accessRequest.done'));
     expect(DB::table('privileged_access_grants')->where(['tenant_id' => $this->tenant, 'user_id' => $target->id, 'status' => 'REQUESTED'])->count())->toBe(1);
 
-    Livewire::test(ListComplianceCases::class)->callAction('fraudAlert', [
+    Livewire::test(\App\Filament\Admin\Resources\RiskAlerts\Pages\ListRiskAlerts::class)->callAction('fraudAlert', [
         'subject_type' => 'CLAIM', 'subject_id' => (string) Str::uuid(), 'alert_type' => 'DUPLICATE_INVOICE', 'risk_score' => 70, 'signals' => ['invoice' => 'duplicate'],
     ])->assertNotified(__('compliance_actions.fraudAlert.done'));
     expect(DB::table('risk_alerts')->where(['tenant_id' => $this->tenant, 'severity' => 'HIGH', 'status' => 'OPEN'])->count())->toBe(1);
