@@ -34,7 +34,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
   const info = policyStatusInfo(policy.status, f.language);
   const carriers = useCarriers();
   const mark = carrierMark(carriers, policy.carrier_id ?? w.carrier?.id, {
-    name: w.carrier_name ?? w.carrier?.party?.display_name,
+    name: (w as { carrier_short_name?: string | null }).carrier_short_name ?? w.carrier_name ?? w.carrier?.party?.display_name,
     logoUrl: w.carrier_logo_url,
   });
   const provider = mark.name ?? t("licensedCarrier");
@@ -67,7 +67,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
         <Text style={styles.title} >{w.product_name ?? t("insurancePolicy")}</Text>
         <View style={styles.providerRow}>
           <InstitutionMark logoUrl={mark.logoUrl} initials={mark.initials} size={28} />
-          <Text style={styles.provider}>{provider}</Text>
+          <Text style={styles.provider} numberOfLines={1}>{provider}</Text>
         </View>
         {asset ? <Text style={styles.number} numberOfLines={1}>{asset}</Text> : null}
         <Text style={styles.number}>{policy.policy_number}</Text>

@@ -42,7 +42,7 @@ export function productTint(name?: string | null, lineCode?: string | null): Tin
   return (cat && TINTS[cat.id]) ?? "blue";
 }
 
-type LoosePolicy = Partial<WalletPolicy> & { product?: { name?: string; line_code?: string } | null; line_code?: string | null };
+type LoosePolicy = Partial<WalletPolicy> & { product?: { name?: string; line_code?: string } | null; line_code?: string | null; carrier_short_name?: string | null };
 
 export function policyTitle(p: LoosePolicy | null | undefined, fallback: string) {
   return p?.product_name ?? p?.product?.name ?? fallback;
@@ -53,7 +53,7 @@ export function policyLine(p: LoosePolicy | null | undefined) {
 }
 
 export function providerName(p: LoosePolicy | null | undefined) {
-  return p?.carrier_name ?? p?.carrier?.party?.display_name ?? null;
+  return p?.carrier_short_name ?? p?.carrier_name ?? p?.carrier?.party?.display_name ?? null;
 }
 
 /** "Toyota Corolla 2022 · LT 123 AB" from insured_object / risk_asset. */

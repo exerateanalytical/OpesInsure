@@ -6,7 +6,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Download, ExternalLink, Share2 } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
-import { ErrorState } from "@/components/StatePanel";
+import { EmptyState, ErrorState } from "@/components/StatePanel";
 import { api } from "@/api/client";
 import { QuoteWorkflowApi } from "@/api/workflow";
 import { environmentConfig } from "@/config/environment";
@@ -20,6 +20,7 @@ import {
   needsBearer,
   pageIndicator,
   parseViewerSource,
+  quoteNotReady,
   safeFileName,
   viewerHtml,
   type DocumentKind,
@@ -310,7 +311,11 @@ export default function DocumentView() {
       </View>
       {error ? (
         <View style={styles.pad}>
-          <ErrorState error={error} onRetry={() => void load()} />
+          {quoteNotReady(source, error) ? (
+            <EmptyState title={t("ctQuotePdfPendingTitle")} message={t("ctQuotePdfPendingBody")} action={t("retry")} onPress={() => void load()} />
+          ) : (
+            <ErrorState error={error} onRetry={() => void load()} />
+          )}
           {source?.kind === "url" ? (
             <Button label={t("docViewerOpenExternal")} icon={ExternalLink} variant="secondary" onPress={() => void Linking.openURL(source.url).catch(() => undefined)} />
           ) : null}

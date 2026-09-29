@@ -73,8 +73,8 @@ export default function Evidence() {
     setNotice(null);
     setProgress(0);
     try {
-      await uploadClaimEvidence(id, asset, requirement ?? kind, setProgress);
-      setNotice(t("evidenceUploaded"));
+      const sent = await uploadClaimEvidence(id, asset, requirement ?? kind, setProgress);
+      setNotice(t(sent.securityCheck ? "evidenceSecurityCheck" : "evidenceUploaded"));
       await Promise.all([items.reload(), requirements.reload()]);
       return true;
     } catch (e) {

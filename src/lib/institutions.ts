@@ -225,3 +225,77 @@ export function filterByCity<T>(rows: T[], city: string | null): T[] {
   const c = fold(city);
   return rows.filter((r) => insurerCities(r).some((x) => fold(x) === c));
 }
+
+// --- Profile pages (app/institutions/insurer|broker/[id]) ----------------
+
+/** Detail route for a directory row type; a broker id opened on the insurer route is redirected. */
+export function institutionRoute(type: string | null | undefined): "/institutions/insurer/[id]" | "/institutions/broker/[id]" {
+  return type === "broker" ? "/institutions/broker/[id]" : "/institutions/insurer/[id]";
+}
+
+/** GET /public/institutions/{id} answered 404 (unknown or no longer listed). */
+export function isNotFound(error: unknown): boolean {
+  return (obj(error)?.status ?? null) === 404;
+}
+
+/** institution_offices.office_type: HEAD_OFFICE | DIRECT_BRANCH (anything else reads as a branch). */
+export function officeKind(type: string | null | undefined): "head" | "branch" | null {
+  const t = (type ?? "").trim().toUpperCase();
+  if (!t) return null;
+  return t === "HEAD_OFFICE" ? "head" : "branch";
+}
+
+/** Branch offices only: the head office listed among the offices is not a branch. */
+export function branchOffices(branches: DirectoryBranch[]): DirectoryBranch[] {
+  return branches.filter((b) => officeKind(b.type) !== "head");
+}
+
+/** Head-office street line with the city appended when the address does not already name it. */
+export function hqAddress(hq: DirectoryHq | null): string | null {
+  if (!hq) return null;
+  if (!hq.address) return hq.city;
+  return hq.city && !fold(hq.address).includes(fold(hq.city)) ? `${hq.address}, ${hq.city}` : hq.address;
+}
+
+/** Google Maps search URL for the head office (opens the Maps app on Android and iOS). */
+export function directionsUrl(hq: DirectoryHq | null): string | null {
+  const line = hqAddress(hq);
+  return line ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${line}, Cameroun`)}` : null;
+}
+
+/** Host name without "www." for showing a URL ("cm.sanlamallianz.com"). */
+export function hostLabel(url: string): string {
+  const m = /^https?:\/\/([^/?#:]+)/i.exec(url.trim());
+  return m?.[1] ? m[1].replace(/^www\./i, "").toLowerCase() : url.trim();
+}
+
+/** Directory sources as tappable links (http/https) or plain labels, de-duplicated. */
+export function sourceLinks(sources: string[]): { label: string; url: string | null }[] {
+  const seen = new Set<string>();
+  const out: { label: string; url: string | null }[] = [];
+  for (const raw of sources) {
+    const s = raw.trim();
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    const url = /^https?:\/\/[^\s]+$/i.test(s) ? s : null;
+    out.push({ label: url ? hostLabel(url) : s, url });
+  }
+  return out;
+}
+
+/** Broker licence against today's date (YYYY-MM-DD, Douala); null when no expiry is published. */
+export function licenceState(expiresOn: string | null | undefined, todayIso: string): "valid" | "expired" | null {
+  const d = str(expiresOn)?.slice(0, 10);
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  return d < todayIso.slice(0, 10) ? "expired" : "valid";
+}
+
+/**
+ * What "Get a quote" does on a public profile: signed-out visitors sign in first, customers
+ * start the quote flow, other workspaces (agents, brokers, carrier staff) do not get the
+ * customer quote CTA (their quote screens live in their own portal).
+ */
+export function quoteEntry(status: string | null | undefined, portal: string | null | undefined): "sign-in" | "quote" | null {
+  if (status !== "authenticated") return "sign-in";
+  return portal === "customer" ? "quote" : null;
+}

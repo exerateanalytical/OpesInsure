@@ -20,6 +20,7 @@ import { proposalQuoteId } from "@/lib/offerChoice";
 import { CustomerApi } from "@/api/customer";
 import { pickUpload, storeDocument, type PickSource } from "@/api/documentUpload";
 import { useLoad } from "@/hooks/useLoad";
+import { useProposalQuote } from "@/hooks/useProposalQuote";
 import { kycAutoAttachments } from "@/lib/proposalDocuments";
 import { canChooseStart } from "@/lib/coverStart";
 import { CoverStartCard } from "@/components/purchase/CoverStartCard";
@@ -226,6 +227,7 @@ export default function ProposalDetail() {
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
   // "Compare other offers" reopens this application's own quote (reloaded by id), never whatever quote is in memory.
   const sourceQuoteId = proposalQuoteId(p);
+  const quote = useProposalQuote(p);
   const ownOffer = p && selectedOffer && (selectedOffer.id === p.quote_offer_id || selectedOffer.id === p.terms_snapshot?.offer_id) ? selectedOffer : null;
 
   const primary = p ? (
@@ -306,7 +308,7 @@ export default function ProposalDetail() {
             <CoverStartCard proposalId={p.id} rule={checklist.cover_term_rule} terms={checklist.cover_terms} onSaved={() => void load()} />
           ) : null}
 
-          <ProposalSummary proposal={p} offer={ownOffer} />
+          <ProposalSummary proposal={p} offer={ownOffer} quote={quote} checklist={checklist} />
 
           {canUpload || reqs.length ? (
             <Card>

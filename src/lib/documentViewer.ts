@@ -151,3 +151,8 @@ export function cacheKey(source: ViewerSource): string {
 export function pageIndicator(page: number, total: number): string {
   return total > 0 ? `${Math.min(Math.max(page, 1), total)} / ${total}` : "";
 }
+
+/** GET quotes/{id}/document answers 422 until the quote is generated: a "being prepared" state, not a load failure. */
+export function quoteNotReady(source: ViewerSource | null | undefined, error: unknown): boolean {
+  return source?.kind === "quote" && (error as { status?: number } | null)?.status === 422;
+}

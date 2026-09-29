@@ -93,7 +93,7 @@ export default function ProductDetail() {
             {offering.slice(0, 3).map((p, i) => (
               <View key={p.id} style={[s.heroLogo, i > 0 && s.heroLogoBorder]}>
                 <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={30} />
-                <Text style={s.heroLogoText} numberOfLines={2}>{p.short_name ?? p.name}</Text>
+                <Text style={s.heroLogoText} numberOfLines={1}>{p.short_name ?? p.name}</Text>
               </View>
             ))}
           </View>
@@ -163,7 +163,7 @@ export default function ProductDetail() {
                   <View style={s.providerTop}>
                     <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={48} />
                     <View style={s.flex}>
-                      <Text style={s.providerName}>{p.name}</Text>
+                      <Text style={s.providerName} numberOfLines={1}>{p.short_name ?? p.name}</Text>
                       <Text style={s.meta}>{t("productsCount", { count })}</Text>
                     </View>
                     <ChevronRight size={18} color={colors.blue600} />

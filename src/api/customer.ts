@@ -166,7 +166,8 @@ export const CustomerApi = {
       purpose: string;
     },
   ) =>
-    api<unknown>(`/mobile/claims/${claimId}/evidence`, {
+    // 202 + security_check_pending: the file is in its malware check and is attached automatically afterwards.
+    api<{ id?: string; status?: string; security_check_pending?: boolean } | null>(`/mobile/claims/${claimId}/evidence`, {
       method: "POST",
       body: JSON.stringify(payload),
       idempotent: true,
@@ -197,9 +198,10 @@ export async function uploadClaimEvidence(
   asset: { uri: string; mimeType?: string | null },
   evidenceType: string,
   onProgress?: (fraction: number) => void,
-) {
+): Promise<{ securityCheck: boolean }> {
   const mime = (asset.mimeType ?? "").toLowerCase();
   const { base64, size } = await readAsBase64(asset.uri);
+  let attached: { security_check_pending?: boolean } | null;
   if (mime.startsWith("video/")) {
     const total = Math.max(1, Math.ceil(base64.length / CHUNK_CHARS));
     const session = await CustomerApi.startUpload({
@@ -213,7 +215,7 @@ export async function uploadClaimEvidence(
       onProgress?.((i + 1) / (total + 1));
     }
     await CustomerApi.finalizeUpload(session.id);
-    await CustomerApi.attachClaimEvidence(claimId, {
+    attached = await CustomerApi.attachClaimEvidence(claimId, {
       upload_session_id: session.id,
       evidence_type: evidenceType,
       purpose: "CLAIM_EVIDENCE",
@@ -223,11 +225,12 @@ export async function uploadClaimEvidence(
       mime === "application/pdf" ? "application/pdf" : mime === "image/png" ? "image/png" : "image/jpeg";
     const documentId = await storeDocument("CLAIM_EVIDENCE", { mime: mime_type, base64 });
     onProgress?.(0.8);
-    await CustomerApi.attachClaimEvidence(claimId, {
+    attached = await CustomerApi.attachClaimEvidence(claimId, {
       document_id: documentId,
       evidence_type: evidenceType,
       purpose: "CLAIM_EVIDENCE",
     });
   }
   onProgress?.(1);
+  return { securityCheck: attached?.security_check_pending === true };
 }

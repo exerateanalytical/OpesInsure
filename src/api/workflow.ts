@@ -55,15 +55,26 @@ export type ProposalChecklist = {
   available_transitions?: string[];
   blocking?: string[];
   /** Declarations catalogue with this application's acceptance (TERMS_ACCEPTANCE once the terms screen was confirmed). */
-  declarations?: { code: string; accepted?: boolean; required_for_submit?: boolean }[];
+  declarations?: { code: string; accepted?: boolean; required_for_submit?: boolean; version?: string; /** {en, fr} wording the customer accepts. */ statement?: Record<string, string> | string | null }[];
   submission_count?: number;
   /** Chosen cover terms (null = defaults: start at issuance, 12 months, single payment). */
   cover_terms?: CoverTerms | null;
   /** What this product allows (CoverTermsService::ruleFor). */
   cover_term_rule?: CoverTermRule | null;
 };
-export type CoverTerms = { effective_rule: string; start_date?: string | null; ends_before?: string | null; duration?: { unit: string; value?: number | null }; instalment_plan?: string };
-export type CoverTermRule = { effective_date_rules: string[]; default_effective_rule: string; max_advance_days: number; durations?: { unit: string; value?: number }[]; instalment_plans?: string[] };
+export type CoverTerms = {
+  effective_rule: string;
+  start_date?: string | null;
+  ends_before?: string | null;
+  duration?: { unit: string; value?: number | null };
+  instalment_plan?: string;
+  /** Instalments: first AT_BIND, then "+3M" style offsets (CoverTermsService::schedule). */
+  schedule?: { sequence: number; due: string; amount_minor: number; fee_minor?: number }[];
+  total_payable_minor?: number;
+  /** NO_COVER_UNTIL_PAID | GRACE_THEN_SUSPEND | CANCEL | UNVERIFIED. */
+  non_payment_consequence?: string | null;
+};
+export type CoverTermRule = { effective_date_rules: string[]; default_effective_rule: string; max_advance_days: number; durations?: { unit: string; value?: number }[]; instalment_plans?: string[]; non_payment_consequence?: string | null };
 
 const post =(body?: unknown) => ({ method: "POST", body: body === undefined ? undefined : JSON.stringify(body), idempotent: true }) as const;
 

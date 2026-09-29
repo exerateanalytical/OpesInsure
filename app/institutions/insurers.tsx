@@ -127,8 +127,7 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
         <View style={styles.row}>
           <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} />
           <View style={styles.copy}>
-            <Text style={styles.name}>{insurer.short_name ?? insurer.name}</Text>
-            {insurer.short_name ? <Text style={styles.meta}>{insurer.name}</Text> : null}
+            <Text style={styles.name} numberOfLines={1}>{insurer.short_name ?? insurer.name}</Text>
             {hqCity || dir.branches.length ? (
               <Text style={styles.meta}>
                 {[hqCity, dir.branches.length ? t("branchNetwork", { count: dir.branches.length }) : null]

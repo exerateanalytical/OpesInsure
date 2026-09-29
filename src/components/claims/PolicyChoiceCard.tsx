@@ -41,7 +41,7 @@ export function PolicyChoiceCard({ policy, logoUrl, selected = false, onPress, p
         {provider ? (
           <View style={s.line}>
             <InstitutionMark logoUrl={logoUrl} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-            <Text style={s.body}>{provider}</Text>
+            <Text style={s.body} numberOfLines={1}>{provider}</Text>
           </View>
         ) : null}
         {policy.policy_number ? <Text style={s.body}>{t("claimPolicyNo", { number: policy.policy_number.replace(/-/g, "‑") })}</Text> : null}

@@ -20,7 +20,7 @@ import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tok
 
 const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: CarFront, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
 
-type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; provider_name?: string | null; carrier_logo_url?: string | null };
+type Row = CustomerQuoteSummary & { created_at?: string | null; carrier_name?: string | null; carrier_short_name?: string | null; provider_name?: string | null; carrier_logo_url?: string | null };
 
 export default function QuoteHistory() {
   const { t, td } = useTranslation();
@@ -121,7 +121,7 @@ export default function QuoteHistory() {
           const outcome = quoteOutcome(q);
           const days = daysUntil(q.expires_at);
           const soon = !outcome && isExpiringSoon(q.expires_at);
-          const provider = q.carrier_name ?? q.provider_name ?? null;
+          const provider = q.carrier_short_name ?? q.carrier_name ?? q.provider_name ?? null;
           const open = () => router.push({ pathname: "/quotes/[id]", params: { id: q.id } });
           return (
             <View style={s.card}>
@@ -137,7 +137,7 @@ export default function QuoteHistory() {
                       {provider ? (
                         <View style={s.providerRow}>
                           <InstitutionMark logoUrl={q.carrier_logo_url ?? null} initials={provider.slice(0, 2).toUpperCase()} size={20} />
-                          <Text style={[s.meta, s.flex]}>{provider}</Text>
+                          <Text style={[s.meta, s.flex]} numberOfLines={1}>{provider}</Text>
                         </View>
                       ) : q.quote_number ? <Text style={s.meta}>{q.quote_number}</Text> : null}
                     </View>

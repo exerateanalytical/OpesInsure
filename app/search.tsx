@@ -298,7 +298,7 @@ export default function GlobalSearch() {
                         <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={56} />
                         <ChevronRight size={18} color={colors.blue600} />
                       </View>
-                      <Text style={s.providerName}>{p.name}</Text>
+                      <Text style={s.providerName} numberOfLines={1}>{p.short_name ?? p.name}</Text>
                       <Text style={s.meta}>
                         {p.type === "broker"
                           ? p.regulator_number

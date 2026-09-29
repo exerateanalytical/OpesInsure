@@ -49,7 +49,7 @@ export function carrierMark(
   payload: { name?: string | null; logoUrl?: string | null },
 ): CarrierMark {
   const row = carrierId ? rows.find((r) => r.id === carrierId) : undefined;
-  const name = payload.name ?? row?.short_name ?? row?.name ?? null;
+  const name = row?.short_name ?? payload.name ?? row?.name ?? null;
   return {
     name,
     logoUrl: payload.logoUrl ?? institutionLogo(row),

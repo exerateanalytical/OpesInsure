@@ -222,8 +222,8 @@ export type OfferLike = {
 };
 
 export const providerName = (o: {
-  carrier?: { party?: { display_name?: string } } | null;
-}, language?: string) => o.carrier?.party?.display_name ?? tx(language, "licensedCarrier");
+  carrier?: { brand_short_name?: string | null; party?: { display_name?: string } } | null;
+}, language?: string) => o.carrier?.brand_short_name || o.carrier?.party?.display_name || tx(language, "licensedCarrier");
 
 export type OfferSort = "price" | "cover" | "insurer" | "excess";
 export type CoverLevel = "essential" | "standard" | "full";

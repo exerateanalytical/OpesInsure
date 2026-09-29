@@ -71,8 +71,8 @@ export default function ClaimInformationRequest() {
     setUploading(key);
     setProgress(0);
     try {
-      await uploadClaimEvidence(id, asset, key, setProgress);
-      setNotice(t("evidenceUploaded"));
+      const sent = await uploadClaimEvidence(id, asset, key, setProgress);
+      setNotice(t(sent.securityCheck ? "evidenceSecurityCheck" : "evidenceUploaded"));
       await Promise.all([items.reload(), requirements.reload()]);
     } catch (e) {
       setError(e);

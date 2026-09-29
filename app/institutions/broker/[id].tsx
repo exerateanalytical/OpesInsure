@@ -1,220 +1,147 @@
 import React from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Building2, ChevronRight, FileText, Globe, Mail, MapPin, Phone, Star } from "lucide-react-native";
-import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Building2, FileText, IdCard } from "lucide-react-native";
+import { Button, StatusChip } from "@/components/ui";
 import { SectionHeading } from "@/components/design";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
-import { BrandArt } from "@/components/design/BrandArt";
+import {
+  ContactCard,
+  EmptyNote,
+  FeaturedChip,
+  InstitutionScreen,
+  KeyFacts,
+  ProductGroups,
+  ProfileCard,
+  ProfileFooter,
+  ProfileHero,
+  ProfileRow,
+  useContactActions,
+  useLineLabel,
+  type Fact,
+} from "@/components/institutions/InstitutionProfile";
 import { useInsurerLogos } from "@/components/offers/useInsurerLogo";
-import { StatePanel } from "@/components/StatePanel";
-import { useLoad } from "@/hooks/useLoad";
-import { InstitutionsApi, type Institution } from "@/api/extra";
-import { formatDisplayDate, useTranslation } from "@/i18n";
-import { REGISTER_SOURCE_KEY, isFeaturedBroker, productsByLine } from "@/lib/institutions";
-import { colors, radius, space, type } from "@/theme/tokens";
+import type { Institution } from "@/api/extra";
+import { useTranslation } from "@/i18n";
+import { isFeaturedBroker, licenceState, productsByLine, readDirectory } from "@/lib/institutions";
+
+/** Today in Douala (UTC+1, no DST) as YYYY-MM-DD, for the licence expiry check. */
+const doualaToday = () => new Date(Date.now() + 3_600_000).toISOString().slice(0, 10);
 
 /**
- * Broker profile: identity and licence, the insurance companies the broker is appointed by,
- * the policies it offers (grouped by line) and how to reach it. Affiliations and products come
- * from the broker's ACTIVE carrier agreements (GET /public/institutions/{id}).
+ * Broker profile from GET /public/institutions/{id}: identity (featured, licensed), key facts
+ * (register entry, licence and expiry, city), the insurance companies the broker is appointed by
+ * and the policies it offers (both from its ACTIVE carrier agreements), contact, then the register
+ * source and the MINFI verification note. Same structure as the insurer profile
+ * (src/components/institutions/InstitutionProfile.tsx).
  */
 export default function BrokerDetail() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useLoad(() => InstitutionsApi.show(id), [id]);
   return (
-    <Screen>
-      <AppHeader title={t("brokerProfile")} back />
-      <StatePanel {...q} onRetry={q.reload} isEmpty={() => false} loadingLabel={t("loadingBrokers")}>
-        {(broker) => (
-          <>
-            <Identity broker={broker} />
-            <Insurers broker={broker} />
-            <Policies broker={broker} />
-            <Contact broker={broker} />
-            <Button label={t("propGetQuote")} onPress={() => router.push("/quote/product")} />
-            <BrandArt name="map_neon" width={88} opacity={0.85} />
-            <Text style={styles.source}>{t("brokerVerifyNote")}</Text>
-            {broker.is_official_register ? <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text> : null}
-          </>
-        )}
-      </StatePanel>
-    </Screen>
+    <InstitutionScreen id={id} kind="broker" loadingLabel={t("loadingBrokers")}>
+      {(broker) => <Profile broker={broker} />}
+    </InstitutionScreen>
   );
 }
 
-function Identity({ broker }: { broker: Institution }) {
-  const { t } = useTranslation();
-  const featured = isFeaturedBroker(broker);
-  return (
-    <Card feature>
-      <View style={styles.head}>
-        <InstitutionMark logoUrl={institutionLogo(broker)} initials={broker.initials} size={64} />
-        <View style={styles.flex}>
-          <Text style={styles.title}>{broker.name}</Text>
-          {broker.city ? (
-            <View style={styles.inline}>
-              <MapPin size={14} color={colors.neutral600} />
-              <Text style={styles.meta}>{t("brokerCityCountry", { city: broker.city })}</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.badges}>
-        {featured ? (
-          <View style={styles.featured}>
-            <Star size={13} color={colors.navy950} fill={colors.navy950} />
-            <Text style={styles.featuredText}>{t("brokerFeatured")}</Text>
-          </View>
-        ) : null}
-        {broker.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
-        {broker.regulator_number ? <StatusChip label={t("regulatorNumber", { number: broker.regulator_number })} tone="info" /> : null}
-        {broker.licence_number ? <StatusChip label={t("brokerLicenceNumber", { number: broker.licence_number })} tone="info" /> : null}
-      </View>
-      {broker.licence_expires_on ? (
-        <Text style={styles.meta}>{t("brokerLicenceExpires", { date: formatDisplayDate(broker.licence_expires_on) })}</Text>
-      ) : null}
-      {broker.canonical_id ? <Text style={styles.canonical}>{t("canonicalId", { id: broker.canonical_id })}</Text> : null}
-    </Card>
-  );
-}
-
-function Insurers({ broker }: { broker: Institution }) {
-  const { t, td } = useTranslation();
-  const rows = broker.affiliated_insurers ?? [];
-  return (
-    <>
-      <SectionHeading title={rows.length ? t("brokerInsurersCount", { count: rows.length }) : t("brokerInsurers")} icon={Building2} />
-      <Card>
-        {rows.length ? (
-          rows.map((c, i) => (
-            <Pressable
-              key={c.id}
-              accessibilityRole="button"
-              accessibilityLabel={c.name}
-              onPress={() => router.push({ pathname: "/institutions/insurer/[id]", params: { id: c.id } })}
-              style={({ pressed }) => [styles.row, i > 0 && styles.divider, pressed && styles.pressed]}
-            >
-              <InstitutionMark logoUrl={c.logo_url ?? null} initials={c.initials} size={40} />
-              <View style={styles.flex}>
-                <Text style={styles.rowTitle}>{c.name}</Text>
-                {c.lines?.length ? (
-                  <Text style={styles.meta} numberOfLines={2}>
-                    {c.lines.map((l) => td(`line_${l}`, l)).join(" · ")}
-                  </Text>
-                ) : null}
-              </View>
-              <ChevronRight size={18} color={colors.neutral500} />
-            </Pressable>
-          ))
-        ) : (
-          <Text style={styles.meta}>{t("brokerNoInsurers")}</Text>
-        )}
-      </Card>
-    </>
-  );
-}
-
-function Policies({ broker }: { broker: Institution }) {
-  const { t, td } = useTranslation();
-  const groups = productsByLine(broker.products);
-  // Logos from the broker's own insurer list, falling back to the public insurer directory.
+function Profile({ broker }: { broker: Institution }) {
+  const { t, date } = useTranslation();
+  const d = readDirectory(broker);
+  const actions = useContactActions(d);
+  const lineLabel = useLineLabel();
   const logoFor = useInsurerLogos();
-  const insurerOf = (id?: string | null) => (broker.affiliated_insurers ?? []).find((c) => c.id === id);
+  const insurers = broker.affiliated_insurers ?? [];
+  const groups = productsByLine(broker.products);
+  const insurerOf = (carrierId?: string | null) => insurers.find((c) => c.id === carrierId);
+  const openInsurer = (carrierId: string) => router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } });
+  const licence = licenceState(broker.licence_expires_on, doualaToday());
+  const facts: Fact[] = [
+    ...(broker.canonical_id
+      ? [{ label: t("instRegisterEntry"), value: broker.regulator_number ? t("instRegisterEntryValue", { number: broker.regulator_number, id: broker.canonical_id }) : broker.canonical_id }]
+      : []),
+    ...(broker.licence_number ? [{ label: t("instLicenceNumber"), value: broker.licence_number }] : []),
+    ...(licence
+      ? [
+          licence === "expired"
+            ? { label: t("instLicenceValidUntil"), value: t("instLicenceExpired", { date: date(broker.licence_expires_on, false) }), tone: "warning" as const }
+            : { label: t("instLicenceValidUntil"), value: date(broker.licence_expires_on, false) },
+        ]
+      : []),
+    ...(broker.city ? [{ label: t("instCity"), value: t("brokerCityCountry", { city: broker.city }) }] : []),
+  ];
   return (
     <>
-      <SectionHeading title={t("brokerPolicies")} icon={FileText} />
-      {groups.length ? (
-        groups.map((g) => (
-          <Card key={g.line}>
-            <Text style={styles.lineTitle}>{td(`line_${g.line}`, g.line)}</Text>
-            {g.products.map((p, i) => (
-              <Pressable
-                key={p.id}
-                accessibilityRole="button"
-                accessibilityLabel={[p.name, p.carrier_name].filter(Boolean).join(", ")}
-                onPress={() =>
-                  p.carrier_id
-                    ? router.push({ pathname: "/institutions/insurer/[id]", params: { id: p.carrier_id } })
-                    : router.push("/quote/product")
-                }
-                style={({ pressed }) => [styles.row, i > 0 && styles.divider, pressed && styles.pressed]}
-              >
+      <ProfileHero
+        logoUrl={institutionLogo(broker)}
+        initials={broker.initials}
+        name={broker.name}
+        kindLine={[t("instKindBroker"), broker.city].filter(Boolean).join(" · ")}
+        actions={actions}
+        chips={
+          <>
+            {isFeaturedBroker(broker) ? <FeaturedChip label={t("brokerFeatured")} /> : null}
+            {broker.licensed && licence !== "expired" ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
+          </>
+        }
+      />
+
+      <KeyFacts icon={IdCard} facts={facts} />
+
+      {!insurers.length && !groups.length ? (
+        <>
+          <SectionHeading title={t("brokerInsurers")} icon={Building2} />
+          <EmptyNote text={t("instNoOffering")} />
+        </>
+      ) : (
+        <>
+          <SectionHeading title={insurers.length ? t("brokerInsurersCount", { count: insurers.length }) : t("brokerInsurers")} icon={Building2} />
+          {insurers.length ? (
+            <ProfileCard>
+              {insurers.map((c, i) => (
+                <ProfileRow
+                  key={c.id}
+                  first={i === 0}
+                  lead={<InstitutionMark logoUrl={logoFor(c.id, c.name, c.logo_url)} initials={c.initials} size={40} />}
+                  title={c.name}
+                  meta={c.lines?.length ? c.lines.map(lineLabel).join(" · ") : null}
+                  onPress={() => openInsurer(c.id)}
+                />
+              ))}
+            </ProfileCard>
+          ) : (
+            <EmptyNote text={t("brokerNoInsurers")} />
+          )}
+          <SectionHeading title={t("brokerPolicies")} icon={FileText} />
+          {groups.length ? (
+            <ProductGroups
+              groups={groups}
+              lead={(p) => (
                 <InstitutionMark
                   logoUrl={logoFor(p.carrier_id, p.carrier_name, insurerOf(p.carrier_id)?.logo_url)}
                   initials={insurerOf(p.carrier_id)?.initials ?? (p.carrier_name ?? "").slice(0, 2).toUpperCase()}
-                  size={36}
+                  size={40}
                 />
-                <View style={styles.flex}>
-                  <Text style={styles.rowTitle}>{p.name}</Text>
-                  {p.carrier_name ? <Text style={styles.meta}>{p.carrier_name}</Text> : null}
-                </View>
-                <ChevronRight size={18} color={colors.neutral500} />
-              </Pressable>
-            ))}
-          </Card>
-        ))
-      ) : (
-        <Card>
-          <Text style={styles.meta}>{t("brokerNoPolicies")}</Text>
-        </Card>
+              )}
+              meta={(p) => p.carrier_name ?? null}
+              onPress={(p) => (p.carrier_id ? openInsurer(p.carrier_id) : undefined)}
+            />
+          ) : (
+            <EmptyNote text={t("brokerNoPolicies")} />
+          )}
+        </>
       )}
+
+      <ContactCard d={d} />
+
+      <Button label={t("instBrowseInsurers")} icon={Building2} variant="secondary" onPress={() => router.push("/institutions/insurers")} />
+
+      <ProfileFooter
+        licensed={!!broker.licensed && licence !== "expired"}
+        legalFooter={Array.isArray(broker.legal_footer) ? broker.legal_footer.filter((l) => typeof l === "string" && l.trim()) : []}
+        official={!!broker.is_official_register}
+        notes={[t("brokerVerifyNote")]}
+        sources={d.sources}
+      />
     </>
   );
 }
-
-function Contact({ broker }: { broker: Institution }) {
-  const { t } = useTranslation();
-  const phones = [broker.phone, ...(broker.contacts?.phones ?? [])].filter((p, i, all): p is string => !!p && all.indexOf(p) === i);
-  const emails = broker.contacts?.emails ?? [];
-  const website = broker.website || broker.contacts?.website;
-  return (
-    <>
-      <SectionHeading title={t("brokerContact")} icon={Phone} />
-      <Card>
-        {phones.map((p) => (
-          <Button key={p} label={p} icon={Phone} variant="secondary" onPress={() => void Linking.openURL(`tel:${p}`)} />
-        ))}
-        {emails.map((e) => (
-          <Button key={e} label={e} icon={Mail} variant="secondary" onPress={() => void Linking.openURL(`mailto:${e}`)} />
-        ))}
-        {website ? (
-          <Button
-            label={t("openWebsite")}
-            icon={Globe}
-            variant="secondary"
-            onPress={() => void Linking.openURL(/^https?:/.test(website) ? website : `https://${website}`)}
-          />
-        ) : null}
-        {!phones.length && !emails.length && !website ? <Text style={styles.meta}>{t("brokerNoContact")}</Text> : null}
-      </Card>
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  head: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  flex: { flex: 1, gap: 2 },
-  inline: { flexDirection: "row", alignItems: "center", gap: 4 },
-  title: { ...type.pageTitle, color: colors.navy950 },
-  badges: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
-  featured: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.gold500,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.x3,
-    paddingVertical: 4,
-  },
-  featuredText: { ...type.caption, fontFamily: "Inter_700Bold", color: colors.navy950 },
-  meta: { ...type.meta, color: colors.neutral600 },
-  canonical: { ...type.meta, color: colors.neutral500, fontVariant: ["tabular-nums"] },
-  row: { flexDirection: "row", alignItems: "center", gap: space.x3, minHeight: 56, paddingVertical: space.x2 },
-  divider: { borderTopWidth: 1, borderTopColor: colors.neutral100 },
-  pressed: { opacity: 0.8 },
-  rowTitle: { ...type.label, color: colors.navy950 },
-  lineTitle: { ...type.caption, color: colors.blue700, textTransform: "uppercase", letterSpacing: 0.6 },
-  source: { ...type.meta, color: colors.neutral500 },
-});

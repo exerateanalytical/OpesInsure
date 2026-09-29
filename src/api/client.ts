@@ -762,6 +762,8 @@ export type Proposal = {
     risk_facts?: Record<string, unknown> | null;
   };
   disclosure_schema?: { questions?: unknown[] };
+  /** Chosen cover start, duration and instalment plan (null = defaults: start at issuance, single payment). */
+  cover_terms?: import("./workflow").CoverTerms | null;
   quote_offer_id?: string;
   /** Policy issued from this proposal (server field); null/absent until issued. */
   policy_id?: string | null;

@@ -18,6 +18,7 @@ import { humanize, networkName, normalizeCoverage, openableUrl, paymentStatusInf
 import { insuredObjectLabel } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
 import { PolicyDocumentsSection } from "@/components/policies/PolicyDocumentsSection";
+import { CoverList } from "@/components/purchase/CoverList";
 import { BeneficiariesSection } from "@/components/policies/BeneficiariesSection";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -169,6 +170,8 @@ export function PolicyDetailView({ id }: { id: string }) {
   const premium = p.premium_minor ?? p.terms_snapshot?.total_minor ?? null;
   const cover = normalizeCoverage(p.terms_snapshot?.coverage_snapshot ?? p.proposal?.offer?.coverage_snapshot, f.language);
   const insured = insuredLabel(p);
+  // Contract terms per cover (limit and deductible), shared with the pre-contract summary.
+  const termCovers = cover.coverages.filter((c) => c.limitMinor !== null || c.deductibleMinor !== null);
   // allowed_actions (when the server sends it) narrows the local status rules.
   const canRenew = allowedAction(p, "renew", ["active", "expired"].includes(info.bucket) && p.status !== "CANCELLATION_PENDING");
   const canClaim = allowedAction(p, "file_claim", !!info.claimable);
@@ -346,23 +349,17 @@ export function PolicyDetailView({ id }: { id: string }) {
           </View>
         </Pressable>
 
-        {p.certificate_number || p.issued_at || cover.excessMinor !== null || cover.coverages.some((c) => c.limitMinor !== null) || cover.exclusions.length ? (
+        {p.certificate_number || p.issued_at || cover.excessMinor !== null || termCovers.length || cover.exclusions.length ? (
           <Card style={st.infoCard}>
             {p.certificate_number ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdCertificate")}</Text><Text style={st.limitValue}>{p.certificate_number}</Text></View> : null}
             {p.issued_at ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdIssued")}</Text><Text style={st.limitValue}>{f.date(p.issued_at)}</Text></View> : null}
             {cover.excessMinor !== null ? <View style={st.limitRow}><Text style={st.limitLabel}>{t("pdExcess")}</Text><Text style={st.limitValue}>{f.xaf(cover.excessMinor)}</Text></View> : null}
-            {cover.coverages.some((c) => c.limitMinor !== null) ? (
+            {termCovers.length || cover.exclusions.length ? (
               <View style={st.limits}>
-                <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text>
-                {cover.coverages.filter((c) => c.limitMinor !== null).map((c) => (
-                  <View key={c.code} style={st.limitRow}>
-                    <Text style={st.limitLabel}>{c.name}</Text>
-                    <Text style={st.limitValue}>{f.xaf(c.limitMinor as number)}</Text>
-                  </View>
-                ))}
+                {termCovers.length ? <Text style={st.limitsTitle}>{t("pdCoverLimits")}</Text> : null}
+                <CoverList covers={termCovers} exclusions={cover.exclusions} />
               </View>
             ) : null}
-            {cover.exclusions.length ? <Text style={ps.meta}>{t("pdExcludes", { list: cover.exclusions.map((e) => e.name).join(", ") })}</Text> : null}
           </Card>
         ) : null}
 
@@ -429,7 +426,7 @@ const st = StyleSheet.create({
   rowTitle: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   cardTitle: { fontSize: 16, lineHeight: 22, fontFamily: "Inter_700Bold", color: colors.navy950 },
   infoCard: { gap: space.x2 },
-  limits: { gap: space.x1, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
+  limits: { gap: space.x3, borderTopWidth: 1, borderTopColor: colors.neutral200, paddingTop: space.x3 },
   limitsTitle: { ...type.label, color: colors.navy950 },
   limitRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: space.x3, paddingVertical: 2 },
   limitLabel: { ...type.meta, color: colors.neutral600, flexShrink: 1 },

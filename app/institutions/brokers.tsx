@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, Star } from "lucide-react-native";
-import { AppHeader, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { ChevronRight } from "lucide-react-native";
+import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
+import { SearchBar } from "@/components/SearchBar";
+import { FeaturedChip } from "@/components/institutions/InstitutionProfile";
 import { InstitutionMark, institutionLogo } from "@/components/InstitutionMark";
 import { BrandArt } from "@/components/design/BrandArt";
 import { StatePanel } from "@/components/StatePanel";
@@ -33,11 +35,13 @@ export default function Brokers() {
         subtitle={t(REGISTER_SOURCE_KEY)}
         back
       />
-      <TextField
+      {/* Same search field as the insurer list (no filter sheet: brokers have no filter sections). */}
+      <SearchBar
         label={t("searchBrokers")}
         value={query}
         onChangeText={setQuery}
         placeholder={t("searchBrokersPlaceholder")}
+        clearLabel={t("clearSearch")}
       />
       {q.data && flt.query ? (
         <Text accessibilityLiveRegion="polite" style={styles.note}>
@@ -85,12 +89,7 @@ function BrokerRow({ broker }: { broker: Institution }) {
         <View style={styles.row}>
           <InstitutionMark logoUrl={institutionLogo(broker)} initials={broker.initials} size={42} />
           <View style={styles.copy}>
-            {featured ? (
-              <View style={styles.featured}>
-                <Star size={12} color={colors.navy950} fill={colors.navy950} />
-                <Text style={styles.featuredText}>{t("brokerFeatured")}</Text>
-              </View>
-            ) : null}
+            {featured ? <FeaturedChip label={t("brokerFeatured")} /> : null}
             <Text style={styles.name}>{broker.name}</Text>
             <Text style={styles.meta}>
               {[
@@ -101,8 +100,8 @@ function BrokerRow({ broker }: { broker: Institution }) {
                 .filter(Boolean)
                 .join(" · ")}
             </Text>
+            {broker.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
           </View>
-          {broker.licensed ? <StatusChip label={t("licensedStatus")} tone="success" /> : null}
           <ChevronRight size={20} color={colors.neutral500} />
         </View>
       </Card>
@@ -118,15 +117,4 @@ const styles = StyleSheet.create({
   meta: { ...type.meta, color: colors.neutral600 },
   source: { ...type.meta, color: colors.neutral500, textAlign: "center" },
   featuredCard: { borderColor: colors.gold500, borderWidth: 1.5 },
-  featured: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.gold500,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  featuredText: { ...type.caption, fontFamily: "Inter_700Bold", color: colors.navy950 },
 });

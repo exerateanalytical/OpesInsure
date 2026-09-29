@@ -147,7 +147,7 @@ export function OfferCard({
         <InstitutionMark logoUrl={logo} initials={initialsOf(name)} size={56} />
         <View style={st.flex}>
           <Pressable accessibilityRole="link" accessibilityLabel={name} hitSlop={4} onPress={() => carrierId && router.push({ pathname: "/institutions/insurer/[id]", params: { id: carrierId } })} style={st.nameRow}>
-            <Text style={st.name}>{name}</Text>
+            <Text style={st.name} numberOfLines={1}>{name}</Text>
             {carrierVerified(offer) ? <BadgeCheck size={18} color={colors.blue600} /> : null}
           </Pressable>
           <Text style={st.product}>{localized(offer.product?.name, f.language) || t("insuranceOffer")}</Text>

@@ -19,7 +19,7 @@ export function InsurerCard({ insurer, onPress }: { insurer: Institution; onPres
         <View style={styles.row}>
           <InstitutionMark logoUrl={institutionLogo(insurer)} initials={insurer.initials} />
           <View style={styles.copy}>
-            <Text style={styles.title}>{insurer.name}</Text>
+            <Text style={styles.title} numberOfLines={1}>{insurer.short_name ?? insurer.name}</Text>
             {insurer.city ? <Text style={styles.meta}>{insurer.city}</Text> : null}
           </View>
           <ChevronRight size={20} color={colors.neutral500} />
@@ -69,7 +69,7 @@ export function PolicyCard({ policy, onPress }: { policy: WalletPolicy | Policy;
   const { t } = useTranslation();
   const info = policyStatusInfo(policy.status, f.language);
   const w = policy as WalletPolicy;
-  const provider = w.carrier_name ?? w.carrier?.party?.display_name ?? t("licensedCarrier");
+  const provider = (w as { carrier_short_name?: string | null }).carrier_short_name ?? w.carrier_name ?? w.carrier?.party?.display_name ?? t("licensedCarrier");
   return (
     <Pressable accessibilityRole={onPress ? "button" : undefined} onPress={onPress}>
       <Card>

@@ -82,7 +82,7 @@ test("institution screens show counts, branch tabs, families and the source note
   assert.match(list, /branchLIFE/);
   assert.match(list, /REGISTER_SOURCE_KEY/);
   const detail = read("app/institutions/insurer/[id].tsx");
-  assert.match(detail, /publishedFamiliesUnverified/);
+  assert.match(detail, /instProductFamiliesNote/);
   assert.match(detail, /canonical_id/);
   const brokerList = read("app/institutions/brokers.tsx");
   assert.match(brokerList, /authorizedBrokers/);

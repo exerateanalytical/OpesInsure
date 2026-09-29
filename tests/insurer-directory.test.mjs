@@ -103,7 +103,8 @@ test("directory strings exist in EN and FR and screens use them", () => {
     "verificationPartial", "verificationHqBranchesPending", "verificationGroupNetwork", "sendEmail", "callNumber"]) {
     assert.ok(en[k] && fr[k], k);
   }
-  const detail = read("app/institutions/insurer/[id].tsx");
+  // Contact/offices rendering is shared with the broker profile (InstitutionProfile).
+  const detail = read("app/institutions/insurer/[id].tsx") + read("src/components/institutions/InstitutionProfile.tsx");
   for (const s of [/mailto:/, /telUrl/, /groupBranchesByCity/, /poBox/, /readDirectory/]) assert.match(detail, s);
   const list = read("app/institutions/insurers.tsx");
   for (const s of [/filterByCity/, /cityAll/, /StatePanel/, /verification/]) assert.match(list, s);

@@ -30,13 +30,10 @@ test("phase 4 endpoints are wired through typed contracts", () => {
 test("institution directory comes from the backend, not bundled data", () => {
   assert.equal(existsSync(new URL("../src/data/insurers.ts", import.meta.url)), false);
   assert.equal(existsSync(new URL("../src/data/brokers.ts", import.meta.url)), false);
-  for (const f of [
-    "app/institutions/insurers.tsx",
-    "app/institutions/brokers.tsx",
-    "app/institutions/insurer/[id].tsx",
-    "app/institutions/broker/[id].tsx",
-  ])
-    assert.match(read(f), /InstitutionsApi/);
+  for (const f of ["app/institutions/insurers.tsx", "app/institutions/brokers.tsx"]) assert.match(read(f), /InstitutionsApi/);
+  // Detail pages load through the shared profile frame (GET /public/institutions/{id}).
+  for (const f of ["app/institutions/insurer/[id].tsx", "app/institutions/broker/[id].tsx"]) assert.match(read(f), /InstitutionScreen/);
+  assert.match(read("src/components/institutions/InstitutionProfile.tsx"), /InstitutionsApi\.show/);
 });
 
 test("customer group has a single guard (R7)", () => {

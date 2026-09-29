@@ -26,7 +26,7 @@ const FILTERS: { value: Filter; label: "draftsAll" | "draftsInProgress" | "draft
   { value: "awaiting", label: "draftsAwaiting" },
   { value: "ready", label: "draftsReady" },
 ];
-type Row = ProposalSummary & { updated_at?: string | null; carrier_logo_url?: string | null; line_code?: string | null; risk_summary?: string | null; vehicle_label?: string | null };
+type Row = ProposalSummary & { carrier_short_name?: string | null; updated_at?: string | null; carrier_logo_url?: string | null; line_code?: string | null; risk_summary?: string | null; vehicle_label?: string | null };
 
 /**
  * "Draft applications". Uses GET /mobile/proposals when the backend has it;
@@ -177,7 +177,7 @@ export default function Applications() {
         const lineCode = p.line_code ?? p.offer?.quote?.line_code ?? null;
         const fam = lineFamily(lineCode);
         const Icon = fam ? LINE_ICONS[fam] : FileText;
-        const provider = p.carrier_name ?? null;
+        const provider = p.carrier_short_name ?? p.carrier_name ?? null;
         const fetched = progress[p.id];
         const pct: number | null = checklistProgress(p.required_documents) ?? (typeof fetched === "number" && fetched >= 0 ? fetched : null);
         const subtitle = [p.vehicle_label ?? p.risk_summary ?? null, p.proposal_number, p.terms_snapshot?.total_minor ? f.xaf(p.terms_snapshot.total_minor) : null].filter(Boolean).join(" • ");
@@ -204,7 +204,7 @@ export default function Applications() {
                 {provider ? (
                   <View style={s.providerRow}>
                     <InstitutionMark logoUrl={p.carrier_logo_url} initials={provider.slice(0, 2).toUpperCase()} size={22} />
-                    <Text style={s.body}>{provider}</Text>
+                    <Text style={s.body} numberOfLines={1}>{provider}</Text>
                   </View>
                 ) : null}
                 <Text style={s.meta}>{fam && name !== td(`lineFamily_${fam}`, name) ? `${name}${subtitle ? ` • ${subtitle}` : ""}` : subtitle}</Text>

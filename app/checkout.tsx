@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, BadgeCheck, CheckCircle2, Lock, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
+import { ArrowRight, BadgeCheck, CheckCircle2, ClipboardCheck, FileSignature, Lock, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
-import { LoadingState } from "@/components/StatePanel";
+import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ConsentRow, ErrorCard, QuoteSteps, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
 import { ProposalSummary } from "@/components/purchase/ProposalSummary";
 import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
 import { Network, NetworkTiles } from "@/components/policies/RenewalUi";
+import { ProposalLifecycleApi, type ProposalChecklist } from "@/api/workflow";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { useRuntime } from "@/store/runtime";
@@ -17,6 +18,8 @@ import { legalLinks } from "@/config/environment";
 import { isProviderNotConfigured, proposalStatusInfo } from "@/lib/purchase";
 import { proposalQuoteId } from "@/lib/offerChoice";
 import { useFormatters } from "@/hooks/useFormatters";
+import { useProposalQuote } from "@/hooks/useProposalQuote";
+import { purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -28,7 +31,7 @@ import { useTranslation } from "@/i18n";
  */
 export default function Checkout() {
   const { proposalId, approved } = useLocalSearchParams<{ proposalId?: string; approved?: string }>();
-  const proposal = useInsurance((s) => s.proposal);
+  const storeProposal = useInsurance((s) => s.proposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
   const loadProposal = useInsurance((s) => s.loadProposal);
   const request = useInsurance((s) => s.requestPayment);
@@ -46,7 +49,11 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [payError, setPayError] = useState<unknown>(null);
-  const id = proposalId ?? proposal?.id;
+  const id = proposalId ?? storeProposal?.id;
+  // Only the application this screen is for: another one left in the store must never show (or be paid) here.
+  const proposal = storeProposal && storeProposal.id === id ? storeProposal : null;
+  const [checklist, setChecklist] = useState<ProposalChecklist | null>(null);
+  const quote = useProposalQuote(proposal);
 
   // Always re-read the proposal: the price and status on screen must be the server's current ones.
   const load = useCallback(async () => {
@@ -55,6 +62,8 @@ export default function Checkout() {
     setLoadError(null);
     try {
       await loadProposal(id);
+      // Optional: whether the contract terms were accepted, and the cover-term rule for the summary.
+      setChecklist(await ProposalLifecycleApi.checklist(id).catch(() => null));
     } catch (e) {
       setLoadError(e);
     } finally {
@@ -72,10 +81,7 @@ export default function Checkout() {
       <Screen>
         <BrandHeader title={t("coTitle")} />
         <QuoteSteps current={3} />
-        <Card>
-          <Text style={ps.title}>{t("coNoApplication")}</Text>
-          <Button label={t("myApplications")} variant="secondary" onPress={() => router.replace("/proposals")} />
-        </Card>
+        <EmptyState title={t("coNoApplication")} message={t("ctNoApplicationBody")} action={t("myApplications")} onPress={() => router.replace("/proposals")} />
       </Screen>
     );
   if (loading && !proposal)
@@ -98,7 +104,9 @@ export default function Checkout() {
   const info = proposalStatusInfo(proposal.status, f.language);
   const payable = info.stage === "payable";
   const phoneValid = /^\+237[26]\d{8}$/.test(phone);
-  const canPay = payable && phoneValid && confirmDetails && acceptTerms && !busy;
+  // Known from the checklist: the contract terms must be accepted on the terms screen before paying.
+  const termsAccepted = checklist ? termsAcceptedIn(checklist.declarations) : null;
+  const canPay = payable && termsAccepted !== false && phoneValid && confirmDetails && acceptTerms && !busy;
   const total = proposal.terms_snapshot?.total_minor;
   // "Change offer" reopens the offers of the quote this application was made from (not whatever quote is in memory).
   const sourceQuoteId = proposalQuoteId(proposal);
@@ -128,8 +136,13 @@ export default function Checkout() {
       <BrandHeader title={t("coTitle")} subtitle={t("coSubtitle")} />
       <QuoteSteps current={3} />
       {approved === "1" && payable ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
+      {payable && termsAccepted === false ? (
+        <Banner icon={FileSignature} tint="gold" title={t("ctAcceptFirstTitle")} body={t("ctAcceptFirstBody")} onPress={() => router.replace(purchaseRoute(proposal.id, "terms") as never)} />
+      ) : payable && termsAccepted && approved !== "1" ? (
+        <Banner icon={CheckCircle2} tint="green" title={t("ctAcceptedTitle")} body={t("ctAcceptedBody")} />
+      ) : null}
       {loadError ? <ErrorCard error={loadError} fallback={t("coStaleTerms")} onRetry={() => void load()} /> : null}
-      <ProposalSummary proposal={proposal} offer={ownOffer} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
+      <ProposalSummary proposal={proposal} offer={ownOffer} quote={quote} checklist={checklist} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
       {!payable ? (
         <Card>
           <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />
@@ -164,8 +177,7 @@ export default function Checkout() {
             <Banner icon={Lock} tint="blue" body={t("coEncrypted")} />
           </Card>
 
-          <Card>
-            <Text style={st.label}>{t("rrConsentTitle")}</Text>
+          <ReviewSection icon={ClipboardCheck} title={t("rrConsentTitle")}>
             <ConsentRow checked={confirmDetails} disabled={busy} onPress={() => setConfirmDetails(!confirmDetails)} label={t("coConsentDetails")} />
             <ConsentRow
               checked={acceptTerms}
@@ -180,7 +192,7 @@ export default function Checkout() {
                 </Text>
               }
             />
-          </Card>
+          </ReviewSection>
 
           {payError ? isProviderNotConfigured(payError) ? <ProviderNotConfigured error={payError} /> : <ErrorCard error={payError} fallback={t("coPayFailed")} onRetry={() => void pay()} /> : null}
           <Banner icon={ShieldAlert} tint="gold" body={t("coActivationNote")} />
@@ -200,7 +212,6 @@ export default function Checkout() {
 
 const st = StyleSheet.create({
   flex: { flex: 1 },
-  label: { ...type.label, color: colors.navy950 },
   link: { ...type.body, color: colors.blue600, textDecorationLine: "underline" },
   secure: { flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, maxWidth: 150 },
   pinRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x2 },
