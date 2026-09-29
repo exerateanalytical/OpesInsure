@@ -12,8 +12,8 @@ const iconFor = (n: CustomerNotification) => (n.severity === "CRITICAL" || n.sev
 
 /** Agent inbox (AGENT_UI_SPEC_V2 drill-down from the header bell): unread rows carry a blue dot + bold title. */
 export default function AgentNotifications() {
-  const { t } = useTranslation();
-  const q = useLoad(() => NotificationsApi.list());
+  const { t, language } = useTranslation();
+  const q = useLoad(() => NotificationsApi.list(), [language]);
   return (
     <AgentShell variant="drilldown" title={t("portalNotifTitle")} refreshing={q.loading && !!q.data} onRefresh={q.reload}>
       <Text style={s.subtitle}>{t("portalNotifSubtitle")}</Text>

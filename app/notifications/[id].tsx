@@ -18,9 +18,9 @@ const severityTint = (severity: CustomerNotification["severity"]): Tint =>
 
 export default function NotificationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t, td, date } = useTranslation();
+  const { t, td, date, language } = useTranslation();
   // Opening the detail marks it read and returns the fresh record.
-  const q = useLoad(() => NotificationsApi.markRead(id), [id]);
+  const q = useLoad(() => NotificationsApi.markRead(id), [id, language]);
   return (
     <Screen>
       <BrandHeader title={t("notification")} back right={null} />

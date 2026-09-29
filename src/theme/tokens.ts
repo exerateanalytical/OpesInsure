@@ -40,6 +40,15 @@ export const CONTENT_MAX_WIDTH = 720;
 
 export const space = { x1: 4, x2: 8, x3: 12, x4: 16, x5: 20, x6: 24, x8: 32, x10: 40, x12: 48, x16: 64 } as const;
 export const radius = { control: 12, card: 14, feature: 18, sheet: 20, pill: 999 } as const;
+
+/**
+ * Icon inside a tinted square / rounded tile (category tiles, policy and claim
+ * card thumbs, TintedIcon, row icon boxes): the glyph fills the tile. Lucide
+ * draws inside a padded 24-unit box, so a 75% icon puts the strokes right up
+ * to the tile edge with a small even inset. One rule for the whole customer app.
+ */
+export const tileIcon = { ratio: 0.75, stroke: 2 } as const;
+export const tileIconSize = (tile: number) => Math.round(tile * tileIcon.ratio);
 export const type = {
   display: { fontSize: 34, lineHeight: 40, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
   pageTitle: { fontSize: 26, lineHeight: 32, fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },

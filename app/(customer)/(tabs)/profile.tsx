@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import {
@@ -23,11 +23,9 @@ import {
   ShieldCheck,
   Search,
   UserRound,
-  WalletCards,
   CloudCog,
   Gauge,
   Activity,
-  ShieldAlert,
   MailCheck,
   Mail,
   Phone,
@@ -40,7 +38,8 @@ import { Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
 import { useSession } from "@/store/session";
-import { AccountApi, AuthApi, SupportContactsApi } from "@/api/client";
+import { AccountApi, SupportContactsApi } from "@/api/client";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { CustomerApi } from "@/api/customer";
 import { kycPhase } from "@/lib/kyc";
 import { profileCompletion } from "@/lib/profileCompletion";
@@ -70,7 +69,6 @@ const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string]
     tint: "gold",
     links: [
       ["savedQuotes", Clock3, "/quotes"],
-      ["policyWallet", WalletCards, "/wallet"],
       ["paymentsReceipts", CreditCard, "/payments"],
       ["policyServiceRequests", FileCog, "/services"],
       ["insuranceCompanies", Building2, "/institutions/insurers"],
@@ -96,7 +94,6 @@ const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string]
       ["syncCentre", CloudCog, "/sync"],
       ["dataUsage", Gauge, "/account/data-usage"],
       ["serviceStatus", Activity, "/system/status"],
-      ["deviceSecurity", ShieldAlert, "/security/device-status"],
     ],
   },
 ];
@@ -111,21 +108,8 @@ export default function Profile() {
   const workspace = useSession((s) => s.activeWorkspace);
   const signOut = useSession((s) => s.signOut);
   const { t, td } = useTranslation();
-  // Only when the server reports it (field present and null / flag false);
-  // older payloads without the field show nothing.
-  const emailUnverified =
-    !!user?.email &&
-    (user.email_verified_at === null || user.contacts_verified === false);
-  const [verifyState, setVerifyState] = useState<"idle" | "busy" | "sent" | "error">("idle");
-  const verifyEmail = async () => {
-    setVerifyState("busy");
-    try {
-      const r = await AuthApi.requestEmailVerification();
-      setVerifyState(r.sent ? "sent" : "error");
-    } catch {
-      setVerifyState("error");
-    }
-  };
+  // Shared with Personal information (POST /me/email/verification via AuthApi.requestEmailVerification).
+  const { unverified: emailUnverified, state: verifyState, send: verifyEmail } = useEmailVerification();
   // Completion is computed only from server data (KYC case + customer profile + session user),
   // and refreshed whenever the tab regains focus (e.g. back from verification or personal info).
   const kyc = useLoad(() => CustomerApi.kyc());

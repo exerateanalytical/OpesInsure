@@ -36,7 +36,7 @@ import {
 } from "@/lib/institutions";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const heroArt = require("../../../assets/brand/header_network.png");
 
@@ -209,7 +209,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
                   android_ripple={ripple()}
                   style={({ pressed }) => [styles.cat, { backgroundColor: tint.bg }, pressed && styles.pressed]}
                 >
-                  <c.icon size={26} color={tint.fg} />
+                  <c.icon size={tileIconSize(48)} color={tint.fg} strokeWidth={tileIcon.stroke} />
                   <Text style={styles.catText} numberOfLines={2}>{t(c.label)}</Text>
                 </Pressable>
               );
@@ -240,7 +240,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
               >
                 <View style={styles.productTop}>
                   <View style={[styles.productIcon, { backgroundColor: tint.bg }]}>
-                    <Icon size={26} color={tint.fg} />
+                    <Icon size={tileIconSize(52)} color={tint.fg} strokeWidth={tileIcon.stroke} />
                   </View>
                   <View style={styles.chevron}>
                     <ChevronRight size={16} color={colors.navy900} />
@@ -265,7 +265,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
           <SectionHeading title={t("insurerAbout", { name: insurer.short_name ?? insurer.name })} />
           <View style={styles.about}>
             <View style={styles.aboutIcon}>
-              <FileText size={24} color={colors.blue600} />
+              <FileText size={tileIconSize(48)} color={colors.blue600} strokeWidth={tileIcon.stroke} />
             </View>
             <View style={styles.copy}>
               <Text style={styles.aboutLabel}>{t("publishedFamiliesUnverified")}</Text>
@@ -326,7 +326,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
         <View style={styles.location}>
           <View style={styles.locationHead}>
             <View style={styles.aboutIcon}>
-              <MapPin size={22} color={colors.blue600} />
+              <MapPin size={tileIconSize(48)} color={colors.blue600} strokeWidth={tileIcon.stroke} />
             </View>
             <View style={styles.copy}>
               <Text style={styles.cardTitle}>{t("insurerOfficeLocation")}</Text>
@@ -349,7 +349,7 @@ function Profile({ insurer, compare }: { insurer: Institution; compare: (line: s
       {legalFooter(insurer).length || insurer.is_official_register ? (
         <View style={styles.trust}>
           <View style={styles.trustIcon}>
-            <ShieldCheck size={26} color={colors.blue600} />
+            <ShieldCheck size={tileIconSize(52)} color={colors.blue600} strokeWidth={tileIcon.stroke} />
           </View>
           <View style={styles.copy}>
             <Text style={styles.cardTitle}>{t("insurerTrusted")}</Text>

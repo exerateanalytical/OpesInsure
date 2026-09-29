@@ -1,73 +1,128 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CreditCard, IdCard, ShieldCheck, UsersRound } from "lucide-react-native";
+import { CheckCircle2, IdCard, MailCheck, MapPin, UserRound, UsersRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
-import { Button, Screen, TextField } from "@/components/ui";
+import { Button, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader } from "@/components/design";
-import { SchemaForm } from "@/components/forms/SchemaForm";
-import { TimezonePicker } from "@/components/TimezonePicker";
+import { ErrorState, LoadingState } from "@/components/StatePanel";
+import { EditableSchemaSection, SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
-import { profileToValues } from "@/lib/inputForms";
+import { useLoad } from "@/hooks/useLoad";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { PROFILE_PERSONAL_FIELDS, profileToValues } from "@/lib/inputForms";
 import { useTranslation } from "@/i18n";
 import { accountProfileStepUpPurpose } from "@/lib/stepUpFlow";
 import { allowedAction } from "@/lib/capabilities";
 import { claimCoordinates } from "@/lib/deviceLocation";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { STEP_UP_CANCELLED, withStepUp } from "@/security/step-up";
-import { colors, type } from "@/theme/tokens";
+import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
- * Personal information. Name and email: PATCH /mobile/account/profile.
- * Date of birth, occupation, address and beneficiaries: the server form
- * customer_profile (GET /forms/customer_profile) submitted to PATCH
- * /mobile/account/customer-profile — pickers, not free text. Details once
- * kept only on this device prefill the form until the server has its own.
+ * Personal information, read as a profile card with Edit actions:
+ *  - contact details (name, email, mobile): PATCH /mobile/account/profile;
+ *  - about you & address: server form customer_profile (GET /forms/customer_profile)
+ *    -> PATCH /mobile/account/customer-profile, pickers not free text.
+ * Summaries show what the server holds (the same GET the Profile tab's
+ * completion card reads); details once kept only on this device prefill the
+ * form until the server has its own.
  */
 export default function Profile() {
   const { t } = useTranslation();
-  const user = useSession((s) => s.bootstrap?.user);
-  const hydrate = useSession((s) => s.hydrate);
-  const [name, setName] = useState(user?.full_name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [seed, setSeed] = useState<Record<string, string> | null>(null);
-  // Raw GET customer-profile answer, for its allowed_actions (absent on older backends).
-  const [serverProfile, setServerProfile] = useState<object | null>(null);
+  const email = useEmailVerification();
+  const profile = useLoad(() => AccountApi.customerProfile(), []);
+  const [legacy, setLegacy] = useState<Record<string, string> | null>(null);
   // Device fix from the address autofill: latitude/longitude ride on the PATCH only when present.
   const fixRef = useRef<DeviceFix | null>(null);
-  const emailOk = !email.trim() || /^\S+@\S+\.\S+$/.test(email.trim());
 
   useEffect(() => {
     let live = true;
-    void (async () => {
-      const local = await Preferences.profileExtras();
-      const legacy = profileToValues({
-        ...local,
-        beneficiaries: local.beneficiaries.map((b) => ({ name: b.full_name, relationship: b.relationship, share_percent: b.share_percent })),
-      });
-      let server: Record<string, string> = {};
-      try {
-        const raw = await AccountApi.customerProfile();
-        if (live) setServerProfile(raw);
-        server = profileToValues(raw);
-      } catch {
-        // Offline: the form still opens with what the device knows.
-      }
-      if (live) setSeed({ ...legacy, ...Object.fromEntries(Object.entries(server).filter(([, v]) => v)) });
-    })();
+    void Preferences.profileExtras().then((local) => {
+      if (live) setLegacy(profileToValues({ ...local, beneficiaries: [] }));
+    });
     return () => {
       live = false;
     };
   }, []);
 
-  const saveIdentity = async () => {
+  const server = profileToValues(profile.data);
+  const values = Object.fromEntries(PROFILE_PERSONAL_FIELDS.map((k) => [k, server[k] ?? ""]));
+
+  return (
+    <Screen>
+      <BrandHeader title={t("personalDetailsTitle")} subtitle={t("personalDetailsSubtitle")} back right={null} />
+      <ContactSection />
+      {email.unverified ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={email.state === "busy" || email.state === "sent"}
+          onPress={() => void email.send()}
+          style={({ pressed }) => [styles.verify, pressed && styles.pressed]}
+        >
+          <MailCheck size={20} color={colors.warningText} />
+          <Text style={styles.verifyText}>
+            {email.state === "sent" ? t("emailVerifySent") : email.state === "busy" ? t("sending") : email.state === "error" ? t("emailVerifyError") : t("emailVerify")}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {profile.loading && !profile.data ? <LoadingState /> : null}
+      {profile.error && !profile.data ? <ErrorState error={profile.error} onRetry={profile.reload} /> : null}
+      {profile.data ? (
+        <EditableSchemaSection
+          form="customer_profile"
+          only={PROFILE_PERSONAL_FIELDS}
+          values={values}
+          seed={legacy}
+          icon={MapPin}
+          title={t("piAboutTitle")}
+          submitLabel={t("profileSaveForm")}
+          disabled={!allowedAction(profile.data, "update_profile", true)}
+          onLocation={(fix) => {
+            fixRef.current = fix;
+          }}
+          onSubmit={async (payload) => {
+            profile.setData(await AccountApi.updateCustomerProfile({ ...payload, ...claimCoordinates(fixRef.current) }));
+            // Device-only drafts are dropped once the server holds the details (beneficiaries have their own page).
+            await Preferences.forgetProfileExtrasPart("personal");
+          }}
+        />
+      ) : null}
+
+      <Banner icon={IdCard} tint="blue" body={t("personalReverifyNote")} />
+      <Banner icon={UsersRound} tint="blue" title={t("benPageTitle")} body={t("benPageLinkBody")} onPress={() => router.push("/account/beneficiaries" as never)} />
+    </Screen>
+  );
+}
+
+/** Name / email / mobile: a summary with an Edit action; e-mail changes go through step-up. */
+function ContactSection() {
+  const { t } = useTranslation();
+  const user = useSession((s) => s.bootstrap?.user);
+  const hydrate = useSession((s) => s.hydrate);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(user?.full_name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const emailOk = !email.trim() || /^\S+@\S+\.\S+$/.test(email.trim());
+  const changed = name.trim() !== (user?.full_name ?? "") || (email.trim() || null) !== (user?.email ?? null);
+  const phoneVerified = !!user?.phone_verified_at || user?.contacts_verified === true;
+  const emailVerified = !!user?.email_verified_at || user?.contacts_verified === true;
+
+  const open = () => {
+    setName(user?.full_name ?? "");
+    setEmail(user?.email ?? "");
+    setError(null);
+    setSaved(false);
+    setEditing(true);
+  };
+  const save = async () => {
     setBusy(true);
     setError(null);
-    setNotice(null);
     try {
       const nextEmail = email.trim() || null;
       const done = await withStepUp(accountProfileStepUpPurpose(user?.email ?? null, nextEmail), () =>
@@ -75,70 +130,51 @@ export default function Profile() {
       );
       if (done === STEP_UP_CANCELLED) return;
       await hydrate();
-      setNotice(t("profileSaved"));
+      setEditing(false);
+      setSaved(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("profileSaveFailed"));
     } finally {
       setBusy(false);
     }
   };
-  const identityChanged = name.trim() !== (user?.full_name ?? "") || (email.trim() || null) !== (user?.email ?? null);
 
+  const chip = (ok: boolean) => <StatusChip label={ok ? t("portalVerified") : t("portalNotVerified")} tone={ok ? "success" : "warning"} />;
+
+  if (!editing) {
+    return (
+      <>
+        {saved ? <Banner icon={CheckCircle2} tint="green" body={t("profileSaved")} /> : null}
+        <SummaryCard icon={UserRound} title={t("contactDetails")} onEdit={open}>
+          <SummaryField first label={t("fullName")} value={user?.full_name} onAdd={open} />
+          <SummaryField label={t("email")} value={user?.email} onAdd={open} right={user?.email ? chip(emailVerified) : null} />
+          <SummaryField label={t("personalMobile")} value={user?.phone_e164} right={user?.phone_e164 ? chip(phoneVerified) : null} note={t("phoneChangeNote")} />
+        </SummaryCard>
+      </>
+    );
+  }
   return (
-    <Screen>
-      <BrandHeader title={t("personalDetailsTitle")} subtitle={t("personalDetailsSubtitle")} back right={null} />
-      <View style={styles.flat} accessibilityLabel={t("contactDetails")}>
-        <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
-        <TextField
-          label={t("email")}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          error={emailOk ? undefined : t("emailInvalid")}
-        />
-        <TextField label={t("personalMobile")} value={user?.phone_e164 ?? ""} editable={false} />
-        <Text style={styles.body}>{t("phoneChangeNote")}</Text>
-        {identityChanged ? (
-          <Button label={t("saveChanges")} loading={busy} disabled={name.trim().length < 3 || !emailOk} onPress={() => void saveIdentity()} />
-        ) : null}
-      </View>
-
-      <Text style={styles.body}>{t("profileServerNote")}</Text>
-      {allowedAction(serverProfile, "update_profile", true) ? (
-      <SchemaForm
-        form="customer_profile"
-        initialValues={seed}
-        submitLabel={t("profileSaveForm")}
-        flat
-        onLocation={(fix) => {
-          fixRef.current = fix;
-        }}
-        onSubmit={async (payload) => {
-          setNotice(null);
-          // An empty beneficiaries list clears them; other empties are left untouched.
-          await AccountApi.updateCustomerProfile({ beneficiaries: [], ...payload, ...claimCoordinates(fixRef.current) });
-          await Preferences.forgetProfileExtras();
-          setNotice(t("profileSaved"));
-        }}
+    <SummaryCard icon={UserRound} title={t("contactDetails")} onCancel={() => setEditing(false)}>
+      <TextField label={t("fullName")} value={name} onChangeText={setName} autoComplete="name" />
+      <TextField
+        label={t("email")}
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        error={emailOk ? undefined : t("emailInvalid")}
       />
-      ) : null}
-
-      <Banner icon={IdCard} tint="blue" body={t("personalReverifyNote")} />
-      <TimezonePicker />
-
-      <Banner icon={ShieldCheck} tint="blue" title={t("identityVerification")} onPress={() => router.push("/onboarding/kyc")} />
-      <Banner icon={UsersRound} tint="blue" title={t("benPageTitle")} body={t("benPageLinkBody")} onPress={() => router.push("/account/beneficiaries" as never)} />
-      <Banner icon={CreditCard} tint="blue" title={t("payMethodsTitle")} body={t("payMethodsLinkBody")} onPress={() => router.push("/account/payment-methods" as never)} />
+      <SummaryField first label={t("personalMobile")} value={user?.phone_e164} right={user?.phone_e164 ? chip(phoneVerified) : null} note={t("phoneChangeNote")} />
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      {notice ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text> : null}
-    </Screen>
+      <Button label={t("saveChanges")} loading={busy} disabled={!changed || name.trim().length < 3 || !emailOk} onPress={() => void save()} />
+    </SummaryCard>
   );
 }
+
 const styles = StyleSheet.create({
-  flat: { gap: 16 },
-  body: { ...type.body, color: colors.neutral600 },
+  pressed: { opacity: 0.85 },
+  verify: { flexDirection: "row", alignItems: "center", gap: space.x2, minHeight: 44, paddingHorizontal: space.x3, borderRadius: radius.control, backgroundColor: colors.warningSoft },
+  verifyText: { ...type.label, color: colors.warningText, flex: 1 },
   error: { ...type.meta, color: colors.dangerText },
-  notice: { ...type.meta, color: colors.successText },
 });

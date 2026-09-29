@@ -15,7 +15,7 @@ import { checklistProgress, draftBucket, DraftBucket, lineFamily, LineFamily } f
 import { useFormatters } from "@/hooks/useFormatters";
 import { byDate, FilterToolbar, optionsFrom, periodMatcher, periodSection, runList, sortSection, useListFilters, type FilterSection, type FilterValues, type Matchers, type Sorters } from "@/components/filters";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: CarFront, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
 const LINE_TINT: Record<LineFamily, "blue" | "gold" | "red" | "green" | "neutral"> = { motor: "gold", health: "red", travel: "blue", home: "green", business: "neutral", life: "blue", accident: "gold" };
@@ -193,7 +193,7 @@ export default function Applications() {
           <View key={p.id} style={s.card}>
             <View style={s.top}>
               <View style={[s.iconTile, { backgroundColor: fam ? TINT_BG[LINE_TINT[fam]] : colors.neutral100 }]}>
-                <Icon size={30} color={fam ? TINT_FG[LINE_TINT[fam]] : colors.navy800} strokeWidth={1.6} />
+                <Icon size={tileIconSize(60)} color={fam ? TINT_FG[LINE_TINT[fam]] : colors.navy800} strokeWidth={tileIcon.stroke} />
               </View>
               <View style={s.flex}>
                 <View style={[s.status, statusStyle]}>

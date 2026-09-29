@@ -15,7 +15,8 @@ import { ArrowLeft, Bell, Check, ChevronRight, CircleHelp, LucideIcon } from "lu
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { ripple } from "@/components/ui";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { sessionHome, useSession } from "@/store/session";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 
 const network = require("../../../assets/brand/header_network.png");
@@ -24,6 +25,16 @@ const wave = require("../../../assets/brand/header_wave.png");
 // ---------------------------------------------------------------------------
 // Brand header
 // ---------------------------------------------------------------------------
+
+/**
+ * Header back: the previous screen, or, when there is none (opened from a
+ * notification, a deep link or after a replace), straight to the signed-in
+ * user's home instead of the splash router.
+ */
+export function goBackOrHome() {
+  if (router.canGoBack()) router.back();
+  else router.replace((sessionHome(useSession.getState()) ?? "/") as never);
+}
 
 /** Centered logo lockup: platform logo (app icon), "OpesInsure" wordmark, gold tagline. */
 export function BrandLockup({ size = 40, compact = false }: { size?: number; compact?: boolean }) {
@@ -94,7 +105,7 @@ export function BrandHeader({
             <Image source={wave} style={[s.wave, { width: artW, height: Math.round(artW * 0.32) }]} resizeMode="contain" />
           </View>
         ) : null}
-        {back ? <HeaderIconButton icon={ArrowLeft} label={t("back")} onPress={() => (router.canGoBack() ? router.back() : router.replace("/" as never))} /> : null}
+        {back ? <HeaderIconButton icon={ArrowLeft} label={t("back")} onPress={goBackOrHome} /> : null}
         <View style={[s.lockupSlot, back && s.lockupCentered]} onLayout={(e: LayoutChangeEvent) => setSlotX(e.nativeEvent.layout.x)}>
           <View onLayout={(e: LayoutChangeEvent) => setInner({ x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
             <BrandLockup compact={back} size={back ? 32 : 40} />
@@ -205,7 +216,7 @@ export function HeroCard({
           <Image source={image} style={s.heroImage} resizeMode="cover" />
         ) : Icon ? (
           <View style={[s.heroIconBox, compact && s.heroIconBoxCompact]}>
-            <Icon size={compact ? 26 : 30} color={colors.navy900} />
+            <Icon size={tileIconSize(compact ? 60 : 84)} color={colors.navy900} strokeWidth={tileIcon.stroke} />
           </View>
         ) : null}
         <View style={s.flex}>
@@ -279,7 +290,7 @@ export function IconTile({ icon: Icon, label, tint = "blue", onPress, disabled, 
       android_ripple={ripple()}
       style={({ pressed }) => [s.tile, { backgroundColor: c.bg }, pressed && s.pressed, disabled && s.disabled, style]}
     >
-      <Icon size={28} color={c.fg} />
+      <Icon size={tileIconSize(48)} color={c.fg} strokeWidth={tileIcon.stroke} />
       <Text style={[s.tileLabel, { color: tint === "neutral" ? colors.navy950 : c.fg }]} numberOfLines={3}>{label}</Text>
     </Pressable>
   );
@@ -300,7 +311,8 @@ export function TintedIcon({ icon: Icon, tint = "blue", size = 44, round = false
   const c = tints[tint];
   return (
     <View style={{ width: size, height: size, borderRadius: round ? size / 2 : Math.round(size * 0.28), backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
-      <Icon size={Math.round(size * 0.5)} color={c.fg} />
+      {/* Glyph fills the tile (tileIconSize); a circle clips its corners, so round avatars stay a touch smaller. */}
+      <Icon size={round ? Math.round(size * 0.7) : tileIconSize(size)} color={c.fg} strokeWidth={tileIcon.stroke} />
     </View>
   );
 }

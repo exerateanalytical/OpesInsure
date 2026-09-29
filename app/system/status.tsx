@@ -8,8 +8,13 @@ import { environmentConfig } from "@/config/environment";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
+/** "payment_gateway" -> "Payment gateway" when no copy exists for the service key. */
+const humanKey = (k: string) => {
+  const w = k.replaceAll("_", " ").toLowerCase();
+  return w.charAt(0).toUpperCase() + w.slice(1);
+};
 export default function SystemStatus() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const runtime = useRuntime((s) => s.bootstrap);
   const check = useRuntime((s) => s.check);
   useEffect(() => void check(), [check]);
@@ -21,7 +26,7 @@ export default function SystemStatus() {
         <View style={styles.row}>
           <TintedIcon icon={Activity} tint="blue" size={48} />
           <View style={styles.flex}>
-            <Text style={styles.title}>OpesInsure mobile</Text>
+            <Text style={styles.title}>{t("statusAppName")}</Text>
             <Text style={styles.body}>{t("statusVersion", { version: environmentConfig.appVersion, channel: environmentConfig.releaseChannel })}</Text>
           </View>
         </View>
@@ -35,10 +40,10 @@ export default function SystemStatus() {
               <View key={service.key} style={[styles.row, styles.serviceRow, i === services.length - 1 && styles.serviceRowLast]}>
                 <TintedIcon icon={Server} tint={tone === "success" ? "green" : tone === "warning" ? "gold" : "red"} size={40} />
                 <View style={styles.flex}>
-                  <Text style={styles.title}>{service.key.replaceAll("_", " ")}</Text>
+                  <Text style={styles.title}>{td(`statusService_${service.key}`, humanKey(service.key))}</Text>
                   {service.message ? <Text style={styles.body}>{service.message}</Text> : null}
                 </View>
-                <StatusChip label={service.status} tone={tone} />
+                <StatusChip label={td(`statusState_${service.status}`, service.status)} tone={tone} />
               </View>
             );
           })}
@@ -55,6 +60,6 @@ const styles = StyleSheet.create({
   serviceRow: { paddingVertical: space.x2, borderBottomWidth: 1, borderBottomColor: colors.neutral100 },
   serviceRowLast: { borderBottomWidth: 0 },
   flex: { flex: 1 },
-  title: { ...type.label, color: colors.navy950, textTransform: "capitalize" },
+  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
   body: { ...type.meta, color: colors.neutral600, textTransform: "none" },
 });

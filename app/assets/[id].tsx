@@ -1,15 +1,16 @@
 import React from "react";
 import { useLocalSearchParams, router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
-import { CarFront, ScanLine } from "lucide-react-native";
-import { Button, Card, Screen, StatusChip } from "@/components/ui";
-import { BrandHeader, TintedIcon } from "@/components/design";
+import { StyleSheet, View } from "react-native";
+import { Building2, CarFront, Package, ScanLine } from "lucide-react-native";
+import { Button, Screen, StatusChip } from "@/components/ui";
+import { BrandHeader } from "@/components/design";
+import { SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
 import { StatePanel } from "@/components/StatePanel";
 import { AssetsApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { normalizeAsset } from "@/lib/riskAsset";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 
 export default function Asset() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,18 +22,31 @@ export default function Asset() {
       <StatePanel loading={loading} error={error} data={a} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("assetsLoading")}>
         {(a) => {
           const verified = a.status === "VERIFIED" || a.status === "ACTIVE";
+          const vehicle = a.type === "VEHICLE";
+          // Details on file read as a profile card (label above value); missing ones say so.
+          const rows: [string, string | null | undefined][] = [
+            [t("fltType"), a.type ? td(`assetType_${a.type}`, a.type) : null],
+            ...(vehicle
+              ? ([
+                  [t("vehicleRegistration"), a.registration_number],
+                  [t("vehicleMake"), a.make],
+                  [t("vehicleModel"), a.model],
+                  [t("vehicleYear"), a.year ? String(a.year) : null],
+                ] as [string, string | null | undefined][])
+              : []),
+          ];
           return (
-            <Card style={s.card}>
-              <View style={s.headRow}>
-                <TintedIcon icon={CarFront} tint={verified ? "green" : "gold"} size={56} />
-                <View style={s.flex}>
+            <>
+              <SummaryCard icon={vehicle ? CarFront : a.type === "PROPERTY" ? Building2 : Package} title={a.registration_number ?? a.label ?? t("assetVehicle")}>
+                <View style={s.chip}>
                   <StatusChip label={td(`status_${a.status}`, a.status)} tone={verified ? "success" : "warning"} />
-                  <Text style={s.title}>{a.registration_number ?? a.label}</Text>
-                  <Text style={s.body}>{[a.make, a.model, a.year].filter(Boolean).join(" · ")}</Text>
                 </View>
-              </View>
-              <Button label={t("assetScanCard")} icon={ScanLine} onPress={() => router.push(`/assets/${id}/scan`)} />
-            </Card>
+                {rows.map(([label, value]) => (
+                  <SummaryField key={label} label={label} value={value} />
+                ))}
+              </SummaryCard>
+              {vehicle ? <Button label={t("assetScanCard")} icon={ScanLine} onPress={() => router.push(`/assets/${id}/scan`)} /> : null}
+            </>
           );
         }}
       </StatePanel>
@@ -40,9 +54,5 @@ export default function Asset() {
   );
 }
 const s = StyleSheet.create({
-  flex: { flex: 1, gap: space.x1 },
-  card: { borderRadius: radius.feature },
-  headRow: { flexDirection: "row", alignItems: "flex-start", gap: space.x3 },
-  title: { ...type.cardTitle, color: colors.navy950, marginTop: space.x1 },
-  body: { ...type.body, color: colors.neutral700 },
+  chip: { flexDirection: "row", paddingBottom: space.x2 },
 });

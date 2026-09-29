@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react-native";
 import { CATEGORIES, type Category } from "@/components/customer/categories";
 import { CONTENT_MAX_WIDTH, ripple } from "@/components/ui";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 /** Tint per category, as in the reference designs (motor gold, health red, travel blue, home green, others indigo). */
 export const CATEGORY_TINT: Record<Category["id"], { bg: string; fg: string }> = {
@@ -32,7 +32,7 @@ export function CategoryTile({ category, onPress, size = 64 }: { category: Categ
       style={({ pressed }) => [styles.tileWrap, pressed && styles.pressed]}
     >
       <View style={[styles.tile, { width: size, height: size, backgroundColor: tint.bg }]}>
-        <Icon size={Math.round(size * 0.44)} color={tint.fg} strokeWidth={2} />
+        <Icon size={tileIconSize(size)} color={tint.fg} strokeWidth={tileIcon.stroke} />
       </View>
       <Text style={styles.label} numberOfLines={2}>{t(category.label)}</Text>
     </Pressable>

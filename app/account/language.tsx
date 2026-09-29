@@ -103,7 +103,7 @@ export default function Language() {
         </CtaBar>
       }
     >
-      <BrandHeader title={t("langPageTitle")} subtitle={t("langPageSubtitle")} back />
+      <BrandHeader title={t("langPageTitle")} subtitle={t("langPageSubtitle")} back right={null} />
       <SectionHeading title={t("language")} icon={Languages} />
       <Card style={styles.card}>
         <View style={styles.segment} accessibilityRole="radiogroup">
@@ -133,6 +133,8 @@ export default function Language() {
       </Card>
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       {saved ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{t("savedToAccount")}</Text> : null}
+      {/* Time zone lives here for every portal (it carries its own title and saves on pick). */}
+      <TimezonePicker />
       <Banner icon={Bell} tint="blue" title={t("langNotifPrefs")} body={t("langChannelsBody")} onPress={() => router.push("/account/notifications")} />
     </Screen>
   );

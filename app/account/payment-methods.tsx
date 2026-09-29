@@ -53,7 +53,7 @@ export default function PaymentMethods() {
   const methods = useMemo(() => methodsFromPayments(q.data ?? []), [q.data]);
   return (
     <Screen>
-      <BrandHeader title={t("payMethodsTitle")} subtitle={t("payMethodsSubtitle")} back />
+      <BrandHeader title={t("payMethodsTitle")} subtitle={t("payMethodsSubtitle")} back right={null} />
       {q.loading && !q.data ? <LoadingState /> : null}
       {q.error && !q.data ? <ErrorState error={q.error} onRetry={q.reload} /> : null}
       {q.data ? <SectionHeading title={t("payMethodsMobileMoney")} /> : null}

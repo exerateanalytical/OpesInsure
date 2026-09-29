@@ -16,7 +16,7 @@ import { ClaimsApi } from "@/api/client";
 import { ClaimRecordsApi } from "@/api/extra";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 /**
  * New claim, step 4 of 4 (design 30): review the policy, incident, evidence
@@ -113,7 +113,7 @@ export default function NewClaimReview() {
                       const pdf = evidenceIsPdf(f);
                       return (
                         <View key={f.id} style={[s.thumb, pdf && s.thumbPdf]} accessible accessibilityLabel={td(`evidence_${f.evidence_type}`, f.evidence_type)}>
-                          <Icon size={26} color={pdf ? colors.white : colors.blue600} />
+                          <Icon size={tileIconSize(64)} color={pdf ? colors.white : colors.blue600} strokeWidth={tileIcon.stroke} />
                         </View>
                       );
                     })}

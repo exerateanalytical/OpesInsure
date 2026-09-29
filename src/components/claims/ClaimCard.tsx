@@ -9,7 +9,7 @@ import { InstitutionMark } from "@/components/InstitutionMark";
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { useTranslation } from "@/i18n";
 import { claimStatusKey, claimTone, normalizeClaimStatus } from "@/lib/claimStatus";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const TILE: Record<string, { bg: string; fg: string }> = {
   blue: { bg: colors.blue50, fg: colors.navy900 },
@@ -57,7 +57,7 @@ export function ClaimCard({ claim, policy, onPress }: { claim: Claim; policy?: W
     >
       <View style={s.top}>
         <View style={[s.tile, { backgroundColor: tile.bg }]}>
-          <Icon size={30} color={tile.fg} />
+          <Icon size={tileIconSize(52)} color={tile.fg} strokeWidth={tileIcon.stroke} />
         </View>
         <View style={s.flex}>
           <View style={s.chipRow}><StatusChip label={needsAction ? t("claimActionNeeded") : status} tone={claimTone(claim.status)} /></View>

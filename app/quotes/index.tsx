@@ -16,7 +16,7 @@ import { humanize } from "@/lib/purchase";
 import { daysUntil, isExpiringSoon, lineFamily, LineFamily } from "@/lib/crm";
 import { useTranslation } from "@/i18n";
 import { quoteOutcome, quoteTone } from "@/lib/quoteWorkflow";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const LINE_ICONS: Record<LineFamily, LucideIcon> = { motor: CarFront, health: HeartPulse, travel: Plane, home: Home, business: Briefcase, life: ShieldPlus, accident: HardHat };
 
@@ -127,7 +127,7 @@ export default function QuoteHistory() {
             <View style={s.card}>
               <View style={s.top}>
                 <View style={s.imageTile}>
-                  <Icon size={34} color={colors.navy800} strokeWidth={1.5} />
+                  <Icon size={tileIconSize(72)} color={colors.navy800} strokeWidth={tileIcon.stroke} />
                 </View>
                 <View style={s.flex}>
                   <View style={s.titleRow}>

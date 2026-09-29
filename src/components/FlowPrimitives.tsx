@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChevronRight, LucideIcon } from "lucide-react-native";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 import { ripple } from "@/components/ui";
 import { AgentIconBadge } from "@/components/agent/primitives";
 import { usePartnerLook } from "@/hooks/usePartnerLook";
@@ -27,7 +27,7 @@ export function FlowRow({
         <AgentIconBadge icon={Icon} />
       ) : (
         <View style={s.icon}>
-          <Icon size={29} color={colors.navy800} />
+          <Icon size={tileIconSize(42)} color={colors.navy800} strokeWidth={tileIcon.stroke} />
         </View>
       )}
       <View style={s.copy}>

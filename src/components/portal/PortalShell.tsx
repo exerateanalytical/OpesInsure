@@ -161,8 +161,8 @@ export function PortalScreen({
 }
 
 export function PortalNotifications({ tabs }: { tabs: PortalTab[] }) {
-  const { t } = useTranslation();
-  const q = useLoad(() => NotificationsApi.list());
+  const { t, language } = useTranslation();
+  const q = useLoad(() => NotificationsApi.list(), [language]);
   return (
     <PortalScreen tabs={tabs}>
       <AppHeader title={t("portalNotifTitle")} subtitle={t("portalNotifSubtitle")} back />

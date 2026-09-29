@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { WalletApi, WalletPolicy } from "@/api/client";
+import { translateNow } from "@/i18n";
 
 /**
  * The signed-in customer's OWN policies, from /mobile/wallet (party-scoped).
@@ -16,7 +17,7 @@ export function usePolicies() {
     try {
       setData(await WalletApi.all());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Policies could not be loaded.");
+      setError(e instanceof Error && e.message ? e.message : translateNow("policiesLoadFailed"));
     } finally {
       setLoading(false);
     }

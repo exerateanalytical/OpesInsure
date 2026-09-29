@@ -218,7 +218,7 @@ test("environment banner only when the runtime bootstrap sets one", () => {
 
 test("screens render the server forms with the shared renderer; timezone, canonical endpoints and EN/FR copy are wired", () => {
   assert.match(read("app/account/profile.tsx"), /form="customer_profile"/);
-  assert.match(read("app/account/profile.tsx"), /<TimezonePicker/);
+  assert.match(read("app/account/language.tsx"), /<TimezonePicker/);
   assert.match(read("app/account/profile.tsx"), /updateCustomerProfile/);
   assert.match(read("app/onboarding/kyc.tsx"), /form="kyc_identifier"/);
   // Batch 4: the KYC case engine takes explicit purposes (ID_FRONT, ID_BACK, PASSPORT, PROOF_OF_ADDRESS, RCCM, NIU).

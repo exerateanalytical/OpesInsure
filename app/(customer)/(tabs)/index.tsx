@@ -34,7 +34,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { CONTENT_MAX_WIDTH, ripple, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, IconTile, SectionHeading } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
-import { CategoryStrip } from "@/components/customer/CategoryTiles";
+import { CategoryStrip, CATEGORY_TINT } from "@/components/customer/CategoryTiles";
 import { PolicyListCard } from "@/components/policies/PolicyListCard";
 import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
 import { applyExploreFilters, exploreSections } from "@/components/customer/exploreFilters";
@@ -52,7 +52,7 @@ import { useTranslation } from "@/i18n";
 import { claimStatusKey, claimTone, isActiveClaim } from "@/lib/claimStatus";
 import { daysUntil, isRenewalDue } from "@/lib/customerLogic";
 import { HeritagePattern } from "@/components/HeritagePattern";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const NO_FILTERS: FilterValues = { cat: [], prov: [], sort: ["best"] };
 const OPEN_QUOTE = /^(DRAFT|QUOTING|RATED|OFFERED|REFERRED|PENDING)/;
@@ -60,7 +60,7 @@ const OPEN_QUOTE = /^(DRAFT|QUOTING|RATED|OFFERED|REFERRED|PENDING)/;
 const greetingKey = (h = new Date().getHours()): "greetingMorning" | "greetingAfternoon" | "greetingEvening" => (h < 12 ? "greetingMorning" : h < 18 ? "greetingAfternoon" : "greetingEvening");
 
 export default function CustomerHome() {
-  const { t, td, date } = useTranslation();
+  const { t, td, date, language } = useTranslation();
   const user = useSession((s) => s.bootstrap?.user);
   const offline = useSession((s) => s.offline);
   const [query, setQuery] = useState("");
@@ -70,7 +70,8 @@ export default function CustomerHome() {
   const policies = usePolicies();
   const quotes = useLoad(() => CustomerApi.quotes());
   const claims = useLoad(() => CustomerApi.claims());
-  const notifications = useLoad(() => CustomerApi.notifications());
+  // Titles/bodies come back in the app language: refetch when it changes.
+  const notifications = useLoad(() => CustomerApi.notifications(), [language]);
   const contacts = useLoad(() => SupportContactsApi.get());
   // HOME-002/003: server payment + KYC state feed the priority block.
   const payments = useLoad(() => PaymentsApi.list());
@@ -205,7 +206,7 @@ export default function CustomerHome() {
           <HeritagePattern variant="ndop" opacity={0.08} />
           <View style={styles.ctaTop}>
             <View style={styles.ctaThumb}>
-              <ShieldCheck size={28} color={colors.gold500} />
+              <ShieldCheck size={tileIconSize(56)} color={colors.gold500} strokeWidth={tileIcon.stroke} />
             </View>
             <View style={styles.ctaCopy}>
               <Text style={styles.ctaTitle}>{t("homeCtaTitle")}</Text>
@@ -258,7 +259,9 @@ export default function CustomerHome() {
                 android_ripple={ripple()}
                 style={({ pressed }) => [styles.category, grid.item, pressed && styles.pressed]}
               >
-                <Icon size={28} color={colors.navy800} />
+                <View style={[styles.categoryIcon, { backgroundColor: CATEGORY_TINT[c.id].bg }]}>
+                  <Icon size={tileIconSize(48)} color={CATEGORY_TINT[c.id].fg} strokeWidth={tileIcon.stroke} />
+                </View>
                 <Text style={styles.categoryLabel} numberOfLines={2}>{t(c.label)}</Text>
               </Pressable>
             );
@@ -585,6 +588,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral200,
     borderRadius: radius.card,
   },
+  categoryIcon: { width: 48, height: 48, borderRadius: radius.control, alignItems: "center", justifyContent: "center" },
   categoryLabel: { ...type.caption, color: colors.navy950, textAlign: "center" },
   safe: { flex: 1, backgroundColor: colors.neutral50 },
   content: { paddingHorizontal: space.x5, paddingBottom: space.x16, gap: space.x5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },

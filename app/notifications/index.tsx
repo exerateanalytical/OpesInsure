@@ -35,10 +35,11 @@ const KIND: Record<Kind, { icon: LucideIcon; tint: Tint; label: CopyKey; action:
 };
 
 export default function Notifications() {
-  const { t, date } = useTranslation();
+  const { t, date, language } = useTranslation();
   // Under 400dp the time moves under the body so it does not squeeze the title.
   const narrow = useWindowDimensions().width < 400;
-  const q = useLoad(() => CustomerApi.notifications());
+  // Server-rendered in the app language (Accept-Language): refetch when it changes.
+  const q = useLoad(() => CustomerApi.notifications(), [language]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reload = q.reload;

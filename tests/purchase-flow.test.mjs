@@ -209,7 +209,8 @@ test("client: one idempotency key per operation, reused on retry and after 401",
 
 test("screens use the fixed contracts", () => {
   assert.match(read("app/payments/index.tsx"), /usePagedList/);
-  assert.match(read("app/wallet/index.tsx"), /usePagedList/);
+  // The wallet duplicated the Policies tab (same GET /mobile/wallet): old links redirect there.
+  assert.match(read("app/wallet/index.tsx"), /<Redirect href="\/\(customer\)\/\(tabs\)\/policies"/);
   assert.match(read("app/payments/[id]/refund.tsx"), /refundPayload/);
   assert.match(read("app/payment.tsx"), /refreshPurchase/);
   assert.match(read("app/payment.tsx"), /t\("payCheckLater"\)/);

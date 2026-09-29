@@ -3,8 +3,9 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Smartphone } from "lucide-react-native";
 import { AccountApi, DeviceSession } from "@/api/client";
-import { Button, Card, Screen, StatusChip } from "@/components/ui";
-import { BrandHeader, TintedIcon } from "@/components/design";
+import { Button, Screen, StatusChip } from "@/components/ui";
+import { BrandHeader } from "@/components/design";
+import { SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { useLoad } from "@/hooks/useLoad";
@@ -13,13 +14,13 @@ import { useIsAgentPortal } from "@/hooks/useIsAgentPortal";
 import { AgentButton, AgentCard, AgentEmptyState, AgentShell, AgentStatusChip } from "@/components/agent";
 import { AgentLoadGate, AgentOfflineNote } from "@/components/security/AgentStates";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, space, type } from "@/theme/tokens";
 import { agentColors as c, agentIcon, agentLayout as L, agentType as T } from "@/theme/agent";
 
 /** Device detail (SEC-ACC-003). Read from the signed-in user's own device list; revoke is enforced server-side. */
 export default function DeviceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const agent = useIsAgentPortal();
   const f = useFormatters();
   const { data, loading, error, reload } = useLoad(async () => {
@@ -54,8 +55,8 @@ export default function DeviceDetail() {
     [t("devFieldApp"), device.app_version],
     [t("devFieldFirstSeen"), device.first_seen_at ? f.dateTime(device.first_seen_at) : null],
     [t("devFieldLastSeen"), f.dateTime(device.last_seen_at)],
-    [t("devFieldLastAuth"), device.last_auth_method],
-    [t("devFieldAttestation"), device.attestation_status],
+    [t("devFieldLastAuth"), device.last_auth_method ? device.last_auth_method.replaceAll("_", " ").toLowerCase() : null],
+    [t("devFieldAttestation"), device.attestation_status ? td(`devAttest_${device.attestation_status.toUpperCase()}`, device.attestation_status) : null],
     [t("devFieldLocation"), device.approx_location],
   ];
 
@@ -97,7 +98,7 @@ export default function DeviceDetail() {
 
   return (
     <Screen>
-      <BrandHeader title={t("devDetailTitle")} back right={null} />
+      <BrandHeader title={t("devDetailTitle")} subtitle={t("secDevicesBody")} back right={null} />
       {actionError ? <ErrorCard error={actionError} fallback={t("errGeneric")} /> : null}
       <StatePanel
         loading={loading}
@@ -112,24 +113,23 @@ export default function DeviceDetail() {
           if (!device) return null;
           const rows = fields(device);
           return (
-            <Card style={styles.card}>
-              <View style={styles.row}>
-                <TintedIcon icon={Smartphone} tint={device.current ? "green" : "neutral"} size={48} />
-                <Text style={[styles.title, styles.flex]}>{device.name}</Text>
-                {device.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
-              </View>
-              {rows.map(([label, value]) => (
-                <View key={label} style={styles.field}>
-                  <Text style={styles.label}>{label}</Text>
-                  <Text style={styles.value}>{value || t("devFieldNotReported")}</Text>
-                </View>
-              ))}
+            <>
+              <SummaryCard icon={Smartphone} title={device.name}>
+                {device.current ? (
+                  <View style={styles.chip}>
+                    <StatusChip label={t("devThis")} tone="success" />
+                  </View>
+                ) : null}
+                {rows.map(([label, value], i) => (
+                  <SummaryField key={label} first={i === 0 && !device.current} label={label} value={value || t("devFieldNotReported")} />
+                ))}
+              </SummaryCard>
               {device.current ? (
                 <Text style={styles.label}>{t("devCurrentHint")}</Text>
               ) : (
                 <Button label={t("devRevoke")} variant="danger" loading={busy} onPress={revoke} />
               )}
-            </Card>
+            </>
           );
         }}
       </StatePanel>
@@ -137,13 +137,8 @@ export default function DeviceDetail() {
   );
 }
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  card: { borderRadius: radius.feature, gap: space.x3 },
-  row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  field: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, paddingTop: space.x2, gap: 2 },
-  title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
+  chip: { flexDirection: "row", paddingBottom: space.x2 },
   label: { ...type.meta, color: colors.neutral600 },
-  value: { ...type.body, color: colors.navy950 },
 });
 const a = StyleSheet.create({
   hero: { alignItems: "center", gap: 8, paddingVertical: 20 },

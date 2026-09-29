@@ -3,10 +3,10 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimens
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
-import { Calendar, CarFront, Check, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
+import { Calendar, CarFront, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
-import { BrandHeader, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
+import { BrandHeader, CheckList, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { LoadingState } from "@/components/StatePanel";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { ErrorCard, InfoRow, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
@@ -246,16 +246,8 @@ export function PolicyDetailView({ id }: { id: string }) {
               <TintedIcon icon={ShieldCheck} tint="gold" size={40} />
               <Text style={st.cardTitle}>{t("pdKeyBenefits")}</Text>
             </View>
-            <View style={st.checkGrid}>
-              {cover.coverages.map((c, i) => (
-                <View key={`${c.code}-${i}`} style={st.checkItem}>
-                  <View style={st.checkDot}>
-                    <Check size={10} color={colors.white} strokeWidth={3} />
-                  </View>
-                  <Text style={st.checkText}>{`${c.name}${c.optional ? t("pdOptional") : ""}`}</Text>
-                </View>
-              ))}
-            </View>
+            {/* One benefit per row on phones: tick + wrapping text, never a squeezed second column. */}
+            <CheckList items={cover.coverages.map((c) => `${c.name}${c.optional ? t("pdOptional") : ""}`)} tint="gold" compact />
           </View>
         ) : null}
 
@@ -443,10 +435,6 @@ const st = StyleSheet.create({
   limitLabel: { ...type.meta, color: colors.neutral600, flexShrink: 1 },
   limitValue: { ...type.meta, fontFamily: "Inter_600SemiBold", color: colors.navy950, textAlign: "right" },
   benefits: { backgroundColor: colors.gold50, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
-  checkGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: space.x2 },
-  checkItem: { flexBasis: 140, flexGrow: 1, flexDirection: "row", alignItems: "flex-start", gap: space.x2, paddingRight: space.x2 },
-  checkDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.gold600, alignItems: "center", justifyContent: "center", marginTop: 1 },
-  checkText: { fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular", color: colors.neutral700, flex: 1 },
   termCard: { borderRadius: radius.feature },
   termMonths: { ...type.label, color: colors.neutral600 },
   track: { height: 16, justifyContent: "center", marginHorizontal: 8 },

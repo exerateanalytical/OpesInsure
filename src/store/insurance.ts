@@ -245,7 +245,9 @@ export const useInsurance = create<State>((set, get) => ({
       if (!created) throw new Error("Payment request failed.");
       await TokenVault.setPendingPayment(created.id);
       let payment = created;
-      if (created.status === "CREATED") {
+      // POST /payments answers PENDING_CUSTOMER (not CREATED): the operator is only prompted by initiate, so
+      // initiate whenever nothing has been sent to the operator yet (no provider_reference).
+      if (created.status === "CREATED" || (created.status === "PENDING_CUSTOMER" && !created.provider_reference)) {
         try {
           const initKey = await PaymentAttemptKeys.forSlot(paymentAttemptSlot(proposal.id, attempt, provider, payer_phone_e164));
           payment = await InsuranceApi.initiatePayment(created.id, `${initKey}:init`);

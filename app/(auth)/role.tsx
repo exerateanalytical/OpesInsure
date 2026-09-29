@@ -18,7 +18,7 @@ import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { BrandArt } from "@/components/design/BrandArt";
 import { TintedIcon } from "@/components/design";
 import { portalRoute, roleToPortal, useSession } from "@/store/session";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
 const icons: Record<string, any> = {
@@ -103,7 +103,7 @@ export default function RoleSelect() {
               <Card>
                 <View style={styles.row}>
                   <View style={styles.icon}>
-                    <Icon size={30} color={colors.navy800} />
+                    <Icon size={tileIconSize(44)} color={colors.navy800} strokeWidth={tileIcon.stroke} />
                   </View>
                   <View style={styles.copy}>
                     <Text style={styles.title}>{label}</Text>

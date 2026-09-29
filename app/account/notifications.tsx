@@ -138,7 +138,7 @@ export default function Preferences() {
 
   return (
     <Screen>
-      <BrandHeader title={t("notifPrefsTitle")} back right={null} />
+      <BrandHeader title={t("notificationSettings")} subtitle={t("agNotifSubtitle")} back right={null} />
       <StatePanel loading={loading} error={loadError} data={value} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("notifPrefsLoading")}>
         {(current) => {
           const keys = Object.keys(current) as (keyof NotificationPreferences)[];

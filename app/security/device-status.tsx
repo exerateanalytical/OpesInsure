@@ -11,7 +11,7 @@ import { colors, radius, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
 export default function DeviceStatus() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const [result, setResult] = useState<DeviceRiskResult>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -48,7 +48,7 @@ export default function DeviceStatus() {
           <View style={styles.headRow}>
             <TintedIcon icon={result.action === "ALLOW" ? ShieldCheck : ShieldAlert} tint={result.action === "ALLOW" ? "green" : result.action === "LIMIT" ? "gold" : "red"} size={48} />
             <View style={styles.flex}>
-              <StatusChip label={result.action} tone={result.action === "ALLOW" ? "success" : result.action === "LIMIT" ? "warning" : "danger"} />
+              <StatusChip label={td(`devAction_${result.action}`, result.action)} tone={result.action === "ALLOW" ? "success" : result.action === "LIMIT" ? "warning" : "danger"} />
               <Text style={styles.meta}>{t("devAssessment", { id: result.assessment_id })}</Text>
             </View>
           </View>
@@ -64,7 +64,7 @@ export default function DeviceStatus() {
             .map((reason) => (
             <View key={reason} style={styles.reasonRow}>
               <CircleAlert size={16} color={colors.warningText} />
-              <Text style={styles.reason}>{reason.replaceAll("_", " ")}</Text>
+              <Text style={styles.reason}>{td(`devReason_${reason}`, reason.replaceAll("_", " ").toLowerCase())}</Text>
             </View>
           ))}
         </Card>

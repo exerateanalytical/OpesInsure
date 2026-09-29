@@ -126,6 +126,10 @@ export function endpointValues(payload: unknown, valueKey: string): MasterValue[
   return out;
 }
 
+/** customer_profile sections: Personal information edits these; Beneficiaries edits the list. */
+export const PROFILE_PERSONAL_FIELDS = ["date_of_birth", "occupation", "region", "department", "city", "address_line1"];
+export const PROFILE_BENEFICIARY_FIELDS = ["beneficiaries"];
+
 /** Profile form values from GET /mobile/account/customer-profile. */
 export function profileToValues(p: Record<string, unknown> | null | undefined): Record<string, string> {
   if (!p) return {};

@@ -18,7 +18,7 @@ import { matchesQuery } from "@/lib/customerLogic";
 import { featuredFirst } from "@/lib/institutions";
 import { activeFilterCount, FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
 import { applyExploreFilters, exploreSections, listParam } from "@/components/customer/exploreFilters";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 type Filter = "all" | "insurer" | "broker";
 
@@ -130,7 +130,7 @@ export default function Explore() {
             style={({ pressed }) => [styles.popular, pressed && styles.pressed]}
           >
             <View style={[styles.popularIcon, { backgroundColor: tint.bg }]}>
-              <Icon size={34} color={tint.fg} />
+              <Icon size={tileIconSize(60)} color={tint.fg} strokeWidth={tileIcon.stroke} />
             </View>
             <View style={styles.flex}>
               <Text style={styles.popularTitle}>{t(c.label)}</Text>

@@ -18,12 +18,21 @@ import { Telemetry } from "@/security/telemetry";
 import { CrashReporting } from "@/security/crashReporting";
 import { Platform } from "react-native";
 import { rememberColdStartPath } from "@/lib/navigationContinuity";
+import { CustomerScreenFrame } from "@/components/customer/CustomerTabBar";
 
 // NAV-001: a web reload / deep link lands on index while the session boots;
 // index restores this path once auth is back (native: +native-intent).
 if (Platform.OS === "web" && typeof window !== "undefined") {
   rememberColdStartPath(window.location.pathname + window.location.search);
 }
+
+/** Customer stack screens (quote, checkout, policy, claim, account...) keep
+ * the customer bottom bar and a safe Android back; see CustomerScreenFrame. */
+const customerScreenLayout = ({ route, navigation, children }: { route: { name: string; params?: object }; navigation: { canGoBack(): boolean; isFocused(): boolean }; children: React.ReactElement }) => (
+  <CustomerScreenFrame route={route} navigation={navigation}>
+    {children}
+  </CustomerScreenFrame>
+);
 
 SplashScreen.preventAutoHideAsync();
 Telemetry.installGlobalHandlers();
@@ -71,6 +80,7 @@ export default function RootLayout() {
     <AppRuntime>
       <StatusBar style="dark" />
       <Stack
+        screenLayout={customer ? customerScreenLayout : undefined}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.neutral50 },

@@ -95,6 +95,18 @@ export const Preferences = {
     await write(keys.profileExtras, null);
     await SecureJson.remove(keys.profileExtras).catch(() => undefined);
   },
+  /**
+   * Drops one part of the device-only copy once the server holds it
+   * (Personal information saves the details, Beneficiaries the list);
+   * the whole copy goes when nothing else is left in it.
+   */
+  forgetProfileExtrasPart: async (part: "personal" | "beneficiaries") => {
+    const local = await Preferences.profileExtras();
+    const rest: ProfileExtras = part === "beneficiaries" ? { ...local, beneficiaries: [] } : { ...emptyProfileExtras, beneficiaries: local.beneficiaries };
+    const empty = !rest.beneficiaries.length && !rest.address_line1 && !rest.city && !rest.region && !rest.occupation && !rest.date_of_birth;
+    if (empty) await Preferences.forgetProfileExtras();
+    else await Preferences.saveProfileExtras(rest);
+  },
   /** Removed on sign-out: personal data must not outlive the session. */
   clearPersonal: async () => {
     await write(keys.profileExtras, null);

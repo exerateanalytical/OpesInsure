@@ -12,7 +12,7 @@ import { policyStatusInfo } from "@/lib/purchase";
 import { insuredObjectLabel } from "@/lib/renewal";
 import { daysUntil } from "@/lib/customerLogic";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 /** Category for a policy from its product line / name, else null. */
 export function policyCategory(p: Policy | WalletPolicy) {
@@ -62,7 +62,7 @@ export function PolicyListCard({ policy, onPress }: { policy: WalletPolicy | Pol
       android_ripple={ripple()}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={[styles.thumb, { backgroundColor: tint.bg }]}>{Icon ? <Icon size={28} color={tint.fg} /> : null}</View>
+      <View style={[styles.thumb, { backgroundColor: tint.bg }]}>{Icon ? <Icon size={tileIconSize(56)} color={tint.fg} strokeWidth={tileIcon.stroke} /> : null}</View>
       <View style={styles.flex}>
         <Text style={styles.title} >{w.product_name ?? t("insurancePolicy")}</Text>
         <View style={styles.providerRow}>

@@ -204,7 +204,7 @@ export default function Security() {
 
   return (
     <Screen>
-      <BrandHeader title={t("secPageTitle")} subtitle={t("secPageSubtitle")} back />
+      <BrandHeader title={t("secPageTitle")} subtitle={t("secPageSubtitle")} back right={null} />
       <SectionHeading title={t("secSignIn")} />
       <Card style={styles.card}>
         <View style={styles.row}>
@@ -255,20 +255,6 @@ export default function Security() {
           <ChevronRight size={20} color={colors.neutral500} />
         </View>
       </Card>
-      {(devices.data ?? []).slice(0, 3).map((d) => (
-        <Card key={d.id} style={styles.card} onPress={() => openDevice(d.id)} accessibilityLabel={t("devOpenDetail", { name: d.name })}>
-          <View style={styles.row}>
-            <TintedIcon icon={Smartphone} tint={d.current ? "green" : "neutral"} size={44} />
-            <View style={styles.flex}>
-              <View style={styles.topRow}>
-                <Text style={[styles.title, styles.grow]}>{d.name}</Text>
-                {d.current ? <StatusChip label={t("devThis")} tone="success" /> : null}
-              </View>
-              <Text style={styles.body}>{t("devLastSeen", { platform: d.platform, date: f.dateTime(d.last_seen_at) })}</Text>
-            </View>
-          </View>
-        </Card>
-      ))}
       <Text style={styles.body}>{t("signOutAllBody")}</Text>
       <Button label={t("signOutAll")} icon={LogOut} variant="danger" loading={busy === "all"} onPress={everywhere} />
       {message ? <Text accessibilityRole="alert" style={styles.error}>{message}</Text> : null}
@@ -283,8 +269,6 @@ const styles = StyleSheet.create({
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.neutral200, paddingTop: space.x3, minHeight: 48 },
   title: { ...type.label, fontSize: 16, lineHeight: 21, color: colors.navy950 },
   body: { ...type.body, fontSize: 13, lineHeight: 18, color: colors.neutral600 },
-  topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.x2 },
-  grow: { flexBasis: 100, flexGrow: 1, flexShrink: 1 },
   meta: { ...type.meta, color: colors.neutral600 },
   error: { ...type.meta, color: colors.dangerText },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View, Linking, Modal } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View, Linking, Modal } from "react-native";
 import { router } from "expo-router";
 import { BarChart3, ChevronRight, Download, FileText, Lock, Megaphone, MessageCircle, Pencil, ShieldCheck, Trash2, UsersRound, ClipboardList, FileSignature, Gavel, HandCoins, History } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -35,7 +35,7 @@ const PURPOSES: { code: Purpose; icon: LucideIcon; tint: Tint }[] = [
  * corrections go through a PRIVACY_REQUEST support case.
  */
 export default function Privacy() {
-  const { t, date } = useTranslation();
+  const { t, td, date } = useTranslation();
   const isAgent = useSession((st) => roleToPortal(st.activeWorkspace?.role_code) === "agent");
   const links = legalLinks(useRuntime((st) => st.bootstrap?.legal));
   const [showConsents, setShowConsents] = useState(false);
@@ -182,7 +182,7 @@ export default function Privacy() {
                       {r.due_on ? ` · ${t("privacyDue", { date: date(r.due_on) })}` : ""}
                     </Text>
                   </View>
-                  <StatusChip label={r.status} tone={["COMPLETED", "FULFILLED"].includes(r.status) ? "success" : "info"} />
+                  <StatusChip label={td(`dsrStatus_${r.status}`, r.status)} tone={["COMPLETED", "FULFILLED"].includes(r.status) ? "success" : r.status === "REJECTED" ? "danger" : "info"} />
                 </View>
               ))}
             </AgentCard>
@@ -234,7 +234,7 @@ export default function Privacy() {
         </CtaBar>
       }
     >
-      <BrandHeader title={t("privacyPageTitle")} subtitle={t("privacyPageSubtitle")} back />
+      <BrandHeader title={t("privacyPageTitle")} subtitle={t("privacyPageSubtitle")} back right={null} />
       <SectionHeading title={t("privacyConsentPrefs")} />
       {q.loading && !q.data ? <LoadingState /> : null}
       {q.error && !q.data ? <ErrorState error={q.error} onRetry={q.reload} /> : null}
@@ -287,7 +287,19 @@ export default function Privacy() {
         <Text style={styles.body}>{t("privacyYourDataBody")}</Text>
         <NavRow icon={Download} tint="blue" label={t("privacyExport")} busy={busy === "EXPORT"} onPress={() => void requestDsr("EXPORT")} />
         <NavRow icon={Pencil} tint="gold" label={t("privacyCorrection")} onPress={correction} />
-        <NavRow icon={Trash2} tint="red" danger label={t("privacyDelete")} busy={busy === "DELETE"} onPress={() => void requestDsr("DELETE")} />
+        <NavRow
+          icon={Trash2}
+          tint="red"
+          danger
+          label={t("privacyDelete")}
+          busy={busy === "DELETE"}
+          onPress={() =>
+            Alert.alert(t("privacyDeleteConfirmTitle"), t("privacyDeleteConfirmBody"), [
+              { text: t("cancel"), style: "cancel" },
+              { text: t("privacyDeleteConfirm"), style: "destructive", onPress: () => void requestDsr("DELETE") },
+            ])
+          }
+        />
         {(dsr.data ?? []).map((r) => (
           <View key={r.id} style={[styles.row, styles.divider]}>
             <View style={styles.flex}>
@@ -298,7 +310,7 @@ export default function Privacy() {
                 {r.due_on ? ` · ${t("privacyDue", { date: date(r.due_on) })}` : ""}
               </Text>
             </View>
-            <StatusChip label={r.status} tone={["COMPLETED", "FULFILLED"].includes(r.status) ? "success" : "info"} />
+            <StatusChip label={td(`dsrStatus_${r.status}`, r.status)} tone={["COMPLETED", "FULFILLED"].includes(r.status) ? "success" : r.status === "REJECTED" ? "danger" : "info"} />
           </View>
         ))}
       </Card>

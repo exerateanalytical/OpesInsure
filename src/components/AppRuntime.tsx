@@ -8,7 +8,7 @@ import { useSession } from "@/store/session";
 import { colors, space, type } from "@/theme/tokens";
 import { useResilience } from "@/store/resilience";
 import { useTranslation } from "@/i18n";
-import { onSessionExpired } from "@/api/client";
+import { AccountApi, onSessionExpired } from "@/api/client";
 import { useRuntime } from "@/store/runtime";
 import { RuntimeGateView } from "@/components/RuntimeGate";
 import { IssueReportButton } from "@/components/IssueReportButton";
@@ -90,6 +90,24 @@ export function AppRuntime({ children }: { children: ReactNode }) {
     if (status === "authenticated") void useTimezone.getState().load();
     else if (status === "anonymous") useTimezone.getState().reset();
   }, [status]);
+  // Push and SMS are written in users.locale. Keep it equal to the app
+  // language (also when it simply follows the device), not only after an
+  // explicit choice on the Language screen.
+  const language = useSession((s) => s.language);
+  const serverLocale = useSession((s) => s.bootstrap?.user?.locale);
+  const syncedLocale = useRef<string | null>(null);
+  useEffect(() => {
+    if (status !== "authenticated") {
+      syncedLocale.current = null;
+      return;
+    }
+    const previous = syncedLocale.current;
+    if (!serverLocale || (previous ?? serverLocale) === language) return;
+    syncedLocale.current = language;
+    AccountApi.setLocale(language).catch(() => {
+      syncedLocale.current = previous;
+    });
+  }, [status, language, serverLocale]);
   const envBanner = environmentBanner(runtime?.environment);
 
   const unlock = useCallback(async () => {

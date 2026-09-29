@@ -27,6 +27,12 @@ let localizeError: ErrorLocalizer | null = null;
 export const setApiErrorLocalizer = (fn: ErrorLocalizer) => {
   localizeError = fn;
 };
+/** Registered by src/i18n: the app language, sent as Accept-Language so the
+ * server answers in it (notification titles/bodies, master-data labels). */
+let currentApiLanguage: (() => string) | null = null;
+export const setApiLanguage = (fn: () => string) => {
+  currentApiLanguage = fn;
+};
 /** Localized copy for an error code, or null when it has no specific copy. */
 export const localizeErrorCode = (code: string, status?: number) => localizeError?.(code, status) ?? null;
 export class ApiError extends Error {
@@ -303,6 +309,7 @@ async function attemptRequest<T>(path: string, options: Options): Promise<T> {
       signal: controller.signal,
       headers: {
         Accept: "application/json",
+        ...(currentApiLanguage ? { "Accept-Language": currentApiLanguage() } : {}),
         ...(!multipart ? { "Content-Type": "application/json" } : {}),
         "X-Request-ID": Crypto.randomUUID(),
         ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
@@ -1804,6 +1811,11 @@ export type PolicyServiceCase = {
 export type CustomerNotification = {
   id: string;
   type: string;
+  /** Title/body arrive already in the app language (Accept-Language); code +
+   * params identify the message (backend NotificationCatalog). Older
+   * servers omit both. */
+  code?: string | null;
+  params?: Record<string, string | number | null>;
   title: string;
   body: string;
   read: boolean;

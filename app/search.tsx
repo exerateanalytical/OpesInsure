@@ -30,7 +30,7 @@ import { matchesQuery } from "@/lib/customerLogic";
 import { FiltersSheet, type FilterValues } from "@/components/customer/FiltersSheet";
 import { applyExploreFilters, exploreSections } from "@/components/customer/exploreFilters";
 import { useTranslation } from "@/i18n";
-import { colors, radius, space, type } from "@/theme/tokens";
+import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 const ROLES: SearchRole[] = ["customer", "agent", "broker", "carrier"];
 /** Local scopes (catalogue categories + licensed providers) shown to customers next to the API entity types. */
@@ -200,7 +200,7 @@ export default function GlobalSearch() {
               <View key={c.id} style={s.card}>
                 <View style={s.productRow}>
                   <View style={s.imageTile}>
-                    <Icon size={40} color={colors.navy800} strokeWidth={1.6} />
+                    <Icon size={tileIconSize(84)} color={colors.navy800} strokeWidth={tileIcon.stroke} />
                     <View style={s.imageTag}>
                       <Icon size={12} color={colors.white} />
                       <Text style={s.imageTagText}>{t(c.label)}</Text>
@@ -239,7 +239,7 @@ export default function GlobalSearch() {
               <View key={`${p.id}-${x.id}`} style={s.card}>
                 <View style={s.productRow}>
                   <View style={s.offerTile}>
-                    <Icon size={30} color={colors.navy800} strokeWidth={1.6} />
+                    <Icon size={tileIconSize(72)} color={colors.navy800} strokeWidth={tileIcon.stroke} />
                   </View>
                   <View style={s.flex}>
                     <Text style={s.cardTitle}>{x.name}</Text>
@@ -378,7 +378,7 @@ const s = StyleSheet.create({
   section: { gap: space.x3 },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.neutral200, borderRadius: radius.feature, padding: space.x4, gap: space.x3 },
   productRow: { flexDirection: "row", gap: space.x3 },
-  imageTile: { width: 112, height: 112, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  imageTile: { width: 112, height: 112, borderRadius: radius.card, backgroundColor: colors.blue50, alignItems: "center", justifyContent: "center", overflow: "hidden", paddingBottom: 28 /* icon fills the area above the line tag */ },
   imageTag: { position: "absolute", left: 8, bottom: 8, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.navy950, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
   imageTagText: { ...type.caption, color: colors.white },
   kicker: { ...type.eyebrow, color: colors.blue600, marginBottom: 2 },

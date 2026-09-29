@@ -9,6 +9,7 @@ import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { api } from "@/api/client";
 import { useTranslation } from "@/i18n";
+import { sectionPayload } from "@/lib/formSummary";
 import { buildFormPayload, initialFormValues, normalizeFormSchema, type FormName, type FormSchema } from "@/lib/inputForms";
 import { allFields, clearedDependents, isFieldVisible, validateStep } from "@/lib/riskSchema";
 import type { MasterValue } from "@/lib/masterFields";
@@ -79,6 +80,7 @@ export function SchemaForm({
   flat = false,
   submitIcon,
   onLocation,
+  only,
 }: {
   form: FormName;
   initialValues?: Record<string, string> | null;
@@ -95,6 +97,12 @@ export function SchemaForm({
   submitIcon?: React.ComponentProps<typeof Button>["icon"];
   /** Device position used to prefill town/region (null when cleared or opted out). */
   onLocation?: (fix: DeviceFix | null) => void;
+  /**
+   * Edit only these fields (one section of a larger form): the others are
+   * neither shown, validated nor sent, and a field emptied here is sent as
+   * null so the server really clears it.
+   */
+  only?: string[];
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -115,6 +123,7 @@ export function SchemaForm({
 
   const Wrap = (flat ? View : Card) as React.ComponentType<{ style?: object; children?: React.ReactNode }>;
   const fields = allFields(schema);
+  const inSection = (key: string) => !hide.includes(key) && (!only || only.includes(key));
   const setValue = (key: string, v: string) => {
     setValues((x) => ({ ...x, [key]: v, ...(x[key] !== v ? clearedDependents(fields, key) : {}) }));
     setErrors((x) => (x[key] ? { ...x, [key]: "" } : x));
@@ -122,14 +131,15 @@ export function SchemaForm({
   const setAny = (key: string, v: string) => setValues((x) => ({ ...x, [key]: v }));
 
   const submit = async () => {
-    const shown = schema.steps.map((s) => ({ ...s, fields: s.fields.filter((f) => !hide.includes(f.key)) }));
+    const shown = schema.steps.map((s) => ({ ...s, fields: s.fields.filter((f) => inSection(f.key)) }));
     const e = Object.assign({}, ...shown.map((s) => validateStep(s, values, lang))) as Record<string, string>;
     setErrors(e);
     if (Object.values(e).some(Boolean)) return;
     setBusy(true);
     setSubmitError(null);
     try {
-      await onSubmit(buildFormPayload(schema, values, labels), { values, schema });
+      const payload = buildFormPayload(schema, values, labels);
+      await onSubmit(only ? sectionPayload(payload, fields, only) : payload, { values, schema });
       if (resetOnSuccess) setValues(initialFormValues(schema));
     } catch (err) {
       setSubmitError(err);
@@ -141,7 +151,7 @@ export function SchemaForm({
   return (
     <>
       {schema.steps.map((step) => {
-        const visible = step.fields.filter((f) => !hide.includes(f.key) && isFieldVisible(f, values));
+        const visible = step.fields.filter((f) => inSection(f.key) && isFieldVisible(f, values));
         if (!visible.length) return null;
         return (
           <React.Fragment key={step.key}>

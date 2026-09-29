@@ -1,30 +1,20 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { View } from "react-native";
-import {
-  UserRound,
-  Compass,
-  FileText,
-  House,
-  ShieldCheck,
-} from "lucide-react-native";
-import { colors } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  customerTabBarIcon,
+  customerTabBarStyle,
+  customerTabColors,
+  customerTabLabelStyle,
+} from "@/components/customer/CustomerTabBar";
 
-const icon = (Icon: any) => {
-  function TabIcon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
-    return (
-      <View style={{ alignItems: "center" }}>
-        <View style={{ position: "absolute", top: -9, width: 36, height: 3, borderRadius: 2, backgroundColor: focused ? colors.gold500 : "transparent" }} />
-        <Icon color={color} size={size + 2} strokeWidth={focused ? 2.2 : 1.9} />
-      </View>
-    );
-  }
-  return TabIcon;
-};
-
-/** Customer bottom navigation: Home | Explore | Policies | Claims | Profile. */
+/**
+ * Customer bottom navigation: Home | Explore | Policies | Claims | Profile.
+ * Stack screens outside this navigator (quote, checkout, policy, claim...)
+ * show the same bar through CustomerScreenFrame (app/_layout.tsx); both use
+ * the shared design in src/components/customer/CustomerTabBar.tsx.
+ */
 export default function CustomerTabs() {
   const { t } = useTranslation();
   // SDK 54 is edge-to-edge on Android: without the bottom inset the tab bar
@@ -34,39 +24,32 @@ export default function CustomerTabs() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.gold600,
-        tabBarInactiveTintColor: colors.navy800,
-        tabBarStyle: {
-          height: 72 + insets.bottom,
-          paddingTop: 9,
-          paddingBottom: 8 + insets.bottom,
-          borderTopColor: colors.neutral200,
-          borderTopWidth: 1,
-          backgroundColor: colors.white,
-        },
-        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 12, lineHeight: 16, marginTop: 2 },
+        tabBarActiveTintColor: customerTabColors.active,
+        tabBarInactiveTintColor: customerTabColors.inactive,
+        tabBarStyle: customerTabBarStyle(insets.bottom),
+        tabBarLabelStyle: customerTabLabelStyle,
         tabBarAllowFontScaling: false,
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ title: t("home"), tabBarAccessibilityLabel: t("home"), tabBarIcon: icon(House) }}
+        options={{ title: t("home"), tabBarAccessibilityLabel: t("home"), tabBarIcon: customerTabBarIcon("home") }}
       />
       <Tabs.Screen
         name="explore"
-        options={{ title: t("explore"), tabBarAccessibilityLabel: t("explore"), tabBarIcon: icon(Compass) }}
+        options={{ title: t("explore"), tabBarAccessibilityLabel: t("explore"), tabBarIcon: customerTabBarIcon("explore") }}
       />
       <Tabs.Screen
         name="policies"
-        options={{ title: t("policies"), tabBarAccessibilityLabel: t("policies"), tabBarIcon: icon(FileText) }}
+        options={{ title: t("policies"), tabBarAccessibilityLabel: t("policies"), tabBarIcon: customerTabBarIcon("policies") }}
       />
       <Tabs.Screen
         name="claims"
-        options={{ title: t("claims"), tabBarAccessibilityLabel: t("claims"), tabBarIcon: icon(ShieldCheck) }}
+        options={{ title: t("claims"), tabBarAccessibilityLabel: t("claims"), tabBarIcon: customerTabBarIcon("claims") }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: t("profile"), tabBarAccessibilityLabel: t("profile"), tabBarIcon: icon(UserRound) }}
+        options={{ title: t("profile"), tabBarAccessibilityLabel: t("profile"), tabBarIcon: customerTabBarIcon("profile") }}
       />
       {/* The comparison screen (purchase flow) stays routable, reached from
           Home / Explore "Compare Insurance", but is no longer a tab. */}

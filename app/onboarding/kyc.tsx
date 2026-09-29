@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { BadgeCheck, Camera, CheckCircle2, CircleAlert, ClipboardList, Fingerprint, IdCard, Images, ShieldAlert, ShieldCheck, UserRound } from "lucide-react-native";
+import { BadgeCheck, Camera, CheckCircle2, CircleAlert, ClipboardList, Fingerprint, IdCard, Images, Plus, ShieldAlert, ShieldCheck, UserRound } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { BrandArt } from "@/components/design/BrandArt";
 import { SchemaForm } from "@/components/forms/SchemaForm";
+import { SummaryCard, SummaryField } from "@/components/forms/SchemaSummary";
 import { ChoiceChips } from "@/components/portal/Workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
@@ -42,6 +43,8 @@ export default function Kyc() {
   const [busy, setBusy] = useState<"photo" | "attach" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Identity numbers on file read as a summary; the form opens when none is on file or to add another.
+  const [addingId, setAddingId] = useState(false);
 
   const run = async (kind: "photo" | "attach" | "submit", fn: () => Promise<void>) => {
     setBusy(kind);
@@ -175,29 +178,36 @@ export default function Kyc() {
 
               <Banner icon={ShieldCheck} tint="blue" title={t("kycWhyTitle")} body={t("kycWhyBody")} />
 
-              <Card style={styles.card}>
-                <SectionHeading title={t("kycStep1")} icon={Fingerprint} />
-                {k.identifiers.map((i) => (
-                  <View key={`${i.type}-${i.masked_value}`} style={styles.row}>
-                    <CheckCircle2 size={18} color={i.verified_at ? colors.success : colors.neutral500} />
-                    <Text style={styles.body}>
-                      {td(`idType_${i.type}`, i.type)} · {i.masked_value}
-                    </Text>
-                  </View>
+              <SummaryCard icon={Fingerprint} title={t("kycStep1")} onCancel={editable && addingId && k.identifiers.length ? () => setAddingId(false) : undefined}>
+                {k.identifiers.map((i, n) => (
+                  <SummaryField
+                    key={`${i.type}-${i.masked_value}`}
+                    first={n === 0}
+                    label={td(`idType_${i.type}`, i.type)}
+                    value={i.masked_value}
+                    right={<StatusChip label={i.verified_at ? t("portalVerified") : t("portalNotVerified")} tone={i.verified_at ? "success" : "warning"} />}
+                  />
                 ))}
-              </Card>
-              {editable ? (
-                <SchemaForm
-                  form="kyc_identifier"
-                  submitLabel={t("kycSaveIdentifier")}
-                  resetOnSuccess
-                  onSubmit={async (payload) => {
-                    setError(null);
-                    q.setData(await CustomerApi.addIdentifier(payload as Parameters<typeof CustomerApi.addIdentifier>[0]));
-                    setNotice(t("kycIdentifierSaved"));
-                  }}
-                />
-              ) : null}
+                {!k.identifiers.length && !editable ? <SummaryField first label={t("kycStep1")} value={null} /> : null}
+                {editable && (addingId || !k.identifiers.length) ? (
+                  <View style={[styles.idForm, k.identifiers.length ? styles.idFormDivider : null]}>
+                  <SchemaForm
+                    form="kyc_identifier"
+                    flat
+                    submitLabel={t("kycSaveIdentifier")}
+                    resetOnSuccess
+                    onSubmit={async (payload) => {
+                      setError(null);
+                      q.setData(await CustomerApi.addIdentifier(payload as Parameters<typeof CustomerApi.addIdentifier>[0]));
+                      setAddingId(false);
+                      setNotice(t("kycIdentifierSaved"));
+                    }}
+                  />
+                  </View>
+                ) : editable ? (
+                  <Button label={t("kycAddAnotherId")} icon={Plus} variant="tertiary" onPress={() => setAddingId(true)} />
+                ) : null}
+              </SummaryCard>
 
               <Card style={styles.card}>
                 <SectionHeading title={t("kycStep2")} icon={IdCard} />
@@ -280,6 +290,8 @@ const styles = StyleSheet.create({
   meta: { ...type.meta, color: colors.neutral600 },
   warn: { ...type.meta, color: colors.warningText },
   row: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  idForm: { gap: space.x3 },
+  idFormDivider: { borderTopWidth: 1, borderTopColor: colors.neutral100, paddingTop: space.x3 },
   error: { ...type.meta, color: colors.dangerText },
   notice: { ...type.meta, color: colors.successText },
 });
