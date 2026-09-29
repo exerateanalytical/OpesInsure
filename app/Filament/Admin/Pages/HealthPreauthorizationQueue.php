@@ -37,7 +37,12 @@ final class HealthPreauthorizationQueue extends HealthQueuePage
 
     protected function workflowActions(): array
     {
-        return HealthProviderActions::preauth();
+        return [...HealthProviderActions::preauth(), ...\App\Filament\Shared\Actions\ProviderPortalActions::preauth()];
+    }
+
+    protected function headerWorkflowActions(): array
+    {
+        return [\App\Filament\Shared\Actions\ProviderPortalActions::preauthRequest()];
     }
 
     protected function detail(string $tenantId, string $id): array

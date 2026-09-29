@@ -5,7 +5,7 @@
 @include('public.account.partials.customer-assets')
 <div class="agrid main-side op-ms380">
   <section class="acard" data-page-body></section>
-  <div style="display:grid;gap:16px;align-content:start"><section class="acard" data-new></section><section class="acard" data-sos></section></div>
+  <div style="display:grid;gap:16px;align-content:start"><section class="acard" data-new></section><section class="acard" data-sos></section><section class="acard" data-issue></section></div>
 </div>
 @endsection
 @push('scripts')
@@ -52,6 +52,16 @@ Opes.page(function (ctx) {
     Opes.clear(sb).append(h('h2', null, S.title), h('p', { class: 'sub' }, S.text), sf);
   }).catch(function () { sb.remove(); });
 
+  // Report a problem with the site (batch 12): POST /mobile/issue-reports {route, note, platform}.
+  var SX = window.OPES_SUPX = @json(__('support_actions.portal')), ib = $('[data-issue]');
+  var isend = h('button', { type: 'submit', class: 'dbtn dbtn-outline wide' }, Opes.icon('send'), SX.issue_send);
+  var iform = h('form', { style: 'display:grid;gap:12px', 'data-issue-form': '', onsubmit: function (e) {
+    e.preventDefault(); var note = iform.elements.note.value.trim(); if (note.length < 3) return; Opes.busy(isend, true);
+    Opes.api('/mobile/issue-reports', { body: { route: location.pathname, note: note, platform: 'web' } }).then(function () { Opes.alert(SX.issue_done, 'ok'); iform.reset(); })
+      .catch(function (err) { Opes.alert(err.message); }).finally(function () { Opes.busy(isend, false); });
+  } }, h('label', { class: 'afield-s' }, h('span', null, SX.issue_note), h('textarea', { name: 'note', required: true, minlength: 3, maxlength: 2000, rows: 3 })), isend);
+  Opes.clear(ib).append(h('h2', null, SX.issue_title), h('p', { class: 'sub' }, SX.issue_text), iform);
+
   function thread(c, holder) {
     Opes.loading(holder);
     Opes.api('/mobile/support/cases/' + c.id).then(function (full) {
@@ -73,6 +83,14 @@ Opes.page(function (ctx) {
           Opes.api('/mobile/support/cases/' + c.id + '/attachments', { method: 'POST', body: fd }).then(function () { Opes.alert(AT.done, 'ok'); thread(c, holder); }).catch(function (e) { Opes.busy(ab, false); Opes.alert(e.message); });
         } }, Opes.icon('doc'), AT.send);
         holder.appendChild(h('div', { class: 'afield-s', style: 'margin-top:10px' }, h('span', null, AT.label), fi, h('div', { class: 'btnbar', style: 'margin-top:6px' }, ab)));
+      }
+      // Escalation (batch 12): POST /mobile/support/cases/{id}/escalate {reason?} — once per case; the API refuses closed cases.
+      if (!/CLOSED|RESOLVED|CANCELLED/.test(String(full.status).toUpperCase()) && !full.escalated_at) {
+        var eb = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-escalate': c.id, onclick: function () {
+          var why = window.prompt(SX.escalate_reason, ''); if (why === null) return; Opes.busy(eb, true);
+          Opes.api('/mobile/support/cases/' + c.id + '/escalate', { body: { reason: why.trim() || null } }).then(function () { Opes.alert(SX.escalated, 'ok'); thread(c, holder); }).catch(function (e) { Opes.busy(eb, false); Opes.alert(e.message); });
+        } }, Opes.icon('bell'), SX.escalate);
+        holder.appendChild(h('div', { class: 'btnbar', style: 'margin-top:10px;justify-content:flex-start' }, eb));
       }
       if (!/CLOSED|RESOLVED/.test(String(full.status).toUpperCase())) holder.appendChild(h('div', { class: 'afield-s', style: 'margin-top:10px' }, h('span', null, U.reply), ta, h('div', { class: 'btnbar', style: 'margin-top:6px' }, b)));
     }).catch(function (e) { Opes.fail(holder, e); });

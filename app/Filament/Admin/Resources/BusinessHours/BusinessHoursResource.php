@@ -69,7 +69,7 @@ final class BusinessHoursResource extends \App\Filament\Shared\LocalizedResource
             Tables\Columns\TextColumn::make('closes'),
             \App\Filament\Shared\Columns::date('valid_from', false),
             \App\Filament\Shared\Columns::date('valid_to', false)->placeholder('open-ended'),
-        ])->recordActions([Actions\EditAction::make()]);
+        ])->recordActions([\App\Filament\Shared\Actions\CalendarActions::hoursEnd(), Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

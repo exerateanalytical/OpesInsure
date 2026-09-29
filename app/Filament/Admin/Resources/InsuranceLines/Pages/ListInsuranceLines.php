@@ -3,4 +3,9 @@ namespace App\Filament\Admin\Resources\InsuranceLines\Pages;
 use App\Filament\Admin\Resources\InsuranceLines\InsuranceLineResource;use Filament\Resources\Pages\ListRecords;
 final class ListInsuranceLines extends ListRecords{
     use \App\Filament\Shared\Concerns\OpensViewPage;
-protected static string $resource=InsuranceLineResource::class;}
+protected static string $resource=InsuranceLineResource::class;
+    protected function getHeaderActions(): array
+    {
+        return [\App\Filament\Shared\Actions\CatalogueActions::createLine()];
+    }
+}

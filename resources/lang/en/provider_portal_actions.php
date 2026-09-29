@@ -1,0 +1,43 @@
+<?php
+
+// UI coverage batches 16/17 — provider network and provider-side health actions (ProviderPortalActions, FacilitiesPage department form).
+return [
+    'result' => 'Eligibility result',
+    'screens' => ['provider_register' => 'Health providers', 'benefit_schedules' => 'Benefit schedules'],
+    'providerRegister' => ['label' => 'Register provider', 'help' => 'Creates the provider in PROSPECT status.', 'done' => 'Provider registered'],
+    'providerCredential' => ['label' => 'Credentialing', 'help' => 'Moves the provider to the next credentialing status.', 'done' => 'Credentialing status changed'],
+    'providerAddFacility' => ['label' => 'Add facility', 'done' => 'Facility added'],
+    'providerAddFacilityService' => ['label' => 'Add facility service', 'done' => 'Service added to the facility'],
+    'providerMapCode' => ['label' => 'Map provider code', 'done' => 'Provider code mapped'],
+    'providerRelate' => ['label' => 'Add relationship', 'done' => 'Relationship recorded'],
+    'medicalServiceAdd' => ['label' => 'Add medical service', 'done' => 'Medical service added'],
+    'benefitScheduleCreate' => ['label' => 'New benefit schedule line', 'done' => 'Benefit schedule line created'],
+    'eligibilityCheck' => ['label' => 'Check eligibility', 'done' => 'Eligibility checked'],
+    'eligibilityScan' => ['label' => 'Scan health card', 'done' => 'Health card scanned'],
+    'preauthRequest' => ['label' => 'New pre-authorization', 'help' => 'Request on behalf of a provider. Type fields go in Details.', 'done' => 'Pre-authorization requested'],
+    'preauthProvideInfo' => ['label' => 'Provide information', 'done' => 'Information provided'],
+    'preauthAdmit' => ['label' => 'Record admission', 'done' => 'Admission recorded'],
+    'preauthDischarge' => ['label' => 'Record discharge', 'done' => 'Discharge recorded'],
+    'preauthRequestExtension' => ['label' => 'Request stay extension', 'done' => 'Extension requested'],
+    'providerClaimCreate' => ['label' => 'Capture provider claim', 'done' => 'Provider claim captured'],
+    'providerClaimSubmit' => ['label' => 'Submit claim', 'done' => 'Claim submitted'],
+    'providerClaimDispute' => ['label' => 'Dispute decision', 'done' => 'Dispute opened'],
+    'fields' => [
+        'category' => 'Category', 'name' => 'Name', 'provider_type_code' => 'Provider type', 'registration_number' => 'Registration number',
+        'city_code' => 'City', 'region_code' => 'Region', 'to_status' => 'New status', 'reason' => 'Reason', 'evidence_reference' => 'Evidence reference',
+        'code' => 'Code', 'facility_type_code' => 'Facility type', 'address' => 'Address', 'facility' => 'Facility', 'medical_service' => 'Medical service',
+        'specialty_code' => 'Specialty', 'provider_code' => 'Provider code', 'to_party' => 'Related party', 'relationship_type' => 'Relationship',
+        'valid_from' => 'Valid from', 'valid_to' => 'Valid to', 'category_code' => 'Service category', 'product' => 'Product', 'benefit_code' => 'Benefit code',
+        'period_basis' => 'Period', 'scope' => 'Scope', 'period_limit_minor' => 'Period limit', 'per_event_limit_minor' => 'Per-event limit',
+        'copay_bp' => 'Co-pay (basis points)', 'waiting_period_days' => 'Waiting period (days)', 'currency' => 'Currency', 'effective_from' => 'Effective from',
+        'effective_until' => 'Effective until', 'member_ref' => 'Member reference', 'provider' => 'Provider', 'service_code' => 'Service code',
+        'service_date' => 'Service date', 'qr' => 'Card QR payload', 'request_type' => 'Request type', 'policy_id' => 'Policy ID',
+        'clinical_notes' => 'Clinical notes', 'details' => 'Details', 'lines' => 'Lines', 'quantity' => 'Quantity', 'unit_price_minor' => 'Unit price',
+        'answer' => 'Answer', 'admitted_on' => 'Admitted on', 'discharged_on' => 'Discharged on', 'requested_until' => 'Requested until',
+        'contract' => 'Contract', 'invoice_reference' => 'Invoice reference', 'preauth_id' => 'Pre-authorization ID',
+    ],
+    'department' => [
+        'heading' => 'Add department or service unit', 'facility' => 'Facility', 'code' => 'Code', 'name' => 'Name', 'level' => 'Level',
+        'level_department' => 'Department', 'level_service_unit' => 'Service unit', 'parent' => 'Parent department', 'specialty' => 'Specialty', 'submit' => 'Add',
+    ],
+];

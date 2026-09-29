@@ -11,6 +11,7 @@
     <a class="dbtn dbtn-outline sm" href="/account/privacy">{{ __('account.side.privacy') }}</a>
     <a class="dbtn dbtn-outline sm" href="/account/requests">{{ __('account.side.requests') }}</a>
   </div></section>
+  @include('public.account.partials.account-security')
 </div>
 @endsection
 @push('scripts')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Cases\Http;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Cases\CalendarAdminService;
 use App\Application\Cases\CaseProblem;
 use App\Application\Cases\CaseTypeService;
 use App\Application\Cases\CaseVisibility;
@@ -53,32 +54,22 @@ final class CaseAdminController
             ->orderBy('jurisdiction')->orderBy('weekday')->orderBy('opens')->get()]);
     }
 
-    public function addHours(Request $r): JsonResponse
+    public function addHours(Request $r, CalendarAdminService $calendars): JsonResponse
     {
         $d = $r->validate([
             'jurisdiction' => 'required|string|size:2', 'branch_id' => 'nullable|uuid', 'weekday' => 'required|integer|between:1,7',
             'opens' => 'required|date_format:H:i', 'closes' => 'required|date_format:H:i|after:opens', 'valid_from' => 'required|date', 'valid_to' => 'nullable|date|after_or_equal:valid_from',
         ]);
-        $this->assertBranch($d['branch_id'] ?? null);
-        $row = CalendarBusinessHours::create($d + ['created_by' => $r->user()->id]);
-        $this->audit->record('calendar.business_hours.added', 'calendar_business_hours', $row->id, $d);
 
-        return response()->json(['data' => $row], 201);
+        return response()->json(['data' => $calendars->addHours($d, $r->user())], 201);
     }
 
     /** Hours are never deleted; they are end-dated (history stays explainable). */
-    public function endHours(Request $r, string $id): JsonResponse
+    public function endHours(Request $r, string $id, CalendarAdminService $calendars): JsonResponse
     {
         $d = $r->validate(['valid_to' => 'required|date']);
-        $row = CalendarBusinessHours::findOrFail($id);
-        if ($row->branch_id) {
-            $this->assertBranch($row->branch_id);
-        }
-        $old = ['valid_to' => $row->valid_to?->toDateString()];
-        $row->update(['valid_to' => $d['valid_to']]);
-        $this->audit->recordChange('calendar.business_hours.ended', 'calendar_business_hours', $row->id, $old, $d, 'END_DATED');
 
-        return response()->json(['data' => $row->refresh()]);
+        return response()->json(['data' => $calendars->endHours($id, $d['valid_to'])]);
     }
 
     public function exceptions(Request $r): JsonResponse
@@ -91,17 +82,14 @@ final class CaseAdminController
             ->orderBy('date')->get()]);
     }
 
-    public function addException(Request $r): JsonResponse
+    public function addException(Request $r, CalendarAdminService $calendars): JsonResponse
     {
         $d = $r->validate([
             'jurisdiction' => 'required|string|size:2', 'branch_id' => 'nullable|uuid', 'date' => 'required|date_format:Y-m-d',
             'kind' => 'required|in:HOLIDAY,CLOSURE,EXTRA_DAY', 'label' => 'required|string|max:160', 'source_reference' => 'nullable|string|max:255',
         ]);
-        $this->assertBranch($d['branch_id'] ?? null);
-        $row = CalendarException::create($d + ['created_by' => $r->user()->id]);
-        $this->audit->record('calendar.exception.added', 'calendar_exception', $row->id, $d);
 
-        return response()->json(['data' => $row], 201);
+        return response()->json(['data' => $calendars->addException($d, $r->user())], 201);
     }
 
     /** Diagnostic: due instant for N business minutes from `from` (ICE §6.11 test 1 by hand). */

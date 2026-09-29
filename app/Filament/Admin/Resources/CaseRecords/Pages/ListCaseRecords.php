@@ -10,4 +10,9 @@ use Filament\Resources\Pages\ListRecords;
 final class ListCaseRecords extends ListRecords
 {
     protected static string $resource = CaseRecordResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return \App\Filament\Shared\Actions\SupportActions::caseListHeader();
+    }
 }

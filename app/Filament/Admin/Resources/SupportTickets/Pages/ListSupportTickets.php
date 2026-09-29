@@ -1,1 +1,6 @@
-<?php namespace App\Filament\Admin\Resources\SupportTickets\Pages;use App\Filament\Admin\Resources\SupportTickets\SupportTicketResource;use Filament\Resources\Pages\ListRecords;final class ListSupportTickets extends ListRecords{protected static string $resource=SupportTicketResource::class;}
+<?php namespace App\Filament\Admin\Resources\SupportTickets\Pages;use App\Filament\Admin\Resources\SupportTickets\SupportTicketResource;use Filament\Resources\Pages\ListRecords;final class ListSupportTickets extends ListRecords{protected static string $resource=SupportTicketResource::class;
+    protected function getHeaderActions(): array
+    {
+        return [\App\Filament\Shared\Actions\SupportActions::ticketOpen()];
+    }
+}

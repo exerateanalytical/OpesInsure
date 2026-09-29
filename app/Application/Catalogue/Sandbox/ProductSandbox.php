@@ -65,6 +65,13 @@ final class ProductSandbox
         return $case;
     }
 
+    /** DELETE catalogue/test-cases/{case} (API and staff desktop): removes one case from the version's pack. */
+    public function removeCase(ProductTestCase $case, User $actor): void
+    {
+        $case->delete();
+        $this->audit->record('catalogue.test_case.deleted', 'insurance_product', $case->insurance_product_id, ['code' => $case->code]);
+    }
+
     /** Runs every case of the version's pack; persists only the evidence row. */
     public function runPack(InsuranceProduct $v, User $actor): ProductTestRun
     {

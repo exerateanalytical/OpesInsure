@@ -1,0 +1,43 @@
+<?php
+
+// Lots de couverture UI 16/17 — réseau de prestataires et actions santé côté prestataire.
+return [
+    'result' => 'Résultat d’éligibilité',
+    'screens' => ['provider_register' => 'Prestataires de santé', 'benefit_schedules' => 'Barèmes de garanties'],
+    'providerRegister' => ['label' => 'Enregistrer un prestataire', 'help' => 'Crée le prestataire au statut PROSPECT.', 'done' => 'Prestataire enregistré'],
+    'providerCredential' => ['label' => 'Agrément', 'help' => 'Fait passer le prestataire au statut d’agrément suivant.', 'done' => 'Statut d’agrément modifié'],
+    'providerAddFacility' => ['label' => 'Ajouter un établissement', 'done' => 'Établissement ajouté'],
+    'providerAddFacilityService' => ['label' => 'Ajouter un service à l’établissement', 'done' => 'Service ajouté à l’établissement'],
+    'providerMapCode' => ['label' => 'Associer un code prestataire', 'done' => 'Code prestataire associé'],
+    'providerRelate' => ['label' => 'Ajouter une relation', 'done' => 'Relation enregistrée'],
+    'medicalServiceAdd' => ['label' => 'Ajouter un acte médical', 'done' => 'Acte médical ajouté'],
+    'benefitScheduleCreate' => ['label' => 'Nouvelle ligne de barème', 'done' => 'Ligne de barème créée'],
+    'eligibilityCheck' => ['label' => 'Vérifier l’éligibilité', 'done' => 'Éligibilité vérifiée'],
+    'eligibilityScan' => ['label' => 'Scanner la carte santé', 'done' => 'Carte santé scannée'],
+    'preauthRequest' => ['label' => 'Nouvelle prise en charge', 'help' => 'Demande pour le compte d’un prestataire. Les champs du type vont dans Détails.', 'done' => 'Prise en charge demandée'],
+    'preauthProvideInfo' => ['label' => 'Fournir les informations', 'done' => 'Informations fournies'],
+    'preauthAdmit' => ['label' => 'Enregistrer l’admission', 'done' => 'Admission enregistrée'],
+    'preauthDischarge' => ['label' => 'Enregistrer la sortie', 'done' => 'Sortie enregistrée'],
+    'preauthRequestExtension' => ['label' => 'Demander une prolongation', 'done' => 'Prolongation demandée'],
+    'providerClaimCreate' => ['label' => 'Saisir une facture prestataire', 'done' => 'Facture prestataire saisie'],
+    'providerClaimSubmit' => ['label' => 'Soumettre la facture', 'done' => 'Facture soumise'],
+    'providerClaimDispute' => ['label' => 'Contester la décision', 'done' => 'Contestation ouverte'],
+    'fields' => [
+        'category' => 'Catégorie', 'name' => 'Nom', 'provider_type_code' => 'Type de prestataire', 'registration_number' => 'Numéro d’enregistrement',
+        'city_code' => 'Ville', 'region_code' => 'Région', 'to_status' => 'Nouveau statut', 'reason' => 'Motif', 'evidence_reference' => 'Référence du justificatif',
+        'code' => 'Code', 'facility_type_code' => 'Type d’établissement', 'address' => 'Adresse', 'facility' => 'Établissement', 'medical_service' => 'Acte médical',
+        'specialty_code' => 'Spécialité', 'provider_code' => 'Code prestataire', 'to_party' => 'Partie liée', 'relationship_type' => 'Relation',
+        'valid_from' => 'Valide du', 'valid_to' => 'Valide au', 'category_code' => 'Catégorie d’acte', 'product' => 'Produit', 'benefit_code' => 'Code garantie',
+        'period_basis' => 'Période', 'scope' => 'Portée', 'period_limit_minor' => 'Plafond de période', 'per_event_limit_minor' => 'Plafond par événement',
+        'copay_bp' => 'Ticket modérateur (points de base)', 'waiting_period_days' => 'Délai de carence (jours)', 'currency' => 'Devise', 'effective_from' => 'Effet du',
+        'effective_until' => 'Effet jusqu’au', 'member_ref' => 'Référence assuré', 'provider' => 'Prestataire', 'service_code' => 'Code acte',
+        'service_date' => 'Date de soins', 'qr' => 'Contenu QR de la carte', 'request_type' => 'Type de demande', 'policy_id' => 'ID de police',
+        'clinical_notes' => 'Notes cliniques', 'details' => 'Détails', 'lines' => 'Lignes', 'quantity' => 'Quantité', 'unit_price_minor' => 'Prix unitaire',
+        'answer' => 'Réponse', 'admitted_on' => 'Admis le', 'discharged_on' => 'Sorti le', 'requested_until' => 'Demandé jusqu’au',
+        'contract' => 'Contrat', 'invoice_reference' => 'Référence facture', 'preauth_id' => 'ID de prise en charge',
+    ],
+    'department' => [
+        'heading' => 'Ajouter un département ou une unité de soins', 'facility' => 'Établissement', 'code' => 'Code', 'name' => 'Nom', 'level' => 'Niveau',
+        'level_department' => 'Département', 'level_service_unit' => 'Unité de soins', 'parent' => 'Département parent', 'specialty' => 'Spécialité', 'submit' => 'Ajouter',
+    ],
+];

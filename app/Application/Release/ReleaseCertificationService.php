@@ -2,7 +2,7 @@
 namespace App\Application\Release;
 
 use App\Domain\Release\ReleaseGate;
-use App\Models\{ReleaseCandidate,ReleaseGateResult,SecurityFinding};
+use App\Models\{RecoveryExercise,ReleaseCandidate,ReleaseGateResult,SecurityFinding};
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +23,18 @@ final class ReleaseCertificationService
             ['release_candidate_id'=>$candidate->getKey(),'gate'=>$gate->value],
             ['status'=>$status,'evidence'=>$evidence,'evidence_hash'=>hash('sha256',$canonical),'assessed_by'=>$actor->getKey(),'assessed_at'=>now()]
         );
+    }
+
+    /** Security finding against the platform (optionally a release candidate): an open HIGH / CRITICAL one blocks certification. */
+    public function recordFinding(array $data): SecurityFinding
+    {
+        return SecurityFinding::query()->create($data);
+    }
+
+    /** Disaster-recovery exercise, planned with its RTO / RPO targets. */
+    public function planRecoveryExercise(array $data): RecoveryExercise
+    {
+        return RecoveryExercise::query()->create([...$data,'status'=>'PLANNED']);
     }
 
     public function certify(ReleaseCandidate $candidate, User $actor, int $expectedVersion): ReleaseCandidate

@@ -15,6 +15,6 @@ final class ListMasterDataReviews extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [\App\Filament\Shared\Actions\MasterDataOwnershipActions::suggest()];
     }
 }

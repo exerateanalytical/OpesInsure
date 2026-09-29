@@ -10,4 +10,9 @@ use App\Filament\Shared\Pages\RecordDetailPage;
 final class ViewVehicleVariant extends RecordDetailPage
 {
     protected static string $resource = VehicleVariantResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [...parent::getHeaderActions(), ...\App\Filament\Shared\Actions\VehiclePowerActions::variantActions()];
+    }
 }

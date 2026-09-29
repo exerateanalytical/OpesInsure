@@ -68,7 +68,7 @@ final class WorkQueueResource extends \App\Filament\Shared\LocalizedResource
             Tables\Columns\TextColumn::make('routing_rule')->badge(),
             Tables\Columns\IconColumn::make('is_default')->boolean(),
             Tables\Columns\IconColumn::make('active')->boolean(),
-        ])->recordActions([\App\Filament\Shared\Actions\WorkQueueActions::claimNext(), Actions\EditAction::make()]);
+        ])->recordActions([\App\Filament\Shared\Actions\WorkQueueActions::claimNext(), \App\Filament\Shared\Actions\OperationsConsoleActions::queueSetType(), Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

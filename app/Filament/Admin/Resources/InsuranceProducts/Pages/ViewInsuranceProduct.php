@@ -82,6 +82,7 @@ final class ViewInsuranceProduct extends ViewRecord
                     DatePicker::make('next_review_date')->label(__('product_builder.governance.review_date')),
                 ])
                 ->action(fn (array $d) => $this->done(ServiceValidation::run(fn () => $gov->updateAttributes($this->record, $d, auth()->user())), 'advanced')),
+            \App\Filament\Shared\Actions\CatalogueActions::versionGroup(),
         ];
     }
 

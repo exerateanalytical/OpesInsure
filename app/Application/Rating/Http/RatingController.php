@@ -42,26 +42,20 @@ final class RatingController
         return response()->json(['data' => [...$t->toArray(), 'history' => $history]]);
     }
 
-    public function reject(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, 'reject', $s); }
+    public function reject(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, fn (TariffVersion $t, array $d) => $s->reject($t, $r->user(), $d['notes'])); }
 
-    public function schedule(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, 'schedule', $s); }
+    public function schedule(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, fn (TariffVersion $t, array $d) => $s->schedule($t, $r->user(), $d['notes'])); }
 
-    public function activate(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, 'activate', $s); }
+    public function activate(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, fn (TariffVersion $t, array $d) => $s->activate($t, $r->user(), $d['notes'])); }
 
-    public function expire(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, 'expire', $s); }
+    public function expire(Request $r, string $tariff, TariffGovernanceService $s): JsonResponse { return $this->transition($r, $tariff, fn (TariffVersion $t, array $d) => $s->expire($t, $r->user(), $d['notes'], $d['effective_until'] ?? null)); }
 
-    private function transition(Request $r, string $tariff, string $event, TariffGovernanceService $s): JsonResponse
+    /** @param callable(TariffVersion, array): TariffVersion $call */
+    private function transition(Request $r, string $tariff, callable $call): JsonResponse
     {
         $d = $r->validate(['notes' => 'required|string|min:10|max:2000', 'effective_until' => 'nullable|date']);
-        $t = TariffVersion::findOrFail($tariff);
-        $t = match ($event) {
-            'reject' => $s->reject($t, $r->user(), $d['notes']),
-            'schedule' => $s->schedule($t, $r->user(), $d['notes']),
-            'activate' => $s->activate($t, $r->user(), $d['notes']),
-            'expire' => $s->expire($t, $r->user(), $d['notes'], $d['effective_until'] ?? null),
-        };
 
-        return response()->json(['data' => $t]);
+        return response()->json(['data' => $call(TariffVersion::findOrFail($tariff), $d)]);
     }
 
     public function chargeCodes(): JsonResponse

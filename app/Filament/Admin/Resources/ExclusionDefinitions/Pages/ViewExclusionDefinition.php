@@ -10,4 +10,9 @@ use App\Filament\Shared\Pages\RecordDetailPage;
 final class ViewExclusionDefinition extends RecordDetailPage
 {
     protected static string $resource = ExclusionDefinitionResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [...parent::getHeaderActions(), \App\Filament\Shared\Actions\CatalogueActions::draftLegalText(), \App\Filament\Shared\Actions\CatalogueActions::approveLegalText()];
+    }
 }

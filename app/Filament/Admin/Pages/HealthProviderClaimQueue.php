@@ -38,7 +38,12 @@ final class HealthProviderClaimQueue extends HealthQueuePage
 
     protected function workflowActions(): array
     {
-        return HealthProviderActions::providerClaim();
+        return [...HealthProviderActions::providerClaim(), ...\App\Filament\Shared\Actions\ProviderPortalActions::providerClaim()];
+    }
+
+    protected function headerWorkflowActions(): array
+    {
+        return [\App\Filament\Shared\Actions\ProviderPortalActions::providerClaimCreate()];
     }
 
     protected function detail(string $tenantId, string $id): array

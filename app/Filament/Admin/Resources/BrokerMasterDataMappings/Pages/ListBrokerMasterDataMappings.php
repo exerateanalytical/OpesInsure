@@ -15,6 +15,6 @@ final class ListBrokerMasterDataMappings extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [\Filament\Actions\CreateAction::make()];
+        return [\Filament\Actions\CreateAction::make(), \App\Filament\Shared\Actions\MasterDataOwnershipActions::mapForBroker()];
     }
 }

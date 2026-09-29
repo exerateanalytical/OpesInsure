@@ -117,7 +117,7 @@ final class ProductGovernanceController
     {
         $c = ProductTestCase::findOrFail($case);
         $this->version($r, $c->insurance_product_id);
-        $c->delete();
+        $this->sandbox->removeCase($c, $r->user());
 
         return response()->json(null, 204);
     }

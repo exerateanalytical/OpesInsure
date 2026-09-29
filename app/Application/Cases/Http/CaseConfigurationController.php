@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Cases\Http;
 
 use App\Application\Audit\AuditWriter;
+use App\Application\Cases\CalendarAdminService;
 use App\Application\Cases\CaseProblem;
 use App\Application\Cases\CaseService;
 use App\Application\Cases\CaseTypeCatalogue;
@@ -133,35 +134,23 @@ final class CaseConfigurationController
             ->orderBy('jurisdiction')->orderBy('starts')->get()]);
     }
 
-    public function addBreak(Request $r): JsonResponse
+    public function addBreak(Request $r, CalendarAdminService $calendars): JsonResponse
     {
         $d = $r->validate([
             'jurisdiction' => 'required|string|size:2', 'branch_id' => 'nullable|uuid', 'weekday' => 'nullable|integer|between:1,7',
             'starts' => 'required|date_format:H:i', 'ends' => 'required|date_format:H:i|after:starts', 'label' => 'nullable|string|max:120',
             'valid_from' => 'required|date', 'valid_to' => 'nullable|date|after_or_equal:valid_from',
         ]);
-        if (! empty($d['branch_id']) && ! DB::table('tenant_branches')->where('tenant_id', $this->tenant())->where('id', $d['branch_id'])->exists()) {
-            throw CaseProblem::make('BRANCH_NOT_FOUND', 422, 'Branch not found in this tenant.');
-        }
-        $id = (string) Str::uuid();
-        DB::table('calendar_breaks')->insert($d + ['id' => $id, 'label' => $d['label'] ?? 'Break', 'created_by' => $r->user()->id, 'created_at' => now(), 'updated_at' => now()]);
-        $this->audit->record('calendar.break.added', 'calendar_break', $id, $d);
 
-        return response()->json(['data' => DB::table('calendar_breaks')->find($id)], 201);
+        return response()->json(['data' => $calendars->addBreak($d, $r->user())], 201);
     }
 
     /** Breaks are end-dated, never deleted. */
-    public function endBreak(Request $r, string $id): JsonResponse
+    public function endBreak(Request $r, string $id, CalendarAdminService $calendars): JsonResponse
     {
         $d = $r->validate(['valid_to' => 'required|date']);
-        $row = DB::table('calendar_breaks')->find($id) ?? abort(404);
-        if ($row->branch_id && ! DB::table('tenant_branches')->where('tenant_id', $this->tenant())->where('id', $row->branch_id)->exists()) {
-            abort(404);
-        }
-        DB::table('calendar_breaks')->where('id', $id)->update(['valid_to' => $d['valid_to'], 'updated_at' => now()]);
-        $this->audit->recordChange('calendar.break.ended', 'calendar_break', $id, ['valid_to' => $row->valid_to], $d, 'END_DATED');
 
-        return response()->json(['data' => DB::table('calendar_breaks')->find($id)]);
+        return response()->json(['data' => $calendars->endBreak($id, $d['valid_to'])]);
     }
 
     private function tenant(): string

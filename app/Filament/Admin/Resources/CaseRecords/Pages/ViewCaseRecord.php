@@ -10,4 +10,9 @@ use Filament\Resources\Pages\ViewRecord;
 final class ViewCaseRecord extends ViewRecord
 {
     protected static string $resource = CaseRecordResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return \App\Filament\Shared\Actions\SupportActions::caseViewHeader();
+    }
 }

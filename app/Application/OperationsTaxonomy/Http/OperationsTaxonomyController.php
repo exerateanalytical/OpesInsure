@@ -10,6 +10,7 @@ use App\Application\Cases\Models\WorkCase;
 use App\Application\Cases\Models\WorkQueue;
 use App\Application\OperationsTaxonomy\OperationsCatalogue;
 use App\Application\OperationsTaxonomy\OperationsLabels;
+use App\Application\OperationsTaxonomy\OperationsTaxonomyService;
 use App\Domain\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,15 +66,11 @@ final class OperationsTaxonomyController
         return response()->json(['data' => $c]);
     }
 
-    public function queueType(Request $r, string $queue, AuditWriter $audit): JsonResponse
+    public function queueType(Request $r, string $queue, OperationsTaxonomyService $taxonomy): JsonResponse
     {
         $d = $r->validate(['queue_type' => 'required|string|max:32']);
-        OperationsCatalogue::assert('queue_types', $d['queue_type'], 'queue_type');
-        $q = WorkQueue::where('tenant_id', $this->tenant->id())->findOrFail($queue);
-        $q->update(['queue_type' => $d['queue_type']]);
-        $audit->record('case.queue.typed', 'queue', $q->id, ['queue_type' => $d['queue_type']]);
 
-        return response()->json(['data' => $q->refresh()]);
+        return response()->json(['data' => $taxonomy->setQueueType($this->tenant->id(), $queue, $d['queue_type'])]);
     }
 
     public function notificationTemplates(Request $r): JsonResponse
@@ -87,23 +84,8 @@ final class OperationsTaxonomyController
     }
 
     /** Platform (tenant_id NULL) event templates are seeded DRAFT: an administrator approves each before it can be queued. */
-    public function approveTemplate(Request $r, string $template, AuditWriter $audit): JsonResponse
+    public function approveTemplate(Request $r, string $template, OperationsTaxonomyService $taxonomy): JsonResponse
     {
-        return DB::transaction(function () use ($r, $template, $audit) {
-            $t = DB::table('notification_templates')->where('id', $template)->whereNull('tenant_id')->whereNotNull('event_code')->lockForUpdate()->first();
-            abort_unless($t, 404);
-            if ($t->status !== 'DRAFT') {
-                throw ValidationException::withMessages(['status' => 'Only a DRAFT template can be approved.']);
-            }
-            if (($t->created_by ?? null) !== null && $t->created_by === $r->user()->id) {
-                throw ValidationException::withMessages(['actor' => 'The author of a template cannot approve it.']);
-            }
-            DB::table('notification_templates')->whereNull('tenant_id')->where(['code' => $t->code, 'locale' => $t->locale, 'channel' => $t->channel, 'status' => 'ACTIVE'])
-                ->update(['status' => 'RETIRED', 'updated_at' => now()]);
-            DB::table('notification_templates')->where('id', $t->id)->update(['status' => 'ACTIVE', 'approved_by' => $r->user()->id, 'approved_at' => now(), 'updated_at' => now()]);
-            $audit->record('notification.template.approved', 'notification_template', $t->id, ['event_code' => $t->event_code, 'version' => $t->version]);
-
-            return response()->json(['data' => DB::table('notification_templates')->find($t->id)]);
-        });
+        return response()->json(['data' => $taxonomy->approvePlatformTemplate($template, $r->user())]);
     }
 }
