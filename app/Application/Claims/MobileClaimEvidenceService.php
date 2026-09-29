@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Claims;
 
-use App\Application\Documents\Adapters\MalwareScanAdapter;
-use App\Application\Documents\Adapters\ScanResult;
+use App\Application\Documents\Scanning\DocumentScanQueue;
 use App\Application\Identity\PartyResolver;
 use App\Models\Document;
 use App\Models\Party;
@@ -47,7 +46,7 @@ final class MobileClaimEvidenceService
         private PartyResolver $parties,
         private MobileClaimService $claims,
         private ClaimEvidenceService $evidence,
-        private MalwareScanAdapter $scanner,
+        private DocumentScanQueue $scans,
     ) {
     }
 
@@ -67,6 +66,17 @@ final class MobileClaimEvidenceService
     }
 
     /**
+     * S4: evidence still in its security check (or quarantined) for this owned claim — shown as "Security check in
+     * progress" next to the attached evidence; never downloadable. Additive `pending` array of GET .../evidence.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function pending(string $claimId, User $user, string $tenantId): array
+    {
+        return app(\App\Application\Documents\Scanning\PendingDocuments::class)->forClaim($this->claims->owned($claimId, $user, $tenantId)->id);
+    }
+
+    /**
      * @param  array{document_id?: string, upload_session_id?: string, evidence_type: string, purpose: string}  $data
      * @return array<string, mixed>
      */
@@ -83,7 +93,23 @@ final class MobileClaimEvidenceService
             ? $this->ownedDocument($data['document_id'], $party, $tenantId)
             : $this->registerFromUploadSession($data['upload_session_id'], $user, $party, $tenantId);
 
+        // Q1: a file still in its security check is not a failure — the attachment is remembered and performed
+        // automatically once the file scans CLEAN (DocumentScanQueue); INFECTED still refuses as before.
+        if (DocumentScanQueue::isHeld($document->scan_status) || $document->scan_status === DocumentScanQueue::LEGACY_FAILED) {
+            $pendingId = $this->scans->deferAttachment($document, DocumentScanQueue::TARGET_CLAIM_EVIDENCE, $claim->id,
+                ['evidence_type' => $data['evidence_type'], 'purpose' => $data['purpose']], $user);
+
+            return ['id' => $pendingId, 'document_id' => $document->id, 'status' => DocumentScanQueue::ATTACHMENT_PENDING,
+                'security_check_pending' => true, 'message' => __('scan_queue.client.in_progress')];
+        }
+
         return $this->evidence->attach($claim, $document, $data['evidence_type'], $data['purpose'], $user);
+    }
+
+    /** True when attach() deferred the attachment until the security check finishes (the controller answers 202). */
+    public static function deferred(array $result): bool
+    {
+        return ($result['status'] ?? null) === DocumentScanQueue::ATTACHMENT_PENDING;
     }
 
     private function ownedDocument(string $documentId, Party $party, string $tenantId): Document
@@ -137,9 +163,7 @@ final class MobileClaimEvidenceService
 
         abort_if($duplicate, 409, __('wave12.document_duplicate'));
 
-        $scan = $this->scan($bytes, $session->mime_type);
-
-        return DB::transaction(function () use ($tenantId, $party, $session, $bytes, $sha256, $scan, $user) {
+        $document = DB::transaction(function () use ($tenantId, $party, $session, $bytes, $sha256, $user) {
             $document = Document::create([
                 'tenant_id' => $tenantId,
                 'party_id' => $party->id,
@@ -148,7 +172,8 @@ final class MobileClaimEvidenceService
                 'mime_type' => $session->mime_type,
                 'size_bytes' => strlen($bytes),
                 'sha256' => $sha256,
-                'scan_status' => $scan->status,
+                // Q1: stored first, scanned by ScanDocumentJob (never CLEAN without a real scan).
+                'scan_status' => DocumentScanQueue::PENDING_SCAN,
                 'verification_status' => 'UNVERIFIED',
                 'ocr_data' => [],
             ]);
@@ -165,19 +190,11 @@ final class MobileClaimEvidenceService
                 'created_at' => now(),
             ]);
 
+            $this->scans->enqueue($document, 'local', $user->id);
+
             return $document;
         });
-    }
 
-    private function scan(string $bytes, string $mimeType): ScanResult
-    {
-        $tempPath = tempnam(sys_get_temp_dir(), 'claim-evidence-scan-');
-        file_put_contents($tempPath, $bytes);
-
-        try {
-            return $this->scanner->scan($tempPath, $mimeType);
-        } finally {
-            @unlink($tempPath);
-        }
+        return $document->refresh(); // on a sync queue the scan has already run
     }
 }

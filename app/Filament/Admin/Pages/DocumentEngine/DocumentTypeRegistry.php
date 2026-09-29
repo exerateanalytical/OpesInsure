@@ -23,7 +23,7 @@ final class DocumentTypeRegistry extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Document types (DOC-ADM-002/003)';
+        return __('Document types');
     }
 
     protected function report(): array

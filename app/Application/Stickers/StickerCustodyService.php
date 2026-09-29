@@ -212,6 +212,11 @@ final class StickerCustodyService
             if ($s->custody_level === 'AGENT' && $s->custodian_user_id !== $actor->id && ! $actor->hasPermission('stickers.assign.any')) {
                 throw ValidationException::withMessages(['sticker_serial_number' => 'This sticker is in another agent\'s custody.']);
             }
+            // R1 2026-09-29: an agent assigns only stock handed over to them, never branch / broker stock directly.
+            if ($s->custody_level !== 'AGENT' && ! $actor->hasPermission('stickers.assign.any')
+                && ! \App\Models\TenantMembership::where(['tenant_id' => $policy->tenant_id, 'user_id' => $actor->id, 'status' => 'ACTIVE'])->where('role_code', '!=', 'AGENT')->exists()) {
+                throw ValidationException::withMessages(['sticker_serial_number' => 'This sticker is not in your custody.']);
+            }
             $from = ['level' => $s->custody_level, 'tenant_id' => $s->custodian_tenant_id, 'branch_id' => $s->custodian_branch_id, 'user_id' => $s->custodian_user_id];
             $s->update(['status' => 'ASSIGNED', 'custody_level' => 'POLICY', 'assigned_policy_id' => $policy->id, 'assigned_at' => now()]);
             $this->events(collect([$s]), 'ASSIGNED_TO_POLICY', $from, ['level' => 'POLICY', 'tenant_id' => $policy->tenant_id, 'branch_id' => null, 'user_id' => null],

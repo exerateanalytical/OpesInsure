@@ -19,10 +19,13 @@
     ['vehicles', '/account/vehicles', 'motor', null],
     ['customers', '/account/customers', 'users', 'agent'],
     ['book', '/account/book', 'list', 'agent', 'agent.clients.read|broker.portal.read'],
+    ['agent-actions', '/account/agent-actions', 'bell', 'agent', 'agent.clients.read'],
+    ['tasks', '/account/tasks', 'clock', 'agent', 'agent.clients.read'],
     ['leads', '/account/leads', 'target', 'agent'],
     ['reports', '/account/reports', 'grid', 'agent'],
     ['commissions', '/account/commissions', 'piggy', 'agent'],
     ['staff', '/account/staff', 'handshake', 'agent', 'broker.portal.read'],
+    ['stickers', '/account/stickers', 'check', 'agent', 'agent.clients.read'],
     ['desk', '/account/claims-desk', 'scale', 'officer'],
     ['requests', '/account/requests', 'refresh', null],
     ['profile', '/account/profile', 'user', null],
@@ -60,6 +63,7 @@
     <a href="/contact">{{ $A['nav']['support'] }}</a>
   </nav>
   <div class="acct-actions">
+    <a class="acct-ic" href="/account/search" aria-label="{{ __('launch_customer.search_p.title') }}" data-global-search>@include('public.partials.i', ['n' => 'search'])</a>
     <a class="acct-ic" href="/account/notifications" aria-label="{{ $A['side']['notifications'] }}">@include('public.partials.i', ['n' => 'bell'])<span class="dot" data-unread hidden></span></a>
     <nav class="lang light" aria-label="{{ __('site.nav.language') }}"><a href="{{ $langUrl('en') }}" @if($locale === 'en') aria-current="true" @endif>EN</a><a href="{{ $langUrl('fr') }}" @if($locale === 'fr') aria-current="true" @endif>FR</a></nav>
     <details class="acct-user">
@@ -83,6 +87,7 @@
     <div class="side-help">
       @include('public.partials.i', ['n' => 'headset'])
       <b>{{ $A['help_t'] }}</b><small>{{ $A['help_d'] }}</small>
+      <a class="dbtn dbtn-outline sm" href="/account/help" @if($active === 'help') aria-current="page" @endif>@include('public.partials.i', ['n' => 'doc']){{ __('help_guides.nav') }}</a>
       <a class="dbtn dbtn-outline sm" href="/contact?topic=support">@include('public.partials.i', ['n' => 'phone']){{ $A['help_btn'] }}</a>
     </div>
   </aside>

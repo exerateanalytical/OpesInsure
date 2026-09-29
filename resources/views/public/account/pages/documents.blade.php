@@ -46,7 +46,7 @@ Opes.page(function () {
     if (!chosen) return;
     Opes.busy(send, true);
     Opes.fileBase64(chosen).then(function (b64) { return Opes.api('/mobile/documents', { body: { category: catSel.value, mime_type: chosen.type, file_base64: b64 } }); })
-      .then(function () { Opes.alert(K.u_ok, 'ok'); chosen = null; fname.textContent = ''; form.hidden = true; load(); })
+      .then(function (r) { if (r && r.security_check_pending) Opes.alert(r.message || K.u_ok, 'info'); else Opes.alert(K.u_ok, 'ok'); chosen = null; fname.textContent = ''; form.hidden = true; load(); })
       .catch(function (e) { Opes.alert(e.message); })
       .finally(function () { Opes.busy(send, false); send.disabled = !chosen; });
   }

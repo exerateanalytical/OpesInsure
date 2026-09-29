@@ -35,7 +35,7 @@ final class DataReadinessDashboard extends Page
 
     public function getTitle(): string
     {
-        return 'Data readiness';
+        return __('Data readiness');
     }
 
     protected function getViewData(): array

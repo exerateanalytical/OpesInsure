@@ -21,7 +21,7 @@ use Illuminate\Support\HtmlString;
 
 /**
  * Policy endorsement and cancellation actions (mount on the policy detail page). Same services / permissions as:
- *   endorse             POST policies/{p}/transactions (type ENDORSEMENT)      (route has no permission gate)  PolicyServicingService::request
+ *   endorse             POST policies/{p}/transactions (type ENDORSEMENT)      policies.service.approve (R1)     PolicyServicingService::request
  *   decideService       POST policies/{p}/transactions/{t}/approve|reject      policies.service.approve        PolicyServicingService::approve|reject
  *   requestCancellation POST policies/{p}/cancellations (+ /preview)           policies.cancellation.request   CancellationService::quote|request
  *   reviewCancellation  POST policy-cancellations/{c}/review                   policies.cancellation.review    CancellationService::review
@@ -37,7 +37,7 @@ final class PolicyActions
 
     public static function endorse(): Action
     {
-        return WorkflowAction::make('policyEndorse', null)->icon('lucide-square-pen')
+        return WorkflowAction::make('policyEndorse', 'policies.service.approve')->icon('lucide-square-pen')
             ->visible(fn (Policy $record) => $record->status === 'ACTIVE')
             ->schema([
                 TextInput::make('endorsement_type')->label(__('workflow_actions.fields.endorsement_type'))->maxLength(32),
@@ -48,7 +48,7 @@ final class PolicyActions
                 Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(2000),
             ])
             ->requiresConfirmation()
-            ->action(fn (Action $action, Policy $record, array $data) => WorkflowAction::run($action, null, fn () => app(PolicyServicingService::class)->request($record, array_filter([
+            ->action(fn (Action $action, Policy $record, array $data) => WorkflowAction::run($action, 'policies.service.approve', fn () => app(PolicyServicingService::class)->request($record, array_filter([
                 'type' => 'ENDORSEMENT', 'effective_at' => $data['effective_at'], 'requested_changes' => $data['requested_changes'] ?? [],
                 'premium_delta_minor' => (int) $data['premium_delta_minor'], 'reason_code' => $data['reason_code'], 'notes' => $data['notes'] ?? null,
                 'endorsement_type' => filled($data['endorsement_type'] ?? null) ? $data['endorsement_type'] : null,
@@ -61,7 +61,8 @@ final class PolicyActions
         $pending = fn (Policy $r) => PolicyTransaction::where('policy_id', $r->id)->where('status', 'PENDING_APPROVAL');
 
         return WorkflowAction::make('policyDecideService', $p)->icon('lucide-badge-check')->requiresConfirmation()
-            ->visible(fn (Policy $record) => $pending($record)->exists())
+            ->visible(fn (Policy $record) => \App\Application\Identity\Rbac\RequestMemo::rowFlag('policy-pending-service', 'policies', (string) $record->id,
+                fn (array $ids) => PolicyTransaction::whereIn('policy_id', $ids)->where('status', 'PENDING_APPROVAL')->distinct()->pluck('policy_id')->all()))
             ->schema([
                 Select::make('transaction_id')->label(__('workflow_actions.fields.pending_transaction'))->required()
                     ->options(fn (Policy $record) => $pending($record)->get()->mapWithKeys(fn ($t) => [$t->id => $t->type.' · '.$t->reason_code.' · '.number_format((int) $t->premium_delta_minor)])),
@@ -108,7 +109,7 @@ final class PolicyActions
         $p = 'policies.cancellation.review';
 
         return WorkflowAction::make('policyReviewCancellation', $p)->icon('lucide-eye')
-            ->visible(fn (Policy $record) => self::cancellation($record, ['REQUESTED']) !== null)
+            ->visible(fn (Policy $record) => self::hasCancellation($record, ['REQUESTED']))
             ->schema([Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(2000)])
             ->action(fn (Action $action, Policy $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(CancellationService::class)->review(self::cancellation($record, ['REQUESTED']) ?? abort(404), auth()->user(), $data['note'] ?? null)));
@@ -120,7 +121,7 @@ final class PolicyActions
         $open = ['REQUESTED', 'UNDER_REVIEW'];
 
         return WorkflowAction::make('policyDecideCancellation', $p)->icon('lucide-badge-check')->requiresConfirmation()
-            ->visible(fn (Policy $record) => self::cancellation($record, $open) !== null)
+            ->visible(fn (Policy $record) => self::hasCancellation($record, $open))
             ->schema([
                 Select::make('outcome')->label(__('workflow_actions.fields.outcome'))->options(['APPROVE' => __('workflow_actions.accept'), 'REJECT' => __('workflow_actions.reject')])->required()->live(),
                 Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(2000)->required(fn (callable $get) => $get('outcome') === 'REJECT'),
@@ -131,6 +132,17 @@ final class PolicyActions
 
                 return WorkflowAction::run($action, $p, fn () => $data['outcome'] === 'APPROVE' ? $s->approve($case, auth()->user(), $data['note'] ?? null) : $s->reject($case, auth()->user(), (string) $data['note']));
             });
+    }
+
+    /**
+     * Row-action visibility: cancellation() !== null, decided for every policy row of the page in one query (R4).
+     *
+     * @param  list<string>  $statuses
+     */
+    private static function hasCancellation(Policy $policy, array $statuses): bool
+    {
+        return \App\Application\Identity\Rbac\RequestMemo::rowFlag('policy-cancellation:'.$policy->tenant_id.':'.implode(',', $statuses), 'policies', (string) $policy->id,
+            fn (array $ids) => PolicyCancellation::whereIn('policy_id', $ids)->where('tenant_id', $policy->tenant_id)->whereIn('status', $statuses)->distinct()->pluck('policy_id')->all());
     }
 
     /** @param  list<string>  $statuses */

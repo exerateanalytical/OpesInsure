@@ -104,6 +104,8 @@ final class QuoteService
             }
             $quote = Quote::create([
                 'tenant_id' => $tenant->id, 'party_id' => $partyId, 'risk_asset_id' => $data['risk_asset_id'] ?? null, 'partner_id' => $partnerId,
+                // S2: the acting user's membership branch (null → the DB trigger falls back to the partner's branch).
+                'branch_id' => \App\Application\Identity\BranchStamp::of($actor, $tenant->id),
                 'line_code' => $data['line_code'], 'channel' => $data['channel'], 'currency' => 'XAF', 'risk_facts' => $facts,
                 'lifecycle_state' => 'DRAFT', 'status' => QuoteMachine::legacyStatus('DRAFT'),
                 'quote_number' => $this->numbers->allocate($tenant->id, 'INSURANCE_QUOTE')['number'],
@@ -312,7 +314,7 @@ final class QuoteService
         return ['quote_number' => $quote->quote_number, 'line_code' => $quote->line_code, 'state' => QuoteMachine::stateOf($quote), 'status' => $quote->status,
             'currency' => $quote->currency, 'expires_at' => $quote->expires_at?->toIso8601String(),
             'offers' => $quote->offers()->with(['carrier.party:id,display_name', 'product:id,name,code'])->where('status', 'OFFERED')->orderBy('comparison_rank')->get()
-                ->map(fn (QuoteOffer $o) => ['id' => $o->id, 'carrier' => $o->carrier?->party?->display_name, 'product' => $o->product?->name, 'premium_minor' => $o->premium_minor,
+                ->map(fn (QuoteOffer $o) => ['id' => $o->id, 'carrier' => $o->carrier?->party?->display_name, 'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($o->carrier), 'carrier_display_order' => $o->carrier?->display_order, 'product' => $o->product?->name, 'premium_minor' => $o->premium_minor,
                     'tax_minor' => $o->tax_minor, 'fee_minor' => $o->fee_minor, 'total_minor' => $o->total_minor, 'valid_until' => $o->valid_until?->toIso8601String(), 'coverage_snapshot' => $o->coverage_snapshot])->all()];
     }
 

@@ -30,7 +30,7 @@ final class ProviderPanelProvider extends PanelProvider
         return [Pages\ProviderDashboardPage::class, Pages\EligibilityPage::class, Pages\PreauthorizationsPage::class, Pages\AdmissionsPage::class,
             Pages\TreatmentEpisodesPage::class, Pages\ClaimsPage::class, Pages\AccountsPage::class, Pages\SettlementsPage::class, Pages\ReconciliationsPage::class,
             Pages\DisputesPage::class, Pages\ContractsPage::class, Pages\DocumentsPage::class, Pages\ReportsPage::class, Pages\NotificationsPage::class,
-            Pages\ProfilePage::class, Pages\FacilitiesPage::class, Pages\UsersPage::class, Pages\IntegrationPage::class, Pages\AuditPage::class];
+            Pages\ProfilePage::class, Pages\FacilitiesPage::class, Pages\UsersPage::class, Pages\IntegrationPage::class, Pages\AuditPage::class, \App\Filament\Shared\Pages\HelpPage::class];
     }
 
     public function panel(Panel $panel): Panel

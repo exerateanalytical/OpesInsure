@@ -45,6 +45,9 @@ final class DocumentsPage extends ProviderWorkspacePage
 
     public function download(string $id): ?StreamedResponse
     {
+        if ($this->refuseInvalidId($id)) {
+            return null;
+        }
         try {
             return app(ProviderDocumentService::class)->downloadForProvider($this->user(), $this->scope(), $id);
         } catch (ApiProblemException $e) {

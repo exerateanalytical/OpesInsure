@@ -40,6 +40,7 @@ final class InvitationService
             'token_hash'=>hash('sha256', $token), 'status'=>'PENDING', 'expires_at'=>now()->addHours($ttlHours), 'invited_by'=>$actor->id,
         ]);
         $this->audit->record('identity.invitation.issued', 'tenant_invitation', $invitation->id, ['tenant_id'=>$tenant->id,'role_code'=>$roleCode]);
+        app(\App\Application\Notifications\LaunchNotificationRouter::class)->staffInvitation($invitation->recipient_email, $phone, $token, $ttlHours, $tenant->id, $actor->locale ?? null);
         return compact('invitation', 'token');
     }
 

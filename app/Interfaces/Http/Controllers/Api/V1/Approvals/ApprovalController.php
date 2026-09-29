@@ -102,6 +102,9 @@ final class ApprovalController
     {
         $tenant = app(TenantContext::class)->id();
 
-        return ApprovalRequest::query()->where(fn ($q) => $q->where('tenant_id', $tenant)->orWhereNull('tenant_id'));
+        // Security 2026-09-29: requests without a tenant are platform-level; only the platform tenant reaches them.
+        $platform = app(\App\Application\Identity\Rbac\PlatformAuthority::class)->isPlatformTenant($tenant);
+
+        return ApprovalRequest::query()->where(fn ($q) => $q->where('tenant_id', $tenant)->when($platform, fn ($w) => $w->orWhereNull('tenant_id')));
     }
 }

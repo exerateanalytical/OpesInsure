@@ -120,6 +120,7 @@ final class OrangeMoneyAdapter implements PaymentProviderAdapter
             ->post('/oauth/v3/token', ['grant_type' => 'client_credentials']);
 
         if (! $response->successful()) {
+            \App\Application\Operations\Monitoring\MonitoringSignals::record(\App\Application\Operations\Monitoring\MonitoringSignals::PAYMENT_AUTH_FAILURE, 'orange_money');
             throw new DomainException('Orange Money authentication failed.');
         }
 

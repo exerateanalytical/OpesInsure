@@ -29,6 +29,14 @@ function b7dStickerChain(): array
     app(CertificateService::class)->receiveBatch(['carrier_id' => $f['carrier']->id, 'batch_number' => 'B-'.Str::random(6),
         'stickers' => array_map(fn ($i) => ['serial_number' => "STK-{$i}", 'security_code' => Str::random(24)], range(1, 5))], $f['carrierAdmin']);
     $f['policy'] = makeMobileTestPolicy($f['proposal'], $f['tenant'], $f['carrier']->id, $f['party']->id);
+    // R1 2026-09-29: POST policies/{p}/sticker is bounded by the caller's book, so the first agent carries the client (one active attribution per client).
+    foreach (['agent' => 'AGENT'] as $who => $type) {
+        $party = \App\Models\Party::create(['type' => 'ORGANIZATION', 'display_name' => 'B7D '.$who, 'status' => 'ACTIVE']);
+        $partner = \App\Models\Partner::create(['tenant_id' => $f['tenant']->id, 'party_id' => $party->id, 'type' => $type, 'status' => 'ACTIVE']);
+        $f[$who]->forceFill(['party_id' => $party->id])->save();
+        DB::table('customer_attributions')->insert(['id' => (string) Str::uuid(), 'party_id' => $f['party']->id, 'partner_id' => $partner->id, 'origin_type' => $type,
+            'terms_version' => '1', 'effective_from' => now(), 'status' => 'ACTIVE', 'recorded_by' => $f[$who]->id, 'created_at' => now(), 'updated_at' => now()]);
+    }
 
     return $f;
 }
@@ -73,7 +81,7 @@ it('moves stickers carrier → broker → branch → agent → policy with ackno
 
     // Another agent cannot use this agent's sticker; the holder assigns it to the motor policy.
     Passport::actingAs($f['agent2']);
-    $this->postJson("/api/v1/policies/{$f['policy']->id}/sticker", ['serial_number' => 'STK-1'], $h)->assertStatus(422);
+    expect($this->postJson("/api/v1/policies/{$f['policy']->id}/sticker", ['serial_number' => 'STK-1'], $h)->status())->toBeIn([404, 422]); // R1: not in agent2's book either
     Passport::actingAs($f['agent']);
     $this->postJson("/api/v1/policies/{$f['policy']->id}/sticker", ['serial_number' => 'STK-1'], $h)->assertCreated()
         ->assertJsonPath('data.status', 'ASSIGNED')->assertJsonPath('data.custody_level', 'POLICY')->assertJsonPath('data.assigned_policy_id', $f['policy']->id);
@@ -135,6 +143,6 @@ it('refuses a sticker for a non-motor policy', function () {
     $f = b7dStickerChain();
     $f['quote']->update(['line_code' => 'TRAVEL']);
     DB::table('sticker_stock')->where('serial_number', 'STK-1')->update(['custody_level' => 'BROKER', 'custodian_tenant_id' => $f['tenant']->id]);
-    Passport::actingAs($f['admin']);
+    Passport::actingAs($f['agent']); // R1: a caller whose book holds the policy
     $this->postJson("/api/v1/policies/{$f['policy']->id}/sticker", ['serial_number' => 'STK-1'], tenantHeaderFor($f['tenant']))->assertStatus(422)->assertJsonValidationErrors('policy_id');
 });

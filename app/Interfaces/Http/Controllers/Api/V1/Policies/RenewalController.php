@@ -2,4 +2,12 @@
 declare(strict_types=1);namespace App\Interfaces\Http\Controllers\Api\V1\Policies;
 use App\Application\Policies\RenewalService;use App\Domain\Tenancy\TenantContext;use App\Models\{Policy,RenewalCase,Tenant};use Illuminate\Http\{JsonResponse,Request};
 final class RenewalController{private function scoped(string$id):RenewalCase{return RenewalCase::where('tenant_id',app(TenantContext::class)->id())->findOrFail($id);}/** REQ-REN-001 canonical renewal sweep (scheduled job + ops); days defaults to the widest reminder window (90). */
-public function seed(Request$r,RenewalService$s,TenantContext$c):JsonResponse{$d=$r->validate(['days'=>'sometimes|integer|min:1|max:180']);$x=$s->sweep(Tenant::findOrFail($c->id()),(int)($d['days']??90),$r->user());return response()->json(['data'=>['created_or_found'=>$x['cases']]+$x]);}public function createQuote(Request$r,string$renewal,RenewalService$s):JsonResponse{return response()->json(['data'=>$s->createQuote($this->scoped($renewal),$r->user())],201);}public function complete(Request$r,string$renewal,RenewalService$s):JsonResponse{$d=$r->validate(['successor_policy_id'=>'required|uuid|exists:policies,id']);$p=Policy::where('tenant_id',app(TenantContext::class)->id())->findOrFail($d['successor_policy_id']);return response()->json(['data'=>$s->complete($this->scoped($renewal),$p)]);}}
+public function seed(Request$r,RenewalService$s,TenantContext$c):JsonResponse{$d=$r->validate(['days'=>'sometimes|integer|min:1|max:180']);$x=$s->sweep(Tenant::findOrFail($c->id()),(int)($d['days']??90),$r->user());return response()->json(['data'=>['created_or_found'=>$x['cases']]+$x]);}public function createQuote(Request$r,string$renewal,RenewalService$s):JsonResponse{return response()->json(['data'=>$s->createQuote($this->scoped($renewal),$r->user())],201);}public function complete(Request$r,string$renewal,RenewalService$s):JsonResponse{$d=$r->validate(['successor_policy_id'=>'required|uuid|exists:policies,id']);$p=Policy::where('tenant_id',app(TenantContext::class)->id())->findOrFail($d['successor_policy_id']);return response()->json(['data'=>$s->complete($this->scoped($renewal),$p)]);}
+/** S3 2026-09-29: POST renewals/{renewal}/assignment (renewals.manage) — assign / unassign an open case; own-book scoping in RenewalService::reassign. */
+public function reassign(Request $r, string $renewal, RenewalService $s): JsonResponse
+{
+    $d = $r->validate(['assignee_id' => 'present|nullable|uuid', 'reason' => 'sometimes|nullable|string|max:500']);
+
+    return response()->json(['data' => $s->reassign($this->scoped($renewal), $d['assignee_id'] ?? null, $r->user(), $d['reason'] ?? null)]);
+}
+}

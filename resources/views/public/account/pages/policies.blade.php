@@ -32,13 +32,13 @@ Opes.page(function () {
         if (tab === 'EXPIRED' && s !== 'EXPIRED' && s !== 'LAPSED') return false;
         if (!q) return true;
         var r = OP.risk(p);
-        return [OP.title(p), p.carrier_name, p.policy_number, r.name, r.reg, OP.line(OP.lineOf(p))].join(' ').toLowerCase().indexOf(q) >= 0;
+        return [OP.title(p), (p.carrier_short_name || p.carrier_name), p.policy_number, r.name, r.reg, OP.line(OP.lineOf(p))].join(' ').toLowerCase().indexOf(q) >= 0;
       });
       Opes.clear(out);
       if (!rows.length) return Opes.empty(out, T.no_match);
       out.appendChild(OP.table([
         [T.pol.policy, function (p) { return h('div', { class: 'op-cell' }, h('span', { class: 'op-li' }, Opes.icon(OP.lineIcon(OP.lineOf(p)))), h('div', null, h('b', null, OP.title(p)), h('small', null, OP.line(OP.lineOf(p))))); }],
-        [T.pol.insurer, function (p) { return p.carrier_name; }],
+        [T.pol.insurer, function (p) { return p.carrier_short_name || p.carrier_name; }],
         [T.pol.number, function (p) { return h('a', { class: 'rowlink', href: '/account/policies/' + p.id }, p.policy_number); }],
         [T.pol.insured, function (p) { var r = OP.risk(p); return r.name ? h('div', null, r.name, r.reg ? h('small', { class: 'op-muted', style: 'display:block' }, r.reg) : null) : '—'; }],
         [T.pol.period, function (p) { return h('div', null, Opes.date(p.coverage_starts_at) + ' – ' + Opes.date(p.coverage_ends_at), h('small', { class: 'op-muted' + (p.days_to_expiry < 31 ? ' op-late' : ''), style: 'display:block' }, OP.daysNote(p))); }],

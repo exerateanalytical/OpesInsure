@@ -40,7 +40,7 @@ return [
         'grace_minutes' => 'Grace (minutes)', 'review_hours' => 'Carrier review SLA (hours)', 'escalated_to' => 'Escalate to', 'resolution' => 'Resolution',
         'effective_rule' => 'Effective-date rule', 'start_date' => 'Start date', 'duration_unit' => 'Duration unit', 'duration_value' => 'Duration',
         'instalment_plan' => 'Instalment plan', 'codes' => 'Declaration codes', 'channel' => 'Channel', 'answers' => 'Answers', 'question' => 'Question code', 'answer' => 'Answer',
-        'document' => 'Document', 'requirement_code' => 'Requirement', 'decision' => 'Decision', 'kind' => 'Kind', 'attempts' => 'Attempts', 'status' => 'Status', 'proposal' => 'Proposal',
+        'document' => 'Document', 'file' => 'Upload a file (PDF, JPG, PNG)', 'requirement_code' => 'Requirement', 'decision' => 'Decision', 'kind' => 'Kind', 'attempts' => 'Attempts', 'status' => 'Status', 'proposal' => 'Proposal',
     ],
     'codes' => [
         'resolution' => ['REFUND_REQUESTED' => 'Refund the customer', 'RESOLVED_MANUALLY' => 'Resolved manually'],

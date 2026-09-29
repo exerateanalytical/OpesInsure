@@ -10,7 +10,7 @@
 
   A.t = function (k, rep) { var s = T[k] !== undefined ? T[k] : k; if (rep) Object.keys(rep).forEach(function (r) { s = String(s).replace(':' + r, rep[r]); }); return s; };
   A.label = function (code) { return (T.st || {})[code] || O.label(code); };
-  A.line = function (code) { return code ? ((T.lines || {})[String(code).toUpperCase()] || O.label(code)) : '—'; };
+  A.line = function (code) { var c = String(code || '').toUpperCase(); if (c === 'AUTO' || c === 'AUTOMOBILE') c = 'MOTOR'; return code ? ((T.lines || {})[c] || O.label(code)) : '—'; };
   A.money = function (minor) { return minor === null || minor === undefined ? '—' : O.money(minor, { minor: true }); };
 
   /** 'agent' | 'broker' | null, from the workspace permissions. */

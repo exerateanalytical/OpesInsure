@@ -104,7 +104,8 @@ final class ImportPipeline
         $this->assertOpen($batch);
         $t = $this->targets->get($batch->target);
         $report = $this->check($t, $batch->rows ?? [], $batch->target_params ?? []);
-        $status = $report['errors'] ? 'FAILED' : 'VALIDATED';
+        // PartialImportTarget: invalid rows are skipped at import, so the batch stays submittable while any row is valid.
+        $status = $report['errors'] && ! ($t instanceof PartialImportTarget && $report['valid'] > 0) ? 'FAILED' : 'VALIDATED';
         $batch->update(['status' => $status, 'report' => $report]);
         $this->audit->record('import.validated', 'import_batch', $batch->id, ['target' => $batch->target, 'status' => $status, 'valid' => $report['valid'],
             'duplicates' => count($report['duplicates']), 'errors' => count($report['errors'])]);
@@ -199,6 +200,18 @@ final class ImportPipeline
                 $result['skipped'][] = ['row' => $i + 1, 'status' => $c['status'], 'reason' => $c['error'] ?? ($c['matches'] ?? null)];
                 continue;
             }
+            if ($t instanceof PartialImportTarget) {
+                // One savepoint per row: a failing row is reported and the others still import.
+                try {
+                    $id = DB::transaction(fn () => $t->import($row, $params, $actor, $batch->id));
+                } catch (Throwable $e) {
+                    $result['failed'][] = ['row' => $i + 1, 'key' => $c['key'] ?? null,
+                        'reason' => $e instanceof ValidationException ? (string) collect($e->errors())->flatten()->first() : $e->getMessage()];
+                    continue;
+                }
+                $result['created'][] = ['row' => $i + 1, 'key' => $c['key'] ?? null, 'id' => $id] + $t->outcome();
+                continue;
+            }
             try {
                 $id = $t->import($row, $params, $actor, $batch->id);
             } catch (ValidationException $e) {
@@ -209,7 +222,7 @@ final class ImportPipeline
         $t->finish($params);
         $batch->update(['status' => 'IMPORTED', 'approved_by' => $actor->id, 'imported_at' => now(), 'imported_count' => count($result['created']), 'result' => $result]);
         $this->audit->record('import.imported', 'import_batch', $batch->id, ['target' => $batch->target, 'params' => $params, 'created' => count($result['created']),
-            'skipped' => count($result['skipped']), 'approval_id' => $batch->approval_request_id], null, ['approval_id' => $batch->approval_request_id]);
+            'skipped' => count($result['skipped']), 'failed' => count($result['failed'] ?? []), 'approval_id' => $batch->approval_request_id], null, ['approval_id' => $batch->approval_request_id]);
     }
 
     /** @return array{valid: int, new: list<string>, errors: list<array>, duplicates: list<array>, preview: list<array>} */

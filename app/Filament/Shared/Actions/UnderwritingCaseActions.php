@@ -36,7 +36,7 @@ final class UnderwritingCaseActions
 
     public static function group(): ActionGroup
     {
-        return ActionGroup::make([self::assign(), self::startReview(), self::evaluate(), self::readyForDecision(), self::resolveReferral(), self::decide(), self::counterOffer()])
+        return ActionGroup::make([self::assign(), self::startReview(), self::evaluate(), self::readyForDecision(), self::resolveReferral(), self::requestInformation(), self::decide(), self::counterOffer()])
             ->label(__('doc_uw_actions.uw_group'))->icon('lucide-zap')->button()
             // D4 lifted 2026-09-29: shown in /insurer too; each action is gated by its API permission + own carrier's case
             // (WorkflowAction -> PortalScope::isOwnRecord, docs/spec/PORTAL_WRITE_RULES.md).
@@ -129,6 +129,40 @@ final class UnderwritingCaseActions
                 __('doc_uw_actions.uwReadyForDecision.done')));
     }
 
+    /**
+     * Q8 UND-015 / UND-016: POST underwriting/cases/{c}/information-requests  underwriting.decide  UnderwritingService::requestInformation.
+     * Exact items (documents, answers, clarifications, inspection or medical requirements); MEDICAL items only for documents.medical.read.
+     */
+    public static function requestInformation(): Action
+    {
+        $p = 'underwriting.decide';
+        $kinds = fn () => collect(UnderwritingService::ITEM_KINDS)
+            ->reject(fn ($k) => $k === 'MEDICAL' && ! \App\Application\Underwriting\Workbench\UnderwritingWorkbenchQuery::mayReadMedical(auth()->user()))
+            ->mapWithKeys(fn ($k) => [$k => __('uw_workbench.kinds.'.$k)])->all();
+
+        return WorkflowAction::make('uwRequestInformation', $p, 'uw_workbench')->icon('lucide-message-square-plus')
+            ->visible(fn (UnderwritingCase $record) => in_array($record->status, UnderwritingCaseMachine::TRANSITIONS['request_information'], true))
+            ->schema([
+                \Filament\Forms\Components\Repeater::make('items')->label(__('uw_workbench.fields.items'))->required()->minItems(1)->maxItems(30)->schema([
+                    Select::make('kind')->label(__('uw_workbench.fields.kind'))->options($kinds)->required()->default('DOCUMENT'),
+                    \Filament\Forms\Components\TextInput::make('code')->label(__('uw_workbench.fields.code'))->required()->maxLength(64)->regex('/^[A-Z][A-Z0-9_]{1,63}$/'),
+                    Textarea::make('description')->label(__('uw_workbench.fields.description'))->required()->minLength(5)->maxLength(1000),
+                    \Filament\Forms\Components\Toggle::make('mandatory')->label(__('uw_workbench.fields.mandatory'))->default(true),
+                ])->columns(2),
+                Textarea::make('message')->label(__('uw_workbench.fields.message'))->maxLength(4000),
+            ])
+            ->action(fn (Action $action, UnderwritingCase $record, array $data) => WorkflowAction::run($action, $p, function () use ($record, $data, $kinds) {
+                $items = array_values((array) ($data['items'] ?? []));
+                foreach ($items as $i) {
+                    if (! array_key_exists((string) ($i['kind'] ?? ''), $kinds())) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['items' => __('uw_workbench.kind_not_allowed')]);
+                    }
+                }
+
+                return app(UnderwritingService::class)->requestInformation(self::case($record), $items, filled($data['message'] ?? null) ? $data['message'] : null, auth()->user());
+            }, __('uw_workbench.uwRequestInformation.done')));
+    }
+
     public static function resolveReferral(): Action
     {
         $p = 'underwriting.decide';
@@ -156,11 +190,14 @@ final class UnderwritingCaseActions
         return UnderwritingCase::query()->where('tenant_id', $tenant)->when($carrier !== null, fn ($q) => $q->where('carrier_id', $carrier))->findOrFail($record->id);
     }
 
-    /** @return array<string, string> active staff members of the current tenant */
+    /** @return array<string, string> active staff members of the current tenant (in /insurer: of the caller's carrier only, R7) */
     private static function members(): array
     {
+        $insurer = \App\Application\WebExperiences\PortalScope::panel() === 'insurer';
+
         return DB::table('tenant_memberships')->join('users', 'users.id', '=', 'tenant_memberships.user_id')
             ->where('tenant_memberships.tenant_id', app(TenantContext::class)->id())->where('tenant_memberships.status', 'ACTIVE')
+            ->when($insurer, fn ($q) => $q->where('tenant_memberships.carrier_id', \App\Application\WebExperiences\PortalScope::carrierId() ?? ''))
             ->where('tenant_memberships.role_code', '<>', 'CUSTOMER')->orderBy('users.full_name')->pluck('users.full_name', 'users.id')->all();
     }
 }

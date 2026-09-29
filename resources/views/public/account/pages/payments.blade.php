@@ -36,7 +36,7 @@ Opes.page(function () {
   return Promise.all([OP.payments(), OP.policies().catch(function () { return []; }), OP.proposals().catch(function () { return []; })]).then(function (r) {
     var list = r[0], byProp = {};
     r[1].forEach(function (p) { byProp[p.proposal_id] = { name: OP.title(p), href: '/account/policies/' + p.id, sub: p.policy_number }; });
-    r[2].forEach(function (p) { if (!byProp[p.id]) byProp[p.id] = { name: p.product_name, sub: p.carrier_name, status: p.status }; });
+    r[2].forEach(function (p) { if (!byProp[p.id]) byProp[p.id] = { name: p.product_name, sub: (p.carrier_short_name || p.carrier_name), status: p.status }; });
     var okList = list.filter(OP.ok);
     var failed = list.filter(function (x) { return /FAIL|CANCEL|EXPIRE/.test(String(x.status).toUpperCase()); });
     var pending = list.length - okList.length - failed.length;

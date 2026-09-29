@@ -5,7 +5,7 @@
     @elseif ($diff['changes'] === [])
         <p style="color:#667">{{ __('product_builder.diff.none') }}</p>
     @else
-        <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+        <div style="overflow-x:auto;max-width:100%"><table style="width:100%;font-size:.85rem;border-collapse:collapse">
             <thead><tr style="text-align:left"><th>{{ __('product_builder.diff.path') }}</th><th>{{ __('product_builder.diff.change') }}</th><th>{{ __('product_builder.diff.from') }}</th><th>{{ __('product_builder.diff.to') }}</th></tr></thead>
             <tbody>
             @foreach ($diff['changes'] as $c)
@@ -14,6 +14,6 @@
                     <td>{{ is_scalar($c['to']) || $c['to'] === null ? $c['to'] : json_encode($c['to']) }}</td></tr>
             @endforeach
             </tbody>
-        </table>
+        </table></div>
     @endif
 </div>

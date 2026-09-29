@@ -22,6 +22,8 @@ Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(funct
     Route::post('configuration/inheritance/overrides', [P::class, 'draftOverride'])->middleware('permission:configuration.changes.manage');
 
     Route::get('demo/coverage', [P::class, 'demoCoverage'])->middleware('permission:platform.settings.manage');
+    // S13: explicit demo data view — the only place is_demo rows are readable while demo mode is off.
+    Route::get('demo/records/{table}', [P::class, 'demoRecords'])->middleware('permission:platform.settings.manage');
 
     Route::get('carrier-broker-agreements', [A::class, 'index'])->middleware('permission:distribution.agreements.view');
     Route::post('carrier-broker-agreements', [A::class, 'store'])->middleware('permission:distribution.agreements.manage');

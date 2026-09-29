@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Documents;
 
-use App\Application\Documents\Adapters\MalwareScanAdapter;
-use App\Application\Documents\Adapters\ScanResult;
+use App\Application\Documents\Scanning\DocumentScanQueue;
 use App\Application\Documents\Adapters\SignedUrlAdapter;
 use App\Application\Identity\PartyResolver;
 use App\Models\Document;
@@ -56,7 +55,7 @@ final class MobileDocumentService
     public function __construct(
         private PartyResolver $parties,
         private SignedUrlAdapter $signedUrls,
-        private MalwareScanAdapter $scanner,
+        private DocumentScanQueue $scans,
     ) {
     }
 
@@ -153,9 +152,10 @@ final class MobileDocumentService
      * @param  array{category: string, mime_type: string, file_base64: string}  $data
      * @return array<string, mixed>
      */
-    public function upload(array $data, User $user, string $tenantId): array
+    /** $forParty (Q3 launch, agent-assisted capture): store the file as the given client's own document; the caller must have checked the book. */
+    public function upload(array $data, User $user, string $tenantId, ?\App\Models\Party $forParty = null): array
     {
-        $party = $this->parties->forUser($user);
+        $party = $forParty ?? $this->parties->forUser($user);
 
         if (! $party) {
             throw ValidationException::withMessages(['party' => __('wave12.document_no_party')]);
@@ -191,13 +191,12 @@ final class MobileDocumentService
 
         abort_if($duplicate, 409, __('wave12.document_duplicate'));
 
-        $scan = $this->scan($bytes, $mimeType);
-
         $storageKey = sprintf('documents/%s/%s.%s', $tenantId, (string) Str::uuid(), self::ALLOWED_MIME_TYPES[$mimeType]);
 
         Storage::disk(config('filesystems.default'))->put($storageKey, $bytes);
 
-        $document = DB::transaction(function () use ($tenantId, $party, $data, $storageKey, $mimeType, $bytes, $sha256, $scan, $user) {
+        $disk = (string) config('filesystems.default');
+        $document = DB::transaction(function () use ($tenantId, $party, $data, $storageKey, $mimeType, $bytes, $sha256, $user, $disk) {
             $document = Document::create([
                 'tenant_id' => $tenantId,
                 'party_id' => $party->id,
@@ -206,7 +205,8 @@ final class MobileDocumentService
                 'mime_type' => $mimeType,
                 'size_bytes' => strlen($bytes),
                 'sha256' => $sha256,
-                'scan_status' => $scan->status,
+                // Q1: always stored first, then scanned by ScanDocumentJob (never CLEAN without a real scan).
+                'scan_status' => DocumentScanQueue::PENDING_SCAN,
                 'verification_status' => 'UNVERIFIED',
                 'ocr_data' => [],
             ]);
@@ -223,8 +223,11 @@ final class MobileDocumentService
                 'created_at' => now(),
             ]);
 
+            $this->scans->enqueue($document, $disk, $user->id);
+
             return $document;
         });
+        $document->refresh(); // the scan job has run already on a sync queue
 
         return [
             'id' => $document->id,
@@ -234,21 +237,11 @@ final class MobileDocumentService
             'scan_status' => $document->scan_status,
             'verification_status' => $document->verification_status,
             'usable' => $document->scan_status === 'CLEAN',
+            // Held while the security check runs; the client shows this instead of a failure.
+            'security_check_pending' => DocumentScanQueue::isHeld($document->scan_status),
+            'message' => DocumentScanQueue::isHeld($document->scan_status) ? __('scan_queue.client.in_progress') : null,
             'created_at' => $document->created_at?->toIso8601String(),
         ];
-    }
-
-    /** Writes to a local temp file so the adapter never has to care which disk the document's real bytes end up on. */
-    private function scan(string $bytes, string $mimeType): ScanResult
-    {
-        $tempPath = tempnam(sys_get_temp_dir(), 'doc-scan-');
-        file_put_contents($tempPath, $bytes);
-
-        try {
-            return $this->scanner->scan($tempPath, $mimeType);
-        } finally {
-            @unlink($tempPath);
-        }
     }
 
     private function owned(string $documentId, User $user, string $tenantId): Document

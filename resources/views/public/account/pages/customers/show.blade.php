@@ -23,7 +23,13 @@ Opes.page(function (ctx) {
     O.clear(box).append(
       h('div', { class: 'ag-head' }, h('div', { class: 'who' }, h('span', { class: 'av' }, initials || '··'), h('div', null, h('h2', null, c.full_name), h('small', null, [c.phone_e164, c.city].filter(Boolean).join(' · ')))),
         h('div', { class: 'btns' }, h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers' }, A.t('back')), A.canQuote() ? h('a', { class: 'dbtn dbtn-primary sm', href: '/account/buy?customer=' + encodeURIComponent(c.id) }, O.icon('compare'), A.t('new_quote_client')) : null,
-          A.canFileClaim() ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/claim' }, O.icon('shield'), A.t('file_claim')) : null)),
+          A.canFileClaim() ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/claim' }, O.icon('shield'), A.t('file_claim')) : null,
+          // Q3 launch: AGT-014/015 KYC and AGT-016 activities (agents only).
+          A.mode() === 'agent' ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/kyc' }, O.icon('check'), @json(__('launch_agent_a.kyc_t'))) : null,
+          A.mode() === 'agent' ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/activities' }, O.icon('list'), @json(__('launch_agent_a.activities_t'))) : null,
+          // Q4 launch: AGT-038 payment history and AGT-047/048 vehicles (agents only).
+          A.mode() === 'agent' ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/payments' }, O.icon('card'), @json(__('launch_agent_b.client_payments_t'))) : null,
+          A.mode() === 'agent' ? h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(c.id) + '/vehicles' }, O.icon('motor'), @json(__('launch_agent_b.vehicles_t'))) : null)),
       h('hr', { class: 'ag-hr' }),
       h('div', { class: 'ag-fields' },
         A.field(A.t('th_phone'), c.phone_e164), A.field(A.t('th_city'), c.city),
@@ -36,7 +42,7 @@ Opes.page(function (ctx) {
     pols.then(function (rows) {
       if (!rows.length) return O.empty(pbox, A.t('no_client_policies'));
       O.clear(pbox).appendChild(A.table(['th_policy', 'th_insurer', 'th_line', 'th_premium', 'th_status', 'th_issued'], rows.map(function (p) {
-        return h('tr', null, h('td', null, h('b', null, p.policy_number || '—')), h('td', null, p.carrier_name || '—'), h('td', null, A.line(p.line_code)),
+        return h('tr', null, h('td', null, h('b', null, p.policy_number || '—')), h('td', null, (p.carrier_short_name || p.carrier_name) || '—'), h('td', null, A.line(p.line_code)),
           h('td', { class: 'amt' }, A.money(p.premium_minor)), h('td', null, O.chip(p.status)), h('td', null, O.date(p.issued_at)));
       })));
     }).catch(function (e) { A.fail(pbox, e); });

@@ -85,13 +85,13 @@ Opes.page(function (ctx) {
     var body = { status: to };
     if (to === 'LOST') { var why = window.prompt(A.t('lost_reason')); if (why === null) { sel.value = ''; return; } body.lost_reason = why || null; }
     sel.disabled = true; O.alert('');
-    (AG ? O.api(BASE + '/' + encodeURIComponent(l.id), { method: 'PATCH', body: body }) : O.api(BASE + '/' + encodeURIComponent(l.id) + '/transitions', { body: body })).then(function (u) { replace(u); O.alert(A.t('lead_moved', { s: A.label(u.status) }), 'ok'); })
+    (AG ? O.api('/mobile/partner/agent/leads/' + encodeURIComponent(l.id), { method: 'PATCH', body: body }) : O.api(BASE + '/' + encodeURIComponent(l.id) + '/transitions', { body: body })).then(function (u) { replace(u); O.alert(A.t('lead_moved', { s: A.label(u.status) }), 'ok'); })
       .catch(function (e) { sel.disabled = false; sel.value = ''; O.alert(A.errMsg(e), 'bad'); });
   }
   function convert(btn, l) {
     if (!window.confirm(A.t('convert_confirm', { name: l.full_name }))) return;
     O.busy(btn, true); O.alert('');
-    O.api(BASE + '/' + encodeURIComponent(l.id) + '/convert', { body: { consent_confirmed: true } }).then(function (r) {
+    O.api('/mobile/partner/agent/leads/' + encodeURIComponent(l.id) + '/convert', { body: { consent_confirmed: true } }).then(function (r) {
       replace(r.lead); O.alert(A.t('converted', { name: l.full_name }), 'ok');
     }).catch(function (e) { O.busy(btn, false); O.alert(A.errMsg(e), 'bad'); });
   }

@@ -23,7 +23,11 @@ final class ProposalLifecycleController
     /** GET proposals/{p}/checklist — questions, declarations, documents, KYC, cover terms, blockers, next events. */
     public function checklist(Request $r, string $proposal): JsonResponse
     {
-        return response()->json(['data' => $this->service->checklist($this->proposal($r, $proposal), $r->user())]);
+        $p = $this->proposal($r, $proposal);
+
+        // S4 (additive): uploads still in the security check / quarantined, never downloadable.
+        return response()->json(['data' => $this->service->checklist($p, $r->user())
+            + ['pending_documents' => app(\App\Application\Documents\Scanning\PendingDocuments::class)->forDocumentIds($p->documents()->pluck('document_id'))]]);
     }
 
     /** POST proposals/{p}/declarations {codes: [..]} */
@@ -88,6 +92,10 @@ final class ProposalLifecycleController
 
     private function proposal(Request $r, string $id): Proposal
     {
-        return $this->own->apply(Proposal::where('tenant_id', app(TenantContext::class)->id()), $r->user())->findOrFail($id);
+        $p = $this->own->apply(Proposal::where('tenant_id', app(TenantContext::class)->id()), $r->user())->findOrFail($id);
+        // Q3 launch: a partner reads and acts only on proposals of clients in their own book.
+        app(\App\Application\Partners\PartnerBook::class)->assertInBook($r->user(), $p->party_id);
+
+        return $p;
     }
 }

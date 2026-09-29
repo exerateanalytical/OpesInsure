@@ -32,8 +32,19 @@ final class MobileMoneyStatusReconciler
         if (! $this->sameTransaction($intent, $rawStatus['externalId'] ?? null, $rawStatus['amount'] ?? null, $rawStatus['currency'] ?? null)) {
             return null;
         }
+        // A SANDBOX status moves no real money: it may only settle a seeded demo persona's payment, never a real customer's.
+        if (! empty($rawStatus['opes_sandbox']) && ! \App\Application\Demo\DemoPersonas::ownsPayment($intent)) {
+            \Illuminate\Support\Facades\Log::warning('mobile_money.reconcile.sandbox_refused', ['payment_intent_id' => $intent->id, 'provider' => 'mtn_momo']);
 
-        return $this->reconcile($intent, 'mtn_momo', $this->mapMtnStatus((string) ($rawStatus['status'] ?? '')));
+            return null;
+        }
+        $result = $this->reconcile($intent, 'mtn_momo', $this->mapMtnStatus((string) ($rawStatus['status'] ?? '')));
+        if (! empty($rawStatus['opes_sandbox']) && $result !== null) {
+            $intent->refresh();
+            $intent->forceFill(['provider_snapshot' => array_merge((array) ($intent->provider_snapshot ?? []), ['sandbox' => true, 'demo' => true])])->save();
+        }
+
+        return $result;
     }
 
     public function reconcileOrange(PaymentIntentRecord $intent, array $rawStatus): ?string

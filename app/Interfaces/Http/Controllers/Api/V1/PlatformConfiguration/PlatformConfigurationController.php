@@ -61,7 +61,17 @@ final class PlatformConfigurationController
 
     public function demoCoverage(DemoCoverageReport $report): JsonResponse
     {
-        return response()->json(['data' => $report->build()]);
+        return response()->json(['data' => \App\Application\Demo\DemoMode::reveal(fn () => $report->build())]);
+    }
+
+    /** S13: platform-admin demo data view; demo rows of one flagged table, readable even while demo mode is off. */
+    public function demoRecords(string $table): JsonResponse
+    {
+        abort_unless(\App\Application\Demo\DemoMode::isFiltered($table), 404);
+
+        $rows = \App\Application\Demo\DemoMode::reveal(fn () => \Illuminate\Support\Facades\DB::table($table)->where('is_demo', true)->orderBy('id')->limit(500)->get());
+
+        return response()->json(['data' => $rows, 'meta' => ['table' => $table, 'demo_mode' => app(\App\Application\Demo\DemoMode::class)->status()]]);
     }
 
     private function scope(array $d): array

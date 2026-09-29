@@ -18,7 +18,7 @@
         {{ __('product_builder.governance.prohibited_market') }}: {{ implode(', ', (array) $state->prohibited_market) ?: '—' }} ·
         {{ __('product_builder.governance.review_date') }}: {{ $state->next_review_date?->toDateString() ?? '—' }}
     </div>
-    <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+    <div style="overflow-x:auto;max-width:100%"><table style="width:100%;font-size:.85rem;border-collapse:collapse">
         <thead><tr style="text-align:left"><th>{{ __('product_builder.governance.when') }}</th><th>{{ __('product_builder.governance.from') }}</th><th>{{ __('product_builder.governance.to') }}</th><th>{{ __('product_builder.governance.decision') }}</th><th>{{ __('product_builder.governance.notes') }}</th></tr></thead>
         <tbody>
         @forelse ($history as $h)
@@ -27,5 +27,5 @@
             <tr><td colspan="5" style="color:#667">{{ __('product_builder.governance.no_history') }}</td></tr>
         @endforelse
         </tbody>
-    </table>
+    </table></div>
 </div>

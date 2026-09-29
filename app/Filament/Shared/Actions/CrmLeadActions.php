@@ -148,6 +148,10 @@ final class CrmLeadActions
     private static function partner(string $name): Select
     {
         return Select::make($name)->label(S::f($name))->searchable()
-            ->options(fn () => Partner::with('party')->where('tenant_id', S::tenant())->limit(500)->get()->mapWithKeys(fn ($p) => [$p->id => $p->party?->display_name ?? $p->legal_name ?? $p->id])->all());
+            // In a portal, a book-scoped broker only picks its own firm and the agents it supervises (no other company's partners).
+            ->options(fn () => Partner::with('party')->where('tenant_id', S::tenant())
+                ->when(\App\Application\WebExperiences\PortalScope::panel() !== null && filled($bp = \App\Application\WebExperiences\PortalScope::brokerPartnerId()), fn ($q) => $q->where(fn ($w) => $w->whereKey($bp)->orWhere('supervisor_partner_id', $bp)))
+                ->when(\App\Application\WebExperiences\PortalScope::panel() !== null && \App\Application\WebExperiences\PortalScope::brokerPartnerId() === '', fn ($q) => $q->whereRaw('1 = 0'))
+                ->limit(500)->get()->mapWithKeys(fn ($p) => [$p->id => $p->party?->display_name ?? $p->legal_name ?? $p->id])->all());
     }
 }

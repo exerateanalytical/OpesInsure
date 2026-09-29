@@ -42,7 +42,17 @@ final class SellableCatalogue
         }
 
         $out = [];
-        foreach ($q->get() as $product) {
+        $products = $q->get();
+        // R4: carriers (name, short name) and approved tariffs for the whole list in two queries, not three per product.
+        $carriers = \App\Models\Carrier::with('party')->whereIn('id', $products->pluck('carrier_id')->filter()->unique()->values())->get()->keyBy('id');
+        $tariffs = [];
+        foreach (DB::table('tariff_versions')->whereIn('insurance_product_id', $products->pluck('id'))->where('status', 'APPROVED')->orderByDesc('version')->get(['id', 'insurance_product_id']) as $tv) {
+            $tariffs[(string) $tv->insurance_product_id] ??= $tv->id;
+        }
+        // ... and SellabilityService reads the same rows from the request memo instead of re-querying them per check.
+        \App\Application\Identity\Rbac\RequestMemo::prime($products->mapWithKeys(fn ($p) => ['sell-product:'.$p->id => $p])->all()
+            + $carriers->mapWithKeys(fn ($c) => ['carrier-status:'.$c->id => $c->getRawOriginal('status')])->all());
+        foreach ($products as $product) {
             $check = $this->sellability->check($product->id, 'quote', $viewer);
             if (! $check['sellable'] && empty($viewer['include_blocked'])) {
                 continue;
@@ -50,8 +60,9 @@ final class SellableCatalogue
             $entry = [
                 'product_id' => $product->id, 'code' => $product->code, 'name' => $product->name, 'line_code' => $product->line_code,
                 'version' => $product->version, 'carrier_id' => $product->carrier_id,
-                'carrier_name' => DB::table('carriers')->join('parties', 'parties.id', '=', 'carriers.party_id')->where('carriers.id', $product->carrier_id)->value('parties.display_name'),
-                'coverages' => $product->coverages, 'tariff_version_id' => DB::table('tariff_versions')->where(['insurance_product_id' => $product->id, 'status' => 'APPROVED'])->orderByDesc('version')->value('id'),
+                'carrier_name' => $carriers->get($product->carrier_id)?->party?->display_name,
+                'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($carriers->get($product->carrier_id)),
+                'coverages' => $product->coverages, 'tariff_version_id' => $tariffs[(string) $product->id] ?? null,
                 'source' => 'CARRIER_PRODUCT', 'broker_overridable' => false,
                 'sellable' => $check['sellable'], 'reasons' => $check['reasons'], 'channel' => $check['channel'],
                 'agreement_id' => $check['agreement_id'], 'selling_partner_id' => $check['selling_partner_id'],

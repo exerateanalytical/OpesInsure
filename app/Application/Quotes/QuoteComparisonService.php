@@ -85,7 +85,7 @@ final class QuoteComparisonService
             'currency' => $quote->currency,
             'dimension_keys' => ['total_minor', 'premium_minor', 'tax_minor', 'fee_minor', 'coverages.limit_minor', 'coverages.deductible_minor', 'exclusions', 'valid_until'],
             'offers' => array_map(fn ($r) => [
-                'offer_id' => $r['offer']->id, 'rank' => $r['offer']->comparison_rank, 'carrier' => $r['offer']->carrier?->party?->display_name, 'carrier_id' => $r['offer']->carrier_id,
+                'offer_id' => $r['offer']->id, 'rank' => $r['offer']->comparison_rank, 'carrier' => $r['offer']->carrier?->party?->display_name, 'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($r['offer']->carrier), 'carrier_display_order' => $r['offer']->carrier?->display_order, 'carrier_id' => $r['offer']->carrier_id,
                 'product' => $r['offer']->product?->name, 'product_id' => $r['offer']->product_id,
                 'premium_minor' => (int) $r['offer']->premium_minor, 'tax_minor' => (int) $r['offer']->tax_minor, 'fee_minor' => (int) $r['offer']->fee_minor, 'total_minor' => (int) $r['offer']->total_minor,
                 'difference_to_lowest_minor' => (int) $r['offer']->total_minor - (int) $lowest, 'premium_overridden' => $r['offer']->original_premium_minor !== null,

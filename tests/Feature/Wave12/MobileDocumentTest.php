@@ -112,10 +112,11 @@ it('uploads a document, malware-scans it, and marks it unusable when no scanner 
     ], tenantHeaderFor($fixture['tenant']));
 
     $response->assertStatus(201);
-    // Fail-closed placeholder: with no CLAMAV_HOST configured, an upload can
-    // never come back CLEAN/usable — see FailClosedMalwareScanAdapter.
-    expect($response->json('data.scan_status'))->toBe('FAILED');
+    // Fail-closed: with no CLAMAV_HOST configured, an upload can never come
+    // back CLEAN/usable — it is held (SCAN_UNAVAILABLE) for the rescan queue.
+    expect($response->json('data.scan_status'))->toBe('SCAN_UNAVAILABLE');
     expect($response->json('data.usable'))->toBeFalse();
+    expect($response->json('data.security_check_pending'))->toBeTrue();
 
     $document = Document::findOrFail($response->json('data.id'));
     expect($document->party_id)->toBe($fixture['party']->id);

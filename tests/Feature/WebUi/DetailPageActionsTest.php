@@ -205,7 +205,7 @@ it('calls the portability export service and surfaces its refusal (no chronology
         ->assertNotified(__('workflow_actions.failed'));
 });
 
-it('does not gate the endorsement servicing action (owner decision pending)', function () {
+it('R1 2026-09-29: gates the endorsement servicing action like POST policies/{p}/transactions (policies.service.approve)', function () {
     dpAs(dpUser($this->tenant, ['claims.view']), $this->tenant);
-    dpHarness(fn () => \App\Filament\Shared\Actions\PolicyActions::endorse(), $this->policy)->assertActionVisible('policyEndorse');
+    dpHarness(fn () => \App\Filament\Shared\Actions\PolicyActions::endorse(), $this->policy)->assertActionHidden('policyEndorse');
 });

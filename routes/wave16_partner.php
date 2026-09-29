@@ -30,6 +30,11 @@ Route::get('mobile/partner/agent/policies', [Agent::class, 'policies'])->middlew
 Route::get('mobile/partner/agent/proposals', [Agent::class, 'proposals'])->middleware('permission:agent.clients.read');
 Route::get('mobile/partner/agent/claims', [Agent::class, 'claims'])->middleware('permission:agent.clients.read');
 Route::get('mobile/partner/agent/clients/{customer}/documents', [Agent::class, 'clientDocuments'])->middleware('permission:agent.clients.read')->whereUuid('customer');
+// Q3 launch: agent-assisted KYC and document capture for a client in the agent's own book (AGT-014/015/030/033).
+Route::get('mobile/partner/agent/clients/{customer}/kyc', [\App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\AgentClientAssistController::class, 'kyc'])->middleware('permission:agent.clients.read')->whereUuid('customer');
+Route::post('mobile/partner/agent/clients/{customer}/documents', [\App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\AgentClientAssistController::class, 'upload'])->middleware(['permission:agent.clients.manage', 'throttle:20,1'])->whereUuid('customer');
+Route::post('mobile/partner/agent/clients/{customer}/kyc/documents', [\App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\AgentClientAssistController::class, 'attach'])->middleware(['permission:agent.clients.manage', 'throttle:20,1'])->whereUuid('customer');
+Route::post('mobile/partner/agent/clients/{customer}/kyc/submit', [\App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace\AgentClientAssistController::class, 'submit'])->middleware(['permission:agent.clients.manage', 'throttle:10,1'])->whereUuid('customer');
 
 // ----------------------------------------------------------------- broker
 Route::get('mobile/partner/broker/quotes', [Broker::class, 'quotes'])->middleware('permission:broker.portal.read');

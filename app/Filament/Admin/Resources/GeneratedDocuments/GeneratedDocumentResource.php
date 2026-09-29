@@ -111,14 +111,14 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
     /** Revoke / replace / cancel through DocumentStatusService (shared by the registry table and the detail page). */
     public static function statusChangeAction(): Actions\Action
     {
-        return Actions\Action::make('statusChange')->label('Revoke / replace')->icon('lucide-ban')->color('danger')
+        return Actions\Action::make('statusChange')->label(__('insurer_portal_ops.register.revoke_replace'))->icon('lucide-ban')->color('danger')
             ->visible(fn ($record) => in_array($record->status, DocumentRegister::CURRENT_STATUSES, true))
             ->authorize(fn ($record) => self::mayWrite('documents.status.request', $record))
             ->schema([
-                Forms\Components\Select::make('action')->options(['REVOKE' => 'Revoke', 'REPLACE' => 'Replace', 'CANCEL' => 'Cancel'])->required()->live(),
-                Forms\Components\Select::make('replacement_document_id')->label('Replacement document')->visible(fn ($get) => $get('action') === 'REPLACE')
+                Forms\Components\Select::make('action')->label(__('insurer_portal_ops.register.action'))->options(['REVOKE' => __('insurer_portal_ops.register.revoke'), 'REPLACE' => __('insurer_portal_ops.register.replace'), 'CANCEL' => __('insurer_portal_ops.register.cancel')])->required()->live(),
+                Forms\Components\Select::make('replacement_document_id')->label(__('insurer_portal_ops.register.replacement'))->visible(fn ($get) => $get('action') === 'REPLACE')
                     ->options(fn ($record) => \App\Models\Document::where('policy_id', $record->policy_id)->whereKeyNot($record->id)->whereIn('status', DocumentRegister::CURRENT_STATUSES)->get()->mapWithKeys(fn ($d) => [$d->id => ($d->document_number ?? $d->verification_code).' · '.$d->document_type_code])->all()),
-                Forms\Components\Textarea::make('reason')->required()->minLength(5),
+                Forms\Components\Textarea::make('reason')->label(__('insurer_portal_ops.register.reason'))->required()->minLength(5),
             ])
             ->action(fn ($record, array $data) => ServiceValidation::run(fn () => app(\App\Application\Documents\Engine\DocumentStatusService::class)->request($record, $data['action'], $data['reason'], auth()->user(), $data['replacement_document_id'] ?? null)));
     }
@@ -129,10 +129,10 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
      */
     public static function tamperCheckAction(bool $identify = false): Actions\Action
     {
-        return Actions\Action::make($identify ? 'tamperIdentify' : 'tamperCheck')->label($identify ? 'Tamper check a PDF' : 'Tamper check')
+        return Actions\Action::make($identify ? 'tamperIdentify' : 'tamperCheck')->label($identify ? __('insurer_portal_ops.register.tamper_identify') : __('insurer_portal_ops.register.tamper_check'))
             ->icon('lucide-shield-check')->color('gray')
-            ->modalDescription('The file is hashed and compared with the registry original and its platform signature. The file is not kept.')
-            ->schema([Forms\Components\FileUpload::make('file')->label('PDF to check')->required()->disk('local')->directory('tamper-checks')
+            ->modalDescription(__('insurer_portal_ops.register.tamper_help'))
+            ->schema([Forms\Components\FileUpload::make('file')->label(__('insurer_portal_ops.register.pdf_to_check'))->required()->disk('local')->directory('tamper-checks')
                 ->acceptedFileTypes(['application/pdf'])->maxSize(20480)])
             ->action(fn (array $data, $record = null) => self::runTamperCheck($data, $identify ? null : $record));
     }
@@ -181,8 +181,8 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
                 $o::text('sha256')->fontFamily('mono')->columnSpanFull(),
             ]),
         ], null, true, ['financial'], [
-            \Filament\Schemas\Components\Tabs\Tab::make('Revoke / replace history')->schema([\Filament\Infolists\Components\ViewEntry::make('status_history')->hiddenLabel()->view('filament.admin.documents.status-history')->columnSpanFull()]),
-            \Filament\Schemas\Components\Tabs\Tab::make('Verification lookups')->schema([\Filament\Infolists\Components\ViewEntry::make('verification_lookups')->hiddenLabel()->view('filament.admin.documents.verification-lookups')->columnSpanFull()]),
+            \Filament\Schemas\Components\Tabs\Tab::make(__('insurer_portal_ops.register.history_tab'))->schema([\Filament\Infolists\Components\ViewEntry::make('status_history')->hiddenLabel()->view('filament.admin.documents.status-history')->columnSpanFull()]),
+            \Filament\Schemas\Components\Tabs\Tab::make(__('insurer_portal_ops.register.lookups_tab'))->schema([\Filament\Infolists\Components\ViewEntry::make('verification_lookups')->hiddenLabel()->view('filament.admin.documents.verification-lookups')->columnSpanFull()]),
         ]));
     }
 
@@ -190,30 +190,31 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
     {
         return $table->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('document_number')->searchable()->fontFamily('mono')->placeholder('carrier original'),
-                Tables\Columns\TextColumn::make('document_type_code')->label('Type')->searchable(),
-                Tables\Columns\TextColumn::make('policy.policy_number')->label('Policy')->searchable(),
-                Tables\Columns\TextColumn::make('subject_label')->label('Subject')->placeholder('—'),
+                Tables\Columns\TextColumn::make('document_number')->searchable()->fontFamily('mono')->label(__('insurer_portal_ops.register.number'))->placeholder(__('insurer_portal_ops.register.carrier_original')),
+                Tables\Columns\TextColumn::make('document_type_code')->label(__('insurer_portal_ops.register.type'))->searchable(),
+                Tables\Columns\TextColumn::make('policy.policy_number')->label(__('insurer_portal_ops.register.policy'))->searchable(),
+                Tables\Columns\TextColumn::make('subject_label')->label(__('insurer_portal_ops.register.subject'))->placeholder('—'),
                 \App\Filament\Shared\Columns::status('status'),
-                Tables\Columns\TextColumn::make('issuer_type')->label('Issuer')->badge(),
-                Tables\Columns\IconColumn::make('is_carrier_original')->label('Carrier')->boolean(),
-                Tables\Columns\TextColumn::make('language'),
-                Tables\Columns\TextColumn::make('verification_code')->copyable()->fontFamily('mono'),
-                Tables\Columns\TextColumn::make('template_version')->label('Tpl v')->placeholder('—'),
+                Tables\Columns\TextColumn::make('issuer_type')->label(__('insurer_portal_ops.register.issuer'))->badge(),
+                Tables\Columns\IconColumn::make('is_carrier_original')->label(__('insurer_portal_ops.register.carrier'))->boolean(),
+                Tables\Columns\TextColumn::make('language')->label(__('insurer_portal_ops.register.language')),
+                Tables\Columns\TextColumn::make('verification_code')->label(__('insurer_portal_ops.register.verification_code'))->copyable()->fontFamily('mono'),
+                Tables\Columns\TextColumn::make('template_version')->label(__('insurer_portal_ops.register.template_version'))->placeholder('—'),
                 \App\Filament\Shared\Columns::date('issued_at'),
-                Tables\Columns\TextColumn::make('security_tier')->label('Tier')->badge()->placeholder('—'),
+                Tables\Columns\TextColumn::make('security_tier')->label(__('insurer_portal_ops.register.tier'))->badge()->placeholder('—'),
                 Tables\Columns\TextColumn::make('security_level')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('sha256')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('document_type_code')->label('Type')->searchable()
+                Tables\Filters\SelectFilter::make('document_type_code')->label(__('insurer_portal_ops.register.type'))->searchable()
                     ->options(fn () => collect(app(DocumentRegister::class)->types())->mapWithKeys(fn ($t) => [$t['code'] => $t['id'].' · '.$t['name_en']])->all()),
-                Tables\Filters\SelectFilter::make('status')->options(array_combine(DocumentRegister::STATUSES, DocumentRegister::STATUSES)),
-                Tables\Filters\SelectFilter::make('security_tier')->label('Tier')->options(['S1' => 'S1', 'S2' => 'S2', 'S3' => 'S3', 'S4' => 'S4', 'S5' => 'S5']),
-                Tables\Filters\SelectFilter::make('issuer_type')->label('Issuer type')->options(fn () => \App\Models\Document::query()->whereNotNull('issuer_type')->distinct()->orderBy('issuer_type')->pluck('issuer_type', 'issuer_type')->all()),
-                Tables\Filters\SelectFilter::make('issuer_carrier_id')->label('Issuer')->searchable()
-                    ->options(fn () => \App\Models\Carrier::with('party')->get()->mapWithKeys(fn ($c) => [$c->id => $c->party?->display_name ?? $c->cima_code])->sort()->all()),
-                Tables\Filters\TernaryFilter::make('is_carrier_original')->label('Carrier originals'),
+                Tables\Filters\SelectFilter::make('status')->label(__('insurer_portal_ops.register.status'))->options(array_combine(DocumentRegister::STATUSES, DocumentRegister::STATUSES)),
+                Tables\Filters\SelectFilter::make('security_tier')->label(__('insurer_portal_ops.register.tier'))->options(['S1' => 'S1', 'S2' => 'S2', 'S3' => 'S3', 'S4' => 'S4', 'S5' => 'S5']),
+                Tables\Filters\SelectFilter::make('issuer_type')->label(__('insurer_portal_ops.register.issuer_type'))->options(fn () => \App\Models\Document::query()->whereNotNull('issuer_type')->distinct()->orderBy('issuer_type')->pluck('issuer_type', 'issuer_type')->all()),
+                Tables\Filters\SelectFilter::make('issuer_carrier_id')->label(__('insurer_portal_ops.register.issuer'))->searchable()
+                    // /insurer: only the caller's own carrier (never list other insurers' names).
+                    ->options(fn () => \App\Models\Carrier::with('party')->when(self::insurer(), fn ($q) => $q->whereKey(\App\Application\WebExperiences\PortalScope::carrierId()))->get()->mapWithKeys(fn ($c) => [$c->id => $c->party?->display_name ?? $c->cima_code])->sort()->all()),
+                Tables\Filters\TernaryFilter::make('is_carrier_original')->label(__('insurer_portal_ops.register.carrier_originals')),
             ])
             ->recordActions([
                 Actions\ViewAction::make(),
@@ -222,18 +223,19 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
             ])
             ->headerActions([
                 self::tamperCheckAction(identify: true),
-                Actions\Action::make('carrierUpload')->label('Upload carrier document')->icon('lucide-upload')
+                Actions\Action::make('carrierUpload')->label(__('insurer_portal_ops.register.upload'))->icon('lucide-upload')
                     ->authorize(fn () => self::mayWrite('documents.carrier.upload'))
                     ->schema([
-                        Forms\Components\Select::make('policy_id')->label('Policy')->searchable()->required()
-                            ->getSearchResultsUsing(fn (string $search) => \App\Application\WebExperiences\PortalScope::narrowTable(\App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id()), 'policies')->where('policy_number', 'ilike', "%{$search}%")->limit(20)->pluck('policy_number', 'id')->all()),
-                        Forms\Components\Select::make('document_type_code')->label('Document type')->options(fn () => collect(app(DocumentRegister::class)->types())->mapWithKeys(fn ($t) => [$t['code'] => $t['id'].' · '.$t['name_en']])->all())->searchable()->required(),
-                        Forms\Components\DatePicker::make('issue_date')->required(),
-                        Forms\Components\TextInput::make('carrier_document_number')->maxLength(100),
-                        Forms\Components\TextInput::make('carrier_version')->maxLength(40),
-                        Forms\Components\Select::make('language')->options(['FR' => 'FR', 'EN' => 'EN', 'BILINGUAL' => 'BILINGUAL'])->default('FR'),
-                        Forms\Components\TextInput::make('subject_key')->label('Vehicle registration / member / shipment (optional)')->maxLength(120),
-                        Forms\Components\FileUpload::make('file')->required()->disk('local')->directory('carrier-uploads')->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])->maxSize(20480),
+                        Forms\Components\Select::make('policy_id')->label(__('insurer_portal_ops.register.policy'))->searchable()->required()
+                            ->getSearchResultsUsing(fn (string $search) => \App\Application\WebExperiences\PortalScope::narrowTable(\App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id()), 'policies')->where('policy_number', 'ilike', "%{$search}%")->limit(20)->pluck('policy_number', 'id')->all())
+                            ->getOptionLabelUsing(fn ($value) => \App\Application\WebExperiences\PortalScope::narrowTable(\App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id()), 'policies')->whereKey($value)->value('policy_number')),
+                        Forms\Components\Select::make('document_type_code')->label(__('insurer_portal_ops.register.document_type'))->options(fn () => collect(app(DocumentRegister::class)->types())->mapWithKeys(fn ($t) => [$t['code'] => $t['id'].' · '.$t['name_en']])->all())->searchable()->required(),
+                        Forms\Components\DatePicker::make('issue_date')->label(__('insurer_portal_ops.register.issue_date'))->required(),
+                        Forms\Components\TextInput::make('carrier_document_number')->label(__('insurer_portal_ops.register.carrier_document_number'))->maxLength(100),
+                        Forms\Components\TextInput::make('carrier_version')->label(__('insurer_portal_ops.register.carrier_version'))->maxLength(40),
+                        Forms\Components\Select::make('language')->label(__('insurer_portal_ops.register.language'))->options(['FR' => 'FR', 'EN' => 'EN', 'BILINGUAL' => 'BILINGUAL'])->default('FR'),
+                        Forms\Components\TextInput::make('subject_key')->label(__('insurer_portal_ops.register.subject_key'))->maxLength(120),
+                        Forms\Components\FileUpload::make('file')->label(__('insurer_portal_ops.register.file'))->required()->disk('local')->directory('carrier-uploads')->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])->maxSize(20480),
                     ])
                     ->action(function (array $data) {
                         $disk = \Illuminate\Support\Facades\Storage::disk('local');

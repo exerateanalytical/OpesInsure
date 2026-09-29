@@ -88,9 +88,11 @@ final class MobileSupportController
         $docId = (string) Str::uuid();
         DB::table('documents')->insert([
             'id' => $docId, 'tenant_id' => $ticket->tenant_id, 'party_id' => $party->id, 'category' => 'SUPPORT_ATTACHMENT', 'storage_key' => $key,
-            'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sha256' => hash_file('sha256', $file->getRealPath()), 'scan_status' => 'PENDING', 'verification_status' => 'PENDING', 'ocr_data' => json_encode([]),
+            'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sha256' => hash_file('sha256', $file->getRealPath()), 'scan_status' => \App\Application\Documents\Scanning\DocumentScanQueue::PENDING_SCAN, 'verification_status' => 'PENDING', 'ocr_data' => json_encode([]),
             'created_at' => now(), 'updated_at' => now(),
         ]);
+        // Same malware check as every other upload (a bare 'PENDING' was never picked up by the scan queue).
+        app(\App\Application\Documents\Scanning\DocumentScanQueue::class)->enqueue(\App\Models\Document::findOrFail($docId), 'local', $request->user()->id);
         $this->event($ticket->id, 'ATTACHMENT', $file->getClientOriginalName(), $request->user()->id, 'CUSTOMER', ['document_id' => $docId, 'file_name' => $file->getClientOriginalName()]);
 
         return response()->json(['data' => $this->present(DB::table('support_tickets')->find($ticket->id), true)], 201);

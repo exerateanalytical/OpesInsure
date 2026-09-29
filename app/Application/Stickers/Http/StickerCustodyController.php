@@ -109,7 +109,8 @@ final class StickerCustodyController
     public function assign(Request $r, string $policy): JsonResponse
     {
         $d = $r->validate(['serial_number' => 'required|string|max:100']);
-        $p = Policy::where('tenant_id', $this->tenantId())->findOrFail($policy);
+        // R1: only a policy in the caller's book / carrier scope (not any policy of the tenant).
+        $p = app(\App\Application\Policies\PolicyWriteScope::class)->find($policy, $r->user());
         $s = $this->stickers->assignToPolicy($p, $d['serial_number'], $r->user());
 
         return response()->json(['data' => $s->only(['id', 'serial_number', 'status', 'custody_level', 'assigned_policy_id', 'assigned_at'])], 201);

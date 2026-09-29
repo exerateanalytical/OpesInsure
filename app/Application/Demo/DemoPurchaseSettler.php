@@ -50,7 +50,16 @@ final class DemoPurchaseSettler
         // REQ-TMP-003: timestamptz now stores true instants (explicit offset on
         // write, see OffsetAwarePostgresConnection), so no wall-clock re-read.
         $ageSeconds = $payment->created_at->diffInSeconds(now(), false);
-        if (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $ageSeconds >= self::CUSTOMER_PROMPT_SECONDS) {
+        $pending = in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true);
+        if ($pending && self::isMtnSandbox($payment)) {
+            // Sent to the MTN MoMo SANDBOX: wait for MTN's own (sandbox) answer instead of faking it.
+            try {
+                app(\App\Application\Payments\MobileMoneyStatusReconciler::class)->reconcileMtn($payment, app(\App\Application\Payments\Adapters\MtnMomoAdapter::class)->status((string) $payment->provider_reference));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+            $payment->refresh();
+        } elseif (in_array($payment->status, ['PENDING_CUSTOMER', 'PROCESSING', 'CREATED'], true) && $ageSeconds >= self::CUSTOMER_PROMPT_SECONDS) {
             DB::transaction(function () use ($payment) {
                 $previous = $payment->status;
                 $payment->update(['status' => 'SUCCEEDED', 'reconciled_at' => now(), 'provider_snapshot' => array_merge($payment->provider_snapshot ?? [], ['demo' => true, 'settled_by' => 'DemoPurchaseSettler'])]);
@@ -63,6 +72,12 @@ final class DemoPurchaseSettler
         if ($payment->status === 'SUCCEEDED' && $proposal->status === 'PAYMENT_PENDING' && ! Policy::where('proposal_id', $proposal->id)->exists()) {
             $this->issue($proposal, $payment, $customer);
         }
+    }
+
+    private static function isMtnSandbox(PaymentIntentRecord $payment): bool
+    {
+        return $payment->provider === 'mtn_momo' && $payment->provider_reference !== null
+            && (bool) (((array) ($payment->attempts()->orderByDesc('attempt_number')->first()?->response_snapshot ?? []))['sandbox'] ?? false);
     }
 
     private function issue(Proposal $proposal, PaymentIntentRecord $payment, User $customer): void

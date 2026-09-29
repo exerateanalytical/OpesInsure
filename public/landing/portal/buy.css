@@ -58,7 +58,7 @@ button.opt-card{font:inherit;text-align:left;color:inherit}
 
 /* insurer mark */
 .bmark{align-items:center}.bmark .bm-t{display:grid;min-width:0}
-.bmark .bm-t b{font-size:16px;overflow:hidden;text-overflow:ellipsis}.bmark .bm-t small{font-size:12.5px;color:var(--muted)}
+.bmark .bm-t b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bmark .bm-t small{font-size:12.5px;color:var(--muted)}
 
 /* offers */
 .bhead-tools{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}

@@ -35868,6 +35868,9 @@
                         }
                     }
                 ],
+                "x-permissions": [
+                    "fulfilments.manage"
+                ],
                 "security": [
                     {
                         "userToken": []
@@ -42689,6 +42692,384 @@
                 ]
             }
         },
+        "/api/v1/ledger/periods": {
+            "get": {
+                "operationId": "get_api_v1_ledger_periods",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@index",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ledger/periods/{period}/checklist": {
+            "get": {
+                "operationId": "get_api_v1_ledger_periods_period_checklist",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@checklist",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ledger/periods/{period}/close": {
+            "post": {
+                "operationId": "post_api_v1_ledger_periods_period_close",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@close",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.periods.close"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ledger/periods/{period}/reopen-requests": {
+            "post": {
+                "operationId": "post_api_v1_ledger_periods_period_reopen_requests",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@requestReopen",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.periods.reopen"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:10|max:2000"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ledger/periods/{period}/reopen-requests/approve": {
+            "post": {
+                "operationId": "post_api_v1_ledger_periods_period_reopen_requests_approve",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@approveReopen",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.periods.reopen"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ledger/periods/{period}/reopen-requests/reject": {
+            "post": {
+                "operationId": "post_api_v1_ledger_periods_period_reopen_requests_reject",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@rejectReopen",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.periods.reopen"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:2000"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ledger/periods/{period}/start-close": {
+            "post": {
+                "operationId": "post_api_v1_ledger_periods_period_start_close",
+                "tags": [
+                    "ledger"
+                ],
+                "summary": "App\\Application\\Ledger\\Periods\\Http\\AccountingPeriodController@startClose",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "ledger.periods.close"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ledger/trial-balance": {
             "get": {
                 "operationId": "get_api_v1_ledger_trial_balance",
@@ -47226,6 +47607,58 @@
                 }
             }
         },
+        "/api/v1/mobile/account/activity": {
+            "get": {
+                "operationId": "get_api_v1_mobile_account_activity",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileActivityController",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {
+                            "type": "integer",
+                            "x-rules": "nullable|integer|min:1|max:100"
+                        },
+                        "before": {
+                            "type": "integer",
+                            "x-rules": "nullable|integer|min:1"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mobile/account/consents": {
             "get": {
                 "operationId": "get_api_v1_mobile_account_consents",
@@ -47433,6 +47866,10 @@
                                         "x-rules": "sometimes|"
                                     },
                                     "occupation": {
+                                        "type": "string",
+                                        "x-rules": "sometimes|nullable|string|max:120"
+                                    },
+                                    "occupation_other": {
                                         "type": "string",
                                         "x-rules": "sometimes|nullable|string|max:120"
                                     },
@@ -51821,6 +52258,159 @@
                 }
             }
         },
+        "/api/v1/mobile/complaints": {
+            "get": {
+                "operationId": "get_api_v1_mobile_complaints",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileComplaintController@index",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "post_api_v1_mobile_complaints",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileComplaintController@store",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "description": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:10|max:10000"
+                                    },
+                                    "policy_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
+                                    },
+                                    "claim_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
+                                    },
+                                    "contact": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:255"
+                                    }
+                                },
+                                "required": [
+                                    "description"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/complaints/{complaint}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_complaints_complaint",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileComplaintController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "complaint",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/deliveries/{delivery}": {
             "get": {
                 "operationId": "get_api_v1_mobile_deliveries_delivery",
@@ -52904,6 +53494,56 @@
                 }
             }
         },
+        "/api/v1/mobile/partner/agent/claims/{claim}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_claims_claim",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@claim",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/agent/clients": {
             "post": {
                 "operationId": "post_api_v1_mobile_partner_agent_clients",
@@ -53027,6 +53667,469 @@
                         "userToken": []
                     }
                 ]
+            },
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_clients_customer_documents",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\AgentClientAssistController@upload",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "category": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:48"
+                                    },
+                                    "mime_type": {
+                                        "type": "string",
+                                        "x-rules": "required|in:application/pdf,image/jpeg,image/png"
+                                    },
+                                    "file_base64": {
+                                        "type": "string",
+                                        "x-rules": "required|string"
+                                    }
+                                },
+                                "required": [
+                                    "category",
+                                    "mime_type",
+                                    "file_base64"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/kyc": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_clients_customer_kyc",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\AgentClientAssistController@kyc",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/kyc/documents": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_clients_customer_kyc_documents",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\AgentClientAssistController@attach",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "document_id": {
+                                        "type": "string",
+                                        "x-rules": "required|uuid"
+                                    },
+                                    "purpose": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:64"
+                                    }
+                                },
+                                "required": [
+                                    "document_id",
+                                    "purpose"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/kyc/submit": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_clients_customer_kyc_submit",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\AgentClientAssistController@submit",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "notes": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:2000"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/payments": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_clients_customer_payments",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@clientPayments",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/clients/{customer}/vehicles": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_clients_customer_vehicles",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@clientVehicles",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_clients_customer_vehicles",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@registerVehicle",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:160"
+                                    },
+                                    "external_reference": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:100"
+                                    },
+                                    "facts": {
+                                        "type": "array",
+                                        "x-rules": "required|array"
+                                    },
+                                    "facts.registration_number": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:20"
+                                    },
+                                    "facts.make": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:60"
+                                    },
+                                    "facts.model": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:60"
+                                    },
+                                    "facts.year": {
+                                        "type": "integer",
+                                        "x-rules": "nullable|integer|min:1950|max:2100"
+                                    },
+                                    "facts.usage_type": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:32"
+                                    },
+                                    "facts.fiscal_power": {
+                                        "type": "integer",
+                                        "x-rules": "nullable|integer|min:1|max:60"
+                                    }
+                                },
+                                "required": [
+                                    "display_name",
+                                    "facts"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/partner/agent/leads": {
@@ -53445,6 +54548,48 @@
                 }
             }
         },
+        "/api/v1/mobile/partner/agent/payments": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_payments",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@payments",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/agent/policies": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_agent_policies",
@@ -53485,6 +54630,338 @@
                         "userToken": []
                     }
                 ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/policies/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_policies_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@policy",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/policies/{policy}/cancellations": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_policies_policy_cancellations",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@requestCancellation",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "policies.cancellation.request"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "effective_at": {
+                                        "type": "string",
+                                        "x-rules": "required|date"
+                                    },
+                                    "reason_code": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:64"
+                                    },
+                                    "initiated_by": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                },
+                                "required": [
+                                    "effective_at",
+                                    "reason_code"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/policies/{policy}/cancellations/preview": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_policies_policy_cancellations_preview",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@previewCancellation",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "policies.cancellation.request"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "effective_at": {
+                                        "type": "string",
+                                        "x-rules": "required|date"
+                                    },
+                                    "initiated_by": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                },
+                                "required": [
+                                    "effective_at"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/policies/{policy}/service-requests": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_policies_policy_service_requests",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@requestService",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/partner/agent/policies/{policy}/sticker": {
+            "post": {
+                "operationId": "post_api_v1_mobile_partner_agent_policies_policy_sticker",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@assignSticker",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "stickers.assign"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "serial_number": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:100"
+                                    }
+                                },
+                                "required": [
+                                    "serial_number"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/partner/agent/proposals": {
@@ -53551,6 +55028,190 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/service-requests": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_service_requests",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@serviceRequests",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/service-requests/{id}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_service_requests_id",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@serviceRequest",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/stickers": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_stickers",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@stickers",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "stickers.view"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/agent/vehicles/{asset}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_agent_vehicles_asset",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerAgentServicingController@vehicle",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "asset",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",
@@ -85224,7 +86885,16 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "carrier_id": {
+                            "type": "string",
+                            "x-rules": "nullable|uuid"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/risk-alerts": {

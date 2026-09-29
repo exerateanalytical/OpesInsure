@@ -21,6 +21,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->tenant = makeAuthTestTenant();
+    $this->tenant->update(['type' => 'PLATFORM']); // integration clients are platform-tenant only (security 2026-09-29)
     $this->h = tenantHeader($this->tenant);
     $this->admin = makeAuthTestUser($this->tenant, ['integrations.manage', 'integrations.revoke', 'integrations.consent.manage']);
 });

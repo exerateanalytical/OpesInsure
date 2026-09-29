@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Distribution;
 
 use App\Application\CarrierOperations\Agreements\CarrierBrokerAgreementService;
+use App\Application\Identity\Rbac\RequestMemo as Memo;
 use App\Application\Regulatory\CimaPublicationGuard;
 use App\Models\InsuranceProduct;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +36,10 @@ final class SellabilityService
     public function check(string $productId, string $action, array $viewer): array
     {
         $on = $viewer['on'] ?? now()->toDateString();
-        $product = InsuranceProduct::find($productId);
-        $partner = ! empty($viewer['partner_id']) ? DB::table('partners')->where('id', $viewer['partner_id'])->first() : null;
+        // R4: the catalogue checks every product for 3 actions; product, partner, carrier status, CIMA verdict and the
+        // tenant's publications are memoised for the current request (RequestMemo; flushed on writes to those tables).
+        $product = Memo::remember('sell-product:'.$productId, fn () => InsuranceProduct::find($productId));
+        $partner = ! empty($viewer['partner_id']) ? Memo::remember('sell-partner:'.$viewer['partner_id'], fn () => DB::table('partners')->where('id', $viewer['partner_id'])->first()) : null;
         $channel = strtoupper((string) ($viewer['channel'] ?? DistributionChannels::defaultFor($partner?->type)));
         $out = ['sellable' => false, 'reasons' => [], 'product_id' => $productId, 'carrier_id' => $product?->carrier_id, 'action' => $action,
             'selling_partner_id' => null, 'agreement_id' => null, 'channel' => $channel, 'requires_carrier_approval' => true,
@@ -54,11 +57,11 @@ final class SellabilityService
         if ($from > $on || ($until !== null && substr((string) $until, 0, 10) < $on)) {
             $reasons[] = 'PRODUCT_NOT_EFFECTIVE';
         }
-        if (DB::table('carriers')->where('id', $product->carrier_id)->value('status') !== 'ACTIVE') {
+        if (Memo::remember('carrier-status:'.$product->carrier_id, fn () => DB::table('carriers')->where('id', $product->carrier_id)->value('status')) !== 'ACTIVE') {
             $reasons[] = 'CARRIER_INACTIVE';
         }
         if (! $this->cima->isGrandfathered($product)) {
-            $out['regulatory'] = $this->cima->violations($product, false);
+            $out['regulatory'] = Memo::remember('cima-violations:'.$product->id, fn () => $this->cima->violations($product, false));
             if ($out['regulatory'] !== []) {
                 $reasons[] = 'CARRIER_NOT_AUTHORIZED';
             }
@@ -142,16 +145,28 @@ final class SellabilityService
 
     private function publicationPaused(string $tenantId, string $productId): bool
     {
-        $rows = DB::table('marketplace_publications')->where(['tenant_id' => $tenantId, 'product_id' => $productId])->pluck('status');
+        $rows = $this->publications($tenantId, $productId)->pluck('status');
 
         return $rows->contains('PAUSED') && $rows->intersect(self::LIVE_PUBLICATION)->isEmpty();
     }
 
     private function publicationLive(string $tenantId, string $productId, string $channel): bool
     {
-        return DB::table('marketplace_publications')->where(['tenant_id' => $tenantId, 'product_id' => $productId])->whereIn('status', self::LIVE_PUBLICATION)
-            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
-            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-            ->get(['channels'])->contains(fn ($p) => in_array($channel, array_map('strtoupper', (array) json_decode((string) $p->channels, true)), true));
+        $now = now();
+
+        return $this->publications($tenantId, $productId)
+            ->filter(fn ($p) => in_array($p->status, self::LIVE_PUBLICATION, true)
+                && ($p->starts_at === null || \Carbon\CarbonImmutable::parse($p->starts_at)->lte($now))
+                && ($p->ends_at === null || \Carbon\CarbonImmutable::parse($p->ends_at)->gt($now)))
+            ->contains(fn ($p) => in_array($channel, array_map('strtoupper', (array) json_decode((string) $p->channels, true)), true));
+    }
+
+    /** The tenant's publications of $productId — all of the tenant's publications load in one query per request (R4). */
+    private function publications(string $tenantId, string $productId): \Illuminate\Support\Collection
+    {
+        $all = Memo::remember('publications:'.$tenantId, fn () => DB::table('marketplace_publications')->where('tenant_id', $tenantId)
+            ->get(['product_id', 'status', 'starts_at', 'ends_at', 'channels'])->groupBy(fn ($p) => (string) $p->product_id));
+
+        return $all->get($productId, collect());
     }
 }

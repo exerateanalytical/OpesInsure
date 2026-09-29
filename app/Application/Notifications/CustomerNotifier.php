@@ -6,6 +6,8 @@ namespace App\Application\Notifications;
 
 use App\Application\Notifications\Adapters\TwilioSmsAdapter;
 use App\Application\Notifications\Push\SendPushNotificationJob;
+use App\Mail\NotificationMail;
+use Illuminate\Support\Facades\Mail;
 use App\Models\PartyContact;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -81,8 +83,16 @@ final class CustomerNotifier
                 SendPushNotificationJob::dispatch($user->id, $title, $body, array_filter(['path' => $path, 'type' => $type, 'notification_id' => $notification->id]))->afterCommit();
             }
 
-            if ($prefs['sms'] && ($forceSms || ! $hasPushToken)) {
-                $this->sms($user, $title, $body, $notification->id);
+            // S8: channel templates (notification_templates, tenant override > platform) when one exists for the code.
+            $locale = NotificationCatalog::locale($user->locale);
+            $templates = app(NotificationTemplateRenderer::class);
+            if ($prefs['sms'] && ($forceSms || ! $hasPushToken) && $this->channelAllowed($user, 'SMS')) {
+                $sms = $templates->render($code, 'SMS', $locale, $tenantId, $params, $user);
+                $this->sms($user, $title, $body, $notification->id, $sms['body'] ?? null);
+            }
+            if (($prefs['email'] ?? true) && $user->email && $this->channelAllowed($user, 'EMAIL')
+                && ($email = $templates->render($code, 'EMAIL', $locale, $tenantId, $params, $user))) {
+                Mail::to($user->email)->queue((new NotificationMail((string) ($email['subject'] ?? $title), $email['body']))->afterCommit());
             }
 
             return $notification;
@@ -100,14 +110,24 @@ final class CustomerNotifier
             && (string) config('services.twilio.sms_from') !== '';
     }
 
-    private function sms(User $user, string $title, string $body, string $notificationId): void
+    /** communication_preferences (party-level, TRANSACTIONAL purpose): an explicit opt-out of a channel is honoured. */
+    private function channelAllowed(User $user, string $channel): bool
+    {
+        if (! $user->party_id) {
+            return true;
+        }
+
+        return DB::table('communication_preferences')->where(['party_id' => $user->party_id, 'purpose' => 'TRANSACTIONAL', 'channel' => $channel])->value('enabled') !== false;
+    }
+
+    private function sms(User $user, string $title, string $body, string $notificationId, ?string $templated = null): void
     {
         if (! self::smsConfigured() || ! $user->phone_e164) {
             return;
         }
 
         try {
-            app(TwilioSmsAdapter::class)->send($user->phone_e164, $title, Str::limit("{$title}: {$body}", 300), 'notif-'.$notificationId);
+            app(TwilioSmsAdapter::class)->send($user->phone_e164, $title, $templated ?? Str::limit("{$title}: {$body}", 300), 'notif-'.$notificationId);
         } catch (Throwable $e) {
             Log::warning('customer_notification.sms_failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }

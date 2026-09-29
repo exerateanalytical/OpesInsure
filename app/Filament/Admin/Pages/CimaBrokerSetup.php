@@ -51,7 +51,7 @@ final class CimaBrokerSetup extends Page
 
     public function getTitle(): string
     {
-        return 'Broker CIMA setup';
+        return __('Broker CIMA setup');
     }
 
     protected function getHeaderActions(): array

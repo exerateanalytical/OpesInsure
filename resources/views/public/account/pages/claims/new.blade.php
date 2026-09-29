@@ -282,10 +282,11 @@ Opes.page(function (ctx) {
         if (i >= files.length) return Promise.resolve();
         var x = files[i++];
         Opes.alert(K.fmt(W.uploading, { i: i, n: files.length }), 'info');
-        return K.uploadEvidence(c.id, x.file, x.type).catch(function () { failed++; }).then(nextFile);
+        return K.uploadEvidence(c.id, x.file, x.type).then(function (r) { if (r && r.security_check_pending) pending++; }, function () { failed++; }).then(nextFile);
       }
+      var pending = 0;
       return nextFile().then(function () {
-        var q = '?created=1' + (failed ? '&failed=' + failed : '');
+        var q = '?created=1' + (failed ? '&failed=' + failed : '') + (pending ? '&pending=' + pending : '');
         location.href = '/account/claims/' + encodeURIComponent(c.id) + q;
       });
     }).catch(function (e) { btn.disabled = false; Opes.alert((e && e.message) || Opes.t.error); });

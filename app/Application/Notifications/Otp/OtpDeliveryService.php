@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Notifications\Otp;
 
+use App\Application\Notifications\Sms\SmsDeliveryException;
+use App\Application\Notifications\Sms\SmsGateway;
 use App\Application\Settings\PlatformSettings;
 use App\Models\OtpDelivery;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +36,8 @@ final class OtpDeliveryService
         $failures = [];
 
         foreach ($channels as $channel) {
-            foreach ($this->settings->otpProviderPriority() as $provider) {
+            // S14: the admin-configured SMS providers (SmsGateway: primary → fallback) come before the legacy drivers.
+            foreach ($channel === 'sms' ? ['gateway', ...$this->settings->otpProviderPriority()] : $this->settings->otpProviderPriority() as $provider) {
                 $driver = $this->driver($provider, $channel);
 
                 if (! $driver->isConfigured()) {
@@ -46,6 +49,15 @@ final class OtpDeliveryService
                     $this->record($driver, $phoneE164, $challengeId, 'SENT', $reference, null);
 
                     return ['provider' => $provider, 'channel' => $channel];
+                } catch (SmsDeliveryException $e) {
+                    $this->record($driver, $phoneE164, $challengeId, 'FAILED', null, $e->getMessage());
+                    if ($e->status === 'RATE_LIMITED') {
+                        // Per-number limit: no other provider may be used to get around it.
+                        Log::warning('otp.rate_limited');
+
+                        return null;
+                    }
+                    $failures[] = "{$provider}/{$channel}: ".$e->getMessage();
                 } catch (Throwable $e) {
                     $failures[] = "{$provider}/{$channel}: ".$e->getMessage();
                     $this->record($driver, $phoneE164, $challengeId, 'FAILED', null, $e->getMessage());
@@ -61,9 +73,24 @@ final class OtpDeliveryService
         return null;
     }
 
+    /** CONFIG_REQUIRED when no SMS/WhatsApp driver (admin SMS providers or legacy settings) could send a code. */
+    public function status(): string
+    {
+        foreach ($this->settings->otpChannelPriority() as $channel) {
+            foreach ($channel === 'sms' ? ['gateway', ...$this->settings->otpProviderPriority()] : $this->settings->otpProviderPriority() as $provider) {
+                if ($this->driver($provider, $channel)->isConfigured()) {
+                    return 'CONFIGURED';
+                }
+            }
+        }
+
+        return 'CONFIG_REQUIRED';
+    }
+
     public function driver(string $provider, string $channel): OtpChannel
     {
         return match ("{$provider}:{$channel}") {
+            'gateway:sms' => new GatewaySmsDriver(app(SmsGateway::class)),
             'etech:sms' => new EtechSmsDriver($this->settings),
             'etech:whatsapp' => new EtechWhatsAppDriver($this->settings),
             'twilio:sms' => new TwilioSmsDriver($this->settings),

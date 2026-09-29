@@ -13,7 +13,7 @@ final class MobileDocumentController
 {
     public function index(Request $request, MobileDocumentService $service): JsonResponse
     {
-        return response()->json(['data' => $service->list($request->user(), app(TenantContext::class)->id(), 20, $request->query('owner_type'), $request->query('owner_id'))]);
+        return response()->json(['data' => $service->list($request->user(), app(TenantContext::class)->id(), max(1, min(100, (int) $request->query('per_page', 20))), $request->query('owner_type'), $request->query('owner_id'))]);
     }
 
     public function show(string $document, Request $request, MobileDocumentService $service): JsonResponse

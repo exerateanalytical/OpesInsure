@@ -54,33 +54,35 @@ final class RuleSetController
             'rules.*.outcome' => 'required|array',
         ]);
 
+        $this->assertCarrierProduct($r, $d['insurance_product_id'] ?? null);
+
         return response()->json(['data' => $this->sets->createDraft(['rules' => $r->input('rules')] + $d, $r->user())->load('rules')], 201);
     }
 
     public function submit(Request $r, string $ruleSet): JsonResponse
     {
-        return response()->json(['data' => $this->sets->submit(RuleSet::findOrFail($ruleSet), $r->user())]);
+        return response()->json(['data' => $this->sets->submit($this->owned($r, $ruleSet), $r->user())]);
     }
 
     public function approve(Request $r, string $ruleSet): JsonResponse
     {
         $d = $r->validate(['note' => 'nullable|string|max:500']);
 
-        return response()->json(['data' => $this->sets->decide(RuleSet::findOrFail($ruleSet), $r->user(), true, $d['note'] ?? null)]);
+        return response()->json(['data' => $this->sets->decide($this->owned($r, $ruleSet), $r->user(), true, $d['note'] ?? null)]);
     }
 
     public function reject(Request $r, string $ruleSet): JsonResponse
     {
         $d = $r->validate(['note' => 'required|string|min:3|max:500']);
 
-        return response()->json(['data' => $this->sets->decide(RuleSet::findOrFail($ruleSet), $r->user(), false, $d['note'])]);
+        return response()->json(['data' => $this->sets->decide($this->owned($r, $ruleSet), $r->user(), false, $d['note'])]);
     }
 
     public function retire(Request $r, string $ruleSet): JsonResponse
     {
         $d = $r->validate(['reason' => 'required|string|min:3|max:500']);
 
-        return response()->json(['data' => $this->sets->retire(RuleSet::findOrFail($ruleSet), $r->user(), $d['reason'])]);
+        return response()->json(['data' => $this->sets->retire($this->owned($r, $ruleSet), $r->user(), $d['reason'])]);
     }
 
     /** PRE §76 sandbox: evaluate this version (any status) against sample facts, full trace, nothing persisted. */
@@ -97,5 +99,21 @@ final class RuleSetController
         $errors = (new ExpressionValidator)->validate($r->input('condition'));
 
         return response()->json(['data' => ['valid' => $errors === [], 'errors' => $errors]]);
+    }
+
+    /** S6: a product-scoped rule set is only moved by its own insurer's staff when the caller is carrier-scoped (404 otherwise). */
+    private function owned(Request $r, string $id): RuleSet
+    {
+        $set = RuleSet::findOrFail($id);
+        $this->assertCarrierProduct($r, $set->insurance_product_id);
+
+        return $set;
+    }
+
+    private function assertCarrierProduct(Request $r, ?string $productId): void
+    {
+        if ($productId !== null) {
+            app(\App\Application\Identity\CarrierScopeResolver::class)->abortUnlessOwnCarrier($r->user(), \App\Models\InsuranceProduct::whereKey($productId)->value('carrier_id'), app(\App\Domain\Tenancy\TenantContext::class)->id());
+        }
     }
 }

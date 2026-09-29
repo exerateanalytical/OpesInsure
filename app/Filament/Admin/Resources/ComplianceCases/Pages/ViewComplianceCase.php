@@ -29,8 +29,8 @@ final class ViewComplianceCase extends RecordDetailPage
         return [
             ComplianceActions::caseGroup(),
             Action::make('transition')->schema([Select::make('to_status')->options(['UNDER_REVIEW' => 'Under review', 'REMEDIATION' => 'Remediation', 'CLOSED' => 'Closed', 'REOPENED' => 'Reopened'])->required(), TextInput::make('reason_code')->required(), KeyValue::make('findings')])
-                ->action(function (array $d) {
-                    ServiceValidation::run(fn () => app(ComplianceCaseService::class)->transition($this->record, $d['to_status'], $d['reason_code'], $d['findings'] ?? [], auth()->user()));
+                ->action(function (array $data) {
+                    ServiceValidation::run(fn () => app(ComplianceCaseService::class)->transition($this->record, $data['to_status'], $data['reason_code'], $data['findings'] ?? [], auth()->user()));
                 }),
         ];
     }

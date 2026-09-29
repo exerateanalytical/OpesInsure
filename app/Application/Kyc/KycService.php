@@ -459,6 +459,8 @@ final class KycService
                 'verification_status' => $d->verification_status, 'ocr_data' => $d->ocr_data,
             ])->all(),
         ];
+        // S4 (additive): attached documents still in the security check / quarantined, never downloadable.
+        $out['pending_documents'] = app(\App\Application\Documents\Scanning\PendingDocuments::class)->forDocumentIds(array_column($out['documents'], 'id'));
         if ($staff) {
             $out += [
                 'party_id' => $s->party_id, 'case_id' => $s->case_id, 'level_source' => $s->level_source, 'risk_factors' => $s->risk_factors ?? [],

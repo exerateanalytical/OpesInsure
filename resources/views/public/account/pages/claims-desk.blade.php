@@ -69,7 +69,7 @@ Opes.page(function (ctx) {
     var uniq = function (f) { var s = {}; all.forEach(function (x) { var v = f(x); if (v) s[v] = 1; }); return Object.keys(s).sort(); };
     var fill = function (k, vals, lab) { var sel = O.$('[data-f="' + k + '"]'); vals.forEach(function (v) { sel.appendChild(h('option', { value: v }, lab ? lab(v) : v)); }); sel.addEventListener('change', function () { state[k] = sel.value; state.page = 1; render(); }); };
     fill('type', uniq(typeOf), D.type);
-    fill('insurer', uniq(function (x) { return x.carrier_name; }));
+    fill('insurer', uniq(function (x) { return (x.carrier_short_name || x.carrier_name); }));
     fill('priority', uniq(function (x) { return x.priority; }), D.type);
     var q = O.$('[data-q]'); q.addEventListener('input', function () { state.q = q.value.trim().toLowerCase(); state.page = 1; render(); });
     O.$('[data-reset]').addEventListener('click', function () { state.q = state.type = state.insurer = state.priority = ''; state.page = 1; q.value = ''; O.$$('[data-f]').forEach(function (s) { s.value = ''; }); render(); });
@@ -80,7 +80,7 @@ Opes.page(function (ctx) {
       var d = details[x.id] || {};
       if (state.tab !== 'all' && D.bucket(x.status) !== state.tab) return false;
       if (state.type && typeOf(x) !== state.type) return false;
-      if (state.insurer && x.carrier_name !== state.insurer) return false;
+      if (state.insurer && (x.carrier_short_name || x.carrier_name) !== state.insurer) return false;
       if (state.priority && x.priority !== state.priority) return false;
       if (state.q && [x.reference, x.subject, d.policy_number, d.customer_name].join(' ').toLowerCase().indexOf(state.q) < 0) return false;
       return true;
@@ -98,7 +98,7 @@ Opes.page(function (ctx) {
         var d = details[x.id] || {}, href = D.base(x.id);
         return h('tr', null,
           h('td', null, h('a', { class: 'rowlink', href: href }, x.reference || '—')),
-          h('td', null, d.customer_name || custOf(x), x.carrier_name ? h('span', { class: 'muted' }, x.carrier_name) : null),
+          h('td', null, d.customer_name || custOf(x), (x.carrier_short_name || x.carrier_name) ? h('span', { class: 'muted' }, (x.carrier_short_name || x.carrier_name)) : null),
           h('td', null, d.policy_number || '—'),
           h('td', null, D.type(typeOf(x))),
           h('td', null, O.date(x.submitted_at, true)),

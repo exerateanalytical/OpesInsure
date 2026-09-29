@@ -175,7 +175,7 @@ it('the sidebar is sentence case, unambiguous and French for a French user', fun
     expect($labels)->toContain('CIMA overview', 'Document register', 'Integration health', 'Compliance cases', 'Customers')
         ->not->toContain('Compliance Cases', 'Tenant Customers')
         ->and(array_unique(array_column($nav, 'group')))->toContain('Administration');
-    expect(collect($nav)->where('group', '')->pluck('label')->all())->toBe(['Dashboard', 'Reports']);
+    expect(collect($nav)->where('group', '')->pluck('label')->all())->toBe(['Dashboard', 'Global search', 'Reports', 'Help']);
 
     $fr = User::factory()->create(['status' => 'ACTIVE', 'locale' => 'fr']);
     TenantMembership::create(['tenant_id' => $tenant->id, 'user_id' => $fr->id, 'role_code' => 'PLATFORM_ADMIN', 'status' => 'ACTIVE'])
@@ -188,7 +188,8 @@ it('the sidebar is sentence case, unambiguous and French for a French user', fun
 });
 
 it('every list page in the admin and insurer panels opens a record (view/edit page or a row URL)', function () {
-    $inlineOnly = [\App\Filament\Admin\Resources\ApprovalRequests\ApprovalRequestResource::class]; // row "Details" slide-over with approve/reject
+    $inlineOnly = [\App\Filament\Admin\Resources\ApprovalRequests\ApprovalRequestResource::class, // row "Details" slide-over with approve/reject
+        \App\Filament\Admin\Resources\BrokerOnboarding\BrokerOnboardingResource::class]; // batch rows: preview / report / submit / approve actions
     $missing = [];
     foreach (['admin', 'insurer'] as $id) {
         foreach (\Filament\Facades\Filament::getPanel($id)->getResources() as $resource) {

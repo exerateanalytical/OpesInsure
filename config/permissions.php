@@ -869,6 +869,7 @@ return [
         'operations.platform.view' => ['description' => 'Operations platform view.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'operations.jobs.manage' => ['description' => 'Operations jobs manage.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'operations.incidents.manage' => ['description' => 'Operations incidents manage.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
+        'operations.alerts.receive' => ['description' => 'Receive operations alerts (email + SMS) from the 5-minute monitoring checks. Granted explicitly; a wildcard role does not receive alerts.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN']],
         'reporting.kpis.view' => ['description' => 'Reporting kpis view.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'reporting.kpis.manage' => ['description' => 'Reporting kpis manage.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],
         'reporting.kpis.approve' => ['description' => 'Reporting kpis approve.', 'suggested_roles' => ['SYSTEM_ADMIN', 'PLATFORM_ADMIN', 'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER']],

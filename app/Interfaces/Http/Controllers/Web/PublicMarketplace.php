@@ -141,7 +141,7 @@ final class PublicMarketplace
             ->whereIn('p.line_code', array_values(self::LINES))
             ->where(fn ($q) => $q->whereNull('p.effective_until')->orWhere('p.effective_until', '>=', now()->toDateString()))
             ->orderBy('p.name')
-            ->get(['p.id', 'p.code', 'p.name', 'p.line_code', 'c.id as carrier_id', 'c.short_name', 'c.trade_name', 'c.legal_name']);
+            ->get(['p.id', 'p.code', 'p.name', 'p.line_code', 'c.id as carrier_id', 'c.short_name', 'c.brand_short_name', 'c.trade_name', 'c.legal_name']);
 
         if ($products->isEmpty()) {
             return [];
@@ -173,7 +173,7 @@ final class PublicMarketplace
                     'limit' => $c->default_limit_minor !== null ? intdiv((int) $c->default_limit_minor, 100) : null,
                     'deductible' => $c->default_deductible_minor ? intdiv((int) $c->default_deductible_minor, 100) : null];
             })->values()->all();
-            $carrier = (string) ($p->short_name ?: ($p->trade_name ?: $p->legal_name));
+            $carrier = (string) ($p->brand_short_name ?: ($p->short_name ?: ($p->trade_name ?: $p->legal_name)));
 
             return [
                 'id' => $p->id, 'code' => $p->code, 'name' => $p->name, 'line' => $p->line_code, 'slug' => $slugOf[$p->line_code],

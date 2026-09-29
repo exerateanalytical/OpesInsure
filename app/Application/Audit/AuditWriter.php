@@ -64,6 +64,9 @@ final class AuditWriter
             DB::table('audit_log')->insert($row);
         });
 
+        // S8: audited-only events (agent payment request, proposal information request, inspection reschedule…) notify the user.
+        \App\Application\Notifications\LaunchNotificationRouter::observe($action, $subjectType, $subjectId, $metadata);
+
         return $id;
     }
 

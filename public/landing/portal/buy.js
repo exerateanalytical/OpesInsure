@@ -14,7 +14,7 @@
   function minor(v) { return v === null || v === undefined || v === '' ? '—' : O.money(v, { minor: true }); }
   function carrierName(o) {
     var c = (o && o.carrier) || {};
-    return c.trade_name || c.short_name || (c.party && c.party.display_name) || c.legal_name || (o && o.carrier_name) || '—';
+    return c.brand_short_name || (o && o.carrier_short_name) || c.trade_name || c.short_name || (c.party && c.party.display_name) || c.legal_name || (o && o.carrier_name) || '—';
   }
   function productName(o) { return (o && o.product && o.product.name) || (o && o.product_name) || ''; }
   function initials(n) {

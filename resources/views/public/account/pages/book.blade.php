@@ -1,7 +1,7 @@
 {{-- /account/book — the partner's book (UI audit 2026-09-27): quotes, proposals, policies and claims of the clients attributed to
      the signed-in agent or broker. Agent: GET /mobile/partner/agent/quotes|proposals|policies|claims. Broker: GET /mobile/partner/broker/quotes|proposals|policies|claims.
      Every list is scoped server-side to the caller's own book (PartnerWorkspaceScope::bookPartyIds). --}}
-@php $K = __('account_agent'); @endphp
+@php $K = __('account_agent'); $servicing = [['/account/book/claims', __('launch_agent_b.claims_t')], ['/account/book/requests', __('launch_agent_b.requests_t')], ['/account/book/payments', __('launch_agent_b.payments_t')]]; @endphp
 @extends('public.account.layout', ['title' => $K['book_t'], 'lede' => $K['book_lede'], 'crumbs' => [[$K['book_t'], null]], 'active' => 'book'])
 @section('content')
 @include('public.account.agent.assets')
@@ -19,19 +19,21 @@ Opes.page(function (ctx) {
   var A = Agent, O = Opes, h = O.h;
   if (!A.guard(ctx)) return;
   var box = O.$('[data-rows]'), data = {}, state = { tab: 'quotes', q: '' };
+  // Agent servicing detail pages (AGT-040 / AGT-053); brokers service from the broker portal, so their rows stay plain.
+  var detail = function (base, id, label) { return A.mode() === 'agent' && id ? h('a', { href: base + encodeURIComponent(id) }, h('b', null, label || '—')) : h('b', null, label || '—'); };
   var client = function (r) { return r.customer_id ? h('a', { href: '/account/customers/' + encodeURIComponent(r.customer_id) }, r.customer_name || '—') : (r.customer_name || '—'); };
   var VIEWS = {
     quotes: [['th_client', 'th_line', 'th_offers', 'th_best', 'th_status', 'th_created', 'th_actions'], function (q) {
       return [client(q), A.line(q.line_code), String(q.offers || 0), h('span', { class: 'amt' }, A.money(q.best_premium_minor)), O.chip(q.status, A.label(q.status)), O.date(q.created_at), collect(q)];
     }],
     proposals: [['th_proposal', 'th_client', 'th_insurer', 'th_premium', 'th_status', 'th_submitted'], function (p) {
-      return [h('b', null, p.proposal_number || '—'), client(p), p.carrier_name || '—', h('span', { class: 'amt' }, A.money(p.total_minor)), O.chip(p.status, A.label(p.status)), O.date(p.submitted_at || p.created_at)];
+      return [h('b', null, p.proposal_number || '—'), client(p), (p.carrier_short_name || p.carrier_name) || '—', h('span', { class: 'amt' }, A.money(p.total_minor)), O.chip(p.status, A.label(p.status)), O.date(p.submitted_at || p.created_at)];
     }],
     policies: [['th_policy', 'th_client', 'th_insurer', 'th_premium', 'th_status', 'th_expires'], function (p) {
-      return [h('b', null, p.policy_number || '—'), client(p), p.carrier_name || '—', h('span', { class: 'amt' }, A.money(p.premium_minor)), O.chip(p.status, A.label(p.status)), O.date(p.coverage_ends_at)];
+      return [detail('/account/book/policies/', p.id, p.policy_number), client(p), (p.carrier_short_name || p.carrier_name) || '—', h('span', { class: 'amt' }, A.money(p.premium_minor)), O.chip(p.status, A.label(p.status)), O.date(p.coverage_ends_at)];
     }],
     claims: [['th_claim', 'th_client', 'th_policy', 'th_estimate', 'th_status', 'th_loss_date'], function (c) {
-      return [h('b', null, c.claim_number || '—'), c.customer_name || '—', c.policy_number || '—', h('span', { class: 'amt' }, A.money(c.estimated_loss_minor)), O.chip(c.status, A.label(c.status)), O.date(c.loss_occurred_at)];
+      return [detail('/account/book/claims/', c.id, c.claim_number), c.customer_name || '—', c.policy_number || '—', h('span', { class: 'amt' }, A.money(c.estimated_loss_minor)), O.chip(c.status, A.label(c.status)), O.date(c.loss_occurred_at)];
     }],
   };
   // Premium collection (agents): prompt the client to pay an assisted-sale quote — POST /mobile/agent/sales/{id}/payment-request (same as the app).
@@ -47,7 +49,7 @@ Opes.page(function (ctx) {
   }
   var LOAD = { quotes: A.quotes, proposals: A.proposals, policies: A.policies, claims: A.claims };
 
-  function text(r) { return JSON.stringify([r.customer_name, r.policy_number, r.proposal_number, r.claim_number, r.carrier_name, r.status]).toLowerCase(); }
+  function text(r) { return JSON.stringify([r.customer_name, r.policy_number, r.proposal_number, r.claim_number, (r.carrier_short_name || r.carrier_name), r.status]).toLowerCase(); }
   function render() {
     var rows = data[state.tab];
     if (rows === undefined) { O.loading(box); return; }
@@ -61,6 +63,7 @@ Opes.page(function (ctx) {
     A.tabs(O.$('[data-tabs]'), ['quotes', 'proposals', 'policies', 'claims'].map(function (k) { return [k, A.t('tab_' + k), data[k] && data[k].length !== undefined ? data[k].length : '…']; }), state.tab, function (k) { state.tab = k; render(); });
   }
   O.$('[data-tools]').appendChild(A.search(A.t('search_book'), function (q) { state.q = q; render(); }));
+  if (A.mode() === 'agent') O.$('[data-tools]').append.apply(O.$('[data-tools]'), @json($servicing).map(function (l) { return h('a', { class: 'dbtn dbtn-outline sm', href: l[0] }, l[1]); }));
   var initial = ctx.params.get('tab'); if (VIEWS[initial]) state.tab = initial;
   tabs(); render();
   Object.keys(LOAD).forEach(function (k) {

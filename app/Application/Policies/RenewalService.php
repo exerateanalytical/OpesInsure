@@ -161,6 +161,49 @@ final class RenewalService
         });
     }
 
+    /**
+     * S3 2026-09-29: (re)assign an open renewal case to a colleague, or unassign it (null) — POST renewals/{r}/assignment
+     * and the BRK-066 / renewal-case web actions (renewals.manage). Own-book scoping: a book-scoped caller (BookScope)
+     * may only touch cases whose policy belongs to a party of their book (else 404, no existence leak), and may only
+     * hand the case to a colleague they can see (BookScope::users). The assignee must be an ACTIVE member of the case's
+     * tenant who holds renewals.manage. Trail REASSIGNED + audit + outbox.
+     */
+    public function reassign(RenewalCase $case, ?string $assigneeId, User $actor, ?string $reason = null): RenewalCase
+    {
+        $book = app(\App\Application\Partners\BookScope::class);
+        $parties = $book->parties($actor);
+        if ($parties !== null && ! DB::table('policies')->where('id', $case->policy_id)->whereIn('party_id', $parties)->exists()) {
+            throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(RenewalCase::class, [$case->id]);
+        }
+        if ($assigneeId !== null) {
+            $member = DB::table('tenant_memberships')->where(['tenant_id' => $case->tenant_id, 'user_id' => $assigneeId, 'status' => 'ACTIVE'])->exists();
+            $assignee = $member ? User::find($assigneeId) : null;
+            $colleagues = $book->users($actor);
+            if ($assignee === null || ! $assignee->hasPermission('renewals.manage')
+                || ($colleagues !== null && ! DB::query()->fromSub($colleagues, 'c')->where('c.user_id', $assigneeId)->exists())) {
+                throw ValidationException::withMessages(['assignee_id' => __('leftover_actions.renewal.assignee_invalid')]);
+            }
+        }
+
+        return DB::transaction(function () use ($case, $assigneeId, $actor, $reason): RenewalCase {
+            $case = RenewalCase::whereKey($case->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($case->status, RenewalMachine::OPEN, true)) {
+                throw ValidationException::withMessages(['status' => __('leftover_actions.renewal.not_open')]);
+            }
+            $from = $case->assigned_to;
+            if ((string) $from === (string) $assigneeId) {
+                throw ValidationException::withMessages(['assignee_id' => __('leftover_actions.renewal.unchanged')]);
+            }
+            $case->forceFill(['assigned_to' => $assigneeId])->save();
+            $meta = ['from_user_id' => $from, 'to_user_id' => $assigneeId];
+            $this->machine->trail($case, 'REASSIGNED', $case->status, $case->status, $actor, $meta + ['reason' => $reason]);
+            $this->audit->record('renewal.reassigned', 'renewal_case', $case->id, $meta, $reason);
+            $this->outbox->record('renewal.reassigned', 'renewal_case', $case->id, ['renewal_case_id' => $case->id] + $meta);
+
+            return $case->refresh();
+        });
+    }
+
     public function complete(RenewalCase $case, Policy $successor): RenewalCase
     {
         return DB::transaction(function () use ($case, $successor): RenewalCase {

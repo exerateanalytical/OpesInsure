@@ -124,7 +124,7 @@ final class CessionService
         }
         $terms = json_decode((string) $policy->terms_snapshot, true) ?: [];
         $basis = ['currency' => $policy->currency, 'gross_premium_minor' => (int) $policy->premium_minor, 'sum_insured_minor' => $sumInsured ?? $this->sumInsured($policy)];
-        $versions = $this->treaties->effectiveVersions($tenantId, substr((string) $policy->coverage_starts_at, 0, 10), $terms['line_code'] ?? null, $policy->currency);
+        $versions = $this->treaties->effectiveVersions($tenantId, substr((string) $policy->coverage_starts_at, 0, 10), $terms['line_code'] ?? null, $policy->currency, $policy->carrier_id ?? null);
 
         return [$policy, $basis, $versions];
     }
@@ -132,7 +132,8 @@ final class CessionService
     private function policy(string $tenantId, string $policyId, bool $lock = false): object
     {
         // Read-only: shared lock at most; policies are owned by the issuance module.
-        $q = DB::table('policies')->where('tenant_id', $tenantId)->where('id', $policyId);
+        // S5: a carrier-linked caller only reaches its own carrier's policies.
+        $q = RiskTransferCarrierScope::apply(DB::table('policies')->where('tenant_id', $tenantId)->where('id', $policyId), $tenantId);
 
         return ($lock ? $q->sharedLock() : $q)->first() ?? abort(404, 'Policy not found.');
     }

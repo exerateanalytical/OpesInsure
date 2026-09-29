@@ -111,6 +111,7 @@ return [
             'repair' => 'Réparation', 'garage' => 'Garage', 'estimate' => 'Devis',
             'next_t' => 'Prochaines étapes', 'important' => 'Informations importantes', 'important_d' => 'Conservez tous les originaux. Votre assureur peut demander des documents supplémentaires pendant l\'expertise.',
             'print' => 'Imprimer / enregistrer le récapitulatif', 'contact' => 'Contacter le support sinistres', 'uploaded_ok' => 'Document envoyé.',
+            'security_check' => 'Contrôle de sécurité en cours — votre fichier sera joint automatiquement.',
             'not_found' => 'Ce sinistre est introuvable dans votre compte.',
             'withdraw' => [
                 'btn' => 'Retirer le sinistre', 'title' => 'Retirer ce sinistre ?',

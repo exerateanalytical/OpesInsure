@@ -34,7 +34,7 @@ final class PortalPanelFactory
             ->login(PortalLogin::class)->passwordReset()->profile()
             ->brandName(fn (): string => 'OpesInsure · '.__('web_experience.portals.'.$id))
             ->resources($resources)
-            ->pages([PortalDashboard::class, \App\Filament\Shared\Pages\PortalOrganisationSettings::class, \App\Filament\Shared\Pages\ReportsPage::class, ...$pages])
+            ->pages([PortalDashboard::class, \App\Filament\Shared\Pages\PortalOrganisationSettings::class, \App\Filament\Shared\Pages\ReportsPage::class, \App\Filament\Shared\Pages\GlobalSearchPage::class, \App\Filament\Shared\Pages\HelpPage::class, ...$pages])
             ->middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, AuthenticateSession::class, ShareErrorsFromSession::class, VerifyCsrfToken::class, SubstituteBindings::class, DisableBladeIconComponents::class, DispatchServingFilamentEvent::class, SetPanelLocale::class])
             ->authMiddleware([AuthenticatePortal::class, ResolvePortalTenant::class], isPersistent: true));
     }
@@ -53,6 +53,8 @@ final class PortalPanelFactory
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->sidebarWidth('264px')->collapsedSidebarWidth('80px')->sidebarCollapsibleOnDesktop()
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): string => view('filament.shared.language-switch')->render())
+            // S11: contextual "?" help link on the key screens (HelpContext::MAP), every panel.
+            ->renderHook(PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE, fn (array $scopes = []): string => \App\Application\Help\HelpContext::link($scopes))
             ->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (): string => '<div style="display:flex;justify-content:center;margin-top:1rem">'.view('filament.shared.language-switch')->render().'</div>');
     }
 }

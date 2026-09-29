@@ -56,7 +56,8 @@ it('logs a critical error when SMS delivery is not configured', function () {
     Log::spy();
     makeMobileTestUser('+237670009001');
 
-    $this->postJson('/api/v1/auth/mobile/otp/request', ['phone_e164' => '+237670009001'])->assertSuccessful();
+    // S14: no provider configured → a clear 422 instead of a silent wait for a code that can never arrive; the alarm is still logged.
+    $this->postJson('/api/v1/auth/mobile/otp/request', ['phone_e164' => '+237670009001'])->assertStatus(422);
 
     Log::shouldHaveReceived('critical')->withArgs(fn ($message) => $message === 'otp.delivery_failed')->once();
 });

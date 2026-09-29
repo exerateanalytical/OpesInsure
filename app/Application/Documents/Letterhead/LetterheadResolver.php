@@ -54,8 +54,18 @@ final class LetterheadResolver
             return null;
         }
 
-        return self::publicLogoUrl(LetterheadAsset::where('owner_type', 'CARRIER')->where('carrier_id', $carrierId)
-            ->where('status', 'ACTIVE')->where('public_display', true)->whereNotNull('logo_path')->orderByDesc('version')->first());
+        // R4: lists call this once per row; one query per request loads every carrier's current public logo (same rule).
+        $logos = \App\Application\Identity\Rbac\RequestMemo::remember('carrier-public-logos', function () {
+            $out = [];
+            foreach (LetterheadAsset::where('owner_type', 'CARRIER')->whereNotNull('carrier_id')->where('status', 'ACTIVE')->where('public_display', true)
+                ->whereNotNull('logo_path')->orderByDesc('version')->get() as $a) {
+                $out[(string) $a->carrier_id] ??= $a;
+            }
+
+            return $out;
+        });
+
+        return self::publicLogoUrl($logos[$carrierId] ?? null);
     }
 
     public static function dataUri(?LetterheadAsset $a, string $kind): ?string

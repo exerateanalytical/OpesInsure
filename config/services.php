@@ -21,6 +21,11 @@ return [
         // 'queue' (needs a queue worker) or 'after_response' (no worker needed).
         'delivery_mode' => env('OTP_DELIVERY_MODE', 'queue'),
     ],
+    // S14 admin-configured SMS providers (credentials live encrypted in sms_provider_connections, never here).
+    'sms' => [
+        'per_number_per_hour' => (int) env('SMS_PER_NUMBER_PER_HOUR', 10),
+        'max_segments' => (int) env('SMS_MAX_SEGMENTS', 6),
+    ],
     'twilio' => [
         'account_sid' => env('TWILIO_ACCOUNT_SID'),
         'auth_token' => env('TWILIO_AUTH_TOKEN'),
@@ -39,5 +44,7 @@ return [
         'host' => env('CLAMAV_HOST'),
         'port' => (int) env('CLAMAV_PORT', 3310),
         'timeout' => (int) env('CLAMAV_TIMEOUT', 10),
+        // Unix socket path (e.g. /run/clamav/clamd.ctl); takes precedence over host/port when set.
+        'socket' => env('CLAMAV_SOCKET'),
     ],
 ];

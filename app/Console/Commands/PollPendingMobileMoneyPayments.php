@@ -46,7 +46,13 @@ final class PollPendingMobileMoneyPayments extends Command
             ->limit($limit)
             ->get();
 
+        // Without MTN credentials every status() call would fail; skip rather than report the same error every run.
+        $mtnConfigured = $mtn->configured();
+
         foreach ($intents as $intent) {
+            if ($intent->provider === 'mtn_momo' && ! $mtnConfigured) {
+                continue;
+            }
             $polled++;
 
             try {

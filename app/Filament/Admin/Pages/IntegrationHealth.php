@@ -16,7 +16,7 @@ final class IntegrationHealth extends Page
 
     public function getTitle(): string
     {
-        return 'Integration health';
+        return __('Integration health');
     }
 
     protected function getViewData(): array

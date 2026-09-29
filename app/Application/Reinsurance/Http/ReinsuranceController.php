@@ -19,7 +19,7 @@ final class ReinsuranceController
 
     public function reinsurers(): JsonResponse
     {
-        return response()->json(['data' => DB::table('reinsurers')->where('tenant_id', $this->tenant->id())->orderBy('code')->get()]);
+        return response()->json(['data' => TreatyService::reinsurers($this->tenant->id())->orderBy('code')->get()]);
     }
 
     public function createReinsurer(Request $r): JsonResponse
@@ -30,7 +30,7 @@ final class ReinsuranceController
             'regulator' => 'nullable|string|max:128', 'license_reference' => 'nullable|string|max:128', 'ratings' => 'sometimes|array|max:10',
             'ratings.*.agency' => 'required_with:ratings|string|max:64', 'ratings.*.rating' => 'required_with:ratings|string|max:16', 'ratings.*.as_of' => 'nullable|date',
             'contact' => 'sometimes|array', 'website' => 'nullable|url|max:255', 'effective_from' => 'nullable|date', 'effective_until' => 'nullable|date|after_or_equal:effective_from',
-            'source_url' => 'nullable|url|max:1024']);
+            'source_url' => 'nullable|url|max:1024', 'carrier_id' => 'nullable|uuid']);
 
         return response()->json(['data' => $this->treaties->createReinsurer($this->tenant->id(), $data)], 201);
     }
@@ -44,7 +44,7 @@ final class ReinsuranceController
 
     public function treatiesIndex(): JsonResponse
     {
-        return response()->json(['data' => DB::table('reinsurance_treaties')->where('tenant_id', $this->tenant->id())->orderBy('code')->get()]);
+        return response()->json(['data' => TreatyService::treaties($this->tenant->id())->orderBy('code')->get()]);
     }
 
     public function createTreaty(Request $r): JsonResponse
@@ -52,7 +52,7 @@ final class ReinsuranceController
         $data = $r->validate(['code' => 'required|string|max:64', 'name' => 'required|string|max:255', 'treaty_type' => 'required|string', 'reinsurance_type' => 'sometimes|string',
             'currency' => 'required|string|size:3', 'underwriting_year' => 'nullable|integer|min:1990|max:2100',
             'treaty_number' => 'nullable|string|max:64', 'cedant_party_id' => 'nullable|uuid|exists:parties,id', 'territories' => 'sometimes|array', 'territories.*' => 'string|max:64',
-            'bordereau_frequency' => 'nullable|string', 'wording_document_id' => 'nullable|uuid']);
+            'bordereau_frequency' => 'nullable|string', 'wording_document_id' => 'nullable|uuid', 'carrier_id' => 'nullable|uuid']);
 
         return response()->json(['data' => $this->treaties->createTreaty($this->tenant->id(), $data)], 201);
     }

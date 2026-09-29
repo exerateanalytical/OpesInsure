@@ -157,7 +157,7 @@ it('assigns a claim handler through ClaimLifecycleService', function () {
 });
 
 it('requests an endorsement and a checker approves it; cancellation needs policies.cancellation.request', function () {
-    wfAs(wfUser($this->tenant, ['policies.read']), $this->tenant);
+    wfAs(wfUser($this->tenant, ['policies.read', 'policies.service.approve']), $this->tenant);
     wfHarness([fn () => PolicyActions::endorse()], $this->policy)->callAction('policyEndorse', [
         'effective_at' => now()->addDay()->toDateTimeString(), 'requested_changes' => ['address' => 'Bonapriso'], 'premium_delta_minor' => 0, 'reason_code' => 'ADDRESS_CHANGE',
     ]);

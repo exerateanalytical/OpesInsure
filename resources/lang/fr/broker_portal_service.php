@@ -7,8 +7,8 @@ return [
     'serviceRequest' => ['label' => 'Demande de gestion', 'help' => "Envoyer à l'assureur une demande d'avenant, de réédition de document ou autre demande de gestion pour cette police.", 'done' => 'Demande de gestion envoyée.'],
     'assistedClaim' => ['label' => 'Déclarer un sinistre pour un client', 'help' => "Déclarer un sinistre pour le compte d'un client de votre portefeuille. Le dossier suit le processus sinistre habituel.", 'done' => 'Sinistre déclaré.'],
     'inviteStaff' => ['label' => 'Inviter un collaborateur', 'help' => 'Envoyer une invitation à rejoindre votre cabinet. Vous ne pouvez attribuer que les rôles que vous êtes autorisé à accorder.', 'done' => 'Invitation créée.', 'code' => "Code d'invitation (à transmettre à l'invité)"],
-    'renewalQuote' => ['label' => 'Recoter le renouvellement'],
-    'renewalComplete' => ['label' => 'Lier la police de remplacement'],
+    'renewalQuote' => ['label' => 'Recoter le renouvellement', 'done' => 'Devis de renouvellement créé'],
+    'renewalComplete' => ['label' => 'Lier la police de remplacement', 'done' => 'Police de remplacement liée'],
     'fields' => [
         'type' => 'Type de demande',
         'reason' => 'Détails',

@@ -32,6 +32,8 @@ Route::middleware(SetPublicLocale::class)->group(function (): void {
     // Signed-in account area (customer, agent/broker and claims-officer screens). Pages are
     // static shells; their data comes from api/v1 with the bearer token from /login.
     Route::get('/account/{path?}', [Site::class, 'account'])->where('path', '(?!delete$)[A-Za-z0-9/_-]*')->name('public.account');
+    // S11 in-app help: printable (PDF-friendly) version of one role guide, ?lang=en|fr.
+    Route::get('/help/{guide}/print', \App\Interfaces\Http\Controllers\Web\HelpGuidePrintController::class)->where('guide', '[a-z_]+')->name('help.print');
 
     Route::get('/providers', [Site::class, 'providers'])->name('public.providers');
     Route::get('/contact', [Site::class, 'contact'])->name('public.contact');
@@ -59,8 +61,9 @@ Route::middleware(SetPublicLocale::class)->group(function (): void {
     // Demo credential directory. The route itself only exists while demo mode
     // is enabled, so disabling the flag removes the page rather than leaving it
     // reachable and empty.
-    if (config('demo.enabled')) {
-        Route::get('/demo', fn () => view('public.demo', [
+    // S13: checked per request (not at route-cache time) so demo:exit takes effect without a re-cache.
+    {
+        Route::get('/demo', fn () => abort_unless(config('demo.enabled'), 404) ?? view('public.demo', [
             'staff' => \Database\Seeders\DatabaseSeeder::DEMO_ACCOUNTS,
             'mobile' => \Database\Seeders\DemoMobileAccountSeeder::ACCOUNTS,
             'password' => config('demo.password'),

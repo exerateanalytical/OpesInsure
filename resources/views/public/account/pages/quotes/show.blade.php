@@ -65,7 +65,11 @@ Opes.page(function (ctx) {
     pdf.addEventListener('click', function () {
       var win = window.open('about:blank', '_blank');
       Opes.busy(pdf, true);
-      Opes.api('/quotes/' + id + '/document', { blob: true }).then(function (b) { var u = URL.createObjectURL(b); if (win) win.location.href = u; else location.href = u; })
+      // A freshly rated quote is CALCULATED: the PDF exists once the quote is generated (owner may call /generate), then retry.
+      Opes.api('/quotes/' + id + '/document', { blob: true }).catch(function (e) {
+        if (!e || e.status !== 422) throw e;
+        return Opes.api('/quotes/' + id + '/generate', { method: 'POST', body: {} }).then(function () { return Opes.api('/quotes/' + id + '/document', { blob: true }); });
+      }).then(function (b) { var u = URL.createObjectURL(b); if (win) win.location.href = u; else location.href = u; })
         .catch(function () { if (win) win.close(); Opes.alert(T.pdf_failed); }).finally(function () { Opes.busy(pdf, false); });
     });
     sel.appendChild(h('section', { class: 'acard bsel-card' }, h('div', { class: 'acard-h' }, h('span', null, T.selected_quote), chosen.comparison_rank === 1 ? h('span', { class: 'bbest' }, Opes.icon('check'), T.best_value) : null),

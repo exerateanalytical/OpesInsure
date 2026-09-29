@@ -23,7 +23,7 @@ final class CoinsuranceRegister extends RegisterPage
 
     protected static ?string $group = 'Reinsurance & co-insurance';
 
-    protected static ?string $carrierColumn = null;
+    protected static ?string $carrierColumn = 'carrier_id';
 
     protected static array $columns = ['reference' => ['text', 'reference'], 'status' => ['status', 'status'], 'currency' => ['text', 'currency'], 'settlement_method' => ['text', 'settlement_method'], 'effective_from' => ['day', 'effective_from'], 'effective_until' => ['day', 'effective_until']];
 }

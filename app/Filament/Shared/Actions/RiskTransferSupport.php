@@ -46,7 +46,7 @@ final class RiskTransferSupport
     /** @return array<string, string> reinsurers (optionally only one role) of the current tenant */
     public static function reinsurers(?string $role = null, bool $excludeBrokers = false): array
     {
-        return DB::table('reinsurers')->where('tenant_id', self::tenant())
+        return \App\Application\Reinsurance\TreatyService::reinsurers(self::tenant())
             ->when($role, fn ($q) => $q->where('role', $role))->when($excludeBrokers, fn ($q) => $q->where('role', '!=', 'REINSURANCE_BROKER'))
             ->orderBy('code')->limit(500)->get()->mapWithKeys(fn ($r) => [$r->id => $r->code.' · '.$r->name])->all();
     }

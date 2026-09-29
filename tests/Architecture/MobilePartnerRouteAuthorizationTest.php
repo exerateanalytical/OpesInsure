@@ -89,7 +89,8 @@ it('never exposes a partner route outside the authenticated api/v1 prefix', func
 it('keeps every mutating partner route rate limited', function () {
     $unthrottled = collect(mobilePartnerRoutes())
         ->filter(fn ($r, string $k) => ! str_starts_with($k, 'GET'))
-        ->reject(fn ($r) => collect($r['middleware'])->contains(fn (string $m) => str_contains($m, 'ThrottleRequests')))
+        // PerRouteThrottle extends ThrottleRequests (one counter per user + route instead of one per user).
+        ->reject(fn ($r) => collect($r['middleware'])->contains(fn (string $m) => str_contains($m, 'ThrottleRequests') || str_contains($m, 'PerRouteThrottle')))
         ->keys()->values()->all();
 
     expect($unthrottled)->toBe([]);

@@ -30,7 +30,7 @@ return [
     ],
     'checks' => [
         'database' => 'Base de données', 'queue' => 'File d’attente', 'scheduler' => 'Planificateur', 'storage' => 'Stockage des fichiers', 'mail' => 'E-mail', 'sms' => 'SMS',
-        'cache' => 'Cache',
+        'cache' => 'Cache', 'api' => 'API', 'malware_scanner' => 'Antivirus (ClamAV)',
     ],
     'sources' => [
         'issuance_exceptions' => 'Anomalies d’émission',

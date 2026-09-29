@@ -81,7 +81,7 @@
               <div class="q-prov">@include('public.partials.pmark', ['p' => $p])@if($p['code'] === $best)<span class="badge-best">@include('public.partials.i', ['n' => 'star']){{ __('desk.compare.best') }}</span>@endif</div>
               <div class="q-body">
                 <h3>{{ $p['name'] }}</h3>
-                <p>{{ __('desk.tab.'.$p['slug']) }} · {{ $p['carrier_full'] }}</p>
+                <p>{{ __('desk.tab.'.$p['slug']) }} · {{ $p['carrier'] }}</p>
                 <ul class="q-covers">@foreach($p['covers'] as $cand)<li>@include('public.partials.i', ['n' => $cand['optional'] ? 'star' : 'shield']){{ $cand['name'] }}@if($cand['optional']) <em>({{ __('desk.list.optional') }})</em>@endif</li>@endforeach</ul>
               </div>
               <div class="q-price">

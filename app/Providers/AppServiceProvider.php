@@ -28,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class, fn () => new TenantContext);
+        // S13: demo mode is a database decision (demo:exit / demo:enter); memoised per request/job.
+        $this->app->scoped(\App\Application\Demo\DemoMode::class);
         $this->app->bind(\Filament\Notifications\Notification::class, \App\Filament\Shared\LocalizedNotification::class);
         $this->app->extend('translator', function (\Illuminate\Translation\Translator $t) {
             $safe = new \App\Support\LabelSafeTranslator($t->getLoader(), $t->getLocale());
@@ -48,8 +50,9 @@ class AppServiceProvider extends ServiceProvider
         // signed-route adapter is what's active (see LocalSignedUrlAdapter).
         $this->app->bind(SignedUrlAdapter::class, fn () => config('filesystems.default') === 's3' ? new S3SignedUrlAdapter : new LocalSignedUrlAdapter);
 
-        // Fails closed until CLAMAV_HOST is set — see FailClosedMalwareScanAdapter.
-        $this->app->bind(MalwareScanAdapter::class, fn () => filled(config('services.clamav.host')) ? new ClamAvMalwareScanAdapter : new FailClosedMalwareScanAdapter);
+        // Fails closed until CLAMAV_HOST or CLAMAV_SOCKET is set — see FailClosedMalwareScanAdapter; held uploads are
+        // retried by documents:rescan-pending (DocumentScanQueue) once the scanner answers.
+        $this->app->bind(MalwareScanAdapter::class, fn () => \App\Application\Documents\Scanning\ClamAvEndpoint::configured() ? new ClamAvMalwareScanAdapter : new FailClosedMalwareScanAdapter);
 
         // No OCR/data-extraction provider exists anywhere in this app —
         // unlike MalwareScanAdapter there is no real second implementation
@@ -62,6 +65,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // S13: every config('demo.enabled') reader follows the operator's stored decision (NULL = .env).
+        $this->app->make(\App\Application\Demo\DemoMode::class)->applyToConfig();
+
         $this->registerPassportScopes();
         $this->registerMobileTokenExpiry();
         $this->registerPortalShellRoute();
@@ -127,7 +133,7 @@ class AppServiceProvider extends ServiceProvider
         $demoEmails = collect(DatabaseSeeder::DEMO_ACCOUNTS)->pluck('email');
 
         Route::middleware('web')->get('/admin/dev-login/{email}', function (string $email) use ($demoEmails) {
-            abort_unless($demoEmails->contains($email), 404);
+            abort_unless(config('demo.enabled') && $demoEmails->contains($email), 404);
 
             Auth::guard('web')->login(User::where('email', $email)->firstOrFail());
 
@@ -136,7 +142,7 @@ class AppServiceProvider extends ServiceProvider
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
-            fn (): string => view('filament.auth.demo-accounts', ['accounts' => DatabaseSeeder::DEMO_ACCOUNTS])->render(),
+            fn (): string => config('demo.enabled') ? view('filament.auth.demo-accounts', ['accounts' => DatabaseSeeder::DEMO_ACCOUNTS])->render() : '',
         );
     }
 }

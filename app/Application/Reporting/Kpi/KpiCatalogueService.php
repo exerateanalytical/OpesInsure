@@ -73,7 +73,10 @@ final class KpiCatalogueService
     /** @return array<string, mixed> the effective (ACTIVE or baseline) definition of a KPI code */
     public function resolve(string $tenantId, string $code): array
     {
-        $row = DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('code', $code)->where('status', self::ACTIVE)->first();
+        // R4: a dashboard resolves a dozen KPIs; the tenant's ACTIVE definitions load once per request (RequestMemo,
+        // flushed on kpi_definitions writes). Several ACTIVE rows for one code: the first one, as ->first() returned.
+        $row = \App\Application\Identity\Rbac\RequestMemo::remember('kpi-defs:'.$tenantId,
+            fn () => DB::table('kpi_definitions')->where('tenant_id', $tenantId)->where('status', self::ACTIVE)->get()->groupBy('code')->map(fn ($g) => $g->first())->all())[$code] ?? null;
         if ($row) {
             return $this->present($row);
         }

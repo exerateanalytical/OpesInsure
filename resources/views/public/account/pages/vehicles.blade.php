@@ -93,7 +93,65 @@ Opes.page(function () {
         h('dt', null, V.expiry), h('dd', null, p ? Opes.date(p.coverage_ends_at) : '—'),
         h('dt', null, V.coverage), h('dd', null, p ? OP.title(p) : '—')),
       p ? h('div', { class: 'btnbar' }, OP.btn(V.view_policy, '/account/policies/' + p.id, 'dbtn-outline'), OP.btn(V.claim, '/account/claims/new?policy=' + p.id, 'dbtn-navy'))
-        : h('div', { class: 'btnbar' }, OP.btn(V.get_quote, '/account/buy?line=motor', 'dbtn-primary', 'compare')));
+        : h('div', { class: 'btnbar' }, OP.btn(V.get_quote, '/account/buy?line=motor', 'dbtn-primary', 'compare')), docsBlock(x));
+  }
+
+  // ---- S3 2026-09-29: vehicle documents (same endpoints as the app, the customer's own assets only — MobileRiskAssetService):
+  // upload + attach (POST /mobile/documents, POST /mobile/assets/{a}/documents), read request (POST /mobile/assets/{a}/scan)
+  // and "confirm the details myself" (POST /mobile/assets/{a}/scan/{doc}/confirm, optimistic version).
+  var LA = @json(__('leftover_actions.assets'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+  function took(a) { rows.forEach(function (r) { if (r.a.id === a.id) { r.a = Object.assign({}, r.a, a); r.f = a.facts || r.f; } }); drawDetail(); }
+  function docsBlock(x) {
+    var a = x.a, docs = a.documents || [], wrap = h('div', { class: 'op-asset-docs', 'data-asset-docs': a.id, style: 'display:grid;gap:8px;margin-top:14px' });
+    wrap.appendChild(h('h3', null, LA.docs_t));
+    if (!docs.length) wrap.appendChild(h('p', { class: 'sub' }, LA.none));
+    docs.forEach(function (d) {
+      var purpose = d.purpose || (d.pivot && d.pivot.purpose) || '', ocr = d.ocr_data || {};
+      var row = h('div', { class: 'btnbar', 'data-asset-doc': d.id },
+        h('span', null, h('b', null, LA.purposes[purpose] || purpose), h('small', { class: 'op-muted' }, ' · ' + (LA.scan_status[d.scan_status] || d.scan_status || '—') + (ocr.status ? ' · ' + (LA.ocr[ocr.status] || ocr.status) : ''))));
+      if (d.scan_status === 'CLEAN') row.appendChild(h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-scan': d.id, onclick: function () { scan(this, a, d); } }, LA.scan));
+      row.appendChild(h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-confirm': d.id, onclick: function () { confirmForm(row, a, d); } }, LA.confirm));
+      wrap.appendChild(row);
+    });
+    var purpose = h('select', { 'aria-label': LA.purpose }, Object.keys(LA.purposes).map(function (k) { return h('option', { value: k }, LA.purposes[k]); }));
+    var file = h('input', { type: 'file', accept: 'image/jpeg,image/png,application/pdf', 'aria-label': LA.file });
+    var btn = h('button', { type: 'button', class: 'dbtn dbtn-primary sm', 'data-attach': a.id, onclick: function () { attach(btn, a, file, purpose.value); } }, LA.attach);
+    wrap.appendChild(h('div', { class: 'btnbar' }, h('label', { class: 'afield-s' }, h('span', null, LA.purpose), purpose), h('label', { class: 'afield-s' }, h('span', null, LA.file), file), btn));
+    return wrap;
+  }
+  function attach(btn, a, file, purpose) {
+    var f = file.files && file.files[0];
+    if (!f) { Opes.alert(LA.pick_file); return; }
+    Opes.busy(btn, true); Opes.alert('');
+    Opes.fileBase64(f).then(function (b64) { return Opes.api('/mobile/documents', { body: { category: purpose === 'VEHICLE_PHOTO' ? 'OTHER' : purpose, mime_type: f.type, file_base64: b64 } }); })
+      .then(function (doc) { return Opes.api('/mobile/assets/' + encodeURIComponent(a.id) + '/documents', { body: { document_id: doc.id, purpose: purpose } }); })
+      .then(function (r) { Opes.alert(LA.attached, 'ok'); took(r); })
+      .catch(function (e) { Opes.alert(e.message); }).finally(function () { Opes.busy(btn, false); });
+  }
+  function scan(btn, a, d) {
+    Opes.busy(btn, true); Opes.alert('');
+    Opes.api('/mobile/assets/' + encodeURIComponent(a.id) + '/scan', { body: { document_id: d.id } })
+      .then(function (r) { Opes.alert(LA.scanned, 'ok'); took(r); })
+      .catch(function (e) { Opes.alert(e.message); Opes.busy(btn, false); });
+  }
+  function confirmForm(row, a, d) {
+    if (row.nextSibling && row.nextSibling.dataset && row.nextSibling.dataset.confirmForm) return;
+    var f = a.facts || {}, save = h('button', { type: 'submit', class: 'dbtn dbtn-primary sm' }, LA.confirm_save);
+    function fld(n, label, v, attrs) { return h('label', { class: 'afield-s' }, h('span', null, label), h('input', Object.assign({ name: n, value: v == null ? '' : v }, attrs || {}))); }
+    var form = h('form', { class: 'op-form', 'data-confirm-form': d.id, novalidate: true, onsubmit: function (e) {
+        e.preventDefault();
+        var facts = {}; new FormData(form).forEach(function (v, k) { v = String(v).trim(); if (v) facts[k] = (k === 'year' ? parseInt(v, 10) : (k === 'registration_number' ? v.toUpperCase() : v)); });
+        if (!Object.keys(facts).length) { Opes.alert(Opes.t.error); return; }
+        Opes.busy(save, true); Opes.alert('');
+        Opes.api('/mobile/assets/' + encodeURIComponent(a.id) + '/scan/' + encodeURIComponent(d.id) + '/confirm', { body: { version: a.version || 1, facts: facts } })
+          .then(function (r) { Opes.alert(LA.confirmed, 'ok'); took(r); })
+          .catch(function (e) { Opes.alert(e.message); Opes.busy(save, false); });
+      } },
+      h('p', { class: 'sub' }, LA.confirm_help),
+      fld('make', V.make, f.make, { maxlength: 60 }), fld('model', V.model, f.model, { maxlength: 60 }),
+      fld('registration_number', V.plate, f.registration_number, { maxlength: 20 }), fld('year', V.year, f.year, { type: 'number', min: 1950, max: new Date().getFullYear() + 1 }),
+      h('div', { class: 'btnbar full' }, h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { form.remove(); } }, T.cancel), save));
+    row.parentNode.insertBefore(form, row.nextSibling);
   }
   function draw() {
     var list = rows.filter(function (x) { return (tab === 'all' || x.st === tab) && (!q || [x.name, x.reg, x.f.year, x.pol && x.pol.policy_number].join(' ').toLowerCase().indexOf(q) >= 0); });

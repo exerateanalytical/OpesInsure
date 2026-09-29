@@ -19,7 +19,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(web: __DIR__.'/../routes/web.php', api: __DIR__.'/../routes/api.php', commands: __DIR__.'/../routes/console.php', health: '/up')
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'json.api' => EnforceJsonApi::class, 'integration.client' => AuthenticateIntegrationClient::class, 'idempotency' => IdempotencyGuard::class, 'step-up' => RequireStepUpGrant::class, 'if-match' => OptimisticConcurrency::class, 'health.carrier_scope' => \App\Interfaces\Http\Middleware\EnsureHealthCarrierScope::class]);
+        $middleware->alias(['platform.tenant' => \App\Interfaces\Http\Middleware\PlatformTenantOnly::class, 'throttle' => \App\Interfaces\Http\Middleware\PerRouteThrottle::class, 'tenant' => ResolveTenant::class, 'permission' => RequirePermission::class, 'json.api' => EnforceJsonApi::class, 'integration.client' => AuthenticateIntegrationClient::class, 'idempotency' => IdempotencyGuard::class, 'step-up' => RequireStepUpGrant::class, 'if-match' => OptimisticConcurrency::class, 'health.carrier_scope' => \App\Interfaces\Http\Middleware\EnsureHealthCarrierScope::class]);
         $middleware->prepend(\App\Interfaces\Http\Middleware\RedirectLegacyBordereauxUrls::class); // old bordereaux/bordereaus panel URLs → 301
         // Correlation id first so every later layer (logs, audit, jobs,
         // error bodies) sees it; StandardApiEnvelope wraps everything below
@@ -37,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [OptimisticConcurrency::class, IdempotencyGuard::class.':auto,optional']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // S12: every reported exception is fingerprinted into error_events (no bodies / PII); logging continues.
+        $exceptions->reportable(fn (\Throwable $e) => app(\App\Application\Operations\Monitoring\ErrorEventRecorder::class)->capture($e));
         $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());
         // Errors raised before the api middleware group runs (unknown route,
         // 405) still get the standard envelope.

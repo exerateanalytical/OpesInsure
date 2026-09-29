@@ -39,6 +39,9 @@ final class SettlementsPage extends ProviderWorkspacePage
     /** DOC-198 settlement statement of a paid batch, through ProviderDocumentService (provider scope, audit). */
     public function downloadStatement(string $batchId): ?StreamedResponse
     {
+        if ($this->refuseInvalidId($batchId)) {
+            return null;
+        }
         $id = Document::where('provider_profile_id', $this->scope()->providerId)->where('document_type_code', 'PROVIDER_SETTLEMENT_STATEMENT')
             ->where('subject_key', 'provider-settlement:'.$batchId)->latest('created_at')->value('id');
         try {

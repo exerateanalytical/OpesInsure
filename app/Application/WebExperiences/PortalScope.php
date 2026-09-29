@@ -101,6 +101,16 @@ final class PortalScope
         return array_values(array_filter($ids, fn ($id) => in_array((string) $id, $keep, true)));
     }
 
+    /**
+     * R4: isOwnRecord() for a book table, decided for the whole page at once. A list asks it per row and per action;
+     * the first ask checks every row of that table retrieved in this request (RequestMemo::retrievedIds) with ONE
+     * visibleOf() query and memoises each answer for the rest of the request (same rule, same result per id).
+     */
+    private static function ownVisible(string $panel, string $tenant, string $table, string $id): bool
+    {
+        return \App\Application\Identity\Rbac\RequestMemo::rowFlag('own:'.$panel.':'.$tenant.':'.auth()->id(), $table, $id, fn (array $ids) => self::visibleOf($table, $ids));
+    }
+
     /** Carrier forced by visibleOfCarrier() (API callers, outside any panel). */
     private static ?string $forcedCarrier = null;
 
@@ -167,6 +177,10 @@ final class PortalScope
     public static function narrowStaff(EloquentBuilder $q): EloquentBuilder
     {
         $user = auth()->user();
+        if (self::panel() === 'insurer') {
+            // R7 (2026-09-29): an insurer sees its own carrier's staff only, never another carrier's in the same tenant.
+            return $q->where('carrier_id', self::carrierId() ?? '');
+        }
         $users = self::panel() === 'broker' && $user instanceof User ? app(BookScope::class)->users($user) : null;
 
         return $users === null ? $q : $q->whereIn('user_id', $users);
@@ -189,7 +203,7 @@ final class PortalScope
     }
 
     /** Tables whose portal visibility visibleIds() knows (anything else is decided by the column rules in isOwnRecord). */
-    private const OWNED_TABLES = ['policies', 'quotes', 'proposals', 'claims', 'claim_payments', 'payment_intents', 'underwriting_cases',
+    public const OWNED_TABLES = ['policies', 'quotes', 'proposals', 'claims', 'claim_payments', 'payment_intents', 'underwriting_cases',
         'health_preauthorizations', 'health_provider_claims', 'health_provider_settlement_batches', 'provider_disputes'];
 
     /** Partner-owned finance rows: in the broker portal a book-scoped caller only acts on their own partner's rows. */
@@ -242,7 +256,7 @@ final class PortalScope
         }
         $table = $record->getTable();
         if (in_array($table, self::OWNED_TABLES, true)) {
-            return self::visibleOf($table, [(string) $record->getKey()]) !== [];
+            return self::ownVisible($panel, (string) $tenant, $table, (string) $record->getKey());
         }
 
         if ($owner !== null || $record instanceof \App\Models\StickerBatch) {

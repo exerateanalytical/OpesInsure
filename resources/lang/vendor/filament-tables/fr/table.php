@@ -14,4 +14,6 @@ return [
         ],
     ],
     'result_count' => '{0} Aucun résultat|{1} :count résultat|[2,*] :count résultats',
+    // Q10 2026-09-29: nor 'loading' (tables with deferred loading showed "filament-tables::table.loading").
+    'loading' => 'Chargement…',
 ];

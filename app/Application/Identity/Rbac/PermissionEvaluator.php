@@ -31,19 +31,15 @@ final class PermissionEvaluator
     {
         $business = PermissionCatalogue::isBusinessData($permission);
 
-        if (! $business && $user->memberships()->where('status', 'ACTIVE')->where('role_code', 'SYSTEM_ADMIN')->exists()) {
+        // R4: both lookups are memoised for the current request (RequestMemo) — a page checks dozens of permissions.
+        if (! $business && RequestMemo::remember('sysadmin:'.$user->getKey(), fn () => $user->memberships()->where('status', 'ACTIVE')->where('role_code', 'SYSTEM_ADMIN')->exists())) {
             return true;
         }
 
         $tenantId = $this->context->id();
         $wanted = [$permission, '*', Str::before($permission, '.').'.*'];
 
-        $memberships = TenantMembership::query()
-            ->where('user_id', $user->getKey())
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'ACTIVE')
-            ->with('roles:id,permissions')
-            ->get(['id', 'role_code']);
+        $memberships = DataScopeResolver::activeMemberships($user, $tenantId);
 
         foreach ($memberships as $m) {
             if ($business && RoleCatalogue::isPlatformOnly((string) $m->role_code)) {

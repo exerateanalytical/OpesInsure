@@ -47,7 +47,7 @@ final class CimaInsurerSetup extends Page
 
     public function getTitle(): string
     {
-        return 'Insurer CIMA setup';
+        return __('Insurer CIMA setup');
     }
 
     protected function getHeaderActions(): array

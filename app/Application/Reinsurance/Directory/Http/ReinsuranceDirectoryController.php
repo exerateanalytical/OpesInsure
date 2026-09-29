@@ -20,7 +20,7 @@ final class ReinsuranceDirectoryController
     public function directory(Request $r): JsonResponse
     {
         $d = $r->validate(['role' => 'nullable|in:'.implode(',', TreatyService::REINSURER_ROLES), 'security' => 'nullable|in:APPROVED,PENDING']);
-        $rows = DB::table('reinsurers')->where('tenant_id', $this->tenant->id())
+        $rows = TreatyService::reinsurers($this->tenant->id())
             ->when($d['role'] ?? null, fn ($q, $role) => $q->where('role', $role))
             ->when(($d['security'] ?? null) === 'APPROVED', fn ($q) => $q->whereIn('approved_security_status', ReinsuranceReference::APPROVED_SECURITY))
             ->when(($d['security'] ?? null) === 'PENDING', fn ($q) => $q->whereNotIn('approved_security_status', ReinsuranceReference::APPROVED_SECURITY))

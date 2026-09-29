@@ -60,7 +60,7 @@ FIN-002 Cash & collections → `/admin/collections` · FIN-016 Manual journal ap
 | FIN-003 Receivables | no finance-wide receivables API (only broker-scoped `mobile/broker/receivables`) |
 | FIN-023 Financial period closing | `AccountingPeriodService` has no HTTP route or GET permission (console `ledger:open-periods` only); period actions exist in LedgerOperationsActions |
 | CMP-006 Corporate due diligence, CMP-007 Expired documentation | no API / service |
-| BRM-001..004, 006..016 (15 branch-manager screens) | data is tenant-scoped, not branch-scoped; no branch filter in the services. The BRANCH_MANAGER role uses `/broker` |
+| ~~BRM-001..004, 006..016~~ | BUILT: BRM-001/004/005/010/012/013 `BranchOverviewPage` (Q10); BRM-002/003/006..009/011/014..016 `app/Filament/Shared/Pages/Branch/*` (S2, 2026-09-29) after branch_id was added to quotes/proposals/policies/claims/renewal_cases/commission_accruals (migration 2026_11_13_200001, stamped at creation + backfilled) |
 | ADM-020 Permission matrix | permissions live in `config/permissions.php`; no API to read or change them |
 | DEV-001, 002, 003, 007, 008, 010, 012, 013, 014 | partner-facing developer portal (`/developers/...`) is a separate surface with no backend (no request logs, usage, sandbox or changelog API) |
 | OPS-003 API health, OPS-005 Redis/cache health | `SystemHealthService` has no API or cache check |

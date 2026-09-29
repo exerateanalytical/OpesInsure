@@ -31,6 +31,8 @@ final class PortalAuthorization
         'policies.read' => ['carrier.issuance.read', 'broker.portal.read'],
         'claims.view' => ['carrier.claims.read', 'broker.portal.read'],
         'quotes.read' => ['carrier.quote_requests.view', 'broker.portal.read'],
+        // Broker admins hold kyc.manage (write) but not kyc.view: whoever may manage KYC may read it (launch 2026-09-29).
+        'kyc.view' => ['kyc.manage'],
     ];
 
     /**

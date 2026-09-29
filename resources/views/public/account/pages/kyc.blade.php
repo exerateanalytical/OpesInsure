@@ -3,7 +3,8 @@
      POST /mobile/kyc/documents {document_id, purpose}, POST /mobile/kyc/submission {notes}. --}}
 @extends('public.account.layout', ['title' => __('account_customer.kyc.title'), 'lede' => __('account_customer.kyc.lede'), 'crumbs' => [[__('account_policies.prof.title'), '/account/profile'], [__('account_customer.kyc.title'), null]], 'active' => 'kyc'])
 @section('content')
-@include('public.account.partials.customer-assets')
+@include('public.account.partials.launch-assets')
+@include('public.partials.pending-scan')
 <div class="agrid c2" data-page-body>
   <div class="acard"><div class="acct-loading" role="status"><span class="spin"></span>{{ __('account.js.loading') }}</div></div>
 </div>
@@ -24,7 +25,11 @@ Opes.page(function () {
       Opes.clear(box);
 
       // Status
-      var sc = card(K.status_t);
+      // CUST-015 KYC Status: Draft → Submitted → Reviewing → Approved, or More information required / Rejected / Expired.
+      var sc = card(K.status_t), LS = LC.kycState(p), STEPS = ['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'APPROVED'];
+      sc.setAttribute('data-kyc-status', LS);
+      sc.appendChild(Opes.stepper(STEPS.map(function (k) { return [LC.T.kyc_steps[k], '']; }), Math.max(0, STEPS.indexOf(LS === 'MORE_INFO_REQUIRED' || LS === 'REJECTED' ? 'IN_REVIEW' : LS === 'EXPIRED' ? 'APPROVED' : LS))));
+      sc.appendChild(h('p', null, h('b', null, LC.T.kyc_state[LS] || Opes.label(LS))));
       if (!s) sc.appendChild(h('p', { class: 'op-muted' }, K.none));
       else {
         sc.appendChild(h('p', null, Opes.chip(st)));
@@ -37,6 +42,16 @@ Opes.page(function () {
         sc.appendChild(miss.length ? h('p', null, h('b', null, K.missing + ' : '), miss.map(Opes.label).join(', ')) : h('p', { class: 'op-muted' }, K.all_ok));
       }
       box.appendChild(sc);
+
+      // CUST-016 KYC Remediation: the exact deficiencies (reviewer note + each missing item), never a bare "KYC failed".
+      if (s && (LS === 'MORE_INFO_REQUIRED' || LS === 'REJECTED' || LS === 'EXPIRED' || (s.missing_requirements || []).length)) {
+        var rc = h('section', { class: 'acard', id: 'remediation', 'data-kyc-remediation': '' }, h('h2', null, LC.T.remed_t), h('p', null, LC.T.remed_d));
+        var items = (s.missing_requirements || []).map(function (m) { return h('li', null, K.purposes[m] || K.types[m] || Opes.label(m)); });
+        if (items.length) rc.appendChild(h('ul', { style: 'display:grid;gap:6px;padding-left:18px' }, items));
+        if (s.remediation_reason) rc.appendChild(h('p', null, h('b', null, LC.T.remed_reason + ' : '), s.remediation_reason));
+        box.appendChild(rc);
+        if (location.hash === '#remediation') setTimeout(function () { rc.scrollIntoView(); }, 0);
+      }
 
       // Identifiers
       var ic = card(K.ids_t);
@@ -64,6 +79,8 @@ Opes.page(function () {
       dc.appendChild(docs.length ? h('ul', { class: 'op-nlist' }, docs.map(function (d) {
         return h('li', null, h('span', { class: 'op-li' }, Opes.icon('doc')), h('div', null, h('b', null, K.purposes[d.purpose] || Opes.label(d.purpose))), Opes.chip(d.verification_status || d.scan_status));
       })) : h('p', { class: 'op-muted' }, T.no_docs));
+      var held = window.OpesPendingScan && OpesPendingScan.render(s && s.pending_documents); // S4
+      if (held) dc.appendChild(held);
       if (editable) {
         var up = h('button', { type: 'submit', class: 'dbtn dbtn-outline sm' }, Opes.icon('download'), K.upload);
         var df = h('form', { class: 'op-form', 'data-kyc-doc': '', onsubmit: function (e) {

@@ -3,6 +3,7 @@
 @extends('public.account.layout', ['title' => __('account_policies.sup.title'), 'lede' => __('account_policies.sup.lede'), 'crumbs' => [[__('account_policies.sup.title'), null]], 'active' => 'support'])
 @section('content')
 @include('public.account.partials.customer-assets')
+<div class="btnbar" style="margin-bottom:16px" data-launch-links><a class="dbtn dbtn-outline sm" href="/account/complaints">@include('public.partials.i', ['n' => 'edit']){{ __('launch_customer.complaints.title') }}</a><a class="dbtn dbtn-outline sm" href="/account/messages">@include('public.partials.i', ['n' => 'chat']){{ __('launch_customer.messages.title') }}</a></div>
 <div class="agrid main-side op-ms380">
   <section class="acard" data-page-body></section>
   <div style="display:grid;gap:16px;align-content:start"><section class="acard" data-new></section><section class="acard" data-sos></section><section class="acard" data-issue></section></div>

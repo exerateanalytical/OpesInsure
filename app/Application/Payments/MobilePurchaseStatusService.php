@@ -53,6 +53,7 @@ final class MobilePurchaseStatusService
             // PENDING_PAYMENT -> PAID_PENDING_ISSUANCE -> ACTIVE ...
             'policy_status' => $policy?->status ?? ($payment?->status === 'SUCCEEDED' ? 'PAID_PENDING_ISSUANCE' : 'PENDING_PAYMENT'),
             'carrier_name' => $proposal->offer?->carrier?->party?->display_name,
+            'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($proposal->offer?->carrier),
             'product_name' => $proposal->offer?->product?->name,
             'coverage_starts_at' => ($policy?->coverage_starts_at ?? $issuance?->coverage_starts_at)?->toIso8601String(),
             'coverage_ends_at' => ($policy?->coverage_ends_at ?? $issuance?->coverage_ends_at)?->toIso8601String(),

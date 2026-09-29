@@ -125,7 +125,7 @@ final class PublicInstitutionController
     {
         [$official, $other] = $rows->partition(fn (array $r) => $r['is_official_register']);
 
-        return $official->sortBy('regulator_sequence')->concat($other->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE))->values();
+        return $official->sortBy(fn (array $r) => [$r['display_order'] ?? PHP_INT_MAX, $r['regulator_sequence']])->values()->concat($other->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE))->values();
     }
 
     /**
@@ -167,7 +167,7 @@ final class PublicInstitutionController
                 ? $prod->id === $line->insurance_product_id
                 : $prod->line_code === $line->line_code);
             foreach ($offered as $prod) {
-                $products[$prod->id] = ['id' => $prod->id, 'name' => $prod->name, 'line_code' => $prod->line_code, 'carrier_id' => $carrier->id, 'carrier_name' => $insurer['name']];
+                $products[$prod->id] = ['id' => $prod->id, 'name' => $prod->name, 'line_code' => $prod->line_code, 'carrier_id' => $carrier->id, 'carrier_name' => $insurer['name'], 'carrier_short_name' => $insurer['short_name']];
             }
         }
 
@@ -242,7 +242,9 @@ final class PublicInstitutionController
             'website' => $d['website'] ?? $caps['website'] ?? null,
             'products' => $c->products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'line_code' => $p->line_code])->unique('name')->values(),
             'insurer_code' => $c->insurer_code,
-            'short_name' => $c->short_name,
+            'short_name' => $c->brand_short_name ?: $c->short_name,
+            'register_short_name' => $c->short_name,
+            'display_order' => $c->display_order,
             'branch' => $c->licence_branch,
             'product_families' => $c->product_families ?? [],
             'product_families_origin' => $c->product_families_origin,

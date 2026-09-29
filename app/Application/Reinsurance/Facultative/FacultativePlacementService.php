@@ -10,6 +10,8 @@ use App\Application\Events\OutboxWriter;
 use App\Application\Ledger\FinancialPostingService;
 use App\Application\Reinsurance\CessionCalculator;
 use App\Application\Reinsurance\CessionService;
+use App\Application\Reinsurance\RiskTransferCarrierScope;
+use App\Application\Reinsurance\TreatyService;
 use App\Interfaces\Http\Errors\ApiProblemException;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +48,8 @@ final class FacultativePlacementService
 
     public function create(string $tenantId, array $d): array
     {
-        $policy = DB::table('policies')->where('tenant_id', $tenantId)->where('id', $d['policy_id'])->first() ?? abort(404, 'Policy not found.');
+        $policy = RiskTransferCarrierScope::apply(DB::table('policies')->where('tenant_id', $tenantId)->where('id', $d['policy_id']), $tenantId)->first() ?? abort(404, 'Policy not found.');
+        $carrierId = RiskTransferCarrierScope::forCreate($tenantId, null, $policy->carrier_id ?? null);
         $this->require(! in_array($policy->status, ['DRAFT', 'PENDING_PAYMENT', 'QUOTED'], true), 'policy', 'Only issued policies can be placed facultatively.');
         $currency = strtoupper($d['currency'] ?? $policy->currency);
         $this->require($currency === $policy->currency, 'currency', 'The slip currency must be the policy currency.');
@@ -61,14 +64,14 @@ final class FacultativePlacementService
         $reference = $d['reference'] ?? 'FAC-'.Str::upper(Str::random(8));
         $this->require(! DB::table('facultative_placements')->where('tenant_id', $tenantId)->where('reference', $reference)->exists(), 'reference', 'Slip reference already used.');
         if (! empty($d['broker_id'])) {
-            $this->require(DB::table('reinsurers')->where('tenant_id', $tenantId)->where('id', $d['broker_id'])->where('role', 'REINSURANCE_BROKER')->exists(), 'broker_id', 'Broker must be a REINSURANCE_BROKER of this tenant.');
+            $this->require(TreatyService::reinsurers($tenantId)->where('id', $d['broker_id'])->where('role', 'REINSURANCE_BROKER')->exists(), 'broker_id', 'Broker must be a REINSURANCE_BROKER of this tenant.');
         }
         $participants = $d['participants'] ?? [];
         $this->validateParticipants($tenantId, $participants);
 
-        return DB::transaction(function () use ($tenantId, $d, $policy, $currency, $sumInsured, $reference, $participants) {
+        return DB::transaction(function () use ($tenantId, $d, $policy, $currency, $sumInsured, $reference, $participants, $carrierId) {
             $id = (string) Str::uuid();
-            DB::table('facultative_placements')->insert(['id' => $id, 'tenant_id' => $tenantId, 'policy_id' => $policy->id, 'reference' => $reference, 'status' => 'DRAFT',
+            DB::table('facultative_placements')->insert(['id' => $id, 'tenant_id' => $tenantId, 'carrier_id' => $carrierId, 'policy_id' => $policy->id, 'reference' => $reference, 'status' => 'DRAFT',
                 'risk_description' => $d['risk_description'], 'currency' => $currency, 'sum_insured_minor' => $sumInsured, 'premium_minor' => $d['premium_minor'] ?? (int) $policy->premium_minor,
                 'placed_share_percent' => $d['placed_share_percent'], 'commission_percent' => $d['commission_percent'] ?? 0, 'brokerage_percent' => $d['brokerage_percent'] ?? 0,
                 'tax_percent' => $d['tax_percent'] ?? 0, 'terms' => json_encode((object) ($d['terms'] ?? [])), 'period_from' => $d['period_from'], 'period_to' => $d['period_to'],
@@ -235,13 +238,13 @@ final class FacultativePlacementService
 
     public function list(string $tenantId, ?string $policyId = null): array
     {
-        return DB::table('facultative_placements')->where('tenant_id', $tenantId)->when($policyId, fn ($q) => $q->where('policy_id', $policyId))
+        return RiskTransferCarrierScope::apply(DB::table('facultative_placements')->where('tenant_id', $tenantId), $tenantId)->when($policyId, fn ($q) => $q->where('policy_id', $policyId))
             ->orderByDesc('created_at')->get()->all();
     }
 
     private function placement(string $tenantId, string $id, bool $lock = false): object
     {
-        $q = DB::table('facultative_placements')->where('tenant_id', $tenantId)->where('id', $id);
+        $q = RiskTransferCarrierScope::apply(DB::table('facultative_placements')->where('tenant_id', $tenantId)->where('id', $id), $tenantId);
 
         return ($lock ? $q->lockForUpdate() : $q)->first() ?? abort(404, 'Facultative placement not found.');
     }
@@ -297,7 +300,7 @@ final class FacultativePlacementService
     {
         $this->require($participants !== [], 'participants', 'At least one participant is required.');
         foreach ($participants as $p) {
-            $r = DB::table('reinsurers')->where('tenant_id', $tenantId)->where('id', $p['reinsurer_id'] ?? null)->first();
+            $r = TreatyService::reinsurers($tenantId)->where('id', $p['reinsurer_id'] ?? null)->first();
             $this->require($r !== null && $r->role !== 'REINSURANCE_BROKER', 'participants', 'Participants must be reinsurers of this tenant.');
             $this->require((float) ($p['offered_percent'] ?? 0) > 0 && (float) $p['offered_percent'] <= 100, 'participants', 'Offered lines must be between 0 and 100% of the placed share.');
         }

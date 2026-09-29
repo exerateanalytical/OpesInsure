@@ -39,7 +39,7 @@ it('authenticates, requests to pay, and returns the reference id as the provider
             && $request->hasHeader('X-Reference-Id', $requestId)
             && $request->hasHeader('Authorization', 'Bearer tok-123')
             && $request->hasHeader('Ocp-Apim-Subscription-Key', 'testing-subscription-key')
-            && $request->hasHeader('X-Target-Environment', 'sandbox')
+            && $request->hasHeader('X-Target-Environment', 'mtncameroon')
             && $request['amount'] === '150000'
             && $request['currency'] === 'XAF'
             && $request['externalId'] === $intent->id

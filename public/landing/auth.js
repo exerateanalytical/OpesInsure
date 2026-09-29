@@ -55,12 +55,13 @@
     if (on) { b.dataset.label = b.innerHTML; b.textContent = C.wait || '…'; b.disabled = true; }
     else if (b.dataset.label) { b.innerHTML = b.dataset.label; b.disabled = false; }
   }
-  function signedIn(data) {
+  function signedIn(data, fresh) {
     var user = (data && data.user) || {};
     store(KEY, JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, name: user.full_name || user.phone_e164 || '' }));
     // Continue into the account area (or the page that sent the visitor to sign in).
     var next = new URLSearchParams(location.search).get('next') || '';
-    location.href = /^\/account(\/|$|\?)/.test(next) ? next : '/account';
+    // A brand-new account lands on the "Account created" screen (CUST-008) unless a page sent it here.
+    location.href = /^\/account(\/|$|\?)/.test(next) ? next : (fresh ? '/account/welcome' : '/account');
   }
 
   // Password visibility
@@ -108,7 +109,7 @@
       : post('/auth/mobile/otp/verify', { challenge_id: pending.challenge_id, code: code, device: device() });
     req.then(function (r) {
       busy(codeForm, false);
-      if (r.ok && r.body.data && r.body.data.access_token) signedIn(r.body.data);
+      if (r.ok && r.body.data && r.body.data.access_token) signedIn(r.body.data, pending.mode === 'register');
       else err('code', r.status === 422 ? firstError(r, C.err.code) : C.err.code);
     }).catch(function () { busy(codeForm, false); err('code', C.err.generic); });
   });
@@ -169,7 +170,7 @@
         busy(signup, false);
         var d = r.body && r.body.data;
         if (!r.ok) { err('form', firstError(r, C.err.generic)); return; }
-        if (d && d.access_token) signedIn(d);
+        if (d && d.access_token) signedIn(d, true);
         else if (d && d.verification_required) askCode('register', d.challenge_id, ph);
         else err('form', C.err.generic);
       }).catch(function () { busy(signup, false); err('form', C.err.generic); });

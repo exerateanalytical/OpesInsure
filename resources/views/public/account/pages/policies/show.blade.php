@@ -32,7 +32,7 @@ Opes.page(function (ctx) {
 
     // ---- header card
     var head = h('section', { class: 'acard op-head' },
-      h('div', { class: 'op-id' }, OP.mark(p.carrier_name), h('div', null, h('h2', null, p.carrier_name || '—'), h('p', null, OP.title(p)), OP.chip(OP.state(p)))),
+      h('div', { class: 'op-id' }, OP.mark(p.carrier_name), h('div', { style: 'min-width:0' }, h('h2', { class: 'ellip', title: p.carrier_name || '' }, p.carrier_short_name || p.carrier_name || '—'), h('p', null, OP.title(p)), OP.chip(OP.state(p)))),
       h('div', null, h('dl', { class: 'kv' },
         h('dt', null, S.number), h('dd', null, p.policy_number || '—'),
         risk.name ? [h('dt', null, S.vehicle), h('dd', null, risk.name, f.usage_type ? h('small', { class: 'op-muted', style: 'display:block;font-weight:500' }, [f.fiscal_power ? f.fiscal_power + ' CV' : null, OP.T.veh.usages[f.usage_type] || Opes.label(f.usage_type)].filter(Boolean).join(' • ')) : null)] : [h('dt', null, S.insured), h('dd', null, OP.line(OP.lineOf(p)))],

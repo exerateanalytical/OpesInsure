@@ -64,7 +64,7 @@ it('buys a policy from a rated quote, pays, gets it issued and downloads the doc
     // Pay with MTN MoMo (sandbox, HTTP faked): create + initiate exactly as the review page does. POST /payments answers
     // PENDING_CUSTOMER without prompting anyone, so the page must initiate while the provider holds no reference.
     config(['payments.providers.mtn_momo' => array_merge(config('payments.providers.mtn_momo'), ['base_url' => 'https://momo.test', 'subscription_key' => 'sk', 'api_user' => 'u', 'api_key' => 'k', 'callback_token' => 'cbt'])]);
-    PaymentProviderConnection::create(['tenant_id' => $f['tenant']->id, 'provider' => 'mtn_momo', 'status' => 'ACTIVE', 'credential_reference' => 'vault://momo', 'created_by' => $f['user']->id]);
+    PaymentProviderConnection::create(['tenant_id' => $f['tenant']->id, 'provider' => 'mtn_momo', 'environment' => 'PRODUCTION', 'status' => 'ACTIVE', 'credential_reference' => 'vault://momo', 'created_by' => $f['user']->id]);
     Http::fake(['momo.test/collection/token/' => Http::response(['access_token' => 'tok', 'expires_in' => 3600]), 'momo.test/collection/v1_0/requesttopay' => Http::response(null, 202),
         'momo.test/collection/v1_0/requesttopay/*' => Http::response(['status' => 'SUCCESSFUL', 'amount' => '100000', 'currency' => 'XAF', 'financialTransactionId' => 'MTN-TX-1']), 'exp.host/*' => Http::response(['data' => []])]);
     $pay = $this->postJson('/api/v1/payments', ['proposal_id' => $pid, 'provider' => 'mtn_momo', 'payer_phone_e164' => '+237672880001', 'idempotency_key' => 'web-'.Str::uuid()], agentHeaders($f))

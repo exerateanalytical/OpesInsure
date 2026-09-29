@@ -183,6 +183,8 @@ final class PartyGoldenRecordController
         $d = $r->validate(['survivor_party_id' => 'required|uuid', 'merged_party_id' => 'required|uuid|different:survivor_party_id', 'candidate_id' => 'nullable|uuid',
             'survivorship' => 'nullable|array', 'survivorship.*' => 'in:SURVIVOR,MERGED', 'reason' => 'nullable|string|max:500']);
         $candidate = isset($d['candidate_id']) ? EntityMatchCandidate::findOrFail($d['candidate_id']) : null;
+        // The candidate must be the match between exactly these two parties, else a foreign candidate could be consumed.
+        abort_if($candidate && collect([$candidate->party_a_id, $candidate->party_b_id])->sort()->values()->all() !== collect([$d['survivor_party_id'], $d['merged_party_id']])->sort()->values()->all(), 404);
         $m = $this->merges->request($this->party($r, $d['survivor_party_id']), $this->party($r, $d['merged_party_id']), $r->user(),
             $d['survivorship'] ?? [], $d['reason'] ?? null, $candidate);
 

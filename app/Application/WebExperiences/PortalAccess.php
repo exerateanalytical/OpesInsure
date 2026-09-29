@@ -45,13 +45,14 @@ final class PortalAccess
             return null;
         }
 
-        return TenantMembership::query()
+        // R4: asked by the panel middleware and again by the tenant resolution; memoised for the current request.
+        return \App\Application\Identity\Rbac\RequestMemo::remember('portal-membership:'.$user->getKey().':'.$panelId, fn () => TenantMembership::query()
             ->where('user_id', $user->getKey())
             ->where('status', 'ACTIVE')
             ->whereIn('role_code', self::roles($panelId))
             ->whereHas('tenant', fn ($q) => $q->where('status', 'ACTIVE'))
             ->orderBy('created_at')
-            ->first();
+            ->first());
     }
 
     public function allows(?User $user, string $panelId): bool

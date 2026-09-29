@@ -71,11 +71,12 @@ final class AuthenticateIntegrationClient
 
         if ($denialReason !== null) {
             app(AuditWriter::class)->record('integration.request.denied', 'integration_client', $client?->id, ['scope' => $requiredScope, 'ip' => $request->ip()], $denialReason);
-            if ($client !== null) {
-                $portal->meter($client, $environment, $requiredScope, $denialReason === 'rate_limited' ? 'rate_limited' : 'denied');
-            }
-
             $response = response()->json(['error' => 'access_denied', 'message' => 'Request denied.'], $denialReason === 'rate_limited' ? 429 : 403);
+            if ($client !== null) {
+                $outcome = $denialReason === 'rate_limited' ? 'rate_limited' : 'denied';
+                $portal->meter($client, $environment, $requiredScope, $outcome);
+                $this->logRequest($request, $client, $credential, $environment, $requiredScope, $response->getStatusCode(), $outcome, $denialReason, null);
+            }
 
             return $denialReason === 'rate_limited' ? $this->withLimitHeaders($response, $limiterKey, $limit) : $response;
         }
@@ -96,7 +97,19 @@ final class AuthenticateIntegrationClient
             $request->attributes->set('integration_consent_id', $consent->id);
         }
 
-        return $this->withLimitHeaders($next($request), $limiterKey, $limit);
+        $started = hrtime(true);
+        $response = $next($request);
+        $this->logRequest($request, $client, $credential, $environment, $requiredScope, $response->getStatusCode(), 'allowed', null, (int) ((hrtime(true) - $started) / 1_000_000));
+
+        return $this->withLimitHeaders($response, $limiterKey, $limit);
+    }
+
+    /** S1 DEV-012: request log row — route template and metadata only, never headers, bodies or tokens. */
+    private function logRequest(Request $request, IntegrationClient $client, ?array $credential, string $environment, string $scope, int $status, string $outcome, ?string $reason, ?int $ms): void
+    {
+        app(\App\Application\Integrations\Developer\Portal\PartnerDeveloperPortalService::class)->logRequest(
+            $client, $credential['key_id'] ?? null, $environment, $request->method(), '/'.ltrim((string) ($request->route()?->uri() ?? $request->path()), '/'),
+            $scope, $status, $outcome, $reason, $ms, $request->ip(), $request->header('X-Request-Id'));
     }
 
     private function consent(DeveloperPortalService $portal, IntegrationClient $client, string $tenantId, string $scope): ?object

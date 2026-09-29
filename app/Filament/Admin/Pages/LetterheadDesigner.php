@@ -64,7 +64,7 @@ class LetterheadDesigner extends Page
 
     public function getTitle(): string
     {
-        return 'Letterhead designer';
+        return __('Letterhead designer');
     }
 
     public function mount(): void

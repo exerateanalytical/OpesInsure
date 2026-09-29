@@ -52,7 +52,7 @@ final class DocumentRegister extends DocUwPage
                 TextColumn::make('created_at')->label(self::col('created_at'))->dateTime(),
             ])
             ->filters([
-                SelectFilter::make('scan_status')->label(self::col('scan_status'))->options(array_combine($s = ['PENDING', 'CLEAN', 'INFECTED', 'FAILED'], $s)),
+                SelectFilter::make('scan_status')->label(self::col('scan_status'))->options(array_combine($s = ['PENDING', 'PENDING_SCAN', 'SCAN_UNAVAILABLE', 'CLEAN', 'INFECTED', 'FAILED'], $s)),
                 SelectFilter::make('verification_status')->label(self::col('verification_status'))->options(array_combine($v = ['UNVERIFIED', 'VERIFIED', 'REJECTED', 'NEEDS_REVIEW'], $v)),
             ])
             ->headerActions([DocumentActions::register()])

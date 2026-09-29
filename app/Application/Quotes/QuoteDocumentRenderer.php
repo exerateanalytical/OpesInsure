@@ -16,7 +16,8 @@ final class QuoteDocumentRenderer
     public function pdf(Quote $quote): string
     {
         $quote->loadMissing(['party', 'offers.carrier.party', 'offers.product']);
-        $money = static fn ($minor, $cur) => number_format((int) $minor, 0, ',', ' ').' '.$cur;
+        // R9: minor units (÷100), XAF printed as FCFA — same formatter as every issued document.
+        $money = static fn ($minor, $cur) => \App\Application\Documents\Security\MappedFieldValues::money((int) $minor, (string) ($cur ?: 'XAF'));
         // Shared letterhead: the quoting organisation (broker tenant) or the platform; text wordmark when no artwork.
         $tenant = $quote->tenant_id ? \App\Models\Tenant::find($quote->tenant_id) : null;
         $letterhead = $tenant?->type === 'BROKER'

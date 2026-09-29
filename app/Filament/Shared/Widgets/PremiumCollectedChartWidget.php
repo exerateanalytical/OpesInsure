@@ -53,10 +53,12 @@ final class PremiumCollectedChartWidget extends ChartWidget
         $kpi = app(KpiCatalogueService::class)->resolve($tenant, 'payments.collected');
         $labels = [];
         $series = [];
+        // R4: the six months in one grouped query (KpiEvaluator::monthly), same record set as value() per month.
+        $byMonth = app(KpiEvaluator::class)->monthly($tenant, $kpi, ['from' => CarbonImmutable::now()->startOfMonth()->subMonths(5)->toDateString(), 'to' => CarbonImmutable::now()->endOfMonth()->toDateString()]);
         for ($i = 5; $i >= 0; $i--) {
             $m = CarbonImmutable::now()->startOfMonth()->subMonths($i);
             $labels[] = $m->translatedFormat('M Y');
-            $v = app(KpiEvaluator::class)->value($tenant, $kpi, ['from' => $m->toDateString(), 'to' => $m->endOfMonth()->toDateString()]);
+            $v = $byMonth[$m->format('Y-m')] ?? ['by_currency' => []];
             foreach ($v['by_currency'] ?? [] as $ccy => $amount) {
                 $series[$ccy] ??= array_fill(0, 6, 0);
                 $series[$ccy][5 - $i] = (int) $amount;

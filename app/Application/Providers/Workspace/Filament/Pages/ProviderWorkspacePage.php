@@ -207,8 +207,24 @@ abstract class ProviderWorkspacePage extends Page
         return array_filter($cards, fn ($k) => $this->displayable((string) $k), ARRAY_FILTER_USE_KEY);
     }
 
-    /** Record opened in the detail panel (claim EOB, settlement statement, contract tariffs …). */
+    /** Record opened in the detail panel (claim EOB, settlement statement, contract tariffs …). Set only by open() / server actions. */
+    #[\Livewire\Attributes\Locked]
     public ?string $selected = null;
+
+    /**
+     * The API routes only accept UUID ids (whereUuid); the web actions apply the same rule so a malformed id is a clear
+     * "not found" instead of a database error. Returns true (and sets the refusal state) when $id is not a UUID.
+     */
+    protected function refuseInvalidId(?string $id): bool
+    {
+        if ($id !== null && Str::isUuid($id)) {
+            return false;
+        }
+        $this->state = 'VALIDATION_FAILED';
+        $this->stateMessage = __('provider_workspace.ui.record_not_found');
+
+        return true;
+    }
 
     /**
      * Per-row actions: list of ['label' => …, 'action' => livewire method, 'arg' => …] or ['label' => …, 'url' => …].
@@ -223,6 +239,11 @@ abstract class ProviderWorkspacePage extends Page
 
     public function open(string $id): void
     {
+        if ($this->refuseInvalidId($id)) {
+            $this->selected = null;
+
+            return;
+        }
         $this->selected = $id;
     }
 
@@ -270,6 +291,9 @@ abstract class ProviderWorkspacePage extends Page
      */
     protected function callWorkspace(string $action, array $input, ?string $id = null, array $fieldMap = []): ?array
     {
+        if ($id !== null && $this->refuseInvalidId($id)) {
+            return null;
+        }
         $this->formToken ??= (string) Str::uuid();
         $r = Request::create('/api/v1/provider-portal', 'POST', $input);
         $r->headers->set('Idempotency-Key', $this->formToken);

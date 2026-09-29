@@ -59,10 +59,10 @@ final class PublicProviderDirectory
                 ->whereNotNull('logo_path')->orderBy('version')->get()->keyBy('carrier_id');
 
             $insurers = DB::table('carriers')->where('is_official_register', true)
-                ->orderBy('regulator_sequence')->get(['id', 'trade_name', 'legal_name', 'short_name', 'licence_branch'])
+                ->orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('regulator_sequence')->get(['id', 'trade_name', 'legal_name', 'short_name', 'brand_short_name', 'licence_branch'])
                 ->map(fn ($r) => [
                     'name' => (string) ($r->trade_name ?: $r->legal_name),
-                    'short' => (string) ($r->short_name ?: ($r->trade_name ?: $r->legal_name)),
+                    'short' => (string) ($r->brand_short_name ?: ($r->short_name ?: ($r->trade_name ?: $r->legal_name))),
                     'kind' => 'insurer',
                     'branch' => $r->licence_branch === 'LIFE' ? 'LIFE' : ($r->licence_branch ? 'IARD' : null),
                     'city' => $hq[$r->id] ?? $insurerCities[$r->id] ?? null,

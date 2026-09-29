@@ -25,23 +25,23 @@ final class CapabilityController
         return response()->json(['data' => ['execution_modes' => CapabilityCatalogue::EXECUTION_MODES, 'capabilities' => CapabilityCatalogue::describe(), 'maturity_levels' => CapabilityCatalogue::MATURITY]]);
     }
 
-    public function index(string $carrier): JsonResponse
+    public function index(Request $r, string $carrier): JsonResponse
     {
-        $c = Carrier::findOrFail($carrier);
+        $c = $this->carrier($r, $carrier);
 
         return response()->json(['data' => CapabilityProfile::with('modes')->where('carrier_id', $c->id)->orderByDesc('version')->get()]);
     }
 
-    public function show(string $profile): JsonResponse
+    public function show(Request $r, string $profile): JsonResponse
     {
-        $p = CapabilityProfile::with('modes')->findOrFail($profile);
+        $p = $this->profile($r, $profile)->load('modes');
 
         return response()->json(['data' => $p, 'meta' => ['incoherences' => $p->status === 'DRAFT' ? $this->profiles->incoherences($p) : []]]);
     }
 
     public function store(Request $r, string $carrier): JsonResponse
     {
-        $c = Carrier::findOrFail($carrier);
+        $c = $this->carrier($r, $carrier);
         $d = $this->validateModes($r) + $r->validate(['notes' => 'nullable|string|max:2000']);
 
         return response()->json(['data' => $this->profiles->draft($c, $d['modes'], $r->user(), $d['notes'] ?? null)], 201);
@@ -51,29 +51,29 @@ final class CapabilityController
     {
         $d = $this->validateModes($r);
 
-        return response()->json(['data' => $this->profiles->replaceModes(CapabilityProfile::findOrFail($profile), $d['modes'], $r->user())]);
+        return response()->json(['data' => $this->profiles->replaceModes($this->profile($r, $profile), $d['modes'], $r->user())]);
     }
 
     public function submit(Request $r, string $profile): JsonResponse
     {
-        return response()->json(['data' => $this->profiles->submit(CapabilityProfile::findOrFail($profile), $r->user())]);
+        return response()->json(['data' => $this->profiles->submit($this->profile($r, $profile), $r->user())]);
     }
 
     public function approve(Request $r, string $profile): JsonResponse
     {
-        return response()->json(['data' => $this->profiles->approve(CapabilityProfile::findOrFail($profile), $r->user())]);
+        return response()->json(['data' => $this->profiles->approve($this->profile($r, $profile), $r->user())]);
     }
 
     public function reject(Request $r, string $profile): JsonResponse
     {
         $d = $r->validate(['reason' => 'required|string|min:5|max:2000']);
 
-        return response()->json(['data' => $this->profiles->reject(CapabilityProfile::findOrFail($profile), $r->user(), $d['reason'])]);
+        return response()->json(['data' => $this->profiles->reject($this->profile($r, $profile), $r->user(), $d['reason'])]);
     }
 
     public function resolve(Request $r, string $carrier): JsonResponse
     {
-        $c = Carrier::findOrFail($carrier);
+        $c = $this->carrier($r, $carrier);
         $d = $r->validate(['capability' => ['nullable', Rule::in(array_keys(CapabilityCatalogue::CAPABILITIES))], 'product_id' => 'nullable|uuid', 'on' => 'nullable|date']);
         $on = isset($d['on']) ? new \DateTimeImmutable($d['on']) : null;
         $data = isset($d['capability'])
@@ -85,7 +85,7 @@ final class CapabilityController
 
     public function maturity(Request $r, string $carrier): JsonResponse
     {
-        $c = Carrier::findOrFail($carrier);
+        $c = $this->carrier($r, $carrier);
         $profile = $this->resolver->profileAt($c->id);
         $m = CapabilityResolver::maturity($this->resolver->all($c->id), $profile !== null);
 
@@ -98,6 +98,7 @@ final class CapabilityController
             'subject_type' => ['required', Rule::in(CapabilityPinner::SUBJECT_TYPES)], 'subject_id' => 'required|uuid', 'carrier_id' => 'required|uuid|exists:carriers,id',
             'capability' => ['required', Rule::in(array_keys(CapabilityCatalogue::CAPABILITIES))], 'product_id' => 'nullable|uuid|exists:insurance_products,id',
         ]);
+        $this->carrier($r, $d['carrier_id']);
         $existing = $pinner->pinned($d['subject_type'], $d['subject_id'], $d['capability']);
         $pin = $existing ?? $pinner->pin($d['subject_type'], $d['subject_id'], $d['carrier_id'], $d['capability'], $d['product_id'] ?? null, $r->user());
 
@@ -118,5 +119,22 @@ final class CapabilityController
             'modes.*.scope_product_id' => 'nullable|uuid', 'modes.*.scope_class_code' => 'nullable|string|max:64',
             'modes.*.config' => 'nullable|array', 'modes.*.fallback_mode' => 'nullable|string|max:40',
         ]);
+    }
+
+    /** S6: a carrier-scoped caller (CARRIER_SUPER_ADMIN / CARRIER_ADMIN) sees and edits only its own insurer's profiles (404 otherwise). */
+    private function carrier(Request $r, string $id): Carrier
+    {
+        $c = Carrier::findOrFail($id);
+        app(\App\Application\Identity\CarrierScopeResolver::class)->abortUnlessOwnCarrier($r->user(), $c->id, app(\App\Domain\Tenancy\TenantContext::class)->id());
+
+        return $c;
+    }
+
+    private function profile(Request $r, string $id): CapabilityProfile
+    {
+        $p = CapabilityProfile::findOrFail($id);
+        $this->carrier($r, (string) $p->carrier_id);
+
+        return $p;
     }
 }

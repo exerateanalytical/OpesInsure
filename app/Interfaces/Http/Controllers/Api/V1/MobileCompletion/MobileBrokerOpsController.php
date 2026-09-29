@@ -176,7 +176,7 @@ final class MobileBrokerOpsController
 
     private function productionOf(Policy $p): array
     {
-        return ['id' => $p->id, 'policy_number' => $p->policy_number, 'customer_name' => $p->party?->display_name ?? 'Client', 'carrier_name' => $p->carrier?->party?->display_name ?? 'Carrier', 'premium_minor' => (int) $p->premium_minor, 'status' => $p->status, 'issued_at' => $p->issued_at?->toIso8601String()];
+        return ['id' => $p->id, 'policy_number' => $p->policy_number, 'customer_name' => $p->party?->display_name ?? 'Client', 'carrier_name' => $p->carrier?->party?->display_name ?? 'Carrier', 'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($p->carrier), 'premium_minor' => (int) $p->premium_minor, 'status' => $p->status, 'issued_at' => $p->issued_at?->toIso8601String()];
     }
 
     private function publicationRows(string $t)

@@ -123,7 +123,7 @@ Opes.page(function (ctx) {
   }
 
   var pLines = Opes.api('/catalogue/lines');
-  var pProduct = productCode ? Opes.list('/catalogue/products').then(function (r) { return r.items.filter(function (p) { return p.code === productCode; })[0] || null; }).catch(function () { return null; }) : Promise.resolve(null);
+  var pProduct = productCode ? Opes.list('/catalogue/products', { code: productCode }).then(function (r) { return r.items.filter(function (p) { return p.code === productCode; })[0] || null; }).catch(function () { return null; }) : Promise.resolve(null);
   Opes.loading(linesBox);
   Promise.all([pLines, pProduct]).then(function (res) {
     var lines = (Array.isArray(res[0]) ? res[0] : []).filter(function (l) { return l.status === 'ACTIVE'; });

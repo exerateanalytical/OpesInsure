@@ -53,7 +53,19 @@ final class ReportsPage extends ProviderWorkspacePage
     /** @return array<string, string> */
     private function activeFilters(): array
     {
-        return array_filter(array_map(fn ($v) => $v === null ? null : trim((string) $v), $this->filters), fn ($v) => $v !== null && $v !== '');
+        $f = array_filter(array_map(fn ($v) => $v === null ? null : trim((string) $v), $this->filters), fn ($v) => $v !== null && $v !== '');
+        // Live filters have no submit step: a malformed date or facility id is ignored (as the API would refuse it), never sent to the query.
+        foreach (['date_from', 'date_to'] as $k) {
+            $d = isset($f[$k]) ? \DateTimeImmutable::createFromFormat('!Y-m-d', $f[$k]) : null;
+            if (isset($f[$k]) && ($d === false || $d->format('Y-m-d') !== $f[$k])) {
+                unset($f[$k]);
+            }
+        }
+        if (isset($f['facility_id']) && ! \Illuminate\Support\Str::isUuid($f['facility_id'])) {
+            unset($f['facility_id']);
+        }
+
+        return $f;
     }
 
     public function exportCsv(): ?StreamedResponse

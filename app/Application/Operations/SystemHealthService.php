@@ -40,6 +40,10 @@ final class SystemHealthService
             'storage' => $this->storage(),
             'mail' => $this->mail(),
             'sms' => $this->sms(),
+            'malware_scanner' => $this->malwareScanner(),
+            // Q10 2026-09-29: OPS-005 cache and OPS-003 API health.
+            'cache' => $this->cache(),
+            'api' => $this->api(),
         ];
         $rank = [self::OK => 0, self::NOT_CONFIGURED => 1, self::UNKNOWN => 1, self::DEGRADED => 2, self::DOWN => 3];
         $worst = self::OK;
@@ -118,6 +122,21 @@ final class SystemHealthService
         return ['status' => $age > $stale ? self::DOWN : self::OK, 'last_beat_at' => CarbonImmutable::parse($row->last_beat_at)->toIso8601String(), 'age_seconds' => $age, 'stale_after_seconds' => $stale, 'host' => $row->host, 'beats' => (int) $row->beats];
     }
 
+    /** Q1: ClamAV probe (PING/VERSION) + how many uploads are held waiting for it. */
+    private function malwareScanner(): array
+    {
+        try {
+            $s = app(\App\Application\Documents\Scanning\MalwareScannerHealth::class)->status();
+            $held = Schema::hasTable('document_scan_queue')
+                ? DB::table('document_scan_queue')->whereIn('status', \App\Application\Documents\Scanning\DocumentScanQueue::HELD)->count() : 0;
+            $status = ! $s['configured'] ? self::NOT_CONFIGURED : ($s['reachable'] ? self::OK : self::DOWN);
+
+            return ['status' => $status, 'endpoint' => $s['endpoint'], 'version' => $s['version'], 'held_files' => $held, 'error' => $s['error']];
+        } catch (Throwable $e) {
+            return ['status' => self::UNKNOWN, 'error' => Str::limit($e->getMessage(), 200)];
+        }
+    }
+
     private function storage(): array
     {
         $disk = (string) config('filesystems.default');
@@ -130,6 +149,47 @@ final class SystemHealthService
             return ['status' => $read === 'ok' ? self::OK : self::DEGRADED, 'disk' => $disk, 'driver' => config("filesystems.disks.{$disk}.driver")];
         } catch (Throwable $e) {
             return ['status' => self::DOWN, 'disk' => $disk, 'error' => Str::limit($e->getMessage(), 200)];
+        }
+    }
+
+    /** OPS-005: live write / read / delete round-trip on the default cache store (Redis in production). */
+    private function cache(): array
+    {
+        $store = (string) config('cache.default');
+        try {
+            $key = 'ops-health:'.Str::uuid();
+            $start = hrtime(true);
+            \Illuminate\Support\Facades\Cache::put($key, 'ok', 30);
+            $read = \Illuminate\Support\Facades\Cache::get($key);
+            \Illuminate\Support\Facades\Cache::forget($key);
+            $ms = (int) round((hrtime(true) - $start) / 1e6);
+
+            return ['status' => $read === 'ok' ? self::OK : self::DEGRADED, 'store' => $store, 'driver' => config("cache.stores.{$store}.driver"), 'latency_ms' => $ms]
+                + (in_array(config("cache.stores.{$store}.driver"), ['array', 'null'], true) ? ['note' => 'in-process store: nothing is shared between workers.'] : []);
+        } catch (Throwable $e) {
+            return ['status' => self::DOWN, 'store' => $store, 'error' => Str::limit($e->getMessage(), 200)];
+        }
+    }
+
+    /**
+     * OPS-003: the API surface is loaded (versioned routes registered), OAuth signing keys are readable (every partner
+     * and mobile token depends on them) and today's partner API traffic (allowed / denied / rate-limited calls).
+     */
+    private function api(): array
+    {
+        try {
+            $routes = collect(app('router')->getRoutes()->getRoutes())->filter(fn ($r) => str_starts_with($r->uri(), 'api/v1/'))->count();
+            $keys = filled(config('passport.private_key')) || is_readable(\Laravel\Passport\Passport::keyPath('oauth-private.key'));
+            $usage = Schema::hasTable('integration_client_usage')
+                ? (array) DB::table('integration_client_usage')->where('usage_date', now()->toDateString())
+                    ->selectRaw('coalesce(sum(allowed_count), 0) as allowed, coalesce(sum(denied_count), 0) as denied, coalesce(sum(rate_limited_count), 0) as rate_limited')->first()
+                : [];
+            $status = $routes === 0 ? self::DOWN : ($keys ? self::OK : self::DEGRADED);
+
+            return ['status' => $status, 'routes' => $routes, 'oauth_keys' => $keys, 'partner_calls_today' => array_map('intval', $usage)]
+                + ($keys ? [] : ['reason' => 'OAuth signing keys not found: tokens cannot be issued or verified.']);
+        } catch (Throwable $e) {
+            return ['status' => self::UNKNOWN, 'error' => Str::limit($e->getMessage(), 200)];
         }
     }
 

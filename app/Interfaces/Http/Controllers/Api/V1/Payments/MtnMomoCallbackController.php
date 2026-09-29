@@ -24,7 +24,7 @@ final class MtnMomoCallbackController
     {
         $referenceId = (string) $request->query('reference_id');
         $token = (string) $request->query('token');
-        $expected = (string) config('payments.providers.mtn_momo.callback_token');
+        $expected = \App\Application\Payments\Adapters\MtnMomoCredentials::resolve()->get('callback_token');
 
         if ($referenceId === '' || $expected === '' || ! hash_equals($expected, $token)) {
             abort(401, __('wave4.invalid_callback_token'));

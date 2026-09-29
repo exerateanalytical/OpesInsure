@@ -8,8 +8,9 @@ return [
     'nav' => ['products' => 'Produits', 'compare' => 'Comparer', 'support' => 'Assistance'],
     'side' => [
         'dashboard' => 'Tableau de bord', 'policies' => 'Mes polices', 'quotes' => 'Devis', 'claims' => 'Sinistres', 'payments' => 'Paiements',
-        'documents' => 'Documents', 'vehicles' => 'Mes véhicules', 'leads' => 'Prospects', 'reports' => 'Rapports', 'commissions' => 'Commissions', 'book' => 'Mon portefeuille', 'staff' => 'Personnel', 'customers' => 'Clients', 'desk' => 'Gestion des sinistres',
+        'documents' => 'Documents', 'vehicles' => 'Mes véhicules', 'leads' => 'Prospects', 'reports' => 'Rapports', 'commissions' => 'Commissions', 'book' => 'Mon portefeuille', 'agent-actions' => "Centre d'actions", 'staff' => 'Personnel', 'customers' => 'Clients', 'desk' => 'Gestion des sinistres',
         'profile' => 'Mon profil', 'kyc' => 'Vérification d’identité', 'requests' => 'Demandes sur police', 'privacy' => 'Confidentialité et sécurité', 'notifications' => 'Notifications', 'support' => 'Assistance',
+        'tasks' => 'Tâches et relances', 'stickers' => 'Vignettes',
     ],
     'help_t' => 'Besoin d’aide ?', 'help_d' => 'Parlez à nos experts en assurance.', 'help_btn' => 'Nous appeler',
     'js' => [

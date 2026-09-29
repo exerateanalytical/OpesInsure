@@ -10,6 +10,7 @@
 @extends('public.account.layout', ['title' => __('account_claims.show.title'), 'lede' => __('account_claims.show.lede'),
   'crumbs' => [[__('account_claims.list.title'), '/account/claims'], [__('account_claims.show.title'), null]], 'active' => 'claims'])
 @include('public.account.claims.assets')
+@include('public.partials.pending-scan')
 @push('scripts')
 <script>window.OPES_CUST = {!! json_encode(__('account_customer.js'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};</script>
 @endpush
@@ -43,7 +44,7 @@ Opes.page(function (ctx) {
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/evidence-requirements')),
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/settlement')),
       soft(Opes.api('/mobile/claims/' + encodeURIComponent(id) + '/parties')),
-    ]).then(function (r) { render(r[0], rows(r[1]), rows(r[2]), rows(r[3]), r[4], rows(r[5])); });
+    ]).then(function (r) { render(r[0], rows(r[1]), rows(r[2]), rows(r[3]), r[4], rows(r[5]), (r[2] && r[2].pending) || []); });
   }
 
   function stepper(c, events) {
@@ -76,7 +77,7 @@ Opes.page(function (ctx) {
       var f = inp.files[0]; inp.value = ''; if (!f) return;
       if (!K.fileOk(f)) { Opes.alert(K.fmt(T.wiz.err_file, { name: f.name })); return; }
       Opes.busy(btn, true);
-      K.uploadEvidence(c.id, f, type).then(function () { Opes.alert(D.uploaded_ok, 'ok'); onDone(); })
+      K.uploadEvidence(c.id, f, type).then(function (r) { Opes.alert(r && r.security_check_pending ? D.security_check : D.uploaded_ok, 'ok'); onDone(); })
         .catch(function (e) { Opes.busy(btn, false); Opes.alert(e.message); });
     });
     return [btn, inp];
@@ -199,14 +200,14 @@ Opes.page(function (ctx) {
     return el;
   }
 
-  function render(c, events, evidence, reqs, settle, parties) {
+  function render(c, events, evidence, reqs, settle, parties, pending) {
     var p = c.policy || {}, r = K.risk(p), inc = (c.loss_details && c.loss_details.incident) || {}, s = K.shown(c);
     var inspection = c.loss_details && c.loss_details.inspection, repair = c.loss_details && c.loss_details.repair;
     var at = c.incident_at || c.loss_occurred_at;
     document.title = (c.claim_number || '') + ' — OpesInsure';
     var crumb = document.querySelector('.crumbs [aria-current="page"]'); if (crumb) crumb.textContent = c.claim_number || crumb.textContent;
     Opes.clear(body);
-    if (q.get('created') && !render.done) Opes.alert(q.get('failed') ? K.fmt(T.wiz.upload_failed, { n: q.get('failed') }) : K.fmt(T.wiz.done, { no: c.claim_number }), q.get('failed') ? 'bad' : 'ok');
+    if (q.get('created') && !render.done) Opes.alert(q.get('failed') ? K.fmt(T.wiz.upload_failed, { n: q.get('failed') }) : K.fmt(T.wiz.done, { no: c.claim_number }) + (q.get('pending') ? ' ' + D.security_check : ''), q.get('failed') ? 'bad' : 'ok');
     render.done = true;
 
     // Header
@@ -253,11 +254,13 @@ Opes.page(function (ctx) {
       var f = gInput.files[0]; gInput.value = ''; if (!f) return;
       if (!K.fileOk(f)) { Opes.alert(K.fmt(T.wiz.err_file, { name: f.name })); return; }
       Opes.busy(gButton, true);
-      K.uploadEvidence(c.id, f, sel.value).then(function () { Opes.alert(D.uploaded_ok, 'ok'); load(); }).catch(function (e) { Opes.busy(gButton, false); Opes.alert(e.message); });
+      K.uploadEvidence(c.id, f, sel.value).then(function (r) { Opes.alert(r && r.security_check_pending ? D.security_check : D.uploaded_ok, 'ok'); load(); }).catch(function (e) { Opes.busy(gButton, false); Opes.alert(e.message); });
     });
     gen.appendChild(gButton); gen.appendChild(gInput);
     docs.querySelector('h2').appendChild(gen);
-    if (!evidence.length) docs.appendChild(h('p', { class: 'acct-empty', style: 'padding:14px' }, D.no_docs));
+    var held = window.OpesPendingScan && OpesPendingScan.render(pending); // S4: uploads still in the security check
+    if (held) docs.appendChild(held);
+    if (!evidence.length && !held) docs.appendChild(h('p', { class: 'acct-empty', style: 'padding:14px' }, D.no_docs));
     else docs.appendChild(h('div', { class: 'cl-docs' }, evidence.map(function (ev) {
       var pdf = /pdf/.test(ev.mime_type || '');
       var b = h('button', { type: 'button', onclick: function () { openDoc(ev, b); } }, Opes.icon('eye'), D.open);

@@ -97,6 +97,7 @@ return [
         'download' => 'Télécharger',
         'download_statement' => 'Télécharger le relevé',
         'statement_not_ready' => 'Le relevé de règlement n’a pas encore été émis.',
+        'record_not_found' => 'Cet enregistrement est introuvable pour votre organisation.',
         'verify' => 'Vérifier',
         'document_type' => 'Type de document',
         'all' => 'Tous',

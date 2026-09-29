@@ -113,6 +113,7 @@ return [
             'repair' => 'Repair', 'garage' => 'Garage', 'estimate' => 'Estimate',
             'next_t' => 'Next Steps', 'important' => 'Important Information', 'important_d' => 'Keep all original documents. Your insurer may request additional documents during the assessment.',
             'print' => 'Print / Save Summary', 'contact' => 'Contact Claims Support', 'uploaded_ok' => 'Document uploaded.',
+            'security_check' => 'Security check in progress — your file will be attached automatically.',
             'not_found' => 'This claim could not be found in your account.',
             'withdraw' => [
                 'btn' => 'Withdraw Claim', 'title' => 'Withdraw this claim?',

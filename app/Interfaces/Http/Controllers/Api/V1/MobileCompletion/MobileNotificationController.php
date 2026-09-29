@@ -19,8 +19,14 @@ final class MobileNotificationController
     public function index(Request $request): JsonResponse
     {
         $locale = NotificationCatalog::requestLocale($request);
+        $mine = UserNotification::where('user_id', $request->user()->id);
+        // meta.unread_count feeds the web header badge and the action centre (?unread=1&per_page=1 asks for just the count).
+        $unread = (clone $mine)->whereNull('read_at')->count();
+        $rows = $request->boolean('unread') ? (clone $mine)->whereNull('read_at') : $mine;
+        $limit = max(1, min(100, (int) $request->query('per_page', 100)));
 
-        return response()->json(['data' => UserNotification::where('user_id', $request->user()->id)->orderByDesc('created_at')->limit(100)->get()->map(fn (UserNotification $n) => $n->toMobile($locale))->values()]);
+        return response()->json(['data' => $rows->orderByDesc('created_at')->limit($limit)->get()->map(fn (UserNotification $n) => $n->toMobile($locale))->values(),
+            'meta' => ['unread_count' => $unread]]);
     }
 
     public function show(string $notification, Request $request): JsonResponse

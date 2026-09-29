@@ -87,6 +87,7 @@ final class MobilePaymentService
             'proposal_id' => $intent->proposal_id,
             'product_name' => $intent->proposal?->offer?->product?->name,
             'carrier_name' => $intent->proposal?->offer?->carrier?->party?->display_name,
+            'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($intent->proposal?->offer?->carrier),
             'policy_id' => $policy?->id,
             'policy_number' => $policy?->policy_number,
             'requested_at' => $intent->created_at?->toIso8601String(),

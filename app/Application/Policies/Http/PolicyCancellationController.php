@@ -26,7 +26,8 @@ final class PolicyCancellationController
 
     private function policy(string $id): Policy
     {
-        return Policy::where('tenant_id', $this->tenant())->findOrFail($id);
+        // R1: only a policy in the caller's book / carrier scope (not any policy of the tenant).
+        return app(\App\Application\Policies\PolicyWriteScope::class)->find($id, request()->user());
     }
 
     private function case(string $id): PolicyCancellation

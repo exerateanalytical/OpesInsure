@@ -127,11 +127,21 @@ final class ClaimActions
         return WorkflowAction::make('claimAssign', $p)->icon('lucide-user-plus')
             ->schema([
                 Select::make('assignee_id')->label(__('workflow_actions.fields.assignee'))->required()->searchable()
-                    ->options(fn () => User::where('status', 'ACTIVE')->whereHas('memberships', fn ($q) => $q->where('tenant_id', self::tenant())->where('status', 'ACTIVE'))->pluck('full_name', 'id')),
+                    ->options(fn () => self::assignableUsers()->pluck('full_name', 'id')),
                 TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
             ])
             ->action(fn (Action $action, Claim $record, array $data) => WorkflowAction::run($action, $p,
-                fn () => app(ClaimLifecycleService::class)->assign($record, User::findOrFail($data['assignee_id']), $data['reason_code'], auth()->user())));
+                fn () => app(ClaimLifecycleService::class)->assign($record, self::assignableUsers()->findOrFail($data['assignee_id']), $data['reason_code'], auth()->user())));
+    }
+
+    /** Active staff of the tenant; in /insurer only the caller's own carrier's staff (R7: never another insurer's). */
+    private static function assignableUsers(): \Illuminate\Database\Eloquent\Builder
+    {
+        $insurer = \App\Application\WebExperiences\PortalScope::panel() === 'insurer';
+        $carrier = $insurer ? (\App\Application\WebExperiences\PortalScope::carrierId() ?? '') : null;
+
+        return User::where('status', 'ACTIVE')->whereHas('memberships', fn ($q) => $q->where('tenant_id', self::tenant())->where('status', 'ACTIVE')
+            ->when($insurer, fn ($w) => $w->where('carrier_id', $carrier)));
     }
 
     public static function assess(): Action

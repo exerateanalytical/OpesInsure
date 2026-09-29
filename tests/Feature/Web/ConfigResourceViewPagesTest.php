@@ -132,6 +132,7 @@ dataset('config view pages', [
 
 it('renders the detail page for an admin and list rows link to it', function (string $resource) {
     $tenant = makeAuthTestTenant('views');
+    $tenant->update(['type' => 'PLATFORM']); // payment connections are platform-tenant only (security 2026-09-29)
     $admin = makeAuthTestSystemAdmin($tenant);
     $this->actingAs($admin, 'web');
     app(\App\Domain\Tenancy\TenantContext::class)->set($tenant->id);
@@ -156,6 +157,7 @@ it('renders the detail page for an admin and list rows link to it', function (st
 
 it('never renders payment connection secrets on the detail page', function () {
     $tenant = makeAuthTestTenant('secret');
+    $tenant->update(['type' => 'PLATFORM']); // payment connections are platform-tenant only (security 2026-09-29)
     $this->actingAs(makeAuthTestSystemAdmin($tenant), 'web');
     app(\App\Domain\Tenancy\TenantContext::class)->set($tenant->id);
     $record = viewPageFixture(Resources\PaymentConnections\PaymentConnectionResource::class, $tenant->id, ['credential_reference' => 'vault://super-secret-ref-123']);

@@ -23,7 +23,7 @@ final class SignatureConfiguration extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Signature configuration (DOC-ADM-013)';
+        return __('Signature configuration');
     }
 
     protected function report(): array

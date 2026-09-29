@@ -23,7 +23,7 @@ final class ProductDocumentMapping extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Product mapping (DOC-ADM-010)';
+        return __('Product document mapping');
     }
 
     protected function report(): array

@@ -65,7 +65,7 @@ final class PaymentActions
 
                 return in_array($intent->status, ['CREATED', 'PENDING_CUSTOMER', 'FAILED'], true) && $intent->provider_reference === null
                     ? app(\App\Application\Payments\PaymentInitiationService::class)->initiate($intent) : $intent;
-            }));
+            }, __('broker_portal_sales.brokerRequestPremium.done')));
     }
 
     /** Receipt of the proposal's confirmed premium payment: the signed PDF link GET mobile/payments/{p}/receipt returns. */
@@ -82,7 +82,7 @@ final class PaymentActions
     /** Providers with an ACTIVE connection for this tenant (as PaymentInitiationService requires), plus the test provider where allowed. */
     private static function providerOptions(): array
     {
-        $live = \App\Models\PaymentProviderConnection::where('status', 'ACTIVE')->where(fn ($q) => $q->where('tenant_id', self::tenant())->orWhereNull('tenant_id'))
+        $live = \App\Models\PaymentProviderConnection::where('status', 'ACTIVE')->where('environment', 'PRODUCTION')->where(fn ($q) => $q->where('tenant_id', self::tenant())->orWhereNull('tenant_id'))
             ->distinct()->pluck('provider')->all();
         if (\App\Application\Demo\DemoPersonas::fakeProviderAllowed(auth()->user())) {
             $live[] = 'fake';

@@ -1,0 +1,82 @@
+<?php
+
+return [
+    'nav' => 'Analyse des fichiers',
+    'title' => 'Analyse des fichiers déposés',
+    'subtitle' => 'Chaque fichier déposé est d’abord conservé, puis libéré seulement après une véritable analyse antivirus. Les fichiers retenus pendant l’indisponibilité de l’antivirus sont réanalysés automatiquement toutes les 5 minutes.',
+    'scanner' => [
+        'heading' => 'Antivirus',
+        'configured' => 'Configuré',
+        'reachable' => 'Joignable',
+        'version' => 'Version',
+        'endpoint' => 'Adresse',
+        'error' => 'Dernière erreur',
+        'yes' => 'Oui',
+        'no' => 'Non',
+        'not_configured_help' => 'Aucun antivirus n’est configuré. Installez clamav-daemon et définissez CLAMAV_HOST=127.0.0.1 (CLAMAV_PORT vaut 3310 par défaut) ou CLAMAV_SOCKET ; les fichiers retenus seront alors analysés et libérés automatiquement.',
+    ],
+    'status' => [
+        'PENDING_SCAN' => 'En attente d’analyse',
+        'SCAN_UNAVAILABLE' => 'Retenu — antivirus indisponible',
+        'CLEAN' => 'Sain',
+        'INFECTED' => 'Infecté (en quarantaine)',
+        'FAILED' => 'Ancien — non analysé',
+        'PENDING_ATTACHMENTS' => 'Rattachements en attente d’une analyse saine',
+    ],
+    'tabs' => [
+        'held' => 'File d’attente',
+        'infected' => 'Quarantaine',
+    ],
+    'columns' => [
+        'document' => 'Document',
+        'category' => 'Catégorie',
+        'party' => 'Client',
+        'status' => 'Statut d’analyse',
+        'attempts' => 'Tentatives',
+        'last_attempt_at' => 'Dernière tentative',
+        'next_attempt_at' => 'Prochaine tentative',
+        'last_error' => 'Motif de la rétention',
+        'pending_attachments' => 'Rattachements en attente',
+        'verdict' => 'Détection',
+        'quarantined_at' => 'Mis en quarantaine le',
+        'created_at' => 'Déposé le',
+    ],
+    'actions' => [
+        'rescan' => 'Réanalyser maintenant',
+        'rescan_all' => 'Réanalyser tous les fichiers retenus',
+        'rescanned' => 'Résultat de l’analyse : :status',
+        'rescan_all_done' => ':scanned fichier(s) analysé(s) : :clean sain(s), :infected infecté(s), :unavailable toujours retenu(s).',
+        'scanner_down' => 'L’antivirus est injoignable ; les fichiers restent retenus et seront analysés dès qu’il répondra.',
+    ],
+    'empty' => [
+        'held' => 'Aucun fichier n’attend d’analyse.',
+        'infected' => 'Aucun fichier infecté n’a été détecté.',
+    ],
+    'client' => [
+        'in_progress' => 'Contrôle de sécurité en cours — votre fichier sera joint automatiquement.',
+    ],
+    'pending' => [
+        'heading' => 'Contrôle de sécurité en cours',
+        'in_progress' => 'Contrôle de sécurité en cours',
+        'quarantined' => 'En quarantaine — ce fichier a échoué au contrôle de sécurité et ne peut pas être téléchargé.',
+        'filename' => 'Fichier',
+        'uploaded_at' => 'Téléversé le',
+        'status_column' => 'Statut',
+        'status' => [
+            'PENDING_SCAN' => 'En attente du contrôle de sécurité',
+            'SCAN_UNAVAILABLE' => 'Contrôle de sécurité retardé — nouvelle tentative automatique',
+            'INFECTED' => 'Infecté (en quarantaine, non téléchargeable)',
+        ],
+    ],
+    'notify' => [
+        'attached_title' => 'Fichier joint',
+        'attached_body' => 'Votre fichier a passé le contrôle de sécurité et a été joint.',
+        'infected_title' => 'Fichier refusé',
+        'infected_body' => 'Un fichier que vous avez envoyé n’a pas passé le contrôle de sécurité et a été mis en quarantaine. Veuillez en envoyer une autre copie.',
+        'staff_infected_title' => 'Fichier infecté mis en quarantaine',
+        'staff_infected_body' => 'Un document :category déposé (:id…) a été détecté comme infecté et mis en quarantaine.',
+    ],
+    'health' => [
+        'check' => 'Antivirus',
+    ],
+];

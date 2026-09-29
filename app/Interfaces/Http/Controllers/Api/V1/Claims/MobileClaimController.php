@@ -13,7 +13,7 @@ final class MobileClaimController
 {
     public function index(Request $request, MobileClaimService $service): JsonResponse
     {
-        return response()->json(['data' => $service->list($request->user(), app(TenantContext::class)->id())]);
+        return response()->json(['data' => $service->list($request->user(), app(TenantContext::class)->id(), max(1, min(100, (int) $request->query('per_page', 20))))]);
     }
 
     public function show(string $claim, Request $request, MobileClaimService $service): JsonResponse

@@ -44,12 +44,12 @@ final class ComplianceController
         if ($r->has('scope')) { // two-step request (maker); approval is a separate call (checker)
             $d = $r->validate(['user_id' => 'required|uuid', 'purpose' => 'required|string|max:64', 'justification' => 'required|string|min:20|max:2000',
                 'starts_at' => 'required|date', 'expires_at' => 'required|date', 'scope' => 'required|array|min:1']);
-            $g = $this->auditedCall(fn () => $s->request($this->tenant(), User::findOrFail($d['user_id']), $d, $r->user()), $perm, 'privileged_access_grant', null);
+            $g = $this->auditedCall(fn () => $s->request($this->tenant(), $this->member($d['user_id']), $d, $r->user()), $perm, 'privileged_access_grant', null);
         } else { // legacy single-step grant: caller is the approver
             $d = $r->validate(['user_id' => 'required|uuid|exists:users,id', 'tenant_id' => 'required|uuid|exists:tenants,id', 'purpose' => 'required|string|max:64',
                 'justification' => 'required|string|min:40|max:4000', 'starts_at' => 'required|date', 'expires_at' => 'required|date|after:starts_at']);
             abort_if($d['tenant_id'] !== $this->tenant(), 404);
-            $g = $this->auditedCall(fn () => $s->grant($this->tenant(), User::findOrFail($d['user_id']), $d, $r->user()), $perm, 'privileged_access_grant', null);
+            $g = $this->auditedCall(fn () => $s->grant($this->tenant(), $this->member($d['user_id']), $d, $r->user()), $perm, 'privileged_access_grant', null);
         }
 
         return $this->out($r, $g, 201, ['id' => $g->id, 'status' => $g->status, 'expires_at' => $g->expires_at]);
@@ -102,7 +102,8 @@ final class ComplianceController
 
     public function audit(Request $r)
     {
-        $q = DB::table('audit_log')->orderByDesc('sequence');
+        // Security 2026-09-29: only the caller's own tenant's audit rows (the admin screen already filtered; the API did not).
+        $q = DB::table('audit_log')->where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id())->orderByDesc('sequence');
         if ($r->filled('subject_type')) {
             $q->where('subject_type', $r->string('subject_type'));
         }
@@ -124,5 +125,13 @@ final class ComplianceController
         }
 
         return response()->json(['data' => $summary ?? $model], $status);
+    }
+
+    /** S6: privileged access is granted only to a member of this tenant (any other user id is a 404). */
+    private function member(string $userId): User
+    {
+        abort_unless(\App\Models\TenantMembership::where(['tenant_id' => $this->tenant(), 'user_id' => $userId])->exists(), 404);
+
+        return User::findOrFail($userId);
     }
 }

@@ -79,7 +79,10 @@ final class PartyActions
     public static function matchDismiss(): Action
     {
         $p = 'parties.match.review';
-        $open = fn (Model $r) => EntityMatchCandidate::where('status', 'OPEN')->where(fn ($q) => $q->where('party_a_id', self::party($r)->id)->orWhere('party_b_id', self::party($r)->id));
+        // Both sides must be customers of this tenant (as PartyGoldenRecordController::candidates): a foreign counterpart's name must not leak.
+        $tenantParties = fn () => TenantCustomer::where('tenant_id', self::tenant())->select('party_id');
+        $open = fn (Model $r) => EntityMatchCandidate::where('status', 'OPEN')->where(fn ($q) => $q->where('party_a_id', self::party($r)->id)->orWhere('party_b_id', self::party($r)->id))
+            ->whereIn('party_a_id', $tenantParties())->whereIn('party_b_id', $tenantParties());
 
         return WorkflowAction::make('matchDismiss', $p, 'party_actions')->icon('lucide-circle-slash')->requiresConfirmation()
             ->visible(fn (Model $record) => $open($record)->exists())
@@ -220,7 +223,7 @@ final class PartyActions
                 } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
                     abort(403, $e->getMessage());   // not a broker user: shown as a refusal, as the API returns 403
                 }
-            }));
+            }, __('broker_portal_sales.brokerRegisterClient.done')));
     }
 
     /** Merges involving the record's party (as survivor or merged), in the given status. */
@@ -241,7 +244,7 @@ final class PartyActions
         $p = 'kyc.manage';
 
         return WorkflowAction::make('partyKycOpen', $p)->icon('lucide-id-card')->requiresConfirmation()
-            ->visible(fn (Model $record) => self::kycDraft($record) === null)
+            ->visible(fn (Model $record) => ! self::hasKycDraft($record))
             ->action(fn (Action $action, Model $record) => WorkflowAction::run($action, $p, fn () => app(KycService::class)->draftFor(self::kycParty($record), self::tenant())));
     }
 
@@ -250,7 +253,7 @@ final class PartyActions
         $p = 'kyc.manage';
 
         return WorkflowAction::make('partyKycSubmit', $p)->icon('lucide-send')->requiresConfirmation()
-            ->visible(fn (Model $record) => self::kycDraft($record) !== null)
+            ->visible(fn (Model $record) => self::hasKycDraft($record))
             ->schema([Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->maxLength(2000)])
             ->action(fn (Action $action, Model $record, array $data) => WorkflowAction::run($action, $p,
                 fn () => app(KycService::class)->submit(self::kycDraft($record) ?? abort(404), $data['notes'] ?? null, auth()->user())));
@@ -379,6 +382,21 @@ final class PartyActions
             || KycSubmission::where('tenant_id', self::tenant())->where('party_id', $id)->exists();
 
         return ($known ? Party::find($id) : null) ?? throw new ApiProblemException('PARTY_NOT_FOUND', 404, 'Party not found in this tenant.');
+    }
+
+    /** Row-action visibility: kycDraft() !== null, decided for every customer row of the page in one query (R4). */
+    private static function hasKycDraft(Model $record): bool
+    {
+        if (! $record instanceof TenantCustomer) {
+            return self::kycDraft($record) !== null;
+        }
+        $tenant = self::tenant();
+
+        return \App\Application\Identity\Rbac\RequestMemo::rowFlag('kyc-draft:'.$tenant, 'tenant_customers', (string) $record->getKey(),
+            fn (array $ids) => DB::table('tenant_customers')->whereIn('tenant_customers.id', $ids)
+                ->whereExists(fn ($k) => $k->from('kyc_submissions')->whereColumn('kyc_submissions.party_id', 'tenant_customers.party_id')
+                    ->where('kyc_submissions.tenant_id', $tenant)->whereIn('kyc_submissions.status', KycService::EDITABLE))
+                ->pluck('tenant_customers.id')->all());
     }
 
     private static function kycDraft(Model $record): ?KycSubmission

@@ -80,6 +80,12 @@ final class ReportsPage extends Page
         $this->report = array_key_first($this->options());
     }
 
+    /** The caller's carrier inside /insurer (null elsewhere or at tenant-wide scope). */
+    private function carrier(): ?string
+    {
+        return rescue(fn () => \App\Application\WebExperiences\PortalScope::carrierId(), null, false);
+    }
+
     private function may(string $family): bool
     {
         return (bool) rescue(fn () => auth()->user()->hasPermission(self::PERMISSIONS[$family]), false, false);
@@ -93,7 +99,9 @@ final class ReportsPage extends Page
             $o['INS:portfolio'] = __('dashboards.reports.insurance_portfolio');
             $o['INS:renewals'] = __('dashboards.reports.renewals');
         }
-        if ($this->may('FR')) {
+        // CAR-034 (Q7): the finance registry reports are tenant-wide, not per carrier — not offered to a carrier-scoped
+        // /insurer user (their figures would include other carriers' business).
+        if ($this->may('FR') && $this->carrier() === null) {
             foreach (app(FinanceReportRegistry::class)->catalogue() as $r) {
                 $o['FR:'.$r['code']] = $r['code'].' — '.$r['title'].($r['status'] === FinanceReportRegistry::AVAILABLE ? '' : ' ('.__('dashboards.reports.not_available').')');
             }
@@ -154,13 +162,15 @@ final class ReportsPage extends Page
     private function insurance(string $code): array
     {
         $c = app(\App\Interfaces\Http\Controllers\Api\V1\Reporting\InsuranceReportController::class);
+        // /insurer: the API's own carrier_id filter, set to the caller's carrier (CAR-034).
+        $carrier = array_filter(['carrier_id' => $this->carrier()]);
         if ($code === 'portfolio') {
-            $data = json_decode((string) $c->portfolio(Request::create('/', 'GET', array_filter(['from' => $this->from, 'to' => $this->to])))->getContent(), true)['data'];
+            $data = json_decode((string) $c->portfolio(Request::create('/', 'GET', array_filter(['from' => $this->from, 'to' => $this->to]) + $carrier))->getContent(), true)['data'];
             $row = array_diff_key($data, ['period' => 1]);
 
             return ['columns' => array_keys($row), 'rows' => [$row]];
         }
-        $rows = array_map(fn ($r) => (array) $r, json_decode((string) $c->renewals(Request::create('/', 'GET'))->getContent(), true)['data']);
+        $rows = array_map(fn ($r) => (array) $r, json_decode((string) $c->renewals(Request::create('/', 'GET', $carrier))->getContent(), true)['data']);
 
         return ['columns' => $rows ? array_keys($rows[0]) : ['status', 'count'], 'rows' => $rows];
     }

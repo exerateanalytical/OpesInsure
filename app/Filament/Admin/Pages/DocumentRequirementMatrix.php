@@ -36,7 +36,7 @@ final class DocumentRequirementMatrix extends Page
 
     public function getTitle(): string
     {
-        return 'Document requirement matrix';
+        return __('Document requirement matrix');
     }
 
     protected function getViewData(): array

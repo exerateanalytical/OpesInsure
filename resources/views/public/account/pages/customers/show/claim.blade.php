@@ -39,7 +39,8 @@ Opes.page(function (ctx) {
     if (!pols.length) return O.empty(state, A.t('claim_no_policy'), h('a', { class: 'dbtn dbtn-outline sm', href: back }, A.t('back')));
     O.$('[data-client-name]').textContent = c.full_name;
     var sel = form.elements.policy_id;
-    pols.forEach(function (p) { sel.appendChild(h('option', { value: p.id }, [p.policy_number, p.carrier_name, A.line(p.line_code)].filter(Boolean).join(' · '))); });
+    pols.forEach(function (p) { sel.appendChild(h('option', { value: p.id }, [p.policy_number, (p.carrier_short_name || p.carrier_name), A.line(p.line_code)].filter(Boolean).join(' · '))); });
+    if (ctx.params.get('policy')) sel.value = ctx.params.get('policy'); // from the agent policy page (AGT-040 → AGT-052)
     form.hidden = false;
     form.addEventListener('submit', function (e) {
       e.preventDefault(); O.alert('');

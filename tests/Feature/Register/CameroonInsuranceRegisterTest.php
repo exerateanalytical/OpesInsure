@@ -182,7 +182,7 @@ it('lists all 29 insurers with branch, short name and families, filterable', fun
 
     $all = $this->getJson('/api/v1/public/institutions?type=insurer')->assertOk();
     expect($all->json('data'))->toHaveCount(29);
-    $row = collect($all->json('data'))->firstWhere('short_name', 'CHANAS');
+    $row = collect($all->json('data'))->firstWhere('short_name', 'Chanas');
     expect($row)->toHaveKeys(['id', 'type', 'name', 'initials', 'code', 'city', 'phone', 'website', 'products', 'branch', 'short_name', 'regulator_sequence', 'product_families', 'is_official_register', 'licensed', 'canonical_id', 'data_origin', 'product_families_status'])
         ->and($row['canonical_id'])->toBe('CM-INS-IARD-008')
         ->and($row['name'])->toBe('Chanas Assurances')
@@ -193,7 +193,7 @@ it('lists all 29 insurers with branch, short name and families, filterable', fun
     expect($this->getJson('/api/v1/public/institutions?type=insurer&branch=LIFE')->json('data'))->toHaveCount(11);
     expect($this->getJson('/api/v1/public/institutions?type=insurer&branch=IARD')->json('data'))->toHaveCount(18);
     $q = $this->getJson('/api/v1/public/institutions?type=insurer&q=sanlam')->json('data');
-    expect(collect($q)->pluck('short_name')->sort()->values()->all())->toBe(['SANLAMALLIANZ', 'SANLAMALLIANZ VIE']);
+    expect(collect($q)->pluck('short_name')->sort()->values()->all())->toBe(['SanlamAllianz', 'SanlamAllianz Vie']);
     $this->getJson('/api/v1/public/institutions?branch=MARINE')->assertStatus(422);
 });
 

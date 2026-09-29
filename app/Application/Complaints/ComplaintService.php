@@ -217,6 +217,7 @@ final class ComplaintService
                 DB::table('complaints')->where('id', $complaint->id)->update($update + ['updated_at' => $this->clock->now()]);
             }
             $this->mirrorTicket($complaint, $case, $actor, $event);
+            rescue(fn () => app(\App\Application\Notifications\LaunchNotificationRouter::class)->complaintStatus($complaint, (string) $case->status), null, true);
 
             return $this->complaint($case);
         });

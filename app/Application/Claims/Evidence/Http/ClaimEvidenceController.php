@@ -25,7 +25,11 @@ final class ClaimEvidenceController
 
     public function checklist(string $id, ClaimEvidenceChecklist $checklist): JsonResponse
     {
-        return response()->json(['data' => $checklist->build($this->claim($id))]);
+        $claim = $this->claim($id);
+
+        // S4 (additive): evidence still in the security check / quarantined, never downloadable.
+        return response()->json(['data' => $checklist->build($claim)
+            + ['pending' => app(\App\Application\Documents\Scanning\PendingDocuments::class)->forClaim($claim->id)]]);
     }
 
     public function show(string $id, string $document, ClaimEvidenceMetadata $metadata): JsonResponse

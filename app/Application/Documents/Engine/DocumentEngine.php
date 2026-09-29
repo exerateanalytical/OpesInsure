@@ -261,6 +261,23 @@ final class DocumentEngine
         return $profile !== null && in_array($profile->issuance_mode, ['OPES_GENERATED', 'HYBRID'], true) && $profile->opes_rendering_authorized;
     }
 
+    /**
+     * R9 document language: the insurer's default (BILINGUAL unless it chose one); a single-language default gives way
+     * to the customer's own language (users.locale of the policyholder) when the insurer's profile allows that language.
+     * A BILINGUAL default always carries the customer's language.
+     */
+    public static function languageFor(Policy $policy, ?DocumentIssuanceProfile $profile): string
+    {
+        $default = strtoupper((string) ($profile?->default_language ?: 'BILINGUAL'));
+        if ($default === 'BILINGUAL' || ! $policy->party_id) {
+            return $default;
+        }
+        $customer = strtoupper((string) User::where('party_id', $policy->party_id)->orderBy('created_at')->value('locale'));
+        $allowed = array_map('strtoupper', (array) ($profile?->languages ?: ['FR', 'EN']));
+
+        return in_array($customer, ['FR', 'EN'], true) && in_array($customer, $allowed, true) ? $customer : $default;
+    }
+
     /** Issuer from the catalogue's document_origin (BROKER only for a broker tenant; SYSTEM = platform). */
     public function issuerFor(string $code, Policy $policy): string
     {
@@ -312,7 +329,7 @@ final class DocumentEngine
         }
 
         $class = $pack['insurance_class'];
-        $language = $profile?->default_language ?? 'BILINGUAL';
+        $language = self::languageFor($policy, $profile);
         $template = $this->templates->resolve($code, [
             'carrier_id' => $policy->carrier_id, 'tenant_id' => $policy->tenant_id, 'broker' => $policy->tenant?->type === 'BROKER',
             'product_id' => $policy->proposal?->offer?->product_id, 'insurance_class' => in_array($class, ['LIFE', 'GROUP_LIFE'], true) ? 'LIFE' : $class,

@@ -97,6 +97,7 @@ return [
         'download' => 'Download',
         'download_statement' => 'Download statement',
         'statement_not_ready' => 'The settlement statement has not been issued yet.',
+        'record_not_found' => 'This record was not found for your organisation.',
         'verify' => 'Verify',
         'document_type' => 'Document type',
         'all' => 'All',

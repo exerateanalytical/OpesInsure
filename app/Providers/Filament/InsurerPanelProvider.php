@@ -44,6 +44,8 @@ final class InsurerPanelProvider extends PanelProvider
             // Read-only registers (no model/resource yet; writes stay in the APIs).
             \App\Filament\Shared\Pages\Registers\QuoteRequestsRegister::class,
             \App\Filament\Shared\Pages\Registers\ReferralsRegister::class,
+            // Q8 (2026-09-29): underwriting workbench dashboard (UND-001/004/020), own carrier, case read permissions.
+            \App\Filament\Admin\Pages\Underwriting\UnderwritingDashboard::class,
             // P4 (owner 2026-09-29, D4 lifted): the risk-transfer workbench replaces the read-only treaty / co-insurance
             // registers — same pages as /admin, gated by the API permission, own tenant; policy/claim-linked rows and
             // pickers narrowed to the caller's carrier (RiskTransferSupport::ownRows / policySelect / claimSelect).
@@ -63,6 +65,25 @@ final class InsurerPanelProvider extends PanelProvider
             \App\Filament\Admin\Pages\HealthProviderDisputes::class,
             // Insurer letterhead and public logo (carrier-scoped, maker-checker), feeding logo_url / carrier_logo_url.
             \App\Filament\Shared\Pages\InsurerLetterheadPage::class,
+            // S10: bulk agreement setup and coverage matrix, own carrier only (BulkAgreements::scope), agreement API permissions.
+            \App\Filament\Admin\Pages\Distribution\BulkAgreements::class,
+            \App\Filament\Admin\Pages\Distribution\AgreementCoverage::class,
+            // Q7 carrier screens (CAR-003…007 dashboards, 012 intermediaries, 018 eligibility, 022 rating, 029 cancellations):
+            // own carrier only (InsurerDashboards / PortalScope), gated by the API read permission of each screen.
+            \App\Filament\Shared\Pages\Insurer\ProductionDashboard::class,
+            \App\Filament\Shared\Pages\Insurer\PortfolioDashboard::class,
+            \App\Filament\Shared\Pages\Insurer\ClaimsPerformanceDashboard::class,
+            \App\Filament\Shared\Pages\Insurer\BrokerProductionDashboard::class,
+            \App\Filament\Shared\Pages\Insurer\ProductPerformanceDashboard::class,
+            \App\Filament\Shared\Pages\Insurer\IntermediaryOverview::class,
+            \App\Filament\Shared\Pages\Insurer\EligibilityRules::class,
+            \App\Filament\Shared\Pages\Insurer\RatingRules::class,
+            \App\Filament\Shared\Pages\Insurer\CancellationReview::class,
+            // Q9 claims professional / adjuster workbench (CLP-001…018): own assignments, own carrier's claims.
+            \App\Filament\Shared\Pages\ClaimsWorkbench\ClaimsWorkbenchDashboard::class,
+            \App\Filament\Shared\Pages\ClaimsWorkbench\MyAssignments::class,
+            \App\Filament\Shared\Pages\ClaimsWorkbench\CompletedAssignments::class,
+            \App\Filament\Shared\Pages\ClaimsWorkbench\AssignmentWorkbench::class,
         ]);
     }
 }

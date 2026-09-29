@@ -67,6 +67,35 @@ it('renders every customer page, list and detail, in EN and FR', function () {
     $this->get('/account/nothing-here')->assertNotFound();
 });
 
+it('renders the launch customer pages and has no dead /account link in any customer page or its scripts (R2)', function () {
+    $id = CUST_UUID;
+    $pages = ['/account', '/account/welcome', '/account/onboarding', '/account/kyc', '/account/actions', '/account/needs', "/account/products/$id", '/account/search', '/account/activity',
+        '/account/complaints', "/account/complaints/$id", '/account/messages', '/account/buy', '/account/quotes', "/account/quotes/$id/customize", "/account/quotes/$id/review",
+        '/account/claims', '/account/claims/new', '/account/payments', '/account/payments/new', '/account/documents', '/account/requests', '/account/privacy', '/account/support',
+        '/account/profile', '/account/policies', "/account/policies/$id", '/account/notifications', '/account/vehicles'];
+    expect(customerCrawl($this, $pages))->toBe([]);
+
+    // Every '/account/...' target named in the HTML or in the page/portal scripts (hrefs and JS string literals).
+    $js = implode("\n", array_map(fn ($f) => file_get_contents(public_path("landing/portal/$f.js")), ['portal', 'policies', 'launch', 'buy', 'claims']));
+    $targets = [];
+    foreach ($pages as $p) {
+        preg_match_all("#['\"](/account(?:/[a-z][a-z0-9-]*)*)(?:/|\\?|\\#|['\"])#", $this->get($p)->getContent()."\n".$js, $m);
+        $targets = [...$targets, ...$m[1]];
+    }
+    $targets = array_values(array_diff(array_unique($targets), ['/account/delete']));
+    expect(count($targets))->toBeGreaterThan(20);
+    $dead = [];
+    foreach ($targets as $t) {
+        foreach ([$t, $t.'/'.$id] as $u) {
+            if (($s = $this->get($u)->getStatusCode()) === 200) {
+                continue 2;
+            }
+        }
+        $dead[] = "$s $t";
+    }
+    expect($dead)->toBe([]);
+});
+
 it('gives every customer API feature a page and an entry button', function () {
     $id = CUST_UUID;
     // [page, entry marker, API path the page calls]

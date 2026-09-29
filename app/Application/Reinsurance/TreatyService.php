@@ -32,7 +32,8 @@ final class TreatyService
         $this->require(! DB::table('reinsurers')->where('tenant_id', $tenantId)->where('code', $data['code'])->exists(), 'code', 'Reinsurer code already used.');
         $row = ['id' => (string) Str::uuid(), 'tenant_id' => $tenantId, 'party_id' => $data['party_id'] ?? null, 'code' => $data['code'], 'name' => $data['name'],
             'role' => $data['role'] ?? 'REINSURER', 'country_code' => $data['country_code'] ?? null, 'rating' => $data['rating'] ?? null,
-            'rating_agency' => $data['rating_agency'] ?? null, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]
+            'rating_agency' => $data['rating_agency'] ?? null, 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now(),
+            'carrier_id' => RiskTransferCarrierScope::forCreate($tenantId, $data['carrier_id'] ?? null)]
             + $this->directoryFields($data);
         DB::table('reinsurers')->insert($row);
         $this->audit->record('reinsurance.reinsurer.created', 'reinsurer', $row['id'], ['code' => $row['code'], 'role' => $row['role']]);
@@ -106,7 +107,8 @@ final class TreatyService
             'status' => 'DRAFT', 'created_by' => auth()->id(), 'created_at' => now(), 'updated_at' => now(),
             'treaty_form' => isset(ReinsuranceReference::TREATY_FORMS[$form]) ? $form : null, 'treaty_number' => $data['treaty_number'] ?? null,
             'cedant_party_id' => $data['cedant_party_id'] ?? null, 'territories' => json_encode(array_values($data['territories'] ?? [])),
-            'bordereau_frequency' => $data['bordereau_frequency'] ?? null, 'wording_document_id' => $data['wording_document_id'] ?? null];
+            'bordereau_frequency' => $data['bordereau_frequency'] ?? null, 'wording_document_id' => $data['wording_document_id'] ?? null,
+            'carrier_id' => RiskTransferCarrierScope::forCreate($tenantId, $data['carrier_id'] ?? null)];
         DB::table('reinsurance_treaties')->insert($row);
         $this->audit->record('reinsurance.treaty.created', 'reinsurance_treaty', $row['id'], ['code' => $row['code'], 'treaty_type' => $row['treaty_type']]);
 
@@ -121,10 +123,10 @@ final class TreatyService
         $participants = $data['participants'] ?? [];
         $this->require($participants !== [], 'participants', 'At least one participant is required.');
         foreach ($participants as $p) {
-            $r = DB::table('reinsurers')->where('tenant_id', $tenantId)->where('id', $p['reinsurer_id'] ?? null)->first();
+            $r = self::reinsurers($tenantId)->where('id', $p['reinsurer_id'] ?? null)->first();
             $this->require($r !== null && $r->role !== 'REINSURANCE_BROKER', 'participants', 'Participants must be reinsurers of this tenant.');
             if (! empty($p['broker_id'])) {
-                $this->require(DB::table('reinsurers')->where('tenant_id', $tenantId)->where('id', $p['broker_id'])->where('role', 'REINSURANCE_BROKER')->exists(), 'participants', 'Broker must be a REINSURANCE_BROKER of this tenant.');
+                $this->require(self::reinsurers($tenantId)->where('id', $p['broker_id'])->where('role', 'REINSURANCE_BROKER')->exists(), 'participants', 'Broker must be a REINSURANCE_BROKER of this tenant.');
             }
         }
         $this->require(count(array_unique(array_column($participants, 'reinsurer_id'))) === count($participants), 'participants', 'A reinsurer may participate once per version.');
@@ -190,11 +192,13 @@ final class TreatyService
      *
      * @return array<int, array<string, mixed>>
      */
-    public function effectiveVersions(string $tenantId, string $date, ?string $lineCode = null, ?string $currency = null): array
+    public function effectiveVersions(string $tenantId, string $date, ?string $lineCode = null, ?string $currency = null, ?string $carrierId = null): array
     {
         $ids = DB::table('reinsurance_treaty_versions as v')->join('reinsurance_treaties as t', 't.id', '=', 'v.treaty_id')
             ->where('v.tenant_id', $tenantId)->where('v.status', 'ACTIVE')->where('t.status', 'ACTIVE')
             ->when($currency, fn ($q) => $q->where('t.currency', $currency))
+            // S5: a policy is ceded only under its own carrier's treaties (or tenant-wide legacy ones with no carrier).
+            ->when($carrierId, fn ($q) => $q->where(fn ($w) => $w->where('t.carrier_id', $carrierId)->orWhereNull('t.carrier_id')))
             ->whereDate('v.effective_from', '<=', $date)
             ->where(fn ($q) => $q->whereNull('v.effective_to')->orWhereDate('v.effective_to', '>=', $date))
             ->orderBy('t.code')->pluck('v.id');
@@ -207,7 +211,7 @@ final class TreatyService
     public function version(string $tenantId, string $id): array
     {
         $v = DB::table('reinsurance_treaty_versions as v')->join('reinsurance_treaties as t', 't.id', '=', 'v.treaty_id')
-            ->where('v.tenant_id', $tenantId)->where('v.id', $id)->select('v.*', 't.treaty_type', 't.code as treaty_code', 't.currency')->first();
+            ->where('v.tenant_id', $tenantId)->where('v.id', $id)->tap(fn ($q) => RiskTransferCarrierScope::apply($q, $tenantId, 't.carrier_id'))->select('v.*', 't.treaty_type', 't.code as treaty_code', 't.currency')->first();
         if (! $v) {
             abort(404, 'Treaty version not found.');
         }
@@ -223,12 +227,24 @@ final class TreatyService
 
     public function treaty(string $tenantId, string $id): object
     {
-        return DB::table('reinsurance_treaties')->where('tenant_id', $tenantId)->where('id', $id)->first() ?? abort(404, 'Treaty not found.');
+        return self::treaties($tenantId)->where('id', $id)->first() ?? abort(404, 'Treaty not found.');
     }
 
     public function reinsurer(string $tenantId, string $id): object
     {
-        return DB::table('reinsurers')->where('tenant_id', $tenantId)->where('id', $id)->first() ?? abort(404, 'Reinsurer not found.');
+        return self::reinsurers($tenantId)->where('id', $id)->first() ?? abort(404, 'Reinsurer not found.');
+    }
+
+    /** S5: reinsurers of the tenant the caller may see (own carrier for a carrier-linked caller). */
+    public static function reinsurers(string $tenantId): \Illuminate\Database\Query\Builder
+    {
+        return RiskTransferCarrierScope::apply(DB::table('reinsurers')->where('tenant_id', $tenantId), $tenantId);
+    }
+
+    /** S5: treaties of the tenant the caller may see (own carrier for a carrier-linked caller). */
+    public static function treaties(string $tenantId): \Illuminate\Database\Query\Builder
+    {
+        return RiskTransferCarrierScope::apply(DB::table('reinsurance_treaties')->where('tenant_id', $tenantId), $tenantId);
     }
 
     private function validateTerms(string $type, array $d): void

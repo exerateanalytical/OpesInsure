@@ -28,4 +28,37 @@ final class RenewalActions
                 return $x;
             }, __('party_actions.renewalSweep.done')));
     }
+
+    /**
+     * S3 2026-09-29: renewalReassign  POST renewals/{r}/assignment  renewals.manage  RenewalService::reassign
+     * (record action on BRK-066 Renewal Assignment and the renewal case view, /admin and /broker; labels in leftover_actions).
+     */
+    public static function reassign(): Action
+    {
+        $p = 'renewals.manage';
+
+        return WorkflowAction::make('renewalReassign', $p, 'leftover_actions')->icon('lucide-user-round-cog')
+            ->visible(fn ($record) => $record instanceof \App\Models\RenewalCase && in_array($record->status, \App\Application\Policies\Renewals\RenewalMachine::OPEN, true))
+            ->schema([
+                \Filament\Forms\Components\Select::make('assignee_id')->label(__('leftover_actions.fields.assignee'))->searchable()
+                    ->placeholder(__('leftover_actions.fields.unassigned'))->options(fn () => self::assignees()),
+                \Filament\Forms\Components\Textarea::make('reason')->label(__('leftover_actions.fields.reason'))->maxLength(500),
+            ])
+            ->action(fn (Action $action, array $data, $record) => WorkflowAction::run($action, $p, fn () => app(RenewalService::class)
+                ->reassign($record, ($data['assignee_id'] ?? null) ?: null, auth()->user(), ($data['reason'] ?? null) ?: null)));
+    }
+
+    /** Colleagues the caller may hand a case to: ACTIVE members of the tenant, inside the caller's colleague scope, holding renewals.manage. */
+    private static function assignees(): array
+    {
+        $tenant = app(TenantContext::class)->id();
+        $q = \Illuminate\Support\Facades\DB::table('users')->join('tenant_memberships as m', 'm.user_id', '=', 'users.id')
+            ->where('m.tenant_id', $tenant)->where('m.status', 'ACTIVE')->select('users.id', 'users.full_name')->distinct()->orderBy('users.full_name')->limit(300);
+        if (($colleagues = app(\App\Application\Partners\BookScope::class)->users(auth()->user())) !== null) {
+            $q->whereIn('users.id', $colleagues);
+        }
+
+        return $q->get()->filter(fn ($u) => (bool) rescue(fn () => \App\Models\User::find($u->id)?->hasPermission('renewals.manage'), false, false))
+            ->mapWithKeys(fn ($u) => [$u->id => $u->full_name ?: $u->id])->all();
+    }
 }

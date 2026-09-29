@@ -12,7 +12,7 @@ public static function table(Table$t):Table{return$t->columns([Tables\Columns\Te
  * (TenantInvitationPolicy). Outside a portal nothing changes.
  */
 public static function inPortal():bool{return \App\Application\WebExperiences\PortalScope::panel()==='insurer';}
-public static function getEloquentQuery():\Illuminate\Database\Eloquent\Builder{$q=parent::getEloquentQuery();return self::inPortal()?$q->where('tenant_id',rescue(fn()=>app(\App\Domain\Tenancy\TenantContext::class)->id(),'',false)??''):$q;}
+public static function getEloquentQuery():\Illuminate\Database\Eloquent\Builder{$q=parent::getEloquentQuery();return self::inPortal()?$q->where('tenant_id',rescue(fn()=>app(\App\Domain\Tenancy\TenantContext::class)->id(),'',false)??'')->where('carrier_id',\App\Application\WebExperiences\PortalScope::carrierId()??''):$q;} // R7: own carrier's invitations only
 public static function getNavigationGroup():?string{return self::inPortal()?__('insurer_portal_ops.nav.organisation'):'Administration';}
 public static function getNavigationLabel():string{return self::inPortal()?__('insurer_portal_ops.nav.invitations'):'Invitations';}
 public static function getPages():array{return['index'=>Pages\ListInvitations::route('/'),'create'=>Pages\CreateInvitation::route('/create'), 'view' => Pages\ViewInvitation::route('/{record}')];}}

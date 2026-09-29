@@ -41,7 +41,11 @@ final class ProviderWorkspaceController
 
     private function filters(Request $r): array
     {
-        return $r->validate(array_fill_keys(ProviderWorkspaceRegister::FILTERS, 'nullable|string|max:120') + ['status' => 'nullable|string|max:40', 'request_type' => 'nullable|string|max:16',
+        // Typed filters are validated by type so a malformed date / id / amount is a 422, never a database error.
+        $typed = array_fill_keys(['date_from', 'date_to'], 'nullable|date') + array_fill_keys(['insurer_id', 'provider_id', 'facility_id', 'policy_id', 'department_id'], 'nullable|uuid')
+            + array_fill_keys(['amount_min', 'amount_max'], 'nullable|integer|min:0');
+
+        return $r->validate($typed + array_fill_keys(ProviderWorkspaceRegister::FILTERS, 'nullable|string|max:120') + ['status' => 'nullable|string|max:40', 'request_type' => 'nullable|string|max:16',
             'per_page' => 'nullable|integer|min:1|max:200', 'page' => 'nullable|integer|min:1']);
     }
 

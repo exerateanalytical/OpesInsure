@@ -136,6 +136,17 @@ final class NotificationCatalog
         return self::locale($request->user()?->locale);
     }
 
+    /**
+     * The placeholder values as the catalog would show them in $locale (dates localised, defaults filled);
+     * used by NotificationTemplateRenderer for the {{param}} channel templates.
+     *
+     * @return array<string, string>
+     */
+    public static function values(array $params, string $locale): array
+    {
+        return self::prepare($params, self::locale($locale));
+    }
+
     /** @return array<string, string> */
     private static function prepare(array $params, string $locale): array
     {

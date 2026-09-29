@@ -18,6 +18,11 @@ final class PaymentAdapterRegistry
     public function for(string $p, bool $demoPersona = false): PaymentProviderAdapter
     {
         if ($demoPersona && config('demo.enabled')) {
+            // A configured MTN MoMo SANDBOX (no real money) lets demo personas exercise the real MoMo flow.
+            if ($p === 'mtn_momo' && ($creds = MtnMomoCredentials::resolve())->configured() && $creds->isSandbox()) {
+                return new MtnMomoAdapter;
+            }
+
             return new FakePaymentAdapter;
         }
 

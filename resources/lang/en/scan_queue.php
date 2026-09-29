@@ -1,0 +1,82 @@
+<?php
+
+return [
+    'nav' => 'Upload scanning',
+    'title' => 'Upload scanning',
+    'subtitle' => 'Every upload is stored first and released only after a real malware scan. Files held while the scanner is unavailable are rescanned automatically every 5 minutes.',
+    'scanner' => [
+        'heading' => 'Malware scanner',
+        'configured' => 'Configured',
+        'reachable' => 'Reachable',
+        'version' => 'Version',
+        'endpoint' => 'Endpoint',
+        'error' => 'Last error',
+        'yes' => 'Yes',
+        'no' => 'No',
+        'not_configured_help' => 'No scanner is configured. Install clamav-daemon and set CLAMAV_HOST=127.0.0.1 (CLAMAV_PORT defaults to 3310) or CLAMAV_SOCKET; held files are then scanned and released automatically.',
+    ],
+    'status' => [
+        'PENDING_SCAN' => 'Waiting for scan',
+        'SCAN_UNAVAILABLE' => 'Held — scanner unavailable',
+        'CLEAN' => 'Clean',
+        'INFECTED' => 'Infected (quarantined)',
+        'FAILED' => 'Legacy — not scanned',
+        'PENDING_ATTACHMENTS' => 'Attachments waiting for a clean scan',
+    ],
+    'tabs' => [
+        'held' => 'Held queue',
+        'infected' => 'Quarantine',
+    ],
+    'columns' => [
+        'document' => 'Document',
+        'category' => 'Category',
+        'party' => 'Customer',
+        'status' => 'Scan status',
+        'attempts' => 'Attempts',
+        'last_attempt_at' => 'Last attempt',
+        'next_attempt_at' => 'Next attempt',
+        'last_error' => 'Reason held',
+        'pending_attachments' => 'Waiting attachments',
+        'verdict' => 'Detection',
+        'quarantined_at' => 'Quarantined at',
+        'created_at' => 'Uploaded',
+    ],
+    'actions' => [
+        'rescan' => 'Rescan now',
+        'rescan_all' => 'Rescan all held files',
+        'rescanned' => 'Scan result: :status',
+        'rescan_all_done' => 'Scanned :scanned file(s): :clean clean, :infected infected, :unavailable still held.',
+        'scanner_down' => 'The scanner is not reachable; files stay held and will be scanned once it answers.',
+    ],
+    'empty' => [
+        'held' => 'No file is waiting for a scan.',
+        'infected' => 'No infected file has been detected.',
+    ],
+    'client' => [
+        'in_progress' => 'Security check in progress — your file will be attached automatically.',
+    ],
+    'pending' => [
+        'heading' => 'Security check in progress',
+        'in_progress' => 'Security check in progress',
+        'quarantined' => 'Quarantined — this file failed the security check and cannot be downloaded.',
+        'filename' => 'File',
+        'uploaded_at' => 'Uploaded',
+        'status_column' => 'Status',
+        'status' => [
+            'PENDING_SCAN' => 'Waiting for the security check',
+            'SCAN_UNAVAILABLE' => 'Security check delayed — retried automatically',
+            'INFECTED' => 'Infected (quarantined, not downloadable)',
+        ],
+    ],
+    'notify' => [
+        'attached_title' => 'File attached',
+        'attached_body' => 'Your file passed the security check and has been attached.',
+        'infected_title' => 'File rejected',
+        'infected_body' => 'A file you uploaded failed the security check and was quarantined. Please send a different copy.',
+        'staff_infected_title' => 'Infected upload quarantined',
+        'staff_infected_body' => 'An uploaded :category document (:id…) was detected as infected and quarantined.',
+    ],
+    'health' => [
+        'check' => 'Malware scanner',
+    ],
+];

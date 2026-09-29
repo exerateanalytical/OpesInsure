@@ -26,7 +26,7 @@ function b93Payment(string $provider, array $o = []): array
 {
     $f = makeMobileCustomerFixture('+2376'.random_int(10000000, 99999999));
     $f['proposal']->update(['status' => 'PAYMENT_PENDING']);
-    PaymentProviderConnection::create(['tenant_id' => $f['tenant']->id, 'provider' => $provider, 'status' => 'ACTIVE', 'credential_reference' => 'vault://x', 'created_by' => $f['user']->id]);
+    PaymentProviderConnection::create(['tenant_id' => $f['tenant']->id, 'provider' => $provider, 'environment' => 'PRODUCTION', 'status' => 'ACTIVE', 'credential_reference' => 'vault://x', 'created_by' => $f['user']->id]);
     $f['payment'] = makeMobileTestPayment($f['proposal'], $f['tenant'], array_merge(['provider' => $provider, 'provider_reference' => null, 'status' => 'CREATED', 'requested_by' => $f['user']->id], $o));
 
     return $f;

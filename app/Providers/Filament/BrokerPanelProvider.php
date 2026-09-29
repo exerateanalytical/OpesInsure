@@ -35,6 +35,14 @@ final class BrokerPanelProvider extends PanelProvider
         ], [
             // P5 2026-09-29: the broker's customers, start of the sales journey (new customer, quote, KYC).
             \App\Filament\Shared\Pages\BrokerCustomersPage::class,
+            // Q10 2026-09-29: BRM branch manager overview (own branch, branch-scoped data only).
+            \App\Filament\Shared\Pages\BranchOverviewPage::class,
+            // S2 2026-09-29: BRM-002/003/006..009/011/014..016 (own branch via branch_id; each page gates on its API permission).
+            ...array_values(\App\Filament\Shared\Pages\Branch\BranchScreen::SCREENS),
+            // Q5 2026-09-29: BRK-004..024 (dashboards, CRM, KYC); each page gates itself (API permission + caller's book).
+            ...\App\Filament\Shared\Pages\Broker\BrokerScreensA::PAGES,
+            // Q6 2026-09-29: BRK-028..088 (quotes, proposals, payments, policies, documents, stickers, claims work queues).
+            ...\App\Filament\Shared\Pages\BrokerScreens\BrokerScreen::PAGES,
         ])
             // UI audit 2026-09-27: the shared finance resources use the literal group key 'Financial operations';
             // give it a translated label here (broker panel only, the admin grouping is untouched).

@@ -38,7 +38,8 @@ final class PartyResolver
             return null;
         }
 
-        return Partner::where('party_id', $party->id)->first();
+        // R4: asked for every tile / row scope of a portal page; memoised for the current request (flushed on partner writes).
+        return Rbac\RequestMemo::remember('partner-of-party:'.$party->id, fn () => Partner::where('party_id', $party->id)->first());
     }
 
     public function tenantCustomerId(User $user, string $tenantId): ?string

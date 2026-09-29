@@ -7,6 +7,7 @@ namespace App\Application\Coinsurance;
 use App\Application\Audit\AuditWriter;
 use App\Application\Events\OutboxWriter;
 use App\Application\FinancialDistribution\ReinsuranceReference;
+use App\Application\Reinsurance\RiskTransferCarrierScope;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -46,9 +47,12 @@ final class CoinsuranceService
         if ($bad = array_diff($rights, self::LEAD_RIGHTS)) {
             throw ValidationException::withMessages(['lead_rights' => 'Unknown lead rights: '.implode(', ', $bad)]);
         }
-        if (! empty($data['policy_id']) && ! DB::table('policies')->where('id', $data['policy_id'])->where('tenant_id', $tenantId)->exists()) {
+        $policy = empty($data['policy_id']) ? null
+            : RiskTransferCarrierScope::apply(DB::table('policies')->where('id', $data['policy_id'])->where('tenant_id', $tenantId), $tenantId)->first();
+        if (! empty($data['policy_id']) && $policy === null) {
             throw ValidationException::withMessages(['policy_id' => 'Policy not found in this tenant.']);
         }
+        $carrierId = RiskTransferCarrierScope::forCreate($tenantId, $data['carrier_id'] ?? null, $policy?->carrier_id);
         $carrierIds = array_column($participants, 'carrier_id');
         if (DB::table('carriers')->whereIn('id', $carrierIds)->count() !== count($carrierIds)) {
             throw ValidationException::withMessages(['participants' => 'Every participant must be a registered carrier.']);
@@ -58,9 +62,9 @@ final class CoinsuranceService
         }
 
         $id = (string) Str::uuid();
-        DB::transaction(function () use ($id, $tenantId, $data, $participants, $partial, $rights, $actor) {
+        DB::transaction(function () use ($id, $tenantId, $data, $participants, $partial, $rights, $actor, $carrierId) {
             DB::table('coinsurance_arrangements')->insert([
-                'id' => $id, 'tenant_id' => $tenantId, 'policy_id' => $data['policy_id'] ?? null, 'reference' => $data['reference'],
+                'id' => $id, 'tenant_id' => $tenantId, 'carrier_id' => $carrierId, 'policy_id' => $data['policy_id'] ?? null, 'reference' => $data['reference'],
                 'currency' => $data['currency'] ?? 'XAF', 'status' => 'DRAFT', 'allow_partial_placement' => $partial,
                 'lead_rights' => json_encode($rights), 'effective_from' => $data['effective_from'], 'effective_until' => $data['effective_until'] ?? null,
                 'settlement_method' => $data['settlement_method'] ?? null, 'agreement_document_id' => $data['agreement_document_id'] ?? null,
@@ -170,6 +174,7 @@ final class CoinsuranceService
     /** Persisted, idempotent apportionment of an amount against an ACTIVE arrangement. */
     public function apportion(string $tenantId, string $id, string $basis, int $totalMinor, string $sourceType, ?string $sourceId, string $idempotencyKey, ?User $actor = null): array
     {
+        $this->show($tenantId, $id); // S5: 404 unless the caller may see the arrangement
         $existing = DB::table('coinsurance_apportionments')->where('tenant_id', $tenantId)->where('idempotency_key', $idempotencyKey)->first();
         if ($existing) {
             if ($existing->arrangement_id !== $id || $existing->basis !== strtoupper($basis) || (int) $existing->total_minor !== $totalMinor) {
@@ -200,7 +205,7 @@ final class CoinsuranceService
 
     public function show(string $tenantId, string $id): array
     {
-        $a = DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        $a = RiskTransferCarrierScope::apply(DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId)->where('id', $id), $tenantId)->first();
         if (! $a) {
             abort(404);
         }
@@ -220,7 +225,7 @@ final class CoinsuranceService
 
     public function list(string $tenantId, ?string $policyId = null): array
     {
-        return DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId)->when($policyId, fn ($q) => $q->where('policy_id', $policyId))
+        return RiskTransferCarrierScope::apply(DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId), $tenantId)->when($policyId, fn ($q) => $q->where('policy_id', $policyId))
             ->orderByDesc('created_at')->limit(200)->pluck('id')->map(fn ($id) => $this->show($tenantId, $id))->all();
     }
 
@@ -243,7 +248,7 @@ final class CoinsuranceService
 
     private function lockedArrangement(string $tenantId, string $id): object
     {
-        return DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId)->where('id', $id)->lockForUpdate()->first() ?? abort(404);
+        return RiskTransferCarrierScope::apply(DB::table('coinsurance_arrangements')->where('tenant_id', $tenantId)->where('id', $id), $tenantId)->lockForUpdate()->first() ?? abort(404);
     }
 
     private function normaliseParticipants(array $raw): array

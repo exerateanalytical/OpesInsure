@@ -23,7 +23,7 @@ final class DocumentQuality extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Quality & missing configuration (DOC-ADM-020)';
+        return __('Quality & missing configuration');
     }
 
     protected function report(): array

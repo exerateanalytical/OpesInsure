@@ -23,7 +23,7 @@ final class ReinsuranceTreatiesRegister extends RegisterPage
 
     protected static ?string $group = 'Reinsurance & co-insurance';
 
-    protected static ?string $carrierColumn = null;
+    protected static ?string $carrierColumn = 'carrier_id';
 
     protected static array $columns = ['treaty_number' => ['text', 'number'], 'name' => ['text', 'name'], 'treaty_type' => ['text', 'type'], 'underwriting_year' => ['text', 'year'], 'currency' => ['text', 'currency'], 'status' => ['status', 'status']];
 }

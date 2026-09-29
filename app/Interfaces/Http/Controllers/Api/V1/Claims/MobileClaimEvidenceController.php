@@ -13,7 +13,11 @@ final class MobileClaimEvidenceController
 {
     public function index(string $claim, Request $request, MobileClaimEvidenceService $service): JsonResponse
     {
-        return response()->json(['data' => $service->list($claim, $request->user(), app(TenantContext::class)->id())]);
+        $tenantId = app(TenantContext::class)->id();
+
+        // S4: `pending` is additive next to the paginator keys (data.data / data.current_page… are unchanged).
+        return response()->json(['data' => $service->list($claim, $request->user(), $tenantId)->toArray()
+            + ['pending' => $service->pending($claim, $request->user(), $tenantId)]]);
     }
 
     // Exactly one of document_id/upload_session_id: required_without makes
@@ -31,6 +35,7 @@ final class MobileClaimEvidenceController
 
         $result = $service->attach($claim, $data, $request->user(), app(TenantContext::class)->id());
 
-        return response()->json(['data' => $result], 201);
+        // 202: accepted, the file is in its security check and will be attached automatically (Q1).
+        return response()->json(['data' => $result], MobileClaimEvidenceService::deferred($result) ? 202 : 201);
     }
 }

@@ -42,7 +42,7 @@ final class ClaimCaseTabs
             self::tab('evidence', fn (Claim $c) => DB::table('claim_documents')->leftJoin('documents', 'documents.id', '=', 'claim_documents.document_id')
                 ->where('claim_documents.claim_id', $c->id)->select('claim_documents.*', 'documents.category')->orderByDesc('claim_documents.submitted_at'), [
                     self::text('evidence_type'), self::text('category'), self::status('status'), self::date('submitted_at'), self::date('verified_at'), self::text('rejection_reason', 2),
-                ]),
+                ], [self::pendingScan()]),
             self::tab('settlements', fn (Claim $c) => DB::table('claim_settlements')->where('claim_id', $c->id)->orderByDesc('created_at'), [
                 self::text('reference'), self::status('status'), self::money('amount_minor'), self::money('covered_minor'), self::money('deductible_minor'), self::date('offered_at'), self::date('accepted_at'), self::text('dispute_reason', 2),
             ]),
@@ -55,7 +55,22 @@ final class ClaimCaseTabs
         ];
     }
 
-    private static function tab(string $key, \Closure $query, array $entries): Tab
+    /** S4: evidence still in the malware scan (or quarantined) — listed, never downloadable. */
+    private static function pendingScan(): RepeatableEntry
+    {
+        $rows = fn (?Claim $record) => $record ? rescue(fn () => app(\App\Application\Documents\Scanning\PendingDocuments::class)->forClaim($record->id), [], false) : [];
+
+        return RepeatableEntry::make('case_evidence_pending_scan')->label(__('scan_queue.pending.heading'))
+            ->state(fn (?Claim $record) => $rows($record))->visible(fn (?Claim $record) => $rows($record) !== [])
+            ->columns(['default' => 1, 'md' => 3])->columnSpanFull()->schema([
+                TextEntry::make('filename')->label(__('scan_queue.pending.filename')),
+                TextEntry::make('uploaded_at')->label(__('scan_queue.pending.uploaded_at'))->dateTime(),
+                TextEntry::make('status_label')->label(__('scan_queue.pending.status_column'))->badge()
+                    ->color(fn ($state) => $state === __('scan_queue.pending.status.INFECTED') ? 'danger' : 'warning'),
+            ]);
+    }
+
+    private static function tab(string $key, \Closure $query, array $entries, array $extra = []): Tab
     {
         $rows = fn (?Claim $record) => $record ? rescue(fn () => $query($record)->limit(100)->get()->map(fn ($r) => (array) $r)->all(), [], false) : [];
 
@@ -64,6 +79,7 @@ final class ClaimCaseTabs
             ->schema([
                 RepeatableEntry::make('case_'.$key)->hiddenLabel()->state(fn (?Claim $record) => $rows($record))
                     ->placeholder(__('web_experience.claim_work.empty'))->columns(['default' => 1, 'md' => 4])->schema($entries)->columnSpanFull(),
+                ...$extra,
             ]);
     }
 

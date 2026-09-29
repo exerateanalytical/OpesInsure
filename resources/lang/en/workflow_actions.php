@@ -3,6 +3,7 @@
 return [
     'confirm' => 'Confirm',
     'failed' => 'Action refused',
+    'done' => 'Done',
     'denied' => 'You do not have permission to perform this action.',
     'accept' => 'Approve',
     'reject' => 'Reject',

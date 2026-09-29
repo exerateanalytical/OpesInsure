@@ -85,8 +85,11 @@ Route::prefix('v1')->group(function (): void {
     // Demo credential directory for the mobile sign-in screen. The route only
     // exists while demo mode is on, so a real deployment simply 404s here and
     // the app hides its demo affordance rather than showing dead accounts.
-    if (config('demo.enabled')) {
+    // S13: checked per request (not at route-cache time) so demo:exit takes effect without a re-cache.
+    {
         Route::get('public/demo-accounts', function () {
+            abort_unless(config('demo.enabled'), 404);
+
             return response()->json(['data' => [
                 'otp' => (string) config('demo.otp'),
                 // Shared password for these personas (POST auth/mobile/password-login),
@@ -212,6 +215,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('renewals/seed', [RenewalController::class, 'seed'])->middleware('permission:renewals.manage');
         Route::post('renewals/{renewal}/quote', [RenewalController::class, 'createQuote'])->middleware('permission:renewals.manage');
         Route::post('renewals/{renewal}/complete', [RenewalController::class, 'complete'])->middleware('permission:renewals.manage');
+        Route::post('renewals/{renewal}/assignment', [RenewalController::class, 'reassign'])->middleware('permission:renewals.manage');
         Route::post('configuration/cancellation-rules', [PolicyConfigurationController::class, 'createCancellationRule'])->middleware('permission:policies.configuration.manage');
         Route::post('configuration/cancellation-rules/{rule}/approve', [PolicyConfigurationController::class, 'approveCancellationRule'])->middleware('permission:policies.configuration.approve');
         Route::post('payments', [PaymentController::class, 'store'])->middleware('throttle:20,1');
@@ -276,7 +280,9 @@ Route::prefix('v1')->group(function (): void {
         require __DIR__.'/wave14_mobile.php';
         require __DIR__.'/wave15_mobile.php';
         require __DIR__.'/wave16_partner.php';
+        require __DIR__.'/agent_servicing.php';
         require __DIR__.'/wave16_lifecycle.php';
+        require __DIR__.'/launch_customer.php';
         Route::post('documents', [DocumentController::class, 'register']);
         Route::post('documents/{document}/review', [DocumentController::class, 'review'])->middleware('permission:documents.review');
         Route::post('documents/{document}/access', [DocumentController::class, 'access']);
@@ -304,12 +310,12 @@ Route::prefix('v1')->group(function (): void {
         Route::get('configuration/regulatory-reference-sets/{code}', [RegulatoryConfigurationController::class, 'show']);
         Route::post('configuration/regulatory-reference-sets', [RegulatoryConfigurationController::class, 'store'])->middleware('permission:configuration.regulatory.manage');
         Route::post('configuration/regulatory-reference-sets/{set}/approve', [RegulatoryConfigurationController::class, 'approve'])->middleware('permission:configuration.regulatory.approve');
-        Route::post('integrations/clients', [IntegrationController::class, 'createClient'])->middleware('permission:integrations.manage');
-        Route::post('integrations/clients/{client}/advance', [IntegrationController::class, 'advance'])->middleware('permission:integrations.manage');
-        Route::post('integrations/clients/{client}/suspend', [IntegrationController::class, 'suspend'])->middleware('permission:integrations.manage');
-        Route::post('integrations/clients/{client}/reinstate', [IntegrationController::class, 'reinstate'])->middleware('permission:integrations.manage');
-        Route::post('integrations/clients/{client}/revoke', [IntegrationController::class, 'revoke'])->middleware('permission:integrations.revoke');
-        Route::post('integrations/clients/{client}/webhooks', [IntegrationController::class, 'subscribe'])->middleware('permission:integrations.manage');
+        Route::post('integrations/clients', [IntegrationController::class, 'createClient'])->middleware(['permission:integrations.manage', 'platform.tenant']);
+        Route::post('integrations/clients/{client}/advance', [IntegrationController::class, 'advance'])->middleware(['permission:integrations.manage', 'platform.tenant']);
+        Route::post('integrations/clients/{client}/suspend', [IntegrationController::class, 'suspend'])->middleware(['permission:integrations.manage', 'platform.tenant']);
+        Route::post('integrations/clients/{client}/reinstate', [IntegrationController::class, 'reinstate'])->middleware(['permission:integrations.manage', 'platform.tenant']);
+        Route::post('integrations/clients/{client}/revoke', [IntegrationController::class, 'revoke'])->middleware(['permission:integrations.revoke', 'platform.tenant']);
+        Route::post('integrations/clients/{client}/webhooks', [IntegrationController::class, 'subscribe'])->middleware(['permission:integrations.manage', 'platform.tenant']);
         Route::post('integrations/delivery-attempts/{attempt}/replay', [IntegrationController::class, 'replayDeliveryAttempt'])->middleware('permission:integrations.manage');
         Route::get('integrations/health', [IntegrationController::class, 'health'])->middleware('permission:integrations.manage');
         // REQ-DUP-008: canonical is the `bordereaux` resource (routes/wave6.php + Batch 10-5 block); broker/carrier
@@ -1111,11 +1117,11 @@ Route::prefix('v1')->middleware(['json.api'])->group(function (): void {
 });
 Route::prefix('v1')->middleware(['auth:api', 'tenant', 'json.api'])->group(function (): void {
     $dp = \App\Application\Integrations\Developer\Http\DeveloperPortalController::class;
-    Route::get('developer/clients', [$dp, 'clients'])->middleware('permission:integrations.manage');
-    Route::post('developer/clients/{client}/keys', [$dp, 'issueKey'])->middleware('permission:integrations.manage')->whereUuid('client');
-    Route::post('developer/clients/{client}/keys/{key}/revoke', [$dp, 'revokeKey'])->middleware('permission:integrations.revoke')->whereUuid(['client', 'key']);
-    Route::put('developer/clients/{client}/rate-limits', [$dp, 'rateLimits'])->middleware('permission:integrations.manage')->whereUuid('client');
-    Route::get('developer/clients/{client}/usage', [$dp, 'usage'])->middleware('permission:integrations.manage')->whereUuid('client');
+    Route::get('developer/clients', [$dp, 'clients'])->middleware(['permission:integrations.manage', 'platform.tenant']);
+    Route::post('developer/clients/{client}/keys', [$dp, 'issueKey'])->middleware(['permission:integrations.manage', 'platform.tenant'])->whereUuid('client');
+    Route::post('developer/clients/{client}/keys/{key}/revoke', [$dp, 'revokeKey'])->middleware(['permission:integrations.revoke', 'platform.tenant'])->whereUuid(['client', 'key']);
+    Route::put('developer/clients/{client}/rate-limits', [$dp, 'rateLimits'])->middleware(['permission:integrations.manage', 'platform.tenant'])->whereUuid('client');
+    Route::get('developer/clients/{client}/usage', [$dp, 'usage'])->middleware(['permission:integrations.manage', 'platform.tenant'])->whereUuid('client');
     Route::get('developer/consents', [$dp, 'consents'])->middleware('permission:integrations.consent.manage');
     Route::post('developer/consents', [$dp, 'grantConsent'])->middleware('permission:integrations.consent.manage');
     Route::post('developer/consents/{consent}/revoke', [$dp, 'revokeConsent'])->middleware('permission:integrations.consent.manage')->whereUuid('consent');

@@ -17,6 +17,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -154,7 +155,7 @@ final class ProposalActions
             ->visible(fn (Proposal $record) => ! in_array($record->status, ProposalMachine::TERMINAL, true))
             ->schema([CheckboxList::make('codes')->label(__('issuance_maker_checker.fields.codes'))->required()
                 ->options(fn (Proposal $record) => collect(app(ProposalService::class)->checklist($record)['declarations'])->reject(fn ($d) => $d['accepted'])
-                    ->mapWithKeys(fn ($d) => [$d['code'] => $d['code'].' — '.Str::limit((string) $d['statement'], 120)])->all())])
+                    ->mapWithKeys(fn ($d) => [$d['code'] => $d['code'].' — '.Str::limit((string) (is_array($d['statement']) ? ($d['statement'][app()->getLocale()] ?? $d['statement']['en'] ?? reset($d['statement'])) : $d['statement']), 120)])->all())])
             ->action(fn (Action $action, Proposal $record, array $data) => WorkflowAction::run($action, null, function () use ($record, $data) {
                 $p = self::book($record);
                 foreach (array_unique($data['codes']) as $code) {
@@ -187,14 +188,33 @@ final class ProposalActions
             ->visible(fn (Proposal $record) => ! in_array($record->status, [...ProposalMachine::TERMINAL, 'PAYMENT_PENDING', 'APPROVED'], true))
             ->schema([
                 Select::make('requirement_code')->label(__('issuance_maker_checker.fields.requirement_code'))->required()
-                    ->options(fn (Proposal $record) => collect(app(ProposalService::class)->requiredDocuments($record))->mapWithKeys(fn ($r) => [$r['code'] => ($r['name'] ?? $r['code']).' ('.$r['status'].')'])->all()),
-                Select::make('document_id')->label(__('issuance_maker_checker.fields.document'))->required()->searchable()
+                    ->options(fn (Proposal $record) => collect(app(ProposalService::class)->requiredDocuments($record))// R6: 'name' is ['en' => …, 'fr' => …] (ProposalDocumentRequirements::for); casting it threw "Array to string conversion".
+                    ->mapWithKeys(fn ($r) => [$r['code'] => ((is_array($r['name'] ?? null) ? ($r['name'][app()->getLocale()] ?? $r['name']['en'] ?? null) : ($r['name'] ?? null)) ?? $r['label'] ?? $r['code']).' ('.$r['status'].')'])->all()),
+                Select::make('document_id')->label(__('issuance_maker_checker.fields.document'))->requiredWithout('file')->searchable()
                     ->options(fn (Proposal $record) => Document::where(['tenant_id' => $record->tenant_id, 'party_id' => $record->party_id])->latest()->limit(200)->get()
                         ->mapWithKeys(fn (Document $d) => [$d->id => ($d->getAttribute('original_filename') ?? $d->getAttribute('file_name') ?? $d->id).' · '.$d->created_at?->format('Y-m-d')])->all()),
+                // R6 2026-09-29: the portals had no way to upload a customer's document, so a mandatory proposal document
+                // blocked every broker sale. Same pipeline as the app (MobileDocumentService::upload, malware scan), stored
+                // as the proposal customer's document once the book is checked.
+                FileUpload::make('file')->label(__('issuance_maker_checker.fields.file'))->disk('local')->directory('tmp-proposal-documents')
+                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])->maxSize(10240),
             ])
-            ->action(fn (Action $action, Proposal $record, array $data) => WorkflowAction::run($action, null,
-                fn () => app(ProposalService::class)->attachDocument(self::book($record), Document::where('tenant_id', $record->tenant_id)->findOrFail($data['document_id']), $data['requirement_code']),
-                IssuanceActions::done('proposalAttachDocument')));
+            ->action(fn (Action $action, Proposal $record, array $data) => WorkflowAction::run($action, null, function () use ($record, $data) {
+                $proposal = self::book($record);
+                $documentId = $data['document_id'] ?? null;
+                if (blank($documentId) && filled($data['file'] ?? null)) {
+                    $disk = \Illuminate\Support\Facades\Storage::disk('local');
+                    $path = is_array($data['file']) ? (string) reset($data['file']) : (string) $data['file'];
+                    try {
+                        $documentId = app(\App\Application\Documents\MobileDocumentService::class)->upload(['category' => 'PROPOSAL', 'mime_type' => (string) $disk->mimeType($path),
+                            'file_base64' => base64_encode((string) $disk->get($path))], auth()->user(), $proposal->tenant_id, $proposal->party)['id'];
+                    } finally {
+                        $disk->delete($path);
+                    }
+                }
+
+                return app(ProposalService::class)->attachDocument($proposal, Document::where('tenant_id', $record->tenant_id)->findOrFail($documentId), $data['requirement_code']);
+            }, IssuanceActions::done('proposalAttachDocument')));
     }
 
     public static function reviewDocument(): Action

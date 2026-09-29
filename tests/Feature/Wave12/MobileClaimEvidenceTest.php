@@ -152,11 +152,14 @@ it('registers a completed resumable-upload session as evidence, without re-uploa
         'purpose' => 'CLAIM_EVIDENCE',
     ], tenantHeaderFor($fixture['tenant']));
 
-    $response->assertStatus(422);
+    // Q1: held, not failed — accepted (202) and attached automatically once a real scan says CLEAN.
+    $response->assertStatus(202);
+    expect($response->json('data.status'))->toBe('PENDING_SECURITY_CHECK');
+    expect(DB::table('claim_documents')->where('claim_id', $claim->id)->count())->toBe(0);
 
     $document = \App\Models\Document::where('storage_key', $storageKey)->first();
     expect($document)->not->toBeNull();
-    expect($document->scan_status)->toBe('FAILED');
+    expect($document->scan_status)->toBe('SCAN_UNAVAILABLE');
     expect($document->category)->toBe('CLAIM_EVIDENCE');
     expect($document->party_id)->toBe($fixture['party']->id);
 });

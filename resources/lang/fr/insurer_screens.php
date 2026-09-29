@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+/* Q7 écrans assureur /insurer (CAR-002…007, 012, 018, 022, 029). */
+return [
+    'nav' => ['dashboards' => 'Tableaux de bord'],
+    'empty' => 'Rien à afficher pour votre compagnie pour le moment.',
+    'filters' => ['period' => 'Période'],
+    'periods' => ['30d' => '30 derniers jours', '90d' => '90 derniers jours', 'ytd' => 'Depuis le début de l’année', '12m' => '12 derniers mois'],
+    'dashboards' => [
+        'operations' => ['title' => 'Tableau de bord des opérations', 'stats' => 'Opérations du jour', 'subheading' => 'Files de travail et chiffres du portefeuille de votre compagnie, en temps réel.'],
+        'production' => ['title' => 'Production', 'stats' => 'Production', 'subheading' => 'Polices émises, primes émises et transformation des devis de votre compagnie.'],
+        'portfolio' => ['title' => 'Portefeuille', 'stats' => 'Portefeuille en vigueur', 'subheading' => 'Polices en vigueur, primes et clients de votre compagnie.'],
+        'claims' => ['title' => 'Performance sinistres', 'stats' => 'Performance sinistres', 'subheading' => 'Sinistres déclarés, clôturés et payés, provisions et ratio sinistres/primes sur vos polices.'],
+        'brokers' => ['title' => 'Production des courtiers', 'stats' => 'Production des intermédiaires', 'subheading' => 'Primes apportées à votre compagnie par chaque courtier et agent.'],
+        'products' => ['title' => 'Performance des produits', 'stats' => 'Performance des produits', 'subheading' => 'Ventes, sinistres et ratio sinistres/primes de chaque version de produit.'],
+    ],
+    'tiles' => [
+        'cancellations_pending' => 'Résiliations à examiner',
+        'expiring_30d' => 'Échéance sous 30 jours',
+        'policies_issued' => 'Polices émises',
+        'written_premium' => 'Primes émises',
+        'average_premium' => 'Prime moyenne',
+        'quotes_received' => 'Devis reçus',
+        'conversion_rate' => 'Transformation devis → police',
+        'in_force_premium' => 'Primes en vigueur',
+        'insured_customers' => 'Clients assurés',
+        'claims_reported' => 'Sinistres déclarés',
+        'claims_closed' => 'Sinistres clôturés',
+        'claims_paid' => 'Sinistres payés',
+        'loss_ratio' => 'Ratio sinistres/primes',
+        'average_days_to_close' => 'Délai moyen de clôture (jours)',
+        'intermediaries' => 'Intermédiaires',
+        'producing_intermediaries' => 'Intermédiaires producteurs',
+        'intermediated_premium' => 'Primes intermédiées',
+        'top_intermediary' => 'Premier intermédiaire',
+        'products' => 'Versions de produit',
+        'selling_products' => 'Versions de produit vendues',
+        'top_product' => 'Premier produit',
+    ],
+    'charts' => [
+        'production_count' => 'Polices émises par mois',
+        'production_premium' => 'Primes émises par mois',
+        'claims_trend' => 'Sinistres déclarés et clôturés par mois',
+        'claims_status' => 'Sinistres par statut',
+        'portfolio_status' => 'Polices par statut',
+        'portfolio_line' => 'Polices en vigueur par branche',
+        'brokers_top' => 'Top 10 des intermédiaires par primes',
+        'products_premium' => 'Top 10 des produits par primes émises',
+    ],
+    'series' => [
+        'policies_issued' => 'Polices émises', 'written_premium' => 'Primes émises', 'claims_reported' => 'Déclarés', 'claims_closed' => 'Clôturés',
+        'claims' => 'Sinistres', 'policies' => 'Polices', 'active_policies' => 'Polices en vigueur',
+    ],
+    'tables' => ['brokers' => 'Intermédiaires par production', 'products' => 'Versions de produit par performance'],
+    'columns' => [
+        'name' => 'Intermédiaire', 'type' => 'Type', 'status' => 'Statut', 'licence_number' => 'Agrément', 'agreement_number' => 'Convention',
+        'agreement_status' => 'Statut de la convention', 'policies' => 'Polices', 'premium' => 'Primes', 'product' => 'Produit', 'version' => 'Version',
+        'line' => 'Branche', 'claims' => 'Sinistres', 'incurred' => 'Charge sinistres', 'ratio' => 'Ratio S/P',
+    ],
+    'intermediaries' => ['title' => 'Intermédiaires', 'subheading' => 'Courtiers et agents qui vendent vos produits : agrément, délégation et production.'],
+    'cancellations' => [
+        'title' => 'Examen des résiliations et suspensions',
+        'subheading' => 'Demandes de résiliation et polices suspendues de votre compagnie en attente de décision.',
+        'empty' => 'Aucune résiliation ni suspension en attente.',
+        'types' => ['cancellation' => 'Résiliation', 'suspension' => 'Suspension / remise en vigueur'],
+        'columns' => ['policy' => 'Police', 'policy_status' => 'Statut de la police', 'request' => 'Demande', 'request_status' => 'Statut de la demande', 'reason' => 'Motif', 'effective' => 'Date d’effet', 'refund' => 'Remboursement'],
+    ],
+    'eligibility' => ['title' => 'Règles d’éligibilité', 'subheading' => 'Jeux de règles d’éligibilité de vos versions de produit, par priorité, avec leur état d’approbation.'],
+    'rating' => ['title' => 'Règles de tarification', 'subheading' => 'Facteurs de tarification de vos versions de tarif contrôlées.', 'empty' => 'Aucune version de tarif pour vos produits.'],
+    'rules' => [
+        'empty' => 'Aucun jeu de règles d’éligibilité pour vos produits.',
+        'disabled' => 'désactivée',
+        'columns' => ['product' => 'Produit', 'code' => 'Code', 'version' => 'Version', 'status' => 'Statut', 'effective_from' => 'En vigueur le', 'rules' => 'Règles (priorité → résultat)',
+            'reference' => 'Référence réglementaire', 'factors' => 'Facteurs de tarification', 'hash' => 'Empreinte des règles'],
+    ],
+];

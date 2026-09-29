@@ -47,7 +47,7 @@ Opes.page(function (ctx) {
       c.appendChild(h('p', { class: 'acct-alert info', style: 'margin:0 0 12px' }, policy ? P.nothing : (due.length ? P.choose : P.nothing_all)));
       if (policy) c.appendChild(h('p', { class: 'op-muted' }, P.renew_note));
       if (due.length) c.appendChild(h('div', { class: 'op-due' }, due.map(function (x) {
-        return h('div', null, h('div', { class: 'op-cell' }, h('span', { class: 'op-li' }, Opes.icon(OP.lineIcon(x.line_code))), h('div', null, h('b', null, x.product_name), h('small', null, x.carrier_name))),
+        return h('div', null, h('div', { class: 'op-cell' }, h('span', { class: 'op-li' }, Opes.icon(OP.lineIcon(x.line_code))), h('div', null, h('b', null, x.product_name), h('small', null, (x.carrier_short_name || x.carrier_name)))),
           h('b', null, OP.mm(x.total_minor)), OP.btn(P.pay_now, '/account/payments/new?proposal=' + x.id, 'dbtn-primary sm', 'card'));
       })));
       box.appendChild(h('div', { class: 'agrid main-side' }, c, recentCard()));
@@ -97,7 +97,7 @@ Opes.page(function (ctx) {
       } else if (state.step === 2) {
         var go = h('button', { type: 'button', class: 'dbtn dbtn-primary', onclick: function () { submit(go); } }, Opes.icon('lock'), P.confirm);
         main.appendChild(h('section', { class: 'acard' }, h('h2', null, P.c_t), h('p', { class: 'sub' }, P.c_d),
-          h('dl', { class: 'kv', style: 'max-width:520px' }, h('dt', null, P.item), h('dd', null, target.product_name + ' — ' + (target.carrier_name || '')), h('dt', null, P.method), h('dd', null, methodLabel(state.provider)),
+          h('dl', { class: 'kv', style: 'max-width:520px' }, h('dt', null, P.item), h('dd', null, target.product_name + ' — ' + ((target.carrier_short_name || target.carrier_name) || '')), h('dt', null, P.method), h('dd', null, methodLabel(state.provider)),
             h('dt', null, P.payer), h('dd', null, '+237 ' + state.phone), h('dt', null, P.to_pay), h('dd', null, OP.mm(target.total_minor))),
           h('div', { class: 'btnbar', style: 'justify-content:space-between' }, h('button', { type: 'button', class: 'dbtn dbtn-outline', onclick: function () { state.step = 1; draw(); } }, Opes.icon('chev-left'), T.back), go)));
       } else {

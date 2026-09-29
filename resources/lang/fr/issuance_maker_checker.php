@@ -40,7 +40,7 @@ return [
         'grace_minutes' => 'Délai de grâce (minutes)', 'review_hours' => 'Délai d’examen assureur (heures)', 'escalated_to' => 'Escalader à', 'resolution' => 'Résolution',
         'effective_rule' => 'Règle de date d’effet', 'start_date' => 'Date de début', 'duration_unit' => 'Unité de durée', 'duration_value' => 'Durée',
         'instalment_plan' => 'Plan de fractionnement', 'codes' => 'Codes de déclaration', 'channel' => 'Canal', 'answers' => 'Réponses', 'question' => 'Code de question', 'answer' => 'Réponse',
-        'document' => 'Document', 'requirement_code' => 'Exigence', 'decision' => 'Décision', 'kind' => 'Type', 'attempts' => 'Tentatives', 'status' => 'Statut', 'proposal' => 'Proposition',
+        'document' => 'Document', 'file' => 'Téléverser un fichier (PDF, JPG, PNG)', 'requirement_code' => 'Exigence', 'decision' => 'Décision', 'kind' => 'Type', 'attempts' => 'Tentatives', 'status' => 'Statut', 'proposal' => 'Proposition',
     ],
     'codes' => [
         'resolution' => ['REFUND_REQUESTED' => 'Rembourser le client', 'RESOLVED_MANUALLY' => 'Résolue manuellement'],

@@ -369,7 +369,7 @@ final class ClaimCaseActions
     public static function expertCancel(): Action
     {
         $p = 'claims.experts.assign';
-        $live = fn (Claim $c) => self::assignments($c)->whereNotIn('status', ExpertAssignmentLifecycle::TERMINAL);
+        $live = fn (Claim $c) => self::assignments($c)->whereNotIn('claim_assignments.status', ExpertAssignmentLifecycle::TERMINAL);
 
         return self::make('expertCancel', $p)->icon('lucide-circle-x')->color('danger')->requiresConfirmation()
             ->visible(fn (Claim $record) => $live($record)->exists())
@@ -385,7 +385,7 @@ final class ClaimCaseActions
     public static function expertReview(): Action
     {
         $p = 'claims.experts.review';
-        $submitted = fn (Claim $c) => self::assignments($c)->where('status', 'REPORT_SUBMITTED');
+        $submitted = fn (Claim $c) => self::assignments($c)->where('claim_assignments.status', 'REPORT_SUBMITTED');
 
         return self::make('expertReview', $p)->icon('lucide-file-check')->requiresConfirmation()
             ->visible(fn (Claim $record) => $submitted($record)->exists())
@@ -764,7 +764,7 @@ final class ClaimCaseActions
 
     private static function assignments(Claim $c)
     {
-        return DB::table('claim_assignments')->where('claim_id', $c->id)->where('assignment_type', 'EXPERT');
+        return DB::table('claim_assignments')->where('claim_assignments.claim_id', $c->id)->where('claim_assignments.assignment_type', 'EXPERT'); // qualified: assignmentOptions() joins provider_profiles and parties (R7: ambiguous column crash)
     }
 
     private static function assignmentOptions($query): array

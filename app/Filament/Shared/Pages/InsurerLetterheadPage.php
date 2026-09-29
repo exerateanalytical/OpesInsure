@@ -25,7 +25,10 @@ use Filament\Schemas\Schema;
  */
 final class InsurerLetterheadPage extends LetterheadDesigner
 {
-    protected static ?string $navigationLabel = 'Letterhead & logo';
+    public static function getNavigationLabel(): string
+    {
+        return __('Letterhead & logo');
+    }
 
     protected static ?string $slug = 'letterhead';
 
@@ -36,7 +39,7 @@ final class InsurerLetterheadPage extends LetterheadDesigner
 
     public function getTitle(): string
     {
-        return 'Letterhead & logo';
+        return __('Letterhead & logo');
     }
 
     public static function carrierId(): ?string

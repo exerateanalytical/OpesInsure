@@ -22,12 +22,12 @@ final class NotifyPolicyExpiry extends Command
 {
     protected $signature = 'policies:notify-expiry {--dry-run : Count what would be sent without sending}';
 
-    protected $description = 'Send renewal reminders 30/14/7/1 days before policies expire.';
+    protected $description = 'Send renewal reminders 90/60/30/15/7/1 days before policies expire.';
 
     public function handle(CustomerNotifier $notifier): int
     {
         $sent = 0;
-        $offsets = collect(config('lifecycle.expiry_reminder_days', [30, 14, 7, 1]))->map(fn ($d) => (int) $d)->sortDesc()->values();
+        $offsets = collect(config('lifecycle.expiry_reminder_days', [90, 60, 30, 15, 7, 1]))->map(fn ($d) => (int) $d)->sortDesc()->values();
 
         foreach ($offsets as $days) {
             $from = now()->startOfDay()->addDays($days);

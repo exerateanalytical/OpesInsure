@@ -94,7 +94,7 @@ Opes.page(function (ctx) {
         var ya = h('button', { type: 'button', class: 'dbtn dbtn-primary sm', 'data-counter-accept': p.id, onclick: function () { answer('accept', ya); } }, Opes.icon('check'), C.accept);
         var no = h('button', { type: 'button', class: 'dbtn dbtn-outline sm', onclick: function () { answer('decline', no); } }, Opes.icon('x'), C.decline);
         cb.appendChild(h('div', { class: 'op-case', style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' },
-          h('div', { style: 'flex:1;min-width:200px' }, h('b', null, (p.carrier_name || '') + ' — ' + (p.product_name || B.lineName(p.line_code))),
+          h('div', { style: 'flex:1;min-width:200px' }, h('b', { class: 'ellip' }, ((p.carrier_short_name || p.carrier_name) || '') + ' — ' + (p.product_name || B.lineName(p.line_code))),
             h('small', { class: 'b-muted', style: 'display:block' }, C.was + ' : ' + money(p.total_minor) + ' · ' + C.now + ' : ' + money(co.total_minor)), co.notes ? h('small', { style: 'display:block' }, co.notes) : null),
           ya, no));
       });

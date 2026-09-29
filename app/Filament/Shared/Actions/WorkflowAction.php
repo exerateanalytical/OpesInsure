@@ -29,6 +29,8 @@ final class WorkflowAction
     /** $lang: the lang group holding "{name}.label" / ".help" / ".done" (one file per area, e.g. kyc_actions). */
     public static function make(string $name, ?string $permission, string $lang = 'workflow_actions'): Action
     {
+        self::$langs[$name] = $lang;
+
         return Action::make($name)
             ->label(__("{$lang}.{$name}.label"))
             ->modalHeading(__("{$lang}.{$name}.label"))
@@ -41,6 +43,9 @@ final class WorkflowAction
      * Permission check; inside a portal (/insurer, /broker) the record must also be the caller's own organisation's
      * (PortalScope::allowsWrite, docs/spec/PORTAL_WRITE_RULES.md). Outside a portal the record is ignored.
      */
+    /** @var array<string, string> action name => lang group given to make() */
+    private static array $langs = [];
+
     public static function allowed(?string $permission, mixed $record = null): bool
     {
         $user = auth()->user();
@@ -81,7 +86,11 @@ final class WorkflowAction
             $action->halt();
         }
 
-        Notification::make()->success()->title($success ?? __("workflow_actions.{$action->getName()}.done"))->send();
+        // R6 2026-09-29: without an explicit $success the title came from workflow_actions.{name}.done even for actions whose
+        // strings live in another lang group, so the user saw the raw key. Look in the action's own group first.
+        $name = $action->getName();
+        $success ??= self::optional((self::$langs[$name] ?? 'workflow_actions').".{$name}.done") ?? self::optional("workflow_actions.{$name}.done") ?? __('workflow_actions.done');
+        Notification::make()->success()->title($success)->send();
 
         return $result;
     }

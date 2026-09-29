@@ -10,7 +10,7 @@ return [
     'download_ttl_minutes' => (int) env('POLICY_DOCUMENT_URL_TTL', 30),
 
     // policies:notify-expiry reminder offsets, in days before coverage ends.
-    'expiry_reminder_days' => [30, 14, 7, 1],
+    'expiry_reminder_days' => [90, 60, 30, 15, 7, 1],
     // policies:expire — ACTIVE -> EXPIRING this many days before the end.
     'expiring_window_days' => (int) env('POLICY_EXPIRING_WINDOW_DAYS', 30),
     // EXPIRED -> LAPSED once this many days have passed after the end

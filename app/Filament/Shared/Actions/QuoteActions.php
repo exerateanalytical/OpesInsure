@@ -56,6 +56,34 @@ use Illuminate\Support\Facades\DB;
  */
 final class QuoteActions
 {
+    /**
+     * R4: row-action visibility on quote lists asked "does this quote have X" once per row and action (5-8 queries per
+     * row). Decided for every quote row of the page in one query per predicate (RequestMemo::rowFlag), memoised for the
+     * request; flushed by RequestMemo on writes to quote_offers / carrier_quote_requests / engine_overrides.
+     */
+    private static function rowHas(string $predicate, Quote $record): bool
+    {
+        return \App\Application\Identity\Rbac\RequestMemo::rowFlag('quote-'.$predicate, 'quotes', (string) $record->getKey(), function (array $ids) use ($predicate) {
+            $offers = fn () => DB::table('quote_offers')->whereIn('quote_id', $ids);
+
+            return (match ($predicate) {
+                'open_request' => DB::table('carrier_quote_requests')->whereIn('quote_id', $ids)->whereIn('status', CarrierQuoteRequest::OPEN_STATES),
+                'offers' => $offers(),
+                'pending_override' => $offers()->whereIn('premium_override_id', DB::table('engine_overrides')->where('status', 'REQUESTED')->select('id')),
+                'live_offers' => $offers()->whereIn('status', ['OFFERED', 'ACCEPTED']),
+                'override' => $offers()->whereNotNull('premium_override_id'),
+                // R6: QuoteComparisonService compares 2..MAX offers; with one offer the button could only fail.
+                'comparable' => $offers()->groupBy('quote_id')->havingRaw('count(*) >= 2')->select('quote_id'),
+            })->distinct()->pluck('quote_id')->all();
+        });
+    }
+
+    /** R6 2026-09-29: an accepted / declined / expired / cancelled quote is closed; its edit actions could only be refused. */
+    private static function open(Quote $record): bool
+    {
+        return ! in_array(\App\Application\Quotes\QuoteMachine::stateOf($record), \App\Application\Quotes\QuoteMachine::TERMINAL, true);
+    }
+
     public static function group(): ActionGroup
     {
         return ActionGroup::make([self::rate(), self::send(), self::requestCarrierQuote(), self::recordCarrierOffer(), self::requestOverride(), self::decideOverride(), self::applyOverride(), self::convertToProposal(),
@@ -92,7 +120,7 @@ final class QuoteActions
                     ], auth()->user());
 
                     return app(QuoteService::class)->rate($quote, auth()->user());
-                });
+                }, __('broker_portal_sales.brokerNewQuote.done'));
                 if ($quote instanceof Quote) {
                     $action->redirect(\App\Filament\Admin\Resources\Quotes\QuoteResource::getUrl('view', ['record' => $quote]));
                 }
@@ -117,7 +145,7 @@ final class QuoteActions
     {
         $p = 'quotes.rate';
 
-        return WorkflowAction::make('quoteRate', $p)->icon('lucide-calculator')->requiresConfirmation()
+        return WorkflowAction::make('quoteRate', $p)->icon('lucide-calculator')->requiresConfirmation()->visible(fn (Quote $record) => self::open($record))
             ->action(fn (Action $action, Quote $record) => WorkflowAction::run($action, $p, fn () => app(QuoteService::class)->rate(self::book($record), auth()->user())));
     }
 
@@ -125,7 +153,7 @@ final class QuoteActions
     {
         $p = 'quotes.send';
 
-        return WorkflowAction::make('quoteSend', $p)->icon('lucide-send')
+        return WorkflowAction::make('quoteSend', $p)->icon('lucide-send')->visible(fn (Quote $record) => self::open($record))
             ->schema([
                 Select::make('channel')->label(__('workflow_actions.fields.channel'))->options(WorkflowAction::options(QuoteService::SHARE_CHANNELS))->required(),
                 TextInput::make('recipient')->label(__('workflow_actions.fields.recipient'))->maxLength(191),
@@ -138,7 +166,7 @@ final class QuoteActions
     {
         $p = 'quotes.carrier_requests.create';
 
-        return WorkflowAction::make('quoteRequestCarrier', $p)->icon('lucide-building-2')
+        return WorkflowAction::make('quoteRequestCarrier', $p)->icon('lucide-building-2')->visible(fn (Quote $record) => self::open($record))
             ->schema([
                 Select::make('carrier_id')->label(__('workflow_actions.fields.carrier'))->required()->searchable()->live()
                     ->options(fn () => Carrier::with('party')->where('status', 'ACTIVE')->get()->mapWithKeys(fn ($c) => [$c->id => $c->party?->display_name ?? $c->cima_code])),
@@ -164,7 +192,7 @@ final class QuoteActions
         $open = fn (Quote $q) => CarrierQuoteRequest::where('quote_id', $q->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES);
 
         return WorkflowAction::make('quoteRecordCarrierOffer', $p)->icon('lucide-file-check')
-            ->visible(fn (Quote $record) => $open($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('open_request', $record))
             ->schema([
                 Select::make('request_id')->label(__('workflow_actions.fields.carrier_request'))->required()
                     ->options(fn (Quote $record) => $open($record)->pluck('request_number', 'id')),
@@ -191,7 +219,7 @@ final class QuoteActions
         $p = 'quotes.premium_override.request';
 
         return WorkflowAction::make('quoteRequestOverride', $p)->icon('lucide-sliders-horizontal')
-            ->visible(fn (Quote $record) => $record->offers()->exists())
+            ->visible(fn (Quote $record) => self::rowHas('offers', $record))
             ->schema([
                 Select::make('offer_id')->label(__('workflow_actions.fields.offer'))->required()->options(fn (Quote $record) => self::offerOptions($record->offers()->get())),
                 TextInput::make('premium_minor')->label(__('workflow_actions.fields.premium_minor'))->integer()->minValue(1)->required(),
@@ -208,7 +236,7 @@ final class QuoteActions
         $pending = fn (Quote $q) => $q->offers()->whereIn('premium_override_id', DB::table('engine_overrides')->where('status', 'REQUESTED')->select('id'));
 
         return WorkflowAction::make('quoteDecideOverride', $p)->icon('lucide-badge-check')->requiresConfirmation()
-            ->visible(fn (Quote $record) => $pending($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('pending_override', $record))
             ->schema([
                 Select::make('offer_id')->label(__('workflow_actions.fields.offer'))->required()->options(fn (Quote $record) => self::offerOptions($pending($record)->get())),
                 Select::make('decision')->label(__('workflow_actions.fields.outcome'))->options(['APPROVED' => __('workflow_actions.accept'), 'REJECTED' => __('workflow_actions.reject')])->required()->live(),
@@ -227,7 +255,7 @@ final class QuoteActions
         $offers = fn (Quote $q) => $q->offers()->whereIn('status', ['OFFERED', 'ACCEPTED']);
 
         return WorkflowAction::make('quoteConvert', null)->icon('lucide-circle-arrow-right')->requiresConfirmation()
-            ->visible(fn (Quote $record) => $offers($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('live_offers', $record))
             ->schema([Select::make('offer_id')->label(__('workflow_actions.fields.offer'))->required()->options(fn (Quote $record) => self::offerOptions($offers($record)->get()))])
             ->action(fn (Action $action, Quote $record, array $data) => WorkflowAction::run($action, null, function () use ($record, $data, $offers) {
                 $q = self::book($record);
@@ -244,7 +272,7 @@ final class QuoteActions
     {
         $p = 'quotes.manage';
 
-        return WorkflowAction::make('quoteGenerate', $p)->icon('lucide-file-text')->requiresConfirmation()
+        return WorkflowAction::make('quoteGenerate', $p)->icon('lucide-file-text')->requiresConfirmation()->visible(fn (Quote $record) => self::open($record))
             ->action(fn (Action $action, Quote $record) => WorkflowAction::run($action, $p, fn () => app(QuoteService::class)->generate(self::book($record), auth()->user())));
     }
 
@@ -252,7 +280,7 @@ final class QuoteActions
     {
         $p = 'quotes.manage';
 
-        return WorkflowAction::make('quoteDecline', $p)->icon('lucide-thumbs-down')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('quoteDecline', $p)->icon('lucide-thumbs-down')->color('danger')->requiresConfirmation()->visible(fn (Quote $record) => self::open($record))
             ->schema([
                 Select::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->options(WorkflowAction::options(QuoteService::DECLINE_REASONS, 'quote_decline'))->required(),
                 Textarea::make('note')->label(__('workflow_actions.fields.note'))->maxLength(1000),
@@ -265,7 +293,7 @@ final class QuoteActions
     {
         $p = 'quotes.manage';
 
-        return WorkflowAction::make('quoteCancel', $p)->icon('lucide-circle-x')->color('danger')->requiresConfirmation()
+        return WorkflowAction::make('quoteCancel', $p)->icon('lucide-circle-x')->color('danger')->requiresConfirmation()->visible(fn (Quote $record) => self::open($record))
             ->action(fn (Action $action, Quote $record) => WorkflowAction::run($action, $p, fn () => app(QuoteService::class)->cancel(self::book($record), auth()->user())));
     }
 
@@ -275,7 +303,7 @@ final class QuoteActions
         $withOverride = fn (Quote $q) => $q->offers()->whereNotNull('premium_override_id');
 
         return WorkflowAction::make('quoteApplyOverride', $p)->icon('lucide-check-check')->requiresConfirmation()
-            ->visible(fn (Quote $record) => $withOverride($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('override', $record))
             ->schema([Select::make('offer_id')->label(__('workflow_actions.fields.offer'))->required()->options(fn (Quote $record) => self::offerOptions($withOverride($record)->get()))])
             ->action(function (Action $action, Quote $record, array $data) use ($p, $withOverride) {
                 $q = self::book($record);
@@ -290,7 +318,7 @@ final class QuoteActions
         $p = 'quotes.read';
 
         return WorkflowAction::make('quoteSaveComparison', $p)->icon('lucide-columns-3')
-            ->visible(fn (Quote $record) => $record->offers()->exists())
+            ->visible(fn (Quote $record) => self::rowHas('comparable', $record))
             ->schema([CheckboxList::make('offer_ids')->label(__('workflow_actions.fields.offers'))->options(fn (Quote $record) => self::offerOptions($record->offers()->get()))
                 ->maxItems(QuoteComparisonService::MAX)])
             ->action(fn (Action $action, Quote $record, array $data) => WorkflowAction::run($action, $p,
@@ -303,7 +331,7 @@ final class QuoteActions
         $open = fn (Quote $q) => CarrierQuoteRequest::where('quote_id', $q->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES);
 
         return WorkflowAction::make('quoteCancelCarrierRequest', $p)->icon('lucide-ban')->color('danger')->requiresConfirmation()
-            ->visible(fn (Quote $record) => $open($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('open_request', $record))
             ->schema([
                 Select::make('request_id')->label(__('workflow_actions.fields.carrier_request'))->required()->options(fn (Quote $record) => $open($record)->pluck('request_number', 'id')),
                 Textarea::make('reason')->label(__('workflow_actions.fields.reason'))->required()->minLength(3)->maxLength(500),
@@ -321,7 +349,7 @@ final class QuoteActions
         $open = fn (Quote $q) => CarrierQuoteRequest::where('quote_id', $q->id)->whereIn('status', CarrierQuoteRequest::OPEN_STATES);
 
         return WorkflowAction::make('quoteDeclineCarrierOnBehalf', $p)->icon('lucide-file-x')->requiresConfirmation()
-            ->visible(fn (Quote $record) => $open($record)->exists())
+            ->visible(fn (Quote $record) => self::rowHas('open_request', $record))
             ->schema([
                 Select::make('request_id')->label(__('workflow_actions.fields.carrier_request'))->required()->options(fn (Quote $record) => $open($record)->pluck('request_number', 'id')),
                 TextInput::make('decline_reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),

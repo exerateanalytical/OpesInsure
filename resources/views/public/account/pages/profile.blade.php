@@ -3,6 +3,7 @@
 @extends('public.account.layout', ['title' => __('account_policies.prof.title'), 'lede' => __('account_policies.prof.lede'), 'crumbs' => [[__('account_policies.prof.title'), null]], 'active' => 'profile'])
 @section('content')
 @include('public.account.partials.policies-assets')
+<div class="btnbar" style="margin-bottom:16px" data-launch-links><a class="dbtn dbtn-outline sm" href="/account/onboarding">@include('public.partials.i', ['n' => 'check']){{ __('launch_customer.onb.title') }}</a><a class="dbtn dbtn-outline sm" href="/account/activity">@include('public.partials.i', ['n' => 'clock']){{ __('launch_customer.activity.title') }}</a></div>
 <div class="agrid c2" data-page-body>
   <section class="acard" data-user></section>
   <section class="acard" data-cust></section>
@@ -11,6 +12,7 @@
     <a class="dbtn dbtn-outline sm" href="/account/privacy">{{ __('account.side.privacy') }}</a>
     <a class="dbtn dbtn-outline sm" href="/account/requests">{{ __('account.side.requests') }}</a>
   </div></section>
+  <section class="acard" data-agent-profile hidden style="grid-column:1/-1"></section>
   @include('public.account.partials.account-security')
 </div>
 @endsection
@@ -58,6 +60,37 @@ Opes.page(function () {
       h('div', { class: 'btnbar full' }, save));
     Opes.clear(cb).append(h('h2', null, R.details), form);
   }).catch(function (e) { Opes.fail(cb, e); });
+
+  // S3 2026-09-29: agent profile (agents only; GET|PATCH /mobile/agent/profile, agent.clients.read). A new payout number
+  // needs the PAYOUT_DESTINATION_CHANGE step-up code first (POST /mobile/security/step-up/request|verify), as in the app.
+  var ap = $('[data-agent-profile]'), LP = @json(__('leftover_actions.agent_profile'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+  if (ap && Opes.can('agent.clients.read')) Opes.api('/mobile/agent/profile').then(function (p) {
+    p = p || {}; ap.hidden = false;
+    var save = h('button', { type: 'submit', class: 'dbtn dbtn-primary' }, Opes.icon('check'), T.save);
+    var codeRow = h('label', { class: 'afield-s', hidden: true }, h('span', null, LP.code), h('input', { name: 'code', inputmode: 'numeric', maxlength: 6, autocomplete: 'one-time-code' }));
+    var challenge = null, P = 'PAYOUT_DESTINATION_CHANGE';
+    var form = h('form', { class: 'op-form', 'data-agent-profile-form': '', onsubmit: function (e) {
+      e.preventDefault(); var d = vals(form), body = { full_name: d.full_name };
+      if (d.national_id_number) body.national_id_number = d.national_id_number;
+      var momoChanged = !!d.momo_phone_e164 && d.momo_phone_e164 !== (p.momo_phone_e164 || '');
+      if (momoChanged) body.momo_phone_e164 = d.momo_phone_e164;
+      Opes.alert(''); Opes.busy(save, true);
+      if (momoChanged && !challenge) {
+        return Opes.api('/mobile/security/step-up/request', { body: { purpose: P } }).then(function (c) { challenge = c.challenge_id; codeRow.hidden = false; Opes.alert(LP.code_sent, 'ok'); })
+          .catch(function (err) { Opes.alert(err.message); }).finally(function () { Opes.busy(save, false); });
+      }
+      var go = momoChanged
+        ? Opes.api('/mobile/security/step-up/verify', { body: { challenge_id: challenge, purpose: P, code: d.code } }).then(function (g) { return Opes.api('/mobile/agent/profile', { method: 'PATCH', body: body, stepUp: true, headers: { 'X-Step-Up-Grant': g.grant_token } }); })
+        : Opes.api('/mobile/agent/profile', { method: 'PATCH', body: body });
+      go.then(function (np) { p = np || p; challenge = null; codeRow.hidden = true; form.elements.national_id_number.value = ''; form.elements.national_id_number.placeholder = p.national_id_number || ''; Opes.alert(LP.saved, 'ok'); })
+        .catch(function (err) { challenge = null; codeRow.hidden = true; Opes.alert(err.message); }).finally(function () { Opes.busy(save, false); });
+    } },
+      field('full_name', R.name, p.full_name, { required: true, minlength: 3, maxlength: 120 }),
+      field('national_id_number', LP.national_id, '', { maxlength: 40, placeholder: p.national_id_number || '', autocomplete: 'off' }),
+      field('momo_phone_e164', LP.momo, p.momo_phone_e164, { maxlength: 32, inputmode: 'tel' }), codeRow,
+      h('div', { class: 'btnbar full' }, save));
+    Opes.clear(ap).append(h('h2', null, LP.title), h('p', { class: 'sub' }, LP.help, ' ', h('b', null, p.agent_code || '')), form);
+  }).catch(function () { ap.hidden = true; });
 });
 </script>
 @endpush

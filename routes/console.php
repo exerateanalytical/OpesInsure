@@ -98,3 +98,22 @@ Artisan::command('activa:test-connection', function (App\Application\Integration
         }
     }
 })->purpose('Call every configured Activa service\'s auth operation and print OK / 401 per service (no secrets printed).');
+
+// Q1 queue-based malware scanning: held uploads (PENDING_SCAN / SCAN_UNAVAILABLE, and unreviewed legacy FAILED) are
+// rescanned once ClamAV answers (CLAMAV_HOST / CLAMAV_PORT / CLAMAV_SOCKET); CLEAN files get their pending
+// attachments (e.g. claim evidence) performed. Nothing is ever marked CLEAN without a real scan.
+Artisan::command('documents:rescan-pending {--limit=200 : max files per run} {--now : ignore the per-file backoff}', function (App\Application\Documents\Scanning\DocumentScanQueue $queue) {
+    $s = $queue->rescanPending((int) $this->option('limit'), (bool) $this->option('now'));
+    $this->info(sprintf('Scanner: %s. Adopted: %d. Scanned: %d. Clean: %d. Infected: %d. Still held: %d. Attached: %d.',
+        $s['scanner'] ? 'up' : 'unavailable', $s['adopted'], $s['scanned'], $s['clean'], $s['infected'], $s['unavailable'], $s['attached']));
+})->purpose('Rescan uploads held while the malware scanner was unavailable, with backoff, and release/attach the clean ones.');
+Schedule::command('documents:rescan-pending')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+
+// S12 monitoring & alerting (App\Application\Operations\Monitoring): the 5-minute checks page the holders of
+// operations.alerts.receive by e-mail + SMS, deduplicated with a cooldown. Error events are captured in bootstrap/app.php.
+Artisan::command('ops:alerts', function (App\Application\Operations\Monitoring\AlertDispatcher $alerts) {
+    foreach ($alerts->evaluate() as $s) {
+        $this->line(sprintf('%s %s: %d e-mail(s), %d SMS', $s['kind'], $s['key'], $s['emails'], $s['sms']));
+    }
+})->purpose('Run the monitoring checks (errors, failed jobs, queue, scheduler, payments, carrier API, scanner, disk, database) and send alerts');
+Schedule::command('ops:alerts')->everyFiveMinutes()->withoutOverlapping()->onOneServer();

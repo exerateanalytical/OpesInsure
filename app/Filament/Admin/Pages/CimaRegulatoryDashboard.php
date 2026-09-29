@@ -32,7 +32,7 @@ final class CimaRegulatoryDashboard extends Page
 
     public function getTitle(): string
     {
-        return 'CIMA Regulatory Dictionary';
+        return __('CIMA regulatory dictionary');
     }
 
     protected function getViewData(): array

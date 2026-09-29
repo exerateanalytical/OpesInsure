@@ -46,7 +46,8 @@ final class DocumentShellView
         $family = SecurityArtwork::familyOf($code);
         $color = SecurityArtwork::FAMILY_COLORS[$family] ?? SecurityArtwork::FAMILY_COLORS['DEFAULT'];
         $seed = $family.'|'.$in['number'];
-        $money = fn ($minor, $cur = null) => $minor === null ? null : number_format(((int) $minor) / 100, 0, '.', ' ').' '.($cur ?? $policy->currency);
+        // XAF prints as FCFA (one formatter with the mapped-field reader).
+        $money = fn ($minor, $cur = null) => $minor === null ? null : \App\Application\Documents\Security\MappedFieldValues::money((int) $minor, (string) ($cur ?? $policy->currency ?? 'XAF'));
         $date = fn (?string $iso, bool $time = false) => $iso ? Carbon::parse($iso)->setTimezone(config('app.timezone'))->format($time ? 'd/m/Y H:i' : 'd/m/Y') : null;
         $label = fn (string $key) => $L(CanonicalFieldDictionary::KEYS[$key][1] ?? $key, CanonicalFieldDictionary::KEYS[$key][0] ?? $key);
         $row = fn (string $key, $value, bool $strong = false) => ['label' => $label($key), 'value' => self::humanCode($value, $L), 'strong' => $strong];

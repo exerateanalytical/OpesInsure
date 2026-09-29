@@ -236,7 +236,7 @@ final class MappedFieldValues
             return $x ? 'Yes / Oui' : 'No / Non';
         }
         if (str_ends_with($col, '_minor') && is_numeric($x)) {
-            return number_format(((int) $x) / 100, 0, '.', ' ').' '.$currency;
+            return self::money((int) $x, $currency);
         }
         if (str_ends_with($col, '_bp') && is_numeric($x)) {
             return rtrim(rtrim(number_format(((int) $x) / 100, 2, '.', ''), '0'), '.').' %';
@@ -258,6 +258,14 @@ final class MappedFieldValues
         return is_scalar($x) ? trim((string) $x) : null;
     }
 
+    /** Printed amount (minor units): XAF reads FCFA on documents, like the rest of the platform (WebExperiences\Money::display). */
+    public static function money(int $minor, string $currency): string
+    {
+        $code = strtoupper($currency ?: 'XAF');
+
+        return number_format($minor / 100, 0, '.', ' ').' '.($code === 'XAF' ? 'FCFA' : $code);
+    }
+
     /** @return array<string, mixed> derived values the table map alone cannot express */
     private static function explicit(Policy $policy, array $ctx): array
     {
@@ -271,7 +279,126 @@ final class MappedFieldValues
             'policy.certificates' => $policy->certificate_number,
             'payment.amount_words' => ($pay = $ctx['payment'] ?? ($policy->payment_intent_id ? DB::table('payment_intents')->where('id', $policy->payment_intent_id)->first() : null)) && isset($pay->amount_minor)
                 ? \App\Application\Shared\AmountInWords::bilingual((int) $pay->amount_minor, (string) ($pay->currency ?? $policy->currency ?? 'XAF')) : null,
-        ], fn ($x) => $x !== null && $x !== '');
+        ] + self::issued($policy, $ctx, $coverages, $name), fn ($x) => $x !== null && $x !== '' && $x !== []);
+    }
+
+    /**
+     * R9: template keys of the documents the platform's real triggers issue (policy pack, claim registration,
+     * cancellation / reinstatement / endorsement, premium receipt) whose value the platform holds under another
+     * name. Money stays in minor units (int) so the shell prints it in FCFA; dates stay ISO so the shell formats them.
+     *
+     * @param  array<int, mixed>  $coverages
+     * @return array<string, mixed>
+     */
+    private static function issued(Policy $policy, array $ctx, array $coverages, callable $name): array
+    {
+        $offer = $policy->proposal?->offer;
+        $product = $offer?->product;
+        $claim = is_object($ctx['claim'] ?? null) ? $ctx['claim'] : null;
+        $tx = is_object($ctx['transaction'] ?? null) ? $ctx['transaction'] : null;
+        $payment = $ctx['payment'] ?? ($policy->payment_intent_id ? DB::table('payment_intents')->where('id', $policy->payment_intent_id)->first() : null);
+        $iso = fn ($d) => $d ? \Carbon\Carbon::parse($d)->toIso8601String() : null;
+        $rules = fn ($r) => is_array($r) && $r !== [] ? $r : null;
+        $exclusions = (array) ($policy->terms_snapshot['coverage_snapshot']['exclusions'] ?? $offer?->coverage_snapshot['exclusions'] ?? []);
+
+        $v = [
+            // The policyholder is the insured unless the platform records another insured person.
+            'insured.name' => $policy->party?->display_name,
+            'product.code' => $product?->code,
+            'product.version' => $product?->version !== null ? 'v'.$product->version : null,
+            'policy.status' => $policy->status,
+            'coverage.status' => $policy->status,
+            'policy.issued_at' => $iso($policy->issued_at),
+            'policy.renewal_date' => $iso($policy->coverage_ends_at),
+            'policy.exclusions_reference' => implode(' · ', array_filter(array_map(fn ($e) => is_array($e) ? ($e['name'] ?? $e['code'] ?? null) : (is_scalar($e) ? (string) $e : null), $exclusions))) ?: null,
+            'coverage.deductibles' => implode(' · ', array_filter(array_map(fn ($c) => is_array($c) && (int) ($c['deductible_minor'] ?? 0) > 0
+                ? $name($c).': '.self::money((int) $c['deductible_minor'], (string) ($policy->currency ?: 'XAF')) : null, $coverages))) ?: null,
+            'policy.renewal_terms' => $rules($product?->renewal_rules),
+            'policy.cancellation_rules' => $rules($product?->cancellation_rules),
+        ];
+
+        if ($claim) {
+            $v += [
+                'claim.claimant' => $claim->claimant_party_id ? DB::table('parties')->where('id', $claim->claimant_party_id)->value('display_name') : null,
+                'claim.received_at' => $iso($claim->submitted_at ?? $claim->created_at),
+                'claim.loss_description' => is_array($claim->loss_details) ? ($claim->loss_details['description'] ?? null) : null,
+                'claim.loss_place' => $claim->loss_location,
+                'claim.handler_contact' => $claim->assigned_to ? DB::table('users')->where('id', $claim->assigned_to)->value('full_name') : null,
+                'claim.closure_date' => $iso($claim->closed_at),
+            ];
+            // Claim decision / settlement offer: the approved decision (heads, reasons) and its settlement when calculated.
+            $decision = DB::table('claim_decisions')->where('claim_id', $claim->id)->where('status', 'APPROVED')->orderByDesc('approved_at')->first();
+            $settlement = Schema::hasTable('claim_settlements') ? DB::table('claim_settlements')->where('claim_id', $claim->id)->orderByDesc('created_at')->first() : null;
+            if ($decision || $settlement) {
+                $heads = array_values(array_filter((array) json_decode((string) ($decision->heads ?? '[]'), true), 'is_array'));
+                $cur = (string) ($settlement->currency ?? $decision->currency ?? $policy->currency ?? 'XAF');
+                $paid = (int) DB::table('claim_payments')->where('claim_id', $claim->id)->where('status', 'PAID')->sum('amount_minor');
+                $payee = $settlement?->payee_party_id ? DB::table('parties')->where('id', $settlement->payee_party_id)->value('display_name') : null;
+                $v += array_filter([
+                    'settlement.gross' => isset($settlement->gross_minor) ? (int) $settlement->gross_minor : (isset($decision->approved_amount_minor) ? (int) $decision->approved_amount_minor : null),
+                    'settlement.amount' => isset($settlement->amount_minor) ? (int) $settlement->amount_minor : (isset($decision->approved_amount_minor) ? (int) $decision->approved_amount_minor : null),
+                    'settlement.prior_payments' => isset($settlement->prior_payments_minor) ? (int) $settlement->prior_payments_minor : $paid,
+                    'settlement.excluded' => isset($settlement->excluded_minor) ? (int) $settlement->excluded_minor : (($decision->decision ?? null) === 'APPROVE' ? 0 : null),
+                    'settlement.reference' => $settlement->reference ?? $claim->claim_number,
+                    'settlement.payee' => $payee ?? ($claim->claimant_party_id ? DB::table('parties')->where('id', $claim->claimant_party_id)->value('display_name') : null),
+                    'settlement.breakdown' => $heads !== [] ? implode(' · ', array_map(fn ($h) => ucwords(strtolower(str_replace('_', ' ', (string) ($h['head'] ?? '')))).': '.self::money((int) ($h['amount_minor'] ?? 0), $cur), $heads)) : null,
+                    'claim.coverage_check' => $decision ? trim(implode(', ', (array) json_decode((string) ($decision->reason_codes ?? '[]'), true) ?: [(string) $decision->reason_code]).' — '.(string) $decision->rationale, ' —') : null,
+                ], fn ($x) => $x !== null && $x !== '');
+            }
+            if ($claim instanceof \App\Models\Claim) {
+                try {
+                    $evidence = app(\App\Application\Claims\Evidence\ClaimEvidenceRules::class)->forClaim($claim)['rules'];
+                    $label = fn (array $r) => trim(($r['name_fr'] ?? '').' / '.($r['name_en'] ?? ''), ' /') ?: ($r['canonical_code'] ?? null);
+                    $v['claim.requirements'] = implode(' · ', array_filter(array_map(fn ($r) => $r['mandatory'] ? $label($r) : null, $evidence))) ?: null;
+                    $v['claim.conditional_requirements'] = implode(' · ', array_filter(array_map(fn ($r) => ! $r['mandatory'] && empty($r['waived']) ? $label($r) : null, $evidence))) ?: null;
+                } catch (Throwable) {
+                    // evidence rules unavailable: the rows stay unrecorded
+                }
+            }
+        }
+
+        if ($tx) {
+            $type = (string) $tx->type;
+            $cancel = $type === 'CANCELLATION' && Schema::hasTable('policy_cancellations')
+                ? DB::table('policy_cancellations')->where('policy_transaction_id', $tx->id)->first() : null;
+            $refund = $tx->refund_id ? DB::table('refunds')->where('id', $tx->refund_id)->value('status') : null;
+            if ($type === 'CANCELLATION') {
+                $v += [
+                    'cancellation.reason' => $cancel->reason_code ?? $tx->reason_code,
+                    'cancellation.effective_at' => $iso($cancel->effective_at ?? $tx->effective_at),
+                    'cancellation.premium_balance' => $tx->refund_minor !== null ? (int) $tx->refund_minor : null,
+                    'cancellation.refund_status' => $refund ?? ((int) $tx->refund_minor > 0 ? 'REFUND_DUE' : 'NO_REFUND_DUE'),
+                    'cancellation.coverage_status' => $policy->status,
+                ];
+            }
+            if ($type === 'REINSTATEMENT') {
+                $v['reinstatement.effective_at'] = $iso($tx->effective_at);
+            }
+            if ($type === 'ENDORSEMENT') {
+                $v += [
+                    'endorsement.requested_change' => (array) $tx->requested_changes ?: null,
+                    'endorsement.authorized_at' => $iso($tx->approved_at),
+                    'endorsement.authorized_by' => $tx->approved_by ? DB::table('users')->where('id', $tx->approved_by)->value('full_name') : null,
+                    'endorsement.resulting_version' => $tx->status === 'APPROVED' ? 'v'.(int) $policy->version : null,
+                ];
+            }
+        }
+
+        if ($payment && isset($payment->amount_minor)) {
+            $channel = array_filter([(string) ($payment->provider ?? ''), (string) ($payment->request_channel ?? '')]);
+            $v['billing.cashier_channel'] = $channel ? implode(' · ', array_map(fn ($c) => strtoupper($c), $channel)) : null;
+            $due = $policy->proposal?->terms_snapshot['total_minor'] ?? $offer?->total_minor;
+            if ($due !== null && ($payment->status ?? null) === 'SUCCEEDED') {
+                $v['billing.balance'] = max(0, (int) $due - (int) $payment->amount_minor);
+            }
+            if (Schema::hasTable('payment_allocations')) {
+                $v['billing.allocation_to_obligations'] = implode(' · ', DB::table('payment_allocations')->where('payment_intent_id', $payment->id)->whereNull('reverses_allocation_id')
+                    ->orderBy('sequence')->get(['target_category', 'amount_minor', 'currency'])
+                    ->map(fn ($a) => ucwords(strtolower(str_replace('_', ' ', (string) $a->target_category))).': '.self::money((int) $a->amount_minor, (string) ($a->currency ?: 'XAF')))->all()) ?: null;
+            }
+        }
+
+        return array_filter($v, fn ($x) => $x !== null && $x !== '' && $x !== []);
     }
 
     /** @return array{mapped: int, source_exists: int, keys: array<int, string>} distinct mapped keys, and those whose source table exists */

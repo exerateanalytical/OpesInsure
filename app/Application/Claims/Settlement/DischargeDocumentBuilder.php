@@ -32,8 +32,10 @@ final class DischargeDocumentBuilder
         $verification = DocumentEngine::newVerificationCode();
         $carrierName = $policy->carrier?->party?->display_name ?? 'Insurer';
         $payee = (string) (\App\Models\Party::whereKey($settlement->payee_party_id)->value('display_name') ?? '');
-        $amount = number_format((int) $settlement->amount_minor, 0, ',', ' ').' '.$settlement->currency;
-        $lines = array_map(fn (array $l) => sprintf('%s %s %s', $l['label'], $l['operator'], number_format((int) $l['amount_minor'], 0, ',', ' ')), json_decode((string) $settlement->breakdown, true)['lines'] ?? []);
+        // R9: minor units (÷100) and XAF printed as FCFA, like every other issued document.
+        $money = fn ($minor) => \App\Application\Documents\Security\MappedFieldValues::money((int) $minor, (string) ($settlement->currency ?: 'XAF'));
+        $amount = $money($settlement->amount_minor);
+        $lines = array_map(fn (array $l) => sprintf('%s %s %s', $l['label'], $l['operator'], $money($l['amount_minor'])), json_decode((string) $settlement->breakdown, true)['lines'] ?? []);
 
         $sections = [
             ['heading' => 'Quittance / Discharge receipt', 'paragraphs' => [

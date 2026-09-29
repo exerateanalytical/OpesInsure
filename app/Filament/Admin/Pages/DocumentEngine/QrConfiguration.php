@@ -23,7 +23,7 @@ final class QrConfiguration extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'QR configuration (DOC-ADM-014)';
+        return __('QR configuration');
     }
 
     protected function report(): array

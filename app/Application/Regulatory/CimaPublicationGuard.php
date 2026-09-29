@@ -58,7 +58,8 @@ final class CimaPublicationGuard
             return false;
         }
         $onSaleSince = $product->published_at ?? $product->created_at;
-        $liveSince = RegulatoryRegime::where('code', 'CIMA')->where('is_seeded', true)->min('created_at');
+        // R4: asked once per product of a catalogue; memoised for the current request.
+        $liveSince = \App\Application\Identity\Rbac\RequestMemo::remember('cima-live-since', fn () => RegulatoryRegime::where('code', 'CIMA')->where('is_seeded', true)->min('created_at'));
 
         return $liveSince === null || ($onSaleSince !== null && $onSaleSince->lt($liveSince));
     }

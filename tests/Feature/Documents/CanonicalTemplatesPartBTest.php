@@ -62,7 +62,7 @@ function partbValues(DocumentTemplate $t): array
         $values[$f['key']] = 'Recorded '.strtoupper(substr(md5($f['key']), 0, 8));
     }
     if (isset($values['premium.gross'])) {
-        $values['premium.gross'] = 1_234_500; // minor units: printed "12 345 XAF" by the premium block
+        $values['premium.gross'] = 1_234_500; // minor units: printed "12 345 FCFA" by the premium block
     }
 
     return $values;
@@ -71,7 +71,7 @@ function partbValues(DocumentTemplate $t): array
 /** Text the shell prints for a value (amounts in minor units are formatted). */
 function partbPrinted(string $key, mixed $value): string
 {
-    return $key === 'premium.gross' ? '12 345 XAF' : e((string) $value);
+    return $key === 'premium.gross' ? '12 345 FCFA' : e((string) $value);
 }
 
 beforeEach(function () {

@@ -94,3 +94,12 @@
 @media (max-width:560px){.acct-brand small,.acct-actions .lang{display:none}.acct-brand span{font-size:21px}.kv dd{text-align:left}.kv{grid-template-columns:1fr}}
 .acct-body [hidden]{display:none!important}
 .acct-content{grid-template-columns:minmax(0,1fr)}.acct-content>*{min-width:0}@media (max-width:1200px){.agrid.main-side{grid-template-columns:minmax(0,1fr)}}
+
+/* R10 launch a11y/responsive: 40px touch targets, AA badge contrast, visible focus, one-line insurer names, no page-level horizontal scroll */
+.acct-body{overflow-x:hidden}
+.acct-body .dbtn.sm{min-height:40px}
+.acct-side .badge{background:#C62A2F}
+.afield-s input:focus-visible,.afield-s select:focus-visible,.afield-s textarea:focus-visible{box-shadow:0 0 0 3px rgba(13,79,219,.4)}
+.tabs-u button:focus-visible,.tabs-u a:focus-visible,.acct-side a:focus-visible{outline:3px solid var(--royal);outline-offset:-3px}
+.ellip{display:block;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct-body img{max-width:100%;height:auto}

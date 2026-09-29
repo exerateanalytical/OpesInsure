@@ -30,9 +30,9 @@ final class RatingController
 {
     public function __construct(private readonly OwnershipScope $own) {}
 
-    public function tariff(string $tariff): JsonResponse
+    public function tariff(Request $r, string $tariff): JsonResponse
     {
-        $t = TariffVersion::findOrFail($tariff);
+        $t = $this->carrierTariff($r, $tariff);
 
         // occurred_at has second precision; same-second steps are ordered by their place in the PRE §75 lifecycle.
         $rank = array_flip(['DRAFT', 'IN_REVIEW', 'REJECTED', 'APPROVED', 'SCHEDULED', 'ACTIVE', 'EXPIRED', 'RETIRED']);
@@ -55,7 +55,16 @@ final class RatingController
     {
         $d = $r->validate(['notes' => 'required|string|min:10|max:2000', 'effective_until' => 'nullable|date']);
 
-        return response()->json(['data' => $call(TariffVersion::findOrFail($tariff), $d)]);
+        return response()->json(['data' => $call($this->carrierTariff($r, $tariff), $d)]);
+    }
+
+    /** S6: a carrier-scoped caller only reads or moves its own insurer's tariffs (404 otherwise). */
+    private function carrierTariff(Request $r, string $id): TariffVersion
+    {
+        $t = TariffVersion::with('product')->findOrFail($id);
+        app(\App\Application\Identity\CarrierScopeResolver::class)->abortUnlessOwnCarrier($r->user(), $t->product?->carrier_id, app(TenantContext::class)->id());
+
+        return $t;
     }
 
     public function chargeCodes(): JsonResponse

@@ -77,7 +77,7 @@ final class PartnerCarrierWorkspaceController
 
         return [
             'id' => $p->id, 'code' => $p->code, 'name' => $p->name, 'line_code' => $p->line_code, 'version' => (int) $p->version, 'status' => $p->status,
-            'carrier_id' => $p->carrier_id, 'carrier_name' => $p->carrier?->party?->display_name,
+            'carrier_id' => $p->carrier_id, 'carrier_name' => $p->carrier?->party?->display_name, 'carrier_short_name' => \App\Application\Directory\InsurerShortNames::shortOf($p->carrier),
             'effective_from' => $p->effective_from?->toDateString(), 'effective_until' => $p->effective_until?->toDateString(),
             'tariffs' => $p->tariffs->sortByDesc('version')->map(fn ($tv) => ['id' => $tv->id, 'version' => (int) $tv->version, 'status' => $tv->status, 'effective_from' => $tv->effective_from?->toDateString()])->values(),
             'policies_in_force' => (clone $sold)->where('policies.status', 'ACTIVE')->count(),

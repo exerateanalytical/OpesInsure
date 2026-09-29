@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+/* Q7 /insurer carrier screens (CAR-002…007, 012, 018, 022, 029). */
+return [
+    'nav' => ['dashboards' => 'Dashboards'],
+    'empty' => 'Nothing to show for your company yet.',
+    'filters' => ['period' => 'Period'],
+    'periods' => ['30d' => 'Last 30 days', '90d' => 'Last 90 days', 'ytd' => 'Year to date', '12m' => 'Last 12 months'],
+    'dashboards' => [
+        'operations' => ['title' => 'Operations dashboard', 'stats' => 'Operations today', 'subheading' => 'Live work queues and book figures of your company.'],
+        'production' => ['title' => 'Production', 'stats' => 'Production', 'subheading' => 'Policies issued, written premium and quote conversion of your company.'],
+        'portfolio' => ['title' => 'Portfolio', 'stats' => 'Portfolio in force', 'subheading' => 'Policies in force, premium and customers of your company.'],
+        'claims' => ['title' => 'Claims performance', 'stats' => 'Claims performance', 'subheading' => 'Claims reported, closed and paid, reserves and loss ratio on your policies.'],
+        'brokers' => ['title' => 'Broker production', 'stats' => 'Intermediary production', 'subheading' => 'Premium brought by each broker and agent to your company.'],
+        'products' => ['title' => 'Product performance', 'stats' => 'Product performance', 'subheading' => 'Sales, claims and loss ratio of each of your product versions.'],
+    ],
+    'tiles' => [
+        'cancellations_pending' => 'Cancellations to review',
+        'expiring_30d' => 'Expiring within 30 days',
+        'policies_issued' => 'Policies issued',
+        'written_premium' => 'Written premium',
+        'average_premium' => 'Average premium',
+        'quotes_received' => 'Quotes received',
+        'conversion_rate' => 'Quote-to-policy conversion',
+        'in_force_premium' => 'Premium in force',
+        'insured_customers' => 'Insured customers',
+        'claims_reported' => 'Claims reported',
+        'claims_closed' => 'Claims closed',
+        'claims_paid' => 'Claims paid',
+        'loss_ratio' => 'Loss ratio',
+        'average_days_to_close' => 'Average days to close',
+        'intermediaries' => 'Intermediaries',
+        'producing_intermediaries' => 'Producing intermediaries',
+        'intermediated_premium' => 'Intermediated premium',
+        'top_intermediary' => 'Top intermediary',
+        'products' => 'Product versions',
+        'selling_products' => 'Selling product versions',
+        'top_product' => 'Top product',
+    ],
+    'charts' => [
+        'production_count' => 'Policies issued per month',
+        'production_premium' => 'Written premium per month',
+        'claims_trend' => 'Claims reported and closed per month',
+        'claims_status' => 'Claims by status',
+        'portfolio_status' => 'Policies by status',
+        'portfolio_line' => 'Policies in force by line',
+        'brokers_top' => 'Top 10 intermediaries by premium',
+        'products_premium' => 'Top 10 products by written premium',
+    ],
+    'series' => [
+        'policies_issued' => 'Policies issued', 'written_premium' => 'Written premium', 'claims_reported' => 'Reported', 'claims_closed' => 'Closed',
+        'claims' => 'Claims', 'policies' => 'Policies', 'active_policies' => 'Policies in force',
+    ],
+    'tables' => ['brokers' => 'Intermediaries by production', 'products' => 'Product versions by performance'],
+    'columns' => [
+        'name' => 'Intermediary', 'type' => 'Type', 'status' => 'Status', 'licence_number' => 'Licence', 'agreement_number' => 'Agreement',
+        'agreement_status' => 'Agreement status', 'policies' => 'Policies', 'premium' => 'Premium', 'product' => 'Product', 'version' => 'Version',
+        'line' => 'Line', 'claims' => 'Claims', 'incurred' => 'Incurred', 'ratio' => 'Loss ratio',
+    ],
+    'intermediaries' => ['title' => 'Intermediaries', 'subheading' => 'Brokers and agents selling your products: licence, delegated authority and production.'],
+    'cancellations' => [
+        'title' => 'Cancellation and suspension review',
+        'subheading' => 'Cancellation requests and suspended policies of your company awaiting a decision.',
+        'empty' => 'No cancellation or suspension awaiting review.',
+        'types' => ['cancellation' => 'Cancellation', 'suspension' => 'Suspension / reinstatement'],
+        'columns' => ['policy' => 'Policy', 'policy_status' => 'Policy status', 'request' => 'Request', 'request_status' => 'Request status', 'reason' => 'Reason', 'effective' => 'Effective', 'refund' => 'Refund'],
+    ],
+    'eligibility' => ['title' => 'Eligibility rules', 'subheading' => 'Eligibility rule sets of your product versions, in priority order, with their approval state.'],
+    'rating' => ['title' => 'Rating rules', 'subheading' => 'Rating factors of your controlled tariff versions.', 'empty' => 'No tariff version for your products yet.'],
+    'rules' => [
+        'empty' => 'No eligibility rule set for your products yet.',
+        'disabled' => 'disabled',
+        'columns' => ['product' => 'Product', 'code' => 'Code', 'version' => 'Version', 'status' => 'Status', 'effective_from' => 'Effective from', 'rules' => 'Rules (priority → outcome)',
+            'reference' => 'Regulatory reference', 'factors' => 'Rating factors', 'hash' => 'Rules hash'],
+    ],
+];

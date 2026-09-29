@@ -55,7 +55,7 @@ Opes.page(function (ctx) {
       return h('div', { title: lab + ': ' + A.money(mo.v) + ' · ' + mo.n }, h('b', null, mo.n ? String(mo.n) : ''), h('i', { style: 'height:' + (mo.v / max * 120) + 'px' }), h('small', null, lab));
     })));
 
-    O.clear(O.$('[data-insurers]')).appendChild(A.bars(A.group(pols, function (p) { return p.carrier_name; }, premium).slice(0, 8).map(function (g) { return [g[0], g[1], A.money(g[1])]; })));
+    O.clear(O.$('[data-insurers]')).appendChild(A.bars(A.group(pols, function (p) { return (p.carrier_short_name || p.carrier_name); }, premium).slice(0, 8).map(function (g) { return [g[0], g[1], A.money(g[1])]; })));
     O.clear(O.$('[data-status]')).appendChild(A.bars(A.group(pols, function (p) { return A.label(p.status); }).map(function (g) { return [g[0], g[1]]; }), '#0EA5E9'));
     O.clear(O.$('[data-clients]')).appendChild(A.bars(A.group(pols, function (p) { return p.customer_name; }, premium).slice(0, 6).map(function (g) { return [g[0], g[1], A.money(g[1])]; }), '#16A34A'));
   }).catch(function (e) { ['[data-months]', '[data-insurers]', '[data-status]', '[data-clients]'].forEach(function (s) { A.fail(O.$(s), e); }); });

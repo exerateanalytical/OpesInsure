@@ -71,17 +71,11 @@ final class IntegrationController
 
         abort_unless($client->status === 'ACTIVE', 409, 'Only an ACTIVE connection may subscribe to webhooks.');
 
-        $secret = Str::random(64);
-        $subscription = $this->auditedCall(fn () => IntegrationWebhookSubscription::create([
-            'integration_client_id' => $client->id,
-            'event_name' => $d['event_name'],
-            'endpoint_encrypted' => Crypt::encryptString($d['endpoint']),
-            'signing_secret_hash' => bcrypt($secret),
-            'signing_secret_encrypted' => Crypt::encryptString($secret),
-            'status' => 'ACTIVE',
-        ]), 'integration.webhook.created', 'integration_webhook_subscription', $client->id);
+        // Q10 2026-09-29: one implementation shared with the admin webhook screen (WebhookSubscriptionService).
+        $result = $this->auditedCall(fn () => app(\App\Application\Integrations\WebhookSubscriptionService::class)->subscribe($client, $d['event_name'], $d['endpoint']),
+            'integration.webhook.created', 'integration_webhook_subscription', $client->id);
 
-        return response()->json(['data' => ['id' => $subscription->id, 'signing_secret' => $secret]], 201);
+        return response()->json(['data' => ['id' => $result['subscription']->id, 'signing_secret' => $result['signing_secret']]], 201);
     }
 
     public function replayDeliveryAttempt(Request $r, IntegrationDeliveryAttempt $attempt, WebhookDeliveryService $delivery): JsonResponse

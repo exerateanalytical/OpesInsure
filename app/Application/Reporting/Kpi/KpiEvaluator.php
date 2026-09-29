@@ -17,6 +17,9 @@ final class KpiEvaluator
 {
     public const MAX_PAGE = 200;
 
+    /** R4: seconds a monthly trend series (monthly()) is served from cache. */
+    public const MONTHLY_TTL = 120;
+
     /**
      * @param  array<string, mixed>  $kpi  a resolved definition (KpiCatalogueService::resolve)
      * @param  array{from?:?string, to?:?string, last_days?:?int}  $period
@@ -28,7 +31,8 @@ final class KpiEvaluator
         $q = KpiQueryRegistry::get($kpi['query_key']);
         $b = $this->recordSet($tenantId, $kpi, $period, $filters);
         if ($q['unit'] !== KpiQueryRegistry::UNIT_MONEY) {
-            return ['value' => (int) $b->count(), 'by_currency' => null];
+            // R4: identical record sets counted twice on one page (tiles + operations) run once per request.
+            return ['value' => \App\Application\Identity\Rbac\RequestMemo::count($b), 'by_currency' => null];
         }
         $by = [];
         foreach ($b->selectRaw($q['currency_column'].' as ccy, COALESCE(SUM('.$q['sum_column'].'), 0) as total')->groupBy($q['currency_column'])->orderBy($q['currency_column'])->get() as $row) {
@@ -36,6 +40,45 @@ final class KpiEvaluator
         }
 
         return ['value' => array_sum($by), 'by_currency' => $by];
+    }
+
+    /**
+     * R4: the KPI per calendar month over [from, to] in ONE grouped query (same record set, filters and date basis as
+     * value(), so each month equals value() for that month). Months without records are absent.
+     *
+     * @param  array<string, mixed>  $kpi
+     * @param  array{from:string, to:string}  $period
+     * @return array<string, array{value:int, by_currency:array<string,int>|null}> keyed 'YYYY-MM'
+     */
+    public function monthly(string $tenantId, array $kpi, array $period, array $filters = []): array
+    {
+        $q = KpiQueryRegistry::get($kpi['query_key']);
+        $basis = $q['date_basis'] ?? throw ValidationException::withMessages(['kpi' => "{$kpi['query_key']} has no date basis."]);
+        $b = $this->recordSet($tenantId, $kpi, $period, $filters);
+        $month = "to_char({$basis}, 'YYYY-MM')";
+        $out = [];
+        // Trend charts only: the grouped rows are cached for MONTHLY_TTL seconds under the fingerprint of the final SQL
+        // and bindings, which carries the tenant, the portal narrowing (carrier / book) and the period — two callers
+        // share an entry only when they would read exactly the same records. Tiles (value()) stay live.
+        $rows = fn ($query) => \Illuminate\Support\Facades\Cache::remember('kpi-monthly:'.md5($query->toSql().'|'.json_encode($query->getBindings())), self::MONTHLY_TTL,
+            fn () => $query->get()->map(fn ($r) => (array) $r)->all());
+        if ($q['unit'] !== KpiQueryRegistry::UNIT_MONEY) {
+            foreach ($rows($b->selectRaw("{$month} as m, COUNT(*) as n")->groupByRaw($month)) as $row) {
+                $out[(string) $row['m']] = ['value' => (int) $row['n'], 'by_currency' => null];
+            }
+
+            return $out;
+        }
+        foreach ($rows($b->selectRaw("{$month} as m, {$q['currency_column']} as ccy, COALESCE(SUM({$q['sum_column']}), 0) as total")->groupByRaw("{$month}, {$q['currency_column']}")) as $row) {
+            $row = (object) $row;
+            $out[(string) $row->m]['by_currency'][(string) $row->ccy] = (int) $row->total;
+        }
+        foreach ($out as $m => $v) {
+            ksort($v['by_currency']);
+            $out[$m] = ['value' => array_sum($v['by_currency']), 'by_currency' => $v['by_currency']];
+        }
+
+        return $out;
     }
 
     /**
@@ -48,7 +91,7 @@ final class KpiEvaluator
         $perPage = max(1, min(self::MAX_PAGE, $perPage));
         $page = max(1, $page);
         $b = $this->recordSet($tenantId, $kpi, $period, $filters);
-        $total = (int) (clone $b)->count();
+        $total = \App\Application\Identity\Rbac\RequestMemo::count(clone $b); // R4: the tile of the same KPI already counted it
         $rows = $b->select($q['record']['columns'])->orderBy($q['record']['id'])->forPage($page, $perPage)->get()->map(fn ($r) => (array) $r)->all();
 
         return ['resource' => $q['record']['resource'], 'columns' => array_map(fn ($c) => substr($c, strrpos($c, '.') + 1), $q['record']['columns']),

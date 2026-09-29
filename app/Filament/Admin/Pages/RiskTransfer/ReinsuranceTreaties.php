@@ -24,7 +24,7 @@ final class ReinsuranceTreaties extends RiskTransferPage
     public function table(Table $table): Table
     {
         return $this->workbench($table,
-            fn (string $t) => self::rows(DB::table('reinsurance_treaties')->where('tenant_id', $t)->orderBy('code')->limit(500)->get()),
+            fn (string $t) => self::rows(\App\Application\Reinsurance\TreatyService::treaties($t)->orderBy('code')->limit(500)->get()),
             ['code' => 'text', 'name' => 'text', 'treaty_type' => 'text', 'currency' => 'text', 'underwriting_year' => 'text', 'large_loss_threshold_minor' => 'money', 'status' => 'status'],
             [ReinsuranceActions::treatyCreate(), ReinsuranceActions::cessionPreview(), ReinsuranceActions::cessionCede()],
             [ReinsuranceActions::treatyAddVersion(), ReinsuranceActions::treatyActivate(), ReinsuranceActions::treatyThreshold()]);

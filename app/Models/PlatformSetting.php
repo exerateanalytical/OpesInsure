@@ -30,6 +30,8 @@ final class PlatformSetting extends Model
             'mail_port' => 'integer',
             'supported_locales' => 'array', // REQ-SET-001
             'setup_completed_at' => 'datetime',
+            'demo_mode_enabled' => 'boolean', // S13: NULL = follow config/demo.php
+            'demo_mode_changed_at' => 'datetime',
         ];
     }
 

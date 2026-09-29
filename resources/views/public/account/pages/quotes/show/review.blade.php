@@ -133,7 +133,10 @@ Opes.page(function (ctx) {
     }
     // B. Declarations / documents, then submit to the insurer.
     if (EDITABLE.indexOf(status) >= 0) {
-      var docs = (proposal.required_documents || []).filter(function (d) { return !d.satisfied && !d.fulfilled && d.status !== 'VERIFIED' && d.status !== 'SATISFIED'; });
+      var docs = (proposal.required_documents || []).filter(function (d) {
+        // ProposalDocumentRequirements: status ACCEPTED | REVIEWING | UPLOADED | MISSING | EXPIRED | REJECTED; the proposal form is covered by the attestation below.
+        return d.satisfied_by !== 'PROPOSAL_FORM' && ['MISSING', 'EXPIRED', 'REJECTED'].indexOf(String(d.status || 'MISSING').toUpperCase()) >= 0;
+      });
       var attest = h('input', { type: 'checkbox', checked: !!proposal.attested_at });
       var sub = h('button', { type: 'button', class: 'dbtn dbtn-primary bbig' }, T.submit_app, Opes.icon('arrow'));
       sub.addEventListener('click', function () {

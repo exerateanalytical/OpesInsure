@@ -31,7 +31,7 @@ return [
     ],
     'checks' => [
         'database' => 'Database', 'queue' => 'Queue', 'scheduler' => 'Scheduler', 'storage' => 'File storage', 'mail' => 'E-mail', 'sms' => 'SMS',
-        'cache' => 'Cache',
+        'cache' => 'Cache', 'api' => 'API', 'malware_scanner' => 'Malware scanner (ClamAV)',
     ],
     'sources' => [
         'issuance_exceptions' => 'Issuance exceptions',

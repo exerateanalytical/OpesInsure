@@ -33,6 +33,22 @@ final class UiCoverage extends Command
     /** Cross-cutting helpers that every page touches; a match on these proves nothing about the action. */
     public const INFRASTRUCTURE = ['TenantContext', 'AuditWriter', 'OwnershipScope', 'PartyResolver', 'PartnerBook', 'PlatformSettings'];
 
+    /**
+     * S3 2026-09-29: superseded routes kept only for old app builds. They get NO web UI (that would duplicate the canonical
+     * flow); they are reported as DEPRECATED and left out of the UI-relevant totals. "VERB path" => why.
+     * Routes carrying the DeprecatedRouteAlias middleware are treated the same way automatically.
+     */
+    public const DEPRECATED = [
+        // Legacy claim decision / recovery endpoints (ClaimLifecycleController::decision|recovery|recordRecovery). Superseded by
+        // ClaimDecisionService (ClaimDecisionController, REQ-CLM-012) and ClaimRecoveryService (ClaimRecoveryController), which
+        // the claims web actions (ClaimActions / ClaimCaseActions) already drive. Kept for old app builds only.
+        'POST /claims/{id}/decisions' => 'superseded by ClaimDecisionService',
+        'POST /claims/{id}/recoveries' => 'superseded by ClaimRecoveryService',
+        'POST /claims/{id}/recoveries/{recovery}/receipts' => 'superseded by ClaimRecoveryService',
+        // Legacy alias of POST /quote-comparisons (REQ-DST-003, Wave10Controller::saveComparison forwards to the canonical controller).
+        'POST /web-experiences/marketplace/comparisons' => 'alias of POST /quote-comparisons',
+    ];
+
     /** @var array<string, string> filament file => contents */
     private array $filament = [];
 
@@ -73,8 +89,10 @@ final class UiCoverage extends Command
             }
         }
         ksort($byClass);
-        $needsUi = $total - ($byClass['MOBILE_ONLY_OK'] ?? 0) - ($byClass['SYSTEM_ONLY'] ?? 0);
-        $coveredUi = count(array_filter($rows, fn ($r) => $r['covered'] && ! in_array($r['classification'], ['MOBILE_ONLY_OK', 'SYSTEM_ONLY'], true)));
+        // S3: denominator and numerator over the same rows (a MOBILE_ONLY_OK / SYSTEM_ONLY / DEPRECATED row that happens to be
+        // covered used to count in the denominator only, so finding more web entry points could lower the percentage).
+        $needsUi = count(array_filter($rows, fn ($r) => ! in_array($r['classification'], ['MOBILE_ONLY_OK', 'SYSTEM_ONLY', 'DEPRECATED'], true)));
+        $coveredUi = count(array_filter($rows, fn ($r) => $r['covered'] && ! in_array($r['classification'], ['MOBILE_ONLY_OK', 'SYSTEM_ONLY', 'DEPRECATED'], true)));
         $report = [
             'generated_at' => now()->toIso8601String(),
             'totals' => [
@@ -157,6 +175,7 @@ final class UiCoverage extends Command
         $filament = array_values(array_unique($filament));
         $portal = $this->portalCalls($path);
         $covered = $filament !== [] || $portal;
+        $deprecated = isset(self::DEPRECATED[$verb.' '.$path]) || str_contains(implode(' ', array_filter($middleware, 'is_string')), 'DeprecatedRouteAlias');
         $domain = $this->domain($path);
 
         return [
@@ -171,7 +190,7 @@ final class UiCoverage extends Command
             'filament_entry' => array_slice($filament, 0, 5),
             'portal_entry' => $portal,
             'covered' => $covered,
-            'classification' => $this->classify($path, $middleware, $permissions),
+            'classification' => $deprecated ? 'DEPRECATED' : $this->classify($path, $middleware, $permissions),
         ];
     }
 
@@ -203,6 +222,15 @@ final class UiCoverage extends Command
         }
         $lines = file((string) $ref->getFileName());
         $body = implode('', array_slice($lines, $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
+        // Q10 2026-09-29: follow one level of delegation to the controller's own helpers ($this->saveProfile(...),
+        // $this->submitFiscal(...)), so an action whose service call sits in a shared private method is not missed.
+        if (preg_match_all('/\$this->(\w+)\s*\(/', $body, $own)) {
+            foreach (array_unique($own[1]) as $helper) {
+                if ($helper !== $method && $classRef->hasMethod($helper) && ($h = $classRef->getMethod($helper))->getFileName() === $ref->getFileName()) {
+                    $body .= implode('', array_slice($lines, $h->getStartLine() - 1, $h->getEndLine() - $h->getStartLine() + 1));
+                }
+            }
+        }
         $calls = [];
         foreach ($types as $var => $type) {
             if (! preg_match('/\\\\(Application|Services?|Domain)\\\\|Service$/', $type)) {
@@ -212,6 +240,12 @@ final class UiCoverage extends Command
                 foreach ($m[1] as $fn) {
                     $calls[] = $type.'::'.$fn;
                 }
+            }
+        }
+        // Q10 2026-09-29: stateless domain helpers built inline ((new ExpressionValidator)->validate(...)).
+        if (preg_match_all('/\(new\s+\\\\?([\w\\\\]+)(?:\(\s*\))?\)->(\w+)\s*\(/', $body, $m, PREG_SET_ORDER)) {
+            foreach ($m as $hit) {
+                $calls[] = $hit[1].'::'.$hit[2];
             }
         }
         if (preg_match_all('/app\(\s*\\\\?([\w\\\\]+)::class\s*\)->(\w+)\s*\(/', $body, $m, PREG_SET_ORDER)) {
@@ -257,7 +291,7 @@ final class UiCoverage extends Command
         foreach (File::allFiles(app_path('Filament')) as $f) {
             $this->filament[str_replace('\\', '/', $f->getRelativePathname())] = $f->getContents();
         }
-        foreach (['Livewire', 'Http/Controllers/Web'] as $extra) {
+        foreach (['Livewire', 'Http/Controllers/Web', 'Interfaces/Http/Controllers/Web'] as $extra) {
             if (is_dir(app_path($extra))) {
                 foreach (File::allFiles(app_path($extra)) as $f) {
                     $this->filament[$extra.'/'.str_replace('\\', '/', $f->getRelativePathname())] = $f->getContents();
@@ -312,7 +346,12 @@ final class UiCoverage extends Command
     private function loadPortalPaths(): void
     {
         $paths = [];
-        foreach (File::allFiles(resource_path('views/public/account')) as $f) {
+        // S3 2026-09-29: the website sign-up / sign-in script (public/landing/auth.js, /signup + /login) calls the API too.
+        $files = File::allFiles(resource_path('views/public/account'));
+        if (is_file(public_path('landing/auth.js'))) {
+            $files[] = new \Symfony\Component\Finder\SplFileInfo(public_path('landing/auth.js'), '', 'auth.js');
+        }
+        foreach ($files as $f) {
             // A path expression: a leading '/...' literal followed by any `+ literal` / `+ variable` chain, e.g.
             // '/claims/' + c.id + '/payments/' + p.id + '/paid'. Variables become X, which only matches a {param}
             // segment of a route (a variable action suffix is therefore conservatively not counted).

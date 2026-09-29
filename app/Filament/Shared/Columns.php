@@ -84,7 +84,13 @@ final class Columns
             ->defaultSort(fn (Builder $query) => self::newestFirst($query))
             ->emptyStateHeading(fn () => __('web_experience.list.empty_heading'))
             ->emptyStateDescription(fn () => __('web_experience.list.empty_description'))
-            ->emptyStateIcon('lucide-inbox'));
+            ->emptyStateIcon('lucide-inbox')
+            // Cameroon convention (EN and FR): dd/mm/yyyy, 24h clock; ->date()/->dateTime() without a format use these.
+            ->defaultDateDisplayFormat('d/m/Y')
+            ->defaultDateTimeDisplayFormat('d/m/Y H:i'));
+        \Filament\Schemas\Schema::configureUsing(fn (\Filament\Schemas\Schema $s) => $s
+            ->defaultDateDisplayFormat('d/m/Y')
+            ->defaultDateTimeDisplayFormat('d/m/Y H:i'));
     }
 
     /** created_at DESC for timestamped models; null (key sort) otherwise. */

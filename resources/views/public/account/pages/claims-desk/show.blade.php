@@ -26,7 +26,7 @@ Opes.page(function (ctx) {
     var ld = c.loss || {}, inc = ld.incident || {};
     var policy = D.card(D.t('policy_cust'), 'doc', h('div', { class: 'desk-fields c2' },
       D.field(D.t('policy_no'), c.policy_number), D.field(D.t('policyholder'), c.customer_name),
-      D.field(D.t('insurer'), c.carrier_name), D.field(D.t('priority'), D.type(c.priority)),
+      D.field(D.t('insurer'), (c.carrier_short_name || c.carrier_name)), D.field(D.t('priority'), D.type(c.priority)),
       D.field(D.t('currency'), c.currency), D.field(D.t('status'), D.chip(c.status))));
     var veh = ld.vehicle || (c.staff && c.staff.policy && c.staff.policy.risk_details && c.staff.policy.risk_details.vehicle) || null;
     var itemBox = D.itemFields(c);

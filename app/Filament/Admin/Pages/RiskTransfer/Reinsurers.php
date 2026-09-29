@@ -24,7 +24,7 @@ final class Reinsurers extends RiskTransferPage
     public function table(Table $table): Table
     {
         return $this->workbench($table,
-            fn (string $t) => self::rows(DB::table('reinsurers')->where('tenant_id', $t)->orderBy('code')->limit(500)->get()),
+            fn (string $t) => self::rows(\App\Application\Reinsurance\TreatyService::reinsurers($t)->orderBy('code')->limit(500)->get()),
             ['code' => 'text', 'name' => 'text', 'role' => 'text', 'rating' => 'text', 'status' => 'status', 'approved_security_status' => 'status'],
             [ReinsuranceActions::reinsurerCreate()],
             [ReinsuranceActions::reinsurerStatus(), ReinsuranceActions::reinsurerSecurity()]);

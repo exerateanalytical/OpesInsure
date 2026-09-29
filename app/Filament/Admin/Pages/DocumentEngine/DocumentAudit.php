@@ -23,7 +23,7 @@ final class DocumentAudit extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Audit (DOC-ADM-019)';
+        return __('Document audit');
     }
 
     protected function report(): array

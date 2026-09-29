@@ -28,7 +28,19 @@ final class PortalDashboard extends Dashboard
 
     public function getWidgets(): array
     {
-        return [PortalMetricsWidget::class, Widgets\PremiumCollectedChartWidget::class, Widgets\MyWorkWidget::class,
+        // Q5 2026-09-29: /broker home = BRK-002 operations dashboard (book KPIs) above the shared tiles.
+        $broker = Filament::getCurrentOrDefaultPanel()->getId() === 'broker' ? [Widgets\BrokerOperationsWidget::class] : [];
+
+        // Q7 2026-09-29: /insurer home = CAR-002 operations dashboard (own-carrier tiles + production / claims trends),
+        // replacing the generic tiles for a user who may read the carrier dashboard (others keep the generic tiles).
+        if (Filament::getCurrentOrDefaultPanel()->getId() === 'insurer' && \App\Filament\Shared\Pages\Insurer\InsurerDashboardPage::mayView('operations')) {
+            return [Widgets\Insurer\InsurerStatsWidget::make(['dashboard' => 'operations']), Widgets\Insurer\InsurerChartWidget::make(['chart' => 'production_count']),
+                ...(\App\Filament\Shared\Pages\Insurer\InsurerDashboardPage::mayView('claims') ? [Widgets\Insurer\InsurerChartWidget::make(['chart' => 'claims_trend'])] : []),
+                Widgets\PremiumCollectedChartWidget::class, Widgets\MyWorkWidget::class,
+                Widgets\ExpiringPoliciesWidget::class, Widgets\OpenClaimsWidget::class, Widgets\RecentActivityWidget::class];
+        }
+
+        return [...$broker, PortalMetricsWidget::class, Widgets\PremiumCollectedChartWidget::class, Widgets\MyWorkWidget::class,
             Widgets\ExpiringPoliciesWidget::class, Widgets\OpenClaimsWidget::class, Widgets\RecentActivityWidget::class];
     }
 }

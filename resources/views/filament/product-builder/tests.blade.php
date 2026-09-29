@@ -10,7 +10,7 @@
             {{ __('product_builder.tests.never_run') }}
         @endif
     </div>
-    <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+    <div style="overflow-x:auto;max-width:100%"><table style="width:100%;font-size:.85rem;border-collapse:collapse">
         <thead><tr style="text-align:left"><th>{{ __('product_builder.tests.code') }}</th><th>{{ __('product_builder.tests.name') }}</th><th>{{ __('product_builder.tests.expected') }}</th></tr></thead>
         <tbody>
         @forelse ($cases as $c)
@@ -19,9 +19,9 @@
             <tr><td colspan="3" style="color:#667">{{ __('product_builder.tests.no_cases') }}</td></tr>
         @endforelse
         </tbody>
-    </table>
+    </table></div>
     @if ($runs->isNotEmpty())
-        <table style="width:100%;font-size:.85rem;border-collapse:collapse">
+        <div style="overflow-x:auto;max-width:100%"><table style="width:100%;font-size:.85rem;border-collapse:collapse">
             <thead><tr style="text-align:left"><th>{{ __('product_builder.governance.when') }}</th><th>{{ __('product_builder.tests.result') }}</th><th>{{ __('product_builder.tests.failed_cases') }}</th></tr></thead>
             <tbody>
             @foreach ($runs as $run)
@@ -29,6 +29,6 @@
                     <td>{{ collect($run->results)->reject(fn ($r) => $r['passed'])->pluck('code')->implode(', ') ?: '—' }}</td></tr>
             @endforeach
             </tbody>
-        </table>
+        </table></div>
     @endif
 </div>

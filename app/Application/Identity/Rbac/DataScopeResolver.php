@@ -31,7 +31,20 @@ final class DataScopeResolver
     /** @return Collection<int, TenantMembership> */
     private function memberships(User $user, string $tenantId): Collection
     {
-        return TenantMembership::query()->where('user_id', $user->getKey())->where('tenant_id', $tenantId)->where('status', 'ACTIVE')->with('roles')->get();
+        return self::activeMemberships($user, $tenantId);
+    }
+
+    /**
+     * R4: the caller's ACTIVE memberships in the tenant with their roles — the one read behind permission checks
+     * (PermissionEvaluator), data scope (here) and carrier scope (CarrierScopeResolver). Memoised for the current
+     * request (RequestMemo); flushed on any membership / role write.
+     *
+     * @return Collection<int, TenantMembership>
+     */
+    public static function activeMemberships(User $user, ?string $tenantId): Collection
+    {
+        return RequestMemo::remember('active-memberships:'.$user->getKey().':'.$tenantId,
+            fn () => TenantMembership::query()->where('user_id', $user->getKey())->where('tenant_id', $tenantId)->where('status', 'ACTIVE')->with('roles')->get());
     }
 
     public function scopeOf(TenantMembership $m): DataScope

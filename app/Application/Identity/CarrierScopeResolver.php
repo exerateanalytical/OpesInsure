@@ -35,7 +35,23 @@ final class CarrierScopeResolver
     /** @return string|null carrier id, or null for tenant-wide */
     public function carrierIdFor(User $user, string $tenantId): ?string
     {
-        $memberships = TenantMembership::where('tenant_id', $tenantId)->where('user_id', $user->id)->where('status', 'ACTIVE')->get();
+        // R4: PortalScope asks this for every tile / query of a page; memoised for the current request only.
+        return Rbac\RequestMemo::remember('carrier-scope:'.$user->getKey().':'.$tenantId, fn () => $this->resolveCarrierId($user, $tenantId));
+    }
+
+    /**
+     * S6 IDOR guard for id lookups of carrier-owned records (products, tariffs): a carrier-scoped caller acting on
+     * another insurer's record gets a 404, as if it did not exist. Tenant-wide callers (platform staff) pass.
+     */
+    public function abortUnlessOwnCarrier(User $user, ?string $carrierId, string $tenantId): void
+    {
+        $own = $this->carrierIdFor($user, $tenantId);
+        abort_if($own !== null && $own !== $carrierId, 404);
+    }
+
+    private function resolveCarrierId(User $user, string $tenantId): ?string
+    {
+        $memberships = Rbac\DataScopeResolver::activeMemberships($user, $tenantId);
 
         $linked = $memberships->firstWhere(fn ($m) => $m->carrier_id !== null);
         if ($linked) {

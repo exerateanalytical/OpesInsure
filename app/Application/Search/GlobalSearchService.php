@@ -98,7 +98,8 @@ final class GlobalSearchService
     {
         $like = $this->like($q);
         $query = Policy::query()->leftJoin('parties', 'parties.id', '=', 'policies.party_id')
-            ->where(fn ($w) => $w->where('policies.policy_number', 'ilike', $like)->orWhere('policies.certificate_number', 'ilike', $like)->orWhere('parties.display_name', 'ilike', $like));
+            // R4: the joined-name match as a sub-select, so each branch can use its trigram index (same rows as the join).
+            ->where(fn ($w) => $w->where('policies.policy_number', 'ilike', $like)->orWhere('policies.certificate_number', 'ilike', $like)->orWhereIn('policies.party_id', $this->partiesNamed($like)));
         $this->scopes->apply($query, $user, ['tenant' => 'policies.tenant_id', 'own' => 'policies.party_id', 'carrier' => 'policies.carrier_id']);
 
         return $this->rank($query, ['policies.policy_number', 'policies.certificate_number', 'parties.display_name'], $q, $n, 'policies.created_at', ['policies.id', 'policies.policy_number', 'policies.status', 'parties.display_name'])
@@ -111,7 +112,8 @@ final class GlobalSearchService
         $like = $this->like($q);
         $query = Claim::query()->join('policies', 'policies.id', '=', 'claims.policy_id')->leftJoin('parties', 'parties.id', '=', 'claims.claimant_party_id')
             ->where(fn ($w) => $w->where('claims.claim_number', 'ilike', $like)->orWhere('claims.carrier_reference', 'ilike', $like)
-                ->orWhere('policies.policy_number', 'ilike', $like)->orWhere('parties.display_name', 'ilike', $like));
+                ->orWhereIn('claims.policy_id', fn ($s) => $s->from('policies')->select('policies.id')->where('policies.policy_number', 'ilike', $like))
+                ->orWhereIn('claims.claimant_party_id', $this->partiesNamed($like)));
         $this->scopes->apply($query, $user, ['tenant' => 'claims.tenant_id', 'own' => 'claims.claimant_party_id', 'assigned' => 'claims.assigned_to', 'carrier' => 'policies.carrier_id']);
 
         return $this->rank($query, ['claims.claim_number', 'claims.carrier_reference', 'policies.policy_number', 'parties.display_name'], $q, $n, 'claims.created_at', ['claims.id', 'claims.claim_number', 'claims.status', 'policies.policy_number', 'parties.display_name'])
@@ -119,12 +121,18 @@ final class GlobalSearchService
             ->map(fn ($r) => $this->hit('claims', $r->id, $r->claim_number ?? $r->id, trim(($r->policy_number ?? '').' '.($r->display_name ?? '')), $r->status, $r->score))->all();
     }
 
+    /** Ids of the parties whose display name matches (trigram index search_parties_display_name_trgm). */
+    private function partiesNamed(string $like): \Closure
+    {
+        return fn ($s) => $s->from('parties')->select('parties.id')->where('parties.display_name', 'ilike', $like);
+    }
+
     private function searchQuotes(User $user, string $q, int $n): array
     {
         $like = $this->like($q);
         $prefix = $this->escape(strtolower($q)).'%';
         $query = Quote::query()->leftJoin('parties', 'parties.id', '=', 'quotes.party_id')
-            ->where(fn ($w) => $w->whereRaw('quotes.id::text like ?', [$prefix])->orWhere('parties.display_name', 'ilike', $like)->orWhere('quotes.line_code', 'ilike', $like));
+            ->where(fn ($w) => $w->whereRaw('quotes.id::text like ?', [$prefix])->orWhereIn('quotes.party_id', $this->partiesNamed($like))->orWhere('quotes.line_code', 'ilike', $like));
         $this->scopes->apply($query, $user, ['tenant' => 'quotes.tenant_id', 'own' => 'quotes.party_id']);
 
         return $this->rank($query, ['parties.display_name', 'quotes.line_code'], $q, $n, 'quotes.created_at', ['quotes.id', 'quotes.line_code', 'quotes.status', 'parties.display_name'])

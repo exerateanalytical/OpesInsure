@@ -19,7 +19,10 @@ final class SigningKeysPage extends DocumentEngineReportPage
 {
     protected static string|BackedEnum|null $navigationIcon = 'lucide-key-round';
 
-    protected static ?string $navigationLabel = 'Signing keys & numbering';
+    public static function getNavigationLabel(): string
+    {
+        return __('Signing keys & numbering');
+    }
 
     protected static ?int $navigationSort = 310;
 
@@ -27,7 +30,7 @@ final class SigningKeysPage extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Signing keys and numbering families';
+        return __('Signing keys and numbering families');
     }
 
     /** @return list<array{key_id: string, public_key: string, fingerprint: string, status: string, signed_documents: int}> */

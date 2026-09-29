@@ -23,7 +23,7 @@ final class DocumentFamilyRegistry extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Document families (DOC-ADM-004)';
+        return __('Document families');
     }
 
     protected function report(): array

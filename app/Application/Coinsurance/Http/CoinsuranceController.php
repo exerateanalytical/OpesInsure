@@ -39,6 +39,7 @@ final class CoinsuranceController
             'participants.*.share_overrides_bps' => 'nullable|array',
             'settlement_method' => 'nullable|string|max:32|regex:/^[A-Z0-9_]+$/',
             'agreement_document_id' => 'nullable|uuid',
+            'carrier_id' => 'nullable|uuid',
         ]);
 
         return response()->json(['data' => $this->service->create($this->tenant->id(), $d, $r->user())], 201);

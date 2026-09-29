@@ -97,6 +97,14 @@ final class MobileAuthService
         $this->guardIpBucket('send', $ip, self::IP_CODE_SENDS_PER_HOUR, 3600, $demo);
         $this->guardCodeSends($phoneE164, $demo);
 
+        // S14 CONFIG_REQUIRED: with no SMS/WhatsApp provider configured no code can arrive — say so instead of a silent wait.
+        // Same answer for every number, so it reveals nothing about registration.
+        if (! $this->usesDemoCode($phoneE164) && app(\App\Application\Notifications\Otp\OtpDeliveryService::class)->status() === 'CONFIG_REQUIRED') {
+            // Keep the operational alarm (monitoring / audit fix W15): a login code was requested but no channel exists.
+            \Illuminate\Support\Facades\Log::critical('otp.delivery_failed', ['reason' => 'CONFIG_REQUIRED', 'purpose' => 'login']);
+            throw ValidationException::withMessages(['phone_e164' => __('sms_providers.otp_config_required')]);
+        }
+
         $user = User::where('phone_e164', $phoneE164)->first();
 
         $challenge = $this->createChallenge($user, $phoneE164, $ip, $purpose, $channel, sendIfUser: true);

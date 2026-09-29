@@ -52,7 +52,7 @@ final class MobileDeliveryService
 
         // Once a courier is actively assigned/en route, redirecting the
         // address is a courier/staff-mediated change, not a self-service one.
-        if (! in_array($order->status, ['CREATED', 'READY_FOR_PICKUP'], true)) {
+        if (! in_array($order->status, MobileDeliveryPresenter::ADDRESS_EDITABLE, true)) {
             throw ValidationException::withMessages(['address' => __('wave12.delivery_address_locked')]);
         }
 

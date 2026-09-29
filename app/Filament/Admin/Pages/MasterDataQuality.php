@@ -35,7 +35,7 @@ final class MasterDataQuality extends Page
 
     public function getTitle(): string
     {
-        return 'Master data quality';
+        return __('Master data quality');
     }
 
     protected function getViewData(): array

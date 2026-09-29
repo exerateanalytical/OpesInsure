@@ -190,7 +190,7 @@ final class CameroonInsuranceRegisterSeeder extends Seeder
             'trade_name' => $row['name'], 'short_name' => $row['short'], 'licence_branch' => $row['branch'],
             'regulator_sequence' => $row['seq'], 'currency' => 'XAF', 'product_families' => $row['families'],
             'product_families_origin' => 'CARRIER_PUBLISHED', 'product_families_status' => 'UNVERIFIED',
-        ];
+        ] + (\App\Application\Directory\InsurerShortNames::attributesFor($code) ?? []);
 
         if ($carrier) {
             $carrier->fill($attributes)->save();

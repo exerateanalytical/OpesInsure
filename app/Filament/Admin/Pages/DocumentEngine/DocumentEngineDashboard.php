@@ -23,7 +23,7 @@ final class DocumentEngineDashboard extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Dashboard (DOC-ADM-001)';
+        return __('Document engine overview');
     }
 
     protected function report(): array

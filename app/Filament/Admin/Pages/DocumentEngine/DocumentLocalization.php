@@ -23,7 +23,7 @@ final class DocumentLocalization extends DocumentEngineReportPage
 
     public function getTitle(): string
     {
-        return 'Localization (DOC-ADM-018)';
+        return __('Document localization');
     }
 
     protected function report(): array
