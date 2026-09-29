@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
-import { CircleAlert, Columns3, RefreshCcw } from "lucide-react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { CheckCircle2, CircleAlert, Columns3, RefreshCcw } from "lucide-react-native";
+import { useInsurance } from "@/store/insurance";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
 import { Button, Card, Screen } from "@/components/ui";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
@@ -51,6 +52,28 @@ export default function QuoteComparisonScreen() {
     return out;
   }, [c, f.language, t, td]);
 
+  // Choosing reuses the offers-screen path: load the quote, accept the offer, create the application.
+  const loadQuote = useInsurance((s) => s.loadQuote);
+  const selectOffer = useInsurance((s) => s.selectOffer);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const choose = async (offerId: string) => {
+    if (!c || choosing) return;
+    setChoosing(offerId);
+    setError(null);
+    try {
+      const r = await loadQuote(c.quote_id);
+      const offer = r.offers.find((o) => o.id === offerId);
+      if (!offer) throw new Error(t("qwCompareOfferGone"));
+      await selectOffer(offer);
+      const proposal = useInsurance.getState().proposal;
+      if (proposal) router.push({ pathname: "/proposals/[id]", params: { id: proposal.id } });
+    } catch (e) {
+      setError(e);
+    } finally {
+      setChoosing(null);
+    }
+  };
+
   const refresh = async () => {
     setRefreshing(true);
     setError(null);
@@ -82,6 +105,21 @@ export default function QuoteComparisonScreen() {
         <Card>
           <SectionHeading icon={Columns3} title={t("qwCompareTitle")} />
           <CompareTable rows={rows} columns={offers.length} money={f.xaf} marks={marks} />
+        </Card>
+      ) : null}
+      {c && offers.length >= 1 && !c.is_expired ? (
+        <Card>
+          <SectionHeading icon={CheckCircle2} title={t("qwCompareChoose")} />
+          {offers.map((o) => (
+            <Button
+              key={o.offer_id}
+              label={`${o.carrier ?? t("insurer")} · ${f.xaf(o.total_minor)}`}
+              variant="secondary"
+              loading={choosing === o.offer_id}
+              disabled={!!choosing}
+              onPress={() => void choose(o.offer_id)}
+            />
+          ))}
         </Card>
       ) : null}
       {error ? <ErrorCard error={error} fallback={t("qwCompareFailed")} /> : null}

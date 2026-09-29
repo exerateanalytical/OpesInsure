@@ -70,11 +70,13 @@ export default function Confirmation() {
   const issuanceFailed =
     (error as { code?: string } | null)?.code === "PAYMENT_OK_ISSUANCE_FAILED" ||
     /ISSUANCE_FAILED/.test(result?.status ?? "");
+  // The payment itself failed (not issuance): stop polling and offer to pay again.
+  const paymentFailed = !issued && !issuanceFailed && result?.status === "PAYMENT_FAILED";
   useEffect(() => {
-    if (issued || issuanceFailed) return;
+    if (issued || issuanceFailed || paymentFailed) return;
     const timer = setInterval(() => void check(), 6000);
     return () => clearInterval(timer);
-  }, [check, issued, issuanceFailed]);
+  }, [check, issued, issuanceFailed, paymentFailed]);
 
   const policy = result?.policy;
   const starts = policy?.coverage_starts_at ?? result?.coverage_starts_at;
@@ -123,6 +125,8 @@ export default function Confirmation() {
           <Text style={st.ctaText}>{t("cfGoMyPolicy")}</Text>
           <ArrowRight size={20} color={colors.white} />
         </Pressable>
+      ) : paymentFailed && proposalId ? (
+        <Button label={t("cfPayAgain")} onPress={() => router.replace({ pathname: "/checkout", params: { proposalId } })} />
       ) : (
         <Button label={t("cfRefresh")} loading={checking} onPress={() => void check()} />
       )}
@@ -172,10 +176,13 @@ export default function Confirmation() {
             <View style={st.flex}>
               <Text style={st.certTitle}>{t("cfCertTitle")}</Text>
               <Text style={st.certBody}>{t("cfCertBody")}</Text>
-              <View style={st.signedChip}>
-                <ShieldCheck size={16} color={colors.success} />
-                <Text style={st.signedText}>{t("cfCertSigned")}</Text>
-              </View>
+              {/* Only a claim the certificate supports: it carries a verification QR (public /verify). */}
+              {policy.certificate_number ? (
+                <View style={st.signedChip}>
+                  <ShieldCheck size={16} color={colors.success} />
+                  <Text style={st.signedText}>{t("cfCertVerifiable")}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -218,7 +225,7 @@ export default function Confirmation() {
           <View style={[st.bottomArt, { alignSelf: "center" }]}>
             <TintedIcon icon={Sparkles} tint="gold" size={56} />
           </View>
-          <Text style={ps.meta}>{t("cfIssuedNote")}</Text>
+          <Text style={ps.meta}>{paymentFailed ? t("cfPaymentFailedBody") : t("cfIssuedNote")}</Text>
           {issuanceFailed ? <Button label={t("contactSupport")} variant="secondary" onPress={() => router.push("/support/new")} /> : null}
         </Card>
       )}

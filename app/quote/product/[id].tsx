@@ -72,7 +72,7 @@ export default function ProductDetail() {
       footer={
         <CtaBar>
           <View style={s.ctaRow}>
-            <Button variant="secondary" icon={BarChart3} label={t("pdCompareOffers")} onPress={() => router.push({ pathname: "/quote/product", params: { product: category.id } })} style={s.flex1} />
+            <Button variant="secondary" icon={BarChart3} label={t("pdCompareOffers")} onPress={() => router.push({ pathname: "/(customer)/(tabs)/explore", params: { cat: category.id } })} style={s.flex1} />
             <Button variant="gold" icon={ArrowRight} label={t("searchGetQuote")} onPress={quote} style={s.flex1} />
           </View>
         </CtaBar>

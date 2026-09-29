@@ -9,6 +9,7 @@ import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ProviderNotConfigured } from "@/components/purchase/ProviderNotConfigured";
 import { InfoBox, Network, NetworkTiles, PriceRow, RenewalHero, RenewalSteps, TotalBand } from "@/components/policies/RenewalUi";
 import { useRenewal } from "@/hooks/useRenewal";
+import { DisclosureApi } from "@/api/client";
 import { useInsurance } from "@/store/insurance";
 import { useSession } from "@/store/session";
 import { useRuntime } from "@/store/runtime";
@@ -78,6 +79,8 @@ export default function RenewalReview() {
         router.push({ pathname: "/proposals/[id]", params: { id: current.id } });
         return;
       }
+      // Same acceptance record as new business (TERMS_ACCEPTANCE declaration with hash, IP, device).
+      await DisclosureApi.acceptTerms(current.id, true);
       await request(provider, phone);
       router.replace({ pathname: "/payment", params: { proposalId: current.id } });
     } catch (e) {

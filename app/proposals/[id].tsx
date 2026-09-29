@@ -20,6 +20,11 @@ import { CustomerApi } from "@/api/customer";
 import { pickUpload, storeDocument, type PickSource } from "@/api/documentUpload";
 import { useLoad } from "@/hooks/useLoad";
 import { kycAutoAttachments } from "@/lib/proposalDocuments";
+import { canChooseStart } from "@/lib/coverStart";
+import { CoverStartCard } from "@/components/purchase/CoverStartCard";
+
+/** ProposalMachine::ANSWERABLE — cover terms can only be changed while the application is being completed. */
+const ANSWERABLE = ["DRAFT", "DISCLOSURES_PENDING", "DOCUMENTS_PENDING", "INFORMATION_REQUIRED"];
 
 type Requirement = { code: string; label: string; mandatory: boolean; status?: string; notes?: string | null; form: boolean };
 
@@ -137,6 +142,28 @@ export default function ProposalDetail() {
     })();
   }, [p, checklist, kyc.data, load, t]);
 
+  // Counter-offer: accepting moves the application to payment on the revised terms; declining closes it.
+  const [answering, setAnswering] = useState<"accept" | "decline" | null>(null);
+  const [answerError, setAnswerError] = useState<unknown>(null);
+  const answerCounter = async (answer: "accept" | "decline") => {
+    if (!p || answering) return;
+    setAnswering(answer);
+    setAnswerError(null);
+    try {
+      await ProposalsApi.respondCounteroffer(p.id, answer);
+      await load();
+    } catch (e) {
+      setAnswerError(e);
+    } finally {
+      setAnswering(null);
+    }
+  };
+  const declineCounter = () =>
+    Alert.alert(t("prCounterDeclineQ"), t("prCounterDeclineBody"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("prCounterDecline"), style: "destructive", onPress: () => void answerCounter("decline") },
+    ]);
+
   const contactSupport = async () => {
     const c = await SupportContactsApi.get();
     if (c?.whatsapp_url) return Linking.openURL(c.whatsapp_url);
@@ -224,9 +251,12 @@ export default function ProposalDetail() {
               {p.counteroffer?.total_minor ? <InfoRow label={t("prRevisedTotal")} value={f.xaf(p.counteroffer.total_minor)} strong /> : null}
               <InfoRow label={t("prOriginalTotal")} value={f.xaf(p.terms_snapshot?.total_minor)} />
               {decision?.notes || p.counteroffer?.notes ? <Text style={ps.body}>{p.counteroffer?.notes ?? decision?.notes}</Text> : null}
-              <Text style={ps.meta}>{t("prAcceptNote")}</Text>
-              <Button label={t("prContactAccept")} onPress={() => void contactSupport()} />
-              {quote ? <Button label={t("prCompareOthers")} variant="secondary" onPress={() => router.replace("/quote/offers")} /> : null}
+              <Text style={ps.meta}>{t("prCounterNote")}</Text>
+              <Button label={t("prCounterAccept")} icon={CheckCircle2} loading={answering === "accept"} disabled={!!answering} onPress={() => void answerCounter("accept")} />
+              <Button label={t("prCounterDecline")} variant="secondary" loading={answering === "decline"} disabled={!!answering} onPress={declineCounter} />
+              {answerError ? <ErrorCard error={answerError} fallback={t("prCounterFailed")} /> : null}
+              <Button label={t("prContactQuestions")} variant="tertiary" onPress={() => void contactSupport()} />
+              {quote ? <Button label={t("prCompareOthers")} variant="tertiary" onPress={() => router.replace("/quote/offers")} /> : null}
             </Card>
           ) : null}
 
@@ -236,6 +266,10 @@ export default function ProposalDetail() {
               {quote ? <Button label={t("prCompareOthers")} onPress={() => router.replace("/quote/offers")} /> : null}
               <Button label={t("prNewQuote")} variant="secondary" onPress={() => router.replace("/quote/product")} />
             </Card>
+          ) : null}
+
+          {checklist?.cover_term_rule && canChooseStart(checklist.cover_term_rule.effective_date_rules) && ANSWERABLE.includes(String(p.status).toUpperCase()) ? (
+            <CoverStartCard proposalId={p.id} rule={checklist.cover_term_rule} terms={checklist.cover_terms} onSaved={() => void load()} />
           ) : null}
 
           <ProposalSummary proposal={p} offer={selectedOffer} />

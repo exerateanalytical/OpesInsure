@@ -55,9 +55,15 @@ export type ProposalChecklist = {
   available_transitions?: string[];
   blocking?: string[];
   submission_count?: number;
+  /** Chosen cover terms (null = defaults: start at issuance, 12 months, single payment). */
+  cover_terms?: CoverTerms | null;
+  /** What this product allows (CoverTermsService::ruleFor). */
+  cover_term_rule?: CoverTermRule | null;
 };
+export type CoverTerms = { effective_rule: string; start_date?: string | null; ends_before?: string | null; duration?: { unit: string; value?: number | null }; instalment_plan?: string };
+export type CoverTermRule = { effective_date_rules: string[]; default_effective_rule: string; max_advance_days: number; durations?: { unit: string; value?: number }[]; instalment_plans?: string[] };
 
-const post = (body?: unknown) => ({ method: "POST", body: body === undefined ? undefined : JSON.stringify(body), idempotent: true }) as const;
+const post =(body?: unknown) => ({ method: "POST", body: body === undefined ? undefined : JSON.stringify(body), idempotent: true }) as const;
 
 export const QuoteWorkflowApi = {
   /** Canonical GET quotes/{q}: {quote (lifecycle_state, quote_number), offers}. */
@@ -93,6 +99,9 @@ export const ProposalLifecycleApi = {
   checklist: (id: string) => api<ProposalChecklist>(`/proposals/${id}/checklist`),
   resubmit: (id: string, response?: string) => api<unknown>(`/proposals/${id}/resubmit`, post(response?.trim() ? { response: response.trim() } : {})),
   withdraw: (id: string, reason?: string) => api<unknown>(`/proposals/${id}/withdraw`, post(reason?.trim() ? { reason: reason.trim() } : {})),
+  /** PUT proposals/{p}/cover-terms — while the application is still being completed (ANSWERABLE). */
+  setCoverStart: (id: string, effective_rule: "IMMEDIATE" | "SPECIFIED_DATE", start_date?: string) =>
+    api<CoverTerms>(`/proposals/${id}/cover-terms`, { method: "PUT", body: JSON.stringify({ effective_rule, ...(start_date ? { start_date } : {}) }), idempotent: true }),
 };
 
 export const DistributionApi = {

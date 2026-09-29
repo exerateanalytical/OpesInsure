@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Clock3, Hourglass, RefreshCcw } from "lucide-react-native";
@@ -43,6 +43,13 @@ export default function Referral() {
       setChecking(false);
     }
   }, [loadProposal, loadQuote, proposalId, quoteId]);
+
+  // Manual review can take a while: check quietly every 30 s so the customer moves on as soon as it is priced.
+  useEffect(() => {
+    if (!quoteId && !proposalId) return;
+    const timer = setInterval(() => void refresh(), 30000);
+    return () => clearInterval(timer);
+  }, [refresh, quoteId, proposalId]);
 
   return (
     <Screen

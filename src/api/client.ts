@@ -1480,6 +1480,9 @@ export const ProposalsApi = {
    * to a proposal requirement: POST /proposals/{id}/documents. Store files with storeDocument()
    * (src/api/documentUpload.ts), which reuses an identical file instead of failing as a duplicate.
    */
+  /** Accept or decline the insurer's counter-offer (POST mobile/proposals/{id}/counteroffer/{accept|decline}). */
+  respondCounteroffer: (id: string, answer: "accept" | "decline") =>
+    api<Proposal>(`/mobile/proposals/${id}/counteroffer/${answer}`, { method: "POST", idempotent: true }),
   linkDocument: (id: string, documentId: string, requirementCode: string) =>
     api<ProposalDocumentLink>(`/proposals/${id}/documents`, {
       method: "POST",
