@@ -52,7 +52,7 @@ final class DelegatedAuthorities extends DocUwPage
                 TextColumn::make('effective_from')->label(self::col('effective_from'))->date(),
                 TextColumn::make('effective_until')->label(self::col('effective_until'))->date(),
                 TextColumn::make('permitted_lines')->label(self::col('permitted_lines')),
-                TextColumn::make('max_policy_premium_minor')->label(self::col('max_policy_premium'))->formatStateUsing(fn ($state) => number_format((int) $state, 0, ',', ' ').' XAF'),
+                \App\Filament\Shared\Columns::money('max_policy_premium_minor', 'currency', self::col('max_policy_premium')),
             ])
             ->filters([SelectFilter::make('status')->label(self::col('status'))->options(['DRAFT' => 'DRAFT', 'ACTIVE' => 'ACTIVE'])])
             ->headerActions([DelegatedAuthorityActions::create()])

@@ -111,10 +111,8 @@ final class AccountStatements extends LaunchScreenPage
                 TextColumn::make('line_type')->label(self::col('line_type'))->badge(),
                 TextColumn::make('description')->label(self::col('description'))->wrap(),
                 TextColumn::make('reference_type')->label(self::col('reference'))->placeholder('—'),
-                TextColumn::make('amount_minor')->label(self::col('amount'))->alignEnd()
-                    ->formatStateUsing(fn ($state) => number_format(((int) $state) / 100, 2)),
-                TextColumn::make('balance_minor')->label(self::col('balance'))->alignEnd()
-                    ->formatStateUsing(fn ($state) => number_format(((int) $state) / 100, 2)),
+                \App\Filament\Shared\Columns::money('amount_minor', 'currency', self::col('amount')),
+                \App\Filament\Shared\Columns::money('balance_minor', 'currency', self::col('balance')),
             ])
             ->emptyStateHeading(__('launch_screens.statement_empty'));
     }

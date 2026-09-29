@@ -57,7 +57,7 @@ it('renders every money column through Columns::money', function () {
         }
         // A *_minor attribute rendered as a plain TextColumn (raw minor units).
         if (preg_match_all("/TextColumn::make\('([a-z0-9_.]*_minor)'\)/", $src, $m)) {
-            array_push($offenders[$path] ??= [], ...$m[1]);
+            $offenders[$path] = [...($offenders[$path] ?? []), ...$m[1]];
         }
     }
 

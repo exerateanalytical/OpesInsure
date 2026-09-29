@@ -45,7 +45,7 @@ final class ReconciliationExceptions extends OperationsDeskPage
             ->columns([
                 TextColumn::make('transaction_at')->label(self::col('transaction_at'))->dateTime(),
                 TextColumn::make('external_reference')->label(self::col('external_reference')),
-                TextColumn::make('gross_minor')->label(self::col('amount'))->numeric(),
+                \App\Filament\Shared\Columns::money('gross_minor', 'currency', self::col('amount')),
                 TextColumn::make('currency')->label(self::col('currency')),
                 TextColumn::make('outcome')->label(self::col('outcome'))->badge(),
                 TextColumn::make('exception_code')->label(self::col('exception_code')),

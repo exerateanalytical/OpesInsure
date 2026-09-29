@@ -84,7 +84,9 @@ it('opens each desk only with one of its permissions and hides actions without t
 
 it('keeps platform actions to platform administrators in the platform tenant', function () {
     $platform = Tenant::create(['type' => 'PLATFORM', 'legal_name' => 'Platform '.Str::random(4), 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en']);
-    $admin = ltUser($platform->id, ['platform.settings.manage', 'tenant.manage', 'configuration.changes.manage'], 'PLATFORM');
+    $admin = ltUser($platform->id, ['platform.settings.manage', 'tenant.manage', 'configuration.changes.manage'], 'PLATFORM_ADMIN');
+    // Creating an organisation is a platform-admin act (security 2026-09-29, PlatformAuthority::isPlatformAdmin).
+    TenantMembership::where('user_id', $admin->id)->update(['role_code' => 'PLATFORM_ADMIN']);
     ltAs($admin, $platform->id);
     expect(PlatformDesk::canAccess())->toBeTrue();
     Livewire::test(PlatformDesk::class)->assertOk()->assertActionVisible('tenantCreate')->assertActionVisible('platformTimezone')

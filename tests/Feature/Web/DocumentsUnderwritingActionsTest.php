@@ -57,7 +57,7 @@ beforeEach(function () {
 });
 
 it('shows the underwriting actions with the API permissions and hides them without', function () {
-    duAs(duUser($this->tenant, ['proposals.read'], 'UNDERWRITER'), $this->tenant);
+    duAs(duUser($this->tenant, ['proposals.read', 'carrier.referrals.read'], 'UNDERWRITER'), $this->tenant);
     $page = Livewire::test(ViewUnderwritingCase::class, ['record' => $this->case->id])->assertOk();
     foreach (['uwAssign', 'uwStartReview', 'uwEvaluate'] as $name) {
         $page->assertActionHidden($name);

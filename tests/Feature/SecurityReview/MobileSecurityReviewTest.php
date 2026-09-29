@@ -137,7 +137,10 @@ it('does not restart the cooling-off when a profile update leaves the payout num
 });
 
 it('keeps the step-up gate on withdrawals and on payout-number changes', function () {
-    $fixture = makeMobileAgentFixture('+237680019430', ['compliance' => ['momo_phone_e164' => '+237670019431']]);
+    // The 2026-09-27 rollout hold (config mobile_runtime.step_up.not_enforced_yet) skips PAYOUT_DESTINATION_CHANGE until
+    // the step-up-aware app is live; this test proves the gate itself once the hold is lifted.
+    config(['mobile_runtime.step_up.not_enforced_yet' => []]);
+    $fixture =makeMobileAgentFixture('+237680019430', ['compliance' => ['momo_phone_e164' => '+237670019431']]);
     makeMobileAgentStatement($fixture['tenant'], $fixture['partner'], ['closing_balance_minor' => 90000]);
     Passport::actingAs($fixture['user']);
 
