@@ -34,14 +34,26 @@ final class WorkflowAction
             ->modalHeading(__("{$lang}.{$name}.label"))
             ->modalDescription(fn () => self::optional("{$lang}.{$name}.help"))
             ->modalSubmitActionLabel(__('workflow_actions.confirm'))
-            ->authorize(fn (): bool => self::allowed($permission));
+            ->authorize(fn (Action $action): bool => self::allowed($permission, self::recordOf($action)));
     }
 
-    public static function allowed(?string $permission): bool
+    /**
+     * Permission check; inside a portal (/insurer, /broker) the record must also be the caller's own organisation's
+     * (PortalScope::allowsWrite, docs/spec/PORTAL_WRITE_RULES.md). Outside a portal the record is ignored.
+     */
+    public static function allowed(?string $permission, mixed $record = null): bool
     {
         $user = auth()->user();
 
-        return $user !== null && ($permission === null || $user->hasPermission($permission));
+        return $user !== null && ($permission === null || \App\Application\WebExperiences\PortalAuthorization::allowsWritePermission($user, $permission))
+            && ($record === null || \App\Application\WebExperiences\PortalScope::isOwnRecord($record));
+    }
+
+    private static function recordOf(Action $action): mixed
+    {
+        $record = rescue(fn () => $action->getRecord(), null, false);
+
+        return $record instanceof \Illuminate\Database\Eloquent\Model ? $record : null;
     }
 
     /**
@@ -50,7 +62,7 @@ final class WorkflowAction
      */
     public static function run(Action $action, ?string $permission, callable $call, ?string $success = null): mixed
     {
-        if (! self::allowed($permission)) {
+        if (! self::allowed($permission, self::recordOf($action))) {
             app(AuditWriter::class)->record('authorization.denied', 'filament_action', null, ['permission' => $permission, 'action' => $action->getName()], 'permission_denied');
             self::fail(__('workflow_actions.denied'));
             $action->halt();

@@ -181,7 +181,8 @@ Opes.page(function (ctx) {
         (function create() {
           return Opes.api('/payments', { body: { proposal_id: proposal.id, provider: provider, payer_phone_e164: digits, idempotency_key: B.payKey(proposal.id, provider, digits) } }).then(function (p) {
             if (B.PAY_FAILED.indexOf(p.status) >= 0 && tries++ < 2) { B.bumpAttempt(proposal.id); return create(); }
-            return p.status === 'CREATED' ? Opes.api('/payments/' + p.id + '/initiate', { method: 'POST', body: {} }) : p;
+            // POST /payments answers PENDING_CUSTOMER before any provider prompt: initiate until the provider holds a reference.
+            return (p.status === 'CREATED' || (p.status === 'PENDING_CUSTOMER' && !p.provider_reference)) ? Opes.api('/payments/' + p.id + '/initiate', { method: 'POST', body: {} }) : p;
           });
         })().then(function (p) {
           location.href = B.qurl(id, 'confirmation', { proposal: proposal.id, payment: p && p.id });

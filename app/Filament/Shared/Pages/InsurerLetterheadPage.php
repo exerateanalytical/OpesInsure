@@ -25,8 +25,6 @@ use Filament\Schemas\Schema;
  */
 final class InsurerLetterheadPage extends LetterheadDesigner
 {
-    public const ROLES = ['CARRIER_ADMIN', 'CARRIER_SUPER_ADMIN'];
-
     protected static ?string $navigationLabel = 'Letterhead & logo';
 
     protected static ?string $slug = 'letterhead';
@@ -46,13 +44,30 @@ final class InsurerLetterheadPage extends LetterheadDesigner
         return PortalScope::panel() === 'insurer' ? PortalScope::carrierId() : null;
     }
 
+    /**
+     * Owner rule 2026-09-29 (docs/spec/PORTAL_WRITE_RULES.md): gated by the letterhead permissions in the portal tenant,
+     * never by role name. documents.letterheads.manage uploads a version; documents.letterheads.approve approves or
+     * rejects one (never the uploader, LetterheadService). Always the caller's own carrier.
+     */
     public static function canAccess(): bool
     {
-        $user = auth()->user();
         $tenant = rescue(fn () => app(TenantContext::class)->id(), null, false);
 
-        return $user !== null && $tenant !== null && self::carrierId() !== null
-            && $user->memberships()->where('status', 'ACTIVE')->where('tenant_id', $tenant)->whereIn('role_code', self::ROLES)->exists();
+        return auth()->user() !== null && $tenant !== null && self::carrierId() !== null
+            && (self::may('documents.letterheads.manage') || self::may('documents.letterheads.approve'));
+    }
+
+    public static function may(string $permission): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && self::carrierId() !== null && \App\Application\WebExperiences\PortalAuthorization::allowsWritePermission($user, $permission);
+    }
+
+    public function save(): void
+    {
+        abort_unless(self::may('documents.letterheads.manage'), 403);
+        parent::save();
     }
 
     public function mount(): void
@@ -95,8 +110,8 @@ final class InsurerLetterheadPage extends LetterheadDesigner
     protected function getHeaderActions(): array
     {
         return [
-            ...parent::getHeaderActions(),
-            Action::make('rejectPending')->label('Reject pending version')->icon('lucide-x')->color('danger')
+            ...array_map(fn (Action $a) => $a->getName() === 'approvePending' ? $a->authorize(fn (): bool => self::may('documents.letterheads.approve')) : $a, parent::getHeaderActions()),
+            Action::make('rejectPending')->authorize(fn (): bool => self::may('documents.letterheads.approve'))->label('Reject pending version')->icon('lucide-x')->color('danger')
                 ->visible(fn () => $this->pending() !== null)
                 ->schema([Textarea::make('reason')->required()->minLength(5)])
                 ->action(function (array $data) {

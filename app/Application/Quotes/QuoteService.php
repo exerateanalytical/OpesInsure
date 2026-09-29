@@ -92,6 +92,13 @@ final class QuoteService
                 throw ValidationException::withMessages(['risk_asset_id' => __('wave2.asset_ownership')]);
             }
             $partnerId = $data['partner_id'] ?? null;
+            // Agent-assisted quotes sell under the agent's own partner (and its supervising brokerage's agreements),
+            // so only products the agent is attached to are rated (SellabilityService supervisor chain).
+            if ($partnerId === null && ($data['channel'] ?? null) === 'AGENT' && $actor !== null) {
+                $agentPartner = app(\App\Application\Identity\PartyResolver::class)->partnerForUser($actor);
+                $partnerId = $agentPartner && $agentPartner->type === 'AGENT' && $agentPartner->tenant_id === $tenant->id ? $agentPartner->id : null;
+                $agentUserId = $partnerId !== null ? $actor->id : null;
+            }
             if ($partnerId !== null && ! DB::table('partners')->where(['id' => $partnerId, 'tenant_id' => $tenant->id])->exists()) {
                 throw ValidationException::withMessages(['partner_id' => __('quotes.partner_unknown')]);
             }
@@ -101,6 +108,8 @@ final class QuoteService
                 'lifecycle_state' => 'DRAFT', 'status' => QuoteMachine::legacyStatus('DRAFT'),
                 'quote_number' => $this->numbers->allocate($tenant->id, 'INSURANCE_QUOTE')['number'],
                 'submitted_at' => now(), 'expires_at' => now()->addDays($this->validityDays(null)), 'version' => 1,
+                // The agent who sold it (assisted sale): scopes the agent's book and its premium-collection request.
+                'comparison_context' => isset($agentUserId) ? ['agent_user_id' => $agentUserId] : [], // column is NOT NULL DEFAULT '{}'
             ]);
             $this->recordRisks($quote, $data['risks'] ?? [], $tenant->id, $partyId);
             $this->recordAnswers($quote, $facts, $actor);

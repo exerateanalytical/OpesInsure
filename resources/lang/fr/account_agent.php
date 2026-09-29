@@ -20,6 +20,10 @@ return [
     'staff_t' => 'Personnel',
     'staff_lede' => 'Les membres de votre cabinet de courtage et les invitations envoyées.',
     'js' => [
+        // agent workspace (P7 2026-09-29): journal du prospect, encaissement de prime
+        'activity' => 'Activité', 'activity_type' => "Type d'activité", 'activity_body' => "Que s'est-il passé ?", 'follow_up_at' => 'Relance', 'log_activity' => "Enregistrer l'activité",
+        'activity_logged' => 'Activité enregistrée.', 'no_activity' => 'Aucune activité pour le moment.', 'loading' => 'Chargement…',
+        'collect_premium' => 'Demander le paiement', 'payment_requested' => 'Demande de paiement envoyée à :name.',
         // portefeuille, sinistre client, documents client, personnel (audit UI 2026-09-27)
         'tab_quotes' => 'Devis', 'tab_proposals' => 'Propositions', 'tab_policies' => 'Polices', 'tab_claims' => 'Sinistres',
         'th_proposal' => 'Proposition', 'th_claim' => 'Sinistre', 'th_submitted' => 'Soumis', 'th_loss_date' => 'Date du sinistre', 'th_estimate' => 'Estimation', 'th_document' => 'Document', 'th_number' => 'Numéro',
@@ -188,6 +192,7 @@ return [
         'wd_ok' => 'Retrait demandé.',
         'lines' => ['MOTOR' => 'Automobile', 'HEALTH' => 'Santé', 'TRAVEL' => 'Voyage', 'HOME' => 'Habitation', 'LIFE' => 'Vie', 'BUSINESS' => 'Entreprise', 'ACCIDENT' => 'Individuelle accident'],
         'st' => [
+            'NOTE' => 'Note', 'CALL' => 'Appel', 'MEETING' => 'Rendez-vous', 'FOLLOW_UP' => 'Relance', 'CUSTOMER_PROMPTED' => 'Paiement demandé', 'NOT_REQUESTED' => 'Non demandé',
             'NEW' => 'Nouveau', 'CONTACTED' => 'Contacté', 'QUALIFIED' => 'Qualifié', 'QUOTE' => 'Devis envoyé', 'NEGOTIATION' => 'Négociation', 'CONVERTED' => 'Converti', 'LOST' => 'Perdu',
             'PENDING' => 'En attente', 'AVAILABLE' => 'Disponible', 'PAID' => 'Payé', 'CLAWED_BACK' => 'Repris', 'REQUESTED' => 'Demandé', 'APPROVED' => 'Approuvé', 'PROCESSING' => 'En cours', 'REJECTED' => 'Rejeté',
             'PUBLISHED' => 'Publié', 'VERIFIED' => 'Vérifié', 'NOT_STARTED' => 'Non commencé', 'SUBMITTED' => 'Soumis', 'ACTIVE' => 'Active', 'EXPIRED' => 'Expirée', 'CANCELLED' => 'Annulée',

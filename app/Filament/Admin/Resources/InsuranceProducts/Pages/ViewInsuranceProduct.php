@@ -35,7 +35,8 @@ final class ViewInsuranceProduct extends ViewRecord
         $v = $this->record;
         $gov = app(ProductGovernanceService::class);
         $stage = fn () => $gov->state($this->record)->stage;
-        $can = fn (string $p) => (bool) auth()->user()?->hasPermission($p);
+        // Same permission as the API route; in /insurer only on the caller's own carrier's product (PortalScope::isOwnRecord).
+        $can = fn (string $p) => \App\Application\WebExperiences\PortalScope::allowsWrite($p, $this->record);
         $advancePermission = ['DRAFT' => 'catalogue.manage', 'CONFIGURATION' => 'catalogue.manage', 'TECHNICAL_REVIEW' => 'catalogue.review',
             'COMPLIANCE_REVIEW' => 'catalogue.review', 'BUSINESS_APPROVAL' => 'catalogue.publish', 'SANDBOX_TESTS' => 'catalogue.test'];
 

@@ -52,7 +52,8 @@ final class ProposalActions
     public static function submit(): Action
     {
         return WorkflowAction::make('proposalSubmit', null)->icon('lucide-send')->requiresConfirmation()
-            ->visible(fn (Proposal $record) => $record->status === 'DRAFT')
+            // ProposalService::submit only accepts an attested DOCUMENTS_PENDING proposal (was: DRAFT, which it always refused).
+            ->visible(fn (Proposal $record) => $record->status === 'DOCUMENTS_PENDING' && $record->attested_at !== null)
             ->action(fn (Action $action, Proposal $record) => WorkflowAction::run($action, null, fn () => app(ProposalService::class)->submit(self::book($record), auth()->user())));
     }
 
@@ -87,14 +88,31 @@ final class ProposalActions
 
         return WorkflowAction::make('proposalDecide', $p)->icon('lucide-scale')->requiresConfirmation()
             ->visible(fn (Proposal $record) => self::case($record) !== null)
-            ->schema([
-                Select::make('decision')->label(__('workflow_actions.fields.decision'))->required()->live()
-                    ->options(WorkflowAction::options(['APPROVED', 'CONDITIONAL', 'DECLINED'], 'underwriting')),
-                TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
-                Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->required()->minLength(20)->maxLength(4000),
-                KeyValue::make('conditions')->label(__('workflow_actions.fields.conditions'))->visible(fn (callable $get) => $get('decision') === 'CONDITIONAL')->required(fn (callable $get) => $get('decision') === 'CONDITIONAL'),
-            ])
+            ->schema(self::decisionSchema())
             ->action(fn (Action $action, Proposal $record, array $data) => WorkflowAction::run($action, $p, fn () => self::decideCase($record, $data)));
+    }
+
+    /** Decision form (POST underwriting/cases/{c}/decision), shared with UnderwritingCaseActions::decide. */
+    public static function decisionSchema(): array
+    {
+        return [
+            Select::make('decision')->label(__('workflow_actions.fields.decision'))->required()->live()
+                ->options(WorkflowAction::options(['APPROVED', 'CONDITIONAL', 'DECLINED'], 'underwriting')),
+            TextInput::make('reason_code')->label(__('workflow_actions.fields.reason_code'))->required()->maxLength(64),
+            Textarea::make('notes')->label(__('workflow_actions.fields.notes'))->required()->minLength(20)->maxLength(4000),
+            KeyValue::make('conditions')->label(__('workflow_actions.fields.conditions'))->visible(fn (callable $get) => $get('decision') === 'CONDITIONAL')->required(fn (callable $get) => $get('decision') === 'CONDITIONAL'),
+        ];
+    }
+
+    /** The service payload of a decision form. */
+    public static function decisionPayload(array $data): array
+    {
+        $d = ['decision' => $data['decision'], 'reason_code' => $data['reason_code'], 'notes' => $data['notes']];
+        if (! empty($data['conditions'])) {
+            $d['conditions'] = $data['conditions'];
+        }
+
+        return $d;
     }
 
     public static function counterOffer(): Action
@@ -240,12 +258,7 @@ final class ProposalActions
 
     private static function decideCase(Proposal $proposal, array $data): Proposal
     {
-        $d = ['decision' => $data['decision'], 'reason_code' => $data['reason_code'], 'notes' => $data['notes']];
-        if (! empty($data['conditions'])) {
-            $d['conditions'] = $data['conditions'];
-        }
-
-        return app(UnderwritingService::class)->decide(self::case($proposal) ?? abort(404), $d, auth()->user());
+        return app(UnderwritingService::class)->decide(self::case($proposal) ?? abort(404), self::decisionPayload($data), auth()->user());
     }
 
     private static function case(Proposal $proposal): ?UnderwritingCase

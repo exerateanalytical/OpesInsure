@@ -72,6 +72,7 @@ Opes.page(function (ctx) {
           h('option', { value: '' }, A.t('move_to') + '…'), l.next_statuses.map(function (s) { return h('option', { value: s }, A.label(s)); })));
       }
       if (AG && l.status !== 'CONVERTED' && l.status !== 'LOST') acts.appendChild(h('button', { type: 'button', class: 'dbtn dbtn-primary sm', onclick: function () { convert(this, l); } }, A.t('convert')));
+      if (AG) acts.appendChild(h('button', { type: 'button', class: 'dbtn dbtn-outline sm', 'data-activity': l.id, onclick: function () { diary(this, l); } }, A.t('activity')));
       if (l.converted_customer_id) acts.appendChild(h('a', { class: 'dbtn dbtn-outline sm', href: '/account/customers/' + encodeURIComponent(l.converted_customer_id) }, A.t('view_client')));
       return h('tr', null,
         h('td', null, h('b', null, l.full_name), h('span', { class: 'muted' }, l.phone_e164 || ''), l.notes ? h('span', { class: 'muted' }, l.notes) : null),
@@ -93,6 +94,30 @@ Opes.page(function (ctx) {
     O.api(BASE + '/' + encodeURIComponent(l.id) + '/convert', { body: { consent_confirmed: true } }).then(function (r) {
       replace(r.lead); O.alert(A.t('converted', { name: l.full_name }), 'ok');
     }).catch(function (e) { O.busy(btn, false); O.alert(A.errMsg(e), 'bad'); });
+  }
+  // Lead diary (notes, calls, meetings, follow-ups): GET|POST /mobile/partner/agent/leads/{id}/activities — same endpoints as the app.
+  function diary(btn, l) {
+    var tr = btn.closest('tr'), next = tr.nextElementSibling;
+    if (next && next.hasAttribute('data-diary')) { next.remove(); return; }
+    var list = h('div', { class: 'muted' }, A.t('loading')), url = BASE + '/' + encodeURIComponent(l.id) + '/activities';
+    var sel = h('select', { name: 'entry_type', 'aria-label': A.t('activity_type') }, ['NOTE', 'CALL', 'MEETING', 'FOLLOW_UP'].map(function (t) { return h('option', { value: t }, A.label(t)); }));
+    var body = h('textarea', { name: 'body', rows: '2', maxlength: '4000', required: 'required', 'aria-label': A.t('activity_body'), placeholder: A.t('activity_body') });
+    var when = h('input', { type: 'datetime-local', name: 'follow_up_at', 'aria-label': A.t('follow_up_at') });
+    var form = h('form', { class: 'ag-form', 'data-activity-form': l.id, onsubmit: function (ev) {
+      ev.preventDefault(); var b = form.querySelector('[type=submit]'), payload = { entry_type: sel.value, body: body.value.trim() };
+      if (when.value) payload.follow_up_at = new Date(when.value).toISOString();
+      O.busy(b, true); O.alert('');
+      O.api(url, { body: payload }).then(function () { O.busy(b, false); form.reset(); O.alert(A.t('activity_logged'), 'ok'); refresh(); })
+        .catch(function (e) { O.busy(b, false); O.alert(A.errMsg(e), 'bad'); });
+    } }, sel, body, h('label', { class: 'afield-s' }, h('span', null, A.t('follow_up_at')), when), h('button', { type: 'submit', class: 'dbtn dbtn-primary sm' }, A.t('log_activity')));
+    function refresh() {
+      O.api(url).then(function (rows) {
+        rows = rows.items || rows;
+        O.clear(list).append.apply(list, rows.length ? rows.map(function (e) { return h('div', null, h('b', null, A.label(e.entry_type) + ' · '), e.body, h('span', { class: 'muted' }, ' — ' + O.date(e.created_at || e.occurred_at, true) + (e.follow_up_at ? ' · ' + A.t('follow_up_at') + ' ' + O.date(e.follow_up_at, true) : ''))); }) : [A.t('no_activity')]);
+      }).catch(function (e) { O.clear(list).append(A.errMsg(e)); });
+    }
+    tr.after(h('tr', { 'data-diary': l.id }, h('td', { colspan: '6' }, list, form)));
+    refresh();
   }
   function replace(u) { all = all.map(function (x) { return x.id === u.id ? u : x; }); paint(); }
   function create(ev) {

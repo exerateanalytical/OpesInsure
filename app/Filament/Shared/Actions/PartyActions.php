@@ -195,6 +195,34 @@ final class PartyActions
             }, __('party_actions.registerClient.done')));
     }
 
+    /**
+     * POST mobile/broker/clients (crm.leads.manage) — AgentClientIntakeService::registerForBroker; /broker customers
+     * page header action (owner decision 2026-09-29: the broker portal is writable). The client is attributed to the
+     * caller's brokerage (origin-locked), exactly as the API.
+     */
+    public static function registerBrokerClient(): Action
+    {
+        $p = 'crm.leads.manage';
+
+        return WorkflowAction::make('brokerRegisterClient', $p, 'broker_portal_sales')->icon('lucide-user-round-plus')
+            ->schema([
+                TextInput::make('full_name')->label(__('party_actions.fields.full_name'))->required()->minLength(3)->maxLength(160),
+                TextInput::make('phone_e164')->label(__('party_actions.fields.phone'))->required()->maxLength(32)->placeholder('+2376XXXXXXXX'),
+                TextInput::make('consent_reference')->label(__('broker_portal_sales.fields.consent_reference'))->required()->maxLength(255),
+                Toggle::make('consent_confirmed')->label(__('party_actions.fields.consent_confirmed'))->accepted()->required(),
+            ])
+            ->action(fn (Action $action, array $data) => WorkflowAction::run($action, $p, function () use ($data) {
+                try {
+                    return app(\App\Application\Agents\AgentClientIntakeService::class)->registerForBroker([
+                        'type' => 'PERSON', 'display_name' => $data['full_name'], 'phone_e164' => $data['phone_e164'], 'notice_version' => 'broker-2026-01',
+                        'evidence_reference' => $data['consent_reference'], 'consent' => true,
+                    ], auth()->user(), self::tenant());
+                } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+                    abort(403, $e->getMessage());   // not a broker user: shown as a refusal, as the API returns 403
+                }
+            }));
+    }
+
     /** Merges involving the record's party (as survivor or merged), in the given status. */
     private static function merges(Model $record, string $status): \Illuminate\Database\Eloquent\Builder
     {

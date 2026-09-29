@@ -22,6 +22,8 @@ final class PartnerWorkspaceShapes
             'customer_name' => $q->party?->display_name ?? 'Client', 'line_code' => $q->line_code, 'status' => $q->status, 'channel' => $q->channel,
             'offers' => $q->offers->count(), 'best_premium_minor' => $best ? (int) $best->total_minor : null, 'currency' => $q->currency,
             'expires_at' => $q->expires_at?->toIso8601String(), 'created_at' => $q->created_at?->toIso8601String(),
+            // Assisted sale (agent-sold): the agent can prompt the client for the premium (POST /mobile/agent/sales/{id}/payment-request).
+            'assisted' => ! empty(($q->comparison_context ?? [])['agent_user_id']), 'payment_status' => ($q->comparison_context ?? [])['payment_status'] ?? null,
         ];
     }
 

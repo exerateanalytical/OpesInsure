@@ -196,7 +196,7 @@ it('shows the signing keys read-only (id, public key, status) and the numbering 
 
 // ------------------------------------------------------------------ 4. Insurer letterhead in /insurer
 
-function docUiInsurerUser(Tenant $tenant, string $role, ?string $carrierId): User
+function docUiInsurerUser(Tenant $tenant, string $role, ?string $carrierId, array $extra = []): User
 {
     $u = User::create(['id' => (string) Str::uuid(), 'full_name' => 'Ins '.Str::random(5), 'email' => Str::lower(Str::random(10)).'@ins.test',
         'phone_e164' => '+2376'.random_int(10000000, 99999999), 'password' => 'x', 'locale' => 'en', 'status' => 'ACTIVE']);
@@ -204,6 +204,9 @@ function docUiInsurerUser(Tenant $tenant, string $role, ?string $carrierId): Use
     $r = Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $role], ['id' => (string) Str::uuid(),
         'permissions' => \App\Application\Identity\RoleCatalogue::defaultPermissions($role), 'is_system' => true]);
     $m->roles()->syncWithoutDetaching([$r->id]);
+    if ($extra !== []) { // owner rule 2026-09-29: letterhead is permission-gated; extra grants on their own role
+        $m->roles()->attach(Role::create(['id' => (string) Str::uuid(), 'tenant_id' => $tenant->id, 'code' => 'DOCUI-'.Str::random(8), 'permissions' => $extra, 'is_system' => false])->id);
+    }
 
     return $u;
 }
@@ -214,8 +217,8 @@ it('lets insurer admins manage their own letterhead in /insurer with maker-check
         'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en']);
     $other = Carrier::create(['party_id' => Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Other Assurances', 'status' => 'ACTIVE'])->id,
         'cima_code' => 'OTH-'.Str::random(5), 'status' => 'ACTIVE', 'capabilities' => []]);
-    $maker = docUiInsurerUser($ins, 'CARRIER_ADMIN', $this->carrier->id);
-    $checker = docUiInsurerUser($ins, 'CARRIER_SUPER_ADMIN', $this->carrier->id);
+    $maker = docUiInsurerUser($ins, 'CARRIER_ADMIN', $this->carrier->id, ['documents.letterheads.manage']); // owner rule 2026-09-29: permission-gated, not role-gated
+    $checker = docUiInsurerUser($ins, 'CARRIER_SUPER_ADMIN', $this->carrier->id, ['documents.letterheads.approve']);
     $staff = docUiInsurerUser($ins, 'CARRIER_STAFF', $this->carrier->id);
 
     Filament::setCurrentPanel(Filament::getPanel('insurer'));
@@ -245,8 +248,8 @@ it('lets insurer admins manage their own letterhead in /insurer with maker-check
     expect($v->carrier_id)->toBe($this->carrier->id)->and($v->status)->toBe('PENDING_APPROVAL')->and($v->public_display)->toBeTrue()->and($v->logo_path)->not->toBeNull();
     expect(LetterheadResolver::carrierLogoUrl($this->carrier->id))->toBeNull(); // nothing public before approval
 
-    // The maker cannot approve their own version.
-    Livewire::test(InsurerLetterheadPage::class)->callAction('approvePending');
+    // The maker cannot approve (no documents.letterheads.approve; the service also refuses the uploader).
+    Livewire::test(InsurerLetterheadPage::class)->assertActionHidden('approvePending');
     expect($v->refresh()->status)->toBe('PENDING_APPROVAL');
 
     $this->actingAs($checker);

@@ -62,6 +62,8 @@ return [
         'MANUAL_REVIEW_REQUIRED' => 'Manual review required by the insurer.',
     ],
     'ui' => [
+        'search_method' => 'Search method',
+        'search_methods' => ['HEALTH_ID' => 'Health card number', 'QR_CODE' => 'Health card QR scan', 'MEMBERSHIP_NUMBER' => 'Membership number', 'POLICY_NUMBER' => 'Policy number', 'NATIONAL_ID_OR_OTHER_ALLOWED_IDENTIFIER' => 'National ID or other identifier', 'NAME_PLUS_DATE_OF_BIRTH' => 'Name + date of birth'],
         'open' => 'Open',
         'close' => 'Close',
         'confirm' => 'Please confirm this action.',
@@ -93,6 +95,8 @@ return [
         'save_draft' => 'Save draft claim',
         'submit_claim' => 'Submit claim to insurer',
         'download' => 'Download',
+        'download_statement' => 'Download statement',
+        'statement_not_ready' => 'The settlement statement has not been issued yet.',
         'verify' => 'Verify',
         'document_type' => 'Document type',
         'all' => 'All',

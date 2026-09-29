@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Providers\Workspace\Filament\Pages;
 
-use App\Interfaces\Http\Errors\ApiProblemException;
 use BackedEnum;
-use Illuminate\Support\Facades\Validator;
 
 /**
  * Patient Search + Eligibility Check + Eligibility Result + Benefit Details (Gap-Free spec). The result shows coverage
@@ -40,17 +38,18 @@ final class EligibilityPage extends ProviderWorkspacePage
         return 'provider-workspace.eligibility-form';
     }
 
+    /** Member lookup or health-card scan (QR_CODE / HEALTH_ID); one of ProviderWorkspaceRegister::SEARCH_METHODS. */
+    public ?string $search_method = 'MEMBERSHIP_NUMBER';
+
+    /** POST provider-portal/eligibility/check through the API controller action (same validation, scope and audit). */
     public function check(): void
     {
-        $d = Validator::make(['member_ref' => $this->member_ref, 'service_code' => $this->service_code, 'policy_id' => $this->policy_id ?: null, 'service_date' => $this->service_date ?: null],
-            ['member_ref' => 'required|string|max:120', 'service_code' => 'required|string|max:64', 'policy_id' => 'nullable|uuid', 'service_date' => 'nullable|date'])->validate();
-        try {
-            $this->result = $this->ws()->checkEligibility($this->tenantId(), $this->user(), $this->scope(), $d);
+        $res = $this->callWorkspace('eligibilityCheck', array_filter(['member_ref' => $this->member_ref, 'search_method' => $this->search_method,
+            'service_code' => $this->service_code, 'policy_id' => $this->policy_id ?: null, 'service_date' => $this->service_date ?: null]));
+        if ($res !== null) {
+            $this->result = $res;
             $this->state = $this->result['ui_state'] ?? 'SUCCESS';
             $this->stateMessage = $this->state === 'SUCCESS' ? null : ($this->result['message'] ?? null);
-        } catch (ApiProblemException $e) {
-            $this->state = 'VALIDATION_FAILED';
-            $this->stateMessage = $e->getMessage();
         }
     }
 

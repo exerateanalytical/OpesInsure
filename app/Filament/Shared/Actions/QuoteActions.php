@@ -63,6 +63,56 @@ final class QuoteActions
             ->label(__('workflow_actions.quote_group'))->icon('lucide-zap')->button();
     }
 
+    /**
+     * /broker customers page row action (owner decision 2026-09-29): POST quotes (channel BROKER, the caller's brokerage
+     * as selling partner) then POST quotes/{q}/rate (quotes.rate) — QuoteService::submit + ::rate. Selling as the
+     * brokerage makes rating apply SellabilityService, so only products of insurers with an ACTIVE agreement are offered.
+     * Offered lines are the lines of the brokerage's ACTIVE agreements. Opens the quote (offers compared) when priced.
+     */
+    public static function createForCustomer(): Action
+    {
+        $p = 'quotes.rate';
+
+        return WorkflowAction::make('brokerNewQuote', $p, 'broker_portal_sales')->icon('lucide-file-plus')
+            ->schema([
+                Select::make('line_code')->label(__('broker_portal_sales.fields.line'))->required()->live()->options(fn () => self::agreedLines())
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('risk_facts', collect(\App\Models\InsuranceLine::where('code', $state)->first()?->risk_schema['required'] ?? [])
+                        ->mapWithKeys(fn ($k) => [$k => ''])->all())),
+                \Filament\Forms\Components\KeyValue::make('risk_facts')->label(__('broker_portal_sales.fields.risk_facts'))
+                    ->keyLabel(__('broker_portal_sales.fields.fact'))->valueLabel(__('broker_portal_sales.fields.value'))->required(),
+            ])
+            ->action(function (Action $action, \Illuminate\Database\Eloquent\Model $record, array $data) use ($p) {
+                $quote = WorkflowAction::run($action, $p, function () use ($record, $data) {
+                    $partyId = (string) $record->getAttribute('party_id');
+                    app(PartnerBook::class)->assertInBook(auth()->user(), $partyId);
+                    $partner = \App\Application\WebExperiences\PortalScope::partnerId()
+                        ?? throw \Illuminate\Validation\ValidationException::withMessages(['partner_id' => __('broker_portal_sales.no_partner')]);
+                    $quote = app(QuoteService::class)->submit(Tenant::findOrFail(app(TenantContext::class)->id()), $partyId, [
+                        'line_code' => $data['line_code'], 'channel' => 'BROKER', 'partner_id' => $partner, 'risk_facts' => ProposalActions::typed($data['risk_facts'] ?? []),
+                    ], auth()->user());
+
+                    return app(QuoteService::class)->rate($quote, auth()->user());
+                });
+                if ($quote instanceof Quote) {
+                    $action->redirect(\App\Filament\Admin\Resources\Quotes\QuoteResource::getUrl('view', ['record' => $quote]));
+                }
+            });
+    }
+
+    /** Lines the caller's brokerage may quote: those of its ACTIVE carrier agreements (CarrierBrokerAgreementService::permits). */
+    private static function agreedLines(): array
+    {
+        $partner = \App\Application\WebExperiences\PortalScope::partnerId();
+        if ($partner === null) {
+            return [];
+        }
+        $codes = DB::table('carrier_broker_agreement_products as ap')->join('carrier_broker_agreements as a', 'a.id', '=', 'ap.agreement_id')
+            ->where(['a.partner_id' => $partner, 'a.status' => 'ACTIVE', 'ap.status' => 'ACTIVE'])->distinct()->pluck('ap.line_code');
+
+        return \App\Models\InsuranceLine::whereIn('code', $codes)->where('status', 'ACTIVE')->get()
+            ->mapWithKeys(fn ($l) => [$l->code => is_array($l->name) ? ($l->name[app()->getLocale()] ?? reset($l->name)) : ($l->name ?? $l->code)])->all();
+    }
+
     public static function rate(): Action
     {
         $p = 'quotes.rate';

@@ -62,6 +62,8 @@ return [
         'MANUAL_REVIEW_REQUIRED' => 'Revue manuelle requise par l’assureur.',
     ],
     'ui' => [
+        'search_method' => 'Méthode de recherche',
+        'search_methods' => ['HEALTH_ID' => 'Numéro de carte santé', 'QR_CODE' => 'Scan QR de la carte santé', 'MEMBERSHIP_NUMBER' => 'Numéro d’adhérent', 'POLICY_NUMBER' => 'Numéro de police', 'NATIONAL_ID_OR_OTHER_ALLOWED_IDENTIFIER' => 'CNI ou autre identifiant', 'NAME_PLUS_DATE_OF_BIRTH' => 'Nom + date de naissance'],
         'open' => 'Ouvrir',
         'close' => 'Fermer',
         'confirm' => 'Veuillez confirmer cette action.',
@@ -93,6 +95,8 @@ return [
         'save_draft' => 'Enregistrer le brouillon',
         'submit_claim' => 'Transmettre à l’assureur',
         'download' => 'Télécharger',
+        'download_statement' => 'Télécharger le relevé',
+        'statement_not_ready' => 'Le relevé de règlement n’a pas encore été émis.',
         'verify' => 'Vérifier',
         'document_type' => 'Type de document',
         'all' => 'Tous',

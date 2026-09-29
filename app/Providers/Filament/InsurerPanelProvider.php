@@ -27,16 +27,31 @@ final class InsurerPanelProvider extends PanelProvider
             \App\Filament\Admin\Resources\PolicyIssuances\PolicyIssuanceResource::class,
             \App\Filament\Admin\Resources\IssuanceExceptions\IssuanceExceptionResource::class,
             \App\Filament\Admin\Resources\UnderwritingCases\UnderwritingCaseResource::class,
+            // P3 (owner 2026-09-29): the insurer's own products and tariff versions (own carrier, catalogue.* / tariff.*
+            // permissions; governance and CIMA guard stay in the services).
+            \App\Filament\Admin\Resources\InsuranceProducts\InsuranceProductResource::class,
+            \App\Filament\Admin\Resources\TariffVersions\TariffVersionResource::class,
             \App\Filament\Admin\Resources\StickerBatches\StickerBatchResource::class,
             \App\Filament\Admin\Resources\StickerInventory\StickerInventoryResource::class,
             \App\Filament\Admin\Resources\Journals\JournalResource::class,
             \App\Filament\Admin\Resources\CommissionAccruals\CommissionAccrualResource::class,
+            // P4 (owner 2026-09-29): staff invitations (identity.invite, own tenant/carrier, no role escalation) and the
+            // document register (own carrier's documents; documents.* permissions).
+            \App\Filament\Admin\Resources\Invitations\InvitationResource::class,
+            \App\Filament\Admin\Resources\Memberships\MembershipResource::class,
+            \App\Filament\Admin\Resources\GeneratedDocuments\GeneratedDocumentResource::class,
         ], [
             // Read-only registers (no model/resource yet; writes stay in the APIs).
             \App\Filament\Shared\Pages\Registers\QuoteRequestsRegister::class,
             \App\Filament\Shared\Pages\Registers\ReferralsRegister::class,
-            \App\Filament\Shared\Pages\Registers\CoinsuranceRegister::class,
-            \App\Filament\Shared\Pages\Registers\ReinsuranceTreatiesRegister::class,
+            // P4 (owner 2026-09-29, D4 lifted): the risk-transfer workbench replaces the read-only treaty / co-insurance
+            // registers — same pages as /admin, gated by the API permission, own tenant; policy/claim-linked rows and
+            // pickers narrowed to the caller's carrier (RiskTransferSupport::ownRows / policySelect / claimSelect).
+            \App\Filament\Admin\Pages\RiskTransfer\Reinsurers::class,
+            \App\Filament\Admin\Pages\RiskTransfer\ReinsuranceTreaties::class,
+            \App\Filament\Admin\Pages\RiskTransfer\FacultativePlacements::class,
+            \App\Filament\Admin\Pages\RiskTransfer\ReinsuranceRecoveries::class,
+            \App\Filament\Admin\Pages\RiskTransfer\CoinsuranceArrangements::class,
             \App\Filament\Shared\Pages\Registers\ReinsuranceCessionsRegister::class,
             \App\Filament\Shared\Pages\Registers\KycRegister::class,
             \App\Filament\Shared\Pages\Registers\CashierSessionsRegister::class,

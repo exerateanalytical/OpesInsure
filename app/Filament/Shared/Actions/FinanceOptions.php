@@ -14,7 +14,10 @@ final class FinanceOptions
     /** @return array<string, string> carriers (a national register, not tenant-owned) */
     public static function carriers(): array
     {
-        return Carrier::query()->where('status', 'ACTIVE')->with('party')->limit(500)->get()
+        // Insurer portal: the caller's own carrier only (PortalScope::carrierId; docs/spec/PORTAL_WRITE_RULES.md).
+        $own = \App\Application\WebExperiences\PortalScope::panel() === 'insurer' ? (\App\Application\WebExperiences\PortalScope::carrierId() ?? '') : null;
+
+        return Carrier::query()->where('status', 'ACTIVE')->when($own !== null, fn ($q) => $q->whereKey($own))->with('party')->limit(500)->get()
             ->mapWithKeys(fn (Carrier $c) => [$c->id => $c->trade_name ?: ($c->legal_name ?: ($c->party?->display_name ?? (string) $c->cima_code))])->sort()->all();
     }
 

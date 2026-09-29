@@ -26,4 +26,11 @@ final class ReinsuranceCessionsRegister extends RegisterPage
     protected static ?string $carrierColumn = null;
 
     protected static array $columns = ['treaty_type' => ['text', 'type'], 'ceded_percent' => ['text', 'ceded_percent'], 'gross_premium_minor' => ['money', 'gross_premium'], 'ceded_premium_minor' => ['money', 'ceded_premium'], 'net_ceded_premium_minor' => ['money', 'net_ceded_premium'], 'status' => ['status', 'status'], 'created_at' => ['date', 'created']];
+
+    /** /insurer: a carrier-linked user sees the cessions of their own carrier's policies only (PortalScope::narrowTable). */
+    protected function scope(\Illuminate\Database\Eloquent\Builder $q, string $tenantId): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::scope($q, $tenantId)
+            ->whereIn('reinsurance_cessions.policy_id', \App\Application\WebExperiences\PortalScope::narrowTable(\Illuminate\Support\Facades\DB::table('policies')->where('tenant_id', $tenantId), 'policies')->select('policies.id'));
+    }
 }

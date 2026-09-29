@@ -207,8 +207,8 @@ it('insurer panel exposes the sections each insurer role\'s permissions allow (a
     $chain = makeMobileFinanceProposalChain($tenant);
     $expect = [
         'CARRIER_ADMIN' => ['/insurer/approvals/inbox', '/insurer/policy-issuances', '/insurer/quotes', '/insurer/quote-requests', '/insurer/referrals', '/insurer/sticker-batches'],
-        'UNDERWRITER' => ['/insurer/underwriting-cases', '/insurer/referrals', '/insurer/quote-requests', '/insurer/coinsurance'],
-        'REINSURANCE_OFFICER' => ['/insurer/reinsurance-treaties', '/insurer/reinsurance-cessions', '/insurer/coinsurance', '/insurer/fx-rates'],
+        'UNDERWRITER' => ['/insurer/underwriting-cases', '/insurer/referrals', '/insurer/quote-requests', '/insurer/risk-transfer/coinsurance'],
+        'REINSURANCE_OFFICER' => ['/insurer/risk-transfer/treaties', '/insurer/risk-transfer/reinsurers', '/insurer/reinsurance-cessions', '/insurer/risk-transfer/coinsurance', '/insurer/fx-rates'],
         'FINANCE_OFFICER' => ['/insurer/journals', '/insurer/cashier-sessions', '/insurer/fx-rates', '/insurer/carrier-settlements', '/insurer/commission-accruals', '/insurer/policy-issuances'],
     ];
     foreach ($expect as $role => $paths) {

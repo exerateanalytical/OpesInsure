@@ -20,6 +20,10 @@ return [
     'staff_t' => 'Staff',
     'staff_lede' => 'The people of your brokerage and the invitations you have sent.',
     'js' => [
+        // agent workspace (P7 2026-09-29): lead diary, premium collection
+        'activity' => 'Activity', 'activity_type' => 'Activity type', 'activity_body' => 'What happened?', 'follow_up_at' => 'Follow-up', 'log_activity' => 'Log activity',
+        'activity_logged' => 'Activity logged.', 'no_activity' => 'No activity yet.', 'loading' => 'Loading…',
+        'collect_premium' => 'Request payment', 'payment_requested' => 'Payment request sent to :name.',
         // book, client claim, client documents, staff (UI audit 2026-09-27)
         'tab_quotes' => 'Quotes', 'tab_proposals' => 'Proposals', 'tab_policies' => 'Policies', 'tab_claims' => 'Claims',
         'th_proposal' => 'Proposal', 'th_claim' => 'Claim', 'th_submitted' => 'Submitted', 'th_loss_date' => 'Loss date', 'th_estimate' => 'Estimate', 'th_document' => 'Document', 'th_number' => 'Number',
@@ -188,6 +192,7 @@ return [
         'wd_ok' => 'Withdrawal requested.',
         'lines' => ['MOTOR' => 'Motor', 'HEALTH' => 'Health', 'TRAVEL' => 'Travel', 'HOME' => 'Home', 'LIFE' => 'Life', 'BUSINESS' => 'Business', 'ACCIDENT' => 'Personal accident'],
         'st' => [
+            'NOTE' => 'Note', 'CALL' => 'Call', 'MEETING' => 'Meeting', 'FOLLOW_UP' => 'Follow-up', 'CUSTOMER_PROMPTED' => 'Payment requested', 'NOT_REQUESTED' => 'Not requested',
             'NEW' => 'New', 'CONTACTED' => 'Contacted', 'QUALIFIED' => 'Qualified', 'QUOTE' => 'Quote sent', 'NEGOTIATION' => 'Negotiation', 'CONVERTED' => 'Converted', 'LOST' => 'Lost',
             'PENDING' => 'Pending', 'AVAILABLE' => 'Available', 'PAID' => 'Paid', 'CLAWED_BACK' => 'Clawed back', 'REQUESTED' => 'Requested', 'APPROVED' => 'Approved', 'PROCESSING' => 'Processing', 'REJECTED' => 'Rejected',
             'PUBLISHED' => 'Published', 'VERIFIED' => 'Verified', 'NOT_STARTED' => 'Not started', 'SUBMITTED' => 'Submitted', 'ACTIVE' => 'Active', 'EXPIRED' => 'Expired', 'CANCELLED' => 'Cancelled',

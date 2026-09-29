@@ -21,7 +21,9 @@ final class PortalAccess
     public const PORTAL_ROLES = [
         'insurer' => ['CARRIER_SUPER_ADMIN', 'CARRIER_ADMIN', 'CARRIER_STAFF', 'UNDERWRITER', 'SENIOR_UNDERWRITER', 'REINSURANCE_OFFICER', 'CUSTOMER_SERVICE', 'ADJUSTER',
             // UI audit 2026-09-27: insurer finance officers work in /insurer (ledger, cashier sessions, FX, receivables, settlements).
-            'FINANCE_OFFICER'],
+            'FINANCE_OFFICER',
+            // Owner decision 2026-09-29 (D4 lifted): insurer claims handlers work their carrier's claims in /insurer.
+            'CLAIMS_OFFICER', 'CLAIMS_MANAGER'],
         'broker' => ['BROKER_ADMIN', 'BROKER_SUPERVISOR', 'BROKER_STAFF', 'BRANCH_MANAGER'],
     ];
 

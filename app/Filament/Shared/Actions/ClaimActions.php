@@ -88,10 +88,10 @@ final class ClaimActions
             ->steps([
                 Step::make(__('workflow_actions.claimRegister.step_policy'))->schema([
                     Select::make('policy_id')->label(__('workflow_actions.fields.policy'))->required()->searchable()->live()
-                        ->options(fn () => Policy::where('tenant_id', self::tenant())->whereIn('status', ['ACTIVE', 'EXPIRING', 'SUSPENDED', 'CANCELLATION_PENDING'])->limit(200)->pluck('policy_number', 'id'))
-                        ->afterStateUpdated(fn ($state, callable $set) => $set('claimant_party_id', Policy::find($state)?->party_id)),
+                        ->options(fn () => self::claimablePolicies()->limit(200)->pluck('policy_number', 'id'))
+                        ->afterStateUpdated(fn ($state, callable $set) => $set('claimant_party_id', self::claimablePolicies()->find($state)?->party_id)),
                     Select::make('claimant_party_id')->label(__('workflow_actions.fields.claimant'))->required()
-                        ->options(fn (callable $get) => ($pol = Policy::find($get('policy_id'))) ? [$pol->party_id => $pol->party?->display_name ?? $pol->party_id] : []),
+                        ->options(fn (callable $get) => ($pol = self::claimablePolicies()->find($get('policy_id'))) ? [$pol->party_id => $pol->party?->display_name ?? $pol->party_id] : []),
                 ]),
                 Step::make(__('workflow_actions.claimRegister.step_loss'))->schema([
                     DateTimePicker::make('loss_occurred_at')->label(__('workflow_actions.fields.loss_occurred_at'))->required()->maxDate(now()),
@@ -103,6 +103,11 @@ final class ClaimActions
                 ]),
             ])
             ->action(function (Action $action, array $data) use ($p) {
+                // The policy must be one the caller may claim on (insurer portal: its own carrier's), re-checked server side.
+                if (! self::claimablePolicies()->whereKey($data['policy_id'] ?? null)->exists()) {
+                    WorkflowAction::fail(__('workflow_actions.denied'));
+                    $action->halt();
+                }
                 $channel = $data['channel'] ?? 'BACK_OFFICE';
                 $payload = [
                     'policy_id' => $data['policy_id'], 'claimant_party_id' => $data['claimant_party_id'], 'loss_occurred_at' => $data['loss_occurred_at'],
@@ -479,5 +484,12 @@ final class ClaimActions
     private static function tenant(): string
     {
         return app(TenantContext::class)->id();
+    }
+
+    /** Claimable policies of the tenant; inside a portal narrowed to the caller's book (insurer: own carrier). */
+    public static function claimablePolicies(): \Illuminate\Database\Eloquent\Builder
+    {
+        return \App\Application\WebExperiences\PortalScope::narrowTable(
+            Policy::where('tenant_id', self::tenant())->whereIn('status', ['ACTIVE', 'EXPIRING', 'SUSPENDED', 'CANCELLATION_PENDING']), 'policies');
     }
 }

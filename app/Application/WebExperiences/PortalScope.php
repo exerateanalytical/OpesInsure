@@ -188,6 +188,109 @@ final class PortalScope
         return $partner === null && BookScope::tenantIsCompany() ? null : (string) $partner;
     }
 
+    /** Tables whose portal visibility visibleIds() knows (anything else is decided by the column rules in isOwnRecord). */
+    private const OWNED_TABLES = ['policies', 'quotes', 'proposals', 'claims', 'claim_payments', 'payment_intents', 'underwriting_cases',
+        'health_preauthorizations', 'health_provider_claims', 'health_provider_settlement_batches', 'provider_disputes'];
+
+    /** Partner-owned finance rows: in the broker portal a book-scoped caller only acts on their own partner's rows. */
+    private const PARTNER_OWNED = [\App\Models\CommissionAccrual::class, \App\Models\PartnerStatement::class, \App\Models\PartnerPayoutRequest::class];
+
+    /**
+     * Owner decision 2026-09-29 (portals writable, D4 lifted — docs/spec/PORTAL_WRITE_RULES.md): true when $record
+     * belongs to the caller's own organisation in the current portal. Always true outside a portal (the admin panel keeps
+     * its own tenant scope). Rules, all of which must hold:
+     *  - tenant: a record carrying tenant_id (or custodian_tenant_id) must be in the portal tenant;
+     *  - insurer: a record carrying carrier_id must be the caller's carrier (CarrierScopeResolver);
+     *  - broker: commission accruals / statements / payouts must be the caller's partner when the caller is book-scoped;
+     *  - carrier-broker agreements: insurer = own carrier_id, broker = CarrierBrokerAgreementRecord::visibleInPortal;
+     *  - book tables (policies, claims, proposals, health ...): the same visibleIds() the lists use.
+     * Fails closed: no portal tenant, no user, or an unreadable record = false.
+     */
+    public static function isOwnRecord(mixed $record): bool
+    {
+        $panel = self::panel();
+        if ($panel === null) {
+            return true;
+        }
+        if (! $record instanceof \Illuminate\Database\Eloquent\Model || ! auth()->user() instanceof User) {
+            return false;
+        }
+        $tenant = rescue(fn () => app(TenantContext::class)->id(), null, false);
+        if ($tenant === null) {
+            return false;
+        }
+        $owner = $record->getAttribute('tenant_id') ?? $record->getAttribute('custodian_tenant_id');
+        $carrier = $panel === 'insurer' ? self::carrierId() : null;
+
+        if ($record instanceof \App\Models\CarrierBrokerAgreementRecord) {
+            return $panel === 'insurer'
+                ? $carrier !== null && (string) $record->getAttribute('carrier_id') === $carrier
+                : \App\Models\CarrierBrokerAgreementRecord::query()->visibleInPortal()->whereKey($record->getKey())->exists();
+        }
+        if ($owner !== null && (string) $owner !== (string) $tenant) {
+            return false;
+        }
+        if ($carrier !== null && array_key_exists('carrier_id', $record->getAttributes()) && (string) $record->getAttribute('carrier_id') !== $carrier) {
+            return false;
+        }
+        if ($panel === 'broker' && in_array($record::class, self::PARTNER_OWNED, true)) {
+            // Same narrowing as the lists: accruals = narrowToPartner, statements / payouts = narrowToBookPartner.
+            $partner = $record instanceof \App\Models\CommissionAccrual ? (self::partnerId() ?? '') : self::brokerPartnerId();
+            if ($partner !== null && ($partner === '' || (string) $record->getAttribute('partner_id') !== (string) $partner)) {
+                return false;
+            }
+        }
+        $table = $record->getTable();
+        if (in_array($table, self::OWNED_TABLES, true)) {
+            return self::visibleOf($table, [(string) $record->getKey()]) !== [];
+        }
+
+        if ($owner !== null || $record instanceof \App\Models\StickerBatch) {
+            return true;
+        }
+
+        // Carrier-owned global rows (no tenant_id), insurer panel only: the caller's own carrier.
+        if ($carrier === null) {
+            return false;
+        }
+        if ($record instanceof \App\Models\Carrier) {
+            return (string) $record->getKey() === $carrier;
+        }
+        if ($record instanceof \App\Models\TariffVersion) {
+            return \App\Models\InsuranceProduct::query()->whereKey($record->getAttribute('insurance_product_id'))->where('carrier_id', $carrier)->exists();
+        }
+
+        // InsuranceProduct, CarrierSetup, authority limits ...: carrier_id already matched above.
+        return array_key_exists('carrier_id', $record->getAttributes()) && $record->getAttribute('carrier_id') !== null;
+    }
+
+    /**
+     * The single write check for portal screens: the caller holds $permission (the SAME string the API route's
+     * RequirePermission uses) AND, when a record is given, isOwnRecord($record). Outside a portal it is the plain
+     * permission check. Use it in ->authorize()/->visible() of custom actions; WorkflowAction already applies it.
+     */
+    public static function allowsWrite(?string $permission, mixed $record = null): bool
+    {
+        $user = auth()->user();
+        if (! $user instanceof User || ($permission !== null && ! (bool) rescue(fn () => $user->hasPermission($permission), false, false))) {
+            return false;
+        }
+
+        return $record === null || self::isOwnRecord($record);
+    }
+
+    /** Partner statements / payout requests in the broker portal: a book-scoped caller sees their own partner's rows only. */
+    public static function narrowToBookPartner(Builder $q, string $column = 'partner_id'): Builder
+    {
+        $partner = self::brokerPartnerId();
+
+        return match ($partner) {
+            null => $q,
+            '' => $q->whereRaw('1 = 0'),
+            default => $q->where($column, $partner),
+        };
+    }
+
     /** Commission receivables in the broker portal: the caller's own partner only (no partner = nothing). */
     public static function narrowToPartner(Builder $q, string $column = 'partner_id'): Builder
     {

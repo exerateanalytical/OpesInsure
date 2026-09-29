@@ -19,12 +19,22 @@ final class BrokerPanelProvider extends PanelProvider
     {
         return PortalPanelFactory::configure($panel, 'broker', [
             QuoteResource::class, PolicyResource::class, ClaimResource::class,
+            // P5 2026-09-29 (D4 lifted): sales journey — proposals of the caller's book (ProposalResource narrows to PortalScope proposals).
+            \App\Filament\Admin\Resources\Proposals\ProposalResource::class,
             // Owner decision D4 (read-only in the portal, see PortalAuthorization::PORTAL_SECTIONS)
             \App\Filament\Admin\Resources\CarrierBrokerAgreements\CarrierBrokerAgreementResource::class,
             \App\Filament\Admin\Resources\Bordereaux\BordereauResource::class,
             \App\Filament\Admin\Resources\CarrierSettlements\CarrierSettlementResource::class,
             \App\Filament\Admin\Resources\CommissionAccruals\CommissionAccrualResource::class,
+            // 2026-09-29 (D4 lifted): commission statements and payout requests, own partner (PortalScope::narrowToBookPartner).
+            \App\Filament\Admin\Resources\PartnerStatements\PartnerStatementResource::class,
+            \App\Filament\Admin\Resources\PartnerPayouts\PartnerPayoutResource::class,
             \App\Filament\Admin\Resources\Memberships\MembershipResource::class,
+            // P6 2026-09-29 (D4 lifted): renewal cases of the caller's book (RenewalResource narrows to PortalScope policies).
+            \App\Filament\Admin\Resources\Renewals\RenewalResource::class,
+        ], [
+            // P5 2026-09-29: the broker's customers, start of the sales journey (new customer, quote, KYC).
+            \App\Filament\Shared\Pages\BrokerCustomersPage::class,
         ])
             // UI audit 2026-09-27: the shared finance resources use the literal group key 'Financial operations';
             // give it a translated label here (broker panel only, the admin grouping is untouched).

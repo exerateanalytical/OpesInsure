@@ -33,6 +33,32 @@ final class PortalAuthorization
         'quotes.read' => ['carrier.quote_requests.view', 'broker.portal.read'],
     ];
 
+    /**
+     * Owner decision 2026-09-29 (D4 lifted, docs/spec/PORTAL_WRITE_RULES.md): write permissions whose portal-role
+     * equivalent is the permission of an existing API alias route on the SAME service (so a portal user is allowed a
+     * write exactly when the API would allow it):
+     *   POST broker/bordereaux                     broker.bordereaux.manage  -> BordereauService::prepare
+     *   POST broker/bordereaux/{b}/submit          broker.bordereaux.submit  -> BordereauService::submit
+     *   POST carrier/bordereaux/{b}/decision       carrier.bordereaux.decide -> BordereauService::acknowledge / reject
+     */
+    public const EQUIVALENT_WRITES = [
+        'bordereaux.prepare' => ['broker.bordereaux.manage'],
+        'bordereaux.submit' => ['broker.bordereaux.submit'],
+        'bordereaux.confirm' => ['carrier.bordereaux.decide'],
+    ];
+
+    /** True when the user holds the write permission or one of its EQUIVALENT_WRITES (evaluated in the current tenant). */
+    public static function allowsWritePermission(User $user, string $permission): bool
+    {
+        foreach ([$permission, ...(self::EQUIVALENT_WRITES[$permission] ?? [])] as $p) {
+            if ((bool) rescue(fn () => $user->hasPermission($p), false, false)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** True when the user holds the permission or one of its EQUIVALENT_READS. */
     public static function allowsRead(User $user, string $permission): bool
     {
@@ -54,10 +80,11 @@ final class PortalAuthorization
     ];
 
     /**
-     * Owner decision D4: broker ERP / carrier portal sections, READ-ONLY in the
-     * portals (every non-view ability is refused there; writes stay in the
-     * admin panel and the APIs, unchanged). Permission strings are the ones the
-     * existing APIs already require for the same data.
+     * Broker ERP / carrier portal sections. Owner decision 2026-09-29 lifted D4: the portals are writable, but only
+     * through the workflow actions (WorkflowAction: the API route's permission + PortalScope::isOwnRecord, then the
+     * same service the API calls). The generic Filament CRUD abilities (create / update / delete through a resource
+     * form, which bypass those services) stay refused here. Read permission strings are the ones the existing APIs
+     * already require for the same data.
      *
      * A list of permissions means any one of them grants read (checked with allowsRead()).
      *
@@ -75,7 +102,10 @@ final class PortalAuthorization
         StickerStock::class => ['insurer' => 'stickers.view'],
         JournalRecord::class => ['insurer' => ['ledger.read', 'ledger.post', 'ledger.approve']],
         CarrierBrokerAgreementRecord::class => ['insurer' => 'distribution.agreements.view', 'broker' => 'distribution.agreements.view'],
-        TenantMembership::class => ['broker' => 'broker.portal.read'],
+        TenantMembership::class => ['broker' => 'broker.portal.read', 'insurer' => 'identity.invite'],
+        // 2026-09-29: broker commission statements and payout requests (own partner, PortalScope::isOwnRecord).
+        \App\Models\PartnerStatement::class => ['broker' => ['statements.read', 'broker.finance.read']],
+        \App\Models\PartnerPayoutRequest::class => ['broker' => ['statements.read', 'broker.finance.read']],
     ];
 
     /** Gate::before hook: null = no opinion. */
@@ -158,6 +188,6 @@ final class PortalAuthorization
             return ($partner = PortalScope::partnerId()) !== null && $subject->getAttribute('partner_id') === $partner;
         }
 
-        return true;
+        return PortalScope::isOwnRecord($subject);
     }
 }

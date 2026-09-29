@@ -72,7 +72,8 @@ test('D4 carrier portal: bordereaux and settlements are tenant + carrier scoped,
     $this->flushSession();
     $this->actingAs($noPerm)->get('/insurer/bordereaux')->assertForbidden();
 
-    // read-only in the portal: write abilities are never granted there
+    // D4 lifted 2026-09-29: portal writes go through the workflow actions (PortalWriteCoreTest); the generic
+    // Filament CRUD abilities, which bypass the services, stay refused (docs/spec/PORTAL_WRITE_RULES.md)
     \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('insurer'));
     expect(app(PortalAuthorization::class)->before($reader, 'create', [\App\Models\Bordereau::class]))->toBeFalse()
         ->and(app(PortalAuthorization::class)->before($reader, 'update', [$mine]))->toBeFalse();
@@ -88,7 +89,9 @@ test('D4 broker portal: staff list is the portal tenant only and cannot be edite
     $stranger->update(['full_name' => 'Stranger Outside']);
 
     $this->actingAs($admin)->get('/broker/memberships')->assertOk()->assertSee('Colleague Inside')->assertDontSee('Stranger Outside')
-        ->assertDontSee(__('filament-actions::create.single.label'));
+        ->assertDontSee(__('filament-actions::create.single.label'))
+        // 2026-09-29 (D4 lifted, P6): generic CRUD stays refused; staff join through the invitation service instead.
+        ->assertSee(__('broker_portal_service.inviteStaff.label'));
     $this->actingAs($admin)->get('/broker/memberships/create')->assertForbidden();
 
     // receivables: no partner link = nothing listed (MobileBrokerOpsController::receivables boundary)

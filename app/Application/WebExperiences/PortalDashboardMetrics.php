@@ -28,12 +28,26 @@ final class PortalDashboardMetrics
         }
 
         // Agent B2 — REQ-RPT-004: tiles and values come from the governed dashboard registry (same shape as before).
-        return array_map(fn (array $t) => $this->m(
+        // Owner rule 2026-09-29 (docs/spec/PORTAL_WRITE_RULES.md): a tile drilling into a book is shown only to a user
+        // who may read that book (same read permission as its list page).
+        return array_values(array_map(fn (array $t) => $this->m(
             $t['key'],
             ($t['format'] ?? null) === 'money_total' ? Money::format((int) $t['value'], 'XAF') : (int) $t['value'],
             $t['tone'],
             $t['drilldown'],
-        ), $this->tilesWithFormat($portal, $tenantId));
+        ), array_filter($this->tilesWithFormat($portal, $tenantId), fn (array $t) => $this->mayRead($t['drilldown'] ?? null))));
+    }
+
+    /** Drill-down list => the read permission its list page requires (PortalAuthorization::READ_PERMISSIONS). */
+    private const DRILLDOWN_READS = ['claims' => 'claims.view', 'policies' => 'policies.read', 'quotes' => 'quotes.read'];
+
+    private function mayRead(?string $drilldown): bool
+    {
+        $permission = self::DRILLDOWN_READS[$drilldown] ?? null;
+        $user = auth()->user();
+
+        // No signed-in user = a service / report caller, not a portal screen (the widget always runs authenticated).
+        return $permission === null || ! $user instanceof \App\Models\User || PortalAuthorization::allowsRead($user, $permission);
     }
 
     /** @return list<array<string, mixed>> */

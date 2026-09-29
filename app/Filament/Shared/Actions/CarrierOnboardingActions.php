@@ -227,7 +227,10 @@ final class CarrierOnboardingActions
 
     public static function carrierOptions(): array
     {
-        return Carrier::with('party')->limit(500)->get()->mapWithKeys(fn ($c) => [$c->id => $c->party?->display_name ?? $c->cima_code])->sort()->all();
+        // Insurer portal: own carrier only (docs/spec/PORTAL_WRITE_RULES.md).
+        $own = \App\Application\WebExperiences\PortalScope::panel() === 'insurer' ? (\App\Application\WebExperiences\PortalScope::carrierId() ?? '') : null;
+
+        return Carrier::with('party')->when($own !== null, fn ($q) => $q->whereKey($own))->limit(500)->get()->mapWithKeys(fn ($c) => [$c->id => $c->party?->display_name ?? $c->cima_code])->sort()->all();
     }
 
     /** @return array<string, string> non-system checklist items (code => label) */

@@ -11,9 +11,9 @@ final class ListCarrierBrokerAgreements extends ListRecords
 {
     protected static string $resource = CarrierBrokerAgreementResource::class;
 
-    /** Staff desktop only: portals stay read-only (D4). */
+    /** Every panel (D4 lifted 2026-09-29): API permission; the insurer portal offers only its own carrier (docs/spec/PORTAL_WRITE_RULES.md). */
     protected function getHeaderActions(): array
     {
-        return \App\Application\WebExperiences\PortalScope::panel() === null ? [\App\Filament\Shared\Actions\CarrierOnboardingActions::agreementCreate()] : [];
+        return [\App\Filament\Shared\Actions\CarrierOnboardingActions::agreementCreate()];
     }
 }

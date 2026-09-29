@@ -149,14 +149,14 @@ final class ClaimCaseActions
         return self::make('policyCoverageCheck', $p)->icon('lucide-shield-question')->color('gray')
             ->schema([
                 Select::make('policy_id')->label(self::f('policy'))->required()->searchable()
-                    ->options(fn () => Policy::where('tenant_id', self::tenant())->orderByDesc('created_at')->limit(200)->pluck('policy_number', 'id')),
+                    ->options(fn () => \App\Application\WebExperiences\PortalScope::narrowTable(Policy::where('tenant_id', self::tenant()), 'policies')->orderByDesc('created_at')->limit(200)->pluck('policy_number', 'id')),
                 DateTimePicker::make('loss_occurred_at')->label(self::f('loss_occurred_at'))->required(),
                 DateTimePicker::make('reported_at')->label(self::f('reported_at')),
                 TextInput::make('coverage_code')->label(self::f('coverage_code'))->maxLength(64),
                 KeyValue::make('facts')->label(self::f('facts')),
             ])
             ->action(fn (Action $action, array $data) => self::run($action, $p, fn () => app(CoverageAtLossEngine::class)->evaluate(
-                Policy::where('tenant_id', self::tenant())->findOrFail($data['policy_id']), CarbonImmutable::parse($data['loss_occurred_at']),
+                \App\Application\WebExperiences\PortalScope::narrowTable(Policy::where('tenant_id', self::tenant()), 'policies')->findOrFail($data['policy_id']), CarbonImmutable::parse($data['loss_occurred_at']),
                 filled($data['reported_at'] ?? null) ? CarbonImmutable::parse($data['reported_at']) : null,
                 filled($data['coverage_code'] ?? null) ? $data['coverage_code'] : null, (array) ($data['facts'] ?? [])), fn ($r) => (string) data_get($r, 'outcome', '')));
     }

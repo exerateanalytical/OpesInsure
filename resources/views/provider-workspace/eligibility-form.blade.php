@@ -1,4 +1,11 @@
-<form wire:submit="check" class="grid gap-3 md:grid-cols-5 items-end">
+<form wire:submit="check" class="grid gap-3 md:grid-cols-6 items-end">
+    <label class="text-sm">{{ __('provider_workspace.ui.search_method') }}
+        <select wire:model="search_method" class="mt-1 block w-full rounded-lg border-gray-300">
+            @foreach (\App\Application\Providers\Workspace\ProviderWorkspaceRegister::SEARCH_METHODS as $m)
+                <option value="{{ $m }}">{{ __('provider_workspace.ui.search_methods.'.$m) }}</option>
+            @endforeach
+        </select>
+    </label>
     <label class="text-sm">{{ __('provider_workspace.screens.patient_search') }}
         <input type="text" wire:model="member_ref" required class="mt-1 block w-full rounded-lg border-gray-300" />
     </label>

@@ -40,6 +40,57 @@ final class PaymentActions
             ->label(__('workflow_actions.payment_group'))->icon('lucide-zap')->button();
     }
 
+    /**
+     * Premium collection from the proposal page (owner decision 2026-09-29, /broker writable):
+     *   POST payments (no route permission) + POST payments/{p}/initiate — PaymentRequestService::create +
+     *   PaymentInitiationService::initiate, with the controller's checks (partner book, fake provider only where allowed).
+     * The customer then authorises on their phone; the provider webhook reconciles it and opens the carrier issuance
+     * request automatically (PaymentIssuanceTrigger).
+     */
+    public static function requestPremium(): Action
+    {
+        return WorkflowAction::make('brokerRequestPremium', null, 'broker_portal_sales')->icon('lucide-smartphone')
+            ->visible(fn (\App\Models\Proposal $record) => $record->status === 'PAYMENT_PENDING'
+                && ! PaymentIntentRecord::where(['proposal_id' => $record->id, 'status' => 'SUCCEEDED'])->exists())
+            ->fillForm(fn (\App\Models\Proposal $record) => ['payer_phone_e164' => DB::table('party_contacts')->where(['party_id' => $record->party_id, 'type' => 'PHONE'])->value('normalized_value')])
+            ->schema([
+                Select::make('provider')->label(__('broker_portal_sales.fields.provider'))->required()->options(fn () => self::providerOptions()),
+                TextInput::make('payer_phone_e164')->label(__('broker_portal_sales.fields.payer_phone'))->required()->regex('/^\+[1-9]\d{7,14}$/'),
+            ])
+            ->action(fn (Action $action, \App\Models\Proposal $record, array $data) => WorkflowAction::run($action, null, function () use ($record, $data) {
+                app(\App\Application\Partners\PartnerBook::class)->assertInBook(auth()->user(), $record->party_id);
+                \App\Application\Demo\DemoPersonas::assertProviderAllowed($data['provider'], auth()->user());
+                $intent = app(\App\Application\Payments\PaymentRequestService::class)->create(\App\Models\Tenant::findOrFail(self::tenant()), $record->refresh(),
+                    ['provider' => $data['provider'], 'payer_phone_e164' => $data['payer_phone_e164'], 'idempotency_key' => (string) Str::uuid()], auth()->user());
+
+                return in_array($intent->status, ['CREATED', 'PENDING_CUSTOMER', 'FAILED'], true) && $intent->provider_reference === null
+                    ? app(\App\Application\Payments\PaymentInitiationService::class)->initiate($intent) : $intent;
+            }));
+    }
+
+    /** Receipt of the proposal's confirmed premium payment: the signed PDF link GET mobile/payments/{p}/receipt returns. */
+    public static function premiumReceipt(): Action
+    {
+        $paid = fn (\App\Models\Proposal $p) => PaymentIntentRecord::where(['tenant_id' => $p->tenant_id, 'proposal_id' => $p->id, 'status' => 'SUCCEEDED'])->latest('updated_at')->first();
+
+        return WorkflowAction::make('brokerPremiumReceipt', null, 'broker_portal_sales')->icon('lucide-receipt')
+            ->visible(fn (\App\Models\Proposal $record) => $paid($record) !== null)
+            ->url(fn (\App\Models\Proposal $record) => ($i = $paid($record)) ? \Illuminate\Support\Facades\URL::temporarySignedRoute('mobile.payments.receipt.pdf',
+                now()->addMinutes((int) config('lifecycle.download_ttl_minutes', 30)), ['payment' => $i->id]) : null, shouldOpenInNewTab: true);
+    }
+
+    /** Providers with an ACTIVE connection for this tenant (as PaymentInitiationService requires), plus the test provider where allowed. */
+    private static function providerOptions(): array
+    {
+        $live = \App\Models\PaymentProviderConnection::where('status', 'ACTIVE')->where(fn ($q) => $q->where('tenant_id', self::tenant())->orWhereNull('tenant_id'))
+            ->distinct()->pluck('provider')->all();
+        if (\App\Application\Demo\DemoPersonas::fakeProviderAllowed(auth()->user())) {
+            $live[] = 'fake';
+        }
+
+        return collect($live)->unique()->mapWithKeys(fn ($v) => [$v => \Illuminate\Support\Facades\Lang::has("broker_portal_sales.providers.{$v}") ? __("broker_portal_sales.providers.{$v}") : $v])->all();
+    }
+
     public static function allocate(): Action
     {
         $p = 'payments.allocations.manage';

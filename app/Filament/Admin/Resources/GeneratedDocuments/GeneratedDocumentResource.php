@@ -20,7 +20,68 @@ use Filament\Tables\Table;
 /** DOC-ADM-016 generated documents registry (+ carrier original upload, revoke/replace request). Never deletes; restricted security levels hidden without the level permission. */
 final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedResource
 {
-    use DocumentEngineAccess;
+    use DocumentEngineAccess { canAccessDocumentEngine as platformDocumentEngine; }
+
+    /**
+     * P4 (owner 2026-09-29): the same registry in /insurer, for the caller's own documents only — tenant = portal tenant
+     * and issued by the caller's carrier or attached to one of its policies (PortalScope::narrowTable). Gated by the
+     * document API permissions (documents.carrier.upload / documents.status.request / documents.status.approve), never
+     * by role name; security levels still filtered by DocumentAccessPolicy::staffMay.
+     */
+    public const INSURER_READ = ['documents.carrier.upload', 'documents.status.request', 'documents.status.approve'];
+
+    private static function insurer(): bool
+    {
+        return \App\Application\WebExperiences\PortalScope::panel() === 'insurer';
+    }
+
+    public static function canAccessDocumentEngine(): bool
+    {
+        if (! self::insurer()) {
+            return static::platformDocumentEngine();
+        }
+        $user = auth()->user();
+
+        return $user !== null && \App\Application\WebExperiences\PortalScope::carrierId() !== null
+            && collect(self::INSURER_READ)->contains(fn (string $p) => \App\Application\WebExperiences\PortalAuthorization::allowsRead($user, $p));
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return self::insurer() ? __('insurer_portal_ops.nav.documents') : 'Document engine';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return self::insurer() ? __('insurer_portal_ops.nav.document_register') : 'Generated documents';
+    }
+
+    /** Own documents in /insurer (no-op elsewhere). */
+    private static function ownDocuments(\Illuminate\Database\Eloquent\Builder $q): \Illuminate\Database\Eloquent\Builder
+    {
+        if (! self::insurer()) {
+            return $q;
+        }
+        $tenant = rescue(fn () => app(\App\Domain\Tenancy\TenantContext::class)->id(), null, false);
+        $carrier = \App\Application\WebExperiences\PortalScope::carrierId();
+        if ($tenant === null || $carrier === null) {
+            return $q->whereRaw('1 = 0');
+        }
+
+        return $q->where('documents.tenant_id', $tenant)->where(fn ($w) => $w->where('documents.issuer_carrier_id', $carrier)
+            ->orWhereIn('documents.policy_id', \App\Application\WebExperiences\PortalScope::narrowTable(\Illuminate\Support\Facades\DB::table('policies')->where('tenant_id', $tenant), 'policies')->select('policies.id')));
+    }
+
+    /** Write gate of the registry actions: in /insurer the API permission plus own record; the admin panel is unchanged. */
+    private static function mayWrite(string $permission, ?\App\Models\Document $record = null): bool
+    {
+        if (! self::insurer()) {
+            return true;
+        }
+
+        return \App\Application\WebExperiences\PortalScope::allowsWrite($permission, $record)
+            && ($record === null || self::ownDocuments(\App\Models\Document::query())->whereKey($record->getKey())->exists());
+    }
 
     protected static ?string $model = \App\Models\Document::class;
 
@@ -52,6 +113,7 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
     {
         return Actions\Action::make('statusChange')->label('Revoke / replace')->icon('lucide-ban')->color('danger')
             ->visible(fn ($record) => in_array($record->status, DocumentRegister::CURRENT_STATUSES, true))
+            ->authorize(fn ($record) => self::mayWrite('documents.status.request', $record))
             ->schema([
                 Forms\Components\Select::make('action')->options(['REVOKE' => 'Revoke', 'REPLACE' => 'Replace', 'CANCEL' => 'Cancel'])->required()->live(),
                 Forms\Components\Select::make('replacement_document_id')->label('Replacement document')->visible(fn ($get) => $get('action') === 'REPLACE')
@@ -161,9 +223,10 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
             ->headerActions([
                 self::tamperCheckAction(identify: true),
                 Actions\Action::make('carrierUpload')->label('Upload carrier document')->icon('lucide-upload')
+                    ->authorize(fn () => self::mayWrite('documents.carrier.upload'))
                     ->schema([
                         Forms\Components\Select::make('policy_id')->label('Policy')->searchable()->required()
-                            ->getSearchResultsUsing(fn (string $search) => \App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id())->where('policy_number', 'ilike', "%{$search}%")->limit(20)->pluck('policy_number', 'id')->all()),
+                            ->getSearchResultsUsing(fn (string $search) => \App\Application\WebExperiences\PortalScope::narrowTable(\App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id()), 'policies')->where('policy_number', 'ilike', "%{$search}%")->limit(20)->pluck('policy_number', 'id')->all()),
                         Forms\Components\Select::make('document_type_code')->label('Document type')->options(fn () => collect(app(DocumentRegister::class)->types())->mapWithKeys(fn ($t) => [$t['code'] => $t['id'].' · '.$t['name_en']])->all())->searchable()->required(),
                         Forms\Components\DatePicker::make('issue_date')->required(),
                         Forms\Components\TextInput::make('carrier_document_number')->maxLength(100),
@@ -175,7 +238,11 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
                     ->action(function (array $data) {
                         $disk = \Illuminate\Support\Facades\Storage::disk('local');
                         $path = is_array($data['file']) ? reset($data['file']) : $data['file'];
-                        $policy = \App\Models\Policy::findOrFail($data['policy_id']);
+                        $policy = \App\Models\Policy::where('tenant_id', app(\App\Domain\Tenancy\TenantContext::class)->id())->findOrFail($data['policy_id']);
+                        if (self::insurer() && ! \App\Application\WebExperiences\PortalScope::isOwnRecord($policy)) {
+                            $disk->delete($path);
+                            abort(403);
+                        }
                         ServiceValidation::run(fn () => app(\App\Application\Documents\Engine\CarrierDocumentService::class)->upload($policy, (string) $disk->get($path), (string) $disk->mimeType($path), $data, auth()->user()));
                         $disk->delete($path);
                     }),
@@ -186,7 +253,7 @@ final class GeneratedDocumentResource extends \App\Filament\Shared\LocalizedReso
     {
         $levels = collect(DocumentRegister::SECURITY_LEVELS)->filter(fn ($l) => DocumentAccessPolicy::staffMay(auth()->user(), new \App\Models\Document(['security_level' => $l])))->all();
 
-        return parent::getEloquentQuery()->whereNotNull('document_type_code')->whereIn('document_origin', DocumentRegister::ISSUED_ORIGINS)->whereIn('security_level', $levels);
+        return self::ownDocuments(parent::getEloquentQuery())->whereNotNull('document_type_code')->whereIn('document_origin', DocumentRegister::ISSUED_ORIGINS)->whereIn('security_level', $levels);
     }
 
     public static function getPages(): array
