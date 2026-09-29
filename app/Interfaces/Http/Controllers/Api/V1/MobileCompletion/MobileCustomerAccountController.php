@@ -57,6 +57,8 @@ final class MobileCustomerAccountController
             'latitude' => 'sometimes|'.\App\Domain\Geo\Coordinates::RULES['latitude'],
             'longitude' => 'sometimes|'.\App\Domain\Geo\Coordinates::RULES['longitude'],
             'occupation' => 'sometimes|nullable|string|max:120',
+            // Free text when the occupation picker's "Other" is chosen (it used to be dropped).
+            'occupation_other' => 'sometimes|nullable|string|max:120',
             'date_of_birth' => 'sometimes|nullable|date|before:today|after:1900-01-01',
             'beneficiaries' => 'sometimes|array|max:10',
             'beneficiaries.*.name' => 'required|string|min:2|max:160',
@@ -79,6 +81,10 @@ final class MobileCustomerAccountController
                         ? array_map(fn ($b) => ['name' => $b['name'], 'relationship' => strtoupper($b['relationship']), 'share_percent' => round((float) $b['share_percent'], 2)], $data[$k])
                         : $data[$k];
                 }
+            }
+            if (array_key_exists('occupation', $data) || array_key_exists('occupation_other', $data)) {
+                $other = strtoupper((string) ($profile['occupation'] ?? '')) === 'OTHER' ? trim((string) ($data['occupation_other'] ?? $profile['occupation_other'] ?? '')) : '';
+                $profile['occupation_other'] = $other !== '' ? $other : null;
             }
             $identity = $party->legal_identity ?? [];
             if (array_key_exists('date_of_birth', $data)) {
@@ -203,6 +209,7 @@ final class MobileCustomerAccountController
             'full_name' => $party->display_name,
             'date_of_birth' => $party->legal_identity['date_of_birth'] ?? null,
             'occupation' => $profile['occupation'] ?? null,
+            'occupation_other' => $profile['occupation_other'] ?? null,
             'address_line1' => $address->line1 ?? null,
             'city' => $address->city ?? null,
             'region' => $address->region ?? null,

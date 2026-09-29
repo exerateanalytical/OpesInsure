@@ -88,6 +88,12 @@ it('saves and returns the customer profile with address, occupation, birth date 
     $this->patchJson('/api/v1/mobile/account/customer-profile', ['city' => 'Yaoundé'], $h)->assertOk();
     $g = $this->getJson('/api/v1/mobile/account/customer-profile', $h)->assertOk();
     expect($g->json('data.city'))->toBe('Yaoundé')->and($g->json('data.address_line1'))->toBe('12 Rue de la Joie')->and($g->json('data.beneficiaries'))->toHaveCount(2);
+
+    // "Other" occupation keeps the typed text; choosing a listed occupation clears it.
+    $this->patchJson('/api/v1/mobile/account/customer-profile', ['occupation' => 'OTHER', 'occupation_other' => '  Mototaxi driver '], $h)->assertOk()
+        ->assertJsonPath('data.occupation', 'OTHER')->assertJsonPath('data.occupation_other', 'Mototaxi driver');
+    $this->patchJson('/api/v1/mobile/account/customer-profile', ['occupation' => 'TEACHER'], $h)->assertOk()
+        ->assertJsonPath('data.occupation_other', null);
 });
 
 it('records consents with version and timestamp, and withdrawals', function () {
