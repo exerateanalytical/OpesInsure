@@ -203,8 +203,41 @@ final class PaymentIssuanceTrigger
 
         // A renewal continues where the previous policy ends.
         $previous = $quote ? RenewalCase::where('renewal_quote_id', $quote->id)->first()?->policy : null;
-        $starts = $previous && $previous->coverage_ends_at->greaterThan($today) ? CarbonImmutable::parse($previous->coverage_ends_at) : $today;
+        if ($previous && $previous->coverage_ends_at->greaterThan($today)) {
+            $starts = CarbonImmutable::parse($previous->coverage_ends_at);
 
-        return [$starts, $starts->addYear()->subDay()->endOfDay()];
+            return [$starts, $starts->addYear()->subDay()->endOfDay()];
+        }
+
+        // REQ-PRP-005: the cover terms chosen on the proposal (start rule/date, duration) — previously ignored.
+        if (is_array($terms = $proposal->cover_terms) && $terms !== []) {
+            return $this->chosenPeriod($terms, $today);
+        }
+
+        return [$today, $today->addYear()->subDay()->endOfDay()];
+    }
+
+    /**
+     * Start from the chosen effective-date rule (a SPECIFIED_DATE never before today), end after the chosen duration
+     * (MONTH / DAY; anything else falls back to 12 months), inclusive of the last day.
+     *
+     * @param  array<string, mixed>  $terms
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private function chosenPeriod(array $terms, CarbonImmutable $today): array
+    {
+        $starts = app(CoverTermsService::class)->resolveStart($terms, CarbonImmutable::now())->startOfDay();
+        if ($starts->lessThan($today)) {
+            $starts = $today;
+        }
+        $unit = strtoupper((string) ($terms['duration']['unit'] ?? 'MONTH'));
+        $value = (int) ($terms['duration']['value'] ?? 0);
+        $end = match (true) {
+            $unit === 'MONTH' && $value >= 1 => $starts->addMonths($value),
+            $unit === 'DAY' && $value >= 1 => $starts->addDays($value),
+            default => $starts->addYear(),
+        };
+
+        return [$starts, $end->subDay()->endOfDay()];
     }
 }
