@@ -125,8 +125,8 @@ export function FeaturedProviders({ providers, kind = "insurer" }: { providers: 
             >
               <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={52} />
               <View style={styles.nameBox}>
-                <Text style={styles.name}>
-                  {p.name}
+                <Text style={styles.name} numberOfLines={2}>
+                  {p.short_name ?? p.name}
                 </Text>
               </View>
               {star ? (
