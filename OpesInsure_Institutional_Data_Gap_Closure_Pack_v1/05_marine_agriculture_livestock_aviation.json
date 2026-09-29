@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "Marine, Cargo, Agriculture, Livestock & Aviation Reference Master"
+  },
+  "marine_cargo": {
+    "incoterms": [
+      "EXW",
+      "FCA",
+      "CPT",
+      "CIP",
+      "DAP",
+      "DPU",
+      "DDP",
+      "FAS",
+      "FOB",
+      "CFR",
+      "CIF"
+    ],
+    "transport_modes": [
+      "ROAD",
+      "RAIL",
+      "SEA",
+      "AIR",
+      "INLAND_WATERWAY",
+      "MULTIMODAL"
+    ],
+    "packaging_types": [
+      "BULK",
+      "BAG",
+      "BOX",
+      "CARTON",
+      "CRATE",
+      "DRUM",
+      "PALLET",
+      "CONTAINER",
+      "TANK",
+      "REEFER",
+      "OTHER"
+    ],
+    "cargo_families": [
+      "AGRICULTURAL_PRODUCE",
+      "FOOD_BEVERAGE",
+      "TIMBER",
+      "MINERALS",
+      "PETROLEUM",
+      "CHEMICALS",
+      "MACHINERY",
+      "ELECTRONICS",
+      "VEHICLES",
+      "TEXTILES",
+      "PHARMACEUTICALS",
+      "CONSTRUCTION_MATERIALS",
+      "GENERAL_MERCHANDISE",
+      "LIVE_ANIMALS",
+      "HIGH_VALUE_GOODS"
+    ],
+    "risk_classes": [
+      "STANDARD",
+      "FRAGILE",
+      "PERISHABLE",
+      "TEMPERATURE_CONTROLLED",
+      "HAZARDOUS",
+      "THEFT_ATTRACTIVE",
+      "HIGH_VALUE",
+      "OVERSIZED"
+    ],
+    "port_master_status": "PENDING_OFFICIAL_IMPORT",
+    "route_master_status": "CONFIG_REQUIRED"
+  },
+  "agriculture": {
+    "crop_families": [
+      "COCOA",
+      "COFFEE",
+      "COTTON",
+      "BANANA",
+      "PLANTAIN",
+      "MAIZE",
+      "RICE",
+      "SORGHUM",
+      "MILLET",
+      "CASSAVA",
+      "YAM",
+      "POTATO",
+      "SWEET_POTATO",
+      "GROUNDNUT",
+      "SOYBEAN",
+      "PALM_OIL",
+      "RUBBER",
+      "TEA",
+      "SUGARCANE",
+      "VEGETABLES",
+      "FRUITS",
+      "OTHER"
+    ],
+    "farm_types": [
+      "SMALLHOLDER",
+      "COMMERCIAL",
+      "PLANTATION",
+      "COOPERATIVE",
+      "IRRIGATED",
+      "RAINFED",
+      "GREENHOUSE",
+      "MIXED"
+    ],
+    "perils": [
+      "DROUGHT",
+      "EXCESS_RAIN",
+      "FLOOD",
+      "WINDSTORM",
+      "HAIL",
+      "FIRE",
+      "PEST",
+      "DISEASE",
+      "THEFT",
+      "WILDLIFE_DAMAGE",
+      "PRICE_OR_YIELD_TRIGGER"
+    ],
+    "variety_master_status": "PENDING_AGRICULTURE_SOURCE",
+    "agro_zone_master_status": "PENDING_OFFICIAL_IMPORT"
+  },
+  "livestock": {
+    "species": [
+      "CATTLE",
+      "SHEEP",
+      "GOAT",
+      "PIG",
+      "CHICKEN",
+      "DUCK",
+      "RABBIT",
+      "HORSE",
+      "DONKEY",
+      "BEE",
+      "FISH",
+      "OTHER"
+    ],
+    "production_systems": [
+      "PASTORAL",
+      "RANCH",
+      "INTENSIVE",
+      "SEMI_INTENSIVE",
+      "BACKYARD",
+      "AQUACULTURE",
+      "MIXED"
+    ],
+    "perils": [
+      "ACCIDENT",
+      "DISEASE",
+      "EPIDEMIC",
+      "FIRE",
+      "FLOOD",
+      "THEFT",
+      "PREDATION",
+      "DROUGHT",
+      "OTHER"
+    ],
+    "breed_master_status": "PENDING_OFFICIAL_IMPORT"
+  },
+  "aviation": {
+    "aircraft_categories": [
+      "FIXED_WING",
+      "HELICOPTER",
+      "ULTRALIGHT",
+      "GLIDER",
+      "DRONE_UAS",
+      "OTHER"
+    ],
+    "usage_types": [
+      "PRIVATE",
+      "COMMERCIAL_PASSENGER",
+      "COMMERCIAL_CARGO",
+      "CHARTER",
+      "TRAINING",
+      "AGRICULTURAL",
+      "MEDEVAC",
+      "GOVERNMENT",
+      "OTHER"
+    ],
+    "manufacturer_model_master_status": "PENDING_LICENSED_OR_AUTHORITY_SOURCE",
+    "airport_master_status": "PENDING_OFFICIAL_IMPORT",
+    "pilot_license_mapping_status": "PENDING_CIVIL_AVIATION_SOURCE"
+  }
+}

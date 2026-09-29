@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "Operations, Documents, Cases, SLA, Retention & Notification Master"
+  },
+  "complaints": {
+    "categories": [
+      "SALES_CONDUCT",
+      "MISREPRESENTATION",
+      "PREMIUM",
+      "POLICY_ISSUANCE",
+      "DOCUMENT",
+      "CLAIM_DELAY",
+      "CLAIM_DECISION",
+      "CLAIM_PAYMENT",
+      "REFUND",
+      "COMMISSION",
+      "BROKER_AGENT",
+      "PROVIDER",
+      "PRIVACY_DATA",
+      "SERVICE_QUALITY",
+      "DIGITAL_ACCESS",
+      "FRAUD_CONCERN",
+      "OTHER"
+    ],
+    "severity": [
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "regulatory_deadlines_status": "PENDING_VERIFICATION",
+    "resolution_reasons": [
+      "RESOLVED_IN_FAVOR_CUSTOMER",
+      "RESOLVED_PARTIAL",
+      "NO_ERROR_FOUND",
+      "DUPLICATE",
+      "WITHDRAWN",
+      "REFERRED",
+      "OUTSIDE_SCOPE",
+      "OTHER"
+    ]
+  },
+  "retention": {
+    "status": "PENDING_LEGAL_VALIDATION",
+    "classes": [
+      "KYC_AML",
+      "POLICY_CONTRACT",
+      "CLAIM",
+      "FINANCIAL_ACCOUNTING",
+      "COMMISSION",
+      "REINSURANCE",
+      "PROVIDER_HEALTH",
+      "MEDICAL_RESTRICTED",
+      "REGULATORY_REPORTING",
+      "AUDIT_SECURITY",
+      "COMMUNICATION",
+      "COMPLAINT",
+      "CONSENT",
+      "SYSTEM_LOG"
+    ],
+    "fields": [
+      "retention_class",
+      "retention_years",
+      "trigger_event",
+      "legal_basis",
+      "legal_hold_override",
+      "destruction_method",
+      "effective_from",
+      "effective_until"
+    ]
+  },
+  "notification_events": [
+    "QUOTE_CREATED",
+    "QUOTE_EXPIRING",
+    "PROPOSAL_SUBMITTED",
+    "UNDERWRITING_REFERRED",
+    "PAYMENT_REQUESTED",
+    "PAYMENT_RECEIVED",
+    "PAYMENT_FAILED",
+    "POLICY_ISSUED",
+    "DOCUMENT_AVAILABLE",
+    "POLICY_EXPIRING",
+    "RENEWAL_AVAILABLE",
+    "RENEWAL_OVERDUE",
+    "ENDORSEMENT_APPROVED",
+    "CLAIM_ACKNOWLEDGED",
+    "CLAIM_EVIDENCE_REQUIRED",
+    "CLAIM_ASSESSMENT_SCHEDULED",
+    "CLAIM_DECISION_AVAILABLE",
+    "CLAIM_PAYMENT_SENT",
+    "COMMISSION_ACCRUED",
+    "COMMISSION_PAYABLE",
+    "COMMISSION_PAID",
+    "SETTLEMENT_DUE",
+    "SETTLEMENT_PAID",
+    "KYC_REFRESH_DUE",
+    "COMPLAINT_RECEIVED",
+    "COMPLAINT_UPDATED",
+    "SECURITY_ALERT",
+    "ACCOUNT_LOCKED",
+    "PASSWORD_CHANGED"
+  ],
+  "channels": [
+    "EMAIL",
+    "SMS",
+    "WHATSAPP",
+    "PUSH",
+    "IN_APP"
+  ],
+  "document_numbering_profiles": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "profile_id",
+      "organization_id",
+      "document_type_code",
+      "prefix",
+      "sequence_scope",
+      "year_component",
+      "branch_component",
+      "product_component",
+      "padding",
+      "check_digit",
+      "reset_rule",
+      "effective_from",
+      "effective_until",
+      "approval_status"
+    ]
+  },
+  "signatory_authority_registry": {
+    "status": "PENDING_PRIVATE_SOURCE",
+    "fields": [
+      "authority_id",
+      "organization_id",
+      "person_id",
+      "role",
+      "document_types",
+      "financial_limits",
+      "product_scope",
+      "branch_scope",
+      "signature_method",
+      "certificate_id",
+      "effective_from",
+      "effective_until",
+      "status",
+      "source_mandate_document_id"
+    ]
+  },
+  "document_reasons": {
+    "revocation": [
+      "ISSUED_IN_ERROR",
+      "FRAUD_OR_COMPROMISE",
+      "POLICY_CANCELLED",
+      "LEGAL_OR_REGULATORY_ORDER",
+      "SECURITY_COMPROMISE",
+      "OTHER"
+    ],
+    "replacement": [
+      "DAMAGED",
+      "LOST",
+      "CORRECTED_DATA",
+      "SUPERSEDED_VERSION",
+      "NAME_OR_DETAIL_CORRECTION",
+      "OTHER"
+    ],
+    "duplicate": [
+      "CUSTOMER_REQUEST",
+      "LOST_ORIGINAL",
+      "AUTHENTICATED_COPY",
+      "OTHER"
+    ]
+  },
+  "case_taxonomy": {
+    "families": [
+      "KYC",
+      "UNDERWRITING",
+      "CLAIMS",
+      "FRAUD",
+      "COMPLAINT",
+      "FINANCE",
+      "PROVIDER",
+      "REINSURANCE",
+      "REGULATORY",
+      "OPERATIONS",
+      "SECURITY"
+    ],
+    "priorities": [
+      "LOW",
+      "NORMAL",
+      "HIGH",
+      "URGENT",
+      "CRITICAL"
+    ],
+    "task_types": [
+      "REVIEW",
+      "VERIFY_DOCUMENT",
+      "REQUEST_INFORMATION",
+      "APPROVE",
+      "REJECT",
+      "ESCALATE",
+      "CALL_CUSTOMER",
+      "CONTACT_PARTNER",
+      "RECONCILE",
+      "INVESTIGATE",
+      "ASSESS",
+      "PAY",
+      "CLOSE"
+    ],
+    "queue_types": [
+      "UNASSIGNED",
+      "MY_QUEUE",
+      "TEAM_QUEUE",
+      "COMPLIANCE",
+      "UNDERWRITING",
+      "CLAIMS",
+      "FINANCE",
+      "PROVIDER",
+      "REINSURANCE",
+      "CUSTOMER_SERVICE",
+      "SECURITY"
+    ],
+    "escalation_reasons": [
+      "SLA_RISK",
+      "SLA_BREACH",
+      "AUTHORITY_LIMIT",
+      "COMPLIANCE_RISK",
+      "FRAUD_RISK",
+      "HIGH_VALUE",
+      "CUSTOMER_ESCALATION",
+      "PARTNER_DELAY",
+      "TECHNICAL_EXCEPTION",
+      "OTHER"
+    ],
+    "closure_reasons": [
+      "COMPLETED",
+      "APPROVED",
+      "REJECTED",
+      "WITHDRAWN",
+      "DUPLICATE",
+      "NO_ACTION_REQUIRED",
+      "REFERRED_EXTERNALLY",
+      "EXPIRED",
+      "CANCELLED",
+      "OTHER"
+    ]
+  },
+  "sla_profiles": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "sla_id",
+      "case_type",
+      "organization_id",
+      "priority",
+      "ack_target_minutes",
+      "resolution_target_minutes",
+      "calendar_id",
+      "pause_states",
+      "escalation_thresholds",
+      "effective_from",
+      "effective_until"
+    ]
+  }
+}

@@ -1,0 +1,297 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "Cameroon Geography, Calendar, Occupation, Industry & Legal Entity Master"
+  },
+  "sources": {
+    "MINAT_REGIONS": "https://minat.gov.cm/presentation/carte-des-regions/centre/",
+    "MINFOPRA_HOLIDAYS": "https://www.minfopra.gov.cm/recueil/REPARATIONS/LOI%20N%C2%B0%2073-5%20DU%207%20DEC%201973.pdf",
+    "INS_NACAM": "https://ins-cameroun.cm/statistique/nomenclature_des-activites-et-des-produits-au-cameroun-nacam_npc-rev1/",
+    "INS_TRADES": "https://ins-cameroun.cm/nomenclature-camerounaise-des-metiers/"
+  },
+  "geography": {
+    "regions": [
+      {
+        "code": "AD",
+        "name_en": "Adamawa",
+        "name_fr": "Adamaoua",
+        "capital": "Ngaoundéré"
+      },
+      {
+        "code": "CE",
+        "name_en": "Centre",
+        "name_fr": "Centre",
+        "capital": "Yaoundé"
+      },
+      {
+        "code": "ES",
+        "name_en": "East",
+        "name_fr": "Est",
+        "capital": "Bertoua"
+      },
+      {
+        "code": "EN",
+        "name_en": "Far North",
+        "name_fr": "Extrême-Nord",
+        "capital": "Maroua"
+      },
+      {
+        "code": "LT",
+        "name_en": "Littoral",
+        "name_fr": "Littoral",
+        "capital": "Douala"
+      },
+      {
+        "code": "NO",
+        "name_en": "North",
+        "name_fr": "Nord",
+        "capital": "Garoua"
+      },
+      {
+        "code": "NW",
+        "name_en": "North-West",
+        "name_fr": "Nord-Ouest",
+        "capital": "Bamenda"
+      },
+      {
+        "code": "OU",
+        "name_en": "West",
+        "name_fr": "Ouest",
+        "capital": "Bafoussam"
+      },
+      {
+        "code": "SU",
+        "name_en": "South",
+        "name_fr": "Sud",
+        "capital": "Ebolowa"
+      },
+      {
+        "code": "SW",
+        "name_en": "South-West",
+        "name_fr": "Sud-Ouest",
+        "capital": "Buea"
+      }
+    ],
+    "hierarchy": [
+      "COUNTRY",
+      "REGION",
+      "DIVISION",
+      "SUBDIVISION",
+      "COUNCIL",
+      "CITY",
+      "LOCALITY"
+    ],
+    "full_division_subdivision_council_import_status": "PENDING_OFFICIAL_IMPORT",
+    "record_schema": [
+      "geo_id",
+      "parent_geo_id",
+      "level",
+      "official_code",
+      "name_en",
+      "name_fr",
+      "capital_or_seat",
+      "region_code",
+      "latitude",
+      "longitude",
+      "effective_from",
+      "effective_until",
+      "source_url",
+      "verification_status"
+    ]
+  },
+  "public_holidays": {
+    "legal_basis": "Law No. 73/5 of 7 December 1973, as amended",
+    "fixed_civil": [
+      {
+        "code": "NEW_YEAR",
+        "month": 1,
+        "day": 1,
+        "name_en": "New Year's Day",
+        "name_fr": "Jour de l'An"
+      },
+      {
+        "code": "YOUTH_DAY",
+        "month": 2,
+        "day": 11,
+        "name_en": "Youth Day",
+        "name_fr": "Fête de la Jeunesse"
+      },
+      {
+        "code": "LABOUR_DAY",
+        "month": 5,
+        "day": 1,
+        "name_en": "Labour Day",
+        "name_fr": "Fête du Travail"
+      },
+      {
+        "code": "NATIONAL_DAY",
+        "month": 5,
+        "day": 20,
+        "name_en": "National Day",
+        "name_fr": "Fête Nationale"
+      }
+    ],
+    "religious": [
+      {
+        "code": "GOOD_FRIDAY",
+        "calculation": "CHRISTIAN_MOVABLE",
+        "name_en": "Good Friday",
+        "name_fr": "Vendredi Saint"
+      },
+      {
+        "code": "ASCENSION",
+        "calculation": "CHRISTIAN_MOVABLE",
+        "name_en": "Ascension Day",
+        "name_fr": "Ascension"
+      },
+      {
+        "code": "ASSUMPTION",
+        "month": 8,
+        "day": 15,
+        "name_en": "Assumption",
+        "name_fr": "Assomption"
+      },
+      {
+        "code": "CHRISTMAS",
+        "month": 12,
+        "day": 25,
+        "name_en": "Christmas",
+        "name_fr": "Noël"
+      },
+      {
+        "code": "EID_AL_FITR",
+        "calculation": "ANNUAL_OFFICIAL_CONFIRMATION",
+        "name_en": "End of Ramadan",
+        "name_fr": "Fin du Ramadan"
+      },
+      {
+        "code": "EID_AL_ADHA",
+        "calculation": "ANNUAL_OFFICIAL_CONFIRMATION",
+        "name_en": "Feast of Sacrifice",
+        "name_fr": "Fête du Mouton"
+      }
+    ],
+    "adjacent_day_rule": "Civil holiday on Sunday/holiday -> following day treated as holiday for labour/remuneration; other bridge/adjacent days require specific Presidential order.",
+    "annual_exception_calendar_status": "CONFIG_REQUIRED"
+  },
+  "business_calendars": {
+    "status": "CONFIG_REQUIRED",
+    "fields": [
+      "calendar_id",
+      "organization_id",
+      "working_days",
+      "start_time",
+      "end_time",
+      "breaks",
+      "timezone",
+      "holiday_calendar_id",
+      "special_closures",
+      "effective_from",
+      "effective_until"
+    ]
+  },
+  "occupation_master": {
+    "source_reference": "INS Cameroonian Nomenclature of Trades",
+    "status": "PENDING_OFFICIAL_IMPORT",
+    "risk_fields": [
+      "underwriting_risk_class",
+      "aml_risk_class",
+      "accident_risk_class",
+      "life_risk_class"
+    ],
+    "platform_risk_levels": [
+      "LOW",
+      "STANDARD",
+      "ELEVATED",
+      "HIGH",
+      "PROHIBITED_OR_REVIEW"
+    ]
+  },
+  "industry_business_activity": {
+    "source_reference": "INS NACAM/NPC Rev.1",
+    "status": "PENDING_OFFICIAL_IMPORT",
+    "fields": [
+      "nacam_code",
+      "name_fr",
+      "name_en",
+      "parent_code",
+      "section",
+      "risk_class",
+      "aml_risk_class",
+      "property_risk_class",
+      "liability_risk_class"
+    ]
+  },
+  "legal_entity_types": {
+    "values": [
+      {
+        "code": "INDIVIDUAL",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "SOLE_PROPRIETORSHIP",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "SARL",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "SA",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "SAS",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "SNC",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "PARTNERSHIP",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "ASSOCIATION",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "NGO",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "COOPERATIVE",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "PUBLIC_ENTITY",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "RELIGIOUS_ORGANIZATION",
+        "status": "PLATFORM_NORMALIZED"
+      },
+      {
+        "code": "TRUST_OR_SIMILAR",
+        "status": "PLATFORM_NORMALIZED"
+      }
+    ],
+    "official_registration_document_matrix_status": "PENDING_VERIFICATION"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "package": {
+    "name": "OpesInsure Canonical Implementation Specification",
+    "version": "1.0.0",
+    "schema_version": "1.0",
+    "generated_at": "2026-09-25T10:42:39",
+    "implementation_source_of_truth": true,
+    "instruction_to_claude": "THIS JSON IS THE CANONICAL MACHINE-READABLE IMPLEMENTATION SOURCE OF TRUTH FOR THE DOCUMENT, DOCUMENT-SECURITY, CRYPTOGRAPHIC/PRINT-SECURITY, AND UI-HANDOFF REQUIREMENTS MERGED HERE. The Markdown files listed in source_manifest remain human-readable source/reference documents. Do not silently weaken, omit, reinterpret, or invent requirements. Where the JSON and a listed Markdown source appear to conflict because of conversion error, stop and compare against the referenced Markdown source before changing production behavior. Preserve the existing Laravel business logic, state machines, APIs, database contracts, tenant isolation, audit controls and maker-checker controls unless a separately verified defect requires an approved change.",
+    "unknown_data_policy": {
+      "do_not_invent": true,
+      "allowed_markers": [
+        "NULL",
+        "UNVERIFIED",
+        "PENDING_VERIFICATION",
+        "CONFIG_REQUIRED"
+      ],
+      "regulatory_and_insurer_specific_values_must_be_verified": true
+    }
+  },
+  "canonical_file": "OpesInsure_Canonical_Implementation_Specification_v1.json",
+  "source_files": [
+    "OpesInsure_220_Documents_and_First_5_Master_Shells_v1.md",
+    "OpesInsure_220_Document_Field_Data_Specification_v1.md",
+    "OpesInsure_220_Document_Security_Matrix_v1.md",
+    "OpesInsure_Document_Cryptographic_Print_and_Verification_Security_Specification_v1.md",
+    "OPESINSURE_CLAUDE_UI_IMPLEMENTATION_HANDOFF.md"
+  ],
+  "validation": {
+    "counts": {
+      "document_registry": 220,
+      "document_field_requirements": 220,
+      "security_profiles": 220,
+      "critical_detailed_specs": 36,
+      "field_groups": 15,
+      "master_shells": 5
+    },
+    "missing": {
+      "field_requirements": [],
+      "security_profiles": []
+    },
+    "passed_220_registry": true,
+    "passed_220_field_requirements": true,
+    "passed_220_security_profiles": true,
+    "passed_5_master_shells": true
+  },
+  "implementation_order": [
+    "Read package.instruction_to_claude.",
+    "Audit existing Laravel/Filament implementation before changing files.",
+    "Use document_system.documents[DOC-xxx] as the canonical per-document merged record.",
+    "Apply field requirements and detailed field specs.",
+    "Apply exact per-document security_profile.",
+    "Apply S1-S5 tier baseline and master shell when assigned.",
+    "Apply cryptographic_print_verification_security for signing, hashing, verification, storage and physical controls.",
+    "Apply ui_implementation_handoff without modifying completed backend business logic.",
+    "Resolve PENDING_VERIFICATION/CONFIG_REQUIRED values from institutional data/configuration rather than inventing them.",
+    "Add tests and acceptance evidence before marking implementation complete."
+  ],
+  "critical_invariants": [
+    "220 document IDs remain stable.",
+    "Issued documents are immutable snapshots.",
+    "Security cannot be downgraded for visual simplicity.",
+    "QR is not proof by itself; authoritative verification is required.",
+    "No fabricated regulatory or insurer-specific data.",
+    "Do not rewrite completed backend modules merely to implement UI."
+  ],
+  "external_dependencies": {
+    "workflow_institutional_data": {
+      "filename": "OpesInsure_Workflow_Institutional_Data_Master_v1.json",
+      "merged_here": false,
+      "reason": "Separate institutional/workflow master-data package; referenced as an implementation dependency rather than silently merged into the attached document/UI specification set."
+    },
+    "insurer_directory": {
+      "filename": "OpesInsure_Cameroon_29_Insurers_Institutional_Directory_v1.json",
+      "merged_here": false,
+      "reason": "Separate institutional company directory with its own provenance and verification lifecycle."
+    }
+  }
+}

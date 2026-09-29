@@ -1,0 +1,539 @@
+{
+  "package": {
+    "name": "OpesInsure Cameroon Vehicle Power & Fiscal Power Institutional Master",
+    "version": "1.0.0",
+    "schema_version": "1.0",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "currency": "XAF",
+    "generated_at": "2026-09-25T11:50:12",
+    "implementation_source_of_truth": true,
+    "purpose": [
+      "Separate mechanical engine power from administrative/fiscal power.",
+      "Provide canonical units and conversion rules for kW, mechanical hp and metric PS/CV.",
+      "Store authoritative Cameroon puissance administrative / CV fiscal without guessing.",
+      "Provide workflow-ready fiscal-CV bands used by automobile stamp-duty logic.",
+      "Support underwriting, quotation, motor policy issuance, taxation, reporting and vehicle master-data validation."
+    ],
+    "claude_instruction": "Use this JSON as the canonical vehicle power/fiscal-power reference. Never derive Cameroon fiscal horsepower (CV fiscal / puissance administrative) from mechanical hp or kW unless an officially verified Cameroon calculation rule is added as an effective-dated formula version. Prefer CIVIC, registration/official vehicle documents, or another approved authoritative source. Technical power conversions may be calculated; fiscal power may not be guessed."
+  },
+  "concepts": {
+    "technical_power_kw": {
+      "canonical_field": "power_kw",
+      "meaning": "Rated engine/motor output in kilowatts.",
+      "data_type": "decimal",
+      "unit": "kW",
+      "status": "INDUSTRY_STANDARD"
+    },
+    "mechanical_horsepower_hp": {
+      "canonical_field": "power_hp",
+      "meaning": "Mechanical horsepower (imperial/SAE-style hp equivalent when normalized from kW).",
+      "data_type": "decimal",
+      "unit": "hp",
+      "status": "INDUSTRY_STANDARD"
+    },
+    "metric_horsepower_ps_cv": {
+      "canonical_field": "power_ps",
+      "aliases": [
+        "PS",
+        "CV DIN",
+        "metric horsepower"
+      ],
+      "meaning": "Metric horsepower; a technical power unit, not Cameroon fiscal CV.",
+      "data_type": "decimal",
+      "unit": "PS",
+      "status": "INDUSTRY_STANDARD"
+    },
+    "fiscal_power_cv": {
+      "canonical_field": "fiscal_power_cv",
+      "aliases": [
+        "puissance fiscale",
+        "puissance administrative",
+        "CV fiscal",
+        "administrative horsepower"
+      ],
+      "meaning": "Administrative/fiscal vehicle rating used by Cameroon administrative/tax workflows.",
+      "data_type": "integer",
+      "unit": "CV_FISCAL",
+      "jurisdiction": "CM",
+      "status": "AUTHORITATIVE_SOURCE_REQUIRED",
+      "must_not_be_confused_with": [
+        "power_hp",
+        "power_kw",
+        "power_ps"
+      ]
+    }
+  },
+  "technical_power_conversions": {
+    "canonical_storage_unit": "kW",
+    "conversion_constants": {
+      "KW_TO_MECHANICAL_HP": 1.3410220896,
+      "MECHANICAL_HP_TO_KW": 0.7456998716,
+      "KW_TO_METRIC_PS": 1.3596216173,
+      "METRIC_PS_TO_KW": 0.73549875
+    },
+    "rounding": {
+      "storage_decimal_places": 3,
+      "display_decimal_places": 1,
+      "integer_display_allowed_when_source_integer": true
+    },
+    "rules": [
+      "Preserve source value and source unit separately from normalized value.",
+      "Do not repeatedly convert already-normalized values.",
+      "Record conversion method/version.",
+      "Manufacturer-rated kW is preferred as canonical technical power when available.",
+      "Do not use hp-to-CV-fiscal conversion."
+    ]
+  },
+  "source_value_model": {
+    "fields": [
+      "power_source_value",
+      "power_source_unit",
+      "power_source_type",
+      "power_source_name",
+      "power_source_reference",
+      "power_source_url",
+      "power_verified_at",
+      "power_verification_status"
+    ],
+    "source_units": [
+      "KW",
+      "MECHANICAL_HP",
+      "METRIC_PS"
+    ],
+    "source_priority": [
+      "OFFICIAL_MANUFACTURER_SPECIFICATION",
+      "TYPE_APPROVAL_OR_HOMOLOGATION",
+      "OFFICIAL_VEHICLE_DOCUMENT",
+      "TRUSTED_TECHNICAL_DATABASE",
+      "AUTHORIZED_DISTRIBUTOR",
+      "MANUAL_VERIFIED_ENTRY"
+    ]
+  },
+  "cameroon_fiscal_power": {
+    "canonical_field": "fiscal_power_cv",
+    "official_label_fr": "Puissance administrative",
+    "alternate_label_fr": "Puissance fiscale",
+    "source_policy": {
+      "authoritative_source_priority": [
+        {
+          "priority": 1,
+          "source_type": "CIVIC",
+          "description": "Cameroon vehicle identification/valuation record containing vehicle identification information including puissance administrative."
+        },
+        {
+          "priority": 2,
+          "source_type": "CAMEROON_REGISTRATION_DOCUMENT",
+          "description": "Official registration/vehicle administrative document carrying the recognized administrative/fiscal power."
+        },
+        {
+          "priority": 3,
+          "source_type": "CAMEROON_AUTHORITY_DATA",
+          "description": "Approved government/administrative electronic record."
+        },
+        {
+          "priority": 4,
+          "source_type": "MANUAL_VERIFIED",
+          "description": "Human-entered value supported by an uploaded authoritative document and approved under maker-checker."
+        }
+      ],
+      "calculation_policy": "NO_AUTOMATIC_CALCULATION_UNTIL_OFFICIAL_FORMULA_VERIFIED",
+      "fallback_status": "PENDING_FISCAL_POWER_VERIFICATION"
+    },
+    "required_fields": [
+      "fiscal_power_cv",
+      "fiscal_power_source_type",
+      "fiscal_power_source_reference",
+      "fiscal_power_source_document_id",
+      "fiscal_power_source_url",
+      "jurisdiction",
+      "effective_from",
+      "effective_until",
+      "verified_by",
+      "verified_at",
+      "verification_status"
+    ],
+    "verification_statuses": [
+      "VERIFIED_CIVIC",
+      "VERIFIED_REGISTRATION",
+      "VERIFIED_AUTHORITY_DATA",
+      "VERIFIED_MANUAL_DOCUMENT",
+      "CONFLICT_REVIEW_REQUIRED",
+      "PENDING_FISCAL_POWER_VERIFICATION",
+      "RETIRED"
+    ],
+    "conflict_rule": "If two authoritative sources disagree, do not overwrite silently; create a master-data conflict case."
+  },
+  "cameroon_automobile_stamp_duty": {
+    "name_fr": "Droit de timbre automobile",
+    "collection_context": "Collected by insurance companies at subscription/payment of motor third-party liability insurance according to applicable tax rules.",
+    "effective_rule_reference": "Cameroon General Tax Code, automobile stamp duty provisions",
+    "vehicle_fiscal_power_bands": [
+      {
+        "code": "CV_02_07",
+        "min_cv": 2,
+        "max_cv": 7,
+        "label_fr": "02 à 7 CV",
+        "label_en": "2 to 7 fiscal HP"
+      },
+      {
+        "code": "CV_08_13",
+        "min_cv": 8,
+        "max_cv": 13,
+        "label_fr": "08 à 13 CV",
+        "label_en": "8 to 13 fiscal HP"
+      },
+      {
+        "code": "CV_14_20",
+        "min_cv": 14,
+        "max_cv": 20,
+        "label_fr": "14 à 20 CV",
+        "label_en": "14 to 20 fiscal HP"
+      },
+      {
+        "code": "CV_GT_20",
+        "min_cv": 21,
+        "max_cv": null,
+        "label_fr": "Plus de 20 CV",
+        "label_en": "More than 20 fiscal HP"
+      }
+    ],
+    "rate_schedules": [
+      {
+        "schedule_code": "PUBLIC_PASSENGER_AND_GOODS_TRANSPORT",
+        "label_fr": "Véhicules de transport en commun de personnes et de marchandises",
+        "eligibility": {
+          "transport_license_required": true,
+          "license_verification_status_required": "VALID"
+        },
+        "rates_xaf": {
+          "CV_02_07": 15000,
+          "CV_08_13": 25000,
+          "CV_14_20": 50000,
+          "CV_GT_20": 150000
+        },
+        "source_status": "VERIFIED_CURRENT_RULE_BASELINE"
+      },
+      {
+        "schedule_code": "OTHER_VEHICLES",
+        "label_fr": "Autres véhicules",
+        "eligibility": {
+          "transport_license_required": false
+        },
+        "rates_xaf": {
+          "CV_02_07": 30000,
+          "CV_08_13": 50000,
+          "CV_14_20": 75000,
+          "CV_GT_20": 200000
+        },
+        "source_status": "VERIFIED_CURRENT_RULE_BASELINE"
+      }
+    ],
+    "exemption_handling": {
+      "status": "RULE_ENGINE_REQUIRED",
+      "rule": "Do not infer exemption from vehicle make/model alone. Exemption must come from verified legal/administrative status.",
+      "examples_requiring_specific_validation": [
+        "ambulance",
+        "administrative/government vehicle",
+        "diplomatic/consular privilege",
+        "temporary admission",
+        "foreign vehicle under qualifying temporary circulation status"
+      ]
+    }
+  },
+  "vehicle_power_master_schema": {
+    "identity_fields": [
+      "vehicle_power_record_id",
+      "make_id",
+      "model_id",
+      "generation_id",
+      "variant_id",
+      "engine_id",
+      "year_from",
+      "year_to",
+      "market_code"
+    ],
+    "engine_fields": [
+      "engine_code",
+      "engine_name",
+      "displacement_cc",
+      "cylinder_count",
+      "aspiration_type",
+      "fuel_type",
+      "hybrid_type",
+      "motor_configuration"
+    ],
+    "technical_power_fields": [
+      "power_kw",
+      "power_hp",
+      "power_ps",
+      "power_rpm",
+      "torque_nm",
+      "torque_rpm"
+    ],
+    "administrative_power_fields": [
+      "fiscal_power_cv",
+      "fiscal_power_band_code",
+      "fiscal_power_source_type",
+      "fiscal_power_source_reference",
+      "fiscal_power_source_document_id",
+      "fiscal_power_source_url",
+      "fiscal_power_effective_from",
+      "fiscal_power_effective_until",
+      "fiscal_power_verification_status"
+    ],
+    "vehicle_context_fields": [
+      "body_type",
+      "transmission",
+      "drivetrain",
+      "seat_count",
+      "gross_vehicle_weight_kg",
+      "curb_weight_kg",
+      "payload_kg",
+      "vehicle_usage_class"
+    ],
+    "governance_fields": [
+      "source_type",
+      "source_name",
+      "source_reference",
+      "source_url",
+      "verified_by",
+      "verified_at",
+      "verification_status",
+      "version",
+      "effective_from",
+      "effective_until",
+      "notes"
+    ]
+  },
+  "power_source_normalization": {
+    "example_algorithm": [
+      "Read source power value and source unit.",
+      "Normalize technical output to kW.",
+      "Derive display hp and PS from kW if source values are unavailable.",
+      "Preserve manufacturer/source value separately.",
+      "Resolve fiscal_power_cv only from approved Cameroon administrative source.",
+      "Assign fiscal-power band from verified fiscal_power_cv.",
+      "Apply tax/insurance workflow rules using fiscal_power_cv, never mechanical hp."
+    ]
+  },
+  "validation_rules": [
+    {
+      "code": "VPWR-001",
+      "rule": "power_kw must be > 0 for powered vehicles when technical power is known.",
+      "severity": "ERROR"
+    },
+    {
+      "code": "VPWR-002",
+      "rule": "power_hp derived from kW must use the configured mechanical-hp conversion constant.",
+      "severity": "ERROR"
+    },
+    {
+      "code": "VPWR-003",
+      "rule": "power_ps must never be stored in fiscal_power_cv.",
+      "severity": "CRITICAL"
+    },
+    {
+      "code": "VPWR-004",
+      "rule": "fiscal_power_cv must be a positive integer when verified.",
+      "severity": "ERROR"
+    },
+    {
+      "code": "VPWR-005",
+      "rule": "A fiscal power value without provenance cannot receive VERIFIED status.",
+      "severity": "CRITICAL"
+    },
+    {
+      "code": "VPWR-006",
+      "rule": "Do not infer fiscal_power_cv from engine displacement, hp, kW, cylinder count or model name.",
+      "severity": "CRITICAL"
+    },
+    {
+      "code": "VPWR-007",
+      "rule": "A change to a verified fiscal power value must retain the previous version and provenance.",
+      "severity": "ERROR"
+    },
+    {
+      "code": "VPWR-008",
+      "rule": "Fiscal stamp-duty band must be derived from fiscal_power_cv, not power_hp.",
+      "severity": "CRITICAL"
+    },
+    {
+      "code": "VPWR-009",
+      "rule": "Public/passenger-goods transport stamp-duty schedule requires a verified valid transport licence.",
+      "severity": "CRITICAL"
+    }
+  ],
+  "workflow_dependencies": {
+    "motor_quote": {
+      "uses": [
+        "power_kw",
+        "power_hp",
+        "displacement_cc",
+        "fiscal_power_cv",
+        "vehicle_usage_class"
+      ],
+      "blocking_rule": "If a production workflow requires fiscal power for tax or pricing and fiscal_power_cv is unknown, route to verification/manual review rather than inventing a value."
+    },
+    "motor_policy_issuance": {
+      "uses": [
+        "fiscal_power_cv",
+        "fiscal_power_band_code",
+        "vehicle_usage_class",
+        "transport_license_status"
+      ]
+    },
+    "automobile_stamp_duty": {
+      "input": "fiscal_power_cv",
+      "secondary_input": "vehicle_usage_class / qualifying transport licence",
+      "output": "applicable fiscal band and configured statutory rate"
+    },
+    "underwriting": {
+      "may_use": [
+        "power_kw",
+        "power_hp",
+        "power_ps",
+        "displacement_cc",
+        "body_type",
+        "usage_class"
+      ],
+      "note": "Underwriting rules are insurer-configurable and must not automatically equate high technical horsepower with a specific fiscal CV."
+    }
+  },
+  "api_contract": {
+    "read_endpoints": [
+      "GET /api/master-data/vehicles/{variant_id}/power",
+      "GET /api/master-data/fiscal-power/bands",
+      "GET /api/master-data/fiscal-power/stamp-duty-rates",
+      "GET /api/master-data/vehicles/power/search"
+    ],
+    "admin_endpoints": [
+      "POST /api/master-data/vehicles/{variant_id}/power",
+      "POST /api/master-data/vehicles/{variant_id}/fiscal-power/verify",
+      "POST /api/master-data/vehicles/{variant_id}/fiscal-power/conflict",
+      "POST /api/master-data/fiscal-power/rate-schedules/version"
+    ],
+    "requirements": [
+      "RBAC required",
+      "maker-checker required for verified fiscal-power changes",
+      "source document attachment supported",
+      "effective-dated versions required",
+      "audit log required"
+    ]
+  },
+  "database_entities": [
+    "vehicle_power_specs",
+    "vehicle_power_sources",
+    "vehicle_fiscal_power_records",
+    "vehicle_fiscal_power_conflicts",
+    "vehicle_fiscal_power_bands",
+    "vehicle_stamp_duty_rate_schedules",
+    "vehicle_stamp_duty_rates",
+    "vehicle_power_verification_audits"
+  ],
+  "indexes": [
+    [
+      "make_id",
+      "model_id",
+      "generation_id",
+      "variant_id"
+    ],
+    [
+      "engine_id",
+      "year_from",
+      "year_to"
+    ],
+    [
+      "fiscal_power_cv"
+    ],
+    [
+      "fiscal_power_band_code"
+    ],
+    [
+      "verification_status"
+    ],
+    [
+      "effective_from",
+      "effective_until"
+    ]
+  ],
+  "master_data_review_workflow": {
+    "states": [
+      "DRAFT",
+      "SOURCE_ATTACHED",
+      "PENDING_REVIEW",
+      "VERIFIED",
+      "CONFLICT_REVIEW_REQUIRED",
+      "SUPERSEDED",
+      "REJECTED"
+    ],
+    "transition_rules": [
+      "DRAFT -> SOURCE_ATTACHED requires provenance.",
+      "SOURCE_ATTACHED -> PENDING_REVIEW requires complete required fields.",
+      "PENDING_REVIEW -> VERIFIED requires authorized reviewer.",
+      "VERIFIED value cannot be overwritten; create new version.",
+      "Conflicting authoritative values -> CONFLICT_REVIEW_REQUIRED."
+    ]
+  },
+  "acceptance_tests": [
+    "A 100 kW vehicle normalizes technical power without changing fiscal_power_cv.",
+    "Mechanical hp and metric PS are stored/displayed distinctly.",
+    "System rejects writing PS/CV DIN into fiscal_power_cv.",
+    "Fiscal power cannot become VERIFIED without approved provenance.",
+    "CIVIC-sourced fiscal power is stored with source reference and verification date.",
+    "A vehicle with fiscal_power_cv=7 maps to CV_02_07.",
+    "A vehicle with fiscal_power_cv=8 maps to CV_08_13.",
+    "A vehicle with fiscal_power_cv=14 maps to CV_14_20.",
+    "A vehicle with fiscal_power_cv=21 maps to CV_GT_20.",
+    "Transport-rate schedule cannot apply without required valid transport licence.",
+    "Other-vehicle schedule can be selected when transport schedule eligibility is not met.",
+    "Changing an effective-dated rate creates a new version instead of modifying historical issued-policy data.",
+    "Unknown fiscal power routes quote/issuance to verification when workflow requires it.",
+    "Historical policy retains fiscal-power/rate snapshot used at issuance.",
+    "No automated hp-to-fiscal-CV conversion exists."
+  ],
+  "source_registry": [
+    {
+      "source_id": "CM-DGI-CGI-2026",
+      "authority": "Direction Générale des Impôts du Cameroun",
+      "title": "Code Général des Impôts mis à jour au 1er janvier 2026",
+      "url": "https://impots.cm/fr/document/code-general-des-impots-mis-jour-au-1er-janvier-2026",
+      "source_type": "OFFICIAL_GOVERNMENT",
+      "used_for": [
+        "current tax-code authority",
+        "automobile stamp-duty framework"
+      ],
+      "verification_status": "PRIMARY_SOURCE"
+    },
+    {
+      "source_id": "CM-DGI-CGI-2024-CIVIC",
+      "authority": "Direction Générale des Impôts du Cameroun",
+      "title": "Code Général des Impôts 2024 — CIVIC vehicle identification data",
+      "url": "https://www.impots.cm/sites/default/files/documents/CGI%202024%20version%20francaise.pdf",
+      "source_type": "OFFICIAL_GOVERNMENT",
+      "used_for": [
+        "CIVIC contains puissance administrative",
+        "vehicle identification provenance model"
+      ],
+      "verification_status": "PRIMARY_SOURCE"
+    },
+    {
+      "source_id": "CM-DGI-LF2023-CIRCULAR",
+      "authority": "Direction Générale des Impôts du Cameroun",
+      "title": "Finance Law implementation guidance / automobile stamp duty rates",
+      "url": "https://www.impots.cm/sites/default/files/documents/Circulaire%20LF%20202302201747.pdf",
+      "source_type": "OFFICIAL_GOVERNMENT",
+      "used_for": [
+        "automobile stamp-duty fiscal-power bands",
+        "public passenger/goods transport vs other vehicle rate schedules"
+      ],
+      "verification_status": "PRIMARY_SOURCE"
+    }
+  ],
+  "canonical_merge": {
+    "target_file": "OpesInsure_Workflow_Institutional_Data_Master_v1.json",
+    "recommended_key": "vehicle_power_and_fiscal_power",
+    "also_reference_from": "OpesInsure_Canonical_Implementation_Specification_v1.json",
+    "required_vehicle_master_link": "make -> model -> generation -> variant -> engine -> power specification"
+  }
+}

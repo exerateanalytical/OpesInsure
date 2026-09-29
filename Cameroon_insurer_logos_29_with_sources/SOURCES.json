@@ -1,0 +1,355 @@
+{
+  "as_of": "2026-09-28",
+  "scope": "29 ASAC entries; 18 non-life and 11 life",
+  "caution": "Logos are third-party trademarks. Several entries use shared group assets. Confirm production-use artwork and permissions directly with insurers.",
+  "entries": [
+    {
+      "number": 1,
+      "branch": "non-life",
+      "company": "ACTIVA Assurances",
+      "file": "01_non-life_ACTIVA_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/activa.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        322,
+        198
+      ]
+    },
+    {
+      "number": 2,
+      "branch": "non-life",
+      "company": "AFG Assurances",
+      "file": "02_non-life_AFG_Assurances.png",
+      "source": "https://afgholding-sa.com/wp-content/uploads/2023/03/LOGO-AFG-Assurances-e1715617777962.jpg",
+      "asset_status": "company image",
+      "dimensions": [
+        1600,
+        1191
+      ]
+    },
+    {
+      "number": 3,
+      "branch": "non-life",
+      "company": "AFRI Insurance",
+      "file": "03_non-life_AFRI_Insurance.png",
+      "source": "https://vitrineducameroun.com/wp-content/uploads/2026/06/Logo-couleur-Afri-Insurance@3x-300x167-1.png",
+      "asset_status": "publisher image",
+      "dimensions": [
+        300,
+        167
+      ]
+    },
+    {
+      "number": 4,
+      "branch": "non-life",
+      "company": "AREA Assurances",
+      "file": "04_non-life_AREA_Assurances.png",
+      "source": "https://areaassurances.com/wp-content/uploads/2024/04/cropped-logo-AREA-224.png",
+      "asset_status": "company image",
+      "dimensions": [
+        224,
+        224
+      ]
+    },
+    {
+      "number": 5,
+      "branch": "non-life",
+      "company": "AGC Assurances",
+      "file": "05_non-life_AGC_Assurances.png",
+      "source": "https://agc-assurances.com/wp-content/uploads/2026/06/agc_logo_v2.png",
+      "asset_status": "company image",
+      "dimensions": [
+        277,
+        144
+      ]
+    },
+    {
+      "number": 6,
+      "branch": "non-life",
+      "company": "AXA Assurances Cameroun",
+      "file": "06_non-life_AXA_Assurances_Cameroun.png",
+      "source": "https://static.wixstatic.com/media/87dd94_b05af6bc11d5429dba62165b96b50086~mv2.png",
+      "asset_status": "general AXA brand; Cameroon approval unconfirmed",
+      "dimensions": [
+        980,
+        774
+      ]
+    },
+    {
+      "number": 7,
+      "branch": "non-life",
+      "company": "Belife General Insurance",
+      "file": "07_non-life_Belife_General_Insurance.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/belife.png",
+      "asset_status": "partner image; group brand",
+      "dimensions": [
+        203,
+        198
+      ]
+    },
+    {
+      "number": 8,
+      "branch": "non-life",
+      "company": "Chanas Assurances",
+      "file": "08_non-life_Chanas_Assurances.png",
+      "source": "https://pbs.twimg.com/profile_images/1787799973301501952/5En0lbsA_400x400.jpg",
+      "asset_status": "social profile image",
+      "dimensions": [
+        400,
+        400
+      ]
+    },
+    {
+      "number": 9,
+      "branch": "non-life",
+      "company": "CPA Assurances",
+      "file": "09_non-life_CPA_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/cpa.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        161,
+        165
+      ]
+    },
+    {
+      "number": 10,
+      "branch": "non-life",
+      "company": "GMC Assurances",
+      "file": "10_non-life_GMC_Assurances.png",
+      "source": "https://www.gmcassurances.com/wp-content/uploads/2023/10/cropped-logo-gmc.png",
+      "asset_status": "company image",
+      "dimensions": [
+        4723,
+        2514
+      ]
+    },
+    {
+      "number": 11,
+      "branch": "non-life",
+      "company": "LD Assurances",
+      "file": "11_non-life_LD_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/ld-assurances.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        162,
+        165
+      ]
+    },
+    {
+      "number": 12,
+      "branch": "non-life",
+      "company": "NSIA Assurances",
+      "file": "12_non-life_NSIA_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/nsia.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        317,
+        195
+      ]
+    },
+    {
+      "number": 13,
+      "branch": "non-life",
+      "company": "Pro Assur",
+      "file": "13_non-life_Pro_Assur.png",
+      "source": "https://wafaassurance.cm/themes/wafacam/logo.png",
+      "asset_status": "Wafa group brand; separate Pro Assur logo unconfirmed",
+      "dimensions": [
+        314,
+        80
+      ]
+    },
+    {
+      "number": 14,
+      "branch": "non-life",
+      "company": "Royal Onyx Insurance",
+      "file": "14_non-life_Royal_Onyx_Insurance.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/royal-onyx.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        177,
+        198
+      ]
+    },
+    {
+      "number": 15,
+      "branch": "non-life",
+      "company": "SAAR Assurances",
+      "file": "15_non-life_SAAR_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/saar.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        165,
+        165
+      ]
+    },
+    {
+      "number": 16,
+      "branch": "non-life",
+      "company": "SanlamAllianz Cameroun Assurances",
+      "file": "16_non-life_SanlamAllianz_Cameroun_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/sanlam-allianz.png",
+      "asset_status": "partner group image",
+      "dimensions": [
+        258,
+        198
+      ]
+    },
+    {
+      "number": 17,
+      "branch": "non-life",
+      "company": "SUNU Assurances",
+      "file": "17_non-life_SUNU_Assurances.png",
+      "source": "https://sunu-group.com/assets/images/logo.png",
+      "asset_status": "company group image",
+      "dimensions": [
+        92,
+        65
+      ]
+    },
+    {
+      "number": 18,
+      "branch": "non-life",
+      "company": "Zenithe Insurance",
+      "file": "18_non-life_Zenithe_Insurance.png",
+      "source": "https://zenitheinsurance.com/en/img/logo.svg",
+      "asset_status": "company SVG embedded image",
+      "dimensions": [
+        220,
+        162
+      ]
+    },
+    {
+      "number": 19,
+      "branch": "life",
+      "company": "ACAM Vie",
+      "file": "19_life_ACAM_Vie.png",
+      "source": "https://platform.acamvie.com/img/logo.png",
+      "asset_status": "company portal image",
+      "dimensions": [
+        640,
+        320
+      ]
+    },
+    {
+      "number": 20,
+      "branch": "life",
+      "company": "ACTIVA Vie",
+      "file": "20_life_ACTIVA_Vie.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/activa.png",
+      "asset_status": "shared ACTIVA brand",
+      "dimensions": [
+        322,
+        198
+      ]
+    },
+    {
+      "number": 21,
+      "branch": "life",
+      "company": "AFRILIFE Insurance Cameroun",
+      "file": "21_life_AFRILIFE_Insurance_Cameroun.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/afri-life.png",
+      "asset_status": "partner image",
+      "dimensions": [
+        194,
+        125
+      ]
+    },
+    {
+      "number": 22,
+      "branch": "life",
+      "company": "Belife Insurance",
+      "file": "22_life_Belife_Insurance.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/belife.png",
+      "asset_status": "partner group image",
+      "dimensions": [
+        203,
+        198
+      ]
+    },
+    {
+      "number": 23,
+      "branch": "life",
+      "company": "Chanas Assurances Vie",
+      "file": "23_life_Chanas_Assurances_Vie.png",
+      "source": "https://www.linkedin.com/company/chanas-assurance-vie",
+      "asset_status": "company LinkedIn profile image",
+      "dimensions": [
+        200,
+        200
+      ]
+    },
+    {
+      "number": 24,
+      "branch": "life",
+      "company": "NSIA Vie Assurances",
+      "file": "24_life_NSIA_Vie_Assurances.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/nsia.png",
+      "asset_status": "shared NSIA brand",
+      "dimensions": [
+        317,
+        195
+      ]
+    },
+    {
+      "number": 25,
+      "branch": "life",
+      "company": "SAAR Vie",
+      "file": "25_life_SAAR_Vie.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/saar.png",
+      "asset_status": "shared SAAR brand",
+      "dimensions": [
+        165,
+        165
+      ]
+    },
+    {
+      "number": 26,
+      "branch": "life",
+      "company": "SanlamAllianz Cameroun Assurances Vie",
+      "file": "26_life_SanlamAllianz_Cameroun_Assurances_Vie.png",
+      "source": "https://kitfinancialpartners.com/logos/partners/sanlam-allianz.png",
+      "asset_status": "shared SanlamAllianz brand",
+      "dimensions": [
+        258,
+        198
+      ]
+    },
+    {
+      "number": 27,
+      "branch": "life",
+      "company": "SONAM Vie",
+      "file": "27_life_SONAM_Vie.png",
+      "source": "https://boursenews.ma/uploads/actualites/5a65f9e061e22.jpg",
+      "asset_status": "SONAM group logo from publisher; Cameroon entity approval unconfirmed",
+      "dimensions": [
+        1191,
+        843
+      ]
+    },
+    {
+      "number": 28,
+      "branch": "life",
+      "company": "SUNU Assurances Vie",
+      "file": "28_life_SUNU_Assurances_Vie.png",
+      "source": "https://sunu-group.com/assets/images/logo.png",
+      "asset_status": "shared SUNU group brand",
+      "dimensions": [
+        92,
+        65
+      ]
+    },
+    {
+      "number": 29,
+      "branch": "life",
+      "company": "WAFA Vie",
+      "file": "29_life_WAFA_Vie.png",
+      "source": "https://wafaassurance.cm/themes/wafacam/logo.png",
+      "asset_status": "company group image",
+      "dimensions": [
+        314,
+        80
+      ]
+    }
+  ]
+}

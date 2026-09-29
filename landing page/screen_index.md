@@ -1,0 +1,39 @@
+# Screen Index
+
+- **screens/public_pages/01_home_landing_page.png** — Homepage / landing page
+- **screens/auth/01_website_login_page.png** — Website login page
+- **screens/auth/02_website_signup_page.png** — Website signup page
+- **screens/public_pages/02_about_page.png** — About page (final simple version)
+- **screens/public_pages/03_contact_page.png** — Contact page (regenerated refined version)
+- **screens/marketplace_hub/01_insurance_marketplace_hub.png** — Insurance marketplace / buy insurance hub
+- **screens/category_directories/01_life_insurance_directory.png** — Life insurance directory
+- **screens/category_directories/02_motor_insurance_directory.png** — Motor insurance directory
+- **screens/category_directories/03_business_insurance_directory.png** — Business insurance directory
+- **screens/category_directories/04_health_insurance_directory.png** — Health insurance directory
+- **screens/category_directories/05_travel_insurance_directory.png** — Travel insurance directory
+- **screens/category_directories/06_home_insurance_directory.png** — Home insurance directory
+- **screens/category_directories/07_personal_accident_insurance_directory.png** — Personal accident insurance directory
+- **screens/compare_buy_flow/01_compare_directory_or_compare_page.png** — Compare / buy flow 01
+- **screens/compare_buy_flow/02_compare_stage.png** — Compare / buy flow 02
+- **screens/compare_buy_flow/03_stage.png** — Compare / buy flow 03
+- **screens/compare_buy_flow/04_stage.png** — Compare / buy flow 04
+- **screens/compare_buy_flow/05_stage.png** — Compare / buy flow 05
+- **screens/compare_buy_flow/06_stage.png** — Compare / buy flow 06
+- **screens/compare_buy_flow/07_stage.png** — Compare / buy flow 07
+- **screens/compare_buy_flow/08_stage.png** — Compare / buy flow 08
+- **screens/compare_buy_flow/09_stage.png** — Compare / buy flow 09
+- **screens/compare_buy_flow/10_stage.png** — Compare / buy flow 10
+- **screens/compare_buy_flow/11_stage.png** — Compare / buy flow 11
+- **screens/compare_buy_flow/12_stage.png** — Compare / buy flow 12
+- **screens/compare_buy_flow/13_stage.png** — Compare / buy flow 13
+- **screens/compare_buy_flow/14_stage.png** — Compare / buy flow 14
+- **screens/compare_buy_flow/15_stage.png** — Compare / buy flow 15
+- **screens/compare_buy_flow/16_stage.png** — Compare / buy flow 16
+- **screens/compare_buy_flow/17_stage.png** — Compare / buy flow 17
+- **screens/compare_buy_flow/18_stage.png** — Compare / buy flow 18
+- **screens/compare_buy_flow/19_stage.png** — Compare / buy flow 19
+- **screens/compare_buy_flow/20_stage.png** — Compare / buy flow 20
+- **screens/compare_buy_flow/21_stage.png** — Compare / buy flow 21
+- **screens/compare_buy_flow/22_stage.png** — Compare / buy flow 22
+- **screens/compare_buy_flow/23_stage.png** — Compare / buy flow 23
+- **screens/compare_buy_flow/24_stage.png** — Compare / buy flow 24

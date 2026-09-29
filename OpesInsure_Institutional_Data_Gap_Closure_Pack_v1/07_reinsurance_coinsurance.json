@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "generated_at": "2026-09-25T17:36:27",
+    "country": "CM",
+    "jurisdiction": "Cameroon",
+    "regulatory_regime": "CIMA",
+    "data_status_vocabulary": [
+      "VERIFIED_PUBLIC_SOURCE",
+      "PLATFORM_NORMALIZED",
+      "CONFIG_REQUIRED",
+      "PENDING_PRIVATE_SOURCE",
+      "PENDING_OFFICIAL_IMPORT",
+      "PENDING_VERIFICATION",
+      "RETIRED"
+    ],
+    "provenance_required": true,
+    "effective_dating_required": true,
+    "never_invent_private_or_regulatory_values": true,
+    "name": "Reinsurance & Co-insurance Institutional Master"
+  },
+  "reinsurer_directory": {
+    "status": "PENDING_CIMA_OR_TENANT_APPROVED_SOURCE",
+    "fields": [
+      "reinsurer_id",
+      "legal_name",
+      "jurisdiction",
+      "regulator",
+      "license_reference",
+      "rating_agencies",
+      "ratings",
+      "approved_security_status",
+      "contact",
+      "website",
+      "effective_from",
+      "effective_until",
+      "source_url",
+      "verification_status"
+    ]
+  },
+  "reinsurance_broker_directory": {
+    "status": "PENDING_PRIVATE_OR_REGULATORY_SOURCE",
+    "fields": [
+      "broker_id",
+      "legal_name",
+      "jurisdiction",
+      "license_reference",
+      "contacts",
+      "website",
+      "approved_by_tenant",
+      "effective_from",
+      "effective_until"
+    ]
+  },
+  "treaty_types": [
+    "QUOTA_SHARE",
+    "SURPLUS",
+    "PER_RISK_EXCESS_OF_LOSS",
+    "CATASTROPHE_EXCESS_OF_LOSS",
+    "AGGREGATE_EXCESS_OF_LOSS",
+    "STOP_LOSS",
+    "FACULTATIVE_OBLIGATORY",
+    "OTHER"
+  ],
+  "treaty_master": {
+    "status": "PENDING_PRIVATE_SOURCE",
+    "fields": [
+      "treaty_id",
+      "cedant_id",
+      "treaty_type",
+      "treaty_number",
+      "period_start",
+      "period_end",
+      "covered_classes",
+      "territories",
+      "currency",
+      "retention",
+      "capacity",
+      "cession_percentage",
+      "layers",
+      "reinstatements",
+      "premium_terms",
+      "commission_terms",
+      "profit_commission",
+      "claims_cooperation",
+      "cash_call_threshold",
+      "bordereau_frequency",
+      "participants",
+      "wording_document_id",
+      "status"
+    ]
+  },
+  "coinsurance": {
+    "roles": [
+      "LEAD_INSURER",
+      "PARTICIPANT"
+    ],
+    "arrangement_statuses": [
+      "PROPOSED",
+      "BOUND",
+      "ACTIVE",
+      "EXPIRED",
+      "CANCELLED"
+    ],
+    "fields": [
+      "arrangement_id",
+      "policy_id",
+      "lead_insurer_id",
+      "participants",
+      "participation_percentages",
+      "premium_allocations",
+      "commission_allocations",
+      "claims_allocations",
+      "settlement_method",
+      "effective_from",
+      "effective_until",
+      "agreement_document_id"
+    ],
+    "status": "PENDING_PRIVATE_SOURCE"
+  }
+}

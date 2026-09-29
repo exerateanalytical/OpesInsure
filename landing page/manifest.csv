@@ -1,0 +1,64 @@
+status,source_file,packaged_as,label,category,notes
+included,a_clean_modern_website_landing_page_design_full_p.png,screens/public_pages/01_home_landing_page.png,Homepage / landing page,public_pages,
+included,opesinsure_african_insurance_login.png,screens/auth/01_website_login_page.png,Website login page,auth,
+included,opesinsure_african_insurance_signup_page.png,screens/auth/02_website_signup_page.png,Website signup page,auth,
+included,a_clean_professional_corporate_website_about_pa.png,screens/public_pages/02_about_page.png,About page (final simple version),public_pages,
+included,wide_high_resolution_clean_modern_ui_website_scr.png,screens/public_pages/03_contact_page.png,Contact page (regenerated refined version),public_pages,
+included,wide_clean_modern_web_ui_screenshot_of_an_insura.png,screens/marketplace_hub/01_insurance_marketplace_hub.png,Insurance marketplace / buy insurance hub,marketplace_hub,
+included,a_clean_modern_full_resolution_website_ui_mockup.png,screens/category_directories/01_life_insurance_directory.png,Life insurance directory,category_directories,
+included,opesinsure_motor_insurance_marketplace.png,screens/category_directories/02_motor_insurance_directory.png,Motor insurance directory,category_directories,
+included,business_insurance_marketplace_dashboard.png,screens/category_directories/03_business_insurance_directory.png,Business insurance directory,category_directories,
+included,modern_health_insurance_marketplace_dashboard.png,screens/category_directories/04_health_insurance_directory.png,Health insurance directory,category_directories,
+included,travel_insurance_marketplace_dashboard.png,screens/category_directories/05_travel_insurance_directory.png,Travel insurance directory,category_directories,
+included,opesinsure_home_insurance_dashboard.png,screens/category_directories/06_home_insurance_directory.png,Home insurance directory,category_directories,
+included,personal_accident_insurance_marketplace.png,screens/category_directories/07_personal_accident_insurance_directory.png,Personal accident insurance directory,category_directories,
+included,a_wide_high_resolution_desktop_web_ui_screenshot.png,screens/compare_buy_flow/01_compare_directory_or_compare_page.png,Compare / buy flow 01,compare_buy_flow,
+included,wide_high_resolution_ui_ux_screenshot_of_a_modern.png,screens/compare_buy_flow/02_compare_stage.png,Compare / buy flow 02,compare_buy_flow,
+included,a_wide_high_resolution_screenshot_of_a_modern_ins.png,screens/compare_buy_flow/03_stage.png,Compare / buy flow 03,compare_buy_flow,
+included,a_wide_high_resolution_desktop_web_ui_design_illu.png,screens/compare_buy_flow/04_stage.png,Compare / buy flow 04,compare_buy_flow,
+included,wide_high_resolution_desktop_web_ui_screenshot_of.png,screens/compare_buy_flow/05_stage.png,Compare / buy flow 05,compare_buy_flow,
+included,a_wide_clean_modern_web_ui_ux_dashboard_screensh.png,screens/compare_buy_flow/06_stage.png,Compare / buy flow 06,compare_buy_flow,
+included,a_wide_clean_modern_ui_dashboard_screen_of_an_in.png,screens/compare_buy_flow/07_stage.png,Compare / buy flow 07,compare_buy_flow,
+included,a_wide_clean_high_resolution_dashboard_ui_screen.png,screens/compare_buy_flow/08_stage.png,Compare / buy flow 08,compare_buy_flow,
+included,wide_clean_ui_screenshot_webpage_dashboard_of_a.png,screens/compare_buy_flow/09_stage.png,Compare / buy flow 09,compare_buy_flow,
+included,a_high_resolution_ui_screenshot_of_a_web_dashboard.png,screens/compare_buy_flow/10_stage.png,Compare / buy flow 10,compare_buy_flow,
+included,wide_clean_high_resolution_screenshot_of_a_web_a.png,screens/compare_buy_flow/11_stage.png,Compare / buy flow 11,compare_buy_flow,
+included,a_clean_high_resolution_web_dashboard_ui_screensh.png,screens/compare_buy_flow/12_stage.png,Compare / buy flow 12,compare_buy_flow,
+included,wide_crisp_ui_screenshot_of_a_dashboard_like_web.png,screens/compare_buy_flow/13_stage.png,Compare / buy flow 13,compare_buy_flow,
+included,a_clean_high_resolution_screenshot_of_a_web_app_d.png,screens/compare_buy_flow/14_stage.png,Compare / buy flow 14,compare_buy_flow,
+included,wide_clean_modern_web_app_ui_screenshot_of_an_in.png,screens/compare_buy_flow/15_stage.png,Compare / buy flow 15,compare_buy_flow,
+included,a_clean_high_resolution_desktop_web_app_ui_screen.png,screens/compare_buy_flow/16_stage.png,Compare / buy flow 16,compare_buy_flow,
+included,a_clean_high_resolution_ui_dashboard_screenshot_of.png,screens/compare_buy_flow/17_stage.png,Compare / buy flow 17,compare_buy_flow,
+included,wide_high_resolution_ui_dashboard_screenshot_of_a.png,screens/compare_buy_flow/18_stage.png,Compare / buy flow 18,compare_buy_flow,
+included,wide_ui_dashboard_web_app_screenshot_of_an_insuran.png,screens/compare_buy_flow/19_stage.png,Compare / buy flow 19,compare_buy_flow,
+included,wide_high_resolution_ui_screen_graphic_of_an_insu.png,screens/compare_buy_flow/20_stage.png,Compare / buy flow 20,compare_buy_flow,
+included,a_wide_high_resolution_screenshot_of_a_modern_web.png,screens/compare_buy_flow/21_stage.png,Compare / buy flow 21,compare_buy_flow,
+included,wide_clean_ui_dashboard_screenshot_of_an_insuranc.png,screens/compare_buy_flow/22_stage.png,Compare / buy flow 22,compare_buy_flow,
+included,a_clean_modern_web_dashboard_screenshot_of_an_ins.png,screens/compare_buy_flow/23_stage.png,Compare / buy flow 23,compare_buy_flow,
+included,wide_screenshot_of_a_modern_web_app_dashboard_ui.png,screens/compare_buy_flow/24_stage.png,Compare / buy flow 24,compare_buy_flow,
+included,opesinsure_africa_logo_mark.png,artifacts/desktop_generated_assets/01_opesinsure_horizontal_logo_lockup.png,Logo lockup,desktop_artifacts,
+included,african_geometric_blue_and_gold_border.png,artifacts/desktop_generated_assets/02_light_african_tribal_vertical_border.png,Light African tribal vertical border,desktop_artifacts,
+included,pale_geometric_tribal_wallpaper.png,artifacts/desktop_generated_assets/03_light_african_pattern_background.png,Light African pattern background,desktop_artifacts,
+included,africa_digital_network_map.png,artifacts/desktop_generated_assets/04_orange_dotted_africa_map.png,Orange dotted Africa map,desktop_artifacts,
+included,connected_africa_dot_network.png,artifacts/desktop_generated_assets/05_connected_africa_dot_network.png,Connected Africa dot network,desktop_artifacts,
+included,luxury_blue_and_gold_wave_ribbons.png,artifacts/desktop_generated_assets/06_blue_gold_flowing_ribbon_system.png,Blue/gold flowing ribbon system,desktop_artifacts,
+included,glossy_blue_glass_shield_icon.png,artifacts/desktop_generated_assets/07_transparent_glass_shield_motif.png,Transparent/glass shield motif,desktop_artifacts,
+included,silver_metallic_suv_cutout.png,artifacts/desktop_generated_assets/08_hero_vehicle_cutout.png,Hero vehicle cutout,desktop_artifacts,
+included,coastal_city_beneath_table_mountain.png,artifacts/desktop_generated_assets/09_mountain_city_hero_background.png,Mountain/city hero background,desktop_artifacts,
+included,suv_protection_over_coastal_africa.png,artifacts/desktop_generated_assets/10_combined_hero_visual_without_ui.png,Combined hero visual without UI,desktop_artifacts,
+included,dreamy_blue_sky_and_mist.png,artifacts/desktop_generated_assets/11_pale_atmospheric_blue_background_wash.png,Pale atmospheric blue background wash,desktop_artifacts,
+included,elegant_golden_wave_abstract.png,artifacts/desktop_generated_assets/12_gold_decorative_line_accents.png,Gold decorative line accents,desktop_artifacts,
+included,opesinsure_marketplace_extracted_assets/01_opesinsure_horizontal_logo_reference.png,artifacts/desktop_extracted_assets/01_opesinsure_horizontal_logo_reference.png,01 opesinsure horizontal logo reference,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/02_hero_family_visual.png,artifacts/desktop_extracted_assets/02_hero_family_visual.png,02 hero family visual,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/03_left_pale_heritage_pattern.png,artifacts/desktop_extracted_assets/03_left_pale_heritage_pattern.png,03 left pale heritage pattern,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/04_right_pale_heritage_pattern.png,artifacts/desktop_extracted_assets/04_right_pale_heritage_pattern.png,04 right pale heritage pattern,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/05_hero_trust_message_panel.png,artifacts/desktop_extracted_assets/05_hero_trust_message_panel.png,05 hero trust message panel,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/06_marketplace_hero_visual_reference.png,artifacts/desktop_extracted_assets/06_marketplace_hero_visual_reference.png,06 marketplace hero visual reference,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+included,opesinsure_marketplace_extracted_assets/07_pale_africa_watermark_reference.png,artifacts/desktop_extracted_assets/07_pale_africa_watermark_reference.png,07 pale africa watermark reference,desktop_extracted_assets,Cropped one-by-one from approved marketplace hub screen
+excluded,a_high_resolution_clean_modern_corporate_website.png,,,,Rejected earlier About page / corporate overview style
+excluded,wide_portrait_oriented_screenshot_of_a_modern_cor.png,,,,Rejected about page for over-coloring / diversion
+excluded,a_clean_professional_website_contact_page_ui_for.png,,,,Rejected contact page (called cheap)
+excluded,opesinsure_family_protection_plan.png,,,,Explicitly rejected and deleted
+excluded,activa_term_life_insurance_plan.png,,,,Superseded by later life detail request; not packaged to avoid confusion
+excluded,a_clean_white_canvas_style_branding_and_ui_asset_s.png,,,,Incorrect collaged extraction output
+excluded,a_clean_flat_design_system_ui_assets_presentat.png,,,,Incorrect collaged extraction output
