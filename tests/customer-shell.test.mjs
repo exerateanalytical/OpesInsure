@@ -237,7 +237,9 @@ test("customer tabs are Home | Explore | Policies | Claims | Profile", () => {
   assert.ok(existsSync(join(root, "app/(customer)/(tabs)/profile.tsx")));
   assert.ok(!existsSync(join(root, "app/(customer)/(tabs)/account.tsx")));
   assert.match(read("app/(customer)/(tabs)/explore.tsx"), /CustomerApi\.institutions/);
-  assert.match(read("src/api/customer.ts"), /\/public\/institutions/);
+  // One cached directory call path (src/api/directory.ts); CustomerApi.institutions wraps it.
+  assert.match(read("src/api/directory.ts"), /\/public\/institutions/);
+  assert.match(read("src/api/customer.ts"), /loadDirectory/);
 });
 
 test("home follows the approved layout: greeting, search, priority, compare, categories, policies, in progress, quick actions", () => {
@@ -326,7 +328,8 @@ test("support: FAQ, context-linked tickets and escalation", () => {
   assert.match(fresh, /paymentId/);
   assert.match(fresh, /PRIVACY_REQUEST/);
   const detail = read("app/support/[id].tsx");
-  assert.match(detail, /priority: "HIGH"/);
+  // Escalation raises this same case (POST .../escalate), never a duplicate HIGH case.
+  assert.match(detail, /SupportApi\.escalate\(id\)/);
   assert.match(detail, /form\.append\("file"/);
   const layout = read("app/_layout.tsx");
   for (const route of ["support/faq", "account/privacy", "proposals/index", "proposals/\\[id\\]", "quote/compare"])

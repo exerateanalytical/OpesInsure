@@ -27,14 +27,14 @@ export default function Module() {
   return (
     <Screen>
       <AppHeader
-        title={q.data?.label ?? q.data?.title ?? "Workspace module"}
+        title={q.data?.label ?? q.data?.title ?? t("wsModuleTitle")}
         back
       />
       <StatePanel
         {...q}
         onRetry={q.reload}
         isEmpty={(d) => d.rows.length === 0}
-        emptyTitle="No records"
+        emptyTitle={t("wsNoRecordsTitle")}
         emptyMessage={t("wsNoRecords")}
       >
         {(data) =>

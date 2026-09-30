@@ -16,7 +16,7 @@ import { useProposalQuote } from "@/hooks/useProposalQuote";
 import { useFormatters } from "@/hooks/useFormatters";
 import { errorMessage, localized, normalizeCoverage, proposalStatusInfo } from "@/lib/purchase";
 import { proposalQuoteId } from "@/lib/offerChoice";
-import { afterTermsRoute, isPayable, purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
+import { afterTermsRoute, isPayable, paidRoute, paymentState, purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
 import { quoteDocumentReady, termsGate } from "@/lib/contractTerms";
 import { useTranslation } from "@/i18n";
 import { colors, space, type } from "@/theme/tokens";
@@ -102,7 +102,9 @@ export default function Terms() {
       </Screen>
     );
 
-  const gate = proposal ? termsGate({ status: proposal.status, policyId: proposal.policy_id, blocking: checklist?.blocking, termsAccepted: !!acceptedAt || termsAcceptedIn(checklist?.declarations) }) : null;
+  // Paid (or a payment with the operator) while still PAYMENT_PENDING: never back to checkout.
+  const paid = proposal ? paymentState({ payments: proposal.payments }) : null;
+  const gate = proposal ? termsGate({ status: proposal.status, policyId: proposal.policy_id, blocking: checklist?.blocking, termsAccepted: !!acceptedAt || termsAcceptedIn(checklist?.declarations), paid }) : null;
   const info = proposalStatusInfo(proposal?.status, language);
   const quoteId = proposalQuoteId(proposal);
   const pdfReady = quoteDocumentReady(quote?.quote);
@@ -121,6 +123,8 @@ export default function Terms() {
     />
   ) : gate.mode === "accepted" ? (
     <Button label={t("qtContinuePayment")} icon={ArrowRight} onPress={() => router.push(purchaseRoute(proposalId, "checkout") as never)} />
+  ) : paid && !proposal?.policy_id ? (
+    <Button label={t(paid === "paid" ? "prTrackIssuance" : "payFollowPayment")} icon={ArrowRight} onPress={() => router.replace(paidRoute(proposalId, paid) as never)} />
   ) : (
     <Button label={t("coOpenApplication")} icon={ArrowRight} onPress={openApplication} />
   );
@@ -137,7 +141,7 @@ export default function Terms() {
       }
     >
       {header}
-      {params.approved === "1" && proposal && isPayable(proposal.status, proposal.policy_id) ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
+      {params.approved === "1" && proposal && isPayable(proposal.status, proposal.policy_id, paid) ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
       {!proposal && !loadError ? <LoadingState label={t("prLoading")} /> : null}
       {loadError && !proposal ? <ErrorCard error={loadError} fallback={t("prLoadFailed")} onRetry={() => void load()} /> : null}
       {proposal && gate ? (

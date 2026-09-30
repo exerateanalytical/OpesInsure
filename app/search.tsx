@@ -129,8 +129,9 @@ export default function GlobalSearch() {
 
   const apiCount = state.data ? (SEARCH_TYPES as readonly string[]).reduce((n, k) => n + (state.data?.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0), 0) : 0;
   const total = apiCount + products.length + offers.length + matchedProviders.length + matchedBrokers.length;
-  const searched = !!state.data && !state.loading;
-  const nothing = searched && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length && !offers.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length) && (only !== "all" && only !== "brokers" ? true : !matchedBrokers.length);
+  // Local results (catalogue, providers, brokers) still show when GET /search fails; the error sits in the API block only.
+  const searched = !state.loading && !!asked && (!!state.data || !!state.error);
+  const nothing = searched && !state.error && !shownGroups.length && (only !== "all" && only !== "products" ? true : !products.length && !offers.length) && (only !== "all" && only !== "providers" ? true : !matchedProviders.length) && (only !== "all" && only !== "brokers" ? true : !matchedBrokers.length);
   const count = (k: string) => (state.data ? ` (${state.data.counts?.[k] ?? groups.find((g) => g.type === k)?.hits.length ?? 0})` : "");
 
   const scopes: { value: Scope; label: string }[] = [
@@ -187,7 +188,6 @@ export default function GlobalSearch() {
       />
       {tooShort ? <Text style={s.meta}>{t("searchMinChars")}</Text> : null}
       {state.loading ? <LoadingState /> : null}
-      {state.error ? <ErrorState error={state.error} onRetry={() => void run()} /> : null}
       {nothing ? <EmptyState title={t("searchResultsTitle")} message={t("searchNoResults", { q: state.data?.query ?? text })} /> : null}
 
       {searched && (only === "all" || only === "products") && products.length ? (
@@ -317,6 +317,7 @@ export default function GlobalSearch() {
             ))
         : null}
 
+      {state.error && !state.loading ? <ErrorState error={state.error} onRetry={() => void run()} /> : null}
       {!state.loading
         ? shownGroups.map((g) => (
             <View key={g.type} style={s.section}>
@@ -356,7 +357,7 @@ export default function GlobalSearch() {
           tint="blue"
           title={t("searchHelpTitle")}
           body={customer ? t("searchHelpBody") : t("searchHelpSupportBody")}
-          onPress={() => router.push(customer ? "/quotes" : "/support")}
+          onPress={() => router.push(customer ? "/quote/product" : "/support")}
           right={
             <View style={s.bannerCta}>
               <Text style={s.bannerCtaText}>{customer ? t("searchHelpCta") : t("helpComplaints")}</Text>

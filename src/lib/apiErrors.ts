@@ -8,6 +8,10 @@ export const API_ERROR_COPY = {
   DUPLICATE_SUBMISSION: "errDuplicateSubmission",
   AUTHORITY_EXCEEDED: "errAuthorityExceeded",
   PAYMENT_OK_ISSUANCE_FAILED: "errPaymentOkIssuanceFailed",
+  // POST /payments guards: never charge an application twice; app payments need the accepted terms.
+  PAYMENT_ALREADY_MADE: "errPaymentAlreadyMade",
+  PAYMENT_IN_PROGRESS: "errPaymentInProgress",
+  TERMS_NOT_ACCEPTED: "errTermsNotAccepted",
   INTEGRATION_UNAVAILABLE: "errIntegrationUnavailable",
   STEP_UP_REQUIRED: "errStepUpRequired",
   NETWORK_UNAVAILABLE: "errNetworkUnavailable",

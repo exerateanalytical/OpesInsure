@@ -9,7 +9,7 @@ import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { SettlementHero } from "@/components/claims/SettlementHero";
 import { claimPolicy, policyLine, policyTitle, productIcon, providerName } from "@/components/claims/claimProduct";
 import { useInsurerLogo } from "@/components/claims/insurerLogo";
-import { ClaimsApi, ClaimsCompletionApi, type ClaimSettlement } from "@/api/client";
+import { ClaimsApi, ClaimsCompletionApi } from "@/api/client";
 import { ClaimRecordsApi } from "@/api/extra";
 import { handleStepUpRequired } from "@/security/step-up";
 import { useLoad } from "@/hooks/useLoad";
@@ -18,13 +18,14 @@ import { useFormatters } from "@/hooks/useFormatters";
 import { isNotFound } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 import { claimDecisionDate, claimStatusKey, claimTone } from "@/lib/claimStatus";
+import { canDecideSettlement, settlementSteps } from "@/lib/settlement";
 import { colors, space, type } from "@/theme/tokens";
 
 /**
  * Claim settlement (opesinsure_claim_settlement_dashboard): claim summary,
  * navy settlement-amount hero with approved / excess / net, accept or reject
  * the offer (POST settlement/decision, step-up protected), settlement
- * tracking from the offer and payment status, terms and deadline, payment
+ * tracking from the offer and payment status, terms, payment
  * tracking and help. The backend exposes no payout method or advice PDF to
  * customers yet, so those blocks are not shown.
  */
@@ -64,7 +65,7 @@ export default function Settlement() {
   const title = policyTitle(policy, t("claimPolicyLabel"));
   const header = (
     <>
-      <BrandHeader title={t("settleTitle")} subtitle={x?.status === "OFFERED" ? t("settleDue", { date: date(x.decision_deadline) }) : t("settleSubtitle")} />
+      <BrandHeader title={t("settleTitle")} subtitle={canDecideSettlement(x) ? t("settleAwaitingAnswer") : t("settleSubtitle")} />
       {c ? (
         <HeroCard
           icon={productIcon(title, policyLine(policy))}
@@ -96,7 +97,7 @@ export default function Settlement() {
   return (
     <Screen
       footer={
-        x.status === "OFFERED" ? (
+        canDecideSettlement(x) ? (
           <CtaBar>
             <Button label={t("settleAcceptCta")} onPress={() => decide("ACCEPT")} />
             <Button label={t("settleRejectCta")} variant="secondary" onPress={() => decide("REJECT")} />
@@ -109,9 +110,9 @@ export default function Settlement() {
       <Card>
         <View style={s.headRow}>
           <Text accessibilityRole="header" style={[s.cardTitle, s.flex]}>{t("settleTracking")}</Text>
-          <StatusChip label={td(`status_${x.status}`, x.status)} tone={x.status === "ACCEPTED" || x.status === "PAID" || (x.payment_status ?? "").toUpperCase() === "PAID" ? "success" : "warning"} />
+          <StatusChip label={td(`settlementStatus_${x.status}`, x.status)} tone={x.status === "DISPUTED" ? "danger" : steps[1].done ? "success" : "warning"} />
         </View>
-        <Text style={s.meta}>{t("settleTrackingBody")}</Text>
+        <Text style={s.meta}>{t(x.status === "DISPUTED" ? "settleDisputedBody" : "settleTrackingBody")}</Text>
         {steps.map((step, i) => (
           <View key={step.key} style={s.step}>
             <View style={s.rail}>
@@ -144,22 +145,6 @@ export default function Settlement() {
       />
     </Screen>
   );
-}
-
-/** Approved → offer accepted → payment initiated → paid, from the offer and payment status. */
-function settlementSteps(x: ClaimSettlement) {
-  const offerAccepted = x.status === "ACCEPTED" || x.status === "PAID";
-  const pay = (x.payment_status ?? "").toUpperCase();
-  const paid = pay === "PAID" || pay === "SETTLED" || pay === "COMPLETED";
-  const initiated = paid || ["PENDING", "INITIATED", "PROCESSING", "SUBMITTED"].includes(pay);
-  // A payment is only raised on an accepted offer, so a started payment implies acceptance.
-  const accepted = offerAccepted || initiated;
-  return [
-    { key: "approved", label: "settleStepApproved", body: "settleStepApprovedBody", done: true },
-    { key: "accepted", label: "settleStepAccepted", body: "settleStepAcceptedBody", done: accepted },
-    { key: "initiated", label: "settleStepInitiated", body: "settleStepInitiatedBody", done: initiated },
-    { key: "paid", label: "settleStepPaid", body: "settleStepPaidBody", done: paid },
-  ] as const;
 }
 
 const s = StyleSheet.create({

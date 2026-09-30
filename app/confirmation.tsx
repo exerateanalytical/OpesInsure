@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Calendar, Check, CheckCircle2, Clock3, Download, FileText, Headset, Receipt, Share2, ShieldCheck, Sparkles } from "lucide-react-native";
+import { ArrowRight, Calendar, Check, CheckCircle2, CircleAlert, Clock3, Download, FileText, Headset, Receipt, Share2, ShieldCheck, Sparkles } from "lucide-react-native";
 import { Image, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
@@ -11,6 +11,7 @@ import { InsuranceApi, Payment, PaymentsApi, PolicyApi, PurchaseStatus, TokenVau
 import { useInsurance } from "@/store/insurance";
 import { useFormatters } from "@/hooks/useFormatters";
 import { openableUrl } from "@/lib/purchase";
+import { issuanceDeclined } from "@/lib/paymentRouting";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 import { PLATFORM_LOGO } from "@/components/BrandMark";
@@ -72,11 +73,13 @@ export default function Confirmation() {
     /ISSUANCE_FAILED/.test(result?.status ?? "");
   // The payment itself failed (not issuance): stop polling and offer to pay again.
   const paymentFailed = !issued && !issuanceFailed && result?.status === "PAYMENT_FAILED";
+  // Paid, but the insurer declined to issue (issuance.status REJECTED): final, so stop polling; support + refund.
+  const declined = !issued && issuanceDeclined(result);
   useEffect(() => {
-    if (issued || issuanceFailed || paymentFailed) return;
+    if (issued || issuanceFailed || paymentFailed || declined) return;
     const timer = setInterval(() => void check(), 6000);
     return () => clearInterval(timer);
-  }, [check, issued, issuanceFailed, paymentFailed]);
+  }, [check, issued, issuanceFailed, paymentFailed, declined]);
 
   const policy = result?.policy;
   const starts = policy?.coverage_starts_at ?? result?.coverage_starts_at;
@@ -125,6 +128,8 @@ export default function Confirmation() {
           <Text style={st.ctaText}>{t("cfGoMyPolicy")}</Text>
           <ArrowRight size={20} color={colors.white} />
         </Pressable>
+      ) : declined ? (
+        <Button label={t("contactSupport")} icon={Headset} onPress={() => router.push("/support/new")} />
       ) : paymentFailed && proposalId ? (
         <Button label={t("cfPayAgain")} onPress={() => router.replace({ pathname: "/checkout", params: { proposalId } })} />
       ) : (
@@ -139,16 +144,16 @@ export default function Confirmation() {
       <BrandHeader back={false} right={null} />
       <View style={st.hero}>
         <View style={[st.heroIcon, issued ? st.heroIconOk : st.heroIconWait]}>
-          {issued ? <Check size={40} color={colors.white} strokeWidth={3} /> : issuanceFailed ? <Clock3 size={36} color={colors.gold600} /> : <Clock3 size={36} color={colors.blue600} />}
+          {issued ? <Check size={40} color={colors.white} strokeWidth={3} /> : declined ? <CircleAlert size={36} color={colors.dangerText} /> : issuanceFailed ? <Clock3 size={36} color={colors.gold600} /> : <Clock3 size={36} color={colors.blue600} />}
         </View>
         <View style={st.flex}>
-          <Text accessibilityRole="header" style={st.title} maxFontSizeMultiplier={1.6}>{issued ? t("cfCoveredTitle") : issuanceFailed ? t("cfIssuanceFailedTitle") : t("cfInProgress")}</Text>
+          <Text accessibilityRole="header" style={st.title} maxFontSizeMultiplier={1.6}>{issued ? t("cfCoveredTitle") : declined ? t("cfDeclinedTitle") : issuanceFailed ? t("cfIssuanceFailedTitle") : t("cfInProgress")}</Text>
           {issued ? <BrandArt name="gold_swoosh" width={150} style={st.swoosh} /> : null}
-          <Text style={st.subtitle}>{issued ? t("cfCoveredSubtitle") : issuanceFailed ? t("errPaymentOkIssuanceFailed") : t("cfInProgressBody")}</Text>
+          <Text style={st.subtitle}>{issued ? t("cfCoveredSubtitle") : declined ? t("cfDeclinedSubtitle") : issuanceFailed ? t("errPaymentOkIssuanceFailed") : t("cfInProgressBody")}</Text>
         </View>
       </View>
-      <Text style={st.lead}>{issued ? `${t("cfCoveredBody")} ${t("cfIssuedBody")}` : t("cfIssuedNote")}</Text>
-      <Stepper steps={[t("cfStepPaid"), t("cfStepIssuing"), t("cfStepIssued")]} failed={issuanceFailed} current={issued ? 2 : 1} done={issued} />
+      <Text style={st.lead}>{issued ? `${t("cfCoveredBody")} ${t("cfIssuedBody")}` : declined ? t("cfDeclinedBody") : t("cfIssuedNote")}</Text>
+      <Stepper steps={[t("cfStepPaid"), t("cfStepIssuing"), t("cfStepIssued")]} failed={issuanceFailed || declined} current={issued ? 2 : 1} done={issued} />
 
       {issued && policy ? (
         <>
@@ -220,13 +225,14 @@ export default function Confirmation() {
         </>
       ) : (
         <Card>
-          <StatusChip label={result?.status ? td(`status_${result.status}`, result.status) : t("cfVerifying")} tone={result?.status === "PAYMENT_FAILED" ? "danger" : "warning"} />
+          <StatusChip label={declined ? t("cfDeclinedChip") : result?.status ? td(`status_${result.status}`, result.status) : t("cfVerifying")} tone={declined || result?.status === "PAYMENT_FAILED" ? "danger" : "warning"} />
           {result?.product_name ? <Text style={ps.body}>{result.product_name}{result.carrier_name ? ` · ${result.carrier_name}` : ""}</Text> : null}
           <View style={[st.bottomArt, { alignSelf: "center" }]}>
             <TintedIcon icon={Sparkles} tint="gold" size={56} />
           </View>
-          <Text style={ps.meta}>{paymentFailed ? t("cfPaymentFailedBody") : t("cfIssuedNote")}</Text>
+          <Text style={ps.meta}>{declined ? t("cfDeclinedRefundNote") : paymentFailed ? t("cfPaymentFailedBody") : t("cfIssuedNote")}</Text>
           {issuanceFailed ? <Button label={t("contactSupport")} variant="secondary" onPress={() => router.push("/support/new")} /> : null}
+          {declined && payment?.id ? <Button label={t("cfRequestRefund")} variant="secondary" onPress={() => router.push({ pathname: "/payments/[id]/refund", params: { id: payment.id } })} /> : null}
         </Card>
       )}
       {error ? <ErrorCard error={error} fallback={t("cfUnavailable")} /> : null}

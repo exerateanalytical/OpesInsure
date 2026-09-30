@@ -12,9 +12,11 @@ test("phase 4 endpoints are wired through typed contracts", () => {
     "/mobile/carrier/bordereaux",
     "/timeline",
     "/evidence",
-    "/public/institutions",
   ])
     assert.ok(extra.includes(path), `missing ${path}`);
+  // The directory has one cached call path (src/api/directory.ts); extra.ts wraps it.
+  assert.match(read("src/api/directory.ts"), /\/public\/institutions/);
+  assert.match(extra, /loadDirectory|loadInstitution/);
   assert.match(read("app/broker/receivables.tsx"), /BrokerFinanceApi\.statements/);
   assert.match(read("app/broker/receivables.tsx"), /BrokerFinanceApi\.accruals/);
   assert.match(read("app/carrier/bordereaux.tsx"), /CarrierFinanceApi\.bordereaux/);

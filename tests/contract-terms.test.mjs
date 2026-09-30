@@ -99,7 +99,11 @@ test("contract screens: server facts, one summary, no stale store data", () => {
   assert.doesNotMatch(summary, /sumTwelveMonths/, "no fixed 12-month fallback");
   const checkout = read("app/checkout.tsx");
   assert.match(checkout, /storeProposal\.id === id/, "never shows another application from the store");
-  assert.match(checkout, /termsAccepted !== false/);
+  // Pay only with the terms KNOWN to be accepted: an unreadable checklist blocks too (retry / go to terms).
+  assert.match(checkout, /termsAccepted === true/);
+  assert.match(checkout, /coTermsUnknownTitle/);
+  // A paid (or in-flight) application never shows the pay form again.
+  assert.match(checkout, /info\.stage === "payable" && !paid/);
   assert.match(read("src/components/policies/PolicyDetailView.tsx"), /<CoverList /);
   assert.match(read("app/documents/view.tsx"), /quoteNotReady\(source, error\)/);
 });

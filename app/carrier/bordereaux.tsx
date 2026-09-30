@@ -21,7 +21,7 @@ export default function CarrierBordereaux() {
 }
 
 function CarrierBordereauxBody() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const q = useLoad(() => CarrierFinanceApi.bordereaux(), []);
   return (
     <Screen>
@@ -48,8 +48,9 @@ function CarrierBordereauxBody() {
             amount={(b) => b.gross_premium_minor}
             render={(b) => ({
               title: b.bordereau_number,
-              subtitle: `${day(b.period_start)} – ${day(b.period_end)} · ${b.item_count} items · ${fcfa(b.gross_premium_minor)}`,
-              status: b.status,
+              subtitle: `${day(b.period_start)} – ${day(b.period_end)} · ${t(b.item_count === 1 ? "caItemsCountOne" : "caItemsCount", { count: b.item_count })} · ${fcfa(b.gross_premium_minor)}`,
+              statusCode: b.status,
+              status: td(`bdxStatus_${b.status}`, b.status),
             })}
           />
         )}

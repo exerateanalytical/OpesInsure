@@ -15,7 +15,7 @@ import {
 import { PartnerHome } from "@/components/agent";
 import type { KpiRoute } from "@/components/portal/KpiGrid";
 import { useWorkspacePermissions } from "@/components/carrier/CarrierGate";
-import { CARRIER_ROUTE_MODULE, canUseCarrierModule } from "@/lib/carrierAccess";
+import { carrierHrefAllowed } from "@/lib/carrierAccess";
 import { useCapabilities } from "@/store/capabilities";
 import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
@@ -36,10 +36,7 @@ export default function CarrierHome() {
   // enforces every route; CarrierGate covers direct links).
   const perms = useWorkspacePermissions();
   const caps = useCapabilities((s) => s.caps);
-  const allowed = (href: string) => {
-    const mod = CARRIER_ROUTE_MODULE[href.split("?")[0]!.split("/")[2] ?? ""];
-    return !mod || canUseCarrierModule(perms, mod, caps);
-  };
+  const allowed = (href: string) => carrierHrefAllowed(href, perms, caps);
   return (
     <PartnerHome
       portal="carrier"

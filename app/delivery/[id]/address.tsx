@@ -35,7 +35,11 @@ export default function Address() {
     setBusy(true);
     setSaveError(null);
     try {
-      await WalletApi.updateAddress(id, form);
+      await WalletApi.updateAddress(
+        id,
+        { recipient_name: form.recipient_name.trim(), phone: form.phone_e164.trim(), line1: form.address_line.trim(), city: form.city.trim() },
+        data?.version,
+      );
       router.back();
     } catch (e) {
       setSaveError(e);

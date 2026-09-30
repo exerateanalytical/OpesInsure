@@ -33,7 +33,7 @@ export default function ServiceDetail() {
   };
   return (
     <Screen>
-      <BrandHeader title={x ? td(`serviceType_${x.type}`, x.type) : t("svcDetailTitle")} back right="help" />
+      <BrandHeader title={x ? td(`svcType_${x.type}`, x.type) : t("svcDetailTitle")} back right="help" />
       <StatePanel loading={loading} error={error} data={x} onRetry={() => void reload()} isEmpty={() => false}>
         {(x) => (
           <>
@@ -42,7 +42,7 @@ export default function ServiceDetail() {
                 <TintedIcon icon={FileCog} tint="blue" size={56} />
                 <View style={s.flex}>
                   <StatusChip label={td(`status_${x.status}`, x.status)} tone="info" />
-                  <Text style={s.title}>{td(`serviceType_${x.type}`, x.type)}</Text>
+                  <Text style={s.title}>{td(`svcType_${x.type}`, x.type)}</Text>
                 </View>
               </View>
               <Text style={s.body}>{x.reason}</Text>

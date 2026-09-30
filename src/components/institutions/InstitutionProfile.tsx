@@ -11,6 +11,7 @@ import {
   MapPin,
   Navigation,
   Phone,
+  Scale,
   Share2,
   ShieldCheck,
   Star,
@@ -111,15 +112,22 @@ export function InstitutionScreen({
     void Share.share({ message }).catch(() => undefined);
   };
   const notFound = !row && isNotFound(q.error);
+  // An insurer with nothing on OpesInsure cannot be quoted: offer the comparison instead.
+  // With exactly one product the quote starts on that product's line.
+  const insurerProducts = kind === "insurer" ? (row?.products ?? []) : null;
+  const compareOnly = entry === "quote" && insurerProducts !== null && insurerProducts.length === 0;
+  const onlyProduct = insurerProducts?.length === 1 ? insurerProducts[0] : null;
   return (
     <Screen
       footer={
         row && !mismatch && entry ? (
           <CtaBar>
             <Button
-              label={t(entry === "sign-in" ? "instSignInToQuote" : "propGetQuote")}
-              icon={FileText}
-              onPress={() => start()}
+              label={t(entry === "sign-in" ? "instSignInToQuote" : compareOnly ? "instCompareInsurers" : "propGetQuote")}
+              icon={compareOnly ? Scale : FileText}
+              onPress={() =>
+                compareOnly ? router.push("/quote/product") : onlyProduct ? start(onlyProduct.line_code, onlyProduct.name) : start()
+              }
             />
           </CtaBar>
         ) : undefined

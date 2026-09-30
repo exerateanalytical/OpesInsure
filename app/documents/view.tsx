@@ -22,6 +22,8 @@ import {
   parseViewerSource,
   quoteNotReady,
   safeFileName,
+  VIEWER_BASE_URL,
+  viewerAllowsNavigation,
   viewerHtml,
   type DocumentKind,
 } from "@/lib/documentViewer";
@@ -58,7 +60,7 @@ const base64ToBytes = (b64: string) => {
 export default function DocumentView() {
   const { t } = useTranslation();
   const { source: rawSource, title, fileName: rawName } = useLocalSearchParams<{ source?: string; title?: string; fileName?: string }>();
-  const source = useMemo(() => parseViewerSource(rawSource), [rawSource]);
+  const source = useMemo(() => parseViewerSource(rawSource, environmentConfig.apiBaseUrl), [rawSource]);
   const heading = title || t("docViewerTitle");
   const fileName = safeFileName(rawName || title);
   const [base64, setBase64] = useState<string | null>(null);
@@ -221,8 +223,8 @@ export default function DocumentView() {
   const useNative = !!NativePdf && kind === "pdf" && !!fileUri;
   /** pdf.js WebView: only the fallback for builds that lack the native PDF module. */
   const html = useMemo(
-    () => (base64 && kind === "pdf" && !useNative && Platform.OS !== "web" ? viewerHtml(base64, { background: colors.neutral50, accent: colors.blue600 }) : null),
-    [base64, kind, useNative],
+    () => (base64 && kind === "pdf" && !useNative && Platform.OS !== "web" ? viewerHtml(base64, { background: colors.neutral50, accent: colors.blue600, loadingLabel: t("docViewerLoading") }) : null),
+    [base64, kind, useNative, t],
   );
   const webUrl = useMemo(() => {
     if (Platform.OS !== "web" || !base64) return null;
@@ -282,15 +284,15 @@ export default function DocumentView() {
     }
     return html ? (
       <WebView
-        originWhitelist={["*"]}
-        source={{ html, baseUrl: "https://insurance.opesdatacenter.tech/" }}
+        originWhitelist={[VIEWER_BASE_URL.slice(0, -1), "about:blank"]}
+        source={{ html, baseUrl: VIEWER_BASE_URL }}
         style={styles.web}
         javaScriptEnabled
         domStorageEnabled={false}
         allowFileAccess={false}
         allowUniversalAccessFromFileURLs={false}
         setSupportMultipleWindows={false}
-        onShouldStartLoadWithRequest={(req) => req.url.startsWith("about:") || req.url.startsWith("data:") || req.url.includes("insurance.opesdatacenter.tech")}
+        onShouldStartLoadWithRequest={(req) => viewerAllowsNavigation(req.url)}
         onMessage={(e) => {
           try {
             const m = JSON.parse(e.nativeEvent.data) as { type: string; count?: number; message?: string };

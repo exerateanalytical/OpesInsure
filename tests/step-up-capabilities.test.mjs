@@ -158,7 +158,7 @@ test("carrier specialists (FINANCE_OFFICER / CLAIMS_OFFICER) reach their carrier
   // Capabilities narrow, never widen.
   assert.equal(canUseCarrierModule(claims, "claims", { modules: { claims: { view: false } } }), false);
   assert.equal(canUseCarrierModule([], "claims", { modules: { claims: { view: true } } }), false);
-  assert.match(read("src/store/session.ts"), /case "FINANCE_OFFICER":\s*\n?\s*return "finance";/);
+  assert.match(read("src/lib/portalRouting.ts"), /case "FINANCE_OFFICER":\s*\n?\s*return "finance";/);
 });
 
 test("security notifications open the security centre", () => {

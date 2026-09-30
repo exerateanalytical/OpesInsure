@@ -1,28 +1,27 @@
 import React, { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { FileCheck2, FileSignature, HandCoins, XCircle } from "lucide-react-native";
+import { BadgeCheck, FileCheck2, FilePen, FileSignature, HandCoins, ShieldCheck, XCircle } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
-import { DetailActions, DetailHistory, DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { DetailActions, DetailHistory, DetailScreen, DetailSection, UnavailableSection, type DetailAction } from "@/components/detail";
 import { CarrierGate, usePermission } from "@/components/carrier/CarrierGate";
 import { OperationsList } from "@/components/OperationsList";
 import { Card, SectionTitle, TextField } from "@/components/ui";
-import { CarrierApi } from "@/api/client";
+import { ApiError } from "@/api/client";
 import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
+import { ISSUANCE_PENDING, issuanceActions, type IssuanceAction } from "@/lib/carrierDecisions";
 import { proposalStatusInfo } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
-
-const ISSUANCE_PENDING = ["REQUESTED", "CARRIER_REVIEW", "PENDING"];
 
 /**
  * Issuance Detail (CAR-005, ISS-003). The decision happens here, next to the
  * proposal, customer, product, premium and payment-verification context, with
  * an explicit confirmation and step-up when the server asks for it. The
- * policy number is always allocated by the server. Authority (delegated or
- * maker-checker) is enforced server-side: when the API returns
- * `capabilities`, only those actions show; otherwise the route permission is
- * mirrored and the server still decides.
+ * policy number is always allocated by the server. Maker-checker (verify,
+ * request correction, approve, second approval, reject) follows the
+ * `capabilities` GET mobile/carrier/issuance/{id} returns for this user; the
+ * server re-checks every action.
  */
 export default function CarrierIssuanceDetail() {
   return (
@@ -33,19 +32,21 @@ export default function CarrierIssuanceDetail() {
 }
 
 function Body() {
-  const { t, language } = useTranslation();
+  const { t, td, language } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const canDecide = usePermission("carrier.referrals.decide");
   const [carrierReference, setCarrierReference] = useState("");
   const [reason, setReason] = useState("");
   const [issued, setIssued] = useState<string | null>(null);
   const q = useLoad(async () => {
-    const [queue, proposals, payments] = await Promise.all([
-      CarrierApi.issuance(),
+    const [item, proposals, payments] = await Promise.all([
+      CarrierWorkspaceApi.issuance(String(id)).catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }),
       CarrierWorkspaceApi.proposals().catch(() => []),
       CarrierWorkspaceApi.payments().catch(() => null),
     ]);
-    const item = queue.find((x) => x.id === id) ?? null;
     if (!item) return null;
     return {
       item,
@@ -65,20 +66,105 @@ function Body() {
       {(d) => {
         const { item, proposal, payments } = d!;
         const pending = ISSUANCE_PENDING.includes(item.status);
-        const caps = item.capabilities;
-        const allowed = (key: string) => (caps ? caps.includes(key) : pending && canDecide);
-        const paid = payments.some((p) => p.status === "SUCCEEDED");
+        const actions = issuanceActions(item, canDecide);
+        const allowed = (key: IssuanceAction) => actions.includes(key);
+        const paid = item.payment?.status === "SUCCEEDED" || payments.some((p) => p.status === "SUCCEEDED");
+        const reference = carrierReference.trim() ? { carrier_reference: carrierReference.trim() } : {};
+        const reasonReady = reason.trim().length >= 5;
+        const after = async () => {
+          setReason("");
+          await q.reload();
+        };
+        const all: Record<IssuanceAction, DetailAction> = {
+          verify: {
+            key: "verify",
+            label: t("cdIssVerify"),
+            icon: ShieldCheck,
+            variant: "secondary",
+            allowed: allowed("verify"),
+            confirm: t("cdIssConfirmVerify", { reference: item.reference }),
+            run: async () => {
+              await CarrierWorkspaceApi.verifyIssuance(item.id, reason.trim() || undefined);
+              await after();
+            },
+            successMessage: t("cdIssVerified"),
+          },
+          request_correction: {
+            key: "request_correction",
+            label: t("cdIssRequestCorrection"),
+            icon: FilePen,
+            variant: "secondary",
+            allowed: allowed("request_correction"),
+            disabled: !reasonReady,
+            confirm: t("cdIssConfirmCorrection", { reference: item.reference }),
+            run: async () => {
+              await CarrierWorkspaceApi.requestIssuanceCorrection(item.id, reason.trim());
+              await after();
+            },
+            successMessage: t("cdIssCorrectionRequested"),
+          },
+          approve: {
+            key: "approve",
+            label: t("caApproveIssue"),
+            icon: FileCheck2,
+            allowed: allowed("approve"),
+            confirm: t("cdConfirmIssue", { reference: item.reference }),
+            stepUpPurpose: "carrier_issuance",
+            run: async () => {
+              const r = await CarrierWorkspaceApi.approveIssuance(item.id, reference);
+              setIssued(r.policy_number);
+              await q.reload();
+              return t("caPolicyIssued", { number: r.policy_number });
+            },
+          },
+          second_approve: {
+            key: "second_approve",
+            label: t("cdIssSecondApprove"),
+            icon: BadgeCheck,
+            allowed: allowed("second_approve"),
+            confirm: t("cdConfirmIssue", { reference: item.reference }),
+            stepUpPurpose: "carrier_issuance",
+            run: async () => {
+              const r = await CarrierWorkspaceApi.secondApproveIssuance(item.id, reference);
+              setIssued(r.policy_number);
+              await q.reload();
+              return t("caPolicyIssued", { number: r.policy_number });
+            },
+          },
+          reject: {
+            key: "reject",
+            label: t("settleReject"),
+            icon: XCircle,
+            variant: "danger",
+            allowed: allowed("reject"),
+            disabled: !reasonReady,
+            confirm: t("cdConfirmReject", { reference: item.reference }),
+            stepUpPurpose: "carrier_issuance",
+            run: async () => {
+              await CarrierWorkspaceApi.rejectIssuance(item.id, reason.trim());
+              await after();
+            },
+            successMessage: t("caIssuanceRejected"),
+          },
+        };
+        const needsReference = allowed("approve") || allowed("second_approve");
+        const needsReason = allowed("reject") || allowed("request_correction") || allowed("verify");
         return (
           <>
             <DetailSection
               title={t("cdSummary")}
               rows={[
                 [t("cdReference"), item.reference],
-                [t("cdStatus"), humanize(item.status)],
-                [t("cdStage"), item.stage ? humanize(item.stage) : null],
-                [t("cdSubject"), item.subject],
+                [t("cdStatus"), td(`issStatus_${item.status}`, item.status)],
+                [t("cdStage"), item.stage ? td(`issStage_${item.stage}`, item.stage) : null],
+                [t("cdCustomer"), item.customer ?? null],
+                [t("cdProduct"), item.product ?? null],
+                [t("cdTotalPremium"), item.premium ? money(item.premium.amount_minor) : null],
                 [t("cdInsurer"), item.carrier_name ?? null],
                 [t("cdSubmitted"), shortDate(item.submitted_at)],
+                [t("cdCarrierReference"), item.carrier_reference ?? null],
+                [t("cdIssCorrectionReason"), item.correction_reason ?? null],
+                [t("cdRejectionReason"), item.rejection_reason ?? null],
                 [t("cdPolicyNumber"), issued],
               ]}
             />
@@ -115,6 +201,14 @@ function Body() {
                   status: x.status,
                 }))}
               />
+            ) : item.payment ? (
+              <Card>
+                <Text style={s.meta}>
+                  {td(`payStatus_${item.payment.status}`, item.payment.status)}
+                  {item.payment.provider_reference ? ` · ${item.payment.provider_reference}` : ""}
+                </Text>
+                {!item.payment.verified ? <Text style={s.warn}>{t("cdNoVerifiedPayment")}</Text> : null}
+              </Card>
             ) : (
               <Card>
                 <Text style={s.warn}>{t("cdNoVerifiedPayment")}</Text>
@@ -124,19 +218,19 @@ function Body() {
             <DetailHistory
               title={t("cdApprovals")}
               items={(item.approvals ?? []).map((a, i) => ({
-                key: `${a.role}-${i}`,
-                when: a.decided_at,
-                text: `${humanize(a.role)} · ${humanize(a.decision)}`,
-                by: a.actor_name ?? null,
+                key: `${a.step}-${i}`,
+                when: a.at,
+                text: td(`issStep_${a.step}`, a.step),
+                by: a.name ?? null,
               }))}
             />
             <UnavailableSection title={t("cdCoverDocsWording")} />
-            {pending && (allowed("approve") || allowed("reject")) ? (
+            {actions.length && (needsReference || needsReason) ? (
               <>
                 <SectionTitle title={t("cdDecision")} />
                 <Card>
                   <Text style={s.meta}>{t("caPolicyNumberByServer")}</Text>
-                  {allowed("approve") ? (
+                  {needsReference ? (
                     <TextField
                       label={t("caCarrierReferenceOptional")}
                       value={carrierReference}
@@ -145,50 +239,13 @@ function Body() {
                       maxLength={64}
                     />
                   ) : null}
-                  {allowed("reject") ? (
-                    <TextField label={t("caReasonRejection")} value={reason} onChangeText={setReason} multiline />
+                  {needsReason ? (
+                    <TextField label={t("cdIssReasonLabel")} value={reason} onChangeText={setReason} multiline maxLength={2000} />
                   ) : null}
                 </Card>
               </>
             ) : null}
-            {pending ? (
-              <DetailActions
-                actions={[
-                  {
-                    key: "approve",
-                    label: t("caApproveIssue"),
-                    icon: FileCheck2,
-                    allowed: allowed("approve"),
-                    confirm: t("cdConfirmIssue", { reference: item.reference }),
-                    stepUpPurpose: "carrier_issuance",
-                    run: async () => {
-                      const r = await CarrierWorkspaceApi.approveIssuance(
-                        item.id,
-                        carrierReference.trim() ? { carrier_reference: carrierReference.trim() } : {},
-                      );
-                      setIssued(r.policy_number);
-                      await q.reload();
-                      return t("caPolicyIssued", { number: r.policy_number });
-                    },
-                  },
-                  {
-                    key: "reject",
-                    label: t("settleReject"),
-                    icon: XCircle,
-                    variant: "danger",
-                    allowed: allowed("reject"),
-                    disabled: reason.trim().length < 5,
-                    confirm: t("cdConfirmReject", { reference: item.reference }),
-                    stepUpPurpose: "carrier_issuance",
-                    run: async () => {
-                      await CarrierWorkspaceApi.rejectIssuance(item.id, reason.trim());
-                      await q.reload();
-                    },
-                    successMessage: t("caIssuanceRejected"),
-                  },
-                ]}
-              />
-            ) : null}
+            {actions.length ? <DetailActions actions={actions.map((a) => all[a])} /> : null}
           </>
         );
       }}

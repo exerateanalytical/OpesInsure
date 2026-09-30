@@ -14,7 +14,7 @@ import { colors, radius, space, type } from "@/theme/tokens";
  */
 export function SettlementHero({ settlement: x }: { settlement: ClaimSettlement }) {
   const { t, td } = useTranslation();
-  const { xaf, date } = useFormatters();
+  const { xaf } = useFormatters();
   const paid = (x.payment_status ?? "").toUpperCase() === "PAID";
   return (
     <View style={s.wrap}>
@@ -23,7 +23,7 @@ export function SettlementHero({ settlement: x }: { settlement: ClaimSettlement 
           <Text style={s.heroLabel}>{t("settleNet")}</Text>
           <Text style={s.heroAmount}>{xaf(x.net_minor)}</Text>
           <Text style={s.heroMeta}>
-            {paid ? t("settlePaidStatus") : x.payment_status ? td(`status_${x.payment_status}`, x.payment_status) : t("settleDue", { date: date(x.decision_deadline) })}
+            {paid ? t("settlePaidStatus") : x.payment_status && x.payment_status !== "NOT_STARTED" ? td(`status_${x.payment_status}`, x.payment_status) : td(`settlementStatus_${x.status}`, x.status)}
           </Text>
         </View>
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

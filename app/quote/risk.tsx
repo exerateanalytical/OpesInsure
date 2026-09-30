@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { ArrowRight, CarFront, ClipboardList, Info, Pencil, Plus, UserRound, Users } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, RadioCard, SectionHeading, TintedIcon } from "@/components/design";
 import { CATEGORIES } from "@/components/customer/categories";
@@ -22,7 +22,8 @@ import { FormLocationAutofill } from "@/components/forms/LocationAutofill";
 import { claimCoordinates } from "@/lib/deviceLocation";
 import type { DeviceFix } from "@/lib/locationMatch";
 import { MasterSelectField } from "@/components/masterData/MasterSelectField";
-import { selectionToValues, VehicleReference, VehicleSelection } from "@/lib/vehicles";
+import { selectionToValues } from "@/lib/vehicles";
+import { selectionFromValues, withReferenceOptions } from "@/lib/riskFormValues";
 import { ReviewIntro, SchemaReviewSection } from "@/components/review/ReviewSummary";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
@@ -63,6 +64,8 @@ export default function Risk() {
   // Quote this screen already created (going back here from the offers re-rates it instead of adding another).
   const createdRef = useRef<{ id: string; asset: string | null } | null>(null);
   const prefilledRef = useRef<string | null>(null);
+  // Saved asset whose facts were last copied into the form (a new one added mid-quote is copied once on return).
+  const assetPrefillRef = useRef<string | null>(useInsurance.getState().riskAssetId);
 
   const [schema, setSchema] = useState<RiskSchema | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(true);
@@ -89,7 +92,11 @@ export default function Risk() {
 
   useEffect(() => {
     void loadSchema();
-    // Insurable object types per line come from GET /risk-asset-types (REQ-RSK-001).
+  }, [loadSchema]);
+
+  // Insurable object types per line come from GET /risk-asset-types (REQ-RSK-001). Reloaded on every focus, so an
+  // asset added from "Add new" (assets/new?returnTo=quote, which selects it) is listed and prefilled on return.
+  const loadAssets = useCallback(() => {
     void RiskAssetTypesApi.list()
       .catch(() => [])
       .then(async (types) => {
@@ -98,10 +105,18 @@ export default function Risk() {
         setAssetType(own?.code ?? (line === "MOTOR" ? "VEHICLE" : null));
         if (!codes.length) return setAssets([]);
         const x = await AssetsApi.list();
-        setAssets(unwrapPage<RiskAsset>(x).items.filter((a) => codes.includes(String(a.type).toUpperCase()) || (line === "MOTOR" && !!a.registration_number)));
+        const list = unwrapPage<RiskAsset>(x).items.filter((a) => codes.includes(String(a.type).toUpperCase()) || (line === "MOTOR" && !!a.registration_number));
+        setAssets(list);
+        const chosen = useInsurance.getState().riskAssetId;
+        const added = chosen && chosen !== assetPrefillRef.current ? list.find((a) => a.id === chosen) : undefined;
+        if (added) {
+          assetPrefillRef.current = added.id;
+          setValues((v) => ({ ...v, ...prefillFromAsset(added) }));
+        }
       })
       .catch(() => setAssets([]));
-  }, [line, loadSchema]);
+  }, [line]);
+  useFocusEffect(loadAssets);
 
   // Step 0 is "who / what is insured"; schema steps follow; the last step is the read-only review.
   const { t, td, language } = useTranslation();
@@ -118,6 +133,7 @@ export default function Risk() {
     prefilledRef.current = editQuote.id;
     setValues(factsToValues(schema, editQuote.risk_facts));
     setInsured(insuredFromFacts(editQuote.risk_facts));
+    assetPrefillRef.current = editQuote.risk_asset_id ?? null;
     setRiskAsset(editQuote.risk_asset_id ?? null);
     setStep(schema.steps.length + 1);
   }, [editQuote, schema, setInsured, setRiskAsset]);
@@ -275,13 +291,14 @@ export default function Risk() {
                           subtitle={a.registration_number && a.registration_number !== a.label ? a.registration_number : t("qtSavedAssetSub")}
                           onPress={() => {
                             setRiskAsset(on ? null : a.id);
+                            assetPrefillRef.current = on ? null : a.id;
                             if (!on) setValues((v) => ({ ...v, ...prefillFromAsset(a) }));
                           }}
                         />
                       );
                     })}
                   </View>
-                  <Button label={t("qtAddNew")} icon={Plus} variant="secondary" onPress={() => router.push(assetType ? { pathname: "/assets/new", params: { type: assetType } } : "/assets/new")} />
+                  <Button label={t("qtAddNew")} icon={Plus} variant="secondary" onPress={() => router.push({ pathname: "/assets/new", params: assetType ? { type: assetType, returnTo: "quote" } : { returnTo: "quote" } })} />
                 </>
               ) : null}
             </>
@@ -363,25 +380,6 @@ function insuredReviewValues(insured: InsuredPerson, riskAssetId: string | null 
     insured_who: insured.mode,
     ...(insured.mode === "other" ? { full_name: insured.full_name, relationship: insured.relationship, date_of_birth: insured.date_of_birth } : {}),
     ...(riskAssetId ? { risk_asset_id: riskAssetId } : {}),
-  };
-}
-
-/** Localized options from the vehicle reference (EN/FR) for body type, fuel, usage, … */
-function withReferenceOptions(field: RiskField, reference: VehicleReference | null): RiskField {
-  const rows = field.reference && reference ? (reference as unknown as Record<string, { code: string; label: string }[]>)[field.reference] : undefined;
-  return rows?.length ? { ...field, options: rows.map((r) => ({ value: r.code, label: r.label })) } : field;
-}
-
-function selectionFromValues(values: Record<string, string>): VehicleSelection | null {
-  if (!values.make) return null;
-  return {
-    make_code: values.make_code || undefined,
-    make: values.make,
-    model_code: values.model_code || undefined,
-    model: values.model ?? "",
-    year: values.year || undefined,
-    manual: !values.make_code || !values.model_code,
-    review_id: values.vehicle_review_id || undefined,
   };
 }
 

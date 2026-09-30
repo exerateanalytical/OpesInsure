@@ -38,7 +38,7 @@ function CarrierPoliciesBody() {
             onPress={(id) => router.push(`/carrier/policies/${id}` as never)}
             rows={x.map((p) => ({
               id: p.id,
-              title: `${p.policy_number ?? "Pending number"} · ${p.customer_name}`,
+              title: `${p.policy_number ?? t("caPendingNumber")} · ${p.customer_name}`,
               subtitle: `${money(p.premium_minor)} · ${shortDate(p.coverage_starts_at)} – ${shortDate(p.coverage_ends_at)}`,
               status: p.status,
             }))}

@@ -4,6 +4,7 @@ import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Bell,
+  CheckCheck,
   ChevronRight,
   CircleUserRound,
   Fingerprint,
@@ -13,7 +14,7 @@ import {
   LucideIcon,
   UserRound,
 } from "lucide-react-native";
-import { AppHeader, Card, Screen, SectionTitle } from "@/components/ui";
+import { AppHeader, Button, Card, Screen, SectionTitle } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import {
@@ -23,6 +24,9 @@ import {
   NotificationsApi,
 } from "@/api/client";
 import { useSession } from "@/store/session";
+import { useCapabilities } from "@/store/capabilities";
+import { carrierHrefAllowed } from "@/lib/carrierAccess";
+import { markedRead, NotificationPortal, portalNotificationTarget } from "@/lib/portalNotifications";
 import { useTranslation } from "@/i18n";
 import { LegalLinks } from "@/components/LegalLinks";
 import { BuildStamp } from "@/components/BuildStamp";
@@ -88,10 +92,15 @@ function HeaderIcon({
 }
 
 /** Persistent bottom navigation for a partner portal. */
-export function PortalTabBar({ tabs }: { tabs: PortalTab[] }) {
+export function PortalTabBar({ tabs: allTabs }: { tabs: PortalTab[] }) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { td } = useTranslation();
+  // Insurer bar: only the modules this workspace is granted (same rule as the
+  // carrier home grid; finance/claims staff must not see tabs that 403).
+  const perms = useSession((st) => st.activeWorkspace?.permissions ?? null);
+  const caps = useCapabilities((st) => st.caps);
+  const tabs = allTabs[0]?.href === "/carrier" ? allTabs.filter((tab) => carrierHrefAllowed(tab.href, perms, caps)) : allTabs;
   // Longest matching prefix wins, so /agent/clients/123 highlights "Clients".
   // Earnings detail pages live outside /agent/wallet but belong to the Earnings tab.
   const tabPath = /^\/agent\/(commissions|withdrawals?)(\/|$)/.test(pathname) ? "/agent/wallet" : pathname;
@@ -160,12 +169,53 @@ export function PortalScreen({
   return <Screen footer={<PortalTabBar tabs={tabs} />}>{children}</Screen>;
 }
 
+/** Broker / insurer inbox: opening a row marks it read (the header badge
+ * clears on return) and follows its link when it is a route of this portal. */
 export function PortalNotifications({ tabs }: { tabs: PortalTab[] }) {
   const { t, language } = useTranslation();
+  const portal: NotificationPortal = tabs[0]?.href === "/carrier" ? "carrier" : "broker";
   const q = useLoad(() => NotificationsApi.list(), [language]);
+  const perms = useSession((st) => st.activeWorkspace?.permissions ?? null);
+  const caps = useCapabilities((st) => st.caps);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const items = q.data ?? [];
+  const unread = items.filter((n) => !n.read).length;
+  const targetOf = (path?: string | null) => {
+    const target = portalNotificationTarget(path, portal);
+    return target && (portal !== "carrier" || carrierHrefAllowed(target, perms, caps)) ? target : null;
+  };
+  const open = (n: (typeof items)[number]) => {
+    if (!n.read) {
+      q.setData(markedRead(items, [n.id]));
+      NotificationsApi.markRead(n.id).catch(() => void q.reload());
+    }
+    const target = targetOf(n.path);
+    if (target) router.push(target as never);
+  };
+  const markAll = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      await NotificationsApi.markAllRead();
+      q.setData(markedRead(items, "all"));
+    } catch {
+      setNotice(t("portalNotifMarkFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <PortalScreen tabs={tabs}>
       <AppHeader title={t("portalNotifTitle")} subtitle={t("portalNotifSubtitle")} back />
+      {unread > 0 ? (
+        <Button label={t("portalNotifMarkAll")} icon={CheckCheck} variant="secondary" loading={busy} onPress={() => void markAll()} />
+      ) : null}
+      {notice ? (
+        <Text accessibilityRole="alert" style={s.notice}>
+          {notice}
+        </Text>
+      ) : null}
       <StatePanel
         {...q}
         onRetry={q.reload}
@@ -173,14 +223,27 @@ export function PortalNotifications({ tabs }: { tabs: PortalTab[] }) {
         emptyTitle={t("portalNotifEmpty")}
         emptyMessage={t("portalNotifEmptyBody")}
       >
-        {(items) => (
+        {(rows) => (
           <Card>
-            {items.map((n) => (
-              <View key={n.id} style={s.noticeItem}>
-                <Text style={s.noticeTitle}>{n.title}</Text>
-                {n.body ? <Text style={s.body}>{n.body}</Text> : null}
-              </View>
-            ))}
+            {rows.map((n) => {
+              const linked = !!targetOf(n.path);
+              return (
+                <Pressable
+                  key={n.id}
+                  accessibilityRole={linked ? "link" : "button"}
+                  accessibilityLabel={[n.read ? null : t("agNotifUnread"), n.title, n.body].filter(Boolean).join(", ")}
+                  onPress={() => open(n)}
+                  style={({ pressed }) => [s.noticeItem, pressed && s.pressed]}
+                >
+                  <View style={s.noticeHead}>
+                    <Text style={[s.noticeTitle, !n.read && s.noticeUnread]}>{n.title}</Text>
+                    {n.read ? null : <View style={s.unreadDot} />}
+                    {linked ? <ChevronRight size={18} color={colors.neutral500} /> : null}
+                  </View>
+                  {n.body ? <Text style={s.body}>{n.body}</Text> : null}
+                </Pressable>
+              );
+            })}
           </Card>
         )}
       </StatePanel>
@@ -452,7 +515,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.neutral100,
   },
-  noticeTitle: { ...type.label, color: colors.navy950 },
+  noticeTitle: { ...type.label, color: colors.navy950, flex: 1 },
+  noticeHead: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  noticeUnread: { fontFamily: "Inter_700Bold" },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.blue600 },
   segment: {
     flexDirection: "row",
     borderWidth: 1,

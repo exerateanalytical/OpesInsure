@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Ambulance, Phone, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { RadioCard, SectionHeading } from "@/components/design";
@@ -31,7 +32,8 @@ export default function Emergency() {
   const [service, setService] = useState<"MEDICAL" | "POLICE" | "TOWING">("TOWING");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState(useSession.getState().bootstrap?.user.phone_e164 ?? "+237");
-  const [reference, setReference] = useState("");
+  // The created ticket: once set, the form is locked so the same emergency is never sent twice.
+  const [created, setCreated] = useState<{ id: string; reference: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Short confirm summary before the request goes out (the 112 call stays one tap away above).
@@ -40,12 +42,15 @@ export default function Emergency() {
   const chosen = options.find(([key]) => key === service)!;
 
   const request = async () => {
-    if (!policyId || busy) return;
+    if (!policyId || busy || created) return;
     setBusy(true);
     setError(null);
     try {
-      setReference((await ClaimsCompletionApi.requestEmergencyAssistance({ policy_id: policyId, service, location, callback_phone: phone })).reference);
+      const ticket = await ClaimsCompletionApi.requestEmergencyAssistance({ policy_id: policyId, service, location, callback_phone: phone });
+      setCreated({ id: ticket.id, reference: ticket.reference });
       setConfirming(false);
+      // The operations desk works the request as a support case: follow it there.
+      router.replace({ pathname: "/support/[id]", params: { id: ticket.id } });
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : t("actionFailed"));
     } finally {
@@ -61,7 +66,7 @@ export default function Emergency() {
         <Text style={s.body}>{t("emBody")}</Text>
         <Button label={t("emCall")} icon={Phone} variant="danger" onPress={() => Linking.openURL("tel:112")} />
       </Card>
-      {active.length > 1 && !confirming ? (
+      {active.length > 1 && !confirming && !created ? (
         <Card>
           <SectionHeading icon={ShieldCheck} title={t("svcWhichPolicy")} />
           <View style={s.list} accessibilityRole="radiogroup">
@@ -72,7 +77,13 @@ export default function Emergency() {
         </Card>
       ) : null}
       {!loading && !active.length ? <Text style={s.body}>{t("emNoPolicy")}</Text> : null}
-      {confirming ? (
+      {created ? (
+        <Card>
+          <StatusChip label={t("emSent")} tone="success" />
+          <Text accessibilityLiveRegion="polite" style={s.ok}>{t("emReference", { reference: created.reference })}</Text>
+          <Button label={t("emViewRequest")} onPress={() => router.replace({ pathname: "/support/[id]", params: { id: created.id } })} />
+        </Card>
+      ) : confirming ? (
         <>
           <ReviewSection icon={chosen[1]} tint="red" title={t("emConfirmTitle")} onEdit={() => setConfirming(false)}>
             <ReviewRow first label={t("emService")} value={t(chosen[2])} />
@@ -100,9 +111,8 @@ export default function Emergency() {
         ))}
         <TextField label={t("emLocation")} value={location} onChangeText={setLocation} />
         <TextField label={t("emCallback")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-        <Button label={t("emRequest")} disabled={!valid || busy} onPress={() => { setError(null); setReference(""); setConfirming(true); }} />
+        <Button label={t("emRequest")} disabled={!valid || busy} onPress={() => { setError(null); setConfirming(true); }} />
         {error ? <Text accessibilityRole="alert" style={s.error}>{error}</Text> : null}
-        {reference ? <Text accessibilityLiveRegion="polite" style={s.ok}>{t("emReference", { reference })}</Text> : null}
       </Card>
       )}
     </Screen>

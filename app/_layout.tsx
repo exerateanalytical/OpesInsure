@@ -10,7 +10,7 @@ import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
 import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
 import { colors } from "@/theme/tokens";
-import { roleToPortal, useSession, WORKSPACE_PORTALS } from "@/store/session";
+import { useSession, workspacePortal, WORKSPACE_PORTALS } from "@/store/session";
 import { carrierShellAllowed } from "@/lib/carrierAccess";
 import { AppRuntime } from "@/components/AppRuntime";
 import { ProductionErrorBoundary } from "@/components/ProductionErrorBoundary";
@@ -65,7 +65,7 @@ export default function RootLayout() {
   }, [loaded]);
   if (!loaded) return null;
   const portal =
-    status === "authenticated" ? roleToPortal(workspace?.role_code) : null;
+    status === "authenticated" ? workspacePortal(workspace) : null;
   const customer = portal === "customer";
   const agent = portal === "agent";
   const broker = portal === "broker_admin" || portal === "broker_staff";
@@ -131,6 +131,9 @@ export default function RootLayout() {
           <Stack.Screen name="search" />
           {/* Batch 6: customer, agent and broker quotes; the server scopes each quote to its owner. */}
           <Stack.Screen name="quote-comparison/[id]" />
+          {/* Documents open from every portal (policy wallets, carrier/broker records); the server authorizes each document. */}
+          <Stack.Screen name="documents/[id]" />
+          <Stack.Screen name="documents/view" />
         </Stack.Protected>
         <Stack.Protected guard={customer}>
           <Stack.Screen name="(customer)" />
@@ -190,8 +193,6 @@ export default function RootLayout() {
           <Stack.Screen name="delivery/[id]/confirm" />
           <Stack.Screen name="quotes/index" />
           <Stack.Screen name="quotes/[id]" />
-          <Stack.Screen name="documents/[id]" />
-          <Stack.Screen name="documents/view" />
           <Stack.Screen name="services/index" />
           <Stack.Screen name="services/new" />
           <Stack.Screen name="services/[id]" />
@@ -203,6 +204,7 @@ export default function RootLayout() {
           <Stack.Screen name="agent/account" />
           <Stack.Screen name="agent/notifications" />
           <Stack.Screen name="agent/onboarding" />
+          <Stack.Screen name="agent/pipeline" />
           <Stack.Screen name="agent/clients/index" />
           <Stack.Screen name="agent/clients/new" />
           <Stack.Screen name="agent/clients/[id]" />

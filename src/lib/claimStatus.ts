@@ -1,10 +1,11 @@
 /**
  * Claim status vocabulary, mirroring the backend state machine
- * (app/Domain/Claims/ClaimStateMachine.php + ClaimLifecycle.php):
+ * (app/Domain/Claims/ClaimMachine.php BLUEPRINT):
  *
  *   DRAFT → SUBMITTED → ACKNOWLEDGED → (EVIDENCE_PENDING) → ASSESSMENT
- *   → CARRIER_REVIEW → APPROVED | PARTIALLY_APPROVED | DECLINED
- *   → (PAYMENT_PENDING) → PAID → CLOSED, with DISPUTED after a decision.
+ *   → (INVESTIGATING) → CARRIER_REVIEW → APPROVED | PARTIALLY_APPROVED | DECLINED
+ *   → (PAYMENT_PENDING) → PAID → CLOSED, with DISPUTED after a decision and
+ *   CLOSED → REOPENED → ASSESSMENT when the insurer reopens a claim.
  *
  * Pure module (no imports) so node:test can load it directly.
  */
@@ -14,6 +15,7 @@ export const CLAIM_STATUSES = [
   "ACKNOWLEDGED",
   "EVIDENCE_PENDING",
   "ASSESSMENT",
+  "INVESTIGATING",
   "CARRIER_REVIEW",
   "APPROVED",
   "PARTIALLY_APPROVED",
@@ -22,6 +24,7 @@ export const CLAIM_STATUSES = [
   "PAID",
   "DISPUTED",
   "CLOSED",
+  "REOPENED",
 ] as const;
 export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
@@ -31,6 +34,13 @@ const LEGACY: Record<string, ClaimStatus> = {
   SETTLED: "PAID",
   UNDER_REVIEW: "CARRIER_REVIEW",
   MORE_INFORMATION: "EVIDENCE_PENDING",
+  // ClaimMachine::BLUEPRINT names, should a payload carry them instead of the stored codes.
+  REGISTERED: "ACKNOWLEDGED",
+  INFORMATION_REQUIRED: "EVIDENCE_PENDING",
+  UNDER_ASSESSMENT: "ASSESSMENT",
+  DECISION_PENDING: "CARRIER_REVIEW",
+  APPEALED: "DISPUTED",
+  SETTLEMENT_PENDING: "PAYMENT_PENDING",
 };
 
 export function normalizeClaimStatus(value: string | null | undefined): ClaimStatus | null {
@@ -51,6 +61,7 @@ export function claimTone(value: string | null | undefined): Tone {
     case "PARTIALLY_APPROVED":
     case "DISPUTED":
     case "PAYMENT_PENDING":
+    case "REOPENED":
       return "warning";
     case "CLOSED":
     case "DRAFT":
@@ -91,6 +102,7 @@ export function claimTracker(value: string | null | undefined): StepState[] {
       current = 0;
       break;
     case "ACKNOWLEDGED":
+    case "REOPENED":
       current = 2;
       break;
     case "EVIDENCE_PENDING":
@@ -98,6 +110,7 @@ export function claimTracker(value: string | null | undefined): StepState[] {
       attention = 4;
       break;
     case "ASSESSMENT":
+    case "INVESTIGATING":
     case "CARRIER_REVIEW":
       current = 3;
       break;
@@ -138,20 +151,23 @@ export type ClaimAction =
   | "appeal"
   | "information"
   | "decision"
+  | "withdraw"
   | "message";
 
 const ACTIONS: Record<ClaimAction, ClaimStatus[]> = {
   incident: ["DRAFT", "SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING"],
-  evidence: ["DRAFT", "SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT"],
-  checklist: ["DRAFT", "SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "CARRIER_REVIEW"],
-  inspection: ["ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "CARRIER_REVIEW"],
+  evidence: ["DRAFT", "SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "INVESTIGATING", "REOPENED"],
+  checklist: ["DRAFT", "SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "INVESTIGATING", "CARRIER_REVIEW", "REOPENED"],
+  inspection: ["ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "INVESTIGATING", "CARRIER_REVIEW", "REOPENED"],
   repair: ["APPROVED", "PARTIALLY_APPROVED", "PAYMENT_PENDING", "PAID"],
   settlement: ["APPROVED", "PARTIALLY_APPROVED", "PAYMENT_PENDING", "PAID"],
   appeal: ["DECLINED", "PARTIALLY_APPROVED"],
   // Insurer asked for documents: the customer can still upload while evidence is open.
-  information: ["SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT"],
+  information: ["SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING", "ASSESSMENT", "INVESTIGATING", "REOPENED"],
   // A decision exists once the insurer approved, partly approved or declined.
   decision: ["APPROVED", "PARTIALLY_APPROVED", "DECLINED", "PAYMENT_PENDING", "PAID", "DISPUTED"],
+  // ClaimMachine::WITHDRAWABLE: before any assessment, decision or payment.
+  withdraw: ["SUBMITTED", "ACKNOWLEDGED", "EVIDENCE_PENDING"],
   message: CLAIM_STATUSES.filter((s) => s !== "CLOSED"),
 };
 
@@ -217,8 +233,10 @@ export function claimStage(value: string | null | undefined): number {
       return 0;
     case "ACKNOWLEDGED":
     case "EVIDENCE_PENDING":
+    case "REOPENED":
       return 1;
     case "ASSESSMENT":
+    case "INVESTIGATING":
     case "CARRIER_REVIEW":
       return 2;
     case "APPROVED":
@@ -249,6 +267,7 @@ const STEP_OF_STATUS: Partial<Record<ClaimStatus, number>> = {
   ACKNOWLEDGED: 2,
   EVIDENCE_PENDING: 4,
   ASSESSMENT: 3,
+  INVESTIGATING: 3,
   CARRIER_REVIEW: 3,
   APPROVED: 5,
   PARTIALLY_APPROVED: 5,
@@ -280,4 +299,20 @@ export function trackerStepDates(
 /** Date of the decision (approved / partly approved / declined) event, if any. */
 export function claimDecisionDate(events: { to_status?: string | null; occurred_at: string }[]): string | null {
   return trackerStepDates(events)[5] ?? null;
+}
+
+/** The most recent event of a timeline, whatever order the server sent it in. */
+export function latestEvent<T extends { occurred_at?: string | null }>(events: readonly T[] | null | undefined): T | undefined {
+  let latest: T | undefined;
+  let latestAt = -Infinity;
+  for (const e of events ?? []) {
+    const at = e.occurred_at ? Date.parse(e.occurred_at) : NaN;
+    if (Number.isNaN(at)) continue;
+    // ">=": for equal times the later entry in the list wins (the server appends in order).
+    if (at >= latestAt) {
+      latest = e;
+      latestAt = at;
+    }
+  }
+  return latest;
 }

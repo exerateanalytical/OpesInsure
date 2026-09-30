@@ -22,7 +22,7 @@ export default function CarrierSettlementDetail() {
 }
 
 function CarrierSettlementDetailBody() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierFinanceApi.settlement(id), [id]);
   return (
@@ -32,30 +32,30 @@ function CarrierSettlementDetailBody() {
         {(s) => (
           <>
             <Card feature>
-              <StatusChip label={s.status.replaceAll("_", " ")} tone="info" />
+              <StatusChip label={td(`settleStatus_${s.status}`, s.status)} tone="info" />
               <Text style={styles.amount}>{fcfa(s.net_amount_minor)}</Text>
               <Text style={styles.body}>
-                Period {day(s.period_start)} – {day(s.period_end)}
+                {t("caSettlePeriod", { from: day(s.period_start), to: day(s.period_end) })}
               </Text>
               {s.submitted_at ? (
-                <Text style={styles.body}>Submitted {day(s.submitted_at)}</Text>
+                <Text style={styles.body}>{t("caSettleSubmitted", { date: day(s.submitted_at) })}</Text>
               ) : null}
               {s.paid_at ? (
                 <Text style={styles.body}>
-                  Paid {day(s.paid_at)}
-                  {s.bank_reference ? ` · ref ${s.bank_reference}` : ""}
+                  {t("caSettlePaid", { date: day(s.paid_at) })}
+                  {s.bank_reference ? ` · ${t("caSettleBankRef", { reference: s.bank_reference })}` : ""}
                 </Text>
               ) : null}
             </Card>
-            <SectionTitle title={`Items (${s.items?.length ?? 0})`} />
+            <SectionTitle title={t("cdLineItems", { count: s.items?.length ?? 0 })} />
             {s.items?.length ? (
               <OperationsList
                 icon={FileCheck2}
                 rows={s.items.map((i) => ({
                   id: i.id,
                   title: t("caNetDue", { amount: fcfa(i.net_due_minor) }),
-                  subtitle: `Gross ${fcfa(i.gross_premium_minor)} · commission ${fcfa(i.commission_minor)}`,
-                  status: i.status,
+                  subtitle: t("caSettleItemBreakdown", { gross: fcfa(i.gross_premium_minor), commission: fcfa(i.commission_minor) }),
+                  status: td(`settleStatus_${i.status}`, i.status),
                 }))}
               />
             ) : (

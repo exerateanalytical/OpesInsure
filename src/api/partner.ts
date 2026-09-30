@@ -432,6 +432,30 @@ export type DistributionPartner = {
   agreement_status: string | null;
 };
 
+/** GET mobile/carrier/issuance/{id} (MobileCarrierIssuanceController::present). */
+export type CarrierIssuanceDetail = {
+  id: string;
+  reference: string;
+  status: string;
+  stage?: string | null;
+  carrier_id?: string | null;
+  carrier_name?: string | null;
+  customer?: string | null;
+  product?: string | null;
+  premium?: { amount_minor: number; currency: string | null } | null;
+  coverage_starts_at?: string | null;
+  coverage_ends_at?: string | null;
+  authority_mode?: string | null;
+  wording_version?: string | null;
+  payment?: { id: string; status: string; verified: boolean; reconciled_at: string | null; provider_reference: string | null } | null;
+  correction_reason?: string | null;
+  rejection_reason?: string | null;
+  carrier_reference?: string | null;
+  approvals?: { step: string; user_id: string; name: string | null; at: string | null }[];
+  capabilities?: string[];
+  submitted_at?: string | null;
+};
+
 export const CarrierWorkspaceApi = {
   products: () => api<CarrierProduct[]>("/mobile/partner/carrier/products"),
   setProductActive: (id: string, active: boolean, reason: string) =>
@@ -464,6 +488,17 @@ export const CarrierWorkspaceApi = {
     api<{ id: string; status: string; rejection_reason: string }>(
       `/mobile/partner/carrier/issuance/${id}/reject`,
       post({ reason }),
+    ),
+  /** Mobile audit E2 maker-checker (routes/wave14_mobile.php): carrier- and tenant-scoped detail with capabilities. */
+  issuance: (id: string) => api<CarrierIssuanceDetail>(`/mobile/carrier/issuance/${id}`),
+  verifyIssuance: (id: string, notes?: string) =>
+    api<CarrierIssuanceDetail>(`/mobile/carrier/issuance/${id}/verify`, post(notes ? { notes } : {})),
+  requestIssuanceCorrection: (id: string, reason: string) =>
+    api<CarrierIssuanceDetail>(`/mobile/carrier/issuance/${id}/request-correction`, post({ reason })),
+  secondApproveIssuance: (id: string, payload: { carrier_reference?: string } = {}) =>
+    api<CarrierIssuanceDetail & { policy_id: string; policy_number: string }>(
+      `/mobile/carrier/issuance/${id}/second-approve`,
+      post(payload),
     ),
   claimEvidence: (id: string) => api<CarrierClaimEvidence[]>(`/mobile/partner/carrier/claims/${id}/evidence`),
   /** Short-lived signed URL; the server logs the read (document_access_log). */

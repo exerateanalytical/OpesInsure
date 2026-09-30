@@ -17,7 +17,7 @@ import {
 import { AppHeader, Button, Card, Screen } from "@/components/ui";
 import { BrandArt } from "@/components/design/BrandArt";
 import { TintedIcon } from "@/components/design";
-import { portalRoute, roleToPortal, useSession } from "@/store/session";
+import { portalRoute, useSession, workspacePortal } from "@/store/session";
 import { colors, radius, space, tileIcon, tileIconSize, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
@@ -88,7 +88,7 @@ export default function RoleSelect() {
         </Card>
       ) : (
         workspaces.map((workspace) => {
-          const portal = roleToPortal(workspace.role_code);
+          const portal = workspacePortal(workspace);
           const Icon = icons[portal ?? ""] ?? Building2;
           const label = portal ? td(`role_${portal}`, workspace.role_code) : workspace.role_code;
           const subtitle = portal ? td(`role_${portal}_sub`, t("roleAuthorised")) : t("roleAuthorised");

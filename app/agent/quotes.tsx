@@ -46,7 +46,7 @@ export default function AgentQuotes() {
           onPress={(r) => router.push({ pathname: "/agent/quotes/[id]", params: { id: r.id, title: `${r.customer_name} · ${r.line_code}` } })}
           render={(r) => ({
             title: r.customer_name,
-            subtitle: [r.line_code ? td(`line_${r.line_code}`, r.line_code) : null, r.best_premium_minor === null ? `${r.offers} offers` : null, shortDate(r.created_at)]
+            subtitle: [r.line_code ? td(`line_${r.line_code}`, r.line_code) : null, r.best_premium_minor === null ? t(r.offers === 1 ? "agOffersCountOne" : "agOffersCount", { count: r.offers }) : null, shortDate(r.created_at)]
               .filter(Boolean)
               .join(" · "),
             amount: r.best_premium_minor !== null ? money(r.best_premium_minor) : null,

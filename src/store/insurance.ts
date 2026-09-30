@@ -111,9 +111,10 @@ type State = {
   setProposal: (v: Proposal) => void;
   loadProposal: (id: string) => Promise<Proposal>;
   requestPayment: (v: Network, p: string) => Promise<void>;
-  recoverPayment: () => Promise<Payment | null>;
+  /** The payment of proposalId (when given): the store's, the one saved on this device, else the latest from the purchase status. */
+  recoverPayment: (proposalId?: string | null) => Promise<Payment | null>;
   refreshPayment: () => Promise<Payment>;
-  refreshPurchase: () => Promise<PurchaseStatus | null>;
+  refreshPurchase: (proposalId?: string | null) => Promise<PurchaseStatus | null>;
   setPolicy: (v: Policy) => void;
   clear: () => void;
   clearError: () => void;
@@ -283,7 +284,12 @@ export const useInsurance = create<State>((set, get) => ({
   },
 
   async loadProposal(id) {
-    const proposal = await InsuranceApi.proposal(id);
+    let proposal = await InsuranceApi.proposal(id);
+    // GET proposals/{id} does not carry the revised terms: the mobile projection does (counter_offer).
+    if (String(proposal.status).toUpperCase() === "COUNTEROFFERED" && !proposal.counter_offer) {
+      const mobile = await ProposalsApi.mobileShow(id).catch(() => null);
+      if (mobile?.counter_offer) proposal = { ...proposal, counter_offer: mobile.counter_offer };
+    }
     set({ proposal });
     return proposal;
   },
@@ -331,10 +337,26 @@ export const useInsurance = create<State>((set, get) => ({
     }
   },
 
-  async recoverPayment() {
-    const id = await TokenVault.pendingPayment();
-    if (!id) return null;
-    const payment = await InsuranceApi.payment(id);
+  async recoverPayment(proposalId) {
+    const current = get().payment;
+    if (current && (!proposalId || current.proposal_id === proposalId)) return get().refreshPayment();
+    // Saved on this device (app restarted mid-payment); ignored when it belongs to another application.
+    const saved = await TokenVault.pendingPayment();
+    if (saved) {
+      const payment = await InsuranceApi.payment(saved).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
+      if (payment && (!proposalId || payment.proposal_id === proposalId)) {
+        set({ payment });
+        return payment;
+      }
+    }
+    // Deep link / notification after a restart: the server knows this application's latest payment.
+    if (!proposalId) return null;
+    const purchase = await get().refreshPurchase(proposalId);
+    if (!purchase?.payment?.id) return null;
+    const payment = await InsuranceApi.payment(purchase.payment.id);
     set({ payment });
     return payment;
   },
@@ -357,13 +379,15 @@ export const useInsurance = create<State>((set, get) => ({
    * provider-confirmed payment and issuance. 404 means the proposal is not
    * linked to this account.
    */
-  async refreshPurchase() {
-    const proposalId = get().proposal?.id ?? get().payment?.proposal_id;
+  async refreshPurchase(forProposal) {
+    const proposalId = forProposal ?? get().proposal?.id ?? get().payment?.proposal_id;
     if (!proposalId) return null;
     try {
       const purchase = await InsuranceApi.purchaseStatus(proposalId);
       set({ purchase });
-      if (purchase?.status === "ISSUANCE_PENDING" || purchase?.status === "POLICY_ISSUED")
+      // Keys are kept until the policy exists: a retry while issuance is pending must replay the SAME
+      // payment, never mint a new one (the server also refuses a second payment: 409 PAYMENT_ALREADY_MADE).
+      if (purchase?.status === "POLICY_ISSUED")
         await PaymentAttemptKeys.forgetProposal(proposalId).catch(() => undefined);
       return purchase;
     } catch (e) {

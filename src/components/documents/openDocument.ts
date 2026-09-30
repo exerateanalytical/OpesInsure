@@ -1,5 +1,7 @@
+import { Linking } from "react-native";
 import { router } from "expo-router";
-import { viewerParams, type ViewerSource } from "@/lib/documentViewer";
+import { environmentConfig } from "@/config/environment";
+import { isAllowedDocumentUrl, viewerParams, type ViewerSource } from "@/lib/documentViewer";
 
 /**
  * Opens a PDF in the in-app viewer (app/documents/view.tsx) instead of
@@ -10,7 +12,15 @@ export function openDocument(source: ViewerSource, title: string, fileName?: str
   router.push({ pathname: "/documents/view", params: viewerParams(source, title, fileName) });
 }
 
-/** Convenience for the common "signed or API https URL" case. */
+/**
+ * Convenience for the common "signed or API https URL" case. The viewer only
+ * accepts our API host; any other https link (e.g. an insurer's own product
+ * sheet) opens in the system browser instead.
+ */
 export function openDocumentUrl(url: string, title: string, fileName?: string) {
-  openDocument({ kind: "url", url }, title, fileName);
+  if (isAllowedDocumentUrl(url, environmentConfig.apiBaseUrl)) {
+    openDocument({ kind: "url", url }, title, fileName);
+    return;
+  }
+  if (/^https:\/\//i.test(url)) void Linking.openURL(url).catch(() => undefined);
 }

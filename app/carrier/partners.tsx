@@ -45,8 +45,8 @@ function CarrierPartnersBody() {
               title: p.name,
               subtitle: [
                 humanize(p.type),
-                `${p.policies} policies · ${money(p.premium_minor)}`,
-                p.agreement_number ? `agreement ${p.agreement_number}` : null,
+                `${t(p.policies === 1 ? "caPoliciesCountOne" : "caPoliciesCount", { count: p.policies })} · ${money(p.premium_minor)}`,
+                p.agreement_number ? t("caAgreementRef", { number: p.agreement_number }) : null,
               ]
                 .filter(Boolean)
                 .join(" · "),

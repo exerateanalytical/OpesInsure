@@ -61,7 +61,7 @@ function ProductCard({ product: p, onChange }: { product: CarrierProduct; onChan
         <StatusChip label={humanize(p.status)} tone={active ? "success" : p.status === "RETIRED" ? "neutral" : "info"} />
       </View>
       <Text style={s.meta}>
-        {p.code} · v{p.version} · {p.line_code} · from {shortDate(p.effective_from)}
+        {p.code} · v{p.version} · {p.line_code} · {t("caEffectiveFrom", { date: shortDate(p.effective_from) })}
       </Text>
       <Button
         label={t("cdViewDetails")}

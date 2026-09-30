@@ -12,7 +12,7 @@
  * Dependency-free apart from sibling libs: tests/contract-terms.test.mjs loads
  * it with Node's type stripping.
  */
-import { isPayable, readyForTerms } from "./paymentRouting.ts";
+import { isPayable, readyForTerms, type PaidState } from "./paymentRouting.ts";
 import { proposalStatusInfo } from "./purchase.ts";
 
 export type ScheduleRowLike = { sequence?: number | null; due?: string | null; amount_minor?: number | null; fee_minor?: number | null };
@@ -108,10 +108,11 @@ export type TermsGate = { mode: "accept" } | { mode: "accepted" } | { mode: "blo
  * checklist blocks on nothing but the terms (accepting submits it). An
  * unknown checklist (older server) keeps the previous behaviour: accept.
  */
-export function termsGate(input: { status: string | null | undefined; policyId?: string | null; blocking?: string[] | null; termsAccepted?: boolean | null }): TermsGate {
+export function termsGate(input: { status: string | null | undefined; policyId?: string | null; blocking?: string[] | null; termsAccepted?: boolean | null; paid?: PaidState }): TermsGate {
   const status = upper(input.status);
   const stage = proposalStatusInfo(status).stage;
-  if (input.policyId || stage === "paid") return { mode: "blocked", reason: "paid" };
+  // Money already taken (or with the operator) while still PAYMENT_PENDING: never back into checkout.
+  if (input.policyId || stage === "paid" || input.paid) return { mode: "blocked", reason: "paid" };
   if (isPayable(status)) return input.termsAccepted ? { mode: "accepted" } : { mode: "accept" };
   if (status === "DOCUMENTS_PENDING") {
     if (!Array.isArray(input.blocking) || readyForTerms(status, input.blocking)) return { mode: "accept" };

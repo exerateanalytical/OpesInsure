@@ -299,3 +299,48 @@ export function quoteEntry(status: string | null | undefined, portal: string | n
   if (status !== "authenticated") return "sign-in";
   return portal === "customer" ? "quote" : null;
 }
+
+/**
+ * Demo / synthetic rows (is_demo, data_origin DEMO_SYNTHETIC) back the demo staff accounts and
+ * are never shown as licensed institutions. The server drops them too; this is belt and braces.
+ */
+export function isDemoInstitution(row: unknown): boolean {
+  const r = obj(row);
+  return !!r && (r.is_demo === true || r.data_origin === "DEMO_SYNTHETIC");
+}
+
+export function withoutDemo<T>(rows: T[] | null | undefined): T[] {
+  return (rows ?? []).filter((r) => !isDemoInstitution(r));
+}
+
+/** Directory rows of one type ("all" keeps every row), demo rows removed, server order kept. */
+export function directoryOfType<T extends { type?: string | null }>(rows: T[] | null | undefined, type: "insurer" | "broker" | "all"): T[] {
+  return withoutDemo(rows).filter((r) => type === "all" || r.type === type);
+}
+
+/** How long a directory response is reused before the next screen refetches it. */
+export const DIRECTORY_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * Keyed promise cache with a TTL: concurrent callers share one in-flight request, a
+ * success is reused until it expires, a failure is forgotten so the next call retries.
+ */
+export function createTtlCache<V>(ttlMs: number, now: () => number = () => Date.now()) {
+  const entries = new Map<string, { at: number; value: Promise<V> }>();
+  return {
+    get(key: string, load: () => Promise<V>): Promise<V> {
+      const entry = entries.get(key);
+      if (entry && now() - entry.at < ttlMs) return entry.value;
+      const value = load();
+      entries.set(key, { at: now(), value });
+      value.catch(() => {
+        if (entries.get(key)?.value === value) entries.delete(key);
+      });
+      return value;
+    },
+    clear(key?: string) {
+      if (key === undefined) entries.clear();
+      else entries.delete(key);
+    },
+  };
+}

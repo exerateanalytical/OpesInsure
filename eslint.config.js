@@ -71,6 +71,6 @@ module.exports = defineConfig([
     },
   },
   {
-    ignores: ["dist/*"],
+    ignores: ["dist/*", "src/lib/vendor/*"],
   }
 ]);

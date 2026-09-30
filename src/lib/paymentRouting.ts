@@ -23,17 +23,68 @@ export type PurchaseRoute =
 
 const upper = (v: string | null | undefined) => String(v ?? "").toUpperCase();
 
-/** True when the application waits for the customer's payment (no policy issued yet). */
-export function isPayable(status: string | null | undefined, policyId?: string | null): boolean {
-  if (policyId) return false;
+/**
+ * Money already taken (or being taken) for an application. A proposal stays
+ * PAYMENT_PENDING after a successful payment until the insurer issues, so the
+ * status alone must never offer "pay" again (double charge, owner fix
+ * 2026-09-29). "paid": a SUCCEEDED payment, or the purchase status is
+ * ISSUANCE_PENDING / POLICY_ISSUED. "in_flight": the latest attempt is with
+ * the operator (PROCESSING, or CREATED / PENDING_CUSTOMER with a provider
+ * reference that has not expired) — the same rule the server applies before
+ * it answers 409 PAYMENT_IN_PROGRESS. null: nothing collected, pay is fine.
+ */
+export type PaidState = "paid" | "in_flight" | null;
+type AttemptLike = { status?: string | null; created_at?: string | null; expires_at?: string | null; provider_reference?: string | null };
+export function paymentState(input: { payments?: AttemptLike[] | null; purchaseStatus?: string | null; now?: number }): PaidState {
+  const agg = upper(input.purchaseStatus);
+  const list = Array.isArray(input.payments) ? input.payments : [];
+  if (agg === "ISSUANCE_PENDING" || agg === "POLICY_ISSUED" || list.some((p) => upper(p?.status) === "SUCCEEDED")) return "paid";
+  if (agg === "PAYMENT_PROCESSING") return "in_flight";
+  const now = input.now ?? Date.now();
+  const live = list.some((p) => {
+    const s = upper(p?.status);
+    if (s === "PROCESSING") return true;
+    if (s !== "CREATED" && s !== "PENDING_CUSTOMER") return false;
+    if (!p?.provider_reference) return false;
+    const end = p.expires_at ? Date.parse(p.expires_at) : NaN;
+    return !Number.isFinite(end) || end > now;
+  });
+  return live ? "in_flight" : null;
+}
+
+/** True when the application waits for the customer's payment (no policy issued yet, nothing collected or in flight). */
+export function isPayable(status: string | null | undefined, policyId?: string | null, paid?: PaidState): boolean {
+  if (policyId || paid) return false;
   if (!upper(status)) return false;
   return proposalStatusInfo(status).stage === "payable";
 }
 
 /** Next purchase step: null unless payable; terms first unless they were already accepted. */
-export function nextPurchaseStep(status: string | null | undefined, termsAccepted?: boolean | null, policyId?: string | null): PurchaseStep | null {
-  if (!isPayable(status, policyId)) return null;
+export function nextPurchaseStep(status: string | null | undefined, termsAccepted?: boolean | null, policyId?: string | null, paid?: PaidState): PurchaseStep | null {
+  if (!isPayable(status, policyId, paid)) return null;
   return termsAccepted ? "checkout" : "terms";
+}
+
+/** Where a paid / in-flight application goes instead of checkout: issuance tracking, or the payment follow-up. */
+export function paidRoute(proposalId: string, paid: Exclude<PaidState, null>) {
+  return { pathname: paid === "paid" ? ("/confirmation" as const) : ("/payment" as const), params: { proposalId } };
+}
+
+/**
+ * Paid, but the insurer turned the issuance down (purchase status issuance.status REJECTED / DECLINED /
+ * CANCELLED and no policy): confirmation stops polling and offers support and a refund, never "pay again".
+ */
+export function issuanceDeclined(purchase: { policy?: unknown; issuance?: { status?: string | null } | null } | null | undefined): boolean {
+  if (!purchase || purchase.policy) return false;
+  return ["REJECTED", "DECLINED", "CANCELLED"].includes(upper(purchase.issuance?.status));
+}
+
+/** 409 from POST /payments: already paid (PAYMENT_ALREADY_MADE) or a payment still with the operator (PAYMENT_IN_PROGRESS). */
+export function paymentConflict(error: unknown): PaidState {
+  const code = String((error as { code?: unknown } | null)?.code ?? "").toUpperCase();
+  if (code === "PAYMENT_ALREADY_MADE") return "paid";
+  if (code === "PAYMENT_IN_PROGRESS") return "in_flight";
+  return null;
 }
 
 /** Route of a purchase step; `approved` shows the "your application is approved" banner there. */
@@ -53,9 +104,9 @@ export function termsAcceptedIn(declarations: { code?: string | null; accepted?:
  * Application hub: where to forward automatically, or null. Only once per
  * visit (`forwarded`), so coming back with the hardware back never loops.
  */
-export function hubForward(input: { proposalId: string; status: string | null | undefined; policyId?: string | null; termsAccepted?: boolean | null; forwarded: boolean }): PurchaseRoute | null {
+export function hubForward(input: { proposalId: string; status: string | null | undefined; policyId?: string | null; termsAccepted?: boolean | null; forwarded: boolean; paid?: PaidState }): PurchaseRoute | null {
   if (input.forwarded || !input.proposalId) return null;
-  const step = nextPurchaseStep(input.status, input.termsAccepted, input.policyId);
+  const step = nextPurchaseStep(input.status, input.termsAccepted, input.policyId, input.paid);
   return step ? purchaseRoute(input.proposalId, step, true) : null;
 }
 

@@ -4,12 +4,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Pencil, UserPlus } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { StatePanel } from "@/components/StatePanel";
-import { ErrorCard } from "@/components/purchase/PurchaseUi";
+import { ConsentRow, ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ReviewRows, ReviewSection } from "@/components/review/ReviewSummary";
 import { ClaimsCompletionApi } from "@/api/client";
 import { useLoad } from "@/hooks/useLoad";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
+import { canAddWitness, witnessPayload } from "@/lib/claimParties";
 
 export default function Parties() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,18 +18,22 @@ export default function Parties() {
   const { data, setData, loading, error, reload } = useLoad(() => ClaimsCompletionApi.parties(id), [id]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  // Contact details for someone other than the claimant need their consent (MobileClaimPartyService).
+  const [consent, setConsent] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<unknown>(null);
   // The witness is shown read-only for a last check before it is added to the claim.
   const [reviewing, setReviewing] = useState(false);
+  const hasPhone = phone.trim().length > 0;
   const add = async () => {
     setAdding(true);
     setAddError(null);
     try {
-      const p = await ClaimsCompletionApi.addParty(id, { role: "WITNESS", full_name: name, phone_e164: phone });
+      const p = await ClaimsCompletionApi.addParty(id, witnessPayload(name, phone, consent));
       setData([...(data ?? []), p]);
       setName("");
       setPhone("");
+      setConsent(false);
       setReviewing(false);
     } catch (e) {
       setAddError(e);
@@ -45,9 +50,9 @@ export default function Parties() {
             {parties.map((p) => (
               <Card key={p.id}>
                 <StatusChip label={td(`partyRole_${p.role}`, p.role)} tone="info" />
-                <Text style={s.title}>{p.full_name}</Text>
-                {p.phone_e164 ? <Text style={s.body}>{p.phone_e164}</Text> : null}
-                {p.vehicle_registration ? <Text style={s.body}>{p.vehicle_registration}</Text> : null}
+                <Text style={s.title}>{p.display_name}</Text>
+                {p.contact_phone ? <Text style={s.body}>{p.contact_phone}</Text> : null}
+                {p.contact_email ? <Text style={s.body}>{p.contact_email}</Text> : null}
               </Card>
             ))}
           </>
@@ -58,8 +63,8 @@ export default function Parties() {
           <ReviewSection icon={UserPlus} title={t("partiesAddWitness")} onEdit={() => setReviewing(false)}>
             <ReviewRows
               rows={[
-                { key: "full_name", label: t("partiesFullName"), value: name.trim() || null },
-                { key: "phone_e164", label: t("partiesPhone"), value: phone.trim() || null },
+                { key: "display_name", label: t("partiesFullName"), value: name.trim() || null },
+                { key: "contact_phone", label: t("partiesPhone"), value: phone.trim() || null },
               ]}
             />
           </ReviewSection>
@@ -72,10 +77,13 @@ export default function Parties() {
         <Text style={s.title}>{t("partiesAddWitness")}</Text>
         <TextField label={t("partiesFullName")} value={name} onChangeText={setName} />
         <TextField label={t("partiesPhone")} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        {hasPhone ? (
+          <ConsentRow checked={consent} onPress={() => setConsent(!consent)} label={t("partiesConsent")} />
+        ) : null}
         <Button
           label={t("reviewBeforeSave")}
           variant="secondary"
-          disabled={name.trim().length < 3}
+          disabled={!canAddWitness(name, phone, consent)}
           onPress={() => {
             setAddError(null);
             setReviewing(true);

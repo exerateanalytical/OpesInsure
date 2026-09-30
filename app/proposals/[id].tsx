@@ -24,7 +24,8 @@ import { useProposalQuote } from "@/hooks/useProposalQuote";
 import { kycAutoAttachments } from "@/lib/proposalDocuments";
 import { canChooseStart } from "@/lib/coverStart";
 import { CoverStartCard } from "@/components/purchase/CoverStartCard";
-import { hubForward, nextPurchaseStep, purchaseRoute, readyForTerms, termsAcceptedIn } from "@/lib/paymentRouting";
+import { hubForward, nextPurchaseStep, paidRoute, paymentState, purchaseRoute, readyForTerms, termsAcceptedIn } from "@/lib/paymentRouting";
+import { counterOfferView } from "@/lib/counterOffer";
 
 /** ProposalMachine::ANSWERABLE — cover terms can only be changed while the application is being completed. */
 const ANSWERABLE = ["DRAFT", "DISCLOSURES_PENDING", "DOCUMENTS_PENDING", "INFORMATION_REQUIRED"];
@@ -90,6 +91,8 @@ export default function ProposalDetail() {
   }, [load]);
 
   const info = proposalStatusInfo(p?.status, f.language);
+  // Money already taken (or with the operator) while the status is still PAYMENT_PENDING: never offer to pay again.
+  const paid = p && !p.policy_id ? paymentState({ payments: p.payments }) : null;
   // Waiting on an underwriter: refresh quietly every 30 s.
   useEffect(() => {
     if (info.stage !== "review") return;
@@ -116,12 +119,12 @@ export default function ProposalDetail() {
   useEffect(() => {
     if (!p || loading || !focused) return;
     const target =
-      hubForward({ proposalId: p.id, status: p.status, policyId: p.policy_id, termsAccepted, forwarded: forwarded.current }) ??
+      hubForward({ proposalId: p.id, status: p.status, policyId: p.policy_id, termsAccepted, forwarded: forwarded.current, paid }) ??
       (termsNext && completedByUpload.current && !forwarded.current ? purchaseRoute(p.id, "terms") : null);
     if (!target) return;
     forwarded.current = true;
     router.push(target as never);
-  }, [p, loading, focused, termsAccepted, termsNext]);
+  }, [p, loading, focused, termsAccepted, termsNext, paid]);
 
   // Take a photo, pick one from the gallery, or choose a PDF/image file; then link it to the requirement.
   const upload = async (code: string, source: PickSource) => {
@@ -194,9 +197,14 @@ export default function ProposalDetail() {
     ]);
 
   const contactSupport = async () => {
-    const c = await SupportContactsApi.get();
-    if (c?.whatsapp_url) return Linking.openURL(c.whatsapp_url);
-    if (c?.phone) return Linking.openURL(`tel:${c.phone}`);
+    // Contacts unavailable or no app for the link: the in-app support form always works.
+    try {
+      const c = await SupportContactsApi.get();
+      if (c?.whatsapp_url) return await Linking.openURL(c.whatsapp_url);
+      if (c?.phone) return await Linking.openURL(`tel:${c.phone}`);
+    } catch {
+      // fall through
+    }
     router.push("/support/new");
   };
 
@@ -224,6 +232,8 @@ export default function ProposalDetail() {
   const canUpload = allowedAction(p, "attach_document", info.stage === "documents" || info.stage === "information");
 
   const decision = p?.underwriting_case?.decisions?.[p.underwriting_case.decisions.length - 1];
+  // Revised terms (GET mobile/proposals/{id} counter_offer) next to the original ones, shown before Accept.
+  const counter = counterOfferView(p?.counter_offer, p?.terms_snapshot);
   const reqs = p ? requirementsOf(p, f.language, checklist) : [];
   // "Compare other offers" reopens this application's own quote (reloaded by id), never whatever quote is in memory.
   const sourceQuoteId = proposalQuoteId(p);
@@ -235,6 +245,8 @@ export default function ProposalDetail() {
       <Button label={t("draftsViewPolicy")} icon={CheckCircle2} onPress={() => router.push({ pathname: "/policy/[id]", params: { id: p.policy_id! } })} />
     ) : info.stage === "disclosures" && allowedAction(p, "answer_disclosures", true) ? (
       <Button label={t("prAnswer")} onPress={() => router.push({ pathname: "/quote/questions", params: { proposalId: p.id } })} />
+    ) : paid ? (
+      <Button label={t(paid === "paid" ? "prTrackIssuance" : "payFollowPayment")} icon={CheckCircle2} onPress={() => router.push(paidRoute(p.id, paid) as never)} />
     ) : info.stage === "payable" ? (
       <Button label={t("prReviewPay")} icon={CheckCircle2} onPress={() => router.push(purchaseRoute(p.id, nextPurchaseStep(p.status, termsAccepted) ?? "terms") as never)} />
     ) : info.stage === "paid" ? (
@@ -267,7 +279,11 @@ export default function ProposalDetail() {
             <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />
             <Text style={ps.body}>{info.message}</Text>
             {info.stage === "review" ? <Banner icon={Hourglass} tint="blue" body={t("prAutoCheck")} /> : null}
-            {info.stage === "payable" && !p.policy_id ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
+            {paid ? (
+              <Banner icon={paid === "paid" ? CheckCircle2 : Hourglass} tint={paid === "paid" ? "green" : "blue"} title={t(paid === "paid" ? "payReceivedTitle" : "payInFlightTitle")} body={t(paid === "paid" ? "payReceivedBody" : "payInFlightBody")} />
+            ) : info.stage === "payable" && !p.policy_id ? (
+              <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} />
+            ) : null}
           </Card>
 
           {info.stage === "information" ? (
@@ -284,11 +300,23 @@ export default function ProposalDetail() {
           {info.stage === "counteroffer" ? (
             <Card>
               <SectionHeading title={t("prRevised")} />
-              {p.counteroffer?.total_minor ? <InfoRow label={t("prRevisedTotal")} value={f.xaf(p.counteroffer.total_minor)} strong /> : null}
-              <InfoRow label={t("prOriginalTotal")} value={f.xaf(p.terms_snapshot?.total_minor)} />
-              {decision?.notes || p.counteroffer?.notes ? <Text style={ps.body}>{p.counteroffer?.notes ?? decision?.notes}</Text> : null}
+              {counter.revisedTotal !== null ? (
+                <Banner icon={MessageSquareWarning} tint="gold" title={t("prRevisedTotalIs", { amount: f.xaf(counter.revisedTotal) })} body={t("prWasTotal", { amount: f.xaf(counter.originalTotal) })} />
+              ) : (
+                <Banner icon={MessageSquareWarning} tint="gold" body={t("prRevisedNoPrice")} />
+              )}
+              {counter.rows.map((r) => (
+                <InfoRow key={r.key} label={t(r.label)} value={`${f.xaf(r.from)} → ${f.xaf(r.to)}`} strong={r.key === "total"} />
+              ))}
+              {counter.notes ?? decision?.notes ? <Text style={ps.body}>{counter.notes ?? decision?.notes}</Text> : null}
               <Text style={ps.meta}>{t("prCounterNote")}</Text>
-              <Button label={t("prCounterAccept")} icon={CheckCircle2} loading={answering === "accept"} disabled={!!answering} onPress={() => void answerCounter("accept")} />
+              <Button
+                label={counter.revisedTotal !== null ? t("prCounterAcceptAt", { amount: f.xaf(counter.revisedTotal) }) : t("prCounterAccept")}
+                icon={CheckCircle2}
+                loading={answering === "accept"}
+                disabled={!!answering}
+                onPress={() => void answerCounter("accept")}
+              />
               <Button label={t("prCounterDecline")} variant="secondary" loading={answering === "decline"} disabled={!!answering} onPress={declineCounter} />
               {answerError ? <ErrorCard error={answerError} fallback={t("prCounterFailed")} /> : null}
               <Button label={t("prContactQuestions")} variant="tertiary" onPress={() => void contactSupport()} />

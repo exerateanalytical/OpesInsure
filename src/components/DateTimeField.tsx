@@ -29,12 +29,16 @@ type Labels = {
   later: string;
   hour: string;
   minutes: string;
+  /** Shown instead of "yesterday" when the field looks ahead (minNow). */
+  tomorrow?: string;
 };
 
 /**
  * Dependency-free date + time picker (no native picker module is bundled):
  * day stepper with Today / Yesterday shortcuts and hour / 5-minute steppers.
- * Never allows a moment in the future when `maxNow` is set.
+ * Never allows a moment in the future when `maxNow` is set; with `minNow`
+ * (appointments) it looks ahead instead: never a moment in the past, and the
+ * shortcuts are Today / Tomorrow.
  */
 export function DateTimeField({
   label,
@@ -43,6 +47,7 @@ export function DateTimeField({
   labels,
   language,
   maxNow = true,
+  minNow = false,
 }: {
   label: string;
   value: number;
@@ -50,8 +55,11 @@ export function DateTimeField({
   labels: Labels;
   language: "en" | "fr";
   maxNow?: boolean;
+  minNow?: boolean;
 }) {
-  const set = (ms: number) => onChange(maxNow ? Math.min(ms, Date.now()) : ms);
+  const ahead = minNow;
+  const upTo = maxNow && !ahead;
+  const set = (ms: number) => onChange(ahead ? Math.max(ms, Date.now()) : upTo ? Math.min(ms, Date.now()) : ms);
   const DAY = 86_400_000;
   const now = Date.now();
   const dayIndex = (ms: number) => Math.floor((ms + OFFSET_MINUTES * 60_000) / DAY);
@@ -91,23 +99,27 @@ export function DateTimeField({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.chips}>
         <Chip text={labels.today} on={sameDay(value, now)} onPress={() => set(value + (dayIndex(now) - dayIndex(value)) * DAY)} />
-        <Chip text={labels.yesterday} on={sameDay(value, now - DAY)} onPress={() => set(value + (dayIndex(now) - 1 - dayIndex(value)) * DAY)} />
+        {ahead ? (
+          <Chip text={labels.tomorrow ?? labels.nextDay} on={sameDay(value, now + DAY)} onPress={() => set(value + (dayIndex(now) + 1 - dayIndex(value)) * DAY)} />
+        ) : (
+          <Chip text={labels.yesterday} on={sameDay(value, now - DAY)} onPress={() => set(value + (dayIndex(now) - 1 - dayIndex(value)) * DAY)} />
+        )}
       </View>
       <Text style={styles.caption}>{labels.date}</Text>
       <View style={styles.row}>
-        <Step a11y={labels.previousDay} icon={ChevronLeft} onPress={() => set(value - DAY)} />
+        <Step a11y={labels.previousDay} icon={ChevronLeft} disabled={ahead && value - DAY < now} onPress={() => set(value - DAY)} />
         <Text style={styles.value} accessibilityLiveRegion="polite">{dayText}</Text>
-        <Step a11y={labels.nextDay} icon={ChevronRight} disabled={maxNow && value + DAY > now} onPress={() => set(value + DAY)} />
+        <Step a11y={labels.nextDay} icon={ChevronRight} disabled={upTo && value + DAY > now} onPress={() => set(value + DAY)} />
       </View>
       <Text style={styles.caption}>{labels.time}</Text>
       <View style={styles.row}>
-        <Step a11y={`${labels.earlier} ${labels.hour}`} icon={Minus} onPress={() => set(value - 3_600_000)} />
+        <Step a11y={`${labels.earlier} ${labels.hour}`} icon={Minus} disabled={ahead && value - 3_600_000 < now} onPress={() => set(value - 3_600_000)} />
         <Text style={styles.time} accessibilityLabel={`${pad(p.h)}:${pad(p.min)}`}>{pad(p.h)}</Text>
-        <Step a11y={`${labels.later} ${labels.hour}`} icon={Plus} disabled={maxNow && value + 3_600_000 > now} onPress={() => set(value + 3_600_000)} />
+        <Step a11y={`${labels.later} ${labels.hour}`} icon={Plus} disabled={upTo && value + 3_600_000 > now} onPress={() => set(value + 3_600_000)} />
         <Text style={styles.colon}>:</Text>
-        <Step a11y={`${labels.earlier} ${labels.minutes}`} icon={Minus} onPress={() => set(value - 300_000)} />
+        <Step a11y={`${labels.earlier} ${labels.minutes}`} icon={Minus} disabled={ahead && value - 300_000 < now} onPress={() => set(value - 300_000)} />
         <Text style={styles.time}>{pad(p.min)}</Text>
-        <Step a11y={`${labels.later} ${labels.minutes}`} icon={Plus} disabled={maxNow && value + 300_000 > now} onPress={() => set(value + 300_000)} />
+        <Step a11y={`${labels.later} ${labels.minutes}`} icon={Plus} disabled={upTo && value + 300_000 > now} onPress={() => set(value + 300_000)} />
       </View>
     </View>
   );

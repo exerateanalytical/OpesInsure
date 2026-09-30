@@ -67,6 +67,8 @@ test("payment attempt keys are forgotten per proposal and both keys cleared on l
   assert.equal(session.match(/PaymentAttemptKeys\.clear\(\)/g)?.length, 2);
   const store = read("src/store/insurance.ts");
   assert.match(store, /POLICY_ISSUED"\)\s*\n\s*await PaymentAttemptKeys\.forgetProposal/);
+  // Kept while issuance is pending: a retry then replays the same payment instead of charging again.
+  assert.doesNotMatch(store, /ISSUANCE_PENDING"[^\n]*forgetProposal|ISSUANCE_PENDING" \|\| purchase\?\.status === "POLICY_ISSUED"/);
 });
 
 // --- OPS-08 offline queue --------------------------------------------------

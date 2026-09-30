@@ -39,3 +39,38 @@ test("viewer renders PDFs natively and keeps the WebView only as a guarded fallb
   assert.doesNotMatch(read("src/components/documents/nativePdf.web.ts"), /react-native-pdf|react-native-blob-util/);
   for (const f of ["src/i18n/en.ts", "src/i18n/fr.ts"]) assert.match(read(f), /docViewerPageOf/);
 });
+
+test("pdf.js is bundled (no CDN), patched for CVE-2024-4367 and run without eval", async () => {
+  const dv = await import("../src/lib/documentViewer.ts");
+  const [major, minor, patch] = dv.PDFJS_VERSION.split(".").map(Number);
+  assert.ok(major > 4 || (major === 4 && (minor > 2 || (minor === 2 && patch >= 67))), dv.PDFJS_VERSION);
+  const html = dv.viewerHtml("JVBERi0xLjQK", { loadingLabel: "Chargement <…>" });
+  const has = (re) => re.test(html);
+  assert.ok(!has(/cdnjs|<script[^>]+src=/i), "no CDN / external script");
+  assert.ok(has(/isEvalSupported:false/), "isEvalSupported:false");
+  assert.ok(has(/Content-Security-Policy" content="default-src 'none'/), "CSP");
+  assert.ok(html.includes("Chargement &#60;…&#62;"), "localized, escaped loading label");
+  // Only the two real closing tags: the bundled library cannot break out of its <script>.
+  assert.equal(html.match(/<\/script/gi).length, 2);
+  assert.doesNotMatch(read("src/lib/documentViewer.ts"), /cdnjs/);
+  assert.doesNotMatch(read("app/documents/view.tsx"), /originWhitelist=\{\["\*"\]\}/);
+});
+
+test("url: viewer sources are limited to the API host", async () => {
+  const { parseViewerSource, isAllowedDocumentUrl, viewerAllowsNavigation } = await import("../src/lib/documentViewer.ts");
+  const api = "https://insurance.opesdatacenter.tech/api/v1";
+  assert.deepEqual(parseViewerSource("url:https://insurance.opesdatacenter.tech/api/v1/documents/1/download", api), {
+    kind: "url",
+    url: "https://insurance.opesdatacenter.tech/api/v1/documents/1/download",
+  });
+  assert.equal(parseViewerSource("url:https://evil.example/x.pdf", api), null);
+  assert.equal(parseViewerSource("url:https://insurance.opesdatacenter.tech.evil.example/x.pdf", api), null);
+  assert.equal(parseViewerSource("url:http://insurance.opesdatacenter.tech/x.pdf", api), null);
+  assert.equal(parseViewerSource("url:https://user:pw@insurance.opesdatacenter.tech/x.pdf", api), null);
+  assert.equal(parseViewerSource("url:https://insurance.opesdatacenter.tech/x.pdf", ""), null);
+  assert.equal(isAllowedDocumentUrl("http://localhost:8000/api/v1/d/1", "http://localhost:8000/api/v1"), true);
+  assert.deepEqual(parseViewerSource("quote:42", api), { kind: "quote", quoteId: "42" });
+  assert.equal(viewerAllowsNavigation("https://insurance.opesdatacenter.tech/"), true);
+  assert.equal(viewerAllowsNavigation("https://evil.example/"), false);
+  assert.equal(viewerAllowsNavigation("https://insurance.opesdatacenter.tech/phish"), false);
+});

@@ -8,15 +8,11 @@ import { BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/de
 import { StatePanel } from "@/components/StatePanel";
 import { useLoad } from "@/hooks/useLoad";
 import { SupportApi } from "@/api/client";
-import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { withoutRelock } from "@/lib/appLock";
 
 const CLOSED = ["RESOLVED", "CLOSED", "CANCELLED"];
-/** Categories the server already treats as HIGH priority
- * (MobileSupportController::store). */
-const HIGH = ["PAYMENT", "CLAIM", "FRAUD", "SECURITY"];
 
 export default function SupportDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -64,20 +60,12 @@ export default function SupportDetail() {
       q.setData(await SupportApi.upload(id, form));
       setNotice(t("supportAttached"));
     });
-  /** Escalation: a HIGH-priority follow-up case referencing this one. */
+  /** Escalation of this same case (POST .../escalate): URGENT priority and a supervisor flag. */
   const escalate = () =>
     run("escalate", async () => {
-      const current = q.data;
-      if (!current) return;
-      const category = HIGH.includes(current.category) ? current.category : "SECURITY";
-      const created = await CustomerApi.createSupportCase({
-        category,
-        priority: "HIGH",
-        parent_case_id: current.id,
-        subject: t("supportEscalationSubject", { ref: current.reference }).slice(0, 200),
-        description: t("supportEscalationBody", { ref: current.reference, subject: current.subject }),
-      });
-      router.replace({ pathname: "/support/[id]", params: { id: created.id } });
+      if (!q.data) return;
+      q.setData(await SupportApi.escalate(id));
+      setNotice(t("supportEscalated"));
     });
 
   const open = q.data ? !CLOSED.includes(q.data.status) : false;
@@ -146,7 +134,7 @@ export default function SupportDetail() {
                     <TintedIcon icon={Flag} tint="gold" size={36} />
                     <View style={styles.metaText}>
                       <Text style={styles.metaLabel}>{t("supportPriority")}</Text>
-                      <Text style={[styles.metaValue, c.priority === "HIGH" && styles.gold]}>{td(`priority_${c.priority}`, c.priority)}</Text>
+                      <Text style={[styles.metaValue, (c.priority === "HIGH" || c.priority === "URGENT") && styles.gold]}>{td(`priority_${c.priority}`, c.priority)}</Text>
                     </View>
                   </View>
                   <View style={[styles.metaCell, styles.metaBorder]}>
@@ -269,7 +257,7 @@ export default function SupportDetail() {
                   <Text style={styles.body}>{t("supportClosed")}</Text>
                   <Button label={t("supportNewTicket")} variant="secondary" onPress={() => router.push("/support/new")} />
                 </Card>
-              ) : c.priority !== "HIGH" ? (
+              ) : !c.escalated && c.priority !== "URGENT" ? (
                 <Card>
                   <Text style={styles.meta}>{t("supportEscalateHint")}</Text>
                   <Button label={t("supportEscalate")} icon={ArrowUpCircle} variant="tertiary" loading={busy === "escalate"} disabled={!!busy} onPress={() => void escalate()} />

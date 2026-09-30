@@ -2,11 +2,11 @@ import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React, { useState } from "react";
 import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
-import { Alert, Text } from "react-native";
+import { Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { CircleCheck, CircleX, MessageSquareMore } from "lucide-react-native";
 import {
   AppHeader,
-  Button,
   Card,
   Money,
   Screen,
@@ -15,8 +15,9 @@ import {
 } from "@/components/ui";
 import { CarrierApi, CarrierReferral } from "@/api/client";
 import { useTranslation } from "@/i18n";
-import { UnavailableSection } from "@/components/detail";
-import { errorMessage } from "@/lib/purchase";
+import { DetailActions, UnavailableSection, type DetailAction } from "@/components/detail";
+import { referralDecisions, type ReferralDecision } from "@/lib/carrierDecisions";
+
 export default function ReferralDetail() {
   return (
     <CarrierGate module="referrals">
@@ -25,32 +26,21 @@ export default function ReferralDetail() {
   );
 }
 
+const DECISION_UI: Record<ReferralDecision, { label: "caApproveWithinAuthority" | "caRequestMoreInfo" | "caDeclineWithReason"; icon: DetailAction["icon"]; variant: DetailAction["variant"] }> = {
+  APPROVE: { label: "caApproveWithinAuthority", icon: CircleCheck, variant: "primary" },
+  MORE_INFORMATION: { label: "caRequestMoreInfo", icon: MessageSquareMore, variant: "secondary" },
+  DECLINE: { label: "caDeclineWithReason", icon: CircleX, variant: "danger" },
+};
+
 function ReferralDetailBody() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, td } = useTranslation();
   const q = useLoad(() => CarrierApi.referral(id), [id]);
   const x: CarrierReferral | undefined = q.data;
-  const setX = q.setData;
   const [note, setNote] = useState("");
-  const decide = (d: "APPROVE" | "DECLINE" | "MORE_INFORMATION") =>
-    Alert.alert(
-      t("refDecisionQ"),
-      t("refDecision", { decision: td(`refDecision_${d}`, d) }),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("refConfirm"),
-          onPress: async () => {
-            try {
-              setX(await CarrierApi.decideReferral(id, d, note));
-            } catch (e) {
-              // AUTHORITY_EXCEEDED / STALE_RECORD / ... arrive localized.
-              Alert.alert(t("refNotRecorded"), errorMessage(e, t("errGeneric")));
-            }
-          },
-        },
-      ],
-    );
+  // The server lists the decisions this user may take (allowed_actions); older
+  // servers fall back to the open underwriting statuses. The server re-checks.
+  const decisions = x ? referralDecisions(x) : [];
   return (
     <Screen>
       <AppHeader title={t("caReferralReview")} subtitle={x?.quote_id} back />
@@ -60,42 +50,36 @@ function ReferralDetailBody() {
         </StatePanel>
       ) : null}
       {x ? (
-      <Card feature>
-        <StatusChip label={x?.status ?? "LOADING"} tone="warning" />
-        <Text>
-          {x?.customer_name} · {x?.product}
-        </Text>
-        {x ? <Money amount={x.premium_minor / 100} /> : null}
-        <Text>{x?.reason}</Text>
-        {x?.decision_note ? <Text>{t("cdLastDecisionNote", { note: x.decision_note })}</Text> : null}
-        <TextField
-          label={t("caUnderwritingNote")}
-          multiline
-          value={note}
-          onChangeText={setNote}
-        />
-      </Card>
+        <Card feature>
+          <StatusChip label={td(`refStatus_${x.status}`, x.status)} tone={decisions.length ? "warning" : "neutral"} />
+          <Text>
+            {x.customer_name} · {x.product}
+          </Text>
+          <Money amount={x.premium_minor / 100} />
+          <Text>{x.reason}</Text>
+          {x.decision_note ? <Text>{t("cdLastDecisionNote", { note: x.decision_note })}</Text> : null}
+          {decisions.length ? (
+            <TextField label={t("caUnderwritingNote")} multiline value={note} onChangeText={setNote} />
+          ) : null}
+        </Card>
       ) : null}
-      {x?.status === "PENDING_REVIEW" ? (
-        <>
-          <Button
-            label={t("caApproveWithinAuthority")}
-            disabled={note.length < 5}
-            onPress={() => decide("APPROVE")}
-          />
-          <Button
-            label={t("caRequestMoreInfo")}
-            variant="secondary"
-            disabled={note.length < 5}
-            onPress={() => decide("MORE_INFORMATION")}
-          />
-          <Button
-            label={t("caDeclineWithReason")}
-            variant="danger"
-            disabled={note.length < 5}
-            onPress={() => decide("DECLINE")}
-          />
-        </>
+      {x && decisions.length ? (
+        <DetailActions
+          actions={decisions.map((d) => ({
+            key: d,
+            label: t(DECISION_UI[d].label),
+            icon: DECISION_UI[d].icon,
+            variant: DECISION_UI[d].variant,
+            allowed: true,
+            disabled: note.trim().length < 5,
+            confirm: `${t("refDecisionQ")} ${t("refDecision", { decision: td(`refDecision_${d}`, d) })}`,
+            run: async () => {
+              q.setData(await CarrierApi.decideReferral(id, d, note.trim()));
+              setNote("");
+            },
+            successMessage: t("refRecorded"),
+          }))}
+        />
       ) : null}
       {x ? (
         /* CAR-002: assignment, escalation above authority, second approval and

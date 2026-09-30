@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { loadDirectory, loadInstitution } from "./directory";
 
 /**
  * API methods added by the audit remediation (Phase 4). Kept out of
@@ -90,6 +91,13 @@ export const CarrierFinanceApi = {
     rows(await api<Page<Bordereau>>("/mobile/carrier/bordereaux")),
   /** Summary + line items, carrier-scoped server-side (403/404 otherwise). CAR-011. */
   bordereau: (id: string) => api<BordereauDetail>(`/mobile/carrier/bordereaux/${id}`),
+  /** Acknowledge or reject a SUBMITTED bordereau (carrier.bordereaux.decide; 409 once decided). */
+  decideBordereau: (id: string, payload: { decision: "ACKNOWLEDGED" | "REJECTED"; carrier_reference: string; notes: string }) =>
+    api<{ id: string; status: string }>(`/carrier/bordereaux/${id}/decision`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
 };
 export type BordereauItem = {
   id: string;
@@ -215,10 +223,9 @@ export type InsuranceClassRow = {
   sub_classes: { id: string; code: string; name: { en: string; fr: string } }[];
 };
 export const InstitutionsApi = {
-  list: (type: "insurer" | "broker") =>
-    api<Institution[]>(`/public/institutions?type=${type}`, { anonymous: true }),
-  show: (id: string) =>
-    api<Institution>(`/public/institutions/${id}`, { anonymous: true }),
+  /** Thin wrappers over the shared, cached directory store (src/api/directory.ts). */
+  list: (type: "insurer" | "broker"): Promise<Institution[]> => loadDirectory(type),
+  show: (id: string): Promise<Institution> => loadInstitution(id),
   classes: () =>
     api<InsuranceClassRow[]>("/public/insurance-classes", { anonymous: true }),
 };

@@ -13,6 +13,7 @@ import { duplicateAssetId } from "@/lib/crm";
 import { reviewRows } from "@/lib/formSummary";
 import type { RiskField } from "@/lib/riskSchema";
 import { useLoad } from "@/hooks/useLoad";
+import { useInsurance } from "@/store/insurance";
 import { useTranslation } from "@/i18n";
 import { modelYears, selectionLabel, VehicleSelection } from "@/lib/vehicles";
 
@@ -21,7 +22,15 @@ const opt = (rows?: { code: string; label: string }[]) => (rows ?? []).map((r) =
 /** Insured object: type from GET /risk-asset-types; vehicles use the vehicle picker, other types a name + reference. */
 export default function NewAsset() {
   const { t, td, language } = useTranslation();
-  const params = useLocalSearchParams<{ type?: string }>();
+  // returnTo=quote: opened from the quote's "Add new" — go back to the quote with the new asset selected.
+  const params = useLocalSearchParams<{ type?: string; returnTo?: string }>();
+  const fromQuote = params.returnTo === "quote";
+  const finish = (id: string, path: string) => {
+    if (!fromQuote) return router.replace(path as never);
+    useInsurance.getState().setRiskAsset(id);
+    if (router.canGoBack()) router.back();
+    else router.replace("/quote/risk");
+  };
   const types = useLoad(() => RiskAssetTypesApi.list(), []);
   const [assetType, setAssetType] = useState<string>(String(params.type || "VEHICLE").toUpperCase());
   const isVehicle = assetType === "VEHICLE";
@@ -56,7 +65,7 @@ export default function NewAsset() {
     setDuplicateId(null);
     try {
       const a = await AssetsApi.createObject({ type: assetType, display_name: label.trim(), external_reference: registration.trim() || null });
-      router.replace(`/assets/${a.id}`);
+      finish(a.id, `/assets/${a.id}`);
     } catch (e) {
       setDuplicateId(duplicateAssetId(e));
       setSaveError(e);
@@ -83,7 +92,8 @@ export default function NewAsset() {
       const merged = { year: vehicle?.year, body_type: vehicle?.body_type, powertrain: vehicle?.powertrain, vehicle_usage: vehicle?.vehicle_usage, ...details };
       for (const [k, v] of Object.entries(merged)) if (v) facts[k] = k === "year" ? Number(v) : v;
       const a = await AssetsApi.createVehicle({ display_name: vehicleName, registration_number: reg, facts });
-      router.replace(`/assets/${a.id}/scan`);
+      // The photo scan can be done later from the vehicle page; mid-quote the customer goes straight back.
+      finish(a.id, `/assets/${a.id}/scan`);
     } catch (e) {
       // 409 duplicate vehicle: offer the existing asset instead of a second record.
       setDuplicateId(duplicateAssetId(e));
@@ -97,7 +107,7 @@ export default function NewAsset() {
     <Card>
       <Text style={ps.title}>{t("assetDuplicateTitle")}</Text>
       <Text style={ps.meta}>{t("assetDuplicateBody")}</Text>
-      <Button label={t("assetOpenExisting")} variant="secondary" onPress={() => router.replace(`/assets/${duplicateId}`)} />
+      <Button label={t(fromQuote ? "assetUseExisting" : "assetOpenExisting")} variant="secondary" onPress={() => finish(duplicateId, `/assets/${duplicateId}`)} />
     </Card>
   ) : null;
 
@@ -125,7 +135,7 @@ export default function NewAsset() {
       <Screen
         footer={
           <ReviewFooter
-            label={isVehicle ? t("vehicleSaveAndScan") : t("assetConfirmAdd")}
+            label={isVehicle && !fromQuote ? t("vehicleSaveAndScan") : t("assetConfirmAdd")}
             loading={saving}
             disabled={!!duplicateId}
             onConfirm={() => void (isVehicle ? save() : saveObject())}

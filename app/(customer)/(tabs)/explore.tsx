@@ -108,13 +108,20 @@ export default function Explore() {
         onPress={(c) => router.push({ pathname: "/quote/product", params: { product: c.id } })}
       />
 
-      <SectionHeading title={t("exploreFeaturedProviders")} action={t("seeAll")} onAction={() => router.push("/institutions/insurers")} />
+      {/* Carousel headings only once there is something under them (no bare headings while loading). */}
       {featured.length ? (
-        <FeaturedProviders providers={featured} />
+        <>
+          <SectionHeading title={t("exploreFeaturedProviders")} action={t("seeAll")} onAction={() => router.push("/institutions/insurers")} />
+          <FeaturedProviders providers={featured} />
+        </>
       ) : null}
 
-      <SectionHeading title={t("exploreLicensedBrokers")} action={t("seeAllBrokers")} onAction={() => router.push("/institutions/brokers")} />
-      {featuredBrokers.length ? <FeaturedProviders providers={featuredBrokers} kind="broker" /> : null}
+      {featuredBrokers.length ? (
+        <>
+          <SectionHeading title={t("exploreLicensedBrokers")} action={t("seeAllBrokers")} onAction={() => router.push("/institutions/brokers")} />
+          <FeaturedProviders providers={featuredBrokers} kind="broker" />
+        </>
+      ) : null}
 
       <SectionHeading title={t("explorePopularProducts")} />
       {categories.filter((c) => ["motor", "health", "travel", "home"].includes(c.id)).map((c) => {
@@ -192,7 +199,16 @@ export default function Explore() {
           }}
         />
       ) : (
-        shown.map((p) => (
+        shown.map((p) => {
+          // Brokers carry no city/products: their register number is the useful second line.
+          const meta = (
+            p.type === "broker"
+              ? [p.regulator_number ? t("regulatorNumber", { number: p.regulator_number }) : null, p.city]
+              : [p.city, p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : null]
+          )
+            .filter(Boolean)
+            .join(" · ");
+          return (
           <Pressable
             key={p.id}
             accessibilityRole="button"
@@ -207,16 +223,13 @@ export default function Explore() {
           >
             <InstitutionMark logoUrl={institutionLogo(p)} initials={p.initials} size={44} />
             <View style={styles.flex}>
-              <Text style={styles.label}>{p.name}</Text>
-              <Text style={styles.meta}>
-                {[p.city, p.products?.length ? (p.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: p.products.length })) : null]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
+              <Text style={styles.label} numberOfLines={2}>{p.short_name ?? p.name}</Text>
+              {meta ? <Text style={styles.meta}>{meta}</Text> : null}
             </View>
             <StatusChip label={t(p.type === "insurer" ? "insurer" : "broker")} tone="neutral" />
           </Pressable>
-        ))
+          );
+        })
       )}
       <FiltersSheet
         visible={sheet}

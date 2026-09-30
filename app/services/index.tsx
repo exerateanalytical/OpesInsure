@@ -43,13 +43,13 @@ export default function Services() {
               return (
                 <Card
                   style={s.card}
-                  accessibilityLabel={[td(`serviceType_${item.type}`, item.type), item.reason, status].filter(Boolean).join(", ")}
+                  accessibilityLabel={[td(`svcType_${item.type}`, item.type), item.reason, status].filter(Boolean).join(", ")}
                   onPress={() => router.push(`/services/${item.id}`)}
                 >
                   <View style={s.row}>
                     <TintedIcon icon={FileCog} tint={tone === "success" ? "green" : tone === "danger" ? "red" : "blue"} size={48} />
                     <View style={s.flex}>
-                      <Text style={s.title} numberOfLines={2}>{td(`serviceType_${item.type}`, item.type)}</Text>
+                      <Text style={s.title} numberOfLines={2}>{td(`svcType_${item.type}`, item.type)}</Text>
                       {item.reason ? <Text style={s.sub} numberOfLines={2}>{item.reason}</Text> : null}
                     </View>
                     <View style={s.right}>

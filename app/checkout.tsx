@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, BadgeCheck, CheckCircle2, ClipboardCheck, FileSignature, Lock, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
+import { ArrowRight, BadgeCheck, CheckCircle2, ClipboardCheck, FileSignature, Hourglass, Lock, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone, UserRound } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
 import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
@@ -19,7 +19,7 @@ import { isProviderNotConfigured, proposalStatusInfo } from "@/lib/purchase";
 import { proposalQuoteId } from "@/lib/offerChoice";
 import { useFormatters } from "@/hooks/useFormatters";
 import { useProposalQuote } from "@/hooks/useProposalQuote";
-import { purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
+import { paidRoute, paymentConflict, paymentState, purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -53,6 +53,8 @@ export default function Checkout() {
   // Only the application this screen is for: another one left in the store must never show (or be paid) here.
   const proposal = storeProposal && storeProposal.id === id ? storeProposal : null;
   const [checklist, setChecklist] = useState<ProposalChecklist | null>(null);
+  // The checklist (terms acceptance) could not be read: paying is blocked until it can (never pay unaccepted terms).
+  const [checklistFailed, setChecklistFailed] = useState(false);
   const quote = useProposalQuote(proposal);
 
   // Always re-read the proposal: the price and status on screen must be the server's current ones.
@@ -63,7 +65,9 @@ export default function Checkout() {
     try {
       await loadProposal(id);
       // Optional: whether the contract terms were accepted, and the cover-term rule for the summary.
-      setChecklist(await ProposalLifecycleApi.checklist(id).catch(() => null));
+      const c = await ProposalLifecycleApi.checklist(id).catch(() => null);
+      setChecklist(c);
+      setChecklistFailed(!c);
     } catch (e) {
       setLoadError(e);
     } finally {
@@ -102,11 +106,15 @@ export default function Checkout() {
     );
 
   const info = proposalStatusInfo(proposal.status, f.language);
-  const payable = info.stage === "payable";
+  // PAYMENT_PENDING stays after a successful payment until issuance: a SUCCEEDED (or in-flight) payment means
+  // "paid, policy being issued", never a second checkout (double charge).
+  const paid = paymentState({ payments: proposal.payments });
+  const payable = info.stage === "payable" && !paid;
   const phoneValid = /^\+237[26]\d{8}$/.test(phone);
   // Known from the checklist: the contract terms must be accepted on the terms screen before paying.
   const termsAccepted = checklist ? termsAcceptedIn(checklist.declarations) : null;
-  const canPay = payable && termsAccepted !== false && phoneValid && confirmDetails && acceptTerms && !busy;
+  // Unknown (checklist failed to load) blocks too: the server refuses an app payment without TERMS_ACCEPTANCE.
+  const canPay = payable && termsAccepted === true && phoneValid && confirmDetails && acceptTerms && !busy;
   const total = proposal.terms_snapshot?.total_minor;
   // "Change offer" reopens the offers of the quote this application was made from (not whatever quote is in memory).
   const sourceQuoteId = proposalQuoteId(proposal);
@@ -118,6 +126,10 @@ export default function Checkout() {
       await request(provider, phone);
       router.replace({ pathname: "/payment", params: { proposalId: proposal.id } });
     } catch (e) {
+      // 409: already paid / a payment still with the operator. Follow that one; never charge twice.
+      const conflict = paymentConflict(e);
+      if (conflict) return router.replace(paidRoute(proposal.id, conflict) as never);
+      if (String((e as { code?: unknown })?.code ?? "").toUpperCase() === "TERMS_NOT_ACCEPTED") return router.replace(purchaseRoute(proposal.id, "terms") as never);
       setPayError(e);
     }
   };
@@ -136,6 +148,21 @@ export default function Checkout() {
       <BrandHeader title={t("coTitle")} subtitle={t("coSubtitle")} />
       <QuoteSteps current={3} />
       {approved === "1" && payable ? <Banner icon={CheckCircle2} tint="green" title={t("payApprovedTitle")} body={t("payApprovedLetsPay")} /> : null}
+      {paid ? (
+        <Banner
+          icon={paid === "paid" ? CheckCircle2 : Hourglass}
+          tint={paid === "paid" ? "green" : "blue"}
+          title={t(paid === "paid" ? "payReceivedTitle" : "payInFlightTitle")}
+          body={t(paid === "paid" ? "payReceivedBody" : "payInFlightBody")}
+        />
+      ) : null}
+      {payable && termsAccepted === null && checklistFailed && !loading ? (
+        <Card>
+          <Banner icon={FileSignature} tint="gold" title={t("coTermsUnknownTitle")} body={t("coTermsUnknownBody")} />
+          <Button label={t("retry")} icon={RefreshCcw} variant="secondary" onPress={() => void load()} />
+          <Button label={t("coReviewTerms")} variant="tertiary" onPress={() => router.replace(purchaseRoute(proposal.id, "terms") as never)} />
+        </Card>
+      ) : null}
       {payable && termsAccepted === false ? (
         <Banner icon={FileSignature} tint="gold" title={t("ctAcceptFirstTitle")} body={t("ctAcceptFirstBody")} onPress={() => router.replace(purchaseRoute(proposal.id, "terms") as never)} />
       ) : payable && termsAccepted && approved !== "1" ? (
@@ -143,7 +170,12 @@ export default function Checkout() {
       ) : null}
       {loadError ? <ErrorCard error={loadError} fallback={t("coStaleTerms")} onRetry={() => void load()} /> : null}
       <ProposalSummary proposal={proposal} offer={ownOffer} quote={quote} checklist={checklist} chip={<StatusChip label={payable ? t("roSelected") : info.label} tone={payable ? "success" : info.tone} />} />
-      {!payable ? (
+      {paid ? (
+        <Card>
+          <Button label={t(paid === "paid" ? "prTrackIssuance" : "payFollowPayment")} icon={ArrowRight} onPress={() => router.replace(paidRoute(proposal.id, paid) as never)} />
+          <Button label={t("coOpenApplication")} variant="tertiary" onPress={() => router.replace({ pathname: "/proposals/[id]", params: { id: proposal.id } })} />
+        </Card>
+      ) : !payable ? (
         <Card>
           <SectionHeading title={t("prStatus")} right={<StatusChip label={info.label} tone={info.tone} />} />
           <Text style={ps.body}>{info.message}</Text>

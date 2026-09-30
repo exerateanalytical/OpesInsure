@@ -85,7 +85,18 @@ export const canUseCarrierModule = (
   return cap ? cap.view : true;
 };
 
-export const allowedCarrierModules = (perms: readonly string[] | null | undefined, caps?: CarrierCapabilities): CarrierModule[] =>
+/** Whether a /carrier/... href may be shown (menu tile, bottom tab). Routes
+ * that are no module (home, account, notifications) are always shown. */
+export const carrierHrefAllowed = (
+  href: string,
+  perms: readonly string[] | null | undefined,
+  caps?: CarrierCapabilities,
+) => {
+  const mod = CARRIER_ROUTE_MODULE[href.split("?")[0]!.split("/")[2] ?? ""];
+  return !mod || canUseCarrierModule(perms, mod, caps);
+};
+
+export const allowedCarrierModules =(perms: readonly string[] | null | undefined, caps?: CarrierCapabilities): CarrierModule[] =>
   (Object.keys(CARRIER_MODULE_PERMISSION) as CarrierModule[]).filter((m) => canUseCarrierModule(perms, m, caps));
 
 /** Specialised operational roles (finance / claims / compliance) whose

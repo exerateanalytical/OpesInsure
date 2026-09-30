@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { FileSpreadsheet } from "lucide-react-native";
+import { CircleCheck, CircleX, FileSpreadsheet } from "lucide-react-native";
 import { useLoad } from "@/hooks/useLoad";
-import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
-import { CarrierGate } from "@/components/carrier/CarrierGate";
+import { DetailActions, DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { CarrierGate, usePermission } from "@/components/carrier/CarrierGate";
 import { OperationsList } from "@/components/OperationsList";
-import { SectionTitle } from "@/components/ui";
+import { Card, SectionTitle, TextField } from "@/components/ui";
+import { bordereauDecidable, bordereauDecisionReady } from "@/lib/carrierDecisions";
 import { CarrierFinanceApi } from "@/api/extra";
 import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
@@ -20,13 +21,22 @@ export default function CarrierBordereauDetail() {
 }
 
 function Body() {
-  const { t } = useTranslation();
+  const { t, td } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(() => CarrierFinanceApi.bordereau(String(id)), [id]);
+  const mayDecide = usePermission("carrier.bordereaux.decide");
+  const [carrierReference, setCarrierReference] = useState("");
+  const [notes, setNotes] = useState("");
   return (
     <DetailScreen title={t("cdBordereauTitle")} subtitle={(b) => b.bordereau_number} query={q}>
       {(b) => {
         const net = b.gross_premium_minor - b.commission_minor;
+        const decidable = bordereauDecidable(b.status, mayDecide);
+        const ready = bordereauDecisionReady(carrierReference, notes);
+        const decide = (decision: "ACKNOWLEDGED" | "REJECTED") => async () => {
+          await CarrierFinanceApi.decideBordereau(b.id, { decision, carrier_reference: carrierReference.trim(), notes: notes.trim() });
+          await q.reload();
+        };
         return (
           <>
             <DetailSection
@@ -34,7 +44,7 @@ function Body() {
               rows={[
                 [t("cdReference"), b.bordereau_number],
                 [t("cdType"), humanize(b.type)],
-                [t("cdStatus"), humanize(b.status)],
+                [t("cdStatus"), td(`bdxStatus_${b.status}`, b.status)],
                 [t("cdPeriod"), `${shortDate(b.period_start)} – ${shortDate(b.period_end)}`],
                 [t("cdItemsCount"), String(b.item_count)],
                 [t("cdSubmitted"), b.submitted_at ? shortDate(b.submitted_at) : null],
@@ -64,7 +74,40 @@ function Body() {
             ) : (
               <UnavailableSection title={t("cdLineItems", { count: 0 })} message={t("caBatchEmpty")} />
             )}
-            <UnavailableSection title={t("cdBordereauActions")} />
+            {decidable ? (
+              <>
+                <SectionTitle title={t("cdBordereauActions")} />
+                <Card>
+                  <TextField label={t("cdCarrierReference")} value={carrierReference} onChangeText={setCarrierReference} autoCapitalize="characters" maxLength={160} />
+                  <TextField label={t("bdxDecisionNotes")} value={notes} onChangeText={setNotes} multiline maxLength={2000} />
+                </Card>
+                <DetailActions
+                  actions={[
+                    {
+                      key: "acknowledge",
+                      label: t("bdxAcknowledge"),
+                      icon: CircleCheck,
+                      allowed: true,
+                      disabled: !ready,
+                      confirm: t("bdxConfirmAcknowledge", { reference: b.bordereau_number }),
+                      run: decide("ACKNOWLEDGED"),
+                      successMessage: t("bdxAcknowledged"),
+                    },
+                    {
+                      key: "reject",
+                      label: t("bdxReject"),
+                      icon: CircleX,
+                      variant: "danger",
+                      allowed: true,
+                      disabled: !ready,
+                      confirm: t("bdxConfirmReject", { reference: b.bordereau_number }),
+                      run: decide("REJECTED"),
+                      successMessage: t("bdxRejected"),
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
           </>
         );
       }}

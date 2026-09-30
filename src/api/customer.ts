@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { api, type Claim, type CustomerNotification, type EvidenceRequirement } from "./client";
 import { rows, type Institution } from "./extra";
+import { loadDirectory } from "./directory";
 import { storeDocument } from "./documentUpload";
 import type { KycRequirement } from "@/lib/kyc";
 
@@ -81,13 +82,8 @@ export const CustomerApi = {
       body: JSON.stringify({ token, provider: "expo", platform: Platform.OS }),
       idempotent: true,
     }),
-  institutions: async (type?: "insurer" | "broker") =>
-    rows(
-      await api<Page<Institution>>(
-        `/public/institutions${type ? `?type=${type}` : ""}`,
-        { anonymous: true },
-      ),
-    ),
+  /** Thin wrapper over the shared, cached directory store (src/api/directory.ts). */
+  institutions: (type?: "insurer" | "broker"): Promise<Institution[]> => loadDirectory(type ?? "all"),
   claims: async () => rows(await api<Page<Claim>>("/mobile/claims")),
   quotes: async () => rows(await api<Page<CustomerQuote>>("/mobile/quotes")),
   notifications: async () =>

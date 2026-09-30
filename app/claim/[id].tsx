@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useColumns } from "@/components/responsive";
@@ -21,10 +21,12 @@ import {
   Paperclip,
   Search,
   ShieldCheck,
+  Undo2,
   Wallet,
   Wrench,
 } from "lucide-react-native";
-import { Button, Card, Screen, StatusChip } from "@/components/ui";
+import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
+import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { Banner, BrandHeader, CtaBar, DetailRow, IconTile, SectionHeading, StepIndicator, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
@@ -38,7 +40,7 @@ import { ClaimRecordsApi } from "@/api/extra";
 import { CustomerApi } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
-import { ClaimAction, claimActionAllowed, claimStage, claimStatusKey, claimTone, DETAIL_STAGES } from "@/lib/claimStatus";
+import { ClaimAction, claimActionAllowed, claimStage, claimStatusKey, claimTone, DETAIL_STAGES, latestEvent } from "@/lib/claimStatus";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { allowedAction } from "@/lib/capabilities";
 
@@ -46,7 +48,9 @@ import { allowedAction } from "@/lib/capabilities";
 const SERVER_ACTION: Partial<Record<ClaimAction, string>> = {
   evidence: "add_evidence",
   appeal: "appeal",
-  decision: "decide_settlement",
+  withdraw: "withdraw",
+  // decide_settlement is true only while an offer waits for an answer; the decision and
+  // settlement screens stay reachable by status (they show the outcome and payment after that).
 };
 const serverAllows = (claim: object, action: ClaimAction) => {
   const server = SERVER_ACTION[action];
@@ -104,7 +108,28 @@ export default function ClaimDetail() {
     (r) => r.status === "MISSING" || r.status === "REJECTED",
   );
   const stages = DETAIL_STAGES.map((k) => t(STAGE_LABELS[k]));
-  const lastEvent = (timeline.data ?? [])[0];
+  // The timeline is ascending: the current status date is the latest event, not the first.
+  const lastEvent = latestEvent(timeline.data);
+  // Withdrawal: an inline second step (reason + confirm) so it is never a single tap.
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState("");
+  const [withdrawBusy, setWithdrawBusy] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<unknown>(null);
+  const withdraw = async () => {
+    if (withdrawBusy) return;
+    setWithdrawBusy(true);
+    setWithdrawError(null);
+    try {
+      await ClaimsApi.withdraw(id, withdrawReason.trim());
+      setWithdrawing(false);
+      setWithdrawReason("");
+      reloadAll.forEach((r) => void r());
+    } catch (e) {
+      setWithdrawError(e);
+    } finally {
+      setWithdrawBusy(false);
+    }
+  };
   // The header date is the first-notice date: the SUBMITTED event when the insurer recorded one, else the record's creation.
   const submittedEvent = (timeline.data ?? []).find((e) => /submit/i.test(`${e.type ?? ""} ${e.to_status ?? ""}`));
 
@@ -254,6 +279,27 @@ export default function ClaimDetail() {
               ) : (
                 <Text style={styles.meta}>{t("claimClosedNoActions")}</Text>
               )}
+              {claimActionAllowed("withdraw", claim.status) && serverAllows(claim, "withdraw") ? (
+                withdrawing ? (
+                  <Card>
+                    <Text accessibilityRole="header" style={styles.cardTitle}>{t("claimWithdrawTitle")}</Text>
+                    <Text style={styles.body}>{t("claimWithdrawBody")}</Text>
+                    <TextField label={t("claimWithdrawReason")} value={withdrawReason} onChangeText={setWithdrawReason} multiline />
+                    {withdrawError ? <ErrorCard error={withdrawError} fallback={t("errGeneric")} /> : null}
+                    <Button
+                      label={t("claimWithdrawConfirm")}
+                      icon={Undo2}
+                      variant="danger"
+                      loading={withdrawBusy}
+                      disabled={withdrawReason.trim().length < 3 || withdrawBusy}
+                      onPress={() => void withdraw()}
+                    />
+                    <Button label={t("cancel")} variant="tertiary" disabled={withdrawBusy} onPress={() => setWithdrawing(false)} />
+                  </Card>
+                ) : (
+                  <Button label={t("claimWithdraw")} icon={Undo2} variant="tertiary" onPress={() => setWithdrawing(true)} />
+                )
+              ) : null}
             </>
           );
         }}

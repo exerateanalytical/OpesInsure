@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Store } from "lucide-react-native";
 import { AgentCard, AgentEmptyState, AgentSection, AgentShell, AgentSkeleton, AgentStatusChip } from "@/components/agent";
 import { agentColors as c, agentType as T } from "@/theme/agent";
@@ -39,8 +40,17 @@ export function SellableCatalogueScreen({ variant = "default" }: { variant?: "de
               <AgentCard padded={false}>
                 {g.items.map((i, n) => {
                   const rate = commissionPercent(i.commission_basis_points);
+                  // A sellable product starts the assisted sale with its line preselected (?product=motor, ...).
+                  const sell = i.sellable && i.line_code ? () => router.push({ pathname: "/agent/sales/new", params: { product: String(i.line_code).toLowerCase() } }) : undefined;
                   return (
-                    <View key={i.product_id} style={[a.row, a.markRow, n > 0 && a.divider]}>
+                    <Pressable
+                      key={i.product_id}
+                      disabled={!sell}
+                      onPress={sell}
+                      accessibilityRole={sell ? "button" : undefined}
+                      accessibilityLabel={sell ? `${t("agNewSale")}: ${catalogueName(i, language)}` : undefined}
+                      style={({ pressed }) => [a.row, a.markRow, n > 0 && a.divider, pressed && a.pressed]}
+                    >
                       {mark(i.carrier_name)}
                       <View style={a.copy}>
                       <View style={a.top}>
@@ -50,7 +60,7 @@ export function SellableCatalogueScreen({ variant = "default" }: { variant?: "de
                       <Text style={a.meta}>{[i.carrier_name, rate ? t("catCommission", { rate }) : null, i.requires_carrier_approval ? t("catApproval") : null].filter(Boolean).join(" · ")}</Text>
                       {!i.sellable && i.reasons?.length ? <Text style={a.meta}>{i.reasons.map((r) => td(`sellReason_${r}`, r)).join(" · ")}</Text> : null}
                       </View>
-                    </View>
+                    </Pressable>
                   );
                 })}
               </AgentCard>
@@ -98,6 +108,7 @@ const a = StyleSheet.create({
   subtitle: { ...T.secondary, color: c.secondary, textAlign: "center", marginTop: -8 },
   row: { minHeight: 62, paddingHorizontal: 16, paddingVertical: 12, gap: 4, justifyContent: "center" },
   divider: { borderTopWidth: 1, borderTopColor: c.border },
+  pressed: { opacity: 0.82 },
   top: { flexDirection: "row", alignItems: "center", gap: 12 },
   markRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   copy: { flex: 1, gap: 4 },

@@ -54,7 +54,9 @@ test("issuance is decided in the detail with confirmation; no policy number from
   const d = read("app/carrier/issuance/[id].tsx");
   assert.match(d, /confirm:/);
   assert.match(d, /stepUpPurpose/);
-  assert.match(d, /item\.capabilities/);
+  // Launch fix 2026-09-29: the server capabilities drive the buttons (src/lib/carrierDecisions.ts issuanceActions).
+  assert.match(d, /issuanceActions\(item, canDecide\)/);
+  assert.match(read("src/lib/carrierDecisions.ts"), /item\.capabilities/);
   assert.doesNotMatch(d, /policy_number:/);
   assert.doesNotMatch(read("app/carrier/issuance.tsx"), /approveIssuance/);
   for (const dir of ["app/agent", "app/broker"]) {

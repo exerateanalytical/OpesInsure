@@ -20,6 +20,7 @@ import {
   verificationText,
   type BranchFilter,
 } from "@/lib/institutions";
+import { productFamilyLabels } from "@/lib/productFamilies";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const BRANCHES: { id: BranchFilter; label: "branchAll" | "branchIARD" | "branchLIFE" }[] = [
@@ -107,6 +108,7 @@ export default function Insurers() {
         }
       </StatePanel>
       <BrandArt name="africa_dots_gold" width={88} opacity={0.8} />
+      <Text style={styles.source}>{t("instFamiliesListNote")}</Text>
       <Text style={styles.source}>{t(REGISTER_SOURCE_KEY)}</Text>
     </Screen>
   );
@@ -114,7 +116,7 @@ export default function Insurers() {
 
 function InsurerRow({ insurer }: { insurer: Institution }) {
   const { t, language } = useTranslation();
-  const families = insurer.product_families ?? [];
+  const families = productFamilyLabels(insurer.product_families, language);
   const dir = readDirectory(insurer);
   const hqCity = dir.hq?.city ?? insurer.city;
   return (
@@ -157,7 +159,9 @@ function InsurerRow({ insurer }: { insurer: Institution }) {
           </View>
         ) : null}
         {insurer.products?.length ? (
-          <Text style={styles.products}>{t("productsCount", { count: insurer.products.length })} · OpesInsure</Text>
+          <Text style={styles.products}>
+            {insurer.products.length === 1 ? t("productsCountOne") : t("productsCount", { count: insurer.products.length })} · OpesInsure
+          </Text>
         ) : null}
       </Card>
     </Pressable>

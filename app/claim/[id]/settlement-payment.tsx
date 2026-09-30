@@ -19,8 +19,8 @@ export default function SettlementPayment() {
   return (
     <Screen>
       <BrandHeader title={t("settlePayTitle")} subtitle={t("settlePaySubtitle")} />
-      <StatePanel loading={loading} error={error} data={data} onRetry={() => void reload()} isEmpty={() => false} loadingLabel={t("settleLoading")}>
-        {(x) => (
+      <StatePanel loading={loading} error={error} data={data} onRetry={() => void reload()} isEmpty={(x) => !x} emptyTitle={t("settleNone")} emptyMessage={t("settleNoneBody")} loadingLabel={t("settleLoading")}>
+        {(x) => !x ? null : (
           <>
             <SettlementHero settlement={x} />
             <Card>

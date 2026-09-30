@@ -12,7 +12,10 @@ export function claimNextStepKeys(status: string | null | undefined): CopyKey[] 
     case "EVIDENCE_PENDING":
       return ["claimNext_evidence", "claimNext_review", "claimNext_decision"];
     case "ASSESSMENT":
+    case "INVESTIGATING":
       return ["claimNext_assessment", "claimNext_contact", "claimNext_decision"];
+    case "REOPENED":
+      return ["claimNext_review", "claimNext_evidence", "claimNext_decision"];
     case "CARRIER_REVIEW":
       return ["claimNext_review", "claimNext_decision"];
     case "APPROVED":

@@ -12,6 +12,17 @@ import { useFormatters } from "@/hooks/useFormatters";
 import { humanize, openableUrl } from "@/lib/purchase";
 
 import { useTranslation } from "@/i18n";
+
+/** Chip tone from the document status: only a valid, live document reads as green. */
+function documentTone(status: string | null | undefined, expiresAt?: string | null): "success" | "warning" | "danger" | "neutral" {
+  const s = String(status ?? "").toUpperCase();
+  const expired = !!expiresAt && Number.isFinite(Date.parse(expiresAt)) && Date.parse(expiresAt) < Date.now();
+  if (expired || ["REVOKED", "CANCELLED", "EXPIRED", "REJECTED", "VOID", "SUPERSEDED", "QUARANTINED", "INFECTED", "FAILED"].includes(s)) return "danger";
+  if (["ISSUED", "ACTIVE", "VALID", "SIGNED", "FINAL", "VERIFIED", "ACCEPTED", "AVAILABLE", "READY"].includes(s)) return "success";
+  if (["PENDING", "DRAFT", "GENERATING", "SCANNING", "PROCESSING", "UPLOADED", "REVIEWING"].includes(s)) return "warning";
+  return "neutral";
+}
+
 export default function DocumentPreview() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const f = useFormatters();
@@ -47,7 +58,7 @@ export default function DocumentPreview() {
         <>
           <Card feature>
             <FileCheck2 size={36} />
-            <StatusChip label={humanize(d.status)} tone="success" />
+            <StatusChip label={humanize(d.status)} tone={documentTone(d.status, d.expires_at)} />
             <Text style={ps.title}>{d.label}</Text>
             <InfoRow label={t("docReference")} value={d.share_reference} />
             <InfoRow label={t("docIssued")} value={f.date(d.issued_at)} />
@@ -58,7 +69,7 @@ export default function DocumentPreview() {
           <Button
             label={t("docShare")}
             variant="secondary"
-            onPress={() => void Share.share({ message: t("docShareMessage", { label: d.label, reference: d.share_reference }) })}
+            onPress={() => void Share.share({ message: t("docShareMessage", { label: d.label, reference: d.share_reference }) }).catch(() => undefined)}
           />
           <Text style={ps.meta}>{t("docWarning")}</Text>
         </>

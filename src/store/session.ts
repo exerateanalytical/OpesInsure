@@ -11,6 +11,7 @@ import { SecureJson } from "@/security/secureJson";
 import { PaymentAttemptKeys, RecentProposals } from "@/store/insurance";
 import { LANGUAGE_CHOICE_KEY, normalizeLanguage, resolveLanguage } from "@/lib/languageChoice";
 import { hydrateStartStatus, statusAfterNetworkFailure } from "@/lib/navigationContinuity";
+import { portalFromPermissions, roleToPortal, workspacePortal, WORKSPACE_PORTALS, type Portal } from "@/lib/portalRouting";
 
 export type SessionStatus =
   "booting" | "anonymous" | "authenticating" | "authenticated" | "error";
@@ -251,65 +252,11 @@ export const useSession = create<SessionState>((set, get) => ({
   clearError: () => set({ error: null }),
 }));
 
-export type Portal =
-  | "customer"
-  | "agent"
-  | "broker_admin"
-  | "broker_staff"
-  | "carrier"
-  | "platform_admin"
-  | "compliance"
-  | "finance"
-  | "claims";
-
-/** Maps the backend's tenant_memberships.role_code values (see
- * database/seeders) to a mobile portal. Unknown codes return null, which the
- * app renders as the "Access not available" screen — never a blank page. */
-export const roleToPortal = (role: string | null | undefined): Portal | null => {
-  switch ((role ?? "").toUpperCase()) {
-    case "CUSTOMER":
-      return "customer";
-    case "AGENT":
-    case "FREELANCE_AGENT":
-      return "agent";
-    case "BROKER_ADMIN":
-    case "BROKER":
-      return "broker_admin";
-    case "BROKER_STAFF":
-      return "broker_staff";
-    case "CARRIER_ADMIN":
-    case "CARRIER_STAFF":
-    case "CARRIER":
-      return "carrier";
-    case "PLATFORM_ADMIN":
-    case "SYSTEM_ADMIN":
-      return "platform_admin";
-    case "COMPLIANCE_ADMIN":
-    case "COMPLIANCE_OFFICER":
-      return "compliance";
-    case "FINANCE_ADMIN":
-    case "FINANCE_MANAGER":
-    case "FINANCE_OPERATOR":
-    case "FINANCE_OFFICER":
-      return "finance";
-    case "CLAIMS_MANAGER":
-    case "CLAIMS_OFFICER":
-      return "claims";
-    default:
-      return null;
-  }
-};
-
-export const WORKSPACE_PORTALS: Portal[] = [
-  "platform_admin",
-  "compliance",
-  "finance",
-  "claims",
-];
+export { portalFromPermissions, roleToPortal, workspacePortal, WORKSPACE_PORTALS, type Portal };
 
 /** The route a workspace lands on. Unknown roles go to the access screen. */
 export const portalRoute = (workspace: Workspace | null | undefined) => {
-  const portal = roleToPortal(workspace?.role_code);
+  const portal = workspacePortal(workspace);
   switch (portal) {
     case "customer":
       return "/(customer)/(tabs)" as const;

@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { Text } from "react-native";
 import { FileText, ScanLine } from "lucide-react-native";
 import { AppHeader, Button, Card, Screen, TextField } from "@/components/ui";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ReviewDocuments, ReviewFooter, ReviewIntro, ReviewRows, ReviewSection } from "@/components/review/ReviewSummary";
-import { AssetsApi, AssetDocument } from "@/api/client";
-import { withoutRelock } from "@/lib/appLock";
+import { ApiError, AssetsApi, type AssetScanState } from "@/api/client";
+import { pickUpload, storeDocument } from "@/api/documentUpload";
+import { REGISTRATION_PURPOSE, scanFacts, scanPrefill, type ScanFactKey } from "@/lib/assetScan";
 import { useTranslation } from "@/i18n";
 
-const SCAN_FIELDS = [
+const SCAN_FIELDS: readonly (readonly [ScanFactKey, "scanRegistration" | "scanMake" | "scanModel" | "scanYear"])[] = [
   ["registration_number", "scanRegistration"],
   ["make", "scanMake"],
   ["model", "scanModel"],
@@ -20,37 +20,51 @@ const SCAN_FIELDS = [
 export default function Scan() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const [d, setD] = useState<AssetDocument>();
-  const [f, setF] = useState<Record<string, string>>({});
+  // The asset after the card was attached (carries the version confirmScan must echo).
+  const [asset, setAsset] = useState<AssetScanState>();
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [f, setF] = useState<Partial<Record<ScanFactKey, string>>>({});
   const [photo, setPhoto] = useState<string | null>(null);
   // The extracted details are shown read-only for a last check before they are confirmed.
   const [reviewing, setReviewing] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const capture = async () => {
-    const p = await withoutRelock(() => ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    }));
-    if (!p.canceled && p.assets[0]) {
-      const form = new FormData();
-      form.append("document", {
-        uri: p.assets[0].uri,
-        name: "registration.jpg",
-        type: "image/jpeg",
-      } as any);
-      const doc = await AssetsApi.uploadDocument(id, form);
-      setD(doc);
-      setPhoto(p.assets[0].uri);
-      setF(doc.extracted_fields ?? {});
+    if (capturing) return;
+    setCapturing(true);
+    setCaptureError(null);
+    try {
+      const file = await pickUpload("camera");
+      if (!file) return;
+      // Store the photo like every other upload, then link it to this vehicle.
+      const docId = await storeDocument("VEHICLE_REGISTRATION", file);
+      let state = await AssetsApi.attachDocument(id, docId, REGISTRATION_PURPOSE).catch(async (e: unknown): Promise<AssetScanState> => {
+        // Already attached (same photo again): carry on with the asset as it stands.
+        if (!(e instanceof ApiError) || e.status !== 409) throw e;
+        const current = await AssetsApi.show(id);
+        if (typeof current.version !== "number") throw e;
+        return { ...current, version: current.version };
+      });
+      // OCR only runs once the malware scan passed; until then the customer types the details.
+      state = await AssetsApi.scan(id, docId).catch(() => state);
+      setAsset(state);
+      setDocumentId(docId);
+      setPhoto(`data:${file.mime};base64,${file.base64}`);
+      setF(scanPrefill(state, docId));
+    } catch (e) {
+      setCaptureError(e);
+    } finally {
+      setCapturing(false);
     }
   };
   const confirm = async () => {
-    if (!d) return;
+    if (!asset || !documentId) return;
     setBusy(true);
     setError(null);
     try {
-      await AssetsApi.confirmScan(id, d.id, f);
+      await AssetsApi.confirmScan(id, documentId, asset.version, scanFacts(f));
       router.replace(`/assets/${id}`);
     } catch (e) {
       setError(e);
@@ -58,7 +72,8 @@ export default function Scan() {
       setBusy(false);
     }
   };
-  if (d && reviewing)
+  const ready = !!asset && !!documentId;
+  if (ready && reviewing)
     return (
       <Screen footer={<ReviewFooter label={t("scanConfirm")} loading={busy} onConfirm={() => void confirm()} onBack={() => setReviewing(false)} />}>
         <AppHeader title={t("scanTitle")} subtitle={t("scanSubtitle")} back />
@@ -83,21 +98,23 @@ export default function Scan() {
       />
       <Card>
         <Text>{t("scanHint")}</Text>
-        <Button label={t("scanOpenCamera")} onPress={capture} />
+        <Button label={t("scanOpenCamera")} loading={capturing} disabled={capturing} onPress={() => void capture()} />
       </Card>
-      {d ? (
+      {captureError ? <ErrorCard error={captureError} fallback={t("errGeneric")} onRetry={() => void capture()} /> : null}
+      {ready ? (
         <Card>
           {SCAN_FIELDS.map(([k, label]) => (
             <TextField
               key={k}
               label={t(label)}
               keyboardType={k === "year" ? "number-pad" : "default"}
-              value={f[k]}
+              value={f[k] ?? ""}
               onChangeText={(v) => setF({ ...f, [k]: v })}
             />
           ))}
           <Button
             label={t("reviewBeforeSave")}
+            disabled={Object.keys(scanFacts(f)).length === 0}
             onPress={() => {
               setError(null);
               setReviewing(true);

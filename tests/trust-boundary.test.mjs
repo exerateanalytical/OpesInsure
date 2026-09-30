@@ -342,8 +342,11 @@ test("broker and carrier mobile operations use typed API contracts", () => {
 });
 test("carrier underwriting decisions require confirmation and a note", () => {
   const screen = read("app/carrier/referrals/[id].tsx");
-  assert.match(screen, /Alert\.alert/);
-  assert.match(screen, /disabled=\{note\.length\s*<\s*5\}/);
+  // Launch fix 2026-09-29: the in-app confirmation (DetailActions confirm:), not a native Alert.
+  assert.match(screen, /<DetailActions/);
+  assert.match(screen, /confirm:/);
+  assert.doesNotMatch(screen, /Alert\.alert/);
+  assert.match(screen, /disabled: note\.trim\(\)\.length < 5/);
 });
 test("patch five demo data covers broker and carrier operations", () => {
   const demo = JSON.parse(

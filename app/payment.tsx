@@ -11,6 +11,7 @@ import { NetworkTiles } from "@/components/policies/RenewalUi";
 import { useInsurance } from "@/store/insurance";
 import { isNotFound, isProviderNotConfigured, localized, paymentStatusInfo, providerName, purchaseStep, networkName } from "@/lib/purchase";
 import { carrierLogo, riskVehicleLabel } from "@/lib/renewal";
+import { paymentState } from "@/lib/paymentRouting";
 import { useFormatters } from "@/hooks/useFormatters";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
@@ -27,13 +28,14 @@ const PATIENCE_MS = 3 * 60 * 1000;
  */
 export default function Payment() {
   const { proposalId } = useLocalSearchParams<{ proposalId?: string }>();
-  const payment = useInsurance((s) => s.payment);
+  const storePayment = useInsurance((s) => s.payment);
+  // Only this application's payment: one left in the store for another application never shows here.
+  const payment = storePayment && (!proposalId || storePayment.proposal_id === proposalId) ? storePayment : null;
   const purchase = useInsurance((s) => s.purchase);
   const proposal = useInsurance((s) => s.proposal);
   const selectedOffer = useInsurance((s) => s.selectedOffer);
   const quote = useInsurance((s) => s.quote);
   const recover = useInsurance((s) => s.recoverPayment);
-  const refresh = useInsurance((s) => s.refreshPayment);
   const refreshPurchase = useInsurance((s) => s.refreshPurchase);
   const f = useFormatters();
   const { t, td } = useTranslation();
@@ -43,16 +45,21 @@ export default function Payment() {
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const inFlight = useRef(false);
+  // Checked and there is no payment for this application at all (nothing saved, none on the server).
+  const [missing, setMissing] = useState(false);
 
   const check = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
     setChecking(true);
     try {
-      const current = useInsurance.getState().payment ? await refresh() : await recover();
+      // The store's payment, the one saved on this device, else (deep link after a restart) the latest one
+      // the purchase status knows for this application.
+      const current = await recover(proposalId ?? null);
       // The purchase-status endpoint is authoritative (server-side provider status).
-      const agg = await refreshPurchase().catch(() => null);
+      const agg = await refreshPurchase(current?.proposal_id ?? proposalId ?? null).catch(() => null);
       setError(null);
+      setMissing(!current && !agg?.payment);
       const status = agg?.status ?? "";
       if (current?.status === "SUCCEEDED" || status === "ISSUANCE_PENDING" || status === "POLICY_ISSUED")
         router.replace({ pathname: "/confirmation", params: { proposalId: current?.proposal_id ?? proposalId ?? "" } });
@@ -63,7 +70,7 @@ export default function Payment() {
       setChecking(false);
       setNow(Date.now());
     }
-  }, [proposalId, recover, refresh, refreshPurchase]);
+  }, [proposalId, recover, refreshPurchase]);
 
   const step = purchaseStep(payment?.status, purchase?.status);
   useEffect(() => {
@@ -75,7 +82,7 @@ export default function Payment() {
   }, [check]);
   // A provider-not-configured (422) or not-found (404) answer will not change
   // by polling again: stop and show the message instead of stalling.
-  const halted = isProviderNotConfigured(error) || isNotFound(error);
+  const halted = isProviderNotConfigured(error) || isNotFound(error) || missing;
   useEffect(() => {
     if (step.failed || step.done || halted) return;
     const timer = setInterval(() => void check(), POLL_MS);
@@ -108,7 +115,8 @@ export default function Payment() {
           ) : (
             <>
               <Button label={t("ppCompleted")} icon={ArrowRight} loading={checking} onPress={() => void check()} />
-              <Button label={t("ppTryAnother")} variant="tertiary" onPress={() => router.replace(checkoutHref)} />
+              {/* While the operator holds the request the server refuses a second one (409 PAYMENT_IN_PROGRESS). */}
+              {paymentState({ payments: payment ? [payment] : [] }) !== "in_flight" ? <Button label={t("ppTryAnother")} variant="tertiary" onPress={() => router.replace(checkoutHref)} /> : null}
             </>
           )}
           <Button
@@ -164,7 +172,7 @@ export default function Payment() {
           </View>
         )}
         <View style={st.flex}>
-          <StatusChip label={payment ? pInfo.label : t("payRecovering")} tone={payment ? pInfo.tone : "warning"} />
+          <StatusChip label={payment ? pInfo.label : missing ? t("payNoneFoundChip") : t("payRecovering")} tone={payment ? pInfo.tone : missing ? "neutral" : "warning"} />
           {step.failed ? (
             <>
               <Text style={st.statusTitle}>{t("payNotCompleted")}</Text>
@@ -178,6 +186,11 @@ export default function Payment() {
               <Text style={ps.body}>{t("ppAwaitingBody", { provider: provider ?? "" })}</Text>
               <Text style={st.italic}>{t("ppFewSeconds")}</Text>
               <Text style={ps.meta}>{t("payApprove", { provider: provider ?? "", phone: payment.payer_phone_e164 })}</Text>
+            </>
+          ) : missing ? (
+            <>
+              <Text style={st.statusTitle}>{t("payNoneFoundTitle")}</Text>
+              <Text style={ps.body}>{t("payNoneFoundBody")}</Text>
             </>
           ) : (
             <Text style={st.statusTitle}>{t("payRecoveringBody")}</Text>

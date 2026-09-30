@@ -26,6 +26,7 @@ import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
 import { productsByLine, readDirectory, verificationText } from "@/lib/institutions";
 import { insurerFacts, insurerKindKey, legalFooterLines, legalNameLine, officesPending } from "@/lib/insurerProfile";
+import { productFamilyLabels } from "@/lib/productFamilies";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
@@ -52,7 +53,7 @@ function Profile({ insurer }: { insurer: Institution }) {
   const { entry, start } = useStartQuote();
   const groups = productsByLine(insurer.products);
   const productCount = insurer.products?.length ?? 0;
-  const families = (insurer.product_families ?? []).filter((f) => typeof f === "string" && f.trim());
+  const families = productFamilyLabels(insurer.product_families, language);
   // Register entry (insurer.canonical_id), insurer code, licence branch, offices, directory check.
   const facts: Fact[] = insurerFacts(insurer, d).map((f) => ({
     label: t(f.label as CopyKey),

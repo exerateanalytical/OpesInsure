@@ -5,6 +5,7 @@ import { OfflineOperation } from "@/offline/types";
 import { environmentConfig } from "@/config/environment";
 import { DEVICE_ONLY } from "@/security/secureJson";
 import { PageResult, unwrapPage } from "@/lib/purchase";
+import { releasedSettlement } from "@/lib/settlement";
 export type { PageResult } from "@/lib/purchase";
 
 // environmentConfig.apiBaseUrl already falls back to the production host in
@@ -786,8 +787,20 @@ export type Proposal = {
     }[];
   } | null;
   payments?: Payment[];
-  /** Counter-offer terms, when the insurer revised the premium. */
-  counteroffer?: { total_minor?: number; premium_minor?: number; notes?: string } | null;
+  /**
+   * Revised terms while COUNTEROFFERED (ProposalService::counterTerms, served by GET mobile/proposals/{id};
+   * loadProposal merges it in). Amounts are null when the insurer did not revise that part.
+   */
+  counter_offer?: CounterOffer | null;
+};
+export type CounterOffer = {
+  decision_id?: string;
+  premium_minor?: number | null;
+  tax_minor?: number | null;
+  fee_minor?: number | null;
+  total_minor?: number | null;
+  notes?: string | null;
+  decided_at?: string | null;
 };
 export type ProposalRequirement = {
   code: string;
@@ -884,6 +897,8 @@ export type PurchaseStatus = {
     | "ISSUANCE_PENDING"
     | "POLICY_ISSUED";
   payment: Pick<Payment, "id" | "proposal_id" | "status"> | null;
+  /** Latest carrier issuance request (MobilePurchaseStatusService); REJECTED = the insurer declined after payment. */
+  issuance?: { id?: string; status?: string | null; requested_at?: string | null } | null;
   policy:
     | (Pick<Policy, "id" | "policy_number" | "status"> &
         Partial<Pick<Policy, "coverage_starts_at" | "coverage_ends_at" | "issued_at" | "certificate_number">>)
@@ -1060,6 +1075,13 @@ export const ClaimsApi = {
       body: JSON.stringify({ reason }),
       idempotent: true,
     }),
+  /** Claimant withdrawal (server `withdraw` allowed action; early-stage claims only). Closes the claim. */
+  withdraw: (id: string, reason: string) =>
+    api<Claim>(`/mobile/claims/${id}/withdraw`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+      idempotent: true,
+    }),
 };
 export type ClaimIncidentDetails = {
   claim_id: string;
@@ -1072,14 +1094,29 @@ export type ClaimIncidentDetails = {
   towing_required: boolean;
   declaration_confirmed: boolean;
 };
+export type ClaimPartyRole = "DRIVER" | "PASSENGER" | "THIRD_PARTY" | "WITNESS" | "OTHER";
+/** A claim_involved_parties row as MobileClaimPartyController returns it. */
 export type ClaimParty = {
   id: string;
   claim_id: string;
-  role: "DRIVER" | "THIRD_PARTY" | "WITNESS" | "PASSENGER";
-  full_name: string;
-  phone_e164?: string;
-  vehicle_registration?: string;
-  insurer_name?: string;
+  role: ClaimPartyRole;
+  display_name: string;
+  is_self?: boolean;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  consent_given?: boolean;
+  notes?: string | null;
+};
+/** POST /mobile/claims/{id}/parties body (MobileClaimPartyController::store). */
+export type NewClaimParty = {
+  role: ClaimPartyRole;
+  display_name: string;
+  is_self?: boolean;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  /** Required (true) whenever contact details for someone else are sent. */
+  consent_given?: boolean;
+  notes?: string | null;
 };
 export type EvidenceRequirement = {
   key: string;
@@ -1091,9 +1128,10 @@ export type EvidenceRequirement = {
 export type ClaimInspection = {
   id: string;
   claim_id: string;
+  /** NOT_SCHEDULED until the assessor (or a reschedule request) sets a real appointment. */
   status: string;
-  appointment_at: string;
-  location: string;
+  appointment_at: string | null;
+  location: string | null;
   surveyor_name?: string | null;
   contact_phone?: string | null;
   notes?: string | null;
@@ -1107,18 +1145,32 @@ export type ClaimRepair = {
   deductible_minor?: number | null;
   authorization_reference?: string | null;
 };
+/**
+ * GET /mobile/claims/{id}/settlement (MobileClaimSettlementView): the
+ * claim_settlements lifecycle as released to the customer. Only an OFFERED
+ * (or later) settlement is ever shown; before that the server answers
+ * status PENDING with no amounts, which settlement() maps to null.
+ */
+export type ClaimSettlementStatus = "OFFERED" | "ACCEPTED" | "DISPUTED" | "DISCHARGE_SIGNED" | "PAYMENT_PENDING" | "PAID";
 export type ClaimSettlement = {
   id: string;
   claim_id: string;
-  status: string;
+  reference?: string | null;
+  status: ClaimSettlementStatus | string;
+  currency: string;
+  /** Assessed loss before the deductible and other deductions. */
   offered_minor: number;
   deductible_minor: number;
+  /** What is paid. */
   net_minor: number;
-  currency: "XAF";
-  payment_status: string;
+  lines?: { code: string; label: string; operator?: string | null; amount_minor: number }[];
+  /** True only while the offer waits for the customer's answer (status OFFERED). */
+  can_decide?: boolean;
+  payment_status?: string | null;
   payment_reference?: string | null;
-  decision_deadline: string;
-  terms: string;
+  offered_at?: string | null;
+  decided_at?: string | null;
+  terms?: string | null;
 };
 export const ClaimsCompletionApi = {
   incident: (id: string) =>
@@ -1129,8 +1181,17 @@ export const ClaimsCompletionApi = {
       body: JSON.stringify(payload),
       idempotent: true,
     }),
-  parties: (id: string) => api<ClaimParty[]>(`/mobile/claims/${id}/parties`),
-  addParty: (id: string, payload: Omit<ClaimParty, "id" | "claim_id">) =>
+  /** The endpoint is a Laravel paginator; every page is collected here. */
+  parties: async (id: string) => {
+    const rows: ClaimParty[] = [];
+    for (let page = 1; page <= 20; page++) {
+      const result = await apiPage<ClaimParty>(`/mobile/claims/${id}/parties`, page);
+      rows.push(...result.items);
+      if (!result.info.hasMore) break;
+    }
+    return rows;
+  },
+  addParty: (id: string, payload: NewClaimParty) =>
     api<ClaimParty>(`/mobile/claims/${id}/parties`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -1147,12 +1208,14 @@ export const ClaimsCompletionApi = {
       idempotent: true,
     }),
   repair: (id: string) => api<ClaimRepair>(`/mobile/claims/${id}/repair`),
-  settlement: (id: string) =>
-    api<ClaimSettlement>(`/mobile/claims/${id}/settlement`),
-  decideSettlement: (id: string, decision: "ACCEPT" | "REJECT") =>
+  /** Null until the insurer has offered a settlement. */
+  settlement: async (id: string) =>
+    releasedSettlement(await api<ClaimSettlement | { id: null; status: string }>(`/mobile/claims/${id}/settlement`)),
+  /** ACCEPT or REJECT an OFFERED settlement (ClaimSettlementService accept / dispute). */
+  decideSettlement: (id: string, decision: "ACCEPT" | "REJECT", reason?: string) =>
     api<ClaimSettlement>(`/mobile/claims/${id}/settlement/decision`, {
       method: "POST",
-      body: JSON.stringify({ decision }),
+      body: JSON.stringify(reason ? { decision, reason } : { decision }),
       idempotent: true,
       stepUpPurpose: "CLAIM_SETTLEMENT_DECISION",
     }),
@@ -1189,17 +1252,54 @@ export type AgentClient = {
   party_id?: string | null;
   renewal_due_at?: string | null;
 };
+/**
+ * Assisted sale as the server reports it (AssistedSaleService): real offers from the client's risk facts, the
+ * client's application, the real mobile-money request and issuance. `next_action` drives the one sale button.
+ */
+export type AgentSaleNextAction =
+  | "SEND_TO_CLIENT"
+  | "AWAIT_CLIENT"
+  | "AWAIT_UNDERWRITING"
+  | "REQUEST_PAYMENT"
+  | "RETRY_PAYMENT"
+  | "AWAIT_PAYMENT"
+  | "AWAIT_ISSUANCE"
+  | "NONE";
+export type AgentSaleOffer = { id: string; carrier_name?: string | null; product_name?: string | null; premium_minor: number; total_minor: number; status: string; valid_until?: string | null };
 export type AgentSale = {
   id: string;
+  quote_number?: string | null;
   customer_id: string;
   customer_name: string;
   product: string;
+  /** QUOTED | NO_OFFER | REFERRED | AWAITING_CLIENT | UNDER_REVIEW | PAYMENT_PENDING | PAYMENT_PROCESSING | PAID | ISSUED | DECLINED | WITHDRAWN */
   status: string;
+  next_action?: AgentSaleNextAction;
   premium_minor: number;
   currency: "XAF";
+  expires_at?: string | null;
+  selected_offer_id?: string | null;
+  carrier_name?: string | null;
+  offers?: AgentSaleOffer[];
+  proposal_id?: string | null;
+  proposal_number?: string | null;
+  proposal_status?: string | null;
+  client_terms_accepted?: boolean;
   payment_phone_e164: string;
+  payment_provider?: string | null;
+  /** NOT_REQUESTED | CUSTOMER_PROMPTED | PAID | FAILED | EXPIRED | CANCELLED */
   payment_status: string;
-  commission_minor: number;
+  payment?: { id: string; status: string; provider: string; amount_minor: number; prompted_at?: string | null; expires_at?: string | null } | null;
+  payment_failure_reason?: string | null;
+  payment_verified_at?: string | null;
+  issuance_status?: "NOT_STARTED" | "PENDING" | "ISSUED";
+  policy_id?: string | null;
+  policy_number?: string | null;
+  /** null when no commission rule is configured for this product (commission_basis NOT_CONFIGURED). */
+  commission_minor: number | null;
+  commission_basis?: "ACCRUED" | "RULE_ESTIMATE" | "NOT_CONFIGURED";
+  commission_status?: string | null;
+  commission_rate_bp?: number | null;
   created_at: string;
 };
 export type AgentCommission = {
@@ -1263,10 +1363,14 @@ export const AgentApi = {
       body: JSON.stringify(payload),
       idempotent: true,
     }),
+  /** Prices the client's real risk facts (same risk schema as the customer quote wizard); nothing is sent to the client yet. */
   createSale: (payload: {
     customer_id: string;
+    /** Line code (MOTOR, TRAVEL, …). */
     product: string;
     payment_phone_e164: string;
+    provider?: "mtn_momo" | "orange_money";
+    risk_facts: Record<string, unknown>;
   }) =>
     api<AgentSale>("/mobile/agent/sales", {
       method: "POST",
@@ -1274,9 +1378,11 @@ export const AgentApi = {
       idempotent: true,
     }),
   sale: (id: string) => api<AgentSale>(`/mobile/agent/sales/${id}`),
-  requestPayment: (id: string) =>
+  /** The sale's next server-side step (open the client's application, remind the client, or send the real payment request). Idempotent. */
+  requestPayment: (id: string, body: { offer_id?: string; provider?: "mtn_momo" | "orange_money"; payment_phone_e164?: string } = {}) =>
     api<AgentSale>(`/mobile/agent/sales/${id}/payment-request`, {
       method: "POST",
+      body: JSON.stringify(body),
       idempotent: true,
     }),
   renewals: () => api<AgentRenewal[]>("/mobile/agent/renewals"),
@@ -1375,6 +1481,8 @@ export type CarrierReferral = {
   premium_minor: number;
   submitted_at: string;
   decision_note?: string;
+  /** Decisions this caller may take now (APPROVE / MORE_INFORMATION / DECLINE); empty once decided. */
+  allowed_actions?: string[];
 };
 export type CarrierQueueItem = {
   id: string;
@@ -1486,6 +1594,8 @@ export const ProposalsApi = {
   /** GET /mobile/proposals when the backend exposes it; callers fall back. */
   list: (page = 1) => apiPage<ProposalSummary>("/mobile/proposals", page),
   show: (id: string) => api<Proposal>(`/proposals/${id}`),
+  /** GET /mobile/proposals/{id}: the list projection of one own proposal, with `counter_offer` while COUNTEROFFERED. */
+  mobileShow: (id: string) => api<Pick<Proposal, "id" | "status" | "counter_offer">>(`/mobile/proposals/${id}`),
   /**
    * Links a stored document of the customer (a new upload, or one already on file such as a verified ID)
    * to a proposal requirement: POST /proposals/{id}/documents. Store files with storeDocument()
@@ -1555,13 +1665,27 @@ export type RiskAsset = {
   status: string;
   documents?: AssetDocument[];
 };
+/** One document attached to a risk asset (MobileRiskAssetService::present). */
 export type AssetDocument = {
   id: string;
-  asset_id: string;
+  purpose?: string | null;
+  category?: string | null;
+  scan_status?: string | null;
+  verification_status?: string | null;
+  /** OCR outcome; `fields` stays empty until a real OCR provider extracts something. */
+  ocr_data?: { status?: string; provider?: string | null; fields?: Record<string, unknown> } | null;
+};
+/** The asset as the attach / scan / confirm endpoints answer it. */
+export type AssetScanState = {
+  id: string;
   type: string;
-  file_name: string;
+  display_name?: string | null;
+  external_reference?: string | null;
+  facts?: Record<string, unknown> | null;
   status: string;
-  extracted_fields?: Record<string, string>;
+  /** Optimistic-concurrency version; confirmScan must echo it. */
+  version: number;
+  documents?: AssetDocument[];
 };
 export type DisclosureSession = {
   id: string;
@@ -1621,23 +1745,41 @@ export type WalletPolicy = Policy & {
   /** Insured vehicle/property from proposal.offer.quote.riskAsset. */
   risk_asset?: { id?: string; label?: string | null; registration_number?: string | null } | null;
 };
+/** GET /mobile/deliveries/{id} (MobileDeliveryPresenter). */
 export type StickerDelivery = {
   id: string;
   policy_id: string;
   status: string;
+  recipient_name?: string | null;
+  phone_e164?: string | null;
+  address_line?: string | null;
+  city?: string | null;
+  region?: string | null;
+  delivery_address?: Record<string, unknown> | null;
+  eta?: string | null;
+  delivered_at?: string | null;
+  tracking_code?: string | null;
+  courier?: { name: string; phone_e164?: string | null } | null;
+  can_change_address?: boolean;
+  can_confirm?: boolean;
+  /** One step per delivery status; `status` is a code (deliveryStatus_*). */
+  timeline?: { status: string; occurred_at?: string | null; complete: boolean }[];
+  /** updated_at as last seen; echoed back on an address change (409 when stale). */
+  version?: string | null;
+};
+/** PUT /mobile/deliveries/{id}/address `address` object (the back-office keys). */
+export type DeliveryAddressInput = {
   recipient_name: string;
-  phone_e164: string;
-  address_line: string;
+  phone: string;
+  line1: string;
   city: string;
-  eta?: string;
-  tracking_code: string;
-  timeline: { label: string; occurred_at: string; complete: boolean }[];
 };
 // KYC lives in CustomerApi (src/api/customer.ts: kyc, addIdentifier, attachKycDocument, submitKyc),
 // typed to the real /mobile/kyc/* answers ({identifiers, submission}).
 export const AssetsApi = {
   list: () => api<RiskAsset[]>("/mobile/assets"),
-  show: (id: string) => api<RiskAsset>(`/mobile/assets/${id}`),
+  /** The raw asset row (display_name, facts, version, documents); normalizeAsset() maps it for display. */
+  show: (id: string) => api<RiskAsset & Partial<Omit<AssetScanState, "type" | "status">>>(`/mobile/assets/${id}`),
   create: (payload: Partial<RiskAsset>) =>
     api<RiskAsset>("/mobile/assets", {
       method: "POST",
@@ -1663,26 +1805,25 @@ export const AssetsApi = {
       body: JSON.stringify({ ...payload, external_reference: payload.external_reference || null, facts: payload.facts ?? {} }),
       idempotent: true,
     }),
-  uploadDocument: (id: string, form: FormData) =>
-    api<AssetDocument>(`/mobile/assets/${id}/documents`, {
+  /** Links a document already stored with storeDocument() (POST /mobile/documents) to the asset. */
+  attachDocument: (id: string, documentId: string, purpose: string) =>
+    api<AssetScanState>(`/mobile/assets/${id}/documents`, {
       method: "POST",
-      body: form,
-      timeoutMs: 45000,
+      body: JSON.stringify({ document_id: documentId, purpose }),
       idempotent: true,
     }),
-  scan: (id: string) =>
-    api<AssetDocument>(`/mobile/assets/${id}/scan`, {
+  /** Requests OCR for one attached document; the server never invents fields. */
+  scan: (id: string, documentId?: string) =>
+    api<AssetScanState>(`/mobile/assets/${id}/scan`, {
       method: "POST",
+      body: JSON.stringify(documentId ? { document_id: documentId } : {}),
       idempotent: true,
     }),
-  confirmScan: (
-    id: string,
-    documentId: string,
-    fields: Record<string, string>,
-  ) =>
-    api<RiskAsset>(`/mobile/assets/${id}/scan/${documentId}/confirm`, {
+  /** The customer's own reading of the document, merged into the asset facts. */
+  confirmScan: (id: string, documentId: string, version: number, facts: Record<string, unknown>) =>
+    api<AssetScanState>(`/mobile/assets/${id}/scan/${documentId}/confirm`, {
       method: "POST",
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify({ version, facts }),
       idempotent: true,
     }),
 };
@@ -1756,18 +1897,11 @@ export const WalletApi = {
   },
   policy: (id: string) => api<WalletPolicy>(`/mobile/wallet/policies/${id}`),
   delivery: (id: string) => api<StickerDelivery>(`/mobile/deliveries/${id}`),
-  updateAddress: (
-    id: string,
-    payload: {
-      recipient_name: string;
-      phone_e164: string;
-      address_line: string;
-      city: string;
-    },
-  ) =>
+  /** MobileDeliveryController validates {address: {...}, version?}. */
+  updateAddress: (id: string, address: DeliveryAddressInput, version?: string | null) =>
     api<StickerDelivery>(`/mobile/deliveries/${id}/address`, {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(version ? { address, version } : { address }),
       idempotent: true,
     }),
   confirmDelivery: (id: string, otp: string) =>
@@ -1845,6 +1979,9 @@ export type SupportCase = {
     created_at: string;
   }[];
   attachments?: { id: string; file_name: string; status: string }[];
+  /** Set by POST .../escalate (priority becomes URGENT). */
+  escalated?: boolean;
+  escalated_at?: string | null;
 };
 export const QuotesApi = {
   history: (page = 1) => apiPage<CustomerQuoteSummary>("/mobile/quotes", page),
@@ -1936,6 +2073,13 @@ export const SupportApi = {
       method: "POST",
       body: form,
       timeoutMs: 45000,
+      idempotent: true,
+    }),
+  /** Raises this case to URGENT for a supervisor (idempotent server-side; no second case is created). */
+  escalate: (id: string, reason?: string) =>
+    api<SupportCase>(`/mobile/support/cases/${id}/escalate`, {
+      method: "POST",
+      body: JSON.stringify(reason ? { reason } : {}),
       idempotent: true,
     }),
 };
