@@ -49,6 +49,7 @@ return [
     'claim_evidence_upload_not_ready' => 'Ce téléversement n\'est pas encore prêt à être utilisé comme pièce justificative.',
     'claim_evidence_upload_unreadable' => 'Ce téléversement n\'a pas pu être lu. Veuillez le téléverser à nouveau.',
     'claim_closed_for_edits' => 'Ce sinistre est clôturé et ne peut plus être modifié.',
+    'claim_settlement_no_offer' => "Aucune offre d'indemnisation n'attend votre réponse.",
     'claim_party_consent_required' => 'Confirmez le consentement de cette personne avant d\'enregistrer ses coordonnées.',
     'step_up_required' => 'Vérifiez cette action avant de continuer.',
     'step_up_code_invalid' => 'Ce code est invalide ou a expiré. Demandez-en un nouveau.',

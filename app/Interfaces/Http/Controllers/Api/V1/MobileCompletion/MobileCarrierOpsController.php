@@ -90,6 +90,8 @@ final class MobileCarrierOpsController
     {
         $data = $request->validate(['decision' => 'required|in:APPROVE,DECLINE,MORE_INFORMATION', 'note' => 'required|string|min:5|max:4000']);
         $c = $this->scoped(UnderwritingCase::with('referrals')->where('tenant_id', app(TenantContext::class)->id()), $this->carrierId($request))->findOrFail($id);
+        // A decided case is never reopened from the app (MORE_INFORMATION used to flip an APPROVED case back).
+        abort_unless(in_array($c->status, self::OPEN_REFERRAL_STATUSES, true), 409, 'This referral has already been decided.');
         if ($data['decision'] === 'MORE_INFORMATION') {
             $c->update(['status' => 'AWAITING_INFORMATION', 'assigned_to' => $c->assigned_to ?? $request->user()->id]);
             $c->referrals()->where('status', 'OPEN')->update(['status' => 'WAITING', 'resolution_notes' => $data['note']]);
@@ -153,6 +155,9 @@ final class MobileCarrierOpsController
         ])->values()]);
     }
 
+    /** Underwriting case statuses a carrier may still decide (see the referrals() ordering). */
+    public const OPEN_REFERRAL_STATUSES = ['QUEUED', 'IN_REVIEW', 'DECISION_PENDING', 'AWAITING_INFORMATION'];
+
     private function referralOf(UnderwritingCase $c, ?array $names = null): array
     {
         $offer = $c->proposal?->offer;
@@ -164,6 +169,10 @@ final class MobileCarrierOpsController
             'reason' => implode(', ', array_map(fn ($r) => ucfirst(strtolower(str_replace('_', ' ', $r))), $c->referral_reasons ?? [])) ?: 'Manual review',
             'status' => $c->status, 'premium_minor' => (int) ($offer?->total_minor ?? 0), 'submitted_at' => $c->created_at?->toIso8601String(),
             'decision_note' => $c->referrals?->whereNotNull('resolution_notes')->last()?->resolution_notes,
+            // Launch fix 2026-09-29: the app shows exactly these decision buttons (decideReferral accepts them while the case is open).
+            'allowed_actions' => in_array($c->status, self::OPEN_REFERRAL_STATUSES, true) && auth()->user()?->hasPermission('carrier.referrals.decide')
+                ? ($c->status === 'AWAITING_INFORMATION' ? ['APPROVE', 'DECLINE'] : ['APPROVE', 'MORE_INFORMATION', 'DECLINE'])
+                : [],
         ];
     }
 }

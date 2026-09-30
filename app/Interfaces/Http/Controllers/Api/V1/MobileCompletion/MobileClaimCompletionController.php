@@ -6,6 +6,7 @@ namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
 use App\Application\Audit\AuditWriter;
 use App\Application\Claims\MobileClaimService;
+use App\Application\Claims\Settlement\MobileClaimSettlementView;
 use App\Application\Identity\PartyResolver;
 use App\Application\Policies\MobileWalletService;
 use App\Domain\Tenancy\TenantContext;
@@ -22,8 +23,8 @@ use Illuminate\Support\Str;
  * claim/[id]/{incident,checklist,inspection,repair,settlement,appeal} and
  * claim/emergency. Incident, inspection and repair details live inside
  * claims.loss_details (the claim's schemaless detail column) under their
- * own keys; the settlement view is derived from claim_decisions +
- * claim_payments; an appeal is a ClaimDispute; emergency assistance opens
+ * own keys; the settlement view is the claim_settlements lifecycle
+ * (MobileClaimSettlementView); an appeal is a ClaimDispute; emergency assistance opens
  * an URGENT support ticket the operations desk works from.
  */
 final class MobileClaimCompletionController
@@ -98,23 +99,19 @@ final class MobileClaimCompletionController
 
     public function settlement(string $claim, Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->settlementOf($this->owned($claim, $request))]);
+        return response()->json(['data' => app(MobileClaimSettlementView::class)->present($this->owned($claim, $request))]);
     }
 
+    /** The customer's answer to an OFFERED settlement, through ClaimSettlementService (accept / dispute). */
     public function decideSettlement(string $claim, Request $request): JsonResponse
     {
-        $data = $request->validate(['decision' => 'required|in:ACCEPT,REJECT']);
+        $data = $request->validate(['decision' => 'required|in:ACCEPT,REJECT', 'reason' => 'nullable|string|max:2000']);
         $c = $this->owned($claim, $request);
-        abort_unless(\App\Application\Claims\MobileClaimService::hasSettlementOffer($c), 422, 'There is no settlement offer to decide on yet.');
-        $details = $c->loss_details ?? [];
-        $details['settlement'] = array_merge($details['settlement'] ?? [], ['customer_decision' => $data['decision'], 'decided_at' => now()->toIso8601String()]);
-        $c->update(['loss_details' => $details, 'version' => $c->version + 1]);
-        if ($data['decision'] === 'REJECT' && in_array($c->status, ['DECLINED', 'PARTIALLY_APPROVED'], true)) {
-            ClaimDispute::firstOrCreate(['claim_id' => $c->id, 'status' => 'OPEN'], ['reference' => 'DSP-'.strtoupper(Str::random(12)), 'reason_code' => 'SETTLEMENT_REJECTED', 'statement' => 'Customer rejected the settlement offer from the app.', 'opened_by' => $request->user()->id]);
-        }
+        $view = app(MobileClaimSettlementView::class);
+        $view->decide($c, $data['decision'], $data['reason'] ?? null, $request->user());
         $this->audit->record('claim.settlement.customer_decision', 'claim', $c->id, ['decision' => $data['decision']]);
 
-        return response()->json(['data' => $this->settlementOf($c->refresh())]);
+        return response()->json(['data' => $view->present($c->refresh())]);
     }
 
     public function appeal(string $claim, Request $request): JsonResponse
@@ -166,26 +163,9 @@ final class MobileClaimCompletionController
 
         return [
             'id' => $c->id.':inspection', 'claim_id' => $c->id, 'status' => $i['status'] ?? 'NOT_SCHEDULED',
-            'appointment_at' => $i['appointment_at'] ?? now()->addDays(3)->setTime(10, 0)->toIso8601String(), 'location' => $i['location'] ?? 'To be confirmed by the assessor',
+            // Null until the assessor (or the customer's reschedule) sets a real appointment.
+            'appointment_at' => $i['appointment_at'] ?? null, 'location' => $i['location'] ?? null,
             'surveyor_name' => $i['surveyor_name'] ?? null, 'contact_phone' => $i['contact_phone'] ?? null, 'notes' => $i['notes'] ?? null,
-        ];
-    }
-
-    private function settlementOf(Claim $c): array
-    {
-        $decision = DB::table('claim_decisions')->where('claim_id', $c->id)->orderByDesc('created_at')->first();
-        $payment = DB::table('claim_payments')->where('claim_id', $c->id)->orderByDesc('created_at')->first();
-        $s = ($c->loss_details ?? [])['settlement'] ?? [];
-        $offered = (int) ($decision->approved_amount_minor ?? $c->approved_amount_minor ?? 0);
-        $deductible = (int) ($s['deductible_minor'] ?? 0);
-
-        return [
-            'id' => $decision->id ?? $c->id.':settlement', 'claim_id' => $c->id,
-            'status' => $decision ? ($s['customer_decision'] ?? null ? 'CUSTOMER_'.$s['customer_decision'].'ED' : ($decision->status ?? 'OFFERED')) : 'PENDING_DECISION',
-            'offered_minor' => $offered, 'deductible_minor' => $deductible, 'net_minor' => max(0, $offered - $deductible), 'currency' => 'XAF',
-            'payment_status' => $payment->status ?? 'NOT_STARTED', 'payment_reference' => $payment->external_reference ?? null,
-            'decision_deadline' => $s['decision_deadline'] ?? ($decision ? \Carbon\Carbon::parse($decision->created_at)->addDays(14)->toIso8601String() : now()->addDays(14)->toIso8601String()),
-            'terms' => $s['terms'] ?? ($decision->rationale ?? 'The settlement terms will appear here once the insurer has decided on your claim.'),
         ];
     }
 }

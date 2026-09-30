@@ -95,8 +95,11 @@ final class LaunchNotificationRouter
             default => null,
         };
         if ($code && $complaint->party_id) {
+            // The app has no complaint screen: a complaint bridged to a support case opens that case
+            // (/support/{id}); one without a case opens the customer's support list.
+            $ticket = $complaint->support_ticket_id ?? null;
             $this->notifier->toParty($complaint->party_id, $complaint->tenant_id, 'COMPLAINT',
-                ...NotificationCatalog::message($code, ['reference' => $complaint->complaint_number]), path: "/support/complaints/{$complaint->id}");
+                ...NotificationCatalog::message($code, ['reference' => $complaint->complaint_number]), path: $ticket ? "/support/{$ticket}" : '/support');
         }
     }
 

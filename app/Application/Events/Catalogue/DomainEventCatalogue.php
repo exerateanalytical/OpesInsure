@@ -366,6 +366,7 @@ final class DomainEventCatalogue
             $d('renewal.lapsed', 'renewal_case', 'Renewal case lapsed: cover ended without a renewal quote.', [], [], true),
             $d('renewal.issuance_failed', 'renewal_case', 'Paid renewal could not be issued; queued as an issuance exception (WF-087).', [], [], true),
             $d('renewal.issuance_recovered', 'renewal_case', 'Paid-renewal issuance exception resolved (re-queued for issuance, or refunded).', [], [], true),
+            $d('renewal.reassigned', 'renewal_case', 'Open renewal case reassigned to another owner (reason recorded).', [], [], true),
             $d('risk_asset.created', 'risk_asset', 'Risk asset created.', [], [], true),
             $d('risk_asset.updated', 'risk_asset', 'Risk asset updated.', [], [], true),
             $d('tariff.submitted', 'tariff', 'Tariff submitted for approval.', [], [], true),
@@ -501,6 +502,9 @@ final class DomainEventCatalogue
             $d('integration.carrier_message.fallback_resolved', 'carrier', 'Manual fallback carrier message resolved (sent manually, requeued or cancelled).', [], [$C], true),
             $d('integration.record_mapping.conflict_detected', 'integration_client', 'Carrier sync changed a record OpesInsure owns; conflict queued for review.', [], [$C], true),
             $d('integration.record_mapping.conflict_resolved', 'integration_client', 'External record mapping conflict resolved.', [], [$C], true),
+            // Carrier API connectors (App\Application\Integrations\Activa\ActivaPolicySync)
+            $d('integration.carrier_api.synced', 'carrier_api_sync_record', 'Policy operation synced to the carrier API (contract, renewal, attestation, payment).', [], [$C], true),
+            $d('integration.carrier_api.document_received', 'policy', 'Carrier-issued document received from the carrier API and stored against the policy.', [], [$C], true),
             // Agent V1 — Cameroon vehicle power & fiscal power master (App\Application\Vehicles\Power)
             $d('vehicle.fiscal_power.verified', 'vehicle_fiscal_power_record', 'Cameroon fiscal power (CV fiscal) verified from an authoritative source (maker-checker).', [], [$C], true),
             $d('vehicle.fiscal_power.conflict_detected', 'vehicle_fiscal_power_record', 'Conflicting authoritative fiscal power values; conflict case opened.', [], [$C], true),

@@ -22,6 +22,19 @@ final class MobileProposalController
         return response()->json(MobileList::fromPaginator($page, fn (Proposal $p) => $service->present($p)));
     }
 
+    /**
+     * GET /mobile/proposals/{proposal} — the caller's own proposal in the list projection, including `counter_offer`
+     * (revised premium/tax/fee/total and the underwriter's notes) while it is COUNTEROFFERED, so the app can show
+     * the revised price before the customer accepts. 404 for anyone else's proposal.
+     */
+    public function show(string $proposal, Request $request, MobileProposalService $service): JsonResponse
+    {
+        $p = $service->owned($proposal, $request->user(), app(TenantContext::class)->id());
+        $p->load(['offer.product', 'offer.carrier.party', 'offer.quote']);
+
+        return response()->json(['data' => $service->present($p)]);
+    }
+
     /** POST /mobile/proposals/{proposal}/counteroffer/{accept|decline} */
     public function counterOffer(string $proposal, string $answer, Request $request, MobileProposalService $service): JsonResponse
     {

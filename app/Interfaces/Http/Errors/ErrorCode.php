@@ -38,6 +38,10 @@ final class ErrorCode
     public const PAYMENT_OK_ISSUANCE_FAILED = 'PAYMENT_OK_ISSUANCE_FAILED';
     public const INTEGRATION_UNAVAILABLE = 'INTEGRATION_UNAVAILABLE';
     public const STEP_UP_REQUIRED = 'STEP_UP_REQUIRED';
+    // POST /payments double-charge and terms guards (PaymentRequestService, owner fix 2026-09-29).
+    public const PAYMENT_ALREADY_MADE = 'PAYMENT_ALREADY_MADE';
+    public const PAYMENT_IN_PROGRESS = 'PAYMENT_IN_PROGRESS';
+    public const TERMS_NOT_ACCEPTED = 'TERMS_NOT_ACCEPTED';
 
     public static function forStatus(int $status): string
     {

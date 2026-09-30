@@ -25,6 +25,7 @@ Route::get('mobile/catalogue/lines/{code}/risk-schema', MobileRiskSchemaControll
 // ARCH-004/005 (mobile audit A1): what the caller may see and do, per module.
 Route::get('mobile/capabilities', MobileCapabilitiesController::class);
 Route::get('mobile/proposals', [MobileProposalController::class, 'index']);
+Route::get('mobile/proposals/{proposal}', [MobileProposalController::class, 'show'])->whereUuid('proposal');
 Route::post('mobile/proposals/{proposal}/counteroffer/{answer}', [MobileProposalController::class, 'counterOffer'])
     ->whereIn('answer', ['accept', 'decline'])->middleware('throttle:20,1');
 

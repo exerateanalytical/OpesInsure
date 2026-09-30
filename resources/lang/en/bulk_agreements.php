@@ -11,6 +11,7 @@ return [
     'upload' => [
         'heading' => 'Upload agreements',
         'help' => 'CSV or XLSX, one row per insurer × broker. Lines and products are separated by ";", commission as LINE=percent (e.g. MOTOR=15;HOME=12.5), dates as YYYY-MM-DD or DD/MM/YYYY.',
+        'file' => 'Agreements file',
         'columns' => 'Columns',
         'preview' => 'Validate and preview',
     ],

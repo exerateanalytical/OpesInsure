@@ -57500,6 +57500,53 @@
                 ]
             }
         },
+        "/api/v1/mobile/proposals/{proposal}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_proposals_proposal",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\Underwriting\\MobileProposalController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "proposal",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/proposals/{proposal}/counteroffer/{answer}": {
             "post": {
                 "operationId": "post_api_v1_mobile_proposals_proposal_counteroffer_answer",

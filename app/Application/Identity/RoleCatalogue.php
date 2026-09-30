@@ -204,7 +204,9 @@ final class RoleCatalogue
 
     public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request', 'finance.obligations.view', 'payments.allocations.read', 'payments.allocations.manage', 'premium_status.read', 'premium_components.manage', 'refund.view', 'refund.review', 'refund.pay', 'clearing.view', 'clearing.manage', 'cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'statements.read', 'finance.exceptions.view', 'finance.reports.view', 'ledger.periods.close', 'technical_accounting.read', 'technical_accounting.actuarial.import', 'commission.statements.adjust', 'commission.statements.dispute', 'bordereaux.view', 'collections.view', 'collections.manage',
         // E9: the carrier finance screens, scoped to the linked carrier.
-        ...self::CARRIER_FINANCE_READS];
+        ...self::CARRIER_FINANCE_READS,
+        // Launch fix 2026-09-29: the mobile finance workspace (mobile/workspace/*) answered 403 without it.
+        'workspace.read'];
 
     public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'finance.obligations.view', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.view'];
 

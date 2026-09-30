@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 final class MobileWorkspaceController
 {
     private const MODULES = [
-        ['key' => 'policies', 'title' => 'Policies', 'permission' => null, 'icon' => 'FileText'],
+        ['key' => 'policies', 'title' => 'Policies', 'permission' => 'policies.read', 'icon' => 'FileText'],
         ['key' => 'claims', 'title' => 'Claims', 'permission' => 'claims.view', 'icon' => 'ShieldAlert'],
         ['key' => 'payments', 'title' => 'Payments', 'permission' => 'ledger.read', 'icon' => 'CreditCard'],
         ['key' => 'support', 'title' => 'Support cases', 'permission' => 'support.manage', 'icon' => 'LifeBuoy'],
@@ -57,11 +57,11 @@ final class MobileWorkspaceController
         $heading = (string) Str::of($role)->replace('_', ' ')->lower()->ucfirst().' workspace';
 
         $metrics = [
-                ['key' => 'policies', 'label' => 'Policies in force', 'value' => $count('policies', ['status' => 'ACTIVE']), 'tone' => 'success'],
-                ['key' => 'claims', 'label' => 'Open claims', 'value' => (string) DB::table('claims')->where('tenant_id', $t)->whereNotIn('status', ['PAID', 'CLOSED', 'DECLINED'])->count(), 'tone' => 'warning'],
-                ['key' => 'premium', 'label' => 'Premium this month', 'value' => $xaf(DB::table('policies')->where('tenant_id', $t)->where('issued_at', '>=', now()->startOfMonth())->sum('premium_minor')), 'tone' => 'info'],
-                ['key' => 'payments', 'label' => 'Payments pending', 'value' => (string) DB::table('payment_intents')->where('tenant_id', $t)->whereIn('status', ['CREATED', 'PENDING_CUSTOMER', 'PROCESSING'])->count(), 'tone' => 'neutral'],
-                ['key' => 'support', 'label' => 'Open support cases', 'value' => $count('support_tickets', ['status' => 'OPEN']), 'tone' => 'neutral'],
+            ['key' => 'policies', 'label' => 'Policies in force', 'value' => $count('policies', ['status' => 'ACTIVE']), 'tone' => 'success'],
+            ['key' => 'claims', 'label' => 'Open claims', 'value' => (string) DB::table('claims')->where('tenant_id', $t)->whereNotIn('status', ['PAID', 'CLOSED', 'DECLINED'])->count(), 'tone' => 'warning'],
+            ['key' => 'premium', 'label' => 'Premium this month', 'value' => $xaf(DB::table('policies')->where('tenant_id', $t)->where('issued_at', '>=', now()->startOfMonth())->sum('premium_minor')), 'tone' => 'info'],
+            ['key' => 'payments', 'label' => 'Payments pending', 'value' => (string) DB::table('payment_intents')->where('tenant_id', $t)->whereIn('status', ['CREATED', 'PENDING_CUSTOMER', 'PROCESSING'])->count(), 'tone' => 'neutral'],
+            ['key' => 'support', 'label' => 'Open support cases', 'value' => $count('support_tickets', ['status' => 'OPEN']), 'tone' => 'neutral'],
         ];
         if ($user->hasPermission(self::ISSUE_REPORTS_PERMISSION)) {
             $metrics[] = ['key' => 'issues', 'label' => 'App issues reported', 'value' => (string) $this->issueReports($t, $user)->where('status', 'OPEN')->count(), 'tone' => 'danger'];

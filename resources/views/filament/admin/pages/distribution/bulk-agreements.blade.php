@@ -3,7 +3,8 @@
         <x-filament::section :heading="__('bulk_agreements.upload.heading')" :description="__('bulk_agreements.upload.help')">
             <div class="text-xs text-gray-500 mb-2">{{ __('bulk_agreements.upload.columns') }}: <code>{{ implode(', ', $columns) }}</code></div>
             <form wire:submit="preview" class="flex flex-wrap items-center gap-3">
-                <input type="file" wire:model="upload" accept=".csv,.xlsx,.txt" class="text-sm">
+                <label for="bulk-agreements-file" class="text-sm">{{ __('bulk_agreements.upload.file') }}</label>
+                <input type="file" id="bulk-agreements-file" wire:model="upload" accept=".csv,.xlsx,.txt" class="text-sm">
                 <x-filament::button type="submit">{{ __('bulk_agreements.upload.preview') }}</x-filament::button>
             </form>
         </x-filament::section>

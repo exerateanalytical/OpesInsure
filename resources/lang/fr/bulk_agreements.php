@@ -11,6 +11,7 @@ return [
     'upload' => [
         'heading' => 'Importer des conventions',
         'help' => 'CSV ou XLSX, une ligne par assureur × courtier. Branches et produits séparés par « ; », commission sous la forme BRANCHE=pourcentage (ex. MOTOR=15;HOME=12,5), dates AAAA-MM-JJ ou JJ/MM/AAAA.',
+        'file' => 'Fichier des conventions',
         'columns' => 'Colonnes',
         'preview' => 'Valider et prévisualiser',
     ],

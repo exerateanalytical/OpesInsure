@@ -235,12 +235,26 @@ it('requests a refund and decides a settlement behind the demo one-time code (12
 
     $claim = makeMobileTestClaim($f['tenant'], $policy, $f['party'], ['status' => 'APPROVED', 'approved_amount_minor' => 500000]);
     [$staff, $checker] = [\App\Models\User::factory()->create(), \App\Models\User::factory()->create()];
-    DB::table('claim_decisions')->insert(['id' => (string) Str::uuid(), 'claim_id' => $claim->id, 'decision' => 'APPROVE', 'approved_amount_minor' => 500000, 'currency' => 'XAF',
+    $decisionId = (string) Str::uuid();
+    DB::table('claim_decisions')->insert(['id' => $decisionId, 'claim_id' => $claim->id, 'decision' => 'APPROVE', 'approved_amount_minor' => 500000, 'currency' => 'XAF',
         'reason_code' => 'OK', 'rationale' => 'Covered.', 'status' => 'APPROVED', 'proposed_by' => $staff->id, 'approved_by' => $checker->id, 'approved_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
-    $this->getJson("/api/v1/mobile/claims/{$claim->id}/settlement", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.status', 'APPROVED')->assertJsonPath('data.offered_minor', 500000);
+    // A decision alone (or a CALCULATED settlement) is internal: the customer sees no amount yet.
+    $settlementId = (string) Str::uuid();
+    DB::table('claim_settlements')->insert(['id' => $settlementId, 'tenant_id' => $f['tenant']->id, 'claim_id' => $claim->id, 'claim_decision_id' => $decisionId, 'payee_party_id' => $f['party']->id,
+        'reference' => 'STL-'.strtoupper(Str::random(12)), 'status' => 'CALCULATED', 'currency' => 'XAF', 'covered_minor' => 500000, 'deductible_minor' => 25000, 'gross_minor' => 475000, 'amount_minor' => 475000,
+        'breakdown' => json_encode(['lines' => [['code' => 'SETTLEMENT', 'label' => 'Settlement amount payable', 'operator' => '=', 'amount_minor' => 475000]]]), 'calculated_by' => $staff->id, 'created_at' => now(), 'updated_at' => now()]);
+    $this->getJson("/api/v1/mobile/claims/{$claim->id}/settlement", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.status', 'PENDING')->assertJsonPath('data.net_minor', null);
+    $grant = webStepUpGrant($this, $f, 'CLAIM_SETTLEMENT_DECISION');
+    $this->postJson("/api/v1/mobile/claims/{$claim->id}/settlement/decision", ['decision' => 'ACCEPT'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])->assertStatus(422);
+    // Released by a checker: now the customer sees the offer and can answer it.
+    DB::table('claim_settlements')->where('id', $settlementId)->update(['status' => 'OFFERED', 'offered_by' => $checker->id, 'offered_at' => now()]);
+    $this->getJson("/api/v1/mobile/claims/{$claim->id}/settlement", tenantHeaderFor($f['tenant']))->assertOk()->assertJsonPath('data.status', 'OFFERED')
+        ->assertJsonPath('data.offered_minor', 500000)->assertJsonPath('data.net_minor', 475000)->assertJsonPath('data.can_decide', true);
     $grant = webStepUpGrant($this, $f, 'CLAIM_SETTLEMENT_DECISION');
     $this->postJson("/api/v1/mobile/claims/{$claim->id}/settlement/decision", ['decision' => 'ACCEPT'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])
-        ->assertOk()->assertJsonPath('data.status', 'CUSTOMER_ACCEPTED');
+        ->assertOk()->assertJsonPath('data.status', 'ACCEPTED')->assertJsonPath('data.can_decide', false);
+    expect(DB::table('claim_settlements')->where('id', $settlementId)->value('status'))->toBe('ACCEPTED')
+        ->and(DB::table('claim_settlement_events')->where('claim_settlement_id', $settlementId)->where('to_status', 'ACCEPTED')->exists())->toBeTrue();
     // A grant is single use.
     $this->postJson("/api/v1/mobile/claims/{$claim->id}/settlement/decision", ['decision' => 'REJECT'], agentHeaders($f) + ['X-Step-Up-Grant' => $grant])->assertStatus(401);
 });

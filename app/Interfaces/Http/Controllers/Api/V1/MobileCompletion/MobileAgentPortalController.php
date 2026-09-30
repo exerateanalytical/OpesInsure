@@ -6,8 +6,8 @@ namespace App\Interfaces\Http\Controllers\Api\V1\MobileCompletion;
 
 use App\Application\Agents\AgentClientIntakeService;
 use App\Application\Agents\AgentPartnerResolver;
+use App\Application\Agents\AssistedSaleService;
 use App\Application\Audit\AuditWriter;
-use App\Application\Quotes\QuoteService;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Partner;
 use App\Models\Policy;
@@ -175,46 +175,56 @@ final class MobileAgentPortalController
         return response()->json(['data' => $this->withdrawalOf(DB::table('partner_payout_requests')->find($id))], 201);
     }
 
-    public function createSale(Request $request, QuoteService $quotes): JsonResponse
+    /**
+     * Assisted sale: prices the client's REAL risk facts (captured in the app with the same risk schema as the
+     * customer quote wizard) through QuoteService — validated exactly like POST /quotes; no invented defaults.
+     */
+    public function createSale(Request $request, AssistedSaleService $sales): JsonResponse
     {
-        $data = $request->validate(['customer_id' => 'required|uuid', 'product' => 'required|string|max:32', 'payment_phone_e164' => 'required|string|max:32', 'risk_facts' => 'sometimes|array']);
+        $data = $request->validate([
+            'customer_id' => 'required|uuid', 'product' => 'required|string|max:32', 'payment_phone_e164' => ['required', 'regex:/^\+[1-9]\d{7,14}$/'],
+            'provider' => 'nullable|in:'.implode(',', AssistedSaleService::PROVIDERS), 'risk_facts' => 'required|array|min:1',
+        ]);
         $t = app(TenantContext::class)->id();
         $customer = $this->intake->show($data['customer_id'], $request->user(), $t);
-        $line = strtoupper($data['product']);
-        $facts = $data['risk_facts'] ?? match ($line) {
-            'MOTOR' => ['registration_number' => 'TBC', 'fiscal_power' => 7, 'usage_type' => 'PRIVATE', 'zone' => 'CAMEROON'],
-            'TRAVEL' => ['destination_country' => 'FRANCE', 'departure_date' => now()->addDays(14)->toDateString(), 'return_date' => now()->addDays(28)->toDateString(), 'traveller_count' => 1],
-            'HOME' => ['property_type' => 'HOUSE', 'occupancy' => 'OWNER_OCCUPIED', 'city' => 'DOUALA', 'declared_value_minor' => 20_000_000_00],
-            'HEALTH' => ['beneficiary_count' => 1, 'oldest_age' => 35, 'coverage_zone' => 'CAMEROON', 'plan_type' => 'INDIVIDUAL'],
-            default => ['insured_age' => 35, 'cover_amount_minor' => 10_000_000_00, 'term_years' => 10, 'purpose' => 'FAMILY_PROTECTION'],
-        };
-        $quote = $quotes->submit(Tenant::findOrFail($t), $customer->party_id, ['line_code' => $line, 'channel' => 'AGENT', 'risk_facts' => $facts], $request->user());
-        $quote = $quotes->rate($quote, $request->user());
-        $best = $quote->offers()->orderBy('comparison_rank')->first();
-        $quote->update(['comparison_context' => array_merge($quote->comparison_context ?? [], ['assisted_sale' => true, 'agent_user_id' => $request->user()->id, 'payment_phone_e164' => $data['payment_phone_e164'], 'customer_id' => $customer->id])]);
-        $this->audit->record('agent.sale.created', 'quote', $quote->id, ['line_code' => $line, 'offers' => $quote->offers()->count()]);
+        $quote = $sales->create(Tenant::findOrFail($t), $customer, $data, $request->user());
 
-        return response()->json(['data' => $this->saleOf($quote->refresh(), $customer, $best)], 201);
+        return response()->json(['data' => $sales->present($quote, $customer, $request->user())], 201);
     }
 
-    public function sale(string $id, Request $request): JsonResponse
+    public function sale(string $id, Request $request, AssistedSaleService $sales): JsonResponse
+    {
+        [$quote, $customer] = $this->ownSale($id, $request);
+
+        return response()->json(['data' => $sales->present($quote, $customer, $request->user())]);
+    }
+
+    /**
+     * The sale's next step, server-driven (AssistedSaleService::advance): open the client's application from the
+     * chosen offer, remind the client to accept the terms, or — once the application is payable and the client
+     * accepted the terms — send the real mobile-money request (operator prompt on the client's phone). Idempotent.
+     */
+    public function requestPayment(string $id, Request $request, AssistedSaleService $sales): JsonResponse
+    {
+        $data = $request->validate([
+            'offer_id' => 'nullable|uuid', 'provider' => 'nullable|in:'.implode(',', AssistedSaleService::PROVIDERS),
+            'payment_phone_e164' => ['nullable', 'regex:/^\+[1-9]\d{7,14}$/'],
+        ]);
+        [$quote, $customer] = $this->ownSale($id, $request);
+        $sales->advance($quote, $customer, $data, $request->user());
+
+        return response()->json(['data' => $sales->present($quote->refresh(), $customer, $request->user())]);
+    }
+
+    /** @return array{0: \App\Models\Quote, 1: TenantCustomer} the agent's own assisted sale (404 otherwise) */
+    private function ownSale(string $id, Request $request): array
     {
         $t = app(TenantContext::class)->id();
         $quote = \App\Models\Quote::where('tenant_id', $t)->where('comparison_context->agent_user_id', $request->user()->id)->findOrFail($id);
-        $customer = TenantCustomer::where(['tenant_id' => $t, 'party_id' => $quote->party_id])->firstOrFail();
+        $customerId = TenantCustomer::where(['tenant_id' => $t, 'party_id' => $quote->party_id])->valueOrFail('id');
 
-        return response()->json(['data' => $this->saleOf($quote, $customer, $quote->offers()->orderBy('comparison_rank')->first())]);
-    }
-
-    public function requestPayment(string $id, Request $request): JsonResponse
-    {
-        $t = app(TenantContext::class)->id();
-        $quote = \App\Models\Quote::where('tenant_id', $t)->where('comparison_context->agent_user_id', $request->user()->id)->findOrFail($id);
-        $quote->update(['comparison_context' => array_merge($quote->comparison_context ?? [], ['payment_requested_at' => now()->toIso8601String(), 'payment_status' => 'CUSTOMER_PROMPTED'])]);
-        $customer = TenantCustomer::where(['tenant_id' => $t, 'party_id' => $quote->party_id])->firstOrFail();
-        $this->audit->record('agent.sale.payment_requested', 'quote', $quote->id, []);
-
-        return response()->json(['data' => $this->saleOf($quote->refresh(), $customer, $quote->offers()->orderBy('comparison_rank')->first())]);
+        // Still in the agent's book (attribution ACTIVE) — a client who left the book is no longer sold to.
+        return [$quote, $this->intake->show($customerId, $request->user(), $t)];
     }
 
     public function offlineQueue(Request $request): JsonResponse
@@ -275,19 +285,6 @@ final class MobileAgentPortalController
         [$provider, $phone] = str_contains($dest, ':') ? explode(':', $dest, 2) : ['mtn_momo', $dest];
 
         return ['id' => $w->id, 'provider' => $provider, 'amount_minor' => (int) $w->amount_minor, 'status' => $w->status, 'requested_at' => \Carbon\Carbon::parse($w->created_at)->toIso8601String(), 'destination_phone' => $phone ? substr($phone, 0, 7).'••••' : '••••'];
-    }
-
-    private function saleOf(\App\Models\Quote $q, TenantCustomer $customer, ?\App\Models\QuoteOffer $offer): array
-    {
-        $ctx = $q->comparison_context ?? [];
-        $policy = Policy::whereHas('proposal', fn ($p) => $p->whereIn('quote_offer_id', $q->offers()->pluck('id')))->first();
-
-        return [
-            'id' => $q->id, 'customer_id' => $customer->id, 'customer_name' => $customer->party?->display_name ?? 'Client', 'product' => $q->line_code,
-            'status' => $policy ? 'ISSUED' : ($q->status === 'OFFERED' ? 'QUOTED' : $q->status), 'premium_minor' => (int) ($offer?->total_minor ?? 0), 'currency' => 'XAF',
-            'payment_phone_e164' => $ctx['payment_phone_e164'] ?? '', 'payment_status' => $policy ? 'PAID' : ($ctx['payment_status'] ?? 'NOT_REQUESTED'), 'commission_minor' => (int) round(($offer?->premium_minor ?? 0) * 0.10),
-            'created_at' => $q->created_at?->toIso8601String(),
-        ];
     }
 
     private function offlineOf(object $r): array

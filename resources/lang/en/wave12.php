@@ -49,6 +49,7 @@ return [
     'claim_evidence_upload_not_ready' => 'That upload is not ready to be used as evidence yet.',
     'claim_evidence_upload_unreadable' => 'That upload could not be read. Please try uploading it again.',
     'claim_closed_for_edits' => 'This claim is closed and can no longer be updated.',
+    'claim_settlement_no_offer' => 'There is no settlement offer waiting for your answer.',
     'claim_party_consent_required' => 'Confirm this person\'s consent before saving their contact details.',
     'step_up_required' => 'Verify this action before continuing.',
     'step_up_code_invalid' => 'That code is invalid or has expired. Request a new one.',

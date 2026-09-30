@@ -151,3 +151,22 @@ it('REQ-DOC-LH-006: public institutions expose logo_url only for public-display 
     // The superseded (private) version stays private.
     $this->get('/api/v1/public/letterheads/'.$private->id.'/logo')->assertNotFound();
 });
+
+it('caches a letterhead logo for a year only when requested with its content hash', function () {
+    $f = docPolicy();
+    $f['carrier']->update(['status' => 'ACTIVE']);
+    $v = app(LetterheadService::class)->publish('CARRIER', $f['carrier']->id, lhAuth(['public_display' => true]), lhPng(), null, null);
+    $url = (string) LetterheadResolver::publicLogoUrl($v);
+    $path = '/api/v1/public/letterheads/'.$v->id.'/logo';
+    expect($url)->toContain('?v=');
+
+    $hashed = $this->get($path.'?v='.substr((string) $v->logo_sha256, 0, 12))->assertOk();
+    expect($hashed->headers->get('Cache-Control'))->toContain('max-age=31536000')->toContain('immutable')->toContain('public')
+        ->and($hashed->headers->get('Cache-Control'))->not->toContain('no-store');
+
+    foreach ([$path, $path.'?v=stale0000000'] as $uncached) {
+        expect($this->get($uncached)->assertOk()->headers->get('Cache-Control'))->toContain('no-store');
+    }
+    // Everything else stays no-store.
+    expect($this->getJson('/api/v1/public/institutions')->headers->get('Cache-Control'))->toContain('no-store');
+});

@@ -146,7 +146,14 @@ it('replays the full agent journey from the /account pages and refuses every ste
     expect(Proposal::find($pid)->status)->not->toBe('INFORMATION_REQUIRED');
 
     // ---- /account/book/payments: payment request -------------------------------------------------------------------
-    $this->postJson("/api/v1/mobile/agent/sales/{$quoteId}/payment-request", [], r3H($t))->assertOk()->assertJsonPath('data.payment_status', 'CUSTOMER_PROMPTED');
+    // Real collection (AssistedSaleService): nothing is requested while the insurer reviews, nor before the CLIENT
+    // accepted the contract terms themselves — the agent's own attestation never stands in for the client.
+    $this->postJson("/api/v1/mobile/agent/sales/{$quoteId}/payment-request", [], r3H($t))->assertOk()
+        ->assertJsonPath('data.next_action', 'AWAIT_UNDERWRITING')->assertJsonPath('data.payment_status', 'NOT_REQUESTED')->assertJsonPath('data.proposal_id', $pid);
+    Proposal::whereKey($pid)->update(['status' => 'PAYMENT_PENDING']);
+    $this->postJson("/api/v1/mobile/agent/sales/{$quoteId}/payment-request", [], r3H($t))->assertOk()
+        ->assertJsonPath('data.next_action', 'AWAIT_CLIENT')->assertJsonPath('data.payment_status', 'NOT_REQUESTED');
+    expect(\App\Models\PaymentIntentRecord::where('proposal_id', $pid)->exists())->toBeFalse();
 
     // ---- policy issued → /account/book/policies/{id} -------------------------------------------------------------
     Proposal::whereKey($pid)->update(['status' => 'APPROVED']);

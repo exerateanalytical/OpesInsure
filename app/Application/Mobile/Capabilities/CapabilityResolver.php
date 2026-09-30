@@ -131,7 +131,7 @@ final class CapabilityResolver
             'withdraw' => $own && MobileClaimService::canWithdraw($claim),
             'add_evidence' => $own,
             'appeal' => $own && in_array($claim->status, ClaimMachine::APPEALABLE, true),
-            'decide_settlement' => $own && MobileClaimService::hasSettlementOffer($claim),
+            'decide_settlement' => $own && \App\Application\Claims\Settlement\MobileClaimSettlementView::hasOpenOffer($claim),
         ]);
     }
 

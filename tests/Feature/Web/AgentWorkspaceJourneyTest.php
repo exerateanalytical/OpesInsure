@@ -48,9 +48,16 @@ it('runs the agent journey: lead, diary, convert, quote, collect premium, commis
     makeMobileTestQuoteOffer($quote, $src->carrier_id, $src->product_id, $src->tariff_version_id, ['total_minor' => 150000, 'premium_minor' => 150000, 'comparison_rank' => 1]);
     $row = collect($this->getJson('/api/v1/mobile/partner/agent/quotes', awH($t))->assertOk()->json('data'))->firstWhere('id', $quoteId);
     expect($row['assisted'])->toBeTrue()->and($row['best_premium_minor'])->toBe(150000);
-    $this->postJson("/api/v1/mobile/agent/sales/{$quoteId}/payment-request", [], awH($t))->assertOk()->assertJsonPath('data.payment_status', 'CUSTOMER_PROMPTED');
+    // Premium collection is real now (AssistedSaleService): the first tap opens the client's application from the
+    // offer and asks the client to accept the terms; no payment is claimed before a real mobile-money request exists.
+    Quote::whereKey($quoteId)->update(['lifecycle_state' => 'CALCULATED', 'status' => 'RATED']);
+    \Illuminate\Support\Facades\DB::table('disclosure_schema_versions')->insert(['id' => (string) Str::uuid(), 'insurance_line_id' => \App\Models\InsuranceLine::where('code', 'AUTO')->value('id'), 'version' => 1, 'status' => 'APPROVED',
+        'questions' => json_encode([['code' => 'prior_claims', 'label' => ['en' => 'Claims in the last 3 years?', 'fr' => 'Sinistres ?'], 'type' => 'boolean', 'required' => true]]),
+        'schema_hash' => str_repeat('c', 64), 'effective_from' => '2026-01-01', 'created_by' => $a['user']->id, 'created_at' => now(), 'updated_at' => now()]);
+    $sale = $this->postJson("/api/v1/mobile/agent/sales/{$quoteId}/payment-request", [], awH($t))->assertOk()->json('data');
+    expect($sale['proposal_id'])->not->toBeNull()->and($sale['next_action'])->toBe('AWAIT_CLIENT')->and($sale['payment_status'])->toBe('NOT_REQUESTED');
     $row = collect($this->getJson('/api/v1/mobile/partner/agent/quotes', awH($t))->json('data'))->firstWhere('id', $quoteId);
-    expect($row['payment_status'])->toBe('CUSTOMER_PROMPTED');
+    expect($row['payment_status'])->toBeNull();
 
     // /account/commissions
     $policy = makeMobileTestPolicy($chain['proposal'], $t, $chain['carrier']->id, $chain['party']->id);

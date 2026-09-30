@@ -240,3 +240,15 @@ it('honours a party opt-out of the email channel but keeps the inbox row', funct
 it('schedules renewal reminders at 90/60/30/15/7 days (plus the day before)', function () {
     expect(config('lifecycle.expiry_reminder_days'))->toBe([90, 60, 30, 15, 7, 1]);
 });
+
+it('deep-links complaint notifications to a support screen the app has (never /support/complaints/{id})', function () {
+    $f = s8Fixture('en');
+    $router = app(LaunchNotificationRouter::class);
+    $ticket = (string) Str::uuid();
+    $router->complaintStatus((object) ['id' => (string) Str::uuid(), 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-2', 'support_ticket_id' => $ticket], 'RECEIVED');
+    $router->complaintStatus((object) ['id' => (string) Str::uuid(), 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-3'], 'CLOSED');
+
+    $paths = UserNotification::where('user_id', $f['user']->id)->where('type', 'COMPLAINT')->pluck('path')->all();
+    expect($paths)->toContain("/support/{$ticket}", '/support')
+        ->and(collect($paths)->filter(fn ($p) => str_contains((string) $p, '/complaints/'))->all())->toBe([]);
+});

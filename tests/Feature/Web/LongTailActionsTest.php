@@ -46,7 +46,9 @@ function ltAs(User $u, string $tenantId): void
 
 const LT_CONFIG = ['authority.types.manage', 'cases.admin', 'claims.types.manage', 'premium_cover.rules.manage', 'premium_cover.rules.view', 'fraud.rules.manage',
     'health.benefits.manage', 'communications.manage', 'life_surrender.scales.manage', 'configuration.changes.manage', 'tenant.manage', 'privacy.purposes.manage',
-    'catastrophe.events.manage', 'accumulation.capacity.check', 'capability_profiles.manage'];
+    'catastrophe.events.manage', 'accumulation.capacity.check', 'capability_profiles.manage',
+    // S6 (2026-09-29): staff may change another customer's communication preference only with customers.manage.
+    'customers.manage'];
 const LT_CHECKER = ['claims.types.approve', 'premium_cover.rules.approve', 'communications.approve', 'life_surrender.scales.approve', 'provider_tariffs.approve'];
 const LT_OPS = ['fulfilments.manage', 'fulfilment.transition', 'provider_networks.manage', 'fraud.alert.create', 'fraud.alert.decide', 'health.cards.issue',
     'health.members.manage', 'legal.matters.manage', 'distribution.agreements.approve', 'onboarding.private_data.review', 'special_policies.schedule.manage',

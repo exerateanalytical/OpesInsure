@@ -44,8 +44,13 @@ it('grants the Batch 7 permissions to the existing catalogue roles', function (s
 ]);
 
 it('keeps the wildcard roles covering the new permissions and every catalogued suggestion an existing role', function () {
-    foreach (['FINANCE_MANAGER', 'CLAIMS_MANAGER', 'SYSTEM_ADMIN'] as $role) {
+    foreach (['FINANCE_MANAGER', 'CLAIMS_MANAGER'] as $role) {
         expect(RoleCatalogue::defaultPermissions($role))->toBe(['*']);
+    }
+    // S12: operational alerts go only to roles holding the explicit string ('*' does not page),
+    // so the platform admins carry it on top of the wildcard.
+    foreach (['SYSTEM_ADMIN', 'PLATFORM_ADMIN'] as $role) {
+        expect(RoleCatalogue::defaultPermissions($role))->toBe(['*', 'operations.alerts.receive']);
     }
     foreach (['issuance_ops', 'providers', 'coinsurance', 'reinsurance'] as $category) {
         foreach (config("permissions.{$category}") as $code => $meta) {

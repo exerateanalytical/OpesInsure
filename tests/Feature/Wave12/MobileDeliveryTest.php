@@ -104,3 +104,52 @@ it('rejects an unauthenticated request to view a delivery', function () {
 
     $this->getJson("/api/v1/mobile/deliveries/{$delivery->id}")->assertStatus(401);
 });
+
+it('presents the delivery as the app renders it: address fields, tracking, version and a real-event timeline', function () {
+    $fixture = makeMobileCustomerFixture();
+    $policy = makeMobileTestPolicy($fixture['proposal'], $fixture['tenant'], $fixture['carrier']->id, $fixture['party']->id);
+    $delivery = makeMobileTestDelivery($policy, $fixture['tenant'], [
+        'status' => 'ASSIGNED',
+        'tracking_number' => 'TRK-PRESENTER1',
+        'delivery_address' => ['recipient_name' => 'Awa Nji', 'phone' => '+237670000001', 'line1' => '5 Avenue Kennedy', 'city' => 'Yaounde'],
+    ]);
+    DB::table('fulfilment_events')->insert([
+        'id' => (string) Str::uuid(), 'fulfilment_order_id' => $delivery->id, 'from_status' => 'READY_FOR_PICKUP',
+        'to_status' => 'ASSIGNED', 'event_type' => 'TRANSITION', 'evidence' => '{}', 'occurred_at' => now(),
+    ]);
+
+    Passport::actingAs($fixture['user']);
+
+    $data = $this->getJson("/api/v1/mobile/deliveries/{$delivery->id}", tenantHeaderFor($fixture['tenant']))->assertOk()->json('data');
+
+    expect($data['tracking_code'])->toBe('TRK-PRESENTER1')
+        ->and($data['recipient_name'])->toBe('Awa Nji')
+        ->and($data['phone_e164'])->toBe('+237670000001')
+        ->and($data['address_line'])->toBe('5 Avenue Kennedy')
+        ->and($data['city'])->toBe('Yaounde')
+        ->and($data['version'])->toBe($delivery->fresh()->updated_at->toIso8601String())
+        ->and($data['can_change_address'])->toBeFalse()
+        ->and($data)->not->toHaveKey('delivery_otp_hash');
+
+    $steps = collect($data['timeline'])->keyBy('status');
+    expect($steps->keys()->all())->toBe(['CREATED', 'READY_FOR_PICKUP', 'ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'])
+        ->and($steps['ASSIGNED']['complete'])->toBeTrue()
+        ->and($steps['ASSIGNED']['occurred_at'])->not->toBeNull()
+        ->and($steps['READY_FOR_PICKUP']['complete'])->toBeTrue()
+        ->and($steps['PICKED_UP']['complete'])->toBeFalse();
+});
+
+it('reads the street-style address the older records carry', function () {
+    $fixture = makeMobileCustomerFixture();
+    $policy = makeMobileTestPolicy($fixture['proposal'], $fixture['tenant'], $fixture['carrier']->id, $fixture['party']->id);
+    $delivery = makeMobileTestDelivery($policy, $fixture['tenant']);
+
+    Passport::actingAs($fixture['user']);
+
+    $data = $this->getJson("/api/v1/mobile/deliveries/{$delivery->id}", tenantHeaderFor($fixture['tenant']))->assertOk()->json('data');
+
+    expect($data['address_line'])->toBe('12 Rue de la Paix')
+        ->and($data['city'])->toBe('Douala')
+        ->and($data['can_change_address'])->toBeTrue()
+        ->and($data['courier'])->toBeNull();
+});

@@ -7,5 +7,8 @@ return [
     'payment_ok_issuance_failed' => 'Your payment was received, but the policy could not be issued yet. Do not pay again; we are completing issuance and will notify you.',
     'integration_unavailable' => 'A partner service is temporarily unavailable. Please try again shortly.',
     'duplicate_submission' => 'This request is already being processed.',
+    'payment_already_made' => 'This application is already paid. Do not pay again; your policy is being issued and you will be notified.',
+    'payment_in_progress' => 'A payment for this application is already in progress. Approve it on your phone or wait for it to finish before trying again.',
+    'terms_not_accepted' => 'Please accept the contract terms before paying.',
     'idempotency_key_invalid' => 'The Idempotency-Key header must be at most 255 characters.',
 ];
