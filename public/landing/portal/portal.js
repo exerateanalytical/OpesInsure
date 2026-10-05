@@ -191,6 +191,25 @@
     location.href = '/login';
   }
 
+  /** Same rules as the sidebar (layout $side): [path prefix, kind, permissions (any of, optional)]. */
+  var GUARDED = [
+    ['/account/agent-actions', 'agent', 'agent.clients.read'], ['/account/agent', 'agent', 'agent.clients.read'],
+    ['/account/tasks', 'agent', 'agent.clients.read'], ['/account/stickers', 'agent', 'agent.clients.read'],
+    ['/account/book', 'agent', 'agent.clients.read|broker.portal.read'], ['/account/staff', 'agent', 'broker.portal.read'],
+    ['/account/customers', 'agent'], ['/account/leads', 'agent'], ['/account/reports', 'agent'], ['/account/commissions', 'agent'],
+    ['/account/claims-desk', 'officer'],
+  ];
+  function pageAllowed(s, path) {
+    for (var i = 0; i < GUARDED.length; i++) {
+      var g = GUARDED[i];
+      if (path === g[0] || path.indexOf(g[0] + '/') === 0) {
+        if (s.kind !== g[1]) return false;
+        return !g[2] || g[2].split('|').some(can);
+      }
+    }
+    return true;
+  }
+
   /** Boot a page: requires sign-in, loads the workspace, paints header/sidebar, then runs fn(ctx). */
   function page(fn) {
     var s = read();
@@ -198,6 +217,9 @@
     $$('[data-signout]').forEach(function (b) { b.addEventListener('click', signOut); });
     var ready = s.tenant_id && s.loaded_at && Date.now() - s.loaded_at < 10 * 60 * 1000 ? Promise.resolve(s) : loadSession(s);
     ready.then(function (s2) {
+      // Live QA 2026-09-30: partner/officer pages are only for those roles (the menu hid them, a typed URL did not).
+      // The data APIs already refuse other roles; this keeps their shells and buttons out of reach too.
+      if (!pageAllowed(s2, location.pathname)) { location.replace('/account'); return; }
       paintChrome(s2);
       var ws = (s2.workspaces || []).filter(function (w) { return w.tenant_id === s2.tenant_id; })[0] || null;
       return fn && fn({ session: s2, workspace: ws, kind: s2.kind, ids: C.ids || [], path: C.path, params: new URLSearchParams(location.search) });
