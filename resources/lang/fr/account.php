@@ -22,6 +22,7 @@ return [
             'ACTIVE' => 'Active', 'PENDING' => 'En attente', 'PAID' => 'Payé', 'APPROVED' => 'Approuvé', 'REJECTED' => 'Rejeté', 'SETTLED' => 'Réglé',
             'SUBMITTED' => 'Soumis', 'UNDER_REVIEW' => 'En examen', 'UNDER_ASSESSMENT' => 'En expertise', 'IN_PROGRESS' => 'En cours',
             'DRAFT' => 'Brouillon', 'EXPIRED' => 'Expiré', 'CANCELLED' => 'Annulé', 'FAILED' => 'Échoué', 'COMPLETED' => 'Terminé', 'ISSUED' => 'Émis',
+            'OPEN' => 'Ouvert', 'RESOLVED' => 'Résolu', 'CLOSED' => 'Clôturé', 'RECEIVED' => 'Reçu', 'ACKNOWLEDGED' => 'Accusé de réception', 'ESCALATED' => 'Escaladé', 'AWAITING_CUSTOMER' => 'En attente de votre réponse',
         ],
     ],
 ];

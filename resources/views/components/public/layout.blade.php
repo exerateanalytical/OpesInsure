@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ $title ?? 'OpesInsure' }}</title>
 <meta name="description" content="{{ $description ?? __('public.meta_description') }}">
-<link rel="icon" type="image/png" href="{{ asset('img/app-icon.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('img/app-icon.png') }}">
+<link rel="icon" type="image/png" href="/landing/img/app-icon-180.png">
+<link rel="apple-touch-icon" href="/landing/img/app-icon-180.png">
 <link rel="preload" href="{{ asset('fonts/manrope/manrope-latin-variable.woff2') }}" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:Manrope;src:url("{{ asset('fonts/manrope/manrope-latin-variable.woff2') }}") format("woff2");font-weight:200 800;font-display:swap}

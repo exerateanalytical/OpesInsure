@@ -17,7 +17,7 @@
       <thead><tr><th>{{ __('public.demo_col_role') }}</th><th>{{ __('public.demo_col_email') }}</th></tr></thead>
       <tbody>
       @foreach($staff as $a)
-        <tr><td>{{ $a['label'] }}</td><td><code>{{ $a['email'] }}</code></td></tr>
+        <tr><td>{{ __($a['label']) }}</td><td><code>{{ $a['email'] }}</code></td></tr>
       @endforeach
       </tbody>
     </table>
@@ -32,7 +32,7 @@
       <thead><tr><th>{{ __('public.demo_col_role') }}</th><th>{{ __('public.demo_col_phone') }}</th><th>{{ __('public.demo_col_otp') }}</th></tr></thead>
       <tbody>
       @foreach($mobile as $a)
-        <tr><td>{{ $a['label'] }}</td><td><code>{{ $a['phone'] }}</code></td><td><code>{{ $otp }}</code></td></tr>
+        <tr><td>{{ __($a['label']) }}</td><td><code>{{ $a['phone'] }}</code></td><td><code>{{ $otp }}</code></td></tr>
       @endforeach
       </tbody>
     </table>

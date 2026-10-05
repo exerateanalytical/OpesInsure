@@ -100,7 +100,7 @@
   function actionItem(a) {
     return h('li', { 'data-action': a.priority }, h('span', { class: 'op-li' }, Opes.icon(a.icon)),
       h('div', null, h('b', null, a.title), h('small', { class: 'op-muted', style: 'display:block' }, a.reason + (a.due ? ' · ' + Opes.date(a.due) : ''))),
-      h('div', { style: 'display:flex;gap:8px;align-items:center' }, prioChip(a.priority), h('a', { class: 'dbtn dbtn-outline sm', href: a.href }, a.cta)));
+      h('div', { class: 'lc-act-cta' }, prioChip(a.priority), h('a', { class: 'dbtn dbtn-outline sm', href: a.href }, a.cta)));
   }
 
   function progress(pct) {

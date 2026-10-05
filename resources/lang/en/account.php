@@ -23,6 +23,7 @@ return [
             'ACTIVE' => 'Active', 'PENDING' => 'Pending', 'PAID' => 'Paid', 'APPROVED' => 'Approved', 'REJECTED' => 'Rejected', 'SETTLED' => 'Settled',
             'SUBMITTED' => 'Submitted', 'UNDER_REVIEW' => 'Under review', 'UNDER_ASSESSMENT' => 'Under assessment', 'IN_PROGRESS' => 'In progress',
             'DRAFT' => 'Draft', 'EXPIRED' => 'Expired', 'CANCELLED' => 'Cancelled', 'FAILED' => 'Failed', 'COMPLETED' => 'Completed', 'ISSUED' => 'Issued',
+            'OPEN' => 'Open', 'RESOLVED' => 'Resolved', 'CLOSED' => 'Closed', 'RECEIVED' => 'Received', 'ACKNOWLEDGED' => 'Acknowledged', 'ESCALATED' => 'Escalated', 'AWAITING_CUSTOMER' => 'Awaiting your reply',
         ],
     ],
 ];

@@ -103,3 +103,29 @@
 .tabs-u button:focus-visible,.tabs-u a:focus-visible,.acct-side a:focus-visible{outline:3px solid var(--royal);outline-offset:-3px}
 .ellip{display:block;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-body img{max-width:100%;height:auto}
+
+/* Live QA 2026-09-30 (#2-#7): nothing may push the page sideways at 360px. Long words wrap, tables scroll or stack
+   inside their card, header rows and action rows wrap, buttons stack on small screens. */
+.acct-body .acct-content .acard,.acct-body .acct-content section,.acct-body .acct-content dd,.acct-body .acct-content p,.acct-body .acct-content li{min-width:0;overflow-wrap:break-word}
+.acct-body .atable-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.acct-body .acard-h{flex-wrap:wrap;row-gap:6px}.acct-body .acard-h h2{flex:1 1 180px;min-width:0}
+.acct-body .acard-h .rowlink{white-space:normal}
+.acct-body .kv dd,.acct-body .kv dt{min-width:0;overflow-wrap:anywhere}
+.acct-body code,.acct-body pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.acct-body input,.acct-body select,.acct-body textarea{max-width:100%}
+.acct-body .op-nlist li{flex-wrap:wrap}.acct-body .op-nlist li>div{min-width:0}
+.acct-body .lc-act-cta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.acct-body .btnbar{flex-wrap:wrap}
+@media (max-width:760px){
+  .acct-body .atable.op-stack,.acct-body .atable.op-stack tbody,.acct-body .atable.op-stack tr{display:block;width:100%;min-width:0}
+  .acct-body .atable.op-stack td{min-width:0}.acct-body .atable.op-stack td>*{min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+}
+@media (max-width:560px){
+  .acct-body .op-nlist li .lc-act-cta{flex-basis:100%;padding-left:52px}
+  .acct-body .dbtn{white-space:normal;max-width:100%;text-align:center}
+  .acct-body .btnbar>.dbtn,.acct-body .btnbar>a,.acct-body .btnbar>button{flex:1 1 100%;justify-content:center}
+  .acct-body .acct-content .acard{padding:14px 12px}
+}
+/* Stepper (payments/new, buy): 1fr tracks grew to the longest French label and pushed the page 15px at 768/1280. */
+.acct-body .stepbar>li,.acct-body .stepbar>li>div{min-width:0}.acct-body .stepbar b,.acct-body .stepbar small{overflow-wrap:anywhere}
+.acct-body .agrid>*,.acct-body .op-dash>*,.acct-body .stats>*{min-width:0}
