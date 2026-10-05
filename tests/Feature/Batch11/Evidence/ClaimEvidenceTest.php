@@ -60,7 +60,9 @@ it('derives the evidence rules for the claim type from the catalogue CLAIM pack 
     $byId = collect($spec['rules'])->keyBy('document_type_id');
     expect($byId['CLM-01']['mandatory'])->toBeTrue()
         ->and($byId['CLM-01']['sources'])->toContain('PACK:MOTOR_CLAIM_PACK')
-        ->and($byId['CLM-05']['mandatory'])->toBeFalse()
+        // Launch review: what the insurer itself issues (CLM-02 acknowledgement, CLM-05 evidence request, CLM-14 decision ...) is never a claimant requirement.
+        ->and($byId->has('CLM-05'))->toBeFalse()->and($byId->has('CLM-02'))->toBeFalse()->and($byId->has('CLM-14'))->toBeFalse()
+        ->and($byId['EVD-018']['mandatory'])->toBeFalse()
         ->and($byId['EVD-001']['third_party'])->toBeTrue();
 });
 
@@ -74,19 +76,19 @@ it('applies DOCUMENTS rules from the rules engine: REQUIRE makes mandatory, WAIV
     $this->claim->policy->update(['terms_snapshot' => ['line_code' => 'MOTOR']]);
     $set = app(RuleSetService::class)->createDraft(['code' => 'CLAIM_DOCS_'.Str::upper(Str::random(4)), 'domain' => 'DOCUMENTS', 'line_code' => 'MOTOR', 'effective_from' => '2026-01-01', 'rules' => [
         ['code' => 'THEFT_NEEDS_EVD018', 'condition' => ['op' => 'EQUAL', 'left' => ['fact' => 'cause'], 'right' => ['value' => 'THEFT']], 'outcome' => ['result' => 'REQUIRE', 'document_codes' => ['EVD-018']]],
-        ['code' => 'THEFT_WAIVES_CLM21', 'condition' => ['op' => 'EQUAL', 'left' => ['fact' => 'cause'], 'right' => ['value' => 'THEFT']], 'outcome' => ['result' => 'WAIVE', 'document_codes' => ['CLM-21']]],
+        ['code' => 'THEFT_WAIVES_CLM21', 'condition' => ['op' => 'EQUAL', 'left' => ['fact' => 'cause'], 'right' => ['value' => 'THEFT']], 'outcome' => ['result' => 'WAIVE', 'document_codes' => ['EVD-045']]],
     ]], makeAuthTestUser($this->f['tenant'], ['rules.manage'], 'C6_RULES'));
     $set->update(['status' => 'APPROVED']);
 
     $items = collect(app(ClaimEvidenceChecklist::class)->build($this->claim->refresh())['items'])->keyBy('document_type_id');
     expect($items['EVD-018']['mandatory'])->toBeTrue()->and($items['EVD-018']['required_by_rule'])->toBeTrue()
-        ->and($items['CLM-21']['status'])->toBe('WAIVED')->and($items['CLM-21']['mandatory'])->toBeFalse();
+        ->and($items['EVD-045']['status'])->toBe('WAIVED')->and($items['EVD-045']['mandatory'])->toBeFalse();
 });
 
 it('builds a checklist with MISSING / SUBMITTED / ACCEPTED / REJECTED and links evidence without copying documents', function () {
     $docs = DB::table('documents')->count();
     $a = c6Attach('CLM-01');
-    $b = c6Attach('CLM-02');
+    $b = c6Attach('EVD-031');
     $svc = app(ClaimEvidenceReviewService::class);
     $svc->review($this->claim, $a, 'ACCEPT', null, null, $this->reviewer);
     $svc->review($this->claim, $b, 'REJECT', 'ILLEGIBLE', 'Photo blurred', $this->reviewer);
@@ -95,11 +97,12 @@ it('builds a checklist with MISSING / SUBMITTED / ACCEPTED / REJECTED and links 
     $c = app(ClaimEvidenceChecklist::class)->build($this->claim);
     $items = collect($c['items'])->keyBy('document_type_id');
     expect($items['CLM-01']['status'])->toBe('ACCEPTED')
-        ->and($items['CLM-02']['status'])->toBe('REJECTED')
-        ->and($items['CLM-02']['evidence'][0]['review_reason_code'])->toBe('ILLEGIBLE')
-        ->and($items['CLM-02']['evidence'][0]['review_notes'])->toBe('Photo blurred')
-        ->and($items['CLM-04']['status'])->toBe('MISSING')
-        ->and($c['complete'])->toBeFalse()
+        ->and($items['EVD-031']['status'])->toBe('REJECTED')
+        ->and($items['EVD-031']['evidence'][0]['review_reason_code'])->toBe('ILLEGIBLE')
+        ->and($items['EVD-031']['evidence'][0]['review_notes'])->toBe('Photo blurred')
+        ->and($items['EVD-048']['status'])->toBe('MISSING')
+        // The only mandatory claimant item of the motor pack (CLM-01) is accepted; insurer-issued documents no longer count.
+        ->and($c['complete'])->toBeTrue()
         ->and($c['other_evidence'])->toHaveCount(1)
         ->and(DB::table('documents')->count())->toBe($docs + 3)
         ->and(DB::table('outbox_messages')->where('event_name', 'claim.evidence.reviewed')->count())->toBe(2)
@@ -107,12 +110,12 @@ it('builds a checklist with MISSING / SUBMITTED / ACCEPTED / REJECTED and links 
 });
 
 it('counts a replacement version of rejected evidence and ignores the superseded one', function () {
-    $old = c6Attach('CLM-02');
+    $old = c6Attach('EVD-031');
     app(ClaimEvidenceReviewService::class)->review($this->claim, $old, 'REJECT', 'ILLEGIBLE', null, $this->reviewer);
-    $new = c6Attach('CLM-02', ['supersedes_document_id' => $old->id]);
+    $new = c6Attach('EVD-031', ['supersedes_document_id' => $old->id]);
     $old->update(['superseded_by_document_id' => $new->id]);
 
-    $item = collect(app(ClaimEvidenceChecklist::class)->build($this->claim)['items'])->firstWhere('document_type_id', 'CLM-02');
+    $item = collect(app(ClaimEvidenceChecklist::class)->build($this->claim)['items'])->firstWhere('document_type_id', 'EVD-031');
     expect($item['status'])->toBe('SUBMITTED')->and($item['evidence'])->toHaveCount(2);
 });
 

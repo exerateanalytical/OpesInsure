@@ -277,3 +277,135 @@ it('R9: every document a platform trigger issues has a published canonical templ
     }
     expect($missing)->toBe([]);
 });
+
+/** One current engine document of the type/trigger: published canonical template, language, FCFA, verification code. */
+function r9EventDoc(string $tenantId, string $code, string $trigger, string $lang, \ArrayObject $renders): Document
+{
+    $docs = Document::where(['tenant_id' => $tenantId, 'document_type_code' => $code, 'generation_trigger' => $trigger])->whereIn('status', ['ISSUED', 'VALID', 'PENDING_SIGNATURE'])->get();
+    expect($docs)->toHaveCount(1, "{$trigger} {$code}");
+    $doc = $docs->first();
+    $template = DocumentTemplate::findOrFail($doc->document_template_id);
+    $spec = DB::table('document_types')->where('canonical_code', $code)->value('canonical_spec_id');
+    expect($template->status)->toBe('PUBLISHED', $code)->and($template->approved_by)->toBe(CanonicalTemplateSeeder::OWNER_APPROVER_ID)
+        ->and($template->content['canonical_spec_id'] ?? null)->toBe($spec, $code)->and($doc->language)->toBe($lang, $code)->and($template->language)->toBe($lang, $code)
+        ->and($doc->verification_code)->not->toBeEmpty()->and($doc->content_hash_sha256)->toMatch('/^[a-f0-9]{64}$/');
+    $disk = Storage::disk((string) config('lifecycle.documents_disk', 'local'));
+    expect(hash('sha256', $disk->get($doc->storage_key)))->toBe($doc->sha256);
+    $render = $renders[$doc->document_number] ?? null;
+    expect($render)->not->toBeNull($code);
+    expect(view('pdf.engine-shell', $render)->render())->not->toMatch('/\d XAF/');
+
+    return $doc;
+}
+
+it('launch gaps: one schedule and one certificate in the wallet, event documents (payment, quote, proposal, refund, bordereau, KYC, renewal, discharge, statement) from published templates, claim requirements without insurer documents', function () {
+    $f = r9World();
+    $renders = r9Capture();
+    $policy = r9Issue($f);
+    app(TenantContext::class)->set($f['tenant']->id);
+    $tid = $f['tenant']->id;
+
+    // (1) One schedule, one certificate: the engine's, and the wallet API serves exactly those (same contract).
+    $current = ['GENERATED', 'PENDING_SIGNATURE', 'ISSUED', 'VALID'];
+    expect(Document::where('policy_id', $policy->id)->whereIn('document_type_code', DocumentEngine::SCHEDULE_KINDS)->whereIn('status', $current)->count())->toBe(1)
+        ->and(Document::where('policy_id', $policy->id)->where('document_type_code', 'PROOF_OF_COVER')->whereIn('status', $current)->count())->toBe(0);
+    $detail = app(\App\Application\Policies\MobileWalletService::class)->policyDetail($policy->id, $f['user'], $tid);
+    expect(collect($detail['documents'])->pluck('category')->all())->toBe(['POLICY_CERTIFICATE', 'POLICY_SCHEDULE']);
+    foreach ($detail['documents'] as $row) {
+        expect(array_keys($row))->toBe(['id', 'category', 'type', 'title', 'mime_type', 'size_bytes', 'created_at', 'download_url']);
+        $d = Document::findOrFail($row['id']);
+        expect($d->document_template_id)->not->toBeNull()->and($d->pack_manifest_id)->not->toBeNull();
+        $this->get($row['download_url'])->assertOk();
+    }
+    expect(Document::find(collect($detail['documents'])->firstWhere('category', 'POLICY_SCHEDULE')['id'])->document_type_code)->toBe('POLICY_SCHEDULE')
+        ->and($detail['certificate']['download_url'])->not->toBeNull()->and($detail['certificate']['serial_number'])->not->toBeEmpty();
+    // A second view is idempotent (no new documents).
+    $count = Document::where('policy_id', $policy->id)->count();
+    app(\App\Application\Policies\MobileWalletService::class)->policyDetail($policy->id, $f['user'], $tid);
+    expect(Document::where('policy_id', $policy->id)->count())->toBe($count);
+
+    // (3) PAYMENT_RECONCILED (webhook): the payment receipt, in the customer's language (en); the on-demand receipt.pdf is that document.
+    $receipt = r9EventDoc($tid, 'PAYMENT_RECEIPT', 'PAYMENT_RECONCILED', 'EN', $renders);
+    expect($receipt->party_id)->toBe($f['party']->id)->and($receipt->issuer_type)->toBe('PLATFORM');
+    $pdf = app(\App\Application\Payments\MobilePaymentService::class)->receiptPdf($f['payment']->id);
+    expect(hash('sha256', $pdf->getContent()))->toBe($receipt->sha256)->and($pdf->headers->get('Content-Type'))->toBe('application/pdf');
+
+    // (2)+(3) QUOTE_GENERATED: the quotation PDF endpoint renders the engine's INSURANCE_QUOTE; the event issues the same one.
+    $bytes = app(\App\Application\Quotes\QuoteDocumentRenderer::class)->pdf($f['quote']->refresh());
+    app(\App\Application\Audit\AuditWriter::class)->record('quote.generated', 'quote', $f['quote']->id, []);
+    $quoteDoc = r9EventDoc($tid, 'INSURANCE_QUOTE', 'QUOTE_GENERATED', 'EN', $renders);
+    expect(hash('sha256', $bytes))->toBe($quoteDoc->sha256);
+    expect(view('pdf.engine-shell', $renders[$quoteDoc->document_number])->render())->toContain('FCFA');
+
+    // Proposal submitted.
+    app(\App\Application\Events\OutboxWriter::class)->record('proposal.submitted', 'proposal', $f['proposal']->id, ['proposal_id' => $f['proposal']->id]);
+    r9EventDoc($tid, 'INSURANCE_PROPOSAL', 'PROPOSAL_SUBMITTED', 'EN', $renders);
+
+    // Refund approved (insurer letterhead: the insurer authorizes rendering).
+    $refundId = (string) Str::uuid();
+    DB::table('refunds')->insert(['id' => $refundId, 'tenant_id' => $tid, 'payment_intent_id' => $f['payment']->id, 'refund_number' => 'RF-R9-1', 'amount_minor' => 20000,
+        'currency' => 'XAF', 'status' => 'APPROVED', 'reason_code' => 'CUSTOMER_REQUEST', 'requested_by' => docUser()->id, 'created_at' => now(), 'updated_at' => now()]);
+    app(\App\Application\Events\OutboxWriter::class)->record('refund.approved', 'refund', $refundId, ['refund_id' => $refundId]);
+    app(\App\Application\Audit\AuditWriter::class)->record('refund.approved', 'refund', $refundId, []);
+    $refund = r9EventDoc($tid, 'REFUND_ADVICE', 'REFUND_APPROVED', 'EN', $renders);
+    expect($refund->issuer_type)->toBe('INSURER')->and(view('pdf.engine-shell', $renders[$refund->document_number])->render())->toContain('200 FCFA');
+
+    // Bordereau approved (premium bordereau of the period).
+    $staff = docUser();
+    $bid = (string) Str::uuid();
+    DB::table('bordereaux')->insert(['id' => $bid, 'tenant_id' => $tid, 'carrier_id' => $f['carrier']->id, 'type' => 'PREMIUM', 'bordereau_number' => 'BOR-R9-1',
+        'period_start' => now()->startOfMonth()->toDateString(), 'period_end' => now()->endOfMonth()->toDateString(), 'status' => 'APPROVED', 'item_count' => 1,
+        'gross_premium_minor' => 100000, 'commission_minor' => 10000, 'total_amount_minor' => 100000, 'currency' => 'XAF', 'prepared_by' => $staff->id, 'approved_by' => docUser()->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('bordereau_items')->insert(['id' => (string) Str::uuid(), 'bordereau_id' => $bid, 'policy_id' => $policy->id, 'transaction_type' => 'NEW_BUSINESS', 'source_type' => 'POLICY', 'source_id' => $policy->id, 'amount_minor' => 100000, 'premium_minor' => 100000,
+        'commission_minor' => 10000, 'currency' => 'XAF', 'effective_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    app(\App\Application\Events\OutboxWriter::class)->record('bordereau.approved', 'bordereau', $bid, ['bordereau_id' => $bid]);
+    r9EventDoc($tid, 'PREMIUM_BORDEREAU', 'BORDEREAU_APPROVED', 'EN', $renders); // the approving user's language
+
+    // KYC letters, French customer -> French letter.
+    $f['user']->update(['locale' => 'fr']);
+    $kid = (string) Str::uuid();
+    DB::table('kyc_submissions')->insert(['id' => $kid, 'tenant_id' => $tid, 'party_id' => $f['party']->id, 'status' => 'APPROVED', 'subject_kind' => 'INDIVIDUAL',
+        'decision_reason' => 'Documents verified', 'expires_at' => now()->addYear(), 'created_at' => now(), 'updated_at' => now()]);
+    app(\App\Application\Events\OutboxWriter::class)->record('kyc_submission.approved', 'kyc_submission', $kid, ['kyc_submission_id' => $kid]);
+    app(\App\Application\Events\OutboxWriter::class)->record('kyc_submission.information_requested', 'kyc_submission', $kid, ['kyc_submission_id' => $kid, 'reason' => 'Proof of address']);
+    r9EventDoc($tid, 'KYC_APPROVAL_REMEDIATION_NOTICE', 'KYC_DECIDED', 'FR', $renders);
+    r9EventDoc($tid, 'KYC_REQUEST', 'KYC_INFORMATION_REQUESTED', 'FR', $renders);
+
+    // Renewal notice / non-renewal / expiry (DOC-151, 154, 159) on the policy, French customer.
+    $cid = (string) Str::uuid();
+    DB::table('renewal_cases')->insert(['id' => $cid, 'tenant_id' => $tid, 'policy_id' => $policy->id, 'status' => 'DUE', 'due_on' => $policy->coverage_ends_at->toDateString(),
+        'created_at' => now(), 'updated_at' => now()]);
+    foreach (['renewal.due' => ['RENEWAL_NOTICE', 'RENEWAL_DUE'], 'renewal.declined' => ['NON_RENEWAL_NOTICE', 'RENEWAL_DECLINED'], 'renewal.lapsed' => ['POLICY_EXPIRY_NOTICE', 'POLICY_LAPSED']] as $event => [$code, $trigger]) {
+        app(\App\Application\Events\OutboxWriter::class)->record($event, 'renewal_case', $cid, ['renewal_case_id' => $cid, 'policy_id' => $policy->id]);
+        $d = r9EventDoc($tid, $code, $trigger, 'FR', $renders);
+        expect($d->policy_id)->toBe($policy->id)->and($d->issuer_type)->toBe('INSURER');
+    }
+
+    // (4) Claim: the requirements list never asks for what the insurer itself issues.
+    $claim = app(ClaimLifecycleService::class)->fnol($tid, ['idempotency_key' => (string) Str::uuid(), 'policy_id' => $policy->id,
+        'claimant_party_id' => $f['party']->id, 'loss_occurred_at' => now()->subHours(3)->toIso8601String(), 'loss_details' => ['description' => 'Rear-ended.'],
+        'loss_location' => 'Douala', 'estimated_loss_minor' => 25000000], $f['user']);
+    $codes = collect(app(\App\Application\Claims\Evidence\ClaimEvidenceRules::class)->forClaim($claim)['rules'])->pluck('canonical_code')->filter()->all();
+    expect($codes)->not->toBeEmpty()->and(array_intersect($codes, ['CLAIM_ACKNOWLEDGEMENT', 'CLAIM_DECISION', 'CLAIM_REFERENCE_CONFIRMATION', 'SETTLEMENT_OFFER', 'CLAIM_REJECTION']))->toBe([]);
+
+    // (2) Discharge receipt from the published DOC-179 template, PENDING_SIGNATURE, addressed to the payee.
+    $settlement = (object) ['id' => (string) Str::uuid(), 'payee_party_id' => $f['party']->id, 'currency' => 'XAF', 'amount_minor' => 300000, 'reference' => 'STL-R9-1',
+        'breakdown' => json_encode(['lines' => [['label' => 'Repair', 'operator' => '+', 'amount_minor' => 300000]]])];
+    $discharge = app(\App\Application\Claims\Settlement\DischargeDocumentBuilder::class)->build($settlement, $claim, docUser());
+    expect($discharge->status)->toBe('PENDING_SIGNATURE')->and($discharge->document_type_code)->toBe('CLAIM_DISCHARGE')->and($discharge->party_id)->toBe($f['party']->id)
+        ->and($discharge->claim_id)->toBe($claim->id);
+    r9EventDoc($tid, 'CLAIM_DISCHARGE', 'CLAIM_SETTLEMENT_DISCHARGE', 'FR', $renders);
+    expect(view('pdf.engine-shell', $renders[$discharge->document_number])->render())->toContain('3 000 FCFA');
+
+    // (2) Customer account statement DOC-193 through the engine, customer language, provenance kept.
+    $stmt = app(\App\Application\Finance\Subledger\StatementDocumentService::class)->generate($tid, 'DOC-193', $f['party']->id, ['currency' => 'XAF'], docUser()->id);
+    expect($stmt->document_type_code)->toBe('CUSTOMER_STATEMENT')->and($stmt->provenance['spec_document'])->toBe('DOC-193')->and($stmt->document_template_id)->not->toBeNull();
+    r9EventDoc($tid, 'CUSTOMER_STATEMENT', 'FINANCE_STATEMENT_GENERATED', 'FR', $renders);
+
+    // Idempotent: replaying the events issues nothing new.
+    $before = Document::where('tenant_id', $tid)->count();
+    app(\App\Application\Events\OutboxWriter::class)->record('renewal.due', 'renewal_case', $cid, []);
+    app(\App\Application\Events\OutboxWriter::class)->record('bordereau.approved', 'bordereau', $bid, []);
+    app(\App\Application\Audit\AuditWriter::class)->record('quote.generated', 'quote', $f['quote']->id, []);
+    expect(Document::where('tenant_id', $tid)->count())->toBe($before);
+});

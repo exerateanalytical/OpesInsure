@@ -113,6 +113,19 @@ final class MobilePaymentService
     {
         $intent = PaymentIntentRecord::findOrFail($paymentId);
         $receipt = $this->receiptData($intent, false);
+        // Launch review: a succeeded payment's receipt is the PAYMENT_RECEIPT (DOC-191) the engine issued from its published
+        // template at PAYMENT_RECONCILED (issued now if missing); the platform rendering below covers other statuses.
+        $item = $intent->status === 'SUCCEEDED' ? app(\App\Application\Documents\Engine\EventDocumentRouter::class)->paymentReceipt($intent) : null;
+        if (($item['state'] ?? null) === 'GENERATED' && ($doc = \App\Models\Document::find($item['document_id']))) {
+            $disk = \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'));
+            if ($disk->exists($doc->storage_key)) {
+                return response((string) $disk->get($doc->storage_key), 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="'.$receipt['receipt_number'].'.pdf"',
+                    'Cache-Control' => 'private, no-store',
+                ]);
+            }
+        }
         $carrier = $intent->proposal?->offer?->carrier;
         $letterhead = $carrier ? \App\Application\Documents\Letterhead\LetterheadResolver::forDocument('INSURER', (string) ($carrier->party?->display_name ?? 'Insurer'), $carrier->id, $carrier->party?->display_name, null, null) : null;
         // D3: canonical secure shell (RECEIPT master shell); same receipt number and data.

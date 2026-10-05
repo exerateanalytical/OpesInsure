@@ -33,6 +33,67 @@ final class StatementDocumentService
     {
         $map = SubledgerCatalogue::STATEMENT_DOCUMENTS[$doc] ?? throw ValidationException::withMessages(['document' => 'Only DOC-193..DOC-200 are sub-ledger statements.']);
         [$title, $figures, $sections] = $this->content($tenantId, $doc, $subjectId, $filters);
+        $hash = hash('sha256', json_encode([$doc, $subjectId, $filters, $figures], JSON_THROW_ON_ERROR));
+        if ($engine = $this->viaEngine($tenantId, $doc, $map, $subjectId, $filters, $title, $figures, $sections, $hash, $actorId)) {
+            return $engine;
+        }
+
+        return $this->legacy($tenantId, $doc, $map, $subjectId, $filters, $actorId, $title, $figures, $sections);
+    }
+
+    /**
+     * Launch review: DOC-193..200 from their published canonical templates through the document engine, in the
+     * recipient's language (DOC-193: the customer's; otherwise the requesting user's), amounts in FCFA. One document per
+     * (statement, subject, filters, figures): asking again for the same figures returns the same statement.
+     */
+    private function viaEngine(string $tenantId, string $doc, array $map, string $subjectId, array $filters, string $title, array $figures, array $sections, string $hash, string $actorId): ?Document
+    {
+        $cur = (string) ($filters['currency'] ?? 'XAF');
+        $from = $filters['date_from'] ?? now()->startOfYear()->toDateString();
+        $to = $filters['date_to'] ?? now()->toDateString();
+        $int = fn (string ...$keys) => ($k = collect($keys)->first(fn ($k) => isset($figures[$k]) && is_int($figures[$k]))) !== null ? $figures[$k] : null;
+        $name = fn (string $table, string $col = 'display_name') => DB::table($table)->where('id', $subjectId)->value($col);
+        $carrierName = $doc === 'DOC-197' ? DB::table('carriers as c')->join('parties as p', 'p.id', '=', 'c.party_id')->where('c.id', $subjectId)->value('p.display_name') : null;
+        $subjectName = match ($doc) {
+            'DOC-193' => $name('parties'),
+            'DOC-195', 'DOC-196', 'DOC-194' => $name('partners', 'legal_name') ?? $name('parties'),
+            default => null,
+        };
+        $item = app(\App\Application\Documents\Engine\EventDocumentRouter::class)->issue('FINANCE_STATEMENT_GENERATED', $map['type'], [
+            'tenant_id' => $tenantId, 'party_id' => $doc === 'DOC-193' ? $subjectId : null, 'carrier_id' => $doc === 'DOC-197' ? $subjectId : null, 'currency' => $cur,
+            'issuer' => \App\Application\Documents\Engine\EventDocumentRouter::tenantIssuer($tenantId),
+            'language' => $doc === 'DOC-193' ? \App\Application\Documents\Engine\EventDocumentRouter::partyLanguage($subjectId) : \App\Application\Documents\Engine\EventDocumentRouter::userLanguage($actorId),
+            'subject' => ['type' => 'FIN_STATEMENT', 'key' => $subjectId.':'.substr($hash, 0, 16), 'label' => $doc.' '.$map['spec']],
+            'label' => $doc.' '.$title, 'valid_from' => $filters['date_from'] ?? null, 'valid_until' => $filters['date_to'] ?? null,
+            'provenance' => ['spec_document' => $doc, 'spec_code' => $map['spec'], 'applied_filters' => $filters, 'figures' => $figures, 'content_hash' => $hash],
+            'fields' => array_filter([
+                'statement.period' => \Carbon\Carbon::parse($from)->format('d/m/Y').' → '.\Carbon\Carbon::parse($to)->format('d/m/Y'),
+                'policy.period' => \Carbon\Carbon::parse($from)->format('d/m/Y').' → '.\Carbon\Carbon::parse($to)->format('d/m/Y'),
+                'policy.effective_from' => \Carbon\Carbon::parse($from)->toIso8601String(), 'policy.effective_until' => \Carbon\Carbon::parse($to)->toIso8601String(),
+                'policy.currency' => $cur, 'party.name' => $doc === 'DOC-193' ? $subjectName : null, 'intermediary.name' => in_array($doc, ['DOC-195', 'DOC-196'], true) ? $subjectName : null,
+                'statement.broker' => $doc === 'DOC-194' ? $subjectName : null, 'policy.insurer' => $carrierName,
+                'statement.opening_balance' => $int('opening_balance'), 'statement.closing_balance' => $int('closing_balance', 'outstanding_amount', 'net_settlement'),
+                'statement.collected_premium' => $int('payments', 'collections_minor'), 'statement.written_premium' => $int('premiums_minor', 'debits'),
+                'refund.amount' => $int('refunds', 'refunds_minor'), 'statement.commission' => $int('commission_minor', 'gross_commission'),
+                'statement.remittances' => $int('remittances_minor', 'paid_amount', 'premium_remitted'), 'statement.adjustments' => $int('adjustments', 'clawed_back', 'clawbacks_minor'),
+                'settlement_batch.gross' => $int('gross_premium_payable'), 'settlement_batch.net' => $int('net_settlement'), 'settlement_batch.paid' => $int('settlements_paid'),
+                'obligation.outstanding' => $int('premium_outstanding'), 'premium.taxes' => isset($figures['TAX_CLEARING']) ? (int) $figures['TAX_CLEARING'] + (int) ($figures['LEVY_CLEARING'] ?? 0) : null,
+                'reconciliation.exceptions' => isset($figures['difference_minor']) ? \App\Application\Documents\Security\MappedFieldValues::money((int) $figures['difference_minor'], $cur) : null,
+                'statement.items' => implode(' · ', array_merge(...array_map(fn ($s) => (array) $s['paragraphs'], $sections))) ?: null,
+            ], fn ($v) => $v !== null && $v !== ''),
+            'sections' => $sections,
+        ]);
+        if (($item['state'] ?? null) !== 'GENERATED' || ! ($d = Document::find($item['document_id']))) {
+            return null;
+        }
+        $this->outbox->record('finance.statement.generated', 'document', $d->id, ['document_id' => $d->id, 'spec_document' => $doc, 'subject_id' => $subjectId, 'content_hash' => $hash]);
+
+        return $d;
+    }
+
+    /** Former platform rendering: only when the engine cannot issue (no published template). */
+    private function legacy(string $tenantId, string $doc, array $map, string $subjectId, array $filters, string $actorId, string $title, array $figures, array $sections): Document
+    {
         $type = $this->register->describe($map['type']);
         $number = $this->numbers->allocate($tenantId, $map['type']);
         $verification = DocumentEngine::newVerificationCode();
@@ -68,8 +129,9 @@ final class StatementDocumentService
     /** @return array{0: string, 1: array<string, mixed>, 2: list<array{heading:string, paragraphs:list<string>}>} */
     private function content(string $tenantId, string $doc, string $subjectId, array $f): array
     {
-        $money = fn (int $m) => number_format($m, 0, ',', ' ').' '.($f['currency'] ?? '');
-        $kv = fn (array $a) => array_map(fn ($k, $v) => str_replace('_', ' ', (string) $k).': '.(is_int($v) ? $money($v) : (is_bool($v) ? ($v ? 'yes' : 'no') : json_encode($v))), array_keys($a), $a);
+        // Launch review: minor units (÷100), XAF printed as FCFA — the formatter of every issued document.
+        $money = fn (int $m) => \App\Application\Documents\Security\MappedFieldValues::money($m, (string) ($f['currency'] ?? 'XAF'));
+        $kv = fn (array $a) => array_map(fn ($k, $v) => str_replace('_', ' ', (string) $k).': '.(is_int($v) && $k !== 'settlements' ? $money($v) : (is_bool($v) ? ($v ? 'yes' : 'no') : json_encode($v))), array_keys($a), $a);
         $from = $f['date_from'] ?? now()->startOfYear()->toDateString();
         $to = $f['date_to'] ?? now()->toDateString();
         $cur = $f['currency'] ?? 'XAF';

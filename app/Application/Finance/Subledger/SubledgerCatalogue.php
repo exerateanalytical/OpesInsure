@@ -128,7 +128,8 @@ final class SubledgerCatalogue
         'DOC-196' => ['spec' => 'BROKER_COMMISSION_STATEMENT', 'type' => 'BROKER_COMMISSION_STATEMENT'],
         'DOC-197' => ['spec' => 'CARRIER_SETTLEMENT_STATEMENT', 'type' => 'CARRIER_SETTLEMENT_STATEMENT'],
         'DOC-198' => ['spec' => 'PROVIDER_SETTLEMENT_STATEMENT', 'type' => 'PROVIDER_SETTLEMENT_STATEMENT'],
-        'DOC-199' => ['spec' => 'TAX_LEVY_BREAKDOWN', 'type' => 'TAX_FEE_STATEMENT'],
+        // Canonical spec DOC-199 is catalogued as SPEC.TAX_LEVY_BREAKDOWN, the code its published template carries.
+        'DOC-199' => ['spec' => 'TAX_LEVY_BREAKDOWN', 'type' => 'TAX_LEVY_BREAKDOWN'],
         'DOC-200' => ['spec' => 'RECONCILIATION_STATEMENT', 'type' => 'RECONCILIATION_STATEMENT'],
     ];
 

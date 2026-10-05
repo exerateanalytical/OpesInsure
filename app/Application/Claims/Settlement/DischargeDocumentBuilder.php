@@ -24,9 +24,44 @@ final class DischargeDocumentBuilder
 
     public function __construct(private DocumentNumberAllocator $numbers, private DocumentRegister $register, private AuditWriter $audit) {}
 
+    /**
+     * Launch review: the discharge is issued from the published canonical template (DOC-179 CLAIM_DISCHARGE) through
+     * the document engine, addressed to the payee in the payee's language, PENDING_SIGNATURE until signed. The former
+     * platform rendering remains only as a fallback when the engine cannot issue (insurer not authorizing rendering,
+     * template missing), so the settlement flow never stalls.
+     */
     public function build(object $settlement, Claim $claim, User $actor): Document
     {
         $policy = $claim->policy()->with(['carrier.party', 'party'])->firstOrFail();
+        $cur = (string) ($settlement->currency ?: 'XAF');
+        $payee = (string) (\App\Models\Party::whereKey($settlement->payee_party_id)->value('display_name') ?? '');
+        $money = fn ($minor) => \App\Application\Documents\Security\MappedFieldValues::money((int) $minor, $cur);
+        $lines = array_map(fn (array $l) => sprintf('%s %s %s', $l['label'], $l['operator'], $money($l['amount_minor'])), json_decode((string) $settlement->breakdown, true)['lines'] ?? []);
+        $engine = app(\App\Application\Documents\Engine\EventDocumentRouter::class);
+        $item = $engine->issue('CLAIM_SETTLEMENT_DISCHARGE', 'CLAIM_DISCHARGE', [
+            'tenant_id' => $claim->tenant_id, 'policy' => $policy, 'claim' => $claim, 'party_id' => $settlement->payee_party_id, 'currency' => $cur,
+            'issuer' => 'INSURER', 'language' => \App\Application\Documents\Engine\EventDocumentRouter::partyLanguage($settlement->payee_party_id),
+            'status' => 'PENDING_SIGNATURE', 'subject' => ['type' => 'CLAIM_SETTLEMENT', 'key' => (string) $settlement->id, 'label' => (string) $settlement->reference],
+            'label' => 'Settlement '.$settlement->reference, 'provenance' => ['claim_settlement_id' => $settlement->id],
+            'sources' => ['claim_settlement_id' => (string) $settlement->id],
+            'fields' => array_filter([
+                'settlement.payee' => $payee ?: null, 'settlement.amount' => (int) $settlement->amount_minor, 'settlement.reference' => $settlement->reference,
+                'settlement.nature' => 'Full and final settlement / Règlement intégral et définitif',
+                'claim.scope_of_discharge_release' => "Claim {$claim->claim_number} (policy {$policy->policy_number}) / Sinistre {$claim->claim_number} (police {$policy->policy_number})",
+                'settlement.breakdown' => $lines ? implode(' · ', $lines) : null,
+            ], fn ($v) => $v !== null && $v !== ''),
+            'sections' => [['heading' => 'Détail du règlement / Settlement breakdown', 'paragraphs' => $lines ?: ['—']]],
+            'is_demo' => (bool) ($claim->is_demo ?? false),
+        ]);
+        if (($item['state'] ?? null) === 'GENERATED' && ($doc = Document::find($item['document_id']))) {
+            return $doc;
+        }
+
+        return $this->legacy($settlement, $claim, $actor, $policy);
+    }
+
+    private function legacy(object $settlement, Claim $claim, User $actor, \App\Models\Policy $policy): Document
+    {
         $type = $this->register->describe(self::TYPE);
         $number = $this->numbers->allocate($claim->tenant_id, self::TYPE);
         $verification = DocumentEngine::newVerificationCode();

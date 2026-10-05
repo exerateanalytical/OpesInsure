@@ -13,7 +13,26 @@ use App\Models\Quote;
  */
 final class QuoteDocumentRenderer
 {
+    /**
+     * Launch review: the quotation is the INSURANCE_QUOTE (DOC-001) issued from its published canonical template by
+     * the document engine at QUOTE_GENERATED (EventDocumentRouter), in the customer's language; this returns that
+     * document's stored bytes (issuing it now if the event predates the router). The platform rendering below is only
+     * the fallback when the engine cannot issue.
+     */
     public function pdf(Quote $quote): string
+    {
+        $item = app(\App\Application\Documents\Engine\EventDocumentRouter::class)->quote('quote.generated', $quote->id);
+        if (($item['state'] ?? null) === 'GENERATED' && ($doc = \App\Models\Document::find($item['document_id']))) {
+            $disk = \Illuminate\Support\Facades\Storage::disk((string) config('lifecycle.documents_disk', 'local'));
+            if ($disk->exists($doc->storage_key)) {
+                return (string) $disk->get($doc->storage_key);
+            }
+        }
+
+        return $this->legacy($quote);
+    }
+
+    private function legacy(Quote $quote): string
     {
         $quote->loadMissing(['party', 'offers.carrier.party', 'offers.product']);
         // R9: minor units (÷100), XAF printed as FCFA — same formatter as every issued document.

@@ -204,6 +204,73 @@ final class DocumentEngine
     }
 
     /**
+     * Launch review: documents of business events outside a policy pack (quote generated, proposal submitted, payment
+     * reconciled, refund, bordereau, KYC letters, renewal / non-renewal / expiry notices, claim discharge, finance
+     * statements). Same finalization sequence as a pack item (published template, required fields, number, verification
+     * code, snapshot, master shell, signature, immutable record); no manifest. The policy is optional (a quote, a KYC
+     * case or a statement has none): without one a transient, never-saved issuing context carries tenant / carrier /
+     * recipient party. Idempotent: one current document per (tenant, type, subject, trigger).
+     *
+     * @param  array<int, string>  $codes
+     * @param  array<string, mixed>  $ctx  tenant_id, issuer, subject{type,key,label}; optional policy, carrier_id, party_id, currency, claim, payment,
+     *                                     language, fields, sections, sources, status, provenance, label, valid_from, valid_until
+     * @return array<int, array<string, mixed>> one item per type (state GENERATED + document_id, or the blocking state and reason)
+     */
+    public function issueEventDocument(string $trigger, array $codes, array $ctx, ?User $actor = null): array
+    {
+        if (empty($ctx['tenant_id']) || empty($ctx['subject']['key']) || empty($ctx['issuer'])) {
+            throw ValidationException::withMessages(['trigger' => "Document trigger {$trigger} refused: tenant, issuer and subject are required."]);
+        }
+        $ctx['event_source'] = $trigger.':'.$ctx['subject']['key'];
+        $ctx['pack_code'] ??= 'EVENT_'.$trigger;
+
+        return DB::transaction(function () use ($trigger, $codes, $ctx, $actor): array {
+            $real = isset($ctx['policy']) && $ctx['policy'] instanceof Policy && $ctx['policy']->exists;
+            if ($real) {
+                $policy = Policy::with(['carrier.party', 'party', 'tenant', 'proposal.offer.product', 'proposal.offer.quote'])->findOrFail($ctx['policy']->id);
+            } else {
+                // Transient issuing context (never saved): tenant, carrier and recipient party of the event.
+                $policy = (new Policy)->forceFill(['tenant_id' => $ctx['tenant_id'], 'carrier_id' => $ctx['carrier_id'] ?? null, 'party_id' => $ctx['party_id'] ?? null,
+                    'currency' => $ctx['currency'] ?? 'XAF', 'version' => 0]);
+                $policy->setRelation('tenant', \App\Models\Tenant::find($ctx['tenant_id']));
+                $policy->setRelation('carrier', ! empty($ctx['carrier_id']) ? \App\Models\Carrier::with('party')->find($ctx['carrier_id']) : null);
+                $policy->setRelation('party', ! empty($ctx['party_id']) ? \App\Models\Party::find($ctx['party_id']) : null);
+                $policy->setRelation('proposal', null);
+            }
+            $label = (string) ($ctx['label'] ?? str_replace('_', ' ', $trigger).' '.$ctx['subject']['label']);
+            $out = [];
+            foreach ($codes as $code) {
+                $existing = Document::where('tenant_id', $ctx['tenant_id'])->where('document_type_code', $code)->where('subject_key', $ctx['subject']['key'])
+                    ->where('generation_trigger', $trigger)->whereIn('status', DocumentRegister::CURRENT_STATUSES)->latest('created_at')->first();
+                if ($existing) {
+                    $out[] = ['state' => 'GENERATED', 'document_id' => $existing->id, 'document_type_code' => $code, 'idempotent' => true];
+
+                    continue;
+                }
+                $item = ['document_type_code' => $code, 'required_level' => 'REQUIRED', 'per_subject' => $ctx['subject']['type'], 'mode' => 'GENERATE'];
+                $out[] = $this->produce($policy, null, ['pack_code' => $ctx['pack_code'], 'insurance_class' => $real ? $this->packs->classFor($policy) : 'GENERAL'],
+                    $item, $ctx['subject'], $trigger, $ctx, $label, $actor);
+            }
+            $this->audit->record('document.event.issued', 'document_event', null, ['trigger' => $trigger, 'subject' => $ctx['subject']['key'],
+                'items' => array_map(fn ($i) => ['type' => $i['document_type_code'], 'state' => $i['state'], 'document_id' => $i['document_id'] ?? null, 'reason' => $i['reason'] ?? null], $out)]);
+
+            return $out;
+        });
+    }
+
+    /** issueEventDocument() in a savepoint that never throws into the caller's business transaction. */
+    public function issueEventDocumentQuietly(string $trigger, array $codes, array $ctx, ?User $actor = null): array
+    {
+        try {
+            return DB::transaction(fn () => $this->issueEventDocument($trigger, $codes, $ctx, $actor));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [];
+        }
+    }
+
+    /**
      * Conditional pack documents whose condition this event meets: explicit
      * ctx['include'], a cover note request, and — on an endorsement touching the
      * vehicle/driver/usage — the re-issued motor attestation and certificate.
@@ -322,14 +389,16 @@ final class DocumentEngine
             return ['state' => 'CARRIER_PROVIDED', 'document_id' => $current->id] + $base;
         }
 
-        $issuer = $this->issuerFor($code, $policy);
+        // Event documents (issueEventDocument) name their issuer: the tenant that produced the record (broker / platform), or the insurer.
+        $issuer = $ctx['issuer'] ?? $this->issuerFor($code, $policy);
         $profile = $this->profileFor($policy);
         if ($issuer === 'INSURER' && ! self::mayRenderForInsurer($profile)) {
             return ['state' => 'AWAITING_CARRIER_DOCUMENT', 'reason' => 'ISSUER_NOT_AUTHORIZED'] + $base;
         }
 
         $class = $pack['insurance_class'];
-        $language = self::languageFor($policy, $profile);
+        // Event documents carry the recipient's own language (EN / FR; BILINGUAL when unknown).
+        $language = $ctx['language'] ?? self::languageFor($policy, $profile);
         $template = $this->templates->resolve($code, [
             'carrier_id' => $policy->carrier_id, 'tenant_id' => $policy->tenant_id, 'broker' => $policy->tenant?->type === 'BROKER',
             'product_id' => $policy->proposal?->offer?->product_id, 'insurance_class' => in_array($class, ['LIFE', 'GROUP_LIFE'], true) ? 'LIFE' : $class,
@@ -404,7 +473,7 @@ final class DocumentEngine
             'issuer' => $issuer, 'issuer_authorized' => $issuer !== 'INSURER' || self::mayRenderForInsurer($profile), 'claim' => $claim, 'transaction' => $transaction,
             'missing_fields' => $missing, 'field_enforcement' => (string) config('document_security.field_enforcement', 'block'),
             // D4: a provider document's source is its provider event (contract, tariff, settlement ...), not a policy.
-            'provider_source' => isset($ctx['provider_id']) && ! empty($ctx['subject']['key']) ? $ctx['subject']['key'] : null,
+            'provider_source' => (isset($ctx['provider_id']) || isset($ctx['event_source'])) && ! empty($ctx['subject']['key']) ? $ctx['subject']['key'] : null,
         ]);
         $refused = IssuanceGate::refusals($gate, (bool) config('document_security.enforce_controls'));
         if ($refused !== []) {
@@ -477,7 +546,7 @@ final class DocumentEngine
         $key = 'documents/'.$policy->tenant_id.'/'.($policy->id ?? 'provider-'.($ctx['provider_id'] ?? 'none')).'/'.$number['number'].'.pdf';
         Storage::disk((string) config('lifecycle.documents_disk', 'local'))->put($key, $bytes);
 
-        $status = $profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED');
+        $status = $ctx['status'] ?? ($profile && $profile->signature_mode === 'DIGITAL' ? 'PENDING_SIGNATURE' : ($certificateLike ? 'VALID' : 'ISSUED'));
 
         $gate = IssuanceGate::finalize($gate, [
             'number' => $number['number'], 'content_hash' => $contentHash, 'token_hash' => VerificationCredentials::tokenHash($token), 'pdf_bytes' => $bytes, 'sha256' => $sha,
@@ -490,10 +559,10 @@ final class DocumentEngine
         $security['controls']['issuance_gate'] = $gate;
 
         $doc = new Document([
-            'tenant_id' => $policy->tenant_id, 'party_id' => $policy->party_id, 'policy_id' => $policy->id,
+            'tenant_id' => $policy->tenant_id, 'party_id' => array_key_exists('party_id', $ctx) ? $ctx['party_id'] : $policy->party_id, 'policy_id' => $policy->id,
             'category' => 'ENGINE_'.$code, 'storage_key' => $key, 'mime_type' => 'application/pdf', 'size_bytes' => strlen($bytes), 'sha256' => $sha,
             'scan_status' => 'CLEAN', 'verification_status' => 'VERIFIED', 'ocr_data' => [],
-            'document_type_code' => $code, 'document_type_id' => $type['id'], 'document_group' => $type['group_code'], 'pack_code' => $manifest?->pack_code ?? ('PROVIDER_'.$trigger), 'pack_manifest_id' => $manifest?->id,
+            'document_type_code' => $code, 'document_type_id' => $type['id'], 'document_group' => $type['group_code'], 'pack_code' => $manifest?->pack_code ?? ($ctx['pack_code'] ?? ('PROVIDER_'.$trigger)), 'pack_manifest_id' => $manifest?->id,
             'document_template_id' => $template->id, 'template_version' => $template->version, 'template_hash' => $template->content_hash,
             'product_id' => $product?->id, 'product_version' => $product?->version, 'policy_version' => (int) $policy->version,
             'policy_transaction_id' => $transaction?->id, 'renewal_of_policy_id' => $trigger === 'RENEWAL_ISSUED' ? $policy->previous_policy_id : null, 'claim_id' => $claim?->id,
@@ -507,7 +576,7 @@ final class DocumentEngine
             'verification_code' => $verification, 'generation_trigger' => $trigger, 'issued_at' => $issuedAt,
             'valid_from' => $ctx['valid_from'] ?? ($certificateLike ? $policy->coverage_starts_at : null), 'valid_until' => $ctx['valid_until'] ?? ($certificateLike ? $policy->coverage_ends_at : null),
             'provenance' => ['rendered_by' => 'OPESINSURE', 'on_behalf_of' => $issuer, 'authorization_reference' => $profile?->authorization_reference, 'event' => $label,
-                'demo_watermark' => $demoRecord, 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']],
+                'demo_watermark' => $demoRecord, 'environment' => app()->environment(), 'letterhead' => $letterhead['snapshot']] + (array) ($ctx['provenance'] ?? []),
             'uploaded_by' => $actor?->id,
         ]);
         // Canonical security record (columns of migration 2026_10_12_900001; frozen by the immutability trigger).
@@ -570,7 +639,10 @@ final class DocumentEngine
                 'POLICY_ISSUED' => 'POLICY',
                 'RENEWAL_ISSUED' => 'RENEWAL',
                 'ENDORSEMENT_ISSUED', 'CANCELLATION_ISSUED', 'REINSTATEMENT_ISSUED' => 'SERVICING',
-                'PAYMENT_RECONCILED' => 'FINANCE',
+                'PAYMENT_RECONCILED', 'REFUND_APPROVED', 'BORDEREAU_APPROVED', 'FINANCE_STATEMENT_GENERATED' => 'FINANCE',
+                'PROPOSAL_SUBMITTED', 'KYC_INFORMATION_REQUESTED', 'KYC_DECIDED' => 'PRE_CONTRACT',
+                'RENEWAL_DUE', 'RENEWAL_QUOTED', 'RENEWAL_DECLINED', 'POLICY_LAPSED' => 'RENEWAL',
+                'CLAIM_SETTLEMENT_DISCHARGE' => 'SETTLEMENT',
                 'QUOTE_GENERATED' => 'PRE_CONTRACT',
                 default => 'CLAIM',
             },

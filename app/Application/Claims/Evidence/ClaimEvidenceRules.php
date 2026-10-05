@@ -84,6 +84,11 @@ final class ClaimEvidenceRules
         foreach ($rules as $id => $r) {
             $t = $types[$id] ?? null;
             $origin = $t?->document_origin;
+            // Launch review: what the insurer / broker / platform itself issues (claim acknowledgement, decision, settlement
+            // offer ...) is never a requirement asked of the claimant — only evidence and third-party / customer inputs are.
+            if ($t && ! $t->is_evidence && in_array($origin, \App\Application\Documents\Engine\DocumentRegister::ISSUED_ORIGINS, true)) {
+                continue;
+            }
             $out[] = $r + [
                 'canonical_code' => $t?->canonical_code, 'name_en' => $t?->name_en, 'name_fr' => $t?->name_fr, 'expected_origin' => $origin,
                 'third_party' => $r['requirement'] === 'THIRD_PARTY' || ($origin !== null && DocumentOrigin::isThirdPartyEvidence($origin)),

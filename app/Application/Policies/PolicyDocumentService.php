@@ -55,9 +55,22 @@ final class PolicyDocumentService
             [$certificate, $token] = $this->issueCertificate($policy, $issuer);
         }
 
+        // Launch review: the schedule and certificate are the document engine's (published canonical templates, one per
+        // policy). The issuance pack is fired here (idempotent per policy/trigger) so a wallet view self-heals; the
+        // engine supersedes any earlier platform copy of the same kind.
+        $this->engineFire($policy, $actor);
         $documents = [];
         foreach ([self::CERTIFICATE, self::SCHEDULE] as $category) {
-            $doc = Document::where('policy_id', $policy->id)->where('category', $category)->latest('created_at')->first();
+            $engine = $this->current($policy, $category);
+            if ($engine) {
+                $documents[] = $engine;
+                $this->retireLegacy($policy, $category, $engine);
+
+                continue;
+            }
+            // Fallback only when the engine holds no document of this kind (insurer has not authorized rendering and no
+            // carrier original uploaded yet): the platform copy keeps the wallet button alive.
+            $doc = Document::where('policy_id', $policy->id)->where('category', $category)->whereIn('status', \App\Application\Documents\Engine\DocumentRegister::CURRENT_STATUSES)->latest('created_at')->first();
             if (! $doc || ! Storage::disk($this->disk())->exists($doc->storage_key)) {
                 try {
                     $doc = $this->render($policy, $certificate, $category, $token, $doc);
@@ -97,16 +110,67 @@ final class PolicyDocumentService
         }
     }
 
+    /** Certificate-like engine codes, most specific first (the wallet shows one certificate per policy). */
+    public const CERTIFICATE_CODES = ['MOTOR_INSURANCE_CERTIFICATE', 'MOTOR_INSURANCE_ATTESTATION', 'CERTIFICATE_OF_INSURANCE', 'FLEET_CERTIFICATE', 'PROOF_OF_COVER'];
+
+    /**
+     * The current schedule / certificate of the policy: an engine-rendered (published template) or carrier-original
+     * document; null when the engine holds none.
+     */
+    public function current(Policy $policy, string $category): ?Document
+    {
+        $q = Document::where('policy_id', $policy->id)->whereIn('status', \App\Application\Documents\Engine\DocumentRegister::CURRENT_STATUSES)
+            ->where(fn ($q) => $q->whereNotNull('document_template_id')->orWhere('is_carrier_original', true));
+        if ($category === self::SCHEDULE) {
+            return $q->whereIn('document_type_code', \App\Application\Documents\Engine\DocumentEngine::SCHEDULE_KINDS)->latest('created_at')->first();
+        }
+        $docs = $q->get()->filter(fn (Document $d) => in_array($d->document_type_code, self::CERTIFICATE_CODES, true)
+            || app(\App\Application\Documents\Engine\DocumentRegister::class)->describe((string) $d->document_type_code)['display_group'] === 'CERTIFICATES');
+
+        return $docs->sortBy(fn (Document $d) => [array_search($d->document_type_code, self::CERTIFICATE_CODES, true) === false ? 99 : array_search($d->document_type_code, self::CERTIFICATE_CODES, true), -$d->created_at?->getTimestamp()])->first();
+    }
+
+    /** Fires the policy's issuance pack (idempotent: the engine keeps one manifest per policy/trigger). */
+    private function engineFire(Policy $policy, ?User $actor): void
+    {
+        if (! $policy->policy_number || ! in_array($policy->status, ['ACTIVE', 'EXPIRING', 'ENDORSEMENT_PENDING', 'CANCELLATION_PENDING'], true)) {
+            return;
+        }
+        app(\App\Application\Documents\Engine\DocumentEngine::class)->fireQuietly($policy->previous_policy_id ? 'RENEWAL_ISSUED' : 'POLICY_ISSUED', $policy, [], $actor);
+    }
+
+    /** One schedule / one certificate: a platform copy left from before the engine document is superseded by it. */
+    private function retireLegacy(Policy $policy, string $category, Document $engine): void
+    {
+        Document::where('policy_id', $policy->id)->where('category', $category)->whereKeyNot($engine->id)
+            ->whereIn('status', \App\Application\Documents\Engine\DocumentRegister::CURRENT_STATUSES)->get()
+            ->each(function (Document $old) use ($engine): void {
+                $old->update(['status' => 'SUPERSEDED', 'superseded_by_document_id' => $engine->id, 'status_changed_at' => now(),
+                    'status_reason' => 'Superseded by '.($engine->document_number ?? $engine->id)]);
+                $this->audit->record('document.superseded', 'document', $old->id, ['by_document_id' => $engine->id]);
+            });
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function documentsPayload(Policy $policy): array
     {
-        return Document::where('policy_id', $policy->id)->whereIn('category', [self::CERTIFICATE, self::SCHEDULE])->orderBy('category')->get()
-            ->unique('category')
-            ->map(fn (Document $d) => [
+        $docs = [];
+        foreach ([self::CERTIFICATE, self::SCHEDULE] as $category) {
+            $d = $this->current($policy, $category) ?? Document::where('policy_id', $policy->id)->where('category', $category)
+                ->whereIn('status', \App\Application\Documents\Engine\DocumentRegister::CURRENT_STATUSES)->latest('created_at')->first();
+            if ($d) {
+                $docs[$category] = $d;
+            }
+        }
+        ksort($docs);
+
+        // Same contract as before (category POLICY_CERTIFICATE / POLICY_SCHEDULE, type, title, signed download URL).
+        return collect($docs)
+            ->map(fn (Document $d, string $category) => [
                 'id' => $d->id,
-                'category' => $d->category,
-                'type' => $d->category === self::CERTIFICATE ? 'CERTIFICATE' : 'SCHEDULE',
-                'title' => $d->category === self::CERTIFICATE ? 'Insurance certificate' : 'Policy schedule',
+                'category' => $category,
+                'type' => $category === self::CERTIFICATE ? 'CERTIFICATE' : 'SCHEDULE',
+                'title' => $category === self::CERTIFICATE ? 'Insurance certificate' : 'Policy schedule',
                 'mime_type' => $d->mime_type,
                 'size_bytes' => (int) $d->size_bytes,
                 'created_at' => $d->created_at?->toIso8601String(),

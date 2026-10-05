@@ -315,7 +315,17 @@ final class MappedFieldValues
                 ? $name($c).': '.self::money((int) $c['deductible_minor'], (string) ($policy->currency ?: 'XAF')) : null, $coverages))) ?: null,
             'policy.renewal_terms' => $rules($product?->renewal_rules),
             'policy.cancellation_rules' => $rules($product?->cancellation_rules),
+            // Launch review key check: the issuing branch the platform records on the policy.
+            'policy.branch' => ! empty($policy->branch_id) ? DB::table('tenant_branches')->where('id', $policy->branch_id)->value('name') : null,
+            'policy.status_as_of' => $policy->status ? $policy->status.' — '.now()->format('d/m/Y') : null,
+            'policy.current_effective_dates' => $policy->coverage_starts_at && $policy->coverage_ends_at ? $policy->coverage_starts_at->format('d/m/Y').' → '.$policy->coverage_ends_at->format('d/m/Y') : null,
+            'policy.documents_issued' => $policy->exists ? (implode(' · ', DB::table('documents')->where('policy_id', $policy->id)->whereIn('status', ['ISSUED', 'VALID'])
+                ->whereNotNull('document_number')->orderBy('created_at')->limit(20)->pluck('document_number')->all()) ?: null) : null,
+            'renewal.new_policy' => $policy->exists ? Policy::where('previous_policy_id', $policy->id)->value('policy_number') : null,
         ];
+        if ($claim) {
+            $v['claim.submission_date'] = $iso($claim->submitted_at ?? null);
+        }
 
         if ($claim) {
             $v += [

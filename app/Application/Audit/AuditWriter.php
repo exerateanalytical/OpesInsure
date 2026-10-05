@@ -66,6 +66,8 @@ final class AuditWriter
 
         // S8: audited-only events (agent payment request, proposal information request, inspection reschedule…) notify the user.
         \App\Application\Notifications\LaunchNotificationRouter::observe($action, $subjectType, $subjectId, $metadata);
+        // Launch review: events with a published template issue their document (quote, proposal, KYC letters, renewal notices ...).
+        \App\Application\Documents\Engine\EventDocumentRouter::observe($action, $subjectType, $subjectId, $metadata);
 
         return $id;
     }

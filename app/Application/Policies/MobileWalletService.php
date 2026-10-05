@@ -120,7 +120,10 @@ final class MobileWalletService
         if (! $certificate) {
             return null;
         }
-        $pdf = Document::where('policy_id', $policy->id)->where('category', PolicyDocumentService::CERTIFICATE)->latest('created_at')->first();
+        // The engine's certificate (one per policy); the platform copy only when the engine holds none.
+        $pdf = $this->documents->current($policy, PolicyDocumentService::CERTIFICATE)
+            ?? Document::where('policy_id', $policy->id)->where('category', PolicyDocumentService::CERTIFICATE)
+                ->whereIn('status', \App\Application\Documents\Engine\DocumentRegister::CURRENT_STATUSES)->latest('created_at')->first();
 
         return [
             'id' => $certificate->id,
