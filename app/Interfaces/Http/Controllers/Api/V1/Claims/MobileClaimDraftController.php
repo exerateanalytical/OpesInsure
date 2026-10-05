@@ -46,9 +46,12 @@ final class MobileClaimDraftController
 
     public function submit(string $draft, Request $request, MobileClaimDraftService $drafts): JsonResponse
     {
-        [$claim, $created] = $drafts->submit($draft, $request->user(), $this->tenant());
+        // Optional body: {declaration_confirmed: true} records the customer's declaration on the filed claim.
+        $body = $request->validate(['declaration_confirmed' => 'sometimes|boolean']);
+        [$claim, $created, $evidence] = $drafts->submit($draft, $request->user(), $this->tenant(), (bool) ($body['declaration_confirmed'] ?? false));
 
-        return response()->json(['data' => $claim], $created ? 201 : 200);
+        // `evidence`: files saved on the draft that were attached (or are in their security check) / could not be.
+        return response()->json(['data' => $claim, 'evidence' => $evidence], $created ? 201 : 200);
     }
 
     private function tenant(): string

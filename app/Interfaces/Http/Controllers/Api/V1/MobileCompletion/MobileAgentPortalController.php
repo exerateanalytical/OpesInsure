@@ -195,8 +195,9 @@ final class MobileAgentPortalController
     public function sale(string $id, Request $request, AssistedSaleService $sales): JsonResponse
     {
         [$quote, $customer] = $this->ownSale($id, $request);
+        $sale = $sales->present($quote, $customer, $request->user());
 
-        return response()->json(['data' => $sales->present($quote, $customer, $request->user())]);
+        return response()->json(['data' => $sale + ['client_acceptance' => $this->clientAcceptance($sale, $request->user(), false)]]);
     }
 
     /**
@@ -211,9 +212,46 @@ final class MobileAgentPortalController
             'payment_phone_e164' => ['nullable', 'regex:/^\+[1-9]\d{7,14}$/'],
         ]);
         [$quote, $customer] = $this->ownSale($id, $request);
+        $before = $sales->present($quote, $customer, $request->user()) + ['notified_at' => ($quote->comparison_context ?? [])['client_notified_at'] ?? null];
         $sales->advance($quote, $customer, $data, $request->user());
+        $sale = $sales->present($quote->refresh(), $customer, $request->user());
+        $acceptance = $this->clientAcceptance($sale, $request->user(), true);
+        $reminded = $acceptance['sent_now'] || (($quote->comparison_context ?? [])['client_notified_at'] ?? null) !== $before['notified_at'];
 
-        return response()->json(['data' => $sales->present($quote->refresh(), $customer, $request->user())]);
+        return response()->json(['data' => $sale + ['client_acceptance' => $acceptance, 'step' => self::step($before, $sale, $reminded)]]);
+    }
+
+    /**
+     * The client's own contract acceptance on the sale (ProposalAcceptanceLinks): ACCEPTED | LINK_SENT | SMS_FAILED |
+     * NO_PHONE | NOT_SENT | NOT_NEEDED (no application yet). With $send, while the sale waits on the client, the client
+     * gets the web acceptance link by SMS (at most every 10 minutes) — for clients without the app. The link itself is
+     * never returned to the agent.
+     */
+    private function clientAcceptance(array $sale, \App\Models\User $agent, bool $send): array
+    {
+        $p = $sale['proposal_id'] ? \App\Models\Proposal::find($sale['proposal_id']) : null;
+        if ($p === null) {
+            return ['status' => 'NOT_NEEDED', 'sent_now' => false, 'sent_at' => null, 'expires_at' => null, 'phone_masked' => null];
+        }
+        $links = app(\App\Application\Underwriting\Proposal\ProposalAcceptanceLinks::class);
+
+        return $send && $sale['next_action'] === 'AWAIT_CLIENT' && $links->needed($p)
+            ? $links->send($p, $sale['payment_phone_e164'] ?: null, $agent)
+            : $links->status($p);
+    }
+
+    /** What this tap did, for the agent's message: APPLICATION_SENT | REMINDER_SENT | REMINDER_RECENT | PAYMENT_PROMPTED | PAYMENT_PENDING | PAYMENT_FAILED | UNDER_REVIEW | PAID | NONE. */
+    private static function step(array $before, array $after, bool $reminded): string
+    {
+        return match (true) {
+            in_array($after['status'], ['ISSUED', 'PAID'], true) => 'PAID',
+            $before['proposal_id'] === null && $after['proposal_id'] !== null => 'APPLICATION_SENT',
+            $after['next_action'] === 'AWAIT_PAYMENT' => $before['next_action'] === 'AWAIT_PAYMENT' ? 'PAYMENT_PENDING' : 'PAYMENT_PROMPTED',
+            in_array($after['payment_status'], ['FAILED', 'EXPIRED', 'CANCELLED'], true) => 'PAYMENT_FAILED',
+            $after['next_action'] === 'AWAIT_CLIENT' => $reminded ? 'REMINDER_SENT' : 'REMINDER_RECENT',
+            $after['next_action'] === 'AWAIT_UNDERWRITING' => 'UNDER_REVIEW',
+            default => 'NONE',
+        };
     }
 
     /** @return array{0: \App\Models\Quote, 1: TenantCustomer} the agent's own assisted sale (404 otherwise) */

@@ -95,7 +95,7 @@ final class CancellationService
                 ...NotificationCatalog::message($initiator === 'INSURER' ? 'policy_cancellation_notice' : 'policy_cancellation_requested', [
                     'policy' => $policy->policy_number, 'effective' => $effective->toDateString(), 'refund' => $transaction->refund_minor, 'currency' => $policy->currency,
                 ]),
-                severity: $initiator === 'INSURER' ? 'WARNING' : 'INFO', forceSms: $initiator === 'INSURER');
+                severity: $initiator === 'INSURER' ? 'WARNING' : 'INFO', forceSms: $initiator === 'INSURER', path: "/policy/{$policy->id}");
 
             $this->audit->record('policy.cancellation.requested', 'policy_cancellation', $case->id, [
                 'policy_id' => $policy->id, 'initiated_by' => $initiator, 'refund_minor' => $case->refund_minor, 'notice_days' => $noticeDays,
@@ -162,7 +162,7 @@ final class CancellationService
                 ...NotificationCatalog::message($case->refund_minor > 0 ? 'policy_cancelled_refund' : 'policy_cancelled', [
                     'policy' => $policy->policy_number, 'effective' => $case->effective_at->toDateString(), 'refund' => $case->refund_minor, 'currency' => $case->currency,
                 ]),
-                severity: 'WARNING', forceSms: true);
+                severity: 'WARNING', forceSms: true, path: "/policy/{$policy->id}");
             $this->audit->record('policy.cancelled', 'policy_cancellation', $case->id, [
                 'policy_id' => $policy->id, 'refund_id' => $refundId, 'documents_revoked' => $revoked, 'policy_version_id' => $versionId,
             ], $case->reason_code);

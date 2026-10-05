@@ -89,8 +89,25 @@ Route::get('mobile/broker/clients/{customer}', [MobileBrokerOpsController::class
 Route::get('mobile/broker/production', [MobileBrokerOpsController::class, 'production'])->middleware('permission:broker.portal.read');
 Route::get('mobile/broker/renewals', [MobileBrokerOpsController::class, 'renewals'])->middleware('permission:broker.portal.read');
 Route::get('mobile/broker/compliance', [MobileBrokerOpsController::class, 'compliance'])->middleware('permission:broker.portal.read');
+// Phase-1 fix S (2026-09-30): per-id reads for the production and compliance detail screens.
+Route::get('mobile/broker/production/{policy}', [MobileBrokerOpsController::class, 'productionItem'])->middleware('permission:broker.portal.read')->whereUuid('policy');
+Route::get('mobile/broker/compliance/{id}', [MobileBrokerOpsController::class, 'complianceItem'])->middleware('permission:broker.portal.read')->whereUuid('id');
 Route::get('mobile/broker/marketplace-publications', [MobileBrokerOpsController::class, 'publications'])->middleware('permission:broker.portal.read');
 Route::patch('mobile/broker/marketplace-publications/{id}', [MobileBrokerOpsController::class, 'togglePublication'])->middleware(['permission:broker.marketplace.manage', 'throttle:20,1']);
+
+// Intermediary desk 2026-09-30 (MobileIntermediaryDeskController): broker assisted sale, broker/agent renewal actions,
+// broker claimable policies. Book-scoped server-side; the `portal` default picks the broker or agent book.
+$desk = \App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileIntermediaryDeskController::class;
+Route::post('mobile/broker/sales', [$desk, 'createSale'])->middleware(['permission:quotes.manage', 'permission:quotes.rate', 'throttle:20,1']);
+Route::get('mobile/broker/sales/{id}', [$desk, 'sale'])->middleware('permission:broker.portal.read')->whereUuid('id');
+Route::post('mobile/broker/sales/{id}/payment-request', [$desk, 'advanceSale'])->middleware(['permission:quotes.manage', 'throttle:20,1'])->whereUuid('id');
+Route::get('mobile/broker/claimable-policies', [$desk, 'claimablePolicies'])->middleware('permission:broker.claims.file');
+Route::get('mobile/broker/renewals/{policy}', [$desk, 'renewal'])->middleware('permission:broker.portal.read')->whereUuid('policy')->defaults('portal', 'broker');
+Route::post('mobile/broker/renewals/{policy}/requote', [$desk, 'requote'])->middleware(['permission:broker.renewals.manage', 'permission:quotes.rate', 'throttle:10,1'])->whereUuid('policy')->defaults('portal', 'broker');
+Route::post('mobile/broker/renewals/{policy}/decline', [$desk, 'declineRenewal'])->middleware(['permission:broker.renewals.manage', 'throttle:10,1'])->whereUuid('policy')->defaults('portal', 'broker');
+Route::get('mobile/agent/renewals/{policy}', [$desk, 'agentRenewal'])->middleware('permission:agent.clients.read')->whereUuid('policy')->defaults('portal', 'agent');
+Route::post('mobile/agent/renewals/{policy}/requote', [$desk, 'agentRequote'])->middleware(['permission:agent.clients.manage', 'permission:quotes.rate', 'throttle:10,1'])->whereUuid('policy')->defaults('portal', 'agent');
+Route::post('mobile/agent/renewals/{policy}/decline', [$desk, 'agentDeclineRenewal'])->middleware(['permission:agent.clients.manage', 'throttle:10,1'])->whereUuid('policy')->defaults('portal', 'agent');
 
 // carrier/*
 Route::get('mobile/carrier/referrals', [MobileCarrierOpsController::class, 'referrals'])->middleware('permission:carrier.referrals.read');
@@ -107,6 +124,13 @@ Route::get('mobile/carrier/claims', [MobileCarrierOpsController::class, 'claims'
 // workspace/[role]
 Route::get('mobile/workspace/dashboard', [MobileWorkspaceController::class, 'dashboard'])->middleware('permission:workspace.read');
 Route::get('mobile/workspace/modules/{key}', [MobileWorkspaceController::class, 'module'])->middleware('permission:workspace.read');
+// Phase-1 fix S (2026-09-30): the workspace claims module (scoped list, detail, the caller's claim actions).
+Route::get('mobile/workspace/claims', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'index'])->middleware(['permission:workspace.read', 'permission:claims.view']);
+Route::get('mobile/workspace/claims/{claim}', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'show'])->middleware(['permission:workspace.read', 'permission:claims.view']);
+Route::post('mobile/workspace/claims/{claim}/assign-to-me', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'assignToMe'])->middleware(['permission:workspace.read', 'permission:claims.assign', 'throttle:30,1']);
+Route::post('mobile/workspace/claims/{claim}/transitions', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'transition'])->middleware(['permission:workspace.read', 'permission:claims.transition', 'throttle:30,1']);
+Route::post('mobile/workspace/claims/{claim}/decisions', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'proposeDecision'])->middleware(['permission:workspace.read', 'permission:claims.decision.propose', 'throttle:20,1']);
+Route::post('mobile/workspace/claims/{claim}/decisions/{decision}/approve', [\App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceClaimsController::class, 'approveDecision'])->middleware(['permission:workspace.read', 'permission:claims.decision.approve', 'throttle:20,1']);
 
 // security/device-status
 Route::post('mobile/security/device-attestation/nonce', [MobileDeviceAttestationController::class, 'nonce'])->middleware('throttle:20,1');

@@ -82,7 +82,7 @@ return [
         'stat_tasks' => 'Tasks', 'stat_overdue' => 'Overdue', 'stat_week' => 'Due within 7 days', 'stat_open_claims' => 'Open claims',
         'no_tasks' => 'Nothing waiting for you. Well done!', 'tasks_partial' => 'Some sources could not be loaded; the list may be incomplete.',
         'kind_leads' => 'Lead', 'kind_payments' => 'Payment', 'kind_renewals' => 'Renewal', 'kind_requests' => 'Change request', 'kind_claims' => 'Claim', 'kind_stickers' => 'Stickers',
-        'task_lead_new' => 'Contact the new lead :n', 'task_lead_follow' => 'Follow up with :n', 'task_pay_prompt' => 'Ask :n to pay the premium', 'task_pay_wait' => 'Check that :n has paid',
+        'task_lead_new' => 'Contact the new lead :n', 'task_lead_follow' => 'Follow up with :n', 'task_pay_prompt' => 'Ask :n to pay the premium', 'task_pay_wait' => 'Check that :n has paid', 'task_pay_accept' => 'Follow up: :n has to review and accept the application',
         'task_renewal' => 'Renew policy :p (:n)', 'task_request' => 'Follow the :t request on :p', 'task_claim' => 'Help complete claim :c (:n)', 'task_handover' => 'Acknowledge a handover of :q sticker(s)',
 
         'st' => [

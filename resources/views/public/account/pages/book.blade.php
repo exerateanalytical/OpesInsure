@@ -43,7 +43,7 @@ Opes.page(function (ctx) {
     return h('button', { type: 'button', class: 'dbtn dbtn-primary sm', 'data-collect': q.id, onclick: function () {
       var btn = this; O.busy(btn, true); O.alert('');
       O.api('/mobile/agent/sales/' + encodeURIComponent(q.id) + '/payment-request', { body: {} }).then(function (s) {
-        q.payment_status = s.payment_status; render(); O.alert(A.t('payment_requested', { name: q.customer_name || '' }), 'ok');
+        q.payment_status = s.payment_status; render(); A.saleAlert(s, q.customer_name);
       }).catch(function (e) { O.busy(btn, false); O.alert(A.errMsg(e), 'bad'); });
     } }, A.t('collect_premium'));
   }

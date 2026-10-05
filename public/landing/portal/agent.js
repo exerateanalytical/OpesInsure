@@ -37,6 +37,14 @@
   };
   A.fail = function (el, e) { O.fail(el, { message: A.errMsg(e) }); };
 
+  /** The message for what a "Request payment" tap did (POST /mobile/agent/sales/{id}/payment-request → s.step, s.client_acceptance). */
+  A.saleAlert = function (s, name) {
+    var step = (s && s.step) || 'NONE', link = (s && s.client_acceptance && s.client_acceptance.status) || '';
+    var rep = { name: name || '' };
+    if (link === 'NO_PHONE' || link === 'SMS_FAILED') return O.alert(A.t('sale_step_' + step, rep) + ' ' + A.t('sale_link_' + link, rep), 'bad');
+    O.alert(A.t('sale_step_' + step, rep), step === 'PAYMENT_FAILED' ? 'bad' : ['REMINDER_RECENT', 'PAYMENT_PENDING', 'UNDER_REVIEW', 'NONE'].indexOf(step) >= 0 ? 'info' : 'ok');
+  };
+
   A.stat = function (tone, iconName, label, value, hint) {
     return h('div', { class: 'statc' }, h('span', { class: 'sq ' + tone }, O.icon(iconName)), h('div', null, h('small', null, label), h('b', null, String(value)), hint ? h('small', null, hint) : null));
   };

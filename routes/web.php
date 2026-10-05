@@ -31,7 +31,14 @@ Route::middleware(SetPublicLocale::class)->group(function (): void {
     Route::get('/signup', [Site::class, 'signup'])->name('public.signup');
     // Signed-in account area (customer, agent/broker and claims-officer screens). Pages are
     // static shells; their data comes from api/v1 with the bearer token from /login.
-    Route::get('/account/{path?}', [Site::class, 'account'])->where('path', '(?!delete$)[A-Za-z0-9/_-]*')->name('public.account');
+    // Contract acceptance for a customer without the app (agent/broker sale): signed, expiring, single-use link sent by
+    // SMS + OTP to the proposal's phone; no sign-in (ProposalAcceptanceLinks). The signature is checked in the controller.
+    Route::get('/account/accept/{token}', [\App\Interfaces\Http\Controllers\Web\ProposalAcceptancePageController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{32,64}')->middleware('throttle:30,1')->name('public.acceptance.show');
+    Route::post('/account/accept/{token}', [\App\Interfaces\Http\Controllers\Web\ProposalAcceptancePageController::class, 'act'])
+        ->where('token', '[A-Za-z0-9]{32,64}')->middleware('throttle:10,1')->name('public.acceptance.act');
+
+    Route::get('/account/{path?}', [Site::class, 'account'])->where('path', '(?!delete$|accept/)[A-Za-z0-9/_-]*')->name('public.account');
     // S11 in-app help: printable (PDF-friendly) version of one role guide, ?lang=en|fr.
     Route::get('/help/{guide}/print', \App\Interfaces\Http\Controllers\Web\HelpGuidePrintController::class)->where('guide', '[a-z_]+')->name('help.print');
 

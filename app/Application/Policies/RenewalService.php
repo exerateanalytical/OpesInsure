@@ -204,6 +204,56 @@ final class RenewalService
         });
     }
 
+    /**
+     * 2026-09-30 (broker / agent renewal desk): opens the renewal case of one policy of the caller's book on demand,
+     * exactly as the sweep would (case DUE + OPENED trail + broker work-list row), when the sweep has not reached it
+     * yet. The policy must be ACTIVE/EXPIRING and not already renewed.
+     */
+    public function openFor(Policy $policy, ?User $actor): RenewalCase
+    {
+        $existing = RenewalCase::where('policy_id', $policy->id)->orderByDesc('created_at')->first();
+        if ($existing !== null && (in_array($existing->status, RenewalMachine::OPEN, true) || $existing->status === 'RENEWED')) {
+            return $existing;
+        }
+        if (! in_array($policy->status, ['ACTIVE', 'EXPIRING'], true) || $policy->coverage_ends_at === null
+            || Policy::where('previous_policy_id', $policy->id)->exists()) {
+            throw ValidationException::withMessages(['policy' => __('wave5.renewal_not_due')]);
+        }
+        $dueOn = $policy->coverage_ends_at->toDateString();
+        $case = RenewalCase::firstOrCreate(['policy_id' => $policy->id, 'due_on' => $dueOn], ['tenant_id' => $policy->tenant_id, 'status' => 'DUE', 'attribution_snapshot' => []]);
+        if ($case->wasRecentlyCreated) {
+            $case->refresh();
+            $this->machine->trail($case, 'OPENED', null, 'DUE', $actor);
+        }
+        DB::table('renewal_work_items')->insertOrIgnore([
+            'id' => (string) Str::uuid(), 'tenant_id' => $policy->tenant_id, 'policy_id' => $policy->id, 'renewal_due_on' => $dueOn,
+            'status' => 'DUE', 'contact_attempts' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $case;
+    }
+
+    /**
+     * 2026-09-30: the client's decision not to renew, recorded by the intermediary (DUE/CONTACTED/QUOTED → DECLINED).
+     * Trail DECLINED + audit + outbox; the broker work-list row gets the outcome.
+     */
+    public function decline(RenewalCase $case, string $reason, User $actor): RenewalCase
+    {
+        return DB::transaction(function () use ($case, $reason, $actor): RenewalCase {
+            $case = RenewalCase::whereKey($case->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($case->status, ['DUE', 'CONTACTED', 'QUOTED'], true)) {
+                throw ValidationException::withMessages(['status' => __('leftover_actions.renewal.not_open')]);
+            }
+            $this->machine->move($case, 'DECLINED', 'DECLINED', $actor, ['reason' => $reason], ['closed_reason' => 'CUSTOMER_DECLINED']);
+            DB::table('renewal_work_items')->where(['policy_id' => $case->policy_id, 'renewal_due_on' => $case->due_on->toDateString()])->whereNull('outcome')
+                ->update(['outcome' => 'DECLINED', 'status' => 'DECLINED', 'updated_at' => now()]);
+            $this->audit->record('renewal.declined', 'renewal_case', $case->id, ['policy_id' => $case->policy_id], $reason);
+            $this->outbox->record('renewal.declined', 'renewal_case', $case->id, ['renewal_case_id' => $case->id, 'policy_id' => $case->policy_id]);
+
+            return $case->refresh();
+        });
+    }
+
     public function complete(RenewalCase $case, Policy $successor): RenewalCase
     {
         return DB::transaction(function () use ($case, $successor): RenewalCase {

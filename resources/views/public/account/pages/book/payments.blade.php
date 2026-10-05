@@ -30,7 +30,7 @@ Opes.page(function (ctx) {
         cell.appendChild(h('button', { type: 'button', class: 'dbtn dbtn-primary sm', onclick: function () {
           var b = this; O.busy(b, true); O.alert('');
           O.api('/mobile/agent/sales/' + S.enc(q.id) + '/payment-request', { body: {} }).then(function (s) {
-            q.payment_status = s.payment_status || 'CUSTOMER_PROMPTED'; paint(); O.alert(S.t('prompted', { name: q.customer_name || '' }), 'ok');
+            q.payment_status = s.payment_status; O.busy(b, false); paint(); A.saleAlert(s, q.customer_name);
           }).catch(function (e) { O.busy(b, false); O.alert(A.errMsg(e), 'bad'); });
         } }, O.icon('send'), S.t('prompt_pay')));
       }

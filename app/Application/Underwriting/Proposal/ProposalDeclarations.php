@@ -46,6 +46,23 @@ final class ProposalDeclarations
         return $this->current($p)->where('code', $code)->where('text_version', $def['version'])->last();
     }
 
+    /**
+     * Current-version acceptance of $code given by the proposal's OWN party: a user of that party (in the app, on the
+     * website, or through a web acceptance link after proving the proposal's phone). An acceptance recorded by
+     * anyone else (agent, broker, staff) never counts here.
+     */
+    public function acceptedByParty(Proposal $p, string $code): ?ProposalDeclaration
+    {
+        $def = $this->catalogue()[$code] ?? null;
+        if ($def === null || $p->party_id === null) {
+            return null;
+        }
+        $rows = $this->current($p)->where('code', $code)->where('text_version', $def['version'])->whereNotNull('accepted_by');
+        $own = User::whereIn('id', $rows->pluck('accepted_by')->unique()->all())->where('party_id', $p->party_id)->pluck('id')->all();
+
+        return $rows->filter(fn (ProposalDeclaration $d) => in_array($d->accepted_by, $own, true))->last();
+    }
+
     /** @return list<string> required codes without a current acceptance */
     public function missing(Proposal $p): array
     {
@@ -69,6 +86,9 @@ final class ProposalDeclarations
                 'proposal_version' => $p->version,
                 'ip' => $context['ip'] ?? null,
                 'user_agent' => isset($context['user_agent']) ? mb_substr((string) $context['user_agent'], 0, 255) : null,
+                // Web acceptance link (ProposalAcceptanceLinks): which link, and the hash of the phone proven by OTP.
+                'acceptance_link_id' => $context['acceptance_link_id'] ?? null,
+                'verified_phone_hash' => $context['verified_phone_hash'] ?? null,
             ], fn ($v) => $v !== null),
             'accepted_by' => $actor?->id, 'accepted_at' => now(),
         ]);

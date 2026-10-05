@@ -17,8 +17,10 @@ final class MobilePaymentController
     public function index(Request $request, MobilePaymentService $service): JsonResponse
     {
         $perPage = max(1, min($request->integer('per_page', 20), 100));
+        // Optional per-policy / per-application filters (policy detail screen); still owner-scoped.
+        $filter = $request->validate(['policy_id' => 'sometimes|nullable|uuid', 'proposal_id' => 'sometimes|nullable|uuid']);
 
-        return response()->json(MobileList::fromPaginator($service->list($request->user(), app(TenantContext::class)->id(), $perPage)));
+        return response()->json(MobileList::fromPaginator($service->list($request->user(), app(TenantContext::class)->id(), $perPage, $filter['policy_id'] ?? null, $filter['proposal_id'] ?? null)));
     }
 
     public function show(string $payment, Request $request, MobilePaymentService $service): JsonResponse

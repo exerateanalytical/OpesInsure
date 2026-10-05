@@ -55,7 +55,9 @@ Opes.page(function (ctx) {
     }
 
     // ---- payment flow for a PAYMENT_PENDING proposal
-    var state = { step: 0, provider: null, phone: String((ctx.session.user && ctx.session.user.phone_e164) || '').replace(/^\+237/, '') };
+    var state = { step: 0, provider: null, phone: String((ctx.session.user && ctx.session.user.phone_e164) || '').replace(/^\+237/, ''), terms: null, termsTick: false };
+    // The customer's own contract-terms acceptance (GET /proposals/{id} terms.accepted); POST /payments answers 422 terms without it.
+    Opes.api('/proposals/' + encodeURIComponent(target.id)).then(function (p) { state.terms = p.terms || { accepted: false }; if (state.step === 2) draw(); }).catch(function () { state.terms = { accepted: false }; });
     var steps = h('div', { class: 'op-steps' });
     var main = h('div', { style: 'display:grid;gap:16px;min-width:0' });
     var sumCard = OP.card(P.sum_t);
@@ -95,10 +97,18 @@ Opes.page(function (ctx) {
               h('button', { type: 'button', class: 'dbtn dbtn-primary', onclick: function () { if (!phoneOk()) { err.hidden = false; input.focus(); return; } state.phone = state.phone.replace(/\s+/g, ''); state.step = 2; draw(); } }, P.continue, Opes.icon('arrow')))));
         }
       } else if (state.step === 2) {
-        var go = h('button', { type: 'button', class: 'dbtn dbtn-primary', onclick: function () { submit(go); } }, Opes.icon('lock'), P.confirm);
+        var go = h('button', { type: 'button', class: 'dbtn dbtn-primary', onclick: function () {
+          if (!(state.terms && state.terms.accepted) && !state.termsTick) return Opes.alert(P.terms_required);
+          submit(go);
+        } }, Opes.icon('lock'), P.confirm);
+        var accepted = !!(state.terms && state.terms.accepted);
         main.appendChild(h('section', { class: 'acard' }, h('h2', null, P.c_t), h('p', { class: 'sub' }, P.c_d),
           h('dl', { class: 'kv', style: 'max-width:520px' }, h('dt', null, P.item), h('dd', null, target.product_name + ' — ' + ((target.carrier_short_name || target.carrier_name) || '')), h('dt', null, P.method), h('dd', null, methodLabel(state.provider)),
             h('dt', null, P.payer), h('dd', null, '+237 ' + state.phone), h('dt', null, P.to_pay), h('dd', null, OP.mm(target.total_minor))),
+          accepted ? h('p', { class: 'acct-alert ok', style: 'margin:12px 0 0' }, P.terms_done) : h('div', { style: 'margin-top:14px;max-width:620px' },
+            h('b', null, P.terms_t), h('p', { class: 'sub', style: 'margin:4px 0 8px' }, P.terms_d.replace(':total', OP.mm(target.total_minor))),
+            h('label', { class: 'op-check', style: 'display:flex;gap:8px;align-items:flex-start' }, h('input', { type: 'checkbox', checked: state.termsTick, onchange: function () { state.termsTick = this.checked; } }),
+              h('span', null, (state.terms && state.terms.statement) || P.terms_accept))),
           h('div', { class: 'btnbar', style: 'justify-content:space-between' }, h('button', { type: 'button', class: 'dbtn dbtn-outline', onclick: function () { state.step = 1; draw(); } }, Opes.icon('chev-left'), T.back), go)));
       } else {
         main.appendChild(state.result);
@@ -106,7 +116,9 @@ Opes.page(function (ctx) {
     }
     function submit(btn) {
       Opes.busy(btn, true); Opes.alert('');
-      Opes.api('/payments', { body: { proposal_id: target.id, provider: state.provider, payer_phone_e164: '+237' + state.phone, idempotency_key: 'web-' + Opes.uuid() } })
+      // Record the contract-terms acceptance first (same service as the app: POST /proposals/{id}/terms), then pay.
+      (state.terms && state.terms.accepted ? Promise.resolve() : Opes.api('/proposals/' + encodeURIComponent(target.id) + '/terms', { body: { accepted: true } }).then(function () { state.terms = Object.assign({}, state.terms, { accepted: true }); }))
+        .then(function () { return Opes.api('/payments', { body: { proposal_id: target.id, provider: state.provider, payer_phone_e164: '+237' + state.phone, idempotency_key: 'web-' + Opes.uuid() } }); })
         .then(function (pay) { return Opes.api('/payments/' + pay.id + '/initiate', { body: {} }).then(function () { return pay; }); })
         .then(function (pay) {
           state.step = 3;

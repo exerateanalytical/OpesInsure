@@ -57,9 +57,12 @@ it('buys a policy from a rated quote, pays, gets it issued and downloads the doc
     expect(collect($this->getJson('/api/v1/mobile/proposals', $h)->assertOk()->json('data'))->pluck('id'))->toContain($pid);
     $this->putJson("/api/v1/proposals/$pid/disclosures", ['answers' => ['prior_claims' => false]], agentHeaders($f))->assertOk();
     $this->postJson("/api/v1/proposals/$pid/disclosures/attest", [], agentHeaders($f))->assertSuccessful();
-    $submitted = $this->postJson("/api/v1/proposals/$pid/submit", [], agentHeaders($f))->assertSuccessful();
+    // The review page accepts the contract terms (TERMS_ACCEPTANCE, same endpoint as the app), which submits the application.
+    $submitted = $this->postJson("/api/v1/proposals/$pid/terms", ['accepted' => true], agentHeaders($f))->assertSuccessful();
+    $this->get("/account/quotes/{$quote->id}/review")->assertOk()->assertSee("'/terms', { method: 'POST', body: { accepted: true } }", false);
 
     expect($submitted->json('data.status'))->toBe('PAYMENT_PENDING');
+    $this->getJson("/api/v1/proposals/$pid", $h)->assertOk()->assertJsonPath('data.terms.accepted', true);
 
     // Pay with MTN MoMo (sandbox, HTTP faked): create + initiate exactly as the review page does. POST /payments answers
     // PENDING_CUSTOMER without prompting anyone, so the page must initiate while the provider holds no reference.

@@ -32,9 +32,16 @@ final class MobilePaymentService
     ) {
     }
 
-    public function list(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
+    /**
+     * $policyId: the payments of that policy's application (payment intents carry proposal_id; the policy points
+     * back to it). $proposalId: one application's payments. Both stay inside the owner scope.
+     */
+    public function list(User $user, string $tenantId, int $perPage = 20, ?string $policyId = null, ?string $proposalId = null): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->orderByDesc('created_at')->paginate($perPage);
+        return $this->ownedQuery($user, $tenantId)
+            ->when($policyId, fn ($q) => $q->whereIn('proposal_id', Policy::where('tenant_id', $tenantId)->where('id', $policyId)->whereNotNull('proposal_id')->select('proposal_id')))
+            ->when($proposalId, fn ($q) => $q->where('proposal_id', $proposalId))
+            ->orderByDesc('created_at')->orderByDesc('id')->paginate($perPage);
     }
 
     public function show(string $paymentId, User $user, string $tenantId): PaymentIntentRecord

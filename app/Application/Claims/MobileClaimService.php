@@ -42,9 +42,11 @@ final class MobileClaimService
     ) {
     }
 
-    public function list(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
+    /** $policyId (optional): only the claims on that policy (policy detail screen) — still owner-scoped. */
+    public function list(User $user, string $tenantId, int $perPage = 20, ?string $policyId = null): LengthAwarePaginator
     {
-        $page = $this->ownedQuery($user, $tenantId)->with('policy.carrier')->orderByDesc('submitted_at')->paginate($perPage);
+        $page = $this->ownedQuery($user, $tenantId)->when($policyId, fn ($q) => $q->where('policy_id', $policyId))
+            ->with('policy.carrier')->orderByDesc('submitted_at')->orderByDesc('id')->paginate($perPage);
         $page->getCollection()->each(fn (Claim $c) => $c->setAttribute('carrier_logo_url', \App\Application\Documents\Letterhead\LetterheadResolver::carrierLogoUrl($c->policy?->carrier_id)));
 
         return $page;

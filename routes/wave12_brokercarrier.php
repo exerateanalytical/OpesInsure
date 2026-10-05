@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 // calling persona.
 Route::get('mobile/broker/dashboard', [MobileBrokerOpsController::class, 'dashboard'])->middleware('permission:broker.finance.read');
 Route::get('mobile/broker/receivables', [MobileBrokerOpsController::class, 'receivables'])->middleware('permission:broker.finance.read');
+Route::get('mobile/broker/receivables/{id}', [MobileBrokerOpsController::class, 'receivable'])->middleware('permission:broker.finance.read')->whereUuid('id');
 Route::get('mobile/broker/commission-accruals', [MobileBrokerFinanceController::class, 'commissionAccruals'])->middleware('permission:broker.finance.read');
 Route::get('mobile/broker/statements', [MobileBrokerFinanceController::class, 'statements'])->middleware('permission:broker.finance.read');
 Route::get('mobile/broker/statements/{statement}', [MobileBrokerFinanceController::class, 'statement'])->middleware('permission:broker.finance.read');

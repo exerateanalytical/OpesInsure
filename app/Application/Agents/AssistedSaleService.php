@@ -69,22 +69,38 @@ final class AssistedSaleService
         private AuditWriter $audit,
     ) {}
 
-    /** @param array{product:string, payment_phone_e164:string, provider?:?string, risk_facts:array} $data */
-    public function create(Tenant $tenant, TenantCustomer $customer, array $data, User $agent): Quote
+    /**
+     * @param array{product:string, payment_phone_e164:string, provider?:?string, risk_facts:array} $data
+     * Broker portal (2026-09-30): $channel BROKER + $sellerPartnerId (the broker's own partner) rates under the
+     * broker's agreements (QuoteService partner_id) and scopes the sale to the broker's book (seller_partner_id).
+     */
+    public function create(Tenant $tenant, TenantCustomer $customer, array $data, User $agent, string $channel = 'AGENT', ?string $sellerPartnerId = null): Quote
     {
         $line = strtoupper(trim($data['product']));
         if (! InsuranceLine::where(['code' => $line, 'status' => 'ACTIVE'])->exists()) {
             throw ValidationException::withMessages(['product' => __('validation.exists', ['attribute' => 'product'])]);
         }
-        $quote = $this->quotes->submit($tenant, $customer->party_id, ['line_code' => $line, 'channel' => 'AGENT', 'risk_facts' => $data['risk_facts']], $agent);
+        $quote = $this->quotes->submit($tenant, $customer->party_id, array_filter(['line_code' => $line, 'channel' => $channel, 'partner_id' => $sellerPartnerId, 'risk_facts' => $data['risk_facts']], fn ($v) => $v !== null), $agent);
         $quote = $this->quotes->rate($quote, $agent);
-        $quote->update(['comparison_context' => array_merge($quote->comparison_context ?? [], array_filter([
-            'assisted_sale' => true, 'agent_user_id' => $agent->id, 'customer_id' => $customer->id,
-            'payment_phone_e164' => $data['payment_phone_e164'], 'payment_provider' => $data['provider'] ?? null,
-        ], fn ($v) => $v !== null))]);
-        $this->audit->record('agent.sale.created', 'quote', $quote->id, ['line_code' => $line, 'offers' => $quote->offers()->count()]);
+        $this->adopt($quote, $customer, $agent, $sellerPartnerId, $data['payment_phone_e164'], $data['provider'] ?? null);
+        $this->audit->record('agent.sale.created', 'quote', $quote->id, ['line_code' => $line, 'offers' => $quote->offers()->count(), 'channel' => $channel]);
 
         return $quote->refresh();
+    }
+
+    /**
+     * Marks an already-rated quote of the client (e.g. a renewal re-quote, RenewalService::createQuote) as this
+     * seller's assisted sale, so the same advance()/present() steps apply: application → client terms → payment.
+     */
+    public function adopt(Quote $quote, TenantCustomer $customer, User $seller, ?string $sellerPartnerId = null, ?string $phone = null, ?string $provider = null, array $extra = []): Quote
+    {
+        $phone = $phone ?: (($quote->comparison_context ?? [])['payment_phone_e164'] ?? null) ?: $this->customerPhone($customer);
+        $quote->update(['comparison_context' => array_merge($quote->comparison_context ?? [], array_filter([
+            'assisted_sale' => true, 'agent_user_id' => $seller->id, 'customer_id' => $customer->id, 'seller_partner_id' => $sellerPartnerId,
+            'payment_phone_e164' => $phone, 'payment_provider' => $provider ?: self::providerForPhone($phone),
+        ], fn ($v) => $v !== null), $extra)]);
+
+        return $quote;
     }
 
     /**
@@ -319,7 +335,12 @@ final class AssistedSaleService
      */
     private function commission(Quote $quote, ?QuoteOffer $offer, ?Policy $policy, User $agent): array
     {
-        $partner = $this->partners->resolve($agent);
+        // A broker sale earns for the broker's partner (seller_partner_id); an agent sale for the agent's own partner.
+        $sellerPartnerId = ($quote->comparison_context ?? [])['seller_partner_id'] ?? null;
+        $partner = $sellerPartnerId ? \App\Models\Partner::find($sellerPartnerId) : $this->partners->resolve($agent);
+        if ($partner === null) {
+            return ['commission_minor' => null, 'commission_basis' => 'NOT_CONFIGURED', 'commission_status' => null, 'commission_rate_bp' => null];
+        }
         if ($policy) {
             $accrual = DB::table('commission_accruals')->where('policy_id', $policy->id)->where('partner_id', $partner->id)->orderByDesc('created_at')->first();
             if ($accrual) {

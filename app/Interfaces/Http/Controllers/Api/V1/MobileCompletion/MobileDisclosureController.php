@@ -32,7 +32,7 @@ final class MobileDisclosureController
         $p = $this->owned($proposal, $request);
         // Pre-submission (and information-required) answers go through the service: validation, referral flags,
         // hash; changing answers resets the attestation. Submitted proposals are immutable (422 disclosures_locked).
-        $p = $service->answer($p, $this->normalise($service, $p, $data['answers']), $request->user());
+        $p = $service->answer($p, \App\Application\Underwriting\Proposal\ProposalQuestions::normalise($service->questions($p), $data['answers']), $request->user());
 
         return response()->json(['data' => $this->present($service, $this->owned($p->id, $request))]);
     }
@@ -52,6 +52,9 @@ final class MobileDisclosureController
     {
         $data = $request->validate(['accepted' => 'required|accepted']);
         $p = $this->owned($proposal, $request);
+        // Only the proposal's own customer accepts its contract terms (owner rule 2026-09-30): an agent/broker who
+        // created the application sends the web acceptance link instead (ProposalAcceptanceLinks).
+        abort_unless($p->party_id !== null && $p->party_id === $request->user()->party_id, 403, __('acceptance.only_customer'));
         if (! $p->attested_at) {
             $p = $service->attest($p, $request->user(), [], 'MOBILE', $this->evidence($request));
         }
@@ -75,25 +78,6 @@ final class MobileDisclosureController
     private function evidence(Request $request): array
     {
         return ['ip' => $request->ip(), 'user_agent' => $request->userAgent()];
-    }
-
-    /** Booleans arrive as true/false or "true"/"false"/"yes"/"no" from the form. */
-    private function normalise(ProposalService $service, Proposal $p, array $answers): array
-    {
-        $out = [];
-        foreach ($service->questions($p) as $q) {
-            if (! array_key_exists($q['code'], $answers)) {
-                continue;
-            }
-            $v = $answers[$q['code']];
-            $out[$q['code']] = match (true) {
-                ($q['type'] ?? 'boolean') === 'boolean' => filter_var($v, FILTER_VALIDATE_BOOLEAN),
-                is_array($v) || $v === null => $v,
-                default => (string) $v,
-            };
-        }
-
-        return $out;
     }
 
     private function present(ProposalService $service, Proposal $p): array

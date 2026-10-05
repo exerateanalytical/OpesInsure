@@ -172,7 +172,8 @@ final class RoleCatalogue
 
     public const SENIOR_UNDERWRITER_PERMISSIONS = [...self::UNDERWRITER_PERMISSIONS, 'underwriting.assign', 'documents.medical.read', 'documents.status.request', 'carrier.quote_requests.view', 'carrier.quote_requests.respond', 'proposals.issuability.read', 'quotes.premium_override.approve', 'coinsurance.approve', 'special_policies.manage', 'cargo_declarations.cancel', 'life_surrender.scales.approve', 'policies.cancellation.approve', 'policies.suspend', 'policies.reinstatement.approve', 'policy.recovery.approve'];
 
-    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload', 'claims.experts.work', 'claims.assessment.record', 'provider_portal.assignments.view', 'provider_portal.profile.view'];
+    // Phase-1 fix S (2026-09-30): workspace.read = the mobile staff workspace, narrowed to the adjuster's assigned claims (WorkspaceDataScope).
+    public const ADJUSTER_PERMISSIONS = ['claims.view', 'claims.evidence.manage', 'documents.carrier.upload', 'claims.experts.work', 'claims.assessment.record', 'provider_portal.assignments.view', 'provider_portal.profile.view', 'workspace.read'];
 
     /**
      * Owner decision (agent R): "a claims officer cannot approve a colleague's claim".
@@ -198,9 +199,9 @@ final class RoleCatalogue
         ...self::CARRIER_CLAIMS_READS,
     ];
 
-    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal'];
+    public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal', 'workspace.read'];
 
-    public const REINSURANCE_OFFICER_PERMISSIONS = ['reinsurance.facultative.view', 'reinsurance.facultative.manage', 'reinsurance.facultative.approve', 'reinsurance.recoveries.view', 'reinsurance.recoveries.manage', 'reinsurance.recoveries.approve', 'reinsurance.recoveries.bill', 'reinsurance.recoveries.settle', 'policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view', 'fx.rates.view', 'finance.reports.view', 'technical_accounting.read'];
+    public const REINSURANCE_OFFICER_PERMISSIONS = ['reinsurance.facultative.view', 'reinsurance.facultative.manage', 'reinsurance.facultative.approve', 'reinsurance.recoveries.view', 'reinsurance.recoveries.manage', 'reinsurance.recoveries.approve', 'reinsurance.recoveries.bill', 'reinsurance.recoveries.settle', 'policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view', 'fx.rates.view', 'finance.reports.view', 'technical_accounting.read', 'workspace.read'];
 
     public const FINANCE_OFFICER_PERMISSIONS = ['ledger.read', 'reconciliation.read', 'reconciliation.import', 'settlement.read', 'refund.request', 'payout.request', 'documents.financial.read', 'policies.issuance_queue.view', 'policies.issuance_queue.manage', 'coinsurance.view', 'coinsurance.apportion', 'life_surrender.quote', 'policy.recovery.request', 'finance.obligations.view', 'payments.allocations.read', 'payments.allocations.manage', 'premium_status.read', 'premium_components.manage', 'refund.view', 'refund.review', 'refund.pay', 'clearing.view', 'clearing.manage', 'cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'statements.read', 'finance.exceptions.view', 'finance.reports.view', 'ledger.periods.close', 'technical_accounting.read', 'technical_accounting.actuarial.import', 'commission.statements.adjust', 'commission.statements.dispute', 'bordereaux.view', 'collections.view', 'collections.manage',
         // E9: the carrier finance screens, scoped to the linked carrier.
@@ -208,10 +209,10 @@ final class RoleCatalogue
         // Launch fix 2026-09-29: the mobile finance workspace (mobile/workspace/*) answered 403 without it.
         'workspace.read'];
 
-    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'finance.obligations.view', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.view'];
+    public const BRANCH_MANAGER_PERMISSIONS = ['customers.read', 'policies.read', 'risk_assets.read', 'claims.view', 'commission.read', 'renewals.manage', 'quotes.rate', 'crm.leads.read', 'crm.leads.manage', 'crm.leads.assign', 'beneficiaries.read', 'distribution.catalogue.view', 'policies.issuance_queue.view', 'stickers.view', 'stickers.handover', 'stickers.allocate', 'stickers.reconcile', 'stickers.assign', 'special_policies.view', 'policies.portfolio_transfer.read', 'policies.portfolio_transfer.request', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'finance.obligations.view', 'cashier.sessions.view', 'cashier.sessions.approve', 'fx.rates.view', 'workspace.read'];
 
     /** D10: till operator. Operates a cashier session; never approves it (BRANCH_MANAGER / checker does). */
-    public const CASHIER_PERMISSIONS = ['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view'];
+    public const CASHIER_PERMISSIONS = ['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view', 'workspace.read'];
 
     /**
      * Provider Portal Gap-Free spec permissions (the /provider panel screens, config/permissions.php 'provider_workspace')

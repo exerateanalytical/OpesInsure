@@ -24,6 +24,18 @@ return [
         'activity' => 'Activity', 'activity_type' => 'Activity type', 'activity_body' => 'What happened?', 'follow_up_at' => 'Follow-up', 'log_activity' => 'Log activity',
         'activity_logged' => 'Activity logged.', 'no_activity' => 'No activity yet.', 'loading' => 'Loading…',
         'collect_premium' => 'Request payment', 'payment_requested' => 'Payment request sent to :name.',
+        // What a "Request payment" tap did (POST mobile/agent/sales/{id}/payment-request → step, client_acceptance)
+        'sale_step_APPLICATION_SENT' => 'Application sent to :name. They receive an SMS link to review it and accept the terms themselves.',
+        'sale_step_REMINDER_SENT' => 'Reminder sent to :name to review and accept the application.',
+        'sale_step_REMINDER_RECENT' => ':name was reminded a few minutes ago. Waiting for them to accept the terms.',
+        'sale_step_PAYMENT_PROMPTED' => 'Payment prompt sent to :name\'s phone. They approve it with their mobile-money PIN.',
+        'sale_step_PAYMENT_PENDING' => 'A payment prompt is already on :name\'s phone. Waiting for their approval.',
+        'sale_step_PAYMENT_FAILED' => 'The last payment attempt for :name failed. Tap again to send a new prompt.',
+        'sale_step_UNDER_REVIEW' => 'The insurer is reviewing :name\'s application. Nothing to send yet.',
+        'sale_step_PAID' => ':name has paid. The insurer is issuing the policy.',
+        'sale_step_NONE' => 'Nothing to send for :name right now.',
+        'sale_link_NO_PHONE' => 'No phone number on file for :name: the acceptance link could not be sent. Add their phone number.',
+        'sale_link_SMS_FAILED' => 'The acceptance link SMS to :name could not be sent. Check the SMS provider settings.',
         // book, client claim, client documents, staff (UI audit 2026-09-27)
         'tab_quotes' => 'Quotes', 'tab_proposals' => 'Proposals', 'tab_policies' => 'Policies', 'tab_claims' => 'Claims',
         'th_proposal' => 'Proposal', 'th_claim' => 'Claim', 'th_submitted' => 'Submitted', 'th_loss_date' => 'Loss date', 'th_estimate' => 'Estimate', 'th_document' => 'Document', 'th_number' => 'Number',

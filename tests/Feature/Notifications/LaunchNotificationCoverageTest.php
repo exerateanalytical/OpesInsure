@@ -241,14 +241,15 @@ it('schedules renewal reminders at 90/60/30/15/7 days (plus the day before)', fu
     expect(config('lifecycle.expiry_reminder_days'))->toBe([90, 60, 30, 15, 7, 1]);
 });
 
-it('deep-links complaint notifications to a support screen the app has (never /support/complaints/{id})', function () {
+it('deep-links complaint notifications to the app complaint screen /complaints/{id} (never /support/complaints/{id})', function () {
     $f = s8Fixture('en');
     $router = app(LaunchNotificationRouter::class);
-    $ticket = (string) Str::uuid();
-    $router->complaintStatus((object) ['id' => (string) Str::uuid(), 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-2', 'support_ticket_id' => $ticket], 'RECEIVED');
-    $router->complaintStatus((object) ['id' => (string) Str::uuid(), 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-3'], 'CLOSED');
+    $a = (string) Str::uuid();
+    $b = (string) Str::uuid();
+    $router->complaintStatus((object) ['id' => $a, 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-2', 'support_ticket_id' => (string) Str::uuid()], 'RECEIVED');
+    $router->complaintStatus((object) ['id' => $b, 'tenant_id' => $f['tenant']->id, 'party_id' => $f['party']->id, 'complaint_number' => 'CPL-S8-3'], 'CLOSED');
 
     $paths = UserNotification::where('user_id', $f['user']->id)->where('type', 'COMPLAINT')->pluck('path')->all();
-    expect($paths)->toContain("/support/{$ticket}", '/support')
-        ->and(collect($paths)->filter(fn ($p) => str_contains((string) $p, '/complaints/'))->all())->toBe([]);
+    expect($paths)->toContain("/complaints/{$a}", "/complaints/{$b}")
+        ->and(collect($paths)->filter(fn ($p) => str_contains((string) $p, '/support/complaints/'))->all())->toBe([]);
 });

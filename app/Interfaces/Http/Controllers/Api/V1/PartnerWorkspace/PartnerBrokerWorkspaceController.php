@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
 use App\Application\Identity\InvitationService;
+use App\Application\Mobile\ListCursor;
 use App\Application\PartnerWorkspace\PartnerBookQuery;
 use App\Application\PartnerWorkspace\PartnerWorkspaceScope;
 use App\Domain\Tenancy\TenantContext;
@@ -23,6 +24,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Broker workspace: quotes, policies, claims for the broker's attributed
  * book; staff memberships + invitations; commission accruals + statements.
+ *
+ * Phase-1 fix S (2026-09-30): quotes / policies / claims / proposals page with ?cursor= (meta.next_cursor; the first
+ * page is unchanged) and policies / claims have per-id reads bounded by the same book.
  */
 final class PartnerBrokerWorkspaceController
 {
@@ -44,29 +48,51 @@ final class PartnerBrokerWorkspaceController
     public function quotes(Request $request): JsonResponse
     {
         $t = $this->tenant();
-        $rows = Quote::with(['party', 'offers'])->where('tenant_id', $t)->whereIn('party_id', $this->book($request))->orderByDesc('created_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply(Quote::with(['party', 'offers'])->where('tenant_id', $t)->whereIn('party_id', $this->book($request))->orderByDesc('created_at')->orderBy('id'))->get());
 
-        return response()->json(['data' => $rows->map(fn (Quote $q) => PartnerWorkspaceShapes::quote($q, $t))->values()]);
+        return response()->json(['data' => $rows->map(fn (Quote $q) => PartnerWorkspaceShapes::quote($q, $t))->values(), 'meta' => $page->meta()]);
     }
 
     public function policies(Request $request): JsonResponse
     {
-        $rows = Policy::with(['party', 'carrier.party'])->where('tenant_id', $this->tenant())->whereIn('party_id', $this->book($request))->orderByDesc('issued_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply($this->policyQuery($request)->orderByDesc('issued_at')->orderBy('id'))->get());
 
-        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values()]);
+        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function policy(string $policy, Request $request): JsonResponse
+    {
+        abort_unless(\Illuminate\Support\Str::isUuid($policy), 404);
+
+        return response()->json(['data' => PartnerWorkspaceShapes::policy($this->policyQuery($request)->whereKey($policy)->firstOrFail())]);
+    }
+
+    private function policyQuery(Request $request)
+    {
+        return Policy::with(['party', 'carrier.party'])->where('tenant_id', $this->tenant())->whereIn('party_id', $this->book($request));
     }
 
     public function claims(Request $request, PartnerBookQuery $book): JsonResponse
     {
-        return response()->json(['data' => $book->claims($this->tenant(), $this->book($request))->map(fn (Claim $c) => PartnerWorkspaceShapes::claim($c))->values()]);
+        $page = ListCursor::from($request);
+
+        return response()->json(['data' => $book->claims($this->tenant(), $this->book($request), $page)->map(fn (Claim $c) => PartnerWorkspaceShapes::claim($c))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function claim(string $claim, Request $request, PartnerBookQuery $book): JsonResponse
+    {
+        return response()->json(['data' => PartnerWorkspaceShapes::claim($book->bookClaim($this->tenant(), $this->book($request), $claim))]);
     }
 
     /** Proposals of the broker's attributed book (UI audit 2026-09-27: web book pages). */
     public function proposals(Request $request, PartnerBookQuery $book): JsonResponse
     {
         $t = $this->tenant();
+        $page = ListCursor::from($request);
 
-        return response()->json(['data' => $book->proposals($t, $this->book($request))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
+        return response()->json(['data' => $book->proposals($t, $this->book($request), $page)->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values(), 'meta' => $page->meta()]);
     }
 
     /** Documents of one book client, filtered by DocumentAccessPolicy::intermediaryMay. */

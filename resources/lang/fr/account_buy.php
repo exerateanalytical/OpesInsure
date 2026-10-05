@@ -90,6 +90,10 @@ return [
         'terms_required' => 'Veuillez accepter les conditions pour continuer.', 'confirm_plan' => 'Confirmer la formule et continuer',
         'attest' => 'Je confirme que mes réponses sont exactes et complètes. Je comprends qu\'une fausse déclaration peut annuler la police.',
         'attest_required' => 'Veuillez répondre à chaque question et confirmer vos déclarations.', 'submit_app' => 'Soumettre la demande',
+        // Acceptation des conditions du contrat (TERMS_ACCEPTANCE via POST /proposals/{id}/terms ; requise pour payer).
+        'contract_terms_h' => 'Conditions du contrat', 'contract_terms_d' => "L'assureur vous couvre selon les conditions, la prime et les garanties indiquées sur cette page. Total à payer : :total.",
+        'contract_terms_accept' => "J'accepte les conditions, la prime et les garanties qui m'ont été présentées.", 'contract_terms_required' => 'Veuillez accepter les conditions du contrat pour continuer.',
+        'contract_terms_done' => 'Vous avez accepté les conditions du contrat.',
         'docs_needed' => 'L\'assureur a besoin de ces documents avant le paiement :', 'docs_where' => 'Téléversez-les depuis votre espace Documents ou l\'application mobile, puis revenez ici.',
         'pay_method_h' => '5. Choisissez le moyen de paiement', 'mtn' => 'MTN Mobile Money', 'mtn_s' => 'Payez en toute sécurité avec MTN MoMo', 'orange' => 'Orange Money', 'orange_s' => 'Payez en toute sécurité avec Orange Money',
         'payer_phone' => 'Numéro mobile money', 'phone_hint' => 'Numéro camerounais, ex. +237 6XX XX XX XX', 'phone_invalid' => 'Saisissez un numéro mobile camerounais valide (+237 6… ou +237 2…).',

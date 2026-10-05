@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\PartnerWorkspace;
 
 use App\Application\Documents\Engine\{DocumentAccessPolicy, DocumentEngine, DocumentRegister};
+use App\Application\Mobile\ListCursor;
 use App\Models\{Claim, Document, Policy, Proposal, TenantCustomer};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
@@ -18,18 +19,41 @@ final class PartnerBookQuery
 {
     public function __construct(private readonly DocumentRegister $register) {}
 
-    /** @param list<string> $book @return Collection<int, Proposal> */
-    public function proposals(string $tenantId, array $book): Collection
+    /**
+     * Phase-1 fix S: $page pages the list (?cursor=, meta.next_cursor); without it the first 100 rows, as before.
+     *
+     * @param  list<string>  $book
+     * @return Collection<int, Proposal>
+     */
+    public function proposals(string $tenantId, array $book, ?ListCursor $page = null): Collection
     {
-        return Proposal::with(['party', 'offer.carrier.party', 'offer.quote'])->where('tenant_id', $tenantId)->whereIn('party_id', $book)
-            ->orderByDesc('created_at')->limit(100)->get();
+        return $this->page(Proposal::with(['party', 'offer.carrier.party', 'offer.quote'])->where('tenant_id', $tenantId)->whereIn('party_id', $book)
+            ->orderByDesc('created_at')->orderBy('id'), $page);
     }
 
     /** Claims on policies held by the book (same rule as GET /mobile/partner/broker/claims). @param list<string> $book @return Collection<int, Claim> */
-    public function claims(string $tenantId, array $book): Collection
+    public function claims(string $tenantId, array $book, ?ListCursor $page = null): Collection
     {
-        return Claim::with(['policy.party', 'policy.carrier.party', 'claimant'])->where('tenant_id', $tenantId)->whereHas('policy', fn ($p) => $p->whereIn('party_id', $book))
-            ->orderByDesc('submitted_at')->limit(100)->get();
+        return $this->page($this->claimQuery($tenantId, $book)->orderByDesc('submitted_at')->orderBy('id'), $page);
+    }
+
+    /** One claim on a book policy, or 404. @param list<string> $book */
+    public function bookClaim(string $tenantId, array $book, string $claimId): Claim
+    {
+        abort_unless(\Illuminate\Support\Str::isUuid($claimId), 404);
+
+        return $this->claimQuery($tenantId, $book)->whereKey($claimId)->firstOrFail();
+    }
+
+    /** @param list<string> $book */
+    private function claimQuery(string $tenantId, array $book)
+    {
+        return Claim::with(['policy.party', 'policy.carrier.party', 'claimant'])->where('tenant_id', $tenantId)->whereHas('policy', fn ($p) => $p->whereIn('party_id', $book));
+    }
+
+    private function page($query, ?ListCursor $page): Collection
+    {
+        return $page ? $page->slice($page->apply($query)->get()) : $query->limit(100)->get();
     }
 
     /** The book client, or 404 (another partner's client and an unknown id look the same). @param list<string> $book */

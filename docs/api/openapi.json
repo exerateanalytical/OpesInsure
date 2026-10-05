@@ -49060,6 +49060,157 @@
                 ]
             }
         },
+        "/api/v1/mobile/agent/renewals/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_agent_renewals_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@agentRenewal",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/agent/renewals/{policy}/decline": {
+            "post": {
+                "operationId": "post_api_v1_mobile_agent_renewals_policy_decline",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@agentDeclineRenewal",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/agent/renewals/{policy}/requote": {
+            "post": {
+                "operationId": "post_api_v1_mobile_agent_renewals_policy_requote",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@agentRequote",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "agent.clients.manage",
+                    "quotes.rate"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/agent/sales": {
             "post": {
                 "operationId": "post_api_v1_mobile_agent_sales",
@@ -49116,17 +49267,21 @@
                                     },
                                     "payment_phone_e164": {
                                         "type": "string",
-                                        "x-rules": "required|string|max:32"
+                                        "x-rules": ""
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "x-rules": "nullable|in:"
                                     },
                                     "risk_facts": {
                                         "type": "array",
-                                        "x-rules": "sometimes|array"
+                                        "x-rules": "required|array|min:1"
                                     }
                                 },
                                 "required": [
                                     "customer_id",
                                     "product",
-                                    "payment_phone_e164"
+                                    "risk_facts"
                                 ]
                             }
                         }
@@ -49231,7 +49386,30 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "offer_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "x-rules": "nullable|in:"
+                                    },
+                                    "payment_phone_e164": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/agent/withdrawals": {
@@ -49708,6 +49886,69 @@
                 }
             }
         },
+        "/api/v1/mobile/broker/claimable-policies": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_claimable_policies",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@claimablePolicies",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.claims.file"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "q": {
+                            "type": "string",
+                            "x-rules": "nullable|string|max:80"
+                        },
+                        "customer_id": {
+                            "type": "string",
+                            "x-rules": "nullable|uuid"
+                        },
+                        "policy_id": {
+                            "type": "string",
+                            "x-rules": "nullable|uuid"
+                        },
+                        "per_page": {
+                            "type": "integer",
+                            "x-rules": "nullable|integer|min:1|max:50"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mobile/broker/clients": {
             "get": {
                 "operationId": "get_api_v1_mobile_broker_clients",
@@ -49957,6 +50198,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/broker/compliance/{id}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_compliance_id",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileBrokerOpsController@complianceItem",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/broker/dashboard": {
             "get": {
                 "operationId": "get_api_v1_mobile_broker_dashboard",
@@ -50151,6 +50442,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/broker/production/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_production_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileBrokerOpsController@productionItem",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/broker/receivables": {
             "get": {
                 "operationId": "get_api_v1_mobile_broker_receivables",
@@ -50173,6 +50514,56 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.finance.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/broker/receivables/{id}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_receivables_id",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileBrokerOpsController@receivable",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",
@@ -50233,6 +50624,377 @@
                         "userToken": []
                     }
                 ]
+            }
+        },
+        "/api/v1/mobile/broker/renewals/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_renewals_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@renewal",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/broker/renewals/{policy}/decline": {
+            "post": {
+                "operationId": "post_api_v1_mobile_broker_renewals_policy_decline",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@declineRenewal",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.renewals.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:3|max:500"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/broker/renewals/{policy}/requote": {
+            "post": {
+                "operationId": "post_api_v1_mobile_broker_renewals_policy_requote",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@requote",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.renewals.manage",
+                    "quotes.rate"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/broker/sales": {
+            "post": {
+                "operationId": "post_api_v1_mobile_broker_sales",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@createSale",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "quotes.manage",
+                    "quotes.rate"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "string",
+                                        "x-rules": "required|uuid"
+                                    },
+                                    "product": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:32"
+                                    },
+                                    "payment_phone_e164": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "x-rules": "nullable|in:"
+                                    },
+                                    "risk_facts": {
+                                        "type": "array",
+                                        "x-rules": "required|array|min:1"
+                                    }
+                                },
+                                "required": [
+                                    "customer_id",
+                                    "product",
+                                    "risk_facts"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/broker/sales/{id}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_broker_sales_id",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@sale",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/broker/sales/{id}/payment-request": {
+            "post": {
+                "operationId": "post_api_v1_mobile_broker_sales_id_payment_request",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileIntermediaryDeskController@advanceSale",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "quotes.manage"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "offer_id": {
+                                        "type": "string",
+                                        "x-rules": "nullable|uuid"
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "x-rules": "nullable|in:"
+                                    },
+                                    "payment_phone_e164": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/broker/statements": {
@@ -51172,7 +51934,16 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "policy_id": {
+                            "type": "string",
+                            "x-rules": "sometimes|nullable|uuid"
+                        }
+                    }
+                }
             },
             "post": {
                 "operationId": "post_api_v1_mobile_claims",
@@ -51521,7 +52292,22 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "declaration_confirmed": {
+                                        "type": "boolean",
+                                        "x-rules": "sometimes|boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/claims/emergency-assistance": {
@@ -52367,10 +53153,213 @@
                                     "decision": {
                                         "type": "string",
                                         "x-rules": "required|in:ACCEPT,REJECT"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:2000"
                                     }
                                 },
                                 "required": [
                                     "decision"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/claims/{claim}/settlement/discharge/decline": {
+            "post": {
+                "operationId": "post_api_v1_mobile_claims_claim_settlement_discharge_decline",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileSettlementDischargeController@decline",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:5|max:2000"
+                                    }
+                                },
+                                "required": [
+                                    "reason"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/claims/{claim}/settlement/discharge/sign": {
+            "post": {
+                "operationId": "post_api_v1_mobile_claims_claim_settlement_discharge_sign",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileSettlementDischargeController@sign",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "consent_accepted": {
+                                        "type": "string",
+                                        "x-rules": "required|accepted"
+                                    }
+                                },
+                                "required": [
+                                    "consent_accepted"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/claims/{claim}/settlement/payout": {
+            "put": {
+                "operationId": "put_api_v1_mobile_claims_claim_settlement_payout",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileSettlementDischargeController@payout",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "method": {
+                                        "type": "string",
+                                        "x-rules": "required|in:MOBILE_MONEY,BANK_TRANSFER"
+                                    },
+                                    "operator": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                },
+                                "required": [
+                                    "method"
                                 ]
                             }
                         }
@@ -55592,6 +56581,56 @@
                 }
             }
         },
+        "/api/v1/mobile/partner/broker/claims/{claim}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_broker_claims_claim",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerBrokerWorkspaceController@claim",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/broker/clients/{customer}/documents": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_broker_clients_customer_documents",
@@ -55706,6 +56745,56 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "broker.portal.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/broker/policies/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_broker_policies_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerBrokerWorkspaceController@policy",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",
@@ -56513,6 +57602,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/partner/carrier/partners/{partner}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_carrier_partners_partner",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@partner",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "partner",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.dashboard.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/carrier/payments": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_carrier_payments",
@@ -56535,6 +57674,56 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.finance.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/carrier/payments/{payment}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_carrier_payments_payment",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@payment",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",
@@ -56597,6 +57786,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/partner/carrier/policies/{policy}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_carrier_policies_policy",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@policy",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.dashboard.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/partner/carrier/products": {
             "get": {
                 "operationId": "get_api_v1_mobile_partner_carrier_products",
@@ -56619,6 +57858,56 @@
                     }
                 },
                 "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.dashboard.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/partner/carrier/products/{product}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_carrier_products_product",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@product",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "X-Tenant-Id",
                         "in": "header",
@@ -56754,6 +58043,56 @@
                 ]
             }
         },
+        "/api/v1/mobile/partner/carrier/proposals/{proposal}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_partner_carrier_proposals_proposal",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\PartnerWorkspace\\PartnerCarrierWorkspaceController@proposal",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "proposal",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "carrier.referrals.read"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
         "/api/v1/mobile/payments": {
             "get": {
                 "operationId": "get_api_v1_mobile_payments",
@@ -56790,7 +58129,20 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "policy_id": {
+                            "type": "string",
+                            "x-rules": "sometimes|nullable|uuid"
+                        },
+                        "proposal_id": {
+                            "type": "string",
+                            "x-rules": "sometimes|nullable|uuid"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/payments/{payment}": {
@@ -57011,6 +58363,51 @@
                         }
                     }
                 }
+            },
+            "get": {
+                "operationId": "get_api_v1_mobile_payments_payment_refunds",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCustomerMoneyController@paymentRefunds",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
             }
         },
         "/api/v1/mobile/payments/{payment}/retry": {
@@ -57165,6 +58562,130 @@
                         "userToken": []
                     }
                 ]
+            }
+        },
+        "/api/v1/mobile/policies/{policy}/instalments": {
+            "get": {
+                "operationId": "get_api_v1_mobile_policies_policy_instalments",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCustomerMoneyController@instalments",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/policies/{policy}/instalments/{instalment}/pay": {
+            "post": {
+                "operationId": "post_api_v1_mobile_policies_policy_instalments_instalment_pay",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCustomerMoneyController@payInstalment",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "policy",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "instalment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "provider": {
+                                        "type": "string",
+                                        "x-rules": "required|in:fake,maviance,campay,mtn_momo,orange_money"
+                                    },
+                                    "payer_phone_e164": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    }
+                                },
+                                "required": [
+                                    "provider"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/policy-documents/{document}/download": {
@@ -57497,7 +59018,16 @@
                     {
                         "userToken": []
                     }
-                ]
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "quote_offer_id": {
+                            "type": "string",
+                            "x-rules": "sometimes|nullable|uuid"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/proposals/{proposal}": {
@@ -57804,6 +59334,53 @@
                 "parameters": [
                     {
                         "name": "quote",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/refunds/{refund}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_refunds_refund",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileCustomerMoneyController@refundShow",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "refund",
                         "in": "path",
                         "required": true,
                         "schema": {
@@ -59112,6 +60689,381 @@
                         "userToken": []
                     }
                 ]
+            }
+        },
+        "/api/v1/mobile/workspace/claims": {
+            "get": {
+                "operationId": "get_api_v1_mobile_workspace_claims",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@index",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.view"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "x-query-rules": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "x-rules": "nullable|string|max:400"
+                        },
+                        "q": {
+                            "type": "string",
+                            "x-rules": "nullable|string|max:100"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/workspace/claims/{claim}": {
+            "get": {
+                "operationId": "get_api_v1_mobile_workspace_claims_claim",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@show",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.view"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/workspace/claims/{claim}/assign-to-me": {
+            "post": {
+                "operationId": "post_api_v1_mobile_workspace_claims_claim_assign_to_me",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@assignToMe",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.assign"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/workspace/claims/{claim}/decisions": {
+            "post": {
+                "operationId": "post_api_v1_mobile_workspace_claims_claim_decisions",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@proposeDecision",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.decision.propose"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "decision": {
+                                        "type": "string",
+                                        "x-rules": "required|in:APPROVE,PARTIAL,DECLINE"
+                                    },
+                                    "approved_amount_minor": {
+                                        "type": "integer",
+                                        "x-rules": "required_unless:decision,DECLINE|nullable|integer|min:0"
+                                    },
+                                    "reason_code": {
+                                        "type": "string",
+                                        "x-rules": "required|string|max:64"
+                                    },
+                                    "rationale": {
+                                        "type": "string",
+                                        "x-rules": "required|string|min:20|max:5000"
+                                    }
+                                },
+                                "required": [
+                                    "decision",
+                                    "approved_amount_minor",
+                                    "reason_code",
+                                    "rationale"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mobile/workspace/claims/{claim}/decisions/{decision}/approve": {
+            "post": {
+                "operationId": "post_api_v1_mobile_workspace_claims_claim_decisions_decision_approve",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@approveDecision",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "decision",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.decision.approve"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/mobile/workspace/claims/{claim}/transitions": {
+            "post": {
+                "operationId": "post_api_v1_mobile_workspace_claims_claim_transitions",
+                "tags": [
+                    "mobile"
+                ],
+                "summary": "App\\Interfaces\\Http\\Controllers\\Api\\V1\\MobileCompletion\\MobileWorkspaceClaimsController@transition",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "claim",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Tenant-Id",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "workspace.read",
+                    "claims.transition"
+                ],
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "to_status": {
+                                        "type": "string",
+                                        "x-rules": ""
+                                    },
+                                    "note": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:2000"
+                                    },
+                                    "closure_summary": {
+                                        "type": "string",
+                                        "x-rules": "nullable|string|max:2000"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/mobile/workspace/dashboard": {

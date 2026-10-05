@@ -115,6 +115,63 @@ final class MobileAuthService
     }
 
     /**
+     * Proof that the person holds a given phone, whether or not it has an account (web contract-acceptance links,
+     * ProposalAcceptanceLinks): the same code rules as sign-in (hashed, 5-minute TTL, 5 attempts, per-phone and per-IP
+     * send ceilings, fixed demo code for demo persona phones) but the code is always sent, because the number is the
+     * one on the proposal, not one typed by a prober. No session is issued.
+     *
+     * @return array{challenge_id: string, expires_in: int}
+     */
+    public function requestPhoneProof(string $phoneE164, string $ip, string $purpose): array
+    {
+        $demo = self::isDemoPersonaPhone($phoneE164);
+        $this->guardIp($ip, $demo);
+        $this->guardIpBucket('send', $ip, self::IP_CODE_SENDS_PER_HOUR, 3600, $demo);
+        $this->guardCodeSends($phoneE164, $demo);
+        if (! $this->usesDemoCode($phoneE164) && app(\App\Application\Notifications\Otp\OtpDeliveryService::class)->status() === 'CONFIG_REQUIRED') {
+            Log::critical('otp.delivery_failed', ['reason' => 'CONFIG_REQUIRED', 'purpose' => strtolower($purpose)]);
+            throw ValidationException::withMessages(['code' => __('sms_providers.otp_config_required')]);
+        }
+        $challenge = $this->createChallenge(null, $phoneE164, $ip, $purpose, null, sendIfUser: false, alwaysSend: true);
+        $this->audit->record('phone_proof.requested', 'verification_challenge', $challenge->id, ['purpose' => $purpose]);
+
+        return ['challenge_id' => $challenge->id, 'expires_in' => self::OTP_TTL_SECONDS];
+    }
+
+    /** Checks a requestPhoneProof() code for that phone and purpose; a wrong code counts an attempt (committed) and throws. */
+    public function confirmPhoneProof(string $challengeId, string $code, string $phoneE164, string $purpose, string $ip): void
+    {
+        $lookup = VerificationChallenge::find($challengeId);
+        $this->guardIp($ip, $lookup !== null && $this->isDemoDestination($lookup->destination_hash));
+        // As verifyOtp(): the attempt increment commits before the failure is thrown.
+        $ok = DB::transaction(function () use ($challengeId, $code, $phoneE164, $purpose): bool {
+            $challenge = VerificationChallenge::whereKey($challengeId)->lockForUpdate()->first();
+            if ($challenge && ! hash_equals($challenge->destination_hash, hash('sha256', $phoneE164))) {
+                return false;
+            }
+            try {
+                $this->assertChallengeUsable($challenge, [$purpose]);
+            } catch (ValidationException) {
+                return false;
+            }
+            if (! Hash::check($code, $challenge->code_hash)) {
+                $challenge->increment('attempts');
+                if ($challenge->attempts >= $challenge->max_attempts) {
+                    $challenge->update(['consumed_at' => now()]);
+                }
+
+                return false;
+            }
+            $challenge->update(['consumed_at' => now()]);
+
+            return true;
+        });
+        if (! $ok) {
+            throw ValidationException::withMessages(['code' => __('wave12.otp_invalid')]);
+        }
+    }
+
+    /**
      * Phone + password sign-in. Same response as verifyOtp(). Every failure
      * (unknown phone, wrong password, inactive account) gives one generic
      * message so the endpoint cannot be used to discover registered numbers.
@@ -503,7 +560,7 @@ final class MobileAuthService
         return $challenge->user_id;
     }
 
-    private function createChallenge(?User $user, string $phoneE164, string $ip, string $purpose, ?string $channel, bool $sendIfUser, ?string $emailTo = null): VerificationChallenge
+    private function createChallenge(?User $user, string $phoneE164, string $ip, string $purpose, ?string $channel, bool $sendIfUser, ?string $emailTo = null, bool $alwaysSend = false): VerificationChallenge
     {
         $code = $this->issueCode($phoneE164);
 
@@ -526,7 +583,7 @@ final class MobileAuthService
 
         if ($emailTo !== null) {
             $this->sendOtpEmail($emailTo, $code);
-        } elseif ($user && $sendIfUser) {
+        } elseif (($user && $sendIfUser) || $alwaysSend) {
             // Only a registered phone is actually messaged, but the response
             // never differs, so a prober cannot tell registered numbers apart.
             SendOtpJob::send($phoneE164, $code, "Your OpesInsure verification code is {$code}. It expires in 5 minutes. Never share this code with anyone.", $channel, $challenge->id);

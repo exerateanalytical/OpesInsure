@@ -91,7 +91,7 @@ it('D10-3 adds a CASHIER tenant role distinct from the approving BRANCH_MANAGER'
     expect(RoleCatalogue::codes())->toContain('CASHIER')
         ->and(RoleCatalogue::invitableOptions())->toHaveKey('CASHIER')
         ->and(RoleCatalogue::isPlatformOnly('CASHIER'))->toBeFalse()
-        ->and(RoleCatalogue::defaultPermissions('CASHIER'))->toEqualCanonicalizing(['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view'])
+        ->and(RoleCatalogue::defaultPermissions('CASHIER'))->toEqualCanonicalizing(['cashier.sessions.view', 'cashier.sessions.operate', 'fx.rates.view', 'premium_status.read', 'statements.read', 'finance.obligations.view', 'workspace.read'])
         ->and(RoleCatalogue::defaultPermissions('BRANCH_MANAGER'))->toContain('cashier.sessions.approve')->not->toContain('cashier.sessions.operate');
 });
 

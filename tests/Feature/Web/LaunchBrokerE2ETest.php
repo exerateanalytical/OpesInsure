@@ -328,7 +328,7 @@ function lbeDanger(): array
 
 it('takes a customer from quote to issued policy and certificate entirely through the /broker pages (BROKER_STAFF)', function () {
     Storage::fake('local');
-    Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok', 'id' => 'ticket']]])]);
+    Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok', 'id' => 'ticket']]]), 'api.twilio.com/*' => Http::response(['sid' => 'SM1'], 201)]);
     $this->travelTo(now()->setDate(2026, 10, 10)->setTime(10, 0));
     $t = \App\Models\Tenant::create(['type' => 'BROKER', 'legal_name' => 'LBE Broker '.Str::random(4), 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en', 'settings' => []]);
     $brokerage = Partner::create(['tenant_id' => $t->id, 'party_id' => Party::create(['type' => 'ORGANIZATION', 'display_name' => 'Cabinet R6', 'status' => 'ACTIVE'])->id, 'type' => 'BROKER', 'status' => 'ACTIVE']);
@@ -393,7 +393,14 @@ it('takes a customer from quote to issued policy and certificate entirely throug
     $ok(Livewire::test(ViewProposal::class, ['record' => $proposal->id])->callAction('proposalSubmit'));
     expect($proposal->refresh()->status)->toBe('PAYMENT_PENDING');
 
-    // 5. Premium request in test mode; the provider confirms; the insurer issues.
+    // 5. Premium request in test mode; the provider confirms; the insurer issues. The customer's own terms acceptance comes
+    //    first (owner rule 2026-09-30): without it the action only sends the customer the web acceptance link.
+    lbeAs($staff, $t->id);
+    $ok(Livewire::test(ViewProposal::class, ['record' => $proposal->id])->callAction('brokerRequestPremium', ['provider' => 'fake', 'payer_phone_e164' => '+237677001122']));
+    expect(PaymentIntentRecord::where('proposal_id', $proposal->id)->exists())->toBeFalse()
+        ->and(\App\Models\ProposalAcceptanceLink::where('proposal_id', $proposal->id)->exists())->toBeTrue();
+    $awa = User::create(['full_name' => 'Awa Ngono', 'phone_e164' => '+237677001122', 'party_id' => $customer->party_id, 'password' => 'x', 'locale' => 'fr', 'status' => 'ACTIVE']);
+    app(\App\Application\Underwriting\Proposal\ProposalDeclarations::class)->accept($proposal->refresh(), 'TERMS_ACCEPTANCE', $awa, 'WEB_LINK');
     lbeAs($staff, $t->id);
     $ok(Livewire::test(ViewProposal::class, ['record' => $proposal->id])->callAction('brokerRequestPremium', ['provider' => 'fake', 'payer_phone_e164' => '+237677001122']));
     $payment = PaymentIntentRecord::where('proposal_id', $proposal->id)->firstOrFail();

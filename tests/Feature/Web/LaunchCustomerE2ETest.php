@@ -203,6 +203,8 @@ it('takes a new customer from sign-up to a renewal quote through the web portal 
     r2Api($this, 'POST', "/proposals/$pid/disclosures/attest", [])->assertSuccessful();
     $submitted = r2Api($this, 'POST', "/proposals/$pid/submit", [])->assertSuccessful()->json('data');
     expect($submitted['status'])->toBe('PAYMENT_PENDING');
+    // The review/pay step records the customer's own contract-terms acceptance before any payment (terms gate).
+    r2Api($this, 'POST', "/proposals/$pid/terms", ['accepted' => true])->assertSuccessful();
     $mine = collect(r2Api($this, 'GET', '/mobile/proposals')->assertOk()->json('data'))->firstWhere('id', $pid);
     expect($mine['total_minor'])->toBeGreaterThan(0)->and($mine)->toHaveKeys(['product_name', 'line_code']);
     $this->get("/account/quotes/{$quote['id']}/review")->assertOk();

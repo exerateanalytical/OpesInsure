@@ -1,0 +1,60 @@
+<?php
+
+// Phase-1 fix S (2026-09-30): espace de travail mobile du personnel (mobile/workspace/*).
+return [
+    'heading' => 'Espace :role',
+    'subtitle' => 'Opérations en direct · :date',
+    'subtitle_scoped' => ':scope · :date',
+    'scope' => [
+        'tenant' => 'Toute l’organisation', 'carrier' => 'Votre assureur', 'branch' => 'Votre agence', 'assigned' => 'Qui vous sont attribués',
+        'team' => 'Votre équipe', 'organization' => 'Votre organisation', 'none' => 'Aucun dossier dans votre périmètre',
+    ],
+    'invalid_cursor' => 'Ce lien de page n’est plus valide. Rechargez la liste.',
+    'metrics' => [
+        'policies' => 'Polices en vigueur', 'claims' => 'Sinistres ouverts', 'claims_assigned' => 'Sinistres ouverts qui vous sont attribués', 'premium' => 'Primes du mois',
+        'payments' => 'Paiements en attente', 'support' => 'Demandes d’assistance ouvertes', 'issues' => 'Problèmes signalés dans l’application', 'cashier_open' => 'Sessions de caisse ouvertes',
+        'collections_today' => 'Encaissé aujourd’hui', 'treaties' => 'Traités actifs', 'customers' => 'Clients',
+    ],
+    'modules' => [
+        'policies' => ['title' => 'Polices', 'description' => 'Les polices de votre périmètre'],
+        'claims' => ['title' => 'Sinistres', 'description' => 'Traitez les sinistres de votre périmètre'],
+        'customers' => ['title' => 'Clients', 'description' => 'Clients détenant une police de votre périmètre'],
+        'payments' => ['title' => 'Paiements', 'description' => 'Paiements de primes'],
+        'cashier' => ['title' => 'Sessions de caisse', 'description' => 'Sessions de caisse de votre agence'],
+        'collections' => ['title' => 'Encaissements', 'description' => 'Espèces et chèques encaissés à la caisse'],
+        'treaties' => ['title' => 'Traités de réassurance', 'description' => 'Traités de votre assureur'],
+        'cessions' => ['title' => 'Cessions', 'description' => 'Primes cédées par police'],
+        'support' => ['title' => 'Demandes d’assistance', 'description' => 'Demandes d’assistance des clients'],
+        'compliance' => ['title' => 'Conformité', 'description' => 'Dossiers de conformité'],
+        'issue-reports' => ['title' => 'Problèmes signalés', 'description' => 'Problèmes signalés depuis l’application'],
+    ],
+    'columns' => [
+        'policy' => 'Police', 'customer' => 'Client', 'status' => 'Statut', 'premium' => 'Prime (FCFA)', 'expires' => 'Échéance',
+        'claim' => 'Sinistre', 'claimant' => 'Déclarant', 'reserve' => 'Provision (FCFA)', 'submitted' => 'Déclaré le',
+        'reference' => 'Référence', 'provider' => 'Opérateur', 'amount' => 'Montant (FCFA)', 'created' => 'Créé le',
+        'ticket' => 'Ticket', 'category' => 'Catégorie', 'priority' => 'Priorité', 'sla_due' => 'Échéance SLA',
+        'case' => 'Dossier', 'type' => 'Type', 'severity' => 'Gravité', 'review_due' => 'Revue prévue',
+        'screen' => 'Écran', 'note' => 'Note', 'reported' => 'Signalé le',
+        'customer_number' => 'Numéro client', 'since' => 'Client depuis',
+        'opened' => 'Ouverte le', 'cashier' => 'Caissier', 'float' => 'Fonds de caisse (FCFA)', 'expected' => 'Espèces attendues (FCFA)', 'closed' => 'Clôturée le',
+        'receipt' => 'Reçu', 'method' => 'Mode', 'payer' => 'Payeur', 'collected' => 'Encaissé le',
+        'treaty' => 'Traité', 'name' => 'Nom', 'year' => 'Exercice de souscription', 'currency' => 'Devise',
+        'ceded_percent' => 'Cédé (%)', 'ceded_premium' => 'Prime cédée (FCFA)',
+    ],
+    'status' => [
+        'ACTIVE' => 'Active', 'PENDING' => 'En attente', 'EXPIRED' => 'Expirée', 'CANCELLED' => 'Annulée', 'LAPSED' => 'Déchue', 'SUSPENDED' => 'Suspendue',
+        'DRAFT' => 'Brouillon', 'SUBMITTED' => 'Déclaré', 'ACKNOWLEDGED' => 'Accusé de réception', 'EVIDENCE_PENDING' => 'Documents demandés',
+        'ASSESSMENT' => 'En expertise', 'INVESTIGATING' => 'En enquête', 'CARRIER_REVIEW' => 'Décision en attente', 'APPROVED' => 'Approuvé',
+        'PARTIALLY_APPROVED' => 'Approuvé partiellement', 'DECLINED' => 'Refusé', 'DISPUTED' => 'Contesté', 'PAYMENT_PENDING' => 'Paiement en attente',
+        'PAID' => 'Payé', 'CLOSED' => 'Clôturé', 'REOPENED' => 'Rouvert', 'OPEN' => 'Ouvert', 'RESOLVED' => 'Résolu', 'IN_PROGRESS' => 'En cours',
+        'CREATED' => 'Créé', 'PENDING_CUSTOMER' => 'En attente du client', 'PROCESSING' => 'En traitement', 'SUCCEEDED' => 'Réussi', 'FAILED' => 'Échoué',
+        'PENDING_APPROVAL' => 'En attente de validation', 'REJECTED' => 'Rejeté', 'CALCULATED' => 'Calculée', 'POSTED' => 'Comptabilisée',
+    ],
+    'claims' => [
+        'transition_reason' => 'Mis à jour depuis l’espace mobile',
+        'assigned_reason' => 'Attribué à soi-même depuis l’espace mobile',
+        'transition_blocked' => 'Ce sinistre ne peut pas passer à ce statut maintenant : :reason',
+        'not_found' => 'Sinistre introuvable.',
+        'cannot_assign' => 'Ce sinistre est clôturé ou vous est déjà attribué.',
+    ],
+];

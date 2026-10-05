@@ -28,6 +28,8 @@ final class PartnerWorkspaceShapes
             'expires_at' => $q->expires_at?->toIso8601String(), 'created_at' => $q->created_at?->toIso8601String(),
             // Assisted sale (agent-sold): the agent can prompt the client for the premium (POST /mobile/agent/sales/{id}/payment-request).
             'assisted' => ! empty(($q->comparison_context ?? [])['agent_user_id']), 'payment_status' => ($q->comparison_context ?? [])['payment_status'] ?? null,
+            // Additive (2026-09-30): when the client was last asked to review/accept the application (AssistedSaleService reminder).
+            'client_notified_at' => ($q->comparison_context ?? [])['client_notified_at'] ?? null,
         ];
     }
 

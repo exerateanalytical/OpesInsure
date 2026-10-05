@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
+use App\Application\Mobile\ListCursor;
 use App\Application\PartnerWorkspace\CarrierWorkspaceActions;
 use App\Application\PartnerWorkspace\PartnerWorkspaceScope;
 use App\Domain\Tenancy\TenantContext;
@@ -22,6 +23,10 @@ use Illuminate\Support\Str;
  * issuance actions, payments/reconciliation and distribution partners.
  * Every read and every action is restricted to the caller's carrier
  * (CarrierScopeResolver); a record of another insurer is a 404.
+ *
+ * Phase-1 fix S (2026-09-30): the lists page with ?cursor= / ?limit= (meta.next_cursor; the first page is unchanged)
+ * and every list has a per-id read (products/{id}, proposals/{id}, policies/{id}, payments/{id}, partners/{id}) so the
+ * app no longer looks a record up in the first page of its list.
  */
 final class PartnerCarrierWorkspaceController
 {
@@ -43,9 +48,18 @@ final class PartnerCarrierWorkspaceController
     {
         $t = $this->tenant();
         $canToggle = $request->user()->hasPermission('carrier.authority.manage');
-        $rows = $this->productQuery($request, $t)->with(['tariffs', 'carrier.party'])->orderBy('name')->orderByDesc('version')->limit(200)->get();
+        $page = ListCursor::from($request, 200, 200);
+        $rows = $page->slice($page->apply($this->productQuery($request, $t)->with(['tariffs', 'carrier.party'])->orderBy('name')->orderByDesc('version')->orderBy('id'))->get());
 
-        return response()->json(['data' => $rows->map(fn (InsuranceProduct $p) => $this->productOf($p, $t, $canToggle))->values()]);
+        return response()->json(['data' => $rows->map(fn (InsuranceProduct $p) => $this->productOf($p, $t, $canToggle))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function product(string $product, Request $request): JsonResponse
+    {
+        $t = $this->tenant();
+        $p = $this->productQuery($request, $t)->with(['tariffs', 'carrier.party'])->whereKey($this->uuid($product))->firstOrFail();
+
+        return response()->json(['data' => $this->productOf($p, $t, $request->user()->hasPermission('carrier.authority.manage'))]);
     }
 
     public function productStatus(string $product, Request $request): JsonResponse
@@ -89,27 +103,57 @@ final class PartnerCarrierWorkspaceController
 
     public function proposals(Request $request): JsonResponse
     {
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply($this->proposalQuery($request))->get());
+
+        return response()->json(['data' => $rows->map(fn ($r) => $this->proposalOf($r))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function proposal(string $proposal, Request $request): JsonResponse
+    {
+        $r = $this->proposalQuery($request)->where('proposals.id', $this->uuid($proposal))->first();
+        abort_unless($r, 404);
+
+        return response()->json(['data' => $this->proposalOf($r)]);
+    }
+
+    private function proposalQuery(Request $request): \Illuminate\Database\Query\Builder
+    {
         $t = $this->tenant();
-        $rows = DB::table('proposals')->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')->join('quotes', 'quotes.id', '=', 'quote_offers.quote_id')
+
+        return DB::table('proposals')->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')->join('quotes', 'quotes.id', '=', 'quote_offers.quote_id')
             ->leftJoin('insurance_products', 'insurance_products.id', '=', 'quote_offers.product_id')->leftJoin('parties', 'parties.id', '=', 'proposals.party_id')
             ->where('proposals.tenant_id', $t)->when($this->carrier($request), fn ($q, $cid) => $q->where('quote_offers.carrier_id', $cid))
             ->select('proposals.id', 'proposals.proposal_number', 'proposals.status', 'proposals.submitted_at', 'proposals.created_at', 'quote_offers.carrier_id', 'quote_offers.total_minor', 'quote_offers.currency', 'quotes.id as quote_id', 'quotes.line_code', 'quotes.status as quote_status', 'insurance_products.name as product_name', 'parties.display_name')
-            ->orderByDesc('proposals.created_at')->limit(100)->get();
+            ->orderByDesc('proposals.created_at')->orderBy('proposals.id');
+    }
 
-        return response()->json(['data' => $rows->map(fn ($r) => [
+    private function proposalOf(object $r): array
+    {
+        return [
             'id' => $r->id, 'reference' => $r->proposal_number ?? strtoupper(substr($r->id, 0, 8)), 'status' => $r->status, 'quote_id' => $r->quote_id, 'quote_status' => $r->quote_status,
             'customer_name' => $r->display_name ?? 'Customer', 'product' => $r->product_name ?? $r->line_code, 'line_code' => $r->line_code, 'carrier_id' => $r->carrier_id,
             'premium_minor' => (int) $r->total_minor, 'currency' => $r->currency,
             'submitted_at' => $r->submitted_at ? \Carbon\Carbon::parse($r->submitted_at)->toIso8601String() : null, 'created_at' => \Carbon\Carbon::parse($r->created_at)->toIso8601String(),
-        ])->values()]);
+        ];
     }
 
     public function policies(Request $request): JsonResponse
     {
-        $rows = Policy::with(['party', 'carrier.party'])->where('tenant_id', $this->tenant())->when($this->carrier($request), fn ($q, $cid) => $q->where('carrier_id', $cid))
-            ->orderByDesc('issued_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply($this->policyQuery($request)->orderByDesc('issued_at')->orderBy('id'))->get());
 
-        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values()]);
+        return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function policy(string $policy, Request $request): JsonResponse
+    {
+        return response()->json(['data' => PartnerWorkspaceShapes::policy($this->policyQuery($request)->whereKey($this->uuid($policy))->firstOrFail())]);
+    }
+
+    private function policyQuery(Request $request)
+    {
+        return Policy::with(['party', 'carrier.party'])->where('tenant_id', $this->tenant())->when($this->carrier($request), fn ($q, $cid) => $q->where('carrier_id', $cid));
     }
 
     // --------------------------------------------------------------- claims
@@ -312,15 +356,45 @@ final class PartnerCarrierWorkspaceController
 
     public function payments(Request $request): JsonResponse
     {
+        $page = ListCursor::from($request);
+        $items = $this->paymentItems($page->slice($page->apply($this->paymentQuery($request))->get()));
+
+        return response()->json(['data' => [
+            'summary' => [
+                'succeeded_minor' => (int) $items->where('status', 'SUCCEEDED')->sum('amount_minor'),
+                'reconciled_minor' => (int) $items->where('reconciliation_status', 'RECONCILED')->sum('amount_minor'),
+                'unreconciled_count' => $items->where('reconciliation_status', 'UNRECONCILED')->count(),
+                'exception_count' => $items->where('reconciliation_status', 'EXCEPTION')->count(),
+                'currency' => 'XAF',
+            ],
+            'items' => $items,
+        ], 'meta' => $page->meta()]);
+    }
+
+    public function payment(string $payment, Request $request): JsonResponse
+    {
+        $item = $this->paymentItems($this->paymentQuery($request)->where('payment_intents.id', $this->uuid($payment))->get())->first();
+        abort_unless($item, 404);
+
+        return response()->json(['data' => $item]);
+    }
+
+    private function paymentQuery(Request $request): \Illuminate\Database\Query\Builder
+    {
         $t = $this->tenant();
-        $rows = DB::table('payment_intents')->join('proposals', 'proposals.id', '=', 'payment_intents.proposal_id')->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')
+
+        return DB::table('payment_intents')->join('proposals', 'proposals.id', '=', 'payment_intents.proposal_id')->join('quote_offers', 'quote_offers.id', '=', 'proposals.quote_offer_id')
             ->leftJoin('parties', 'parties.id', '=', 'proposals.party_id')
             ->where('payment_intents.tenant_id', $t)->when($this->carrier($request), fn ($q, $cid) => $q->where('quote_offers.carrier_id', $cid))
             ->select('payment_intents.*', 'proposals.proposal_number', 'parties.display_name', 'quote_offers.carrier_id')
-            ->orderByDesc('payment_intents.created_at')->limit(100)->get();
+            ->orderByDesc('payment_intents.created_at')->orderBy('payment_intents.id');
+    }
+
+    private function paymentItems(\Illuminate\Support\Collection $rows): \Illuminate\Support\Collection
+    {
         $exceptions = DB::table('reconciliation_items')->whereIn('matched_id', $rows->pluck('id'))->whereNotNull('exception_code')->whereNull('resolved_at')->pluck('exception_code', 'matched_id');
 
-        $items = $rows->map(function ($p) use ($exceptions) {
+        return $rows->map(function ($p) use ($exceptions) {
             $recon = match (true) {
                 $p->reconciled_at !== null => 'RECONCILED',
                 isset($exceptions[$p->id]) => 'EXCEPTION',
@@ -335,17 +409,6 @@ final class PartnerCarrierWorkspaceController
                 'reconciled_at' => $p->reconciled_at ? \Carbon\Carbon::parse($p->reconciled_at)->toIso8601String() : null, 'created_at' => \Carbon\Carbon::parse($p->created_at)->toIso8601String(),
             ];
         })->values();
-
-        return response()->json(['data' => [
-            'summary' => [
-                'succeeded_minor' => (int) $items->where('status', 'SUCCEEDED')->sum('amount_minor'),
-                'reconciled_minor' => (int) $items->where('reconciliation_status', 'RECONCILED')->sum('amount_minor'),
-                'unreconciled_count' => $items->where('reconciliation_status', 'UNRECONCILED')->count(),
-                'exception_count' => $items->where('reconciliation_status', 'EXCEPTION')->count(),
-                'currency' => 'XAF',
-            ],
-            'items' => $items,
-        ]]);
     }
 
     // ------------------------------------------------------------- partners
@@ -356,6 +419,22 @@ final class PartnerCarrierWorkspaceController
      * holding a delegated-authority agreement with it.
      */
     public function partners(Request $request): JsonResponse
+    {
+        $page = ListCursor::from($request);
+        $rows = $page->slice($this->partnerRows($request)->slice($page->offset, $page->limit + 1)->values());
+
+        return response()->json(['data' => $rows, 'meta' => $page->meta()]);
+    }
+
+    public function partner(string $partner, Request $request): JsonResponse
+    {
+        $row = $this->partnerRows($request, $this->uuid($partner))->first();
+        abort_unless($row, 404);
+
+        return response()->json(['data' => $row]);
+    }
+
+    private function partnerRows(Request $request, ?string $only = null): \Illuminate\Support\Collection
     {
         $t = $this->tenant();
         $cid = $this->carrier($request);
@@ -368,15 +447,15 @@ final class PartnerCarrierWorkspaceController
         $agreements = DB::table('delegated_authority_agreements')->join('partners', 'partners.id', '=', 'delegated_authority_agreements.partner_id')
             ->where('partners.tenant_id', $t)->when($cid, fn ($q) => $q->where('delegated_authority_agreements.carrier_id', $cid))
             ->select('delegated_authority_agreements.partner_id', 'delegated_authority_agreements.agreement_number', 'delegated_authority_agreements.status')->get()->keyBy('partner_id');
-        $ids = $sales->keys()->merge($agreements->keys())->unique()->values();
+        $ids = $sales->keys()->merge($agreements->keys())->unique()->when($only !== null, fn ($c) => $c->filter(fn ($id) => $id === $only))->values();
         $partners = DB::table('partners')->leftJoin('parties', 'parties.id', '=', 'partners.party_id')->whereIn('partners.id', $ids)
             ->select('partners.id', 'partners.type', 'partners.status', 'partners.licence_number', 'parties.display_name')->get();
 
-        return response()->json(['data' => $partners->map(fn ($p) => [
+        return $partners->map(fn ($p) => [
             'id' => $p->id, 'name' => $p->display_name ?? 'Partner', 'type' => $p->type, 'status' => $p->status, 'licence_number' => $p->licence_number,
             'policies' => (int) ($sales[$p->id]->policies ?? 0), 'premium_minor' => (int) ($sales[$p->id]->premium_minor ?? 0),
             'agreement_number' => $agreements[$p->id]->agreement_number ?? null, 'agreement_status' => $agreements[$p->id]->status ?? null,
-        ])->sortByDesc('premium_minor')->values()]);
+        ])->sortBy([['premium_minor', 'desc'], ['id', 'asc']])->values();
     }
 
     /** Non-UUID ids would make Postgres throw; treat them as not found. */

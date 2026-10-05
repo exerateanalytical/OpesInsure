@@ -13,7 +13,7 @@ namespace App\Application\Uploads;
 final class FileSignature
 {
     /** Declared MIME types a mobile upload may carry. */
-    public const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'video/mp4'];
+    public const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'video/mp4', 'video/quicktime'];
 
     public static function matches(string $head, string $mimeType): bool
     {
@@ -23,6 +23,8 @@ final class FileSignature
             'image/png' => str_starts_with($head, "\x89PNG\x0D\x0A\x1A\x0A"),
             // ISO base media: bytes 4..7 are the 'ftyp' box type.
             'video/mp4' => strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp',
+            // QuickTime (.mov, iPhone camera): an 'ftyp qt' box, or a classic file opening on a moov/mdat/wide/free/skip atom.
+            'video/quicktime' => strlen($head) >= 12 && in_array(substr($head, 4, 4), ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip'], true),
             default => false,
         };
     }

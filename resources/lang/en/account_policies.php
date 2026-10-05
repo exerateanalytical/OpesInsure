@@ -45,6 +45,9 @@ return [
             'card' => 'Bank Card', 'bank' => 'Bank Transfer', 'soon' => 'Coming soon',
             'd_t' => '2. Payment Details', 'd_d' => 'Enter the required information for your payment.', 'prompt' => 'You will be prompted to confirm the payment on your phone.', 'phone' => 'Mobile Money number', 'phone_h' => 'You will receive a prompt on your phone to authorize the payment.', 'phone_bad' => 'Enter a valid 9-digit Cameroon mobile number.',
             'c_t' => '3. Confirm Payment', 'c_d' => 'Check the details below, then confirm.', 'confirm' => 'Confirm and pay', 'continue' => 'Continue to confirmation',
+            // Contract terms (TERMS_ACCEPTANCE via POST /proposals/{id}/terms), required before paying.
+            'terms_t' => 'Contract terms', 'terms_d' => 'The insurer covers you on the terms, premium and guarantees of this application. Total to pay: :total.',
+            'terms_accept' => 'I accept the offered terms, premium and conditions shown to me.', 'terms_required' => 'Please accept the contract terms before paying.', 'terms_done' => 'You accepted the contract terms.',
             'r_t' => '4. Payment Receipt', 'waiting' => 'Approve the payment request on your phone. This page updates automatically.', 'ok' => 'Payment received. Thank you!', 'failed' => 'The payment did not go through.', 'timeout' => 'We have not received a confirmation yet. Check Payments in a few minutes.',
             'sum_t' => 'Payment Summary', 'item' => 'Paying for', 'to_pay' => 'Amount to pay', 'method' => 'Method', 'payer' => 'Payer number',
             'info_t' => 'Important Information', 'info' => ['You will receive a payment request on your phone.', 'Make sure your Mobile Money account has sufficient balance.', 'Do not close this page until you receive the confirmation message.', 'Your payment is processed securely by the operator.'],

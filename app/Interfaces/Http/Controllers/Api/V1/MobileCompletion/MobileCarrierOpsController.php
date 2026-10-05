@@ -12,6 +12,7 @@ use App\Domain\Tenancy\TenantContext;
 use App\Models\Claim;
 use App\Models\UnderwritingCase;
 use App\Models\UnderwritingReferralTask;
+use App\Application\Mobile\ListCursor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,11 +73,13 @@ final class MobileCarrierOpsController
     public function referrals(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $cases = $this->scoped(UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals'])->where('tenant_id', $t), $this->carrierId($request))->orderByRaw("CASE status WHEN 'QUEUED' THEN 0 WHEN 'IN_REVIEW' THEN 1 WHEN 'AWAITING_INFORMATION' THEN 2 ELSE 3 END")->orderByDesc('created_at')->limit(100)->get();
+        // Phase-1 fix S: cursor paging (?cursor=, meta.next_cursor); the first page is unchanged.
+        $page = ListCursor::from($request);
+        $cases = $page->slice($page->apply($this->scoped(UnderwritingCase::with(['proposal.party', 'proposal.offer.product', 'proposal.offer.quote', 'referrals'])->where('tenant_id', $t), $this->carrierId($request))->orderByRaw("CASE status WHEN 'QUEUED' THEN 0 WHEN 'IN_REVIEW' THEN 1 WHEN 'AWAITING_INFORMATION' THEN 2 ELSE 3 END")->orderByDesc('created_at')->orderBy('id'))->get());
 
         $names = $this->carrierNames($cases->pluck('carrier_id'));
 
-        return response()->json(['data' => $cases->map(fn ($c) => $this->referralOf($c, $names))->values()]);
+        return response()->json(['data' => $cases->map(fn ($c) => $this->referralOf($c, $names))->values(), 'meta' => $page->meta()]);
     }
 
     public function referral(string $id, Request $request): JsonResponse
@@ -112,8 +115,9 @@ final class MobileCarrierOpsController
     public function issuance(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $rows = DB::table('policy_issuance_requests')->join('proposals', 'proposals.id', '=', 'policy_issuance_requests.proposal_id')->leftJoin('parties', 'parties.id', '=', 'proposals.party_id')
-            ->where('policy_issuance_requests.tenant_id', $t)->when($this->carrierId($request), fn ($q, $cid) => $q->where('policy_issuance_requests.carrier_id', $cid))->select('policy_issuance_requests.*', 'proposals.proposal_number', 'parties.display_name')->orderByDesc('policy_issuance_requests.created_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply(DB::table('policy_issuance_requests')->join('proposals', 'proposals.id', '=', 'policy_issuance_requests.proposal_id')->leftJoin('parties', 'parties.id', '=', 'proposals.party_id')
+            ->where('policy_issuance_requests.tenant_id', $t)->when($this->carrierId($request), fn ($q, $cid) => $q->where('policy_issuance_requests.carrier_id', $cid))->select('policy_issuance_requests.*', 'proposals.proposal_number', 'parties.display_name')->orderByDesc('policy_issuance_requests.created_at')->orderBy('policy_issuance_requests.id'))->get());
 
         $names = $this->carrierNames($rows->pluck('carrier_id'));
         // Mobile audit E2: queue rows carry the maker-checker stage, approvals and the viewer's capabilities.
@@ -127,13 +131,14 @@ final class MobileCarrierOpsController
             'priority' => in_array($r->status, ['REQUESTED', 'CARRIER_REVIEW', 'PENDING'], true) ? 'HIGH' : 'NORMAL', 'submitted_at' => \Carbon\Carbon::parse($r->created_at)->toIso8601String(),
             'stage' => $issuance->stage($models[$r->id]), 'approvals' => $issuance->approvals($models[$r->id]),
             'capabilities' => $issuance->capabilities($models[$r->id], $request->user(), $mayDecide),
-        ])->values()]);
+        ])->values(), 'meta' => $page->meta()]);
     }
 
     public function claims(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $rows = $this->scopedClaims($this->carrierId($request))->with(['claimant', 'policy:id,carrier_id'])->where('tenant_id', $t)->orderByRaw("CASE WHEN status IN ('CARRIER_REVIEW','DISPUTED') THEN 0 WHEN status IN ('SUBMITTED','ACKNOWLEDGED','EVIDENCE_PENDING','ASSESSMENT') THEN 1 ELSE 2 END")->orderByDesc('submitted_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply($this->scopedClaims($this->carrierId($request))->with(['claimant', 'policy:id,carrier_id'])->where('tenant_id', $t)->orderByRaw("CASE WHEN status IN ('CARRIER_REVIEW','DISPUTED') THEN 0 WHEN status IN ('SUBMITTED','ACKNOWLEDGED','EVIDENCE_PENDING','ASSESSMENT') THEN 1 ELSE 2 END")->orderByDesc('submitted_at')->orderBy('id'))->get());
 
         $names = $this->carrierNames($rows->map(fn (Claim $c) => $c->policy?->carrier_id));
 
@@ -141,7 +146,7 @@ final class MobileCarrierOpsController
             'carrier_id' => $c->policy?->carrier_id, 'carrier_name' => $names[$c->policy?->carrier_id] ?? null,
             'id' => $c->id, 'reference' => $c->claim_number, 'subject' => ($c->claimant?->display_name ?? 'Claimant').' · '.($c->loss_details['incident']['incident_type'] ?? 'claim'), 'status' => $c->status,
             'priority' => $c->priority ?? 'NORMAL', 'submitted_at' => $c->submitted_at?->toIso8601String(),
-        ])->values()]);
+        ])->values(), 'meta' => $page->meta()]);
     }
 
     public function settlements(Request $request): JsonResponse

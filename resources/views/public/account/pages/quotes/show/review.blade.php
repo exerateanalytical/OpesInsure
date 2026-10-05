@@ -112,6 +112,11 @@ Opes.page(function (ctx) {
     }));
   }
 
+  // The contract terms the customer accepts (TERMS_ACCEPTANCE): plan, price and cover are shown above on this page.
+  function termsBox() {
+    return h('div', { class: 'bnote' }, h('b', null, T.contract_terms_h), h('p', { style: 'margin:6px 0 0' }, T.contract_terms_d.replace(':total', B.minor(terms().total_minor))));
+  }
+
   function action(status, qs, canAnswer) {
     var card = h('section', { class: 'acard' });
     // A. No proposal yet: accept the offer and open the application.
@@ -138,20 +143,25 @@ Opes.page(function (ctx) {
         return d.satisfied_by !== 'PROPOSAL_FORM' && ['MISSING', 'EXPIRED', 'REJECTED'].indexOf(String(d.status || 'MISSING').toUpperCase()) >= 0;
       });
       var attest = h('input', { type: 'checkbox', checked: !!proposal.attested_at });
+      var accept = h('input', { type: 'checkbox' });
       var sub = h('button', { type: 'button', class: 'dbtn dbtn-primary bbig' }, T.submit_app, Opes.icon('arrow'));
       sub.addEventListener('click', function () {
         Opes.alert('');
         var missing = qs.filter(function (q) { return q.required !== false && (answers[q.code] === undefined || answers[q.code] === ''); });
         if ((canAnswer && missing.length) || !attest.checked) return Opes.alert(T.attest_required);
+        if (!accept.checked) return Opes.alert(T.contract_terms_required);
         Opes.busy(sub, true);
         var step = canAnswer && qs.length ? Opes.api('/proposals/' + proposal.id + '/disclosures', { method: 'PUT', body: { answers: answers } }) : Promise.resolve();
+        // Contract terms: POST /proposals/{id}/terms records the customer's TERMS_ACCEPTANCE (same service as the app) and submits the application.
         step.then(function () { return proposal.attested_at ? null : Opes.api('/proposals/' + proposal.id + '/disclosures/attest', { method: 'POST', body: {} }); })
-          .then(function () { return Opes.api('/proposals/' + proposal.id + '/submit', { method: 'POST', body: {} }); })
+          .then(function () { return Opes.api('/proposals/' + proposal.id + '/terms', { method: 'POST', body: { accepted: true } }); })
           .then(reloadProposal)
           .catch(function (e) { Opes.busy(sub, false); Opes.alert(e.message); reloadProposal().catch(function () {}); });
       });
       if (docs.length) card.appendChild(h('div', { class: 'bnote' }, h('b', null, T.docs_needed), h('ul', null, docs.map(function (d) { return h('li', null, B.tr(d.name || d.label) || Opes.label(d.code || d.requirement_code)); })), h('small', null, T.docs_where)));
       card.appendChild(h('label', { class: 'bterms' }, attest, h('span', null, T.attest)));
+      card.appendChild(termsBox());
+      card.appendChild(h('label', { class: 'bterms' }, accept, h('span', null, (proposal.terms && proposal.terms.statement) || T.contract_terms_accept)));
       card.appendChild(sub);
       return card;
     }
@@ -179,19 +189,25 @@ Opes.page(function (ctx) {
         if (/^[26]\d{8}$/.test(digits)) digits = '+237' + digits;
         if (/^237/.test(digits)) digits = '+' + digits;
         if (!/^\+237[26]\d{8}$/.test(digits)) return Opes.alert(T.phone_invalid);
+        if (!termsOk && !payTerms.checked) return Opes.alert(T.contract_terms_required);
         Opes.busy(pay, true);
         var tries = 0;
-        (function create() {
+        (termsOk ? Promise.resolve() : Opes.api('/proposals/' + proposal.id + '/terms', { method: 'POST', body: { accepted: true } }).then(function () { termsOk = true; }))
+          .then(function create() {
           return Opes.api('/payments', { body: { proposal_id: proposal.id, provider: provider, payer_phone_e164: digits, idempotency_key: B.payKey(proposal.id, provider, digits) } }).then(function (p) {
             if (B.PAY_FAILED.indexOf(p.status) >= 0 && tries++ < 2) { B.bumpAttempt(proposal.id); return create(); }
             // POST /payments answers PENDING_CUSTOMER before any provider prompt: initiate until the provider holds a reference.
             return (p.status === 'CREATED' || (p.status === 'PENDING_CUSTOMER' && !p.provider_reference)) ? Opes.api('/payments/' + p.id + '/initiate', { method: 'POST', body: {} }) : p;
           });
-        })().then(function (p) {
+        }).then(function (p) {
           location.href = B.qurl(id, 'confirmation', { proposal: proposal.id, payment: p && p.id });
         }).catch(function (e) { Opes.busy(pay, false); Opes.alert(e.message); });
       });
       card.appendChild(h('p', { class: 'b-muted', style: 'margin-top:10px' }, T.pay_prompt));
+      // The customer's own contract-terms acceptance is required before any payment (POST /payments answers 422 terms without it).
+      var termsOk = !!(proposal.terms && proposal.terms.accepted), payTerms = h('input', { type: 'checkbox' });
+      if (termsOk) card.appendChild(h('div', { class: 'bok' }, Opes.icon('check'), T.contract_terms_done));
+      else { card.appendChild(termsBox()); card.appendChild(h('label', { class: 'bterms' }, payTerms, h('span', null, (proposal.terms && proposal.terms.statement) || T.contract_terms_accept))); }
       card.appendChild(pay);
       return card;
     }

@@ -367,6 +367,7 @@ final class DomainEventCatalogue
             $d('renewal.issuance_failed', 'renewal_case', 'Paid renewal could not be issued; queued as an issuance exception (WF-087).', [], [], true),
             $d('renewal.issuance_recovered', 'renewal_case', 'Paid-renewal issuance exception resolved (re-queued for issuance, or refunded).', [], [], true),
             $d('renewal.reassigned', 'renewal_case', 'Open renewal case reassigned to another owner (reason recorded).', [], [], true),
+            $d('renewal.declined', 'renewal_case', 'Client decided not to renew; recorded by the broker or agent (reason recorded).', [], [], true),
             $d('risk_asset.created', 'risk_asset', 'Risk asset created.', [], [], true),
             $d('risk_asset.updated', 'risk_asset', 'Risk asset updated.', [], [], true),
             $d('tariff.submitted', 'tariff', 'Tariff submitted for approval.', [], [], true),

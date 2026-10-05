@@ -81,7 +81,7 @@ return [
         'stat_tasks' => 'Tâches', 'stat_overdue' => 'En retard', 'stat_week' => 'À faire sous 7 jours', 'stat_open_claims' => 'Sinistres en cours',
         'no_tasks' => 'Rien ne vous attend. Bravo !', 'tasks_partial' => 'Certaines sources n\'ont pas pu être chargées ; la liste peut être incomplète.',
         'kind_leads' => 'Prospect', 'kind_payments' => 'Paiement', 'kind_renewals' => 'Renouvellement', 'kind_requests' => 'Demande de modification', 'kind_claims' => 'Sinistre', 'kind_stickers' => 'Vignettes',
-        'task_lead_new' => 'Contacter le nouveau prospect :n', 'task_lead_follow' => 'Relancer :n', 'task_pay_prompt' => 'Demander à :n de payer la prime', 'task_pay_wait' => 'Vérifier que :n a payé',
+        'task_lead_new' => 'Contacter le nouveau prospect :n', 'task_lead_follow' => 'Relancer :n', 'task_pay_prompt' => 'Demander à :n de payer la prime', 'task_pay_wait' => 'Vérifier que :n a payé', 'task_pay_accept' => 'Relancer : :n doit vérifier et accepter la demande',
         'task_renewal' => 'Renouveler la police :p (:n)', 'task_request' => 'Suivre la demande « :t » sur :p', 'task_claim' => 'Aider à compléter le sinistre :c (:n)', 'task_handover' => 'Accuser une remise de :q vignette(s)',
 
         'st' => [

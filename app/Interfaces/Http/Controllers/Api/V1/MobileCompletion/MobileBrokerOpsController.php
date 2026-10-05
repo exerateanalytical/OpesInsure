@@ -8,6 +8,7 @@ use App\Application\Agents\AgentClientIntakeService;
 use App\Application\Audit\AuditWriter;
 use App\Application\FinancialDistribution\MobilePartnerFinanceService;
 use App\Application\Identity\PartyResolver;
+use App\Application\Mobile\ListCursor;
 use App\Domain\Tenancy\TenantContext;
 use App\Models\Policy;
 use App\Models\TenantCustomer;
@@ -16,7 +17,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/** The broker portal (app/broker/*) in the shapes the app renders. */
+/**
+ * The broker portal (app/broker/*) in the shapes the app renders.
+ *
+ * Phase-1 fix S (2026-09-30): clients / production / receivables page with ?cursor= / ?limit= (meta.next_cursor) and
+ * production, receivables and compliance items have per-id reads, so the app no longer searches the first page.
+ */
 final class MobileBrokerOpsController
 {
     public function __construct(private MobilePartnerFinanceService $finance, private PartyResolver $parties, private AuditWriter $audit) {}
@@ -46,8 +52,11 @@ final class MobileBrokerOpsController
     public function clients(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
+        // Was unbounded: an app without ?limit= still gets up to 500 clients on its first page.
+        $page = ListCursor::from($request, 500, 500);
+        $rows = $page->slice($page->apply($this->clientQuery($request, $t)->orderBy('tenant_customers.id'))->get());
 
-        return response()->json(['data' => $this->clientQuery($request, $t)->get()->map(fn (TenantCustomer $c) => $this->clientOf($c, $t))->values()]);
+        return response()->json(['data' => $rows->map(fn (TenantCustomer $c) => $this->clientOf($c, $t))->values(), 'meta' => $page->meta()]);
     }
 
     /** Onboard a new client for the broker (same contract as POST mobile/agent/clients). */
@@ -79,9 +88,22 @@ final class MobileBrokerOpsController
     public function production(Request $request): JsonResponse
     {
         $t = app(TenantContext::class)->id();
-        $ids = $this->clientQuery($request, $t)->pluck('tenant_customers.party_id');
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply($this->productionQuery($request, $t)->orderByDesc('issued_at')->orderBy('id'))->get());
 
-        return response()->json(['data' => Policy::with(['carrier.party', 'party'])->where('tenant_id', $t)->whereIn('party_id', $ids)->orderByDesc('issued_at')->limit(100)->get()->map(fn ($p) => $this->productionOf($p))->values()]);
+        return response()->json(['data' => $rows->map(fn ($p) => $this->productionOf($p))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function productionItem(string $policy, Request $request): JsonResponse
+    {
+        abort_unless(Str::isUuid($policy), 404);
+
+        return response()->json(['data' => $this->productionOf($this->productionQuery($request, app(TenantContext::class)->id())->whereKey($policy)->firstOrFail())]);
+    }
+
+    private function productionQuery(Request $request, string $t)
+    {
+        return Policy::with(['carrier.party', 'party'])->where('tenant_id', $t)->whereIn('party_id', $this->clientQuery($request, $t)->reorder()->select('tenant_customers.party_id'));
     }
 
     public function renewals(Request $request): JsonResponse
@@ -99,19 +121,54 @@ final class MobileBrokerOpsController
 
     public function receivables(Request $request): JsonResponse
     {
+        $page = ListCursor::from($request);
+        $q = $this->receivableQuery($request);
+        $rows = $q ? $page->slice($page->apply($q->orderByDesc('commission_accruals.created_at')->orderBy('commission_accruals.id'))->get()) : collect();
+
+        return response()->json(['data' => $rows->map(fn ($r) => $this->receivableOf($r))->values(), 'meta' => $page->meta()]);
+    }
+
+    public function receivable(string $id, Request $request): JsonResponse
+    {
+        abort_unless(Str::isUuid($id), 404);
+        $row = $this->receivableQuery($request)?->where('commission_accruals.id', $id)->first();
+        abort_unless($row, 404);
+
+        return response()->json(['data' => $this->receivableOf($row)]);
+    }
+
+    private function receivableQuery(Request $request): ?\Illuminate\Database\Query\Builder
+    {
         $t = app(TenantContext::class)->id();
         $partner = $this->parties->partnerForUser($request->user());
-        $rows = $partner ? DB::table('commission_accruals')->join('policies', 'policies.id', '=', 'commission_accruals.policy_id')->leftJoin('parties', 'parties.id', '=', 'policies.party_id')
-            ->where('commission_accruals.tenant_id', $t)->where('commission_accruals.partner_id', $partner->id)->whereIn('commission_accruals.status', ['PENDING', 'AVAILABLE'])
-            ->select('commission_accruals.*', 'policies.policy_number', 'parties.display_name')->orderByDesc('commission_accruals.created_at')->limit(100)->get() : collect();
 
-        return response()->json(['data' => $rows->map(fn ($r) => [
+        return $partner ? DB::table('commission_accruals')->join('policies', 'policies.id', '=', 'commission_accruals.policy_id')->leftJoin('parties', 'parties.id', '=', 'policies.party_id')
+            ->where('commission_accruals.tenant_id', $t)->where('commission_accruals.partner_id', $partner->id)->whereIn('commission_accruals.status', ['PENDING', 'AVAILABLE'])
+            ->select('commission_accruals.*', 'policies.policy_number', 'parties.display_name') : null;
+    }
+
+    private function receivableOf(object $r): array
+    {
+        return [
             'id' => $r->id, 'policy_id' => $r->policy_id, 'policy_number' => $r->policy_number, 'customer_name' => $r->display_name, 'amount_minor' => (int) ($r->amount_minor - $r->paid_minor - $r->clawed_back_minor), 'currency' => $r->currency,
             'status' => $r->status, 'due_at' => $r->available_at ? \Carbon\Carbon::parse($r->available_at)->toIso8601String() : null, 'label' => 'Commission · '.$r->policy_number,
-        ])->values()]);
+        ];
     }
 
     public function compliance(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->complianceItems($request)]);
+    }
+
+    public function complianceItem(string $id, Request $request): JsonResponse
+    {
+        $item = $this->complianceItems($request)->firstWhere('id', $id);
+        abort_unless($item, 404);
+
+        return response()->json(['data' => $item]);
+    }
+
+    private function complianceItems(Request $request): \Illuminate\Support\Collection
     {
         $t = app(TenantContext::class)->id();
         $partner = $this->parties->partnerForUser($request->user());
@@ -127,7 +184,7 @@ final class MobileBrokerOpsController
             'due_at' => \Carbon\Carbon::parse($l->expires_on)->toIso8601String(), 'severity' => \Carbon\Carbon::parse($l->expires_on)->lte(now()->addDays(90)) ? 'HIGH' : 'LOW',
         ]) : collect();
 
-        return response()->json(['data' => $licences->concat($cases)->values()]);
+        return $licences->concat($cases)->values();
     }
 
     public function publications(Request $request): JsonResponse

@@ -90,6 +90,30 @@ final class ProposalQuestions
         return array_values(array_unique($flags));
     }
 
+    /**
+     * Form answers → stored answers: booleans arrive as true/false or "true"/"false"/"yes"/"no" (app disclosure screen,
+     * web acceptance link page); unknown codes are dropped.
+     *
+     * @param  list<array<string,mixed>>  $questions  of()
+     */
+    public static function normalise(array $questions, array $answers): array
+    {
+        $out = [];
+        foreach ($questions as $q) {
+            if (! array_key_exists($q['code'], $answers)) {
+                continue;
+            }
+            $v = $answers[$q['code']];
+            $out[$q['code']] = match (true) {
+                ($q['type'] ?? 'boolean') === 'boolean' => filter_var($v, FILTER_VALIDATE_BOOLEAN),
+                is_array($v) || $v === null => $v,
+                default => (string) $v,
+            };
+        }
+
+        return $out;
+    }
+
     /** Wizard field (question set rendered_field / legacy adapter field) → disclosure question shape. */
     public static function fromField(array $f): array
     {

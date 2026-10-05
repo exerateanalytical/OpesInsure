@@ -93,6 +93,10 @@ return [
         'terms_required' => 'Please accept the terms to continue.', 'confirm_plan' => 'Confirm plan & continue',
         'attest' => 'I confirm my answers are true and complete. I understand false declarations can void the policy.',
         'attest_required' => 'Please answer every question and confirm your declarations.', 'submit_app' => 'Submit application',
+        // Contract terms acceptance on review/checkout (recorded as TERMS_ACCEPTANCE via POST /proposals/{id}/terms; payments require it).
+        'contract_terms_h' => 'Contract terms', 'contract_terms_d' => 'The insurer covers you on the terms, premium and guarantees shown on this page. Total to pay: :total.',
+        'contract_terms_accept' => 'I accept the offered terms, premium and conditions shown to me.', 'contract_terms_required' => 'Please accept the contract terms to continue.',
+        'contract_terms_done' => 'You accepted the contract terms.',
         'docs_needed' => 'The insurer needs these documents before payment:', 'docs_where' => 'Upload them from your Documents area or the mobile app, then come back here.',
         'pay_method_h' => '5. Choose payment method', 'mtn' => 'MTN Mobile Money', 'mtn_s' => 'Pay securely with MTN MoMo', 'orange' => 'Orange Money', 'orange_s' => 'Pay securely with Orange Money',
         'payer_phone' => 'Mobile money number', 'phone_hint' => 'Cameroon number, e.g. +237 6XX XX XX XX', 'phone_invalid' => 'Enter a valid Cameroon mobile number (+237 6… or +237 2…).',

@@ -41,6 +41,9 @@ Route::get('mobile/partner/broker/quotes', [Broker::class, 'quotes'])->middlewar
 Route::get('mobile/partner/broker/policies', [Broker::class, 'policies'])->middleware('permission:broker.portal.read');
 Route::get('mobile/partner/broker/claims', [Broker::class, 'claims'])->middleware('permission:broker.portal.read');
 Route::get('mobile/partner/broker/proposals', [Broker::class, 'proposals'])->middleware('permission:broker.portal.read');
+// Phase-1 fix S (2026-09-30): per-id reads bounded by the broker's book.
+Route::get('mobile/partner/broker/policies/{policy}', [Broker::class, 'policy'])->middleware('permission:broker.portal.read')->whereUuid('policy');
+Route::get('mobile/partner/broker/claims/{claim}', [Broker::class, 'claim'])->middleware('permission:broker.portal.read')->whereUuid('claim');
 Route::get('mobile/partner/broker/clients/{customer}/documents', [Broker::class, 'clientDocuments'])->middleware('permission:broker.portal.read')->whereUuid('customer');
 Route::get('mobile/partner/broker/staff', [Broker::class, 'staff'])->middleware('permission:broker.portal.read');
 Route::post('mobile/partner/broker/staff/invitations', [Broker::class, 'inviteStaff'])->middleware(['permission:broker.portal.read', 'throttle:10,1']);
@@ -67,6 +70,12 @@ Route::post('mobile/partner/carrier/issuance/{issuance}/approve', [Carrier::clas
 Route::post('mobile/partner/carrier/issuance/{issuance}/reject', [Carrier::class, 'rejectIssuance'])->middleware(['permission:carrier.referrals.decide', 'throttle:20,1']);
 Route::get('mobile/partner/carrier/payments', [Carrier::class, 'payments'])->middleware('permission:carrier.finance.read');
 Route::get('mobile/partner/carrier/partners', [Carrier::class, 'partners'])->middleware('permission:carrier.dashboard.read');
+// Phase-1 fix S (2026-09-30): per-id reads (the app no longer finds a record in the first page of its list).
+Route::get('mobile/partner/carrier/products/{product}', [Carrier::class, 'product'])->middleware('permission:carrier.dashboard.read')->whereUuid('product');
+Route::get('mobile/partner/carrier/proposals/{proposal}', [Carrier::class, 'proposal'])->middleware('permission:carrier.referrals.read')->whereUuid('proposal');
+Route::get('mobile/partner/carrier/policies/{policy}', [Carrier::class, 'policy'])->middleware('permission:carrier.dashboard.read')->whereUuid('policy');
+Route::get('mobile/partner/carrier/payments/{payment}', [Carrier::class, 'payment'])->middleware('permission:carrier.finance.read')->whereUuid('payment');
+Route::get('mobile/partner/carrier/partners/{partner}', [Carrier::class, 'partner'])->middleware('permission:carrier.dashboard.read')->whereUuid('partner');
 
 // ------------------------------------------------------------------ staff security (mobile audit B4)
 Route::get('partner/staff/{user}/security', [StaffSecurity::class, 'show'])->whereUuid('user')->middleware('permission:staff.security.read');

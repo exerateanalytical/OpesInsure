@@ -24,6 +24,18 @@ return [
         'activity' => 'Activité', 'activity_type' => "Type d'activité", 'activity_body' => "Que s'est-il passé ?", 'follow_up_at' => 'Relance', 'log_activity' => "Enregistrer l'activité",
         'activity_logged' => 'Activité enregistrée.', 'no_activity' => 'Aucune activité pour le moment.', 'loading' => 'Chargement…',
         'collect_premium' => 'Demander le paiement', 'payment_requested' => 'Demande de paiement envoyée à :name.',
+        // Ce qu'a fait un appui sur « Demander le paiement » (POST mobile/agent/sales/{id}/payment-request → step, client_acceptance)
+        'sale_step_APPLICATION_SENT' => "Demande envoyée à :name. Il reçoit un lien par SMS pour la vérifier et accepter lui-même les conditions.",
+        'sale_step_REMINDER_SENT' => 'Relance envoyée à :name pour vérifier et accepter la demande.',
+        'sale_step_REMINDER_RECENT' => ":name a été relancé il y a quelques minutes. En attente de son acceptation des conditions.",
+        'sale_step_PAYMENT_PROMPTED' => 'Demande de paiement envoyée sur le téléphone de :name. Il la valide avec son code PIN mobile money.',
+        'sale_step_PAYMENT_PENDING' => 'Une demande de paiement est déjà sur le téléphone de :name. En attente de sa validation.',
+        'sale_step_PAYMENT_FAILED' => 'La dernière tentative de paiement de :name a échoué. Appuyez à nouveau pour envoyer une nouvelle demande.',
+        'sale_step_UNDER_REVIEW' => "L'assureur examine la demande de :name. Rien à envoyer pour le moment.",
+        'sale_step_PAID' => ":name a payé. L'assureur émet la police.",
+        'sale_step_NONE' => 'Rien à envoyer à :name pour le moment.',
+        'sale_link_NO_PHONE' => "Aucun numéro de téléphone pour :name : le lien d'acceptation n'a pas pu être envoyé. Ajoutez son numéro.",
+        'sale_link_SMS_FAILED' => "Le SMS contenant le lien d'acceptation pour :name n'a pas pu être envoyé. Vérifiez les paramètres du fournisseur SMS.",
         // portefeuille, sinistre client, documents client, personnel (audit UI 2026-09-27)
         'tab_quotes' => 'Devis', 'tab_proposals' => 'Propositions', 'tab_policies' => 'Polices', 'tab_claims' => 'Sinistres',
         'th_proposal' => 'Proposition', 'th_claim' => 'Sinistre', 'th_submitted' => 'Soumis', 'th_loss_date' => 'Date du sinistre', 'th_estimate' => 'Estimation', 'th_document' => 'Document', 'th_number' => 'Numéro',

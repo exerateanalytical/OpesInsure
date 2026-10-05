@@ -57,9 +57,22 @@ final class PaymentActions
                 Select::make('provider')->label(__('broker_portal_sales.fields.provider'))->required()->options(fn () => self::providerOptions()),
                 TextInput::make('payer_phone_e164')->label(__('broker_portal_sales.fields.payer_phone'))->required()->regex('/^\+[1-9]\d{7,14}$/'),
             ])
-            ->action(fn (Action $action, \App\Models\Proposal $record, array $data) => WorkflowAction::run($action, null, function () use ($record, $data) {
+            ->action(fn (Action $action, \App\Models\Proposal $record, array $data) => WorkflowAction::run($action, null, function () use ($action, $record, $data) {
                 app(\App\Application\Partners\PartnerBook::class)->assertInBook(auth()->user(), $record->party_id);
                 \App\Application\Demo\DemoPersonas::assertProviderAllowed($data['provider'], auth()->user());
+                // Owner rule 2026-09-30: the premium is requested only once the CUSTOMER accepted the contract terms
+                // themselves. Until then the customer gets the web acceptance link by SMS (to their own phone on file,
+                // never the payer phone typed here) and no payment is created.
+                $links = app(\App\Application\Underwriting\Proposal\ProposalAcceptanceLinks::class);
+                if (! $links->customerAccepted($record->refresh())) {
+                    $s = $links->send($record, null, auth()->user());
+                    $key = match (true) {
+                        $s['status'] === 'NO_PHONE' => 'link_no_phone_broker', $s['status'] === 'SMS_FAILED' => 'link_failed_broker',
+                        $s['sent_now'] => 'link_sent_broker', default => 'link_recent_broker',
+                    };
+                    \Filament\Notifications\Notification::make()->warning()->persistent()->title(__("acceptance.{$key}", ['phone' => $s['phone_masked'] ?? '']))->send();
+                    $action->halt();
+                }
                 $intent = app(\App\Application\Payments\PaymentRequestService::class)->create(\App\Models\Tenant::findOrFail(self::tenant()), $record->refresh(),
                     ['provider' => $data['provider'], 'payer_phone_e164' => $data['payer_phone_e164'], 'idempotency_key' => (string) Str::uuid()], auth()->user());
 

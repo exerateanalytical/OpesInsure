@@ -1,0 +1,60 @@
+<?php
+
+// Phase-1 fix S (2026-09-30): mobile staff workspace (mobile/workspace/*) — headings, metrics, modules, columns, claims.
+return [
+    'heading' => ':role workspace',
+    'subtitle' => 'Live operations · :date',
+    'subtitle_scoped' => ':scope · :date',
+    'scope' => [
+        'tenant' => 'Whole organisation', 'carrier' => 'Your insurer', 'branch' => 'Your branch', 'assigned' => 'Assigned to you',
+        'team' => 'Your team', 'organization' => 'Your organisation', 'none' => 'No records in your scope',
+    ],
+    'invalid_cursor' => 'This page link is no longer valid. Reload the list.',
+    'metrics' => [
+        'policies' => 'Policies in force', 'claims' => 'Open claims', 'claims_assigned' => 'Open claims assigned to you', 'premium' => 'Premium this month',
+        'payments' => 'Payments pending', 'support' => 'Open support cases', 'issues' => 'App issues reported', 'cashier_open' => 'Open till sessions',
+        'collections_today' => 'Collected today', 'treaties' => 'Active treaties', 'customers' => 'Customers',
+    ],
+    'modules' => [
+        'policies' => ['title' => 'Policies', 'description' => 'Policies in your scope'],
+        'claims' => ['title' => 'Claims', 'description' => 'Work the claims in your scope'],
+        'customers' => ['title' => 'Customers', 'description' => 'Customers holding a policy in your scope'],
+        'payments' => ['title' => 'Payments', 'description' => 'Premium payments'],
+        'cashier' => ['title' => 'Till sessions', 'description' => 'Cashier sessions of your branch'],
+        'collections' => ['title' => 'Cash collections', 'description' => 'Cash and cheques collected at the till'],
+        'treaties' => ['title' => 'Reinsurance treaties', 'description' => 'Treaties of your insurer'],
+        'cessions' => ['title' => 'Cessions', 'description' => 'Premium ceded per policy'],
+        'support' => ['title' => 'Support cases', 'description' => 'Customer support cases'],
+        'compliance' => ['title' => 'Compliance', 'description' => 'Compliance cases'],
+        'issue-reports' => ['title' => 'App issue reports', 'description' => 'Problems reported from the app'],
+    ],
+    'columns' => [
+        'policy' => 'Policy', 'customer' => 'Customer', 'status' => 'Status', 'premium' => 'Premium (FCFA)', 'expires' => 'Expires',
+        'claim' => 'Claim', 'claimant' => 'Claimant', 'reserve' => 'Reserve (FCFA)', 'submitted' => 'Submitted',
+        'reference' => 'Reference', 'provider' => 'Provider', 'amount' => 'Amount (FCFA)', 'created' => 'Created',
+        'ticket' => 'Ticket', 'category' => 'Category', 'priority' => 'Priority', 'sla_due' => 'SLA due',
+        'case' => 'Case', 'type' => 'Type', 'severity' => 'Severity', 'review_due' => 'Review due',
+        'screen' => 'Screen', 'note' => 'Note', 'reported' => 'Reported',
+        'customer_number' => 'Customer number', 'since' => 'Customer since',
+        'opened' => 'Opened', 'cashier' => 'Cashier', 'float' => 'Opening float (FCFA)', 'expected' => 'Expected cash (FCFA)', 'closed' => 'Closed',
+        'receipt' => 'Receipt', 'method' => 'Method', 'payer' => 'Payer', 'collected' => 'Collected',
+        'treaty' => 'Treaty', 'name' => 'Name', 'year' => 'Underwriting year', 'currency' => 'Currency',
+        'ceded_percent' => 'Ceded (%)', 'ceded_premium' => 'Ceded premium (FCFA)',
+    ],
+    'status' => [
+        'ACTIVE' => 'Active', 'PENDING' => 'Pending', 'EXPIRED' => 'Expired', 'CANCELLED' => 'Cancelled', 'LAPSED' => 'Lapsed', 'SUSPENDED' => 'Suspended',
+        'DRAFT' => 'Draft', 'SUBMITTED' => 'Submitted', 'ACKNOWLEDGED' => 'Acknowledged', 'EVIDENCE_PENDING' => 'Documents requested',
+        'ASSESSMENT' => 'Under assessment', 'INVESTIGATING' => 'Investigating', 'CARRIER_REVIEW' => 'Decision pending', 'APPROVED' => 'Approved',
+        'PARTIALLY_APPROVED' => 'Partially approved', 'DECLINED' => 'Declined', 'DISPUTED' => 'Disputed', 'PAYMENT_PENDING' => 'Payment pending',
+        'PAID' => 'Paid', 'CLOSED' => 'Closed', 'REOPENED' => 'Reopened', 'OPEN' => 'Open', 'RESOLVED' => 'Resolved', 'IN_PROGRESS' => 'In progress',
+        'CREATED' => 'Created', 'PENDING_CUSTOMER' => 'Awaiting customer', 'PROCESSING' => 'Processing', 'SUCCEEDED' => 'Succeeded', 'FAILED' => 'Failed',
+        'PENDING_APPROVAL' => 'Awaiting approval', 'REJECTED' => 'Rejected', 'CALCULATED' => 'Calculated', 'POSTED' => 'Posted',
+    ],
+    'claims' => [
+        'transition_reason' => 'Updated from the mobile workspace',
+        'assigned_reason' => 'Self-assigned from the mobile workspace',
+        'transition_blocked' => 'This claim cannot move to that status now: :reason',
+        'not_found' => 'Claim not found.',
+        'cannot_assign' => 'This claim is closed or already assigned to you.',
+    ],
+];

@@ -27,7 +27,9 @@ Opes.page(function (ctx) {
       return { kind: 'leads', title: S.t(l.status === 'NEW' ? 'task_lead_new' : 'task_lead_follow', { n: l.full_name }), who: l.full_name, due: due(l.updated_at, l.status === 'NEW' ? 1 : 3), status: l.status, href: '/account/leads' };
     }); }); },
     payments: function () { return A.quotes().then(function (rows) { return rows.filter(function (q) { return q.assisted && q.best_premium_minor && q.payment_status !== 'PAID' && ['ACCEPTED', 'EXPIRED', 'CANCELLED'].indexOf(q.status) < 0; }).map(function (q) {
-      return { kind: 'payments', title: S.t(q.payment_status === 'CUSTOMER_PROMPTED' ? 'task_pay_wait' : 'task_pay_prompt', { n: q.customer_name || '' }), who: q.customer_name, due: q.expires_at || due(q.created_at, 2), status: q.payment_status || q.status, href: '/account/book/payments' };
+      // CUSTOMER_PROMPTED: operator prompt on the client's phone; client_notified_at: the client was asked to review/accept the application; else: send it.
+      var key = q.payment_status === 'CUSTOMER_PROMPTED' ? 'task_pay_wait' : (q.client_notified_at && !q.payment_status ? 'task_pay_accept' : 'task_pay_prompt');
+      return { kind: 'payments', title: S.t(key, { n: q.customer_name || '' }), who: q.customer_name, due: q.expires_at || due(q.created_at, 2), status: q.payment_status || q.status, href: '/account/book/payments' };
     }); }); },
     renewals: function () { return A.renewals().then(function (rows) { return rows.filter(function (r) { return ['RENEWED', 'COMPLETED'].indexOf(r.status) < 0; }).map(function (r) {
       return { kind: 'renewals', title: S.t('task_renewal', { p: r.policy_number || '', n: r.customer_name || '' }), who: r.customer_name, due: r.expires_at, status: r.status, href: '/account/book/renewals/' + S.enc(r.id) };

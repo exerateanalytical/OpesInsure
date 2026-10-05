@@ -60,8 +60,10 @@ final class MobileClaimCompletionController
         };
         $uploaded = app(\App\Application\Documents\SubjectDocuments::class)->forSubject('CLAIM', $c->id)->keyBy('role'); // REQ-DUP-021
 
-        return response()->json(['data' => collect($requirements)->map(function ($r) use ($uploaded) {
+        return response()->json(['data' => collect($requirements)->map(function ($r) use ($uploaded, $request) {
             [$key, $label, $required, $guidance] = $r;
+            $loc = $request->getPreferredLanguage(['en', 'fr']) ?? 'en'; // LIVE-QA #8: localised via fr.json (Accept-Language)
+            [$label, $guidance] = [__($label, [], $loc), __($guidance, [], $loc)];
             $doc = $uploaded->get($key);
             $status = ! $doc ? 'MISSING' : match ($doc->status) { 'VERIFIED' => 'VERIFIED', 'REJECTED' => 'REJECTED', default => 'UPLOADED' };
 
@@ -99,7 +101,7 @@ final class MobileClaimCompletionController
 
     public function settlement(string $claim, Request $request): JsonResponse
     {
-        return response()->json(['data' => app(MobileClaimSettlementView::class)->present($this->owned($claim, $request))]);
+        return response()->json(['data' => app(MobileClaimSettlementView::class)->present($this->owned($claim, $request), $request->user())]);
     }
 
     /** The customer's answer to an OFFERED settlement, through ClaimSettlementService (accept / dispute). */
@@ -111,7 +113,7 @@ final class MobileClaimCompletionController
         $view->decide($c, $data['decision'], $data['reason'] ?? null, $request->user());
         $this->audit->record('claim.settlement.customer_decision', 'claim', $c->id, ['decision' => $data['decision']]);
 
-        return response()->json(['data' => $view->present($c->refresh())]);
+        return response()->json(['data' => $view->present($c->refresh(), $request->user())]);
     }
 
     public function appeal(string $claim, Request $request): JsonResponse

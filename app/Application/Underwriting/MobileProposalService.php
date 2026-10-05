@@ -20,9 +20,31 @@ final class MobileProposalService
 {
     public function __construct(private PartyResolver $parties, private ProposalService $proposals) {}
 
-    public function list(User $user, string $tenantId, int $perPage = 20): LengthAwarePaginator
+    /** $quoteOfferId (optional): only the application(s) opened for that offer ("open my application" lookups). */
+    public function list(User $user, string $tenantId, int $perPage = 20, ?string $quoteOfferId = null): LengthAwarePaginator
     {
-        return $this->ownedQuery($user, $tenantId)->with(['offer.product', 'offer.carrier.party', 'offer.quote'])->orderByDesc('updated_at')->paginate($perPage);
+        return $this->ownedQuery($user, $tenantId)->when($quoteOfferId, fn ($q) => $q->where('quote_offer_id', $quoteOfferId))
+            ->with(['offer.product', 'offer.carrier.party', 'offer.quote'])->orderByDesc('updated_at')->orderByDesc('id')->paginate($perPage);
+    }
+
+    /**
+     * List row: present() plus `required_documents` (the same rows as GET proposals/{id}/checklist) while the
+     * application is still open, so the app shows checklist progress without one checklist call per row.
+     *
+     * @return array<string, mixed>
+     */
+    public function presentRow(Proposal $p): array
+    {
+        $row = $this->present($p);
+        if ($row['policy_id'] === null && ! in_array($p->status, ['WITHDRAWN', 'DECLINED', 'EXPIRED', 'CANCELLED', 'ISSUED'], true)) {
+            try {
+                $row['required_documents'] = app(\App\Application\Underwriting\Proposal\ProposalDocumentRequirements::class)->for($p);
+            } catch (\Throwable) {
+                // Progress is optional on the list: the app falls back to the checklist endpoint.
+            }
+        }
+
+        return $row;
     }
 
     /** @return array<string, mixed> */

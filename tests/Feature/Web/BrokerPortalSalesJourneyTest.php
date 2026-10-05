@@ -80,7 +80,7 @@ function bpsTariff(Tenant $t, User $maker, User $checker, string $productId, int
 
 beforeEach(function () {
     Storage::fake('local');
-    Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok', 'id' => 'ticket']]])]);
+    Http::fake(['exp.host/*' => Http::response(['data' => [['status' => 'ok', 'id' => 'ticket']]]), 'api.twilio.com/*' => Http::response(['sid' => 'SM1'], 201)]);
     $this->travelTo(now()->setDate(2026, 10, 10)->setTime(10, 0));
 
     $this->t = Tenant::create(['type' => 'BROKER', 'legal_name' => 'BPS Broker '.Str::random(4), 'status' => 'ACTIVE', 'country_code' => 'CM', 'currency' => 'XAF', 'primary_locale' => 'en', 'settings' => []]);
@@ -146,7 +146,14 @@ it('takes a new customer from quote to issued policy entirely in /broker, quotin
     expect($proposal->refresh()->status)->toBe('PAYMENT_PENDING');
     $this->get("/broker/proposals/{$proposal->id}")->assertOk()->assertSee(__('broker_portal_sales.brokerRequestPremium.label'));
 
-    // 4. Premium collection in test mode; the provider webhook confirms it and opens the carrier issuance request.
+    // 4. Premium collection needs the CUSTOMER's own terms acceptance (owner rule 2026-09-30): the first request only sends
+    //    the customer the web acceptance link by SMS (to their phone on file); once they accepted, the request goes out.
+    bpsAct([fn () => PaymentActions::requestPremium()], $proposal)->callAction('brokerRequestPremium', ['provider' => 'fake', 'payer_phone_e164' => '+237677001199']);
+    expect(PaymentIntentRecord::where('proposal_id', $proposal->id)->exists())->toBeFalse()
+        ->and(\App\Models\ProposalAcceptanceLink::where(['proposal_id' => $proposal->id, 'phone_e164' => '+237677001122'])->exists())->toBeTrue();
+    $awa = User::create(['full_name' => 'Awa Ngono', 'phone_e164' => '+237677001122', 'party_id' => $customer->party_id, 'password' => 'x', 'locale' => 'fr', 'status' => 'ACTIVE']);
+    app(\App\Application\Underwriting\Proposal\ProposalDeclarations::class)->accept($proposal->refresh(), 'TERMS_ACCEPTANCE', $awa, 'WEB_LINK');
+    // Premium collection in test mode; the provider webhook confirms it and opens the carrier issuance request.
     bpsAct([fn () => PaymentActions::requestPremium()], $proposal)->callAction('brokerRequestPremium', ['provider' => 'fake', 'payer_phone_e164' => '+237677001122']);
     $payment = PaymentIntentRecord::where('proposal_id', $proposal->id)->firstOrFail();
     expect($payment->provider_reference)->not->toBeNull()->and($payment->amount_minor)->toBe((int) $offers->first()->total_minor);

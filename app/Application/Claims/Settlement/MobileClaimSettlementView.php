@@ -44,8 +44,15 @@ final class MobileClaimSettlementView
         return self::current($claim)?->status === 'OFFERED';
     }
 
-    /** @return array<string, mixed> */
-    public function present(Claim $claim): array
+    /** Settlement statuses while the customer may still set / change where the money goes (before the payment is requested). */
+    public const PAYOUT_EDITABLE = ['OFFERED', 'ACCEPTED', 'DISCHARGE_SIGNED'];
+
+    /**
+     * $user: the caller — sign_discharge is only offered when they are the pending signer of the discharge.
+     *
+     * @return array<string, mixed>
+     */
+    public function present(Claim $claim, ?User $user = null): array
     {
         $s = self::current($claim);
 
@@ -55,6 +62,7 @@ final class MobileClaimSettlementView
                 'offered_minor' => null, 'deductible_minor' => null, 'net_minor' => null, 'lines' => [],
                 'can_decide' => false, 'payment_status' => 'NOT_STARTED', 'payment_reference' => null,
                 'offered_at' => null, 'decided_at' => null, 'terms' => null,
+                'discharge' => null, 'payout' => self::payout($claim), 'payment_advice_document_id' => null, 'allowed_actions' => [],
             ];
         }
 
@@ -82,6 +90,53 @@ final class MobileClaimSettlementView
             'offered_at' => $this->iso($s->offered_at),
             'decided_at' => $this->iso($s->accepted_at ?? $s->disputed_at),
             'terms' => $rationale,
+        ] + $this->discharge($claim, $s, $user);
+    }
+
+    /** Discharge signature (REQ-CLM-013 ACCEPTED → DISCHARGE_SIGNED), payout destination and the payment advice. */
+    private function discharge(Claim $claim, object $s, ?User $user): array
+    {
+        $req = $s->signature_request_id ? DB::table('signature_requests')->where('id', $s->signature_request_id)->first() : null;
+        $signer = $req ? DB::table('signature_request_signers')->where('signature_request_id', $req->id)->orderBy('signing_order')
+            ->when($user, fn ($q) => $q->where(fn ($w) => $w->where('signer_user_id', $user->id)->when($user->party_id, fn ($x) => $x->orWhere('signer_party_id', $user->party_id))))
+            ->first() : null;
+        $canSign = $req && $user && $signer && $s->status === 'ACCEPTED' && $req->status === 'PENDING' && $signer->status === 'PENDING'
+            && ($req->expires_at === null || now()->lessThan($req->expires_at));
+        $advice = DB::table('documents')->where('claim_id', $claim->id)->where('document_type_code', 'CLAIM_PAYMENT_ADVICE')
+            ->when($s->payee_party_id, fn ($q) => $q->where('party_id', $s->payee_party_id))
+            ->whereNotIn('status', ['REVOKED', 'CANCELLED', 'SUPERSEDED', 'REPLACED'])->orderByDesc('created_at')->value('id');
+
+        return [
+            'discharge' => $req ? [
+                'signature_request_id' => $req->id, 'document_id' => $s->discharge_document_id, 'status' => $req->status,
+                'consent_text' => $req->consent_text, 'signer_status' => $signer->status ?? null,
+                'signed_at' => $signer && $signer->status === 'SIGNED' ? $this->iso($signer->acted_at) : null,
+                'declined_at' => $signer && $signer->status === 'DECLINED' ? $this->iso($signer->acted_at) : null,
+                'expires_at' => $this->iso($req->expires_at),
+            ] : null,
+            'payout' => self::payout($claim),
+            'payment_advice_document_id' => $advice,
+            'allowed_actions' => array_values(array_filter([
+                $s->status === 'OFFERED' ? 'decide' : null,
+                $canSign ? 'sign_discharge' : null,
+                in_array($s->status, self::PAYOUT_EDITABLE, true) ? 'set_payout' : null,
+            ])),
+        ];
+    }
+
+    /** The payout destination the customer gave for this claim (claims.loss_details.payout), masked. */
+    public static function payout(Claim $claim): ?array
+    {
+        $p = ($claim->loss_details ?? [])['payout'] ?? null;
+        if (! is_array($p) || empty($p['method'])) {
+            return null;
+        }
+        $mask = fn (?string $v) => $v ? str_repeat('•', max(0, strlen($v) - 4)).substr($v, -4) : null;
+
+        return [
+            'method' => $p['method'], 'operator' => $p['operator'] ?? null, 'msisdn_masked' => $mask($p['msisdn'] ?? null),
+            'bank_name' => $p['bank_name'] ?? null, 'account_name' => $p['account_name'] ?? null, 'account_number_masked' => $mask($p['account_number'] ?? null),
+            'updated_at' => $p['updated_at'] ?? null,
         ];
     }
 

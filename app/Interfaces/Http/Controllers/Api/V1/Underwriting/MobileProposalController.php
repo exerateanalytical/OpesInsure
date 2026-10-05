@@ -17,9 +17,11 @@ final class MobileProposalController
     public function index(Request $request, MobileProposalService $service): JsonResponse
     {
         $perPage = max(1, min($request->integer('per_page', 20), 100));
-        $page = $service->list($request->user(), app(TenantContext::class)->id(), $perPage);
+        $filter = $request->validate(['quote_offer_id' => 'sometimes|nullable|uuid']);
+        $page = $service->list($request->user(), app(TenantContext::class)->id(), $perPage, $filter['quote_offer_id'] ?? null);
 
-        return response()->json(MobileList::fromPaginator($page, fn (Proposal $p) => $service->present($p)));
+        // Rows carry required_documents (checklist progress) while open: no per-row checklist call in the app.
+        return response()->json(MobileList::fromPaginator($page, fn (Proposal $p) => $service->presentRow($p)));
     }
 
     /**

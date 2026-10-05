@@ -79,7 +79,7 @@ it('lets a failed attempt be retried and still returns the same payment for the 
 it('requires the TERMS_ACCEPTANCE declaration when asked (native app checkout)', function () {
     $f = payableFixture('+237672330004');
     expect(problemCode(fn () => payRequest($f, true)))->toBe('TERMS_NOT_ACCEPTED:422');
-    // Assisted channels (broker / web review page) are not gated.
+    // Only internal callers/tests may opt out ($requireTerms=false); every API/web/broker/agent path passes true (owner fix 2026-09-30).
     expect(payRequest($f, false)->status)->toBe('PENDING_CUSTOMER');
 
     $g = payableFixture('+237672330005');

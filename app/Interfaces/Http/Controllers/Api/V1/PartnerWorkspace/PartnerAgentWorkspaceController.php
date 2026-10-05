@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interfaces\Http\Controllers\Api\V1\PartnerWorkspace;
 
+use App\Application\Mobile\ListCursor;
 use App\Application\PartnerWorkspace\AgentLeadService;
 use App\Application\PartnerWorkspace\PartnerBookQuery;
 use App\Application\PartnerWorkspace\PartnerWorkspaceScope;
@@ -79,12 +80,14 @@ final class PartnerAgentWorkspaceController
         $t = $this->tenant();
         $partner = $this->scope->agent($request->user());
         $book = $this->scope->bookPartyIds($request->user(), $partner);
-        $quotes = Quote::with(['party', 'offers'])->where('tenant_id', $t)
+        // Phase-1 fix S: cursor paging (?cursor=, meta.next_cursor); the first page is unchanged.
+        $page = ListCursor::from($request);
+        $quotes = $page->slice($page->apply(Quote::with(['party', 'offers'])->where('tenant_id', $t)
             ->where(fn ($q) => $q->where('comparison_context->agent_user_id', $request->user()->id)
                 ->orWhere(fn ($q) => $q->where('channel', 'AGENT')->whereIn('party_id', $book)->whereNull('comparison_context->agent_user_id')))
-            ->orderByDesc('created_at')->limit(100)->get();
+            ->orderByDesc('created_at')->orderBy('id'))->get());
 
-        return response()->json(['data' => $quotes->map(fn (Quote $q) => PartnerWorkspaceShapes::quote($q, $t))->values()]);
+        return response()->json(['data' => $quotes->map(fn (Quote $q) => PartnerWorkspaceShapes::quote($q, $t))->values(), 'meta' => $page->meta()]);
     }
 
     /** Policies of clients origin-locked to this agent. */
@@ -92,29 +95,33 @@ final class PartnerAgentWorkspaceController
     {
         $t = $this->tenant();
         $book = $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user()));
-        $rows = Policy::with(['party', 'carrier.party'])->where('tenant_id', $t)->whereIn('party_id', $book)->orderByDesc('issued_at')->limit(100)->get();
+        $page = ListCursor::from($request);
+        $rows = $page->slice($page->apply(Policy::with(['party', 'carrier.party'])->where('tenant_id', $t)->whereIn('party_id', $book)->orderByDesc('issued_at')->orderBy('id'))->get());
 
         // customer_id = the TenantCustomer id the agent client list uses, so the web client page can match policies by id.
         $customers = TenantCustomer::where('tenant_id', $t)->whereIn('party_id', $rows->pluck('party_id')->unique()->all())->pluck('id', 'party_id');
 
         return response()->json(['data' => $rows->map(fn (Policy $p) => PartnerWorkspaceShapes::policy($p) + [
             'party_id' => $p->party_id, 'customer_id' => $customers[$p->party_id] ?? null,
-        ])->values()]);
+        ])->values(), 'meta' => $page->meta()]);
     }
 
     /** Proposals of clients origin-locked to this agent (UI audit 2026-09-27: web book pages). */
     public function proposals(Request $request, PartnerBookQuery $book): JsonResponse
     {
         $t = $this->tenant();
+        $page = ListCursor::from($request);
 
-        return response()->json(['data' => $book->proposals($t, $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())))->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values()]);
+        return response()->json(['data' => $book->proposals($t, $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())), $page)->map(fn ($p) => PartnerWorkspaceShapes::proposal($p, $t))->values(), 'meta' => $page->meta()]);
     }
 
     /** Claims on policies of clients origin-locked to this agent (same rule as the broker claims list). */
     public function claims(Request $request, PartnerBookQuery $book): JsonResponse
     {
-        return response()->json(['data' => $book->claims($this->tenant(), $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())))
-            ->map(fn ($c) => PartnerWorkspaceShapes::claim($c))->values()]);
+        $page = ListCursor::from($request);
+
+        return response()->json(['data' => $book->claims($this->tenant(), $this->scope->bookPartyIds($request->user(), $this->scope->agent($request->user())), $page)
+            ->map(fn ($c) => PartnerWorkspaceShapes::claim($c))->values(), 'meta' => $page->meta()]);
     }
 
     /** Documents of one book client, filtered by DocumentAccessPolicy::intermediaryMay. */
