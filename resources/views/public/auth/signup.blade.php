@@ -17,7 +17,7 @@
     </div>
     <div class="afield"><label for="s-type">{{ $A['type'] }}</label>
       <span class="ain">@include('public.partials.i', ['n' => 'users'])<select id="s-type" name="account_type" data-partner-switch>@foreach($A['types'] as $k => $label)<option value="{{ $k }}">{{ $label }}</option>@endforeach</select></span></div>
-    <div class="apartner" hidden><p>{{ $A['partner_note'] }}</p><a class="abtn outline" href="/partners">{{ $A['partner_btn'] }} @include('public.partials.i', ['n' => 'arrow'])</a></div>
+    <div class="apartner" hidden><p>{{ $A['partner_note'] }}</p><a class="abtn outline" href="/partners/apply">{{ $A['partner_btn'] }} @include('public.partials.i', ['n' => 'arrow'])</a></div>
     <div data-customer>
       <div class="agrid2">
         <div class="afield"><label for="s-pass">{{ $A['password'] }}</label>

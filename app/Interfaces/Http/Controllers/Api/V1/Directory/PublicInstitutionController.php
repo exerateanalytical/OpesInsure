@@ -82,10 +82,12 @@ final class PublicInstitutionController
         if ($carrier = $this->carriers()->find($institution)) {
             $this->loadDirectory(collect([$carrier]));
 
-            return response()->json(['data' => $this->insurerOf($carrier), 'meta' => ['source' => $this->source()]]);
+            return response()->json(['data' => $this->insurerOf($carrier), 'meta' => ['source' => $this->source()]
+                + ($carrier->is_official_register ? ['claim_url' => url('/organisations/claim/insurer/'.$carrier->id)] : [])]);
         }
         if ($broker = $this->brokers()->find($institution)) {
-            return response()->json(['data' => $this->brokerOf($broker) + $this->affiliationsOf($broker), 'meta' => ['source' => $this->source()]]);
+            return response()->json(['data' => $this->brokerOf($broker) + $this->affiliationsOf($broker), 'meta' => ['source' => $this->source()]
+                + ($broker->is_official_register ? ['claim_url' => url('/organisations/claim/broker/'.$broker->id)] : [])]);
         }
 
         abort(404);

@@ -49,6 +49,7 @@
         <li data-kind="{{ $p['kind'] }}" data-branch="{{ $p['branch'] }}" data-city="{{ mb_strtolower((string) $p['city']) }}" data-search="{{ mb_strtolower($p['name'].' '.$p['short']) }}" @unless(isset($visible[$p['kind'].'|'.$p['name']])) hidden @endunless>
           @include('public.partials.wordmark', ['p' => $p])
           @include('public.partials.provider-details', ['p' => $p])
+          @if(! empty($p['id']))<a class="link" style="font-size:13px" href="/organisations/claim/{{ $p['kind'] }}/{{ $p['id'] }}" rel="nofollow">{{ __('org_claim.cta') }}</a>@endif
         </li>
       @endforeach
     </ul>

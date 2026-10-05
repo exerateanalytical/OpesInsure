@@ -41,6 +41,13 @@ final class BrokerOnboardingTarget implements PartialImportTarget
 
     public const INVITATION_TTL_HOURS = 168;
 
+    /** Cameroon identifier formats (also used by the public partner application, PartnerApplicationService). */
+    public const NIU_PATTERN = '/^[A-Z]\d{12}[A-Z]$/';
+
+    public const RCCM_PATTERN = '#^(RC|CM)[A-Z0-9/\-]{6,38}$#';
+
+    public const LICENCE_PATTERN = '#^[A-Z0-9][A-Z0-9/\-. ]{2,39}$#';
+
     /** Template column order (also the CSV/XLSX header). */
     public const FIELDS = [
         'legal_name' => true, 'trade_name' => false, 'rccm' => true, 'niu' => true, 'licence_number' => true, 'licence_expires_on' => true,
@@ -102,13 +109,13 @@ final class BrokerOnboardingTarget implements PartialImportTarget
                 $e[] = __('bulk_onboarding.errors.required', ['field' => __('bulk_onboarding.fields.'.$req)]);
             }
         }
-        if ($n['niu'] !== null && ! preg_match('/^[A-Z]\d{12}[A-Z]$/', $n['niu'])) {
+        if ($n['niu'] !== null && ! preg_match(self::NIU_PATTERN, $n['niu'])) {
             $e[] = __('bulk_onboarding.errors.niu_format');
         }
-        if ($n['rccm'] !== null && ! preg_match('#^(RC|CM)[A-Z0-9/\-]{6,38}$#', $n['rccm'])) {
+        if ($n['rccm'] !== null && ! preg_match(self::RCCM_PATTERN, $n['rccm'])) {
             $e[] = __('bulk_onboarding.errors.rccm_format');
         }
-        if ($n['licence_number'] !== null && (! preg_match('#^[A-Z0-9][A-Z0-9/\-. ]{2,39}$#', $n['licence_number']) || ! preg_match('/\d/', $n['licence_number']))) {
+        if ($n['licence_number'] !== null && (! preg_match(self::LICENCE_PATTERN, $n['licence_number']) || ! preg_match('/\d/', $n['licence_number']))) {
             $e[] = __('bulk_onboarding.errors.licence_format');
         }
         $n['licence_expires_on'] = null;

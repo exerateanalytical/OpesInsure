@@ -61,6 +61,7 @@ final class PublicProviderDirectory
             $insurers = DB::table('carriers')->where('is_official_register', true)
                 ->orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('regulator_sequence')->get(['id', 'trade_name', 'legal_name', 'short_name', 'brand_short_name', 'licence_branch'])
                 ->map(fn ($r) => [
+                    'id' => (string) $r->id, // "Claim this organisation" link
                     'name' => (string) ($r->trade_name ?: $r->legal_name),
                     'short' => (string) ($r->brand_short_name ?: ($r->short_name ?: ($r->trade_name ?: $r->legal_name))),
                     'kind' => 'insurer',
@@ -72,6 +73,7 @@ final class PublicProviderDirectory
             $brokers = DB::table('partners')->where('is_official_register', true)->where('type', 'BROKER')
                 ->orderBy('regulator_sequence')->orderBy('legal_name')->get(['id', 'trade_name', 'legal_name'])
                 ->map(fn ($r) => [
+                    'id' => (string) $r->id, // "Claim this organisation" link
                     'name' => (string) ($r->trade_name ?: $r->legal_name),
                     'short' => (string) ($r->trade_name ?: $r->legal_name),
                     'kind' => 'broker',

@@ -164,6 +164,17 @@ const S6_UNGUARDED_ALLOW_LIST = [
         'POST api/v1/webhooks/payments/{provider}' => 'WEBHOOK',
         'POST broker/logout' => 'PANEL_LOGOUT',
         'POST contact' => 'PUBLIC_FORM',
+        // Partner self-service application + "Claim this organisation": anonymous, throttled, honeypot; follow-up steps only
+        // through the applicant's secret 48-char status link (hashed in the DB); approval is in /admin (maker-checker).
+        'POST partners/apply' => 'PUBLIC_FORM',
+        'POST partners/apply/status/{token}/verify' => 'PUBLIC_FORM',
+        'POST partners/apply/status/{token}/resend' => 'PUBLIC_FORM',
+        'POST partners/apply/status/{token}/respond' => 'PUBLIC_FORM',
+        'POST partners/apply/brokerage/{token}' => 'PUBLIC_FORM', // single-use link emailed to the brokerage's administrators
+        'POST organisations/claim/{kind}/{id}' => 'PUBLIC_FORM',
+        'POST organisations/claim/status/{token}/verify' => 'PUBLIC_FORM', // code goes to the institution's official contact only
+        'POST organisations/claim/status/{token}/resend' => 'PUBLIC_FORM',
+        'POST organisations/claim/status/{token}/respond' => 'PUBLIC_FORM',
         'POST developers/logout' => 'PANEL_LOGOUT',
         'POST horizon/api/batches/retry/{id}' => 'HORIZON',
         'POST horizon/api/jobs/retry/{id}' => 'HORIZON',

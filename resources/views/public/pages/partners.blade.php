@@ -21,8 +21,10 @@
     <h2 style="font-size:20px">{{ __('site.partner.title') }}</h2>
     <p style="margin-bottom:18px">{{ __('site.partner.body') }}</p>
     <div class="btn-row">
-      <a class="btn btn-gold" href="/contact?topic=partner">{{ __('site.partners.cta') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+      <a class="btn btn-gold" href="/partners/apply">{{ __('partner_apply.apply_cta') }} @include('public.partials.i', ['n' => 'arrow'])</a>
+      <a class="btn" href="/contact?topic=partner">{{ __('site.partners.cta') }}</a>
     </div>
+    <p style="margin-top:12px;font-size:14px">{{ __('partner_apply.claim_hint') }}</p>
     @if($contacts['partner_email'])<p style="margin-top:16px">{{ __('site.partners.email_label') }}: <a class="link" href="mailto:{{ $contacts['partner_email'] }}">{{ $contacts['partner_email'] }}</a></p>@endif
     @if($stats['insurers'])<p style="margin-top:12px;font-size:14px">{{ __('site.providers_page.totals', ['insurers' => $stats['insurers'], 'brokers' => $stats['brokers']]) }} — <a class="link" href="/providers">{{ __('site.providers.view_all') }}</a></p>@endif
   </aside>
