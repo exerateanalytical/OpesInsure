@@ -22,6 +22,7 @@ import { useProposalQuote } from "@/hooks/useProposalQuote";
 import { paidRoute, paymentConflict, paymentState, purchaseRoute, termsAcceptedIn } from "@/lib/paymentRouting";
 import { colors, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { isMomoPhone, normalizeMomoPhone } from "@/lib/momoPhone";
 
 /**
  * Step 4: review the selected offer and pay (design 13/53). The proposal is
@@ -43,6 +44,11 @@ export default function Checkout() {
   const f = useFormatters();
   const { t } = useTranslation();
   const [phone, setPhone] = useState(defaultPhone);
+  // The session can arrive after this screen mounts: prefill the account number then, unless the customer typed one.
+  const [phoneEdited, setPhoneEdited] = useState(false);
+  useEffect(() => {
+    if (!phoneEdited && defaultPhone) setPhone(defaultPhone);
+  }, [defaultPhone, phoneEdited]);
   const [provider, setProvider] = useState<Network>("mtn_momo");
   const [confirmDetails, setConfirmDetails] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -110,7 +116,9 @@ export default function Checkout() {
   // "paid, policy being issued", never a second checkout (double charge).
   const paid = paymentState({ payments: proposal.payments });
   const payable = info.stage === "payable" && !paid;
-  const phoneValid = /^\+237[26]\d{8}$/.test(phone);
+  // Local 6XXXXXXXX (or 237…, spaces) is accepted and sent as +237XXXXXXXXX.
+  const payerPhone = normalizeMomoPhone(phone);
+  const phoneValid = isMomoPhone(phone);
   // Known from the checklist: the contract terms must be accepted on the terms screen before paying.
   const termsAccepted = checklist ? termsAcceptedIn(checklist.declarations) : null;
   // Unknown (checklist failed to load) blocks too: the server refuses an app payment without TERMS_ACCEPTANCE.
@@ -123,7 +131,7 @@ export default function Checkout() {
     if (busy) return;
     setPayError(null);
     try {
-      await request(provider, phone);
+      await request(provider, payerPhone);
       router.replace({ pathname: "/payment", params: { proposalId: proposal.id } });
     } catch (e) {
       // 409: already paid / a payment still with the operator. Follow that one; never charge twice.
@@ -201,7 +209,19 @@ export default function Checkout() {
               }
             />
             <NetworkTiles value={provider} onChange={setProvider} disabled={busy} />
-            <TextField label={t("rrMomoNumber")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!busy} placeholder="+2376XXXXXXXX" error={phone && !phoneValid ? t("coPhoneInvalid") : undefined} />
+            <TextField
+              label={t("rrMomoNumber")}
+              value={phone}
+              onChangeText={(v) => {
+                setPhoneEdited(true);
+                setPhone(v);
+              }}
+              onBlur={() => phoneValid && setPhone(payerPhone)}
+              keyboardType="phone-pad"
+              editable={!busy}
+              placeholder="6XX XX XX XX"
+              error={phone && !phoneValid ? t("coPhoneInvalid") : undefined}
+            />
             <View style={st.pinRow}>
               <Smartphone size={16} color={colors.neutral600} />
               <Text style={[ps.meta, st.flex]}>{t("coPinNote")}</Text>

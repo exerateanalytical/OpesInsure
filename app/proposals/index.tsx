@@ -70,10 +70,11 @@ export default function Applications() {
     void load();
   }, [load]);
 
-  // Progress: the summary's own required_documents first, else the checklist endpoint (open drafts only).
+  // Progress: GET /mobile/proposals rows carry required_documents for open applications (no per-row call);
+  // the checklist endpoint is only a fallback for rows from an older server without it.
   useEffect(() => {
     let alive = true;
-    const pending = items.filter((p) => progress[p.id] === undefined && checklistProgress(p.required_documents) === null && draftBucket(p.status) !== "other");
+    const pending = items.filter((p) => progress[p.id] === undefined && !Array.isArray(p.required_documents) && draftBucket(p.status) !== "other");
     if (!pending.length) return;
     void Promise.allSettled(pending.map((p) => ProposalLifecycleApi.checklist(p.id).then((c) => [p.id, checklistProgress(c.required_documents)] as const))).then((results) => {
       if (!alive) return;

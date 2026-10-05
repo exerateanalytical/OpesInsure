@@ -1,60 +1,47 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
-import { AppHeader, Card, Screen, StatusChip } from "@/components/ui";
+import { Linking, StyleSheet, Text } from "react-native";
+import { ExternalLink } from "lucide-react-native";
+import { AppHeader, Button, Card, Screen, StatusChip } from "@/components/ui";
 import { SupportContactList } from "@/components/auth/SupportContacts";
+import { useRuntime } from "@/store/runtime";
+import { legalLinks } from "@/config/environment";
 import { colors, type } from "@/theme/tokens";
-
 import { useTranslation } from "@/i18n";
-// Placeholder legal copy. Must be reviewed and replaced by counsel before a
-// public production release. Keep TERMS_VERSION in sign-up.tsx in sync.
-const sections: [string, string][] = [
-  [
-    "1. Who we are",
-    "OpesInsure is a digital insurance marketplace operated in the Republic of Cameroon. It lets customers compare, buy and manage insurance from licensed insurers, brokers and agents. OpesInsure is not itself an insurer: cover is provided by the insurer named on your policy, under the CIMA Insurance Code and the rules of the Ministry of Finance.",
-  ],
-  [
-    "2. Your account",
-    "You sign in with your Cameroon mobile number and password, or a one-time code sent by WhatsApp or SMS. Adding an email address is optional but recommended. Keep your password and phone secure and never share codes; OpesInsure staff will never ask for them. You must give accurate information, as insurers rely on it to price and pay claims. Misrepresentation can void cover.",
-  ],
-  [
-    "3. Quotes, policies and payments",
-    "Quotes are indicative until an insurer accepts the risk and payment is confirmed. Premiums paid by Mobile Money or card are collected for the insurer. Your policy wording, certificate and schedule set out the cover, exclusions and cancellation rights, and prevail over any summary in the app.",
-  ],
-  [
-    "4. Claims",
-    "Claims are assessed and decided by the insurer. OpesInsure helps you submit evidence and track progress. Report incidents promptly and do not submit false or altered documents.",
-  ],
-  [
-    "5. Partners",
-    "Insurers, brokers and agents join by invitation after licence verification and are bound by separate partner agreements.",
-  ],
-  [
-    "6. Privacy",
-    "We process your identity, contact, policy, payment and claim data to provide the service, meet regulatory and anti-fraud obligations, and keep your account secure, in line with Law No. 2024/017 on personal data protection in Cameroon. We share data only with the insurers, brokers, agents and payment providers involved in your policy, and with authorities where the law requires. You can ask to access or correct your data from Account settings or by contacting support. Public certificate verification shows only validity, insurer, product class and cover dates.",
-  ],
-  [
-    "7. Contact",
-    "Questions or complaints: contact OpesInsure support using the details below. Unresolved complaints may be referred to the insurer and to the competent insurance regulator.",
-  ],
+import type { CopyKey } from "@/i18n/strings";
+
+// Draft terms, bundled in EN and FR (i18n termsS1..S7). They are pending legal review: counsel supplies
+// the final text. The backend has no legal-document/CMS endpoint yet; when the runtime bootstrap
+// publishes a terms_url, the published version is linked from here. Keep TERMS_VERSION in sign-up.tsx in sync.
+const TERMS_VERSION = "2026-01-01";
+const SECTIONS: [CopyKey, CopyKey][] = [
+  ["termsS1Title", "termsS1Body"],
+  ["termsS2Title", "termsS2Body"],
+  ["termsS3Title", "termsS3Body"],
+  ["termsS4Title", "termsS4Body"],
+  ["termsS5Title", "termsS5Body"],
+  ["termsS6Title", "termsS6Body"],
+  ["termsS7Title", "termsS7Body"],
 ];
 
 export default function Terms() {
   const { t } = useTranslation();
+  const legal = useRuntime((s) => s.bootstrap?.legal);
+  const published = legalLinks(legal).terms;
   return (
     <Screen>
-      <AppHeader title={t("termsTitle")} subtitle={t("termsVersion", { version: "2026-01-01" })} back />
+      <AppHeader title={t("termsTitle")} subtitle={t("termsVersion", { version: TERMS_VERSION })} back />
       <Card>
         <StatusChip label={t("termsDraft")} tone="warning" />
-        <Text style={styles.meta}>
-          This text is a placeholder and has not yet been reviewed by legal
-          counsel. The final terms will be published before general release.
-        </Text>
+        <Text style={styles.meta}>{t("termsDraftNotice")}</Text>
+        {published ? (
+          <Button label={t("termsReadPublished")} icon={ExternalLink} variant="secondary" onPress={() => void Linking.openURL(published).catch(() => undefined)} />
+        ) : null}
       </Card>
-      {sections.map(([title, body]) => (
+      {SECTIONS.map(([title, body], i) => (
         <Card key={title}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.body}>{body}</Text>
-          {title === "7. Contact" ? <SupportContactList /> : null}
+          <Text style={styles.title} accessibilityRole="header">{t(title)}</Text>
+          <Text style={styles.body}>{t(body)}</Text>
+          {i === SECTIONS.length - 1 ? <SupportContactList /> : null}
         </Card>
       ))}
     </Screen>

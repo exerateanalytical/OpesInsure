@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { ChevronRight, CircleHelp, Clock3, Plus, Ticket } from "lucide-react-native";
+import { ChevronRight, CircleHelp, Clock3, MessageSquareWarning, Plus, Ticket } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
@@ -44,6 +44,7 @@ export default function Support() {
       <BrandHeader title={t("helpComplaints")} subtitle={t("supportSubtitle")} back right="help" />
       <Button label={t("supportNewTicket")} icon={Plus} onPress={() => router.push("/support/new")} />
       <Button label={t("faqTitle")} icon={CircleHelp} variant="secondary" onPress={() => router.push("/support/faq")} />
+      <Button label={t("cplMine")} icon={MessageSquareWarning} variant="secondary" onPress={() => router.push("/complaints" as never)} />
       {q.loading && !q.data ? (
         <LoadingState label={t("supportLoading")} />
       ) : q.error && !q.data ? (

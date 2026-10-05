@@ -2,12 +2,14 @@ import { router } from "expo-router";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { FileSignature } from "lucide-react-native";
-import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { CarrierPagedApi } from "@/api/workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
-import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
+import { money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { proposalStatusInfo } from "@/lib/purchase";
 
@@ -21,7 +23,8 @@ export default function CarrierProposals() {
 
 function CarrierProposalsBody() {
   const { t, language } = useTranslation();
-  const q = useLoad(() => CarrierWorkspaceApi.proposals(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 rows).
+  const q = useCursorList(() => CarrierPagedApi.proposals());
   return (
     <Screen>
       <AppHeader title={t("caQuotesProposals")} subtitle={t("caProposalsSubtitle")} back />
@@ -50,6 +53,7 @@ function CarrierProposalsBody() {
           />
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </Screen>
   );
 }

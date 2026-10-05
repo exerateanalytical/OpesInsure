@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button, Card, SectionTitle } from "@/components/ui";
@@ -84,6 +84,7 @@ export function SchemaForm({
   onLocation,
   only,
   review,
+  onValues,
 }: {
   form: FormName;
   initialValues?: Record<string, string> | null;
@@ -112,6 +113,8 @@ export function SchemaForm({
    * onSubmit only runs when the customer confirms there.
    */
   review?: { intro?: string; confirmLabel?: string; title?: string; /** Label of the button that opens the review (default "Review before sending"). */ continueLabel?: string };
+  /** The raw answers as they change (e.g. "Save draft" on the claim wizard keeps them unvalidated). */
+  onValues?: (values: Record<string, string>) => void;
 }) {
   const { t, language } = useTranslation();
   const lang = language === "fr" ? "fr" : "en";
@@ -127,6 +130,11 @@ export function SchemaForm({
   useEffect(() => {
     if (schema) setValues(initialFormValues(schema, JSON.parse(seedKey) as Record<string, string>));
   }, [schema, seedKey]);
+  const valuesListener = useRef(onValues);
+  valuesListener.current = onValues;
+  useEffect(() => {
+    valuesListener.current?.(values);
+  }, [values]);
 
   if (loading && !schema) return <LoadingState label={t("loading")} />;
   if (!schema) return <ErrorCard error={loadError} fallback={t("formLoadFailed")} onRetry={() => void reload()} />;

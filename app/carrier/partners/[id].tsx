@@ -1,8 +1,10 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import { DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
+import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { CarrierPagedApi } from "@/api/workspace";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
-import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
+import { humanize, money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 /** Distribution Partner Detail (CAR-009). Carrier-scoped server-side. */
@@ -17,7 +19,7 @@ export default function CarrierPartnerDetail() {
 function Body() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(() => CarrierWorkspaceApi.partners(), id);
+  const q = useRecord(CarrierPagedApi.partner, id);
   return (
     <DetailScreen
       title={t("cdPartnerTitle")}

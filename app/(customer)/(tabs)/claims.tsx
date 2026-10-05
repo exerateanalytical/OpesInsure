@@ -1,9 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
-import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Siren } from "lucide-react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { ArrowRight, CheckCircle2, Clock3, FilePlus2, FileText, LucideIcon, Save, Siren } from "lucide-react-native";
 import { Button, Card, ripple, Screen, SectionTitle } from "@/components/ui";
-import { BrandHeader } from "@/components/design";
+import { Banner, BrandHeader } from "@/components/design";
+import { ClaimDraftCard } from "@/components/claims/ClaimDraftCard";
+import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { claimPolicy, insuredLabel, policyLine, policyTitle, productCategory, providerName } from "@/components/claims/claimProduct";
@@ -11,8 +13,10 @@ import { byDate, FilterToolbar, periodMatcher, periodSection, runList, sortSecti
 import { carrierMark, useCarriers } from "@/components/customer/useCarriers";
 import { CATEGORIES } from "@/components/customer/categories";
 import { useLoad } from "@/hooks/useLoad";
+import { usePagedList } from "@/hooks/usePagedList";
 import { usePolicies } from "@/hooks/usePolicies";
-import { CustomerApi } from "@/api/customer";
+import { CustomerApi, type ClaimDraft } from "@/api/customer";
+import { resumeStep, wizardRoute } from "@/lib/claimDraft";
 import type { Claim } from "@/api/client";
 import { useTranslation } from "@/i18n";
 import type { CopyKey } from "@/i18n/strings";
@@ -25,12 +29,45 @@ const SEGMENTS: { key: ClaimSegment; label: CopyKey; icon: LucideIcon }[] = [
   { key: "completed", label: "claimsCompleted", icon: CheckCircle2 },
 ];
 
-/** My Claims (design 29 / 11): header with New Claim, search + filter sheet (status, line, insurer, period, sort), claim cards with the progress rail. */
+/**
+ * My Claims (design 29 / 11): header with New Claim, saved drafts (resume / discard), search + filter sheet
+ * (status, line, insurer, period, sort), claim cards with the progress rail. Claims are paged
+ * (GET /mobile/claims?page=N): more load on scroll, and every page is fetched while a filter is on.
+ */
 export default function Claims() {
   const { t, td } = useTranslation();
-  const q = useLoad(() => CustomerApi.claims());
+  const { draftSaved } = useLocalSearchParams<{ draftSaved?: string }>();
+  const q = usePagedList<Claim>((page) => CustomerApi.claimsPage(page));
+  const drafts = useLoad(() => CustomerApi.claimDrafts());
+  const [discarding, setDiscarding] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<unknown>(null);
   const { policies } = usePolicies();
-  const claims = q.data ?? [];
+  const claims = q.items;
+  // Back on the tab (a claim filed or a draft saved elsewhere): re-read both lists.
+  const reloadClaims = q.reload;
+  const reloadDrafts = drafts.reload;
+  const focused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focused.current) {
+        void reloadClaims();
+        void reloadDrafts();
+      }
+      focused.current = true;
+    }, [reloadClaims, reloadDrafts]),
+  );
+  const discard = async (d: ClaimDraft) => {
+    setDiscarding(d.id);
+    setDraftError(null);
+    try {
+      await CustomerApi.deleteClaimDraft(d.id);
+      drafts.setData((drafts.data ?? []).filter((x) => x.id !== d.id));
+    } catch (e) {
+      setDraftError(e);
+    } finally {
+      setDiscarding(null);
+    }
+  };
   const byPolicy = useMemo(() => new Map(policies.map((p) => [p.id, p])), [policies]);
   const carriers = useCarriers();
   const meta = (c: Claim) => {
@@ -57,6 +94,12 @@ export default function Claims() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claims, byPolicy, carriers, t]);
   const f = useListFilters("customer.claims", filterSections);
+  // No server-side filters on /mobile/claims: while a filter or search is on, fetch every page so no match is hidden.
+  const { hasMore, loadAll } = q;
+  const filtering = f.active || !!f.query;
+  useEffect(() => {
+    if (filtering && hasMore) void loadAll();
+  }, [filtering, hasMore, loadAll]);
   const segSel = f.values.segment ?? [];
   const segment: ClaimSegment = segSel.length === 1 ? (segSel[0] as ClaimSegment) : "all";
   const matchers: Matchers<Claim> = {
@@ -117,7 +160,24 @@ export default function Claims() {
   const header = (
     <View style={styles.header}>
       <BrandHeader title={t("myClaims")} subtitle={t("myClaimsSubtitle")} back={false} />
+      {draftSaved === "1" ? <Banner icon={Save} tint="green" body={t("claimDraftSavedBanner")} /> : null}
       {newClaim}
+      {drafts.data?.length ? (
+        <View style={styles.drafts}>
+          <SectionTitle title={t("claimDraftsTitle", { count: drafts.data.length })} />
+          {drafts.data.map((d) => (
+            <ClaimDraftCard
+              key={d.id}
+              draft={d}
+              policy={byPolicy.get(d.policy_id ?? "") as never}
+              busy={discarding === d.id}
+              onResume={() => router.push(wizardRoute(resumeStep(d), d.id, d.policy_id) as never)}
+              onDiscard={() => void discard(d)}
+            />
+          ))}
+        </View>
+      ) : null}
+      {draftError ? <ErrorCard error={draftError} fallback={t("actionFailed")} /> : null}
       <FilterToolbar
         filters={f}
         sections={filterSections}
@@ -134,12 +194,12 @@ export default function Claims() {
     return (
       <Screen>
         {header}
-        {q.loading && !q.data ? (
+        {q.loading && !claims.length ? (
           <LoadingState label={t("claimsLoading")} />
-        ) : q.error && !q.data ? (
+        ) : q.error && !claims.length ? (
           <ErrorState error={q.error} onRetry={() => void q.reload()} />
         ) : claims.length ? (
-          <EmptyState title={t("claimsNoMatch")} message={t("claimsNoMatchBody")} action={t("fltClearAll")} onPress={f.clear} />
+          q.fetchingAll ? <LoadingState label={t("claimsLoading")} /> : <EmptyState title={t("claimsNoMatch")} message={t("claimsNoMatchBody")} action={t("fltClearAll")} onPress={f.clear} />
         ) : (
           <EmptyState title={t("claimsEmpty")} message={t("claimsEmptyBody")} />
         )}
@@ -163,13 +223,22 @@ export default function Claims() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={q.loading} onRefresh={() => void q.reload()} />}
+        refreshControl={<RefreshControl refreshing={q.loading && claims.length > 0} onRefresh={() => { void q.reload(); void drafts.reload(); }} />}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => {
+          if (!q.moreError) void q.loadMore();
+        }}
         ListHeaderComponent={header}
         renderSectionHeader={({ section }) => (section.title ? <SectionTitle title={section.title} /> : null)}
         renderItem={({ item }) => row(item)}
         ItemSeparatorComponent={Separator}
         SectionSeparatorComponent={Separator}
-        ListFooterComponent={<View style={styles.footer}>{emergency}</View>}
+        ListFooterComponent={
+          <View style={styles.footer}>
+            <LoadMore hasMore={q.hasMore} loading={q.loadingMore || q.fetchingAll} error={q.moreError} onPress={() => void q.loadMore()} />
+            {emergency}
+          </View>
+        }
       />
     </Screen>
   );
@@ -179,7 +248,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: space.x16 },
   header: { gap: space.x4, marginBottom: space.x4 },
   sep: { height: space.x3 },
-  footer: { marginTop: space.x6 },
+  footer: { marginTop: space.x6, gap: space.x4 },
+  drafts: { gap: space.x3 },
   row: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },

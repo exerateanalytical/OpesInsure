@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
-import { api, type Claim, type CustomerNotification, type EvidenceRequirement } from "./client";
+import * as FileSystem from "expo-file-system/legacy";
+import { api, apiPage, type Claim, type CustomerNotification, type EvidenceRequirement, type Payment, type Policy } from "./client";
+import { chunkRanges, isVideo, videoMime, type DraftEvidence } from "@/lib/evidenceUpload";
 import { rows, type Institution } from "./extra";
 import { loadDirectory } from "./directory";
 import { storeDocument } from "./documentUpload";
@@ -55,6 +57,38 @@ export type KycState = {
   submission: KycSubmission | null;
 };
 
+/** Partial FNOL kept by the server (claim_drafts) — never a claim until submitted. */
+export type ClaimDraftPayload = {
+  incident_at?: string | null;
+  incident_location?: string | null;
+  description?: string | null;
+  incident_type?: string | null;
+  injuries_reported?: boolean;
+  police_report_filed?: boolean;
+  police_reference?: string | null;
+  estimated_loss_minor?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Wizard answers as entered (form values), so a resumed draft reopens the form as it was left. */
+  client_state?: Record<string, unknown> | null;
+  evidence?: DraftEvidence[] | null;
+};
+export type ClaimDraftInput = ClaimDraftPayload & { policy_id?: string | null };
+export type ClaimDraft = {
+  id: string;
+  policy_id: string | null;
+  payload: ClaimDraftPayload | null;
+  policy?: Policy | null;
+  claim_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+export type ClaimDraftEvidenceReport = {
+  attached: number;
+  pending: number;
+  failed: { index: number; name: string | null; evidence_type: string }[];
+};
+
 export type SupportCaseInput = {
   category: string;
   subject: string;
@@ -85,6 +119,53 @@ export const CustomerApi = {
   /** Thin wrapper over the shared, cached directory store (src/api/directory.ts). */
   institutions: (type?: "insurer" | "broker"): Promise<Institution[]> => loadDirectory(type ?? "all"),
   claims: async () => rows(await api<Page<Claim>>("/mobile/claims")),
+  /** One page of GET /mobile/payments for one policy (server filter policy_id). */
+  policyPayments: (policyId: string, page = 1) => apiPage<Payment>(`/mobile/payments?policy_id=${encodeURIComponent(policyId)}`, page),
+  /** One page of GET /mobile/claims (newest first); policyId narrows it server-side to that policy. */
+  claimsPage: (page = 1, policyId?: string) =>
+    apiPage<Claim>(policyId ? `/mobile/claims?policy_id=${encodeURIComponent(policyId)}` : "/mobile/claims", page),
+
+  // --- Claim drafts (new-claim wizard: nothing is filed until drafts/{id}/submit) ------
+  claimDrafts: async () => rows(await api<Page<ClaimDraft>>("/mobile/claims/drafts")),
+  claimDraft: (id: string) => api<ClaimDraft>(`/mobile/claims/drafts/${id}`),
+  createClaimDraft: (payload: ClaimDraftInput) =>
+    api<ClaimDraft>("/mobile/claims/drafts", { method: "POST", body: JSON.stringify(payload), idempotent: true }),
+  updateClaimDraft: (id: string, payload: ClaimDraftInput) =>
+    api<ClaimDraft>(`/mobile/claims/drafts/${id}`, { method: "PATCH", body: JSON.stringify(payload), idempotent: true }),
+  deleteClaimDraft: (id: string) => api<null>(`/mobile/claims/drafts/${id}`, { method: "DELETE", idempotent: true }),
+  /** Files the draft as a claim (FNOL) with the declaration; evidence saved on the draft is attached by the server. */
+  submitClaimDraft: async (id: string) => {
+    const body = await api<{ data: Claim; evidence?: ClaimDraftEvidenceReport }>(`/mobile/claims/drafts/${id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ declaration_confirmed: true }),
+      idempotent: true,
+      envelope: true,
+      timeoutMs: 60000,
+    });
+    return { claim: body.data, evidence: body.evidence ?? { attached: 0, pending: 0, failed: [] } };
+  },
+
+  // --- Account: phone verification + password -------------------------
+  /** POST /me/phone/verification: sends a code to the account's own phone (demo OTP rules apply server-side). */
+  requestPhoneVerification: (channel?: "whatsapp" | "sms") =>
+    api<{ challenge_id?: string; delivery_status?: string; expires_in?: number; sent?: boolean; reason?: string }>("/me/phone/verification", {
+      method: "POST",
+      body: JSON.stringify(channel ? { channel } : {}),
+      idempotent: true,
+    }),
+  confirmPhoneVerification: (challenge_id: string, code: string) =>
+    api<{ user?: unknown }>("/me/phone/verification/confirm", {
+      method: "POST",
+      body: JSON.stringify({ challenge_id, code }),
+      idempotent: true,
+    }),
+  /** PUT /me/password: ends every session on success (the app then signs in again). */
+  changePassword: (current_password: string, password: string, password_confirmation: string) =>
+    api<{ password_changed: boolean; sessions_revoked?: boolean }>("/me/password", {
+      method: "PUT",
+      body: JSON.stringify({ current_password, password, password_confirmation }),
+      idempotent: true,
+    }),
   quotes: async () => rows(await api<Page<CustomerQuote>>("/mobile/quotes")),
   notifications: async () =>
     rows(await api<Page<CustomerNotification>>("/mobile/notifications")),
@@ -170,63 +251,90 @@ export const CustomerApi = {
     }),
 };
 
-/** Reads a local file URI as base64 (no data: prefix). */
-export async function readAsBase64(uri: string): Promise<{ base64: string; size: number }> {
-  const blob = await (await fetch(uri)).blob();
-  const dataUrl = await new Promise<string>((resolve, reject) => {
+const dataUrlBase64 = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("FILE_READ_FAILED"));
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const comma = dataUrl.indexOf(",");
+      resolve(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl);
+    };
     reader.readAsDataURL(blob);
   });
-  const comma = dataUrl.indexOf(",");
-  return { base64: comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl, size: blob.size };
+
+/** Reads a local file URI as base64 (no data: prefix). Images and PDFs only: videos are streamed in chunks. */
+export async function readAsBase64(uri: string): Promise<{ base64: string; size: number }> {
+  const blob = await (await fetch(uri)).blob();
+  return { base64: await dataUrlBase64(blob), size: blob.size };
 }
 
-/** Base64 chunk length: a multiple of 4 so each chunk decodes on its own
- * (2 000 000 chars ≈ 1.5 MB, well under the server's 10 MB chunk cap). */
-const CHUNK_CHARS = 2_000_000;
+/**
+ * A local file read one byte range at a time as base64, so a video never sits in memory whole:
+ * on device through expo-file-system (position/length reads), on web by slicing the file blob.
+ */
+async function openChunkedFile(uri: string, knownSize?: number | null): Promise<{ size: number; read: (start: number, end: number) => Promise<string> }> {
+  if (Platform.OS !== "web") {
+    const info = await FileSystem.getInfoAsync(uri);
+    const size = info.exists && typeof info.size === "number" ? info.size : (knownSize ?? 0);
+    if (size > 0)
+      return {
+        size,
+        read: (start, end) => FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64, position: start, length: end - start }),
+      };
+  }
+  const blob = await (await fetch(uri)).blob();
+  return { size: blob.size, read: (start, end) => dataUrlBase64(blob.slice(start, end)) };
+}
 
-/** Uploads a file as claim evidence: documents API for images/PDF,
- * resumable upload for video. */
+/** Where an uploaded evidence file lives before it is attached to a claim. */
+export type EvidenceFileRef = { document_id: string } | { upload_session_id: string };
+
+/**
+ * Uploads one evidence file without attaching it: documents API for images/PDF, a resumable upload for
+ * video (read and sent chunk by chunk with its real type: .mov → video/quicktime). Used directly by the
+ * new-claim wizard (the refs are kept on the claim draft and attached by the server on submit).
+ */
+export async function uploadEvidenceFile(
+  asset: { uri: string; mimeType?: string | null; name?: string | null; size?: number | null },
+  onProgress?: (fraction: number) => void,
+): Promise<EvidenceFileRef & { mime_type: string; size_bytes: number }> {
+  const mime = (asset.mimeType ?? "").toLowerCase();
+  if (isVideo(mime)) {
+    const mime_type = videoMime(mime, asset.name, asset.uri);
+    const file = await openChunkedFile(asset.uri, asset.size);
+    const ranges = chunkRanges(file.size);
+    const session = await CustomerApi.startUpload({
+      resource_type: "CLAIM_EVIDENCE",
+      mime_type,
+      total_chunks: ranges.length,
+      total_size_bytes: file.size,
+    });
+    for (let i = 0; i < ranges.length; i++) {
+      const [start, end] = ranges[i]!;
+      await CustomerApi.putChunk(session.id, i, await file.read(start, end));
+      onProgress?.((i + 1) / (ranges.length + 1));
+    }
+    await CustomerApi.finalizeUpload(session.id);
+    return { upload_session_id: session.id, mime_type, size_bytes: file.size };
+  }
+  const mime_type = mime === "application/pdf" ? "application/pdf" : mime === "image/png" ? "image/png" : "image/jpeg";
+  const { base64, size } = await readAsBase64(asset.uri);
+  const documentId = await storeDocument("CLAIM_EVIDENCE", { mime: mime_type, base64 });
+  onProgress?.(0.8);
+  return { document_id: documentId, mime_type, size_bytes: size };
+}
+
+/** Uploads a file and attaches it to an existing claim as evidence. */
 export async function uploadClaimEvidence(
   claimId: string,
-  asset: { uri: string; mimeType?: string | null },
+  asset: { uri: string; mimeType?: string | null; name?: string | null; size?: number | null },
   evidenceType: string,
   onProgress?: (fraction: number) => void,
 ): Promise<{ securityCheck: boolean }> {
-  const mime = (asset.mimeType ?? "").toLowerCase();
-  const { base64, size } = await readAsBase64(asset.uri);
-  let attached: { security_check_pending?: boolean } | null;
-  if (mime.startsWith("video/")) {
-    const total = Math.max(1, Math.ceil(base64.length / CHUNK_CHARS));
-    const session = await CustomerApi.startUpload({
-      resource_type: "CLAIM_EVIDENCE",
-      mime_type: "video/mp4",
-      total_chunks: total,
-      total_size_bytes: size,
-    });
-    for (let i = 0; i < total; i++) {
-      await CustomerApi.putChunk(session.id, i, base64.slice(i * CHUNK_CHARS, (i + 1) * CHUNK_CHARS));
-      onProgress?.((i + 1) / (total + 1));
-    }
-    await CustomerApi.finalizeUpload(session.id);
-    attached = await CustomerApi.attachClaimEvidence(claimId, {
-      upload_session_id: session.id,
-      evidence_type: evidenceType,
-      purpose: "CLAIM_EVIDENCE",
-    });
-  } else {
-    const mime_type =
-      mime === "application/pdf" ? "application/pdf" : mime === "image/png" ? "image/png" : "image/jpeg";
-    const documentId = await storeDocument("CLAIM_EVIDENCE", { mime: mime_type, base64 });
-    onProgress?.(0.8);
-    attached = await CustomerApi.attachClaimEvidence(claimId, {
-      document_id: documentId,
-      evidence_type: evidenceType,
-      purpose: "CLAIM_EVIDENCE",
-    });
-  }
+  const file = await uploadEvidenceFile(asset, onProgress);
+  const ref = "document_id" in file ? { document_id: file.document_id } : { upload_session_id: file.upload_session_id };
+  const attached = await CustomerApi.attachClaimEvidence(claimId, { ...ref, evidence_type: evidenceType, purpose: "CLAIM_EVIDENCE" });
   onProgress?.(1);
   return { securityCheck: attached?.security_check_pending === true };
 }

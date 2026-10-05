@@ -18,6 +18,7 @@ import { useSession } from "@/store/session";
 import { networkName, isProviderNotConfigured, paymentStatusInfo } from "@/lib/purchase";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
+import { PaymentRefunds } from "@/components/payments/PaymentRefunds";
 
 /** Clipboard was extracted from RN core; use it when the host still ships it, otherwise fall back to the share sheet. */
 function copyText(text: string): boolean {
@@ -198,6 +199,7 @@ export default function PaymentDetail() {
               <IconTile icon={Headset} label={t("contactSupport")} tint="neutral" onPress={() => router.push("/support/new")} />
             </View>
           )}
+          <PaymentRefunds paymentId={id} />
           {p.proposal_id ? <Button label={t("coOpenApplication")} variant="tertiary" onPress={() => router.push({ pathname: "/proposals/[id]", params: { id: p.proposal_id } })} /> : null}
         </>
       ) : null}

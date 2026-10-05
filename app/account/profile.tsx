@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CheckCircle2, IdCard, MailCheck, MapPin, Pencil, UserRound, UsersRound } from "lucide-react-native";
+import { CheckCircle2, IdCard, MailCheck, MapPin, Pencil, Smartphone, UserRound, UsersRound } from "lucide-react-native";
 import { AccountApi } from "@/api/client";
 import { Button, Screen, StatusChip, TextField } from "@/components/ui";
 import { Banner, BrandHeader } from "@/components/design";
@@ -158,6 +158,16 @@ function ContactSection() {
           <SummaryField label={t("email")} value={user?.email} onAdd={open} right={user?.email ? chip(emailVerified) : null} />
           <SummaryField label={t("personalMobile")} value={user?.phone_e164} right={user?.phone_e164 ? chip(phoneVerified) : null} note={t("phoneChangeNote")} />
         </SummaryCard>
+        {user?.phone_e164 && !phoneVerified ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/account/verify-phone" as never)}
+            style={({ pressed }) => [styles.verify, pressed && styles.pressed]}
+          >
+            <Smartphone size={20} color={colors.warningText} />
+            <Text style={styles.verifyText}>{t("phoneVerifyAction")}</Text>
+          </Pressable>
+        ) : null}
       </>
     );
   }

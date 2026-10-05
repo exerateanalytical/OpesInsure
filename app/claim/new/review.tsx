@@ -1,51 +1,71 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Check, FileText, Image as ImageIcon, User } from "lucide-react-native";
-import { Screen } from "@/components/ui";
-import { BrandHeader } from "@/components/design";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { ArrowRight, Check, CircleAlert, FileText, Image as ImageIcon, User } from "lucide-react-native";
+import { Button, Screen } from "@/components/ui";
+import { Banner, BrandHeader } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
 import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
 import { ReviewDocuments, ReviewFooter, ReviewIntro, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
-import { claimExtra, claimPolicy, evidenceIcon, formatBytes, insuredLabel, policyLine, policyTitle, productIcon, productTint, providerName } from "@/components/claims/claimProduct";
+import { evidenceIcon, formatBytes, insuredLabel, policyLine, policyTitle, productIcon, productTint, providerName } from "@/components/claims/claimProduct";
 import { useLoad } from "@/hooks/useLoad";
 import { usePolicies } from "@/hooks/usePolicies";
-import { ClaimsApi } from "@/api/client";
-import { ClaimRecordsApi } from "@/api/extra";
+import { CustomerApi, type ClaimDraft, type ClaimDraftEvidenceReport } from "@/api/customer";
+import type { Claim } from "@/api/client";
+import { draftMissing, wizardRoute } from "@/lib/claimDraft";
+import type { DraftEvidence } from "@/lib/evidenceUpload";
 import { useSession } from "@/store/session";
 import { useTranslation } from "@/i18n";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
  * New claim, step 4 of 4 (design 30): review the policy, incident, evidence
- * and contact details (shared review cards, each with Edit back to its step),
- * confirm the declaration and submit. The claim record
- * already exists (created by step 2), so Submit sends the declaration
- * (PUT /mobile/claims/{id}/incident declaration_confirmed) and opens the claim.
+ * and contact details saved on the claim draft (each card's Edit reopens its
+ * step on the same draft — never a second claim), confirm the declaration and
+ * submit. Only Submit files the claim: POST /mobile/claims/drafts/{id}/submit
+ * with declaration_confirmed, which also attaches the draft's evidence.
+ * "Save as draft" keeps the draft (already saved server-side) and returns to My claims.
  */
 export default function NewClaimReview() {
-  const { id: raw } = useLocalSearchParams<{ id: string }>();
-  const id = typeof raw === "string" ? raw : "";
+  const { draftId } = useLocalSearchParams<{ draftId: string }>();
+  const id = typeof draftId === "string" ? draftId : "";
   const { t, td, date, language, timeZone } = useTranslation();
   const user = useSession((s) => s.bootstrap?.user ?? null);
-  const claim = useLoad(() => ClaimsApi.show(id), [id]);
-  const evidence = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
+  const draft = useLoad<ClaimDraft>(() => CustomerApi.claimDraft(id), [id]);
   const { policies } = usePolicies();
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [touched, setTouched] = useState(false);
-  const open = () => router.replace({ pathname: "/claim/[id]", params: { id } });
+  // Filed, but some draft files could not be attached: say so before opening the claim.
+  const [filed, setFiled] = useState<{ claim: Claim; evidence: ClaimDraftEvidenceReport } | null>(null);
+  // Back from an Edit: show what was just saved on the draft.
+  const reloadDraft = draft.reload;
+  const seen = React.useRef(false);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (seen.current) void reloadDraft();
+      seen.current = true;
+    }, [reloadDraft]),
+  );
+  const missing = draftMissing(draft.data);
+  const openClaim = (claimId: string) => router.replace({ pathname: "/claim/[id]", params: { id: claimId } });
+  const saveDraft = () => router.replace({ pathname: "/(customer)/(tabs)/claims" as never, params: { draftSaved: "1" } });
+  const edit = (step: "policy" | "incident" | "evidence") => {
+    const route = wizardRoute(step, id, draft.data?.policy_id, true);
+    router.push(route as never);
+  };
 
   const submit = async () => {
     setTouched(true);
-    if (!agreed) return;
+    if (!agreed || busy || missing) return;
     setBusy(true);
     setError(null);
     try {
-      await ClaimsApi.submitDeclaration(id);
-      open();
+      const result = await CustomerApi.submitClaimDraft(id);
+      if (result.evidence.failed.length) setFiled(result);
+      else openClaim(result.claim.id);
     } catch (e) {
       setError(e);
     } finally {
@@ -61,43 +81,65 @@ export default function NewClaimReview() {
     }
   };
 
+  if (filed)
+    return (
+      <Screen>
+        <BrandHeader title={t("claimReviewTitle")} subtitle={filed.claim.claim_number} back={false} right={null} />
+        <Banner icon={Check} tint="green" title={t("claimDraftSubmitted")} body={t("claimDraftSubmittedBody", { number: filed.claim.claim_number ?? "" })} />
+        <Banner
+          icon={CircleAlert}
+          tint="gold"
+          title={t("claimDraftFilesNotAttached", { count: filed.evidence.failed.length })}
+          body={filed.evidence.failed.map((f) => f.name || td(`evidence_${f.evidence_type}`, f.evidence_type)).join(", ")}
+        />
+        <Button label={t("claimDraftAddFilesNow")} icon={ArrowRight} onPress={() => router.replace({ pathname: "/claim/[id]/evidence", params: { id: filed.claim.id } })} />
+        <Button label={t("claimDraftOpenClaim")} variant="secondary" onPress={() => openClaim(filed.claim.id)} />
+      </Screen>
+    );
+
   return (
     <Screen
-      footer={<ReviewFooter label={t("claimSubmitClaim")} icon={ArrowRight} loading={busy} onConfirm={() => void submit()} onBack={open} backLabel={t("claimSaveDraft")} />}
+      footer={<ReviewFooter label={t("claimSubmitClaim")} icon={ArrowRight} loading={busy} disabled={!draft.data} onConfirm={() => void submit()} onBack={saveDraft} backLabel={t("claimSaveDraft")} />}
     >
       <BrandHeader title={t("claimReviewTitle")} subtitle={t("claimReviewSubtitle")} right="help" />
       <ClaimWizardSteps current={3} />
-      <StatePanel {...claim} onRetry={claim.reload} isEmpty={() => false} loadingLabel={t("loading")}>
-        {(c) => {
-          const policy = policies.find((p) => p.id === c.policy_id) ?? claimPolicy(c);
+      <StatePanel {...draft} onRetry={draft.reload} isEmpty={() => false} loadingLabel={t("loading")}>
+        {(d) => {
+          const p = d.payload ?? {};
+          const policy = policies.find((x) => x.id === d.policy_id) ?? d.policy ?? null;
           const title = policyTitle(policy, t("claimPolicyLabel"));
           const line = policyLine(policy);
           const provider = providerName(policy);
           const asset = insuredLabel(policy);
-          const incidentType = claimExtra(c, "incident_type");
-          const files = evidence.data ?? [];
+          const files = (p.evidence ?? []) as DraftEvidence[];
           return (
             <View style={s.stack}>
               <ReviewIntro body={t("claimReviewIntro")} />
-              <ReviewSection icon={productIcon(title, line)} tint={productTint(title, line)} title={t("claimPolicyInformation")} onEdit={() => router.replace({ pathname: "/claim/new", params: { policyId: c.policy_id } })} editLabel={t("claimEdit")}>
+              {missing ? <Banner icon={CircleAlert} tint="gold" title={t("claimDraftIncomplete")} body={t("claimDraftIncompleteBody")} onPress={() => edit(missing === "policy" ? "policy" : "incident")} /> : null}
+              <ReviewSection icon={productIcon(title, line)} tint={productTint(title, line)} title={t("claimPolicyInformation")} onEdit={() => edit("policy")} editLabel={t("claimEdit")}>
                 <ReviewRow first label={t("claimPolicyLabel")} value={title} />
                 {provider ? <ReviewRow label={t("insurer")} value={provider} /> : null}
                 {asset ? <ReviewRow label={t("claimInsuredItem")} value={asset} /> : null}
                 {policy?.policy_number ? <ReviewRow label={t("claimPolicyNumberLabel")} value={policy.policy_number} /> : null}
               </ReviewSection>
 
-              <ReviewSection icon={FileText} tint="gold" title={t("claimIncidentDetails")} onEdit={() => router.push({ pathname: "/claim/[id]/incident", params: { id } })} editLabel={t("claimEdit")}>
-                <ReviewRow first label={t("claimIncidentDate")} value={date(c.incident_at)} />
-                {timeOf(c.incident_at) ? <ReviewRow label={t("claimIncidentTime")} value={timeOf(c.incident_at)} /> : null}
-                <ReviewRow label={t("claimIncidentLocation")} value={c.incident_location} />
-                {incidentType ? <ReviewRow label={t("claimIncidentType")} value={td(`incidentKind_${incidentType}`, incidentType)} /> : null}
-                <ReviewRow label={t("reviewWhatHappened")} value={c.description} />
+              <ReviewSection icon={FileText} tint="gold" title={t("claimIncidentDetails")} onEdit={() => edit("incident")} editLabel={t("claimEdit")}>
+                <ReviewRow first label={t("claimIncidentDate")} value={p.incident_at ? date(p.incident_at) : null} />
+                {p.incident_at && timeOf(p.incident_at) ? <ReviewRow label={t("claimIncidentTime")} value={timeOf(p.incident_at)} /> : null}
+                <ReviewRow label={t("claimIncidentLocation")} value={p.incident_location ?? null} />
+                {p.incident_type ? <ReviewRow label={t("claimIncidentType")} value={td(`incidentKind_${p.incident_type}`, p.incident_type)} /> : null}
+                <ReviewRow label={t("reviewWhatHappened")} value={p.description ?? null} />
               </ReviewSection>
 
-              <ReviewSection icon={ImageIcon} tint="green" title={t("claimEvidenceSection")} onEdit={() => router.push({ pathname: "/claim/[id]/evidence", params: { id, wizard: "1" } })} editLabel={t("claimEdit")}>
+              <ReviewSection icon={ImageIcon} tint="green" title={t("claimEvidenceSection")} onEdit={() => edit("evidence")} editLabel={t("claimEdit")}>
                 <ReviewDocuments
                   empty={t("claimNoFilesYet")}
-                  files={files.map((f) => ({ key: f.id, name: td(`evidence_${f.evidence_type}`, f.evidence_type), meta: formatBytes(f.size_bytes) || null, icon: evidenceIcon(f) }))}
+                  files={files.map((f, i) => ({
+                    key: f.document_id ?? f.upload_session_id ?? String(i),
+                    name: f.name || td(`evidence_${f.evidence_type}`, f.evidence_type),
+                    meta: formatBytes(f.size_bytes) || null,
+                    icon: evidenceIcon({ mime_type: f.mime_type ?? undefined, evidence_type: f.evidence_type }),
+                  }))}
                 />
               </ReviewSection>
 

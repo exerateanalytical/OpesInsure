@@ -26,6 +26,7 @@ import { selectionToValues } from "@/lib/vehicles";
 import { selectionFromValues, withReferenceOptions } from "@/lib/riskFormValues";
 import { ReviewIntro, SchemaReviewSection } from "@/components/review/ReviewSummary";
 import { useTranslation } from "@/i18n";
+import { focusFromParams, focusParams } from "@/lib/quoteFocus";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 
@@ -45,7 +46,9 @@ function prefillFromAsset(asset: RiskAsset): Record<string, string> {
  * only creates a new one when the server refuses the amendment or another object is chosen.
  */
 export default function Risk() {
-  const { quoteId } = useLocalSearchParams<{ quoteId?: string }>();
+  const { quoteId, carriers, from } = useLocalSearchParams<{ quoteId?: string; carriers?: string; from?: string }>();
+  // Insurer / broker chosen on a profile (quote/product): carried to the offers, which open filtered to it.
+  const focus = focusParams(focusFromParams(carriers, from));
   const editing = useOpenQuote(quoteId);
   const editQuote = quoteId ? editing.quote : null;
   const product = useInsurance((s) => s.product);
@@ -175,7 +178,7 @@ export default function Risk() {
       // replace: back from the offers never returns to this review step.
       if (status === "REFERRED" || (!result.offers.length && status !== "OFFERED"))
         router.replace({ pathname: "/quote/referral", params: { quoteId: result.quote.id } });
-      else router.replace({ pathname: "/quote/offers", params: { quoteId: result.quote.id } });
+      else router.replace({ pathname: "/quote/offers", params: { quoteId: result.quote.id, ...focus } });
     } catch (e) {
       setSubmitError(e);
     }

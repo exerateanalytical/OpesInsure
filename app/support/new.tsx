@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet } from "react-native";
 import { LifeBuoy, Link2, Paperclip } from "lucide-react-native";
@@ -44,6 +44,18 @@ export default function NewSupport() {
     CATEGORIES.find((c) => c === params.category) ??
     (params.claimId ? "CLAIM" : params.paymentId ? "PAYMENT" : "GENERAL_SUPPORT");
   const [category, setCategory] = useState<string>(initial);
+  // A formal complaint is not a support ticket: it goes to the complaint register
+  // (REQ-CPL-001, app/complaints/new.tsx) with its regulatory deadlines.
+  useEffect(() => {
+    if (category !== "FORMAL_COMPLAINT") return;
+    router.replace({
+      pathname: "/complaints/new",
+      params: {
+        ...(params.claimId ? { claimId: params.claimId } : params.policyId ? { policyId: params.policyId } : {}),
+        ...(params.reference ? { reference: params.reference } : {}),
+      },
+    });
+  }, [category, params.claimId, params.policyId, params.reference]);
   const [subject, setSubject] = useState(params.subject ?? (params.reference ? `${params.reference} — ` : ""));
   const [description, setDescription] = useState(params.body ?? "");
   const [busy, setBusy] = useState(false);

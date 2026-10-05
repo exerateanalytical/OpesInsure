@@ -13,7 +13,7 @@ export type CompletionStepState = "done" | "todo" | "waiting";
 export type CompletionStep = { key: CompletionStepKey; state: CompletionStepState; href: string };
 
 export type CompletionInput = {
-  user: { phone_e164?: string | null; phone_verified_at?: string | null; email?: string | null; email_verified_at?: string | null; contacts_verified?: boolean } | null | undefined;
+  user: { phone_e164?: string | null; phone_verified_at?: string | null; phone_verified?: boolean; email?: string | null; email_verified_at?: string | null; email_verified?: boolean; contacts_verified?: boolean } | null | undefined;
   profile: { date_of_birth?: string | null; address_line1?: string | null; city?: string | null } | null | undefined;
   kyc:
     | {
@@ -60,14 +60,16 @@ export function profileCompletion(input: CompletionInput, now = Date.now()): Com
       state: filled(profile.date_of_birth) && filled(profile.address_line1) && filled(profile.city) ? "done" : "todo",
       href: "/account/profile",
     },
-    { key: "phone", state: filled(user.phone_e164) && (filled(user.phone_verified_at) || user.contacts_verified === true) ? "done" : "todo", href: "/account/profile" },
+    // Verified through app/account/verify-phone (POST /me/phone/verification + /confirm).
+    { key: "phone", state: filled(user.phone_e164) && (filled(user.phone_verified_at) || user.phone_verified === true || user.contacts_verified === true) ? "done" : "todo", href: "/account/verify-phone" },
   ];
   // Email is optional for customers; once one is on the account it must be verified.
   if (filled(user.email)) {
-    steps.push({ key: "email", state: filled(user.email_verified_at) || user.contacts_verified === true ? "done" : "todo", href: "/account/profile" });
+    steps.push({ key: "email", state: filled(user.email_verified_at) || user.email_verified === true || user.contacts_verified === true ? "done" : "todo", href: "/account/profile" });
   }
   steps.push(
-    { key: "identifier", state: (kyc.identifiers?.length ?? 0) > 0 ? "done" : "todo", href: "/onboarding/kyc" },
+    // An approved verification proves the identity even when no separate ID number row came back.
+    { key: "identifier", state: (kyc.identifiers?.length ?? 0) > 0 || phase === "approved" ? "done" : "todo", href: "/onboarding/kyc" },
     { key: "documents", state: documentsDone && !(editable && phase === "more_info") ? "done" : "todo", href: "/onboarding/kyc" },
     {
       key: "verified",

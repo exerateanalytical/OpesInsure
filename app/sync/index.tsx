@@ -7,9 +7,18 @@ import { useTranslation, formatCameroonDate } from "@/i18n";
 import { useResilience } from "@/store/resilience";
 import { SyncStateChip, syncStateOf } from "@/components/Freshness";
 import { colors, radius, space, type } from "@/theme/tokens";
+import { apiErrorCopyKey } from "@/lib/apiErrors";
+import { syncKindKey, syncPendingKey, syncResourceKey } from "@/lib/syncLabels";
 
 export default function SyncCentre() {
-  const { t, language } = useTranslation();
+  const { t, td, language } = useTranslation();
+  const resourceLabel = (resource: string) => td(syncResourceKey(resource), resource);
+  // Known server codes read as their message; anything else as a plain "could not sync" with the code kept for support.
+  const errorLabel = (code: string) => {
+    const key = apiErrorCopyKey(code);
+    if (key) return t(key);
+    return code === "SYNC_FAILED" ? t("syncErrorGeneric") : `${t("syncErrorGeneric")} (${code})`;
+  };
   const { queue, summary, online, syncing, hydrate, syncNow, retry, discard } =
     useResilience();
   useEffect(() => void hydrate(), [hydrate]);
@@ -21,7 +30,7 @@ export default function SyncCentre() {
           <TintedIcon icon={online ? ShieldCheck : CloudOff} tint={online ? "green" : "gold"} size={56} />
           <View style={styles.flex}>
             <Text style={styles.title} accessibilityRole="header">
-              {queue.length === 0 ? t("allSynced") : `${queue.length} ${t("pending")}`}
+              {queue.length === 0 ? t("allSynced") : t(syncPendingKey(queue.length), { count: queue.length })}
             </Text>
             <Text style={styles.body}>
               {summary.last_synced_at
@@ -50,12 +59,12 @@ export default function SyncCentre() {
                 <View style={styles.summary}>
                   <TintedIcon icon={item.state === "FAILED" ? AlertTriangle : item.state === "CONFLICT" ? TriangleAlert : CloudUpload} tint={tint} size={44} />
                   <View style={styles.flex}>
-                    <Text style={styles.itemTitle}>{item.resource}</Text>
-                    <Text style={styles.meta}>{item.kind} · {item.method}</Text>
+                    <Text style={styles.itemTitle}>{resourceLabel(item.resource)}</Text>
+                    <Text style={styles.meta}>{td(syncKindKey(item.kind), item.kind)}</Text>
                   </View>
                   <SyncStateChip state={syncStateOf(item, syncing)} />
                 </View>
-                {item.error_code ? <Text style={styles.error}>{item.error_code}</Text> : null}
+                {item.error_code ? <Text style={styles.error}>{errorLabel(item.error_code)}</Text> : null}
                 <View style={styles.actions}>
                   <View style={styles.flex}>
                     <Button label={t("retry")} variant="secondary" onPress={() => void retry(item.id)} />
@@ -65,7 +74,7 @@ export default function SyncCentre() {
                       label={t("discard")}
                       variant="danger"
                       onPress={() =>
-                        Alert.alert(t("discard"), item.resource, [
+                        Alert.alert(t("discard"), resourceLabel(item.resource), [
                           { text: t("back"), style: "cancel" },
                           { text: t("discard"), style: "destructive", onPress: () => void discard(item.id) },
                         ])

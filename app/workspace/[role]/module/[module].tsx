@@ -1,56 +1,64 @@
-import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import React, { useMemo } from "react";
+import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { MoveHorizontal } from "lucide-react-native";
 import { AppHeader, Card, Screen } from "@/components/ui";
-import { StatePanel } from "@/components/StatePanel";
-import { useLoad } from "@/hooks/useLoad";
-import { WorkspaceApi } from "@/api/client";
+import { EmptyState, StatePanel } from "@/components/StatePanel";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { usePagedList } from "@/hooks/usePagedList";
+import { workspaceModulePager } from "@/api/workspace";
 import { colors, space, type } from "@/theme/tokens";
 
 import { useTranslation } from "@/i18n";
 const cellText = (v: unknown) =>
   v === null || v === undefined || v === "" ? "" : String(v);
 
+/**
+ * Generic workspace module table. Phase-1 fix S (2026-09-30): rows are scoped by the server to the caller's data
+ * scope, column headers arrive in the app language, and the list loads the next page (?cursor=) on scroll.
+ */
 export default function Module() {
   const { t } = useTranslation();
   const { module } = useLocalSearchParams<{ module: string }>();
-  const q = useLoad(() => WorkspaceApi.module(module), [module]);
+  const source = useMemo(() => workspaceModulePager(String(module)), [module]);
+  const list = usePagedList(source.pager);
+  const meta = source.meta();
+  const columns = meta?.columns ?? [];
   const { width } = useWindowDimensions();
   const narrow = width < 600;
+  const onEnd = () => {
+    if (!list.moreError) void list.loadMore();
+  };
+  const footer = <LoadMore hasMore={list.hasMore} loading={list.loadingMore} error={list.moreError} onPress={() => void list.loadMore()} />;
+  const empty = !list.loading && !list.error ? <EmptyState title={t("wsNoRecordsTitle")} message={t("wsNoRecords")} /> : null;
+  const refresh = <RefreshControl refreshing={list.loading && list.items.length > 0} onRefresh={() => void list.reload()} />;
+
   return (
-    <Screen>
-      <AppHeader
-        title={q.data?.label ?? q.data?.title ?? t("wsModuleTitle")}
-        back
-      />
-      <StatePanel
-        {...q}
-        onRetry={q.reload}
-        isEmpty={(d) => d.rows.length === 0}
-        emptyTitle={t("wsNoRecordsTitle")}
-        emptyMessage={t("wsNoRecords")}
-      >
-        {(data) =>
+    <Screen scroll={false}>
+      <AppHeader title={meta?.label ?? meta?.title ?? t("wsModuleTitle")} back />
+      <StatePanel loading={list.loading} error={list.error} data={list.loading && !list.items.length ? undefined : list.items} onRetry={() => void list.reload()}>
+        {(rows) =>
           narrow ? (
-            <>
-              {data.rows.map((row, index) => (
-                <Card key={index}>
-                  {data.columns.map((column) => (
+            <FlatList
+              data={rows}
+              keyExtractor={(r) => r.id}
+              contentContainerStyle={styles.content}
+              refreshControl={refresh}
+              onEndReachedThreshold={0.4}
+              onEndReached={onEnd}
+              ListEmptyComponent={empty}
+              ListFooterComponent={footer}
+              renderItem={({ item }) => (
+                <Card>
+                  {columns.map((column) => (
                     <View key={column} style={styles.pair}>
                       <Text style={styles.label}>{column}</Text>
-                      <Text style={styles.value}>{cellText(row[column])}</Text>
+                      <Text style={styles.value}>{cellText(item[column])}</Text>
                     </View>
                   ))}
                 </Card>
-              ))}
-            </>
+              )}
+            />
           ) : (
             <>
               <View style={styles.hint}>
@@ -58,24 +66,33 @@ export default function Module() {
                 <Text style={styles.hintText}>{t("wsScrollHint")}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator>
-                <View>
-                  <View style={styles.row}>
-                    {data.columns.map((column) => (
-                      <Text key={column} style={[styles.cell, styles.header]}>
-                        {column}
-                      </Text>
-                    ))}
-                  </View>
-                  {data.rows.map((row, index) => (
-                    <View key={index} style={styles.row}>
-                      {data.columns.map((column) => (
-                        <Text key={column} style={styles.cell}>
-                          {cellText(row[column])}
+                <FlatList
+                  data={rows}
+                  keyExtractor={(r) => r.id}
+                  refreshControl={refresh}
+                  onEndReachedThreshold={0.4}
+                  onEndReached={onEnd}
+                  ListEmptyComponent={empty}
+                  ListFooterComponent={footer}
+                  ListHeaderComponent={
+                    <View style={styles.row}>
+                      {columns.map((column) => (
+                        <Text key={column} style={[styles.cell, styles.header]}>
+                          {column}
                         </Text>
                       ))}
                     </View>
-                  ))}
-                </View>
+                  }
+                  renderItem={({ item }) => (
+                    <View style={styles.row}>
+                      {columns.map((column) => (
+                        <Text key={column} style={styles.cell}>
+                          {cellText(item[column])}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                />
               </ScrollView>
             </>
           )
@@ -85,6 +102,7 @@ export default function Module() {
   );
 }
 const styles = StyleSheet.create({
+  content: { gap: space.x3, paddingBottom: space.x6 },
   row: {
     flexDirection: "row",
     borderBottomWidth: 1,

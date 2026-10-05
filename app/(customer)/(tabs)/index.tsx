@@ -23,6 +23,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { CustomerApi } from "@/api/customer";
 import { PaymentsApi, ProposalsApi, type ProposalSummary } from "@/api/client";
 import { PriorityFeed, usePriorityItems } from "@/components/customer/PriorityFeed";
+import { useMoneyAttention } from "@/components/customer/MoneyAttention";
 import { useSession } from "@/store/session";
 import { Preferences } from "@/store/preferences";
 import { useTranslation } from "@/i18n";
@@ -116,6 +117,8 @@ export default function CustomerHome() {
     kyc: kyc.data,
     applications: payable,
   });
+  // Instalments due / overdue and a discharge waiting for signature (optional calls).
+  const moneyItems = useMoneyAttention(policies.policies, claims.data);
   const firstName = user?.full_name?.trim().split(/\s+/)[0];
   // A typed query runs the live global search (GET /search + marketplace);
   // an empty submit opens the marketplace.
@@ -175,7 +178,7 @@ export default function CustomerHome() {
         />
 
         {/* HOME-003: urgent exceptions above routine content. */}
-        <PriorityFeed items={priority} />
+        <PriorityFeed items={[...priority, ...moneyItems]} />
 
         <CompareCard />
 

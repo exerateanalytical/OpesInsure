@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { BrokerPagedApi } from "@/api/workspace";
 import { PortalScreen } from "@/components/portal/PortalShell";
 import { brokerTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
@@ -32,7 +35,8 @@ const haystack = (r: Receivable) => [r.customer_name, r.policy_number, r.label, 
 export default function Receivables() {
   const { t, td } = useTranslation();
   const params = useLocalSearchParams<Record<string, string>>();
-  const q = useLoad(() => BrokerApi.receivables() as Promise<Receivable[]>, []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 accruals).
+  const q = useCursorList<Receivable>(() => BrokerPagedApi.receivables() as never);
   const statements = useLoad(() => BrokerFinanceApi.statements(), []);
   const accruals = useLoad(() => BrokerFinanceApi.accruals(), []);
   const rows = useMemo(() => q.data ?? [], [q.data]);
@@ -76,6 +80,7 @@ export default function Receivables() {
           />
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
       <SectionTitle title={t("brStatements")} />
       <StatePanel
         {...statements}

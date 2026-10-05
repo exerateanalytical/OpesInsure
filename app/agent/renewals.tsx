@@ -11,7 +11,7 @@ import { AgentApi } from "@/api/client";
 import { humanize } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
-/** Renewal pipeline (AGENT_UI_SPEC_V2 drill-down list): search + one filter icon, rows open the policy. */
+/** Renewal pipeline (AGENT_UI_SPEC_V2 drill-down list): search + one filter icon, rows open the renewal desk. */
 export default function AgentRenewals() {
   const { t, td } = useTranslation();
   const q = useLoad(() => AgentApi.renewals(), []);
@@ -34,7 +34,7 @@ export default function AgentRenewals() {
               statusCode: r.status,
               status: td(`policyStatus_${r.status}`, humanize(r.status)),
             })}
-            onPress={(r) => router.push({ pathname: "/agent/policies/[id]", params: { id: r.id } })}
+            onPress={(r) => router.push({ pathname: "/agent/renewals/[id]", params: { id: r.id } })}
           />
         )}
       </BookLoad>

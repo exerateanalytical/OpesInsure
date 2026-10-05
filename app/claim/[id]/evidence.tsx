@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import * as DocumentPicker from "expo-document-picker";
-import { ArrowRight, Calendar, Camera, Check, CloudUpload, FileText, FileUp, Images, Info, MapPin, Video } from "lucide-react-native";
+import { useLocalSearchParams } from "expo-router";
+import { Calendar, Camera, Check, CloudUpload, FileText, FileUp, Images, Info, MapPin, Video } from "lucide-react-native";
 import { Button, Card, ripple, Screen, StatusChip } from "@/components/ui";
-import { Banner, BrandHeader, CtaBar, SectionHeading, TintedIcon } from "@/components/design";
+import { Banner, BrandHeader, SectionHeading, TintedIcon } from "@/components/design";
 import { StatePanel } from "@/components/StatePanel";
-import { ClaimWizardSteps } from "@/components/claims/ClaimWizardSteps";
 import { PolicyChoiceCard } from "@/components/claims/PolicyChoiceCard";
 import { claimExtra, claimPolicy, evidenceIcon, evidenceIsPdf, formatBytes, requirementMet } from "@/components/claims/claimProduct";
 import { useLoad } from "@/hooks/useLoad";
@@ -19,24 +16,21 @@ import { CustomerApi, uploadClaimEvidence } from "@/api/customer";
 import { useTranslation } from "@/i18n";
 import { claimActionAllowed } from "@/lib/claimStatus";
 import { colors, radius, space, type } from "@/theme/tokens";
-import { withoutRelock } from "@/lib/appLock";
+import { MAX_VIDEO_SECONDS, pickEvidence, type EvidenceSource, type PickedEvidence } from "@/components/claims/evidencePickers";
 import { ReviewDocuments, ReviewRow, ReviewSection } from "@/components/review/ReviewSummary";
 
 /** A picked file waiting for the customer's confirmation before it is uploaded. */
-type PendingFile = { asset: { uri: string; mimeType?: string | null }; kind: string; name: string; size?: number | null };
-
-const MAX_VIDEO_SECONDS = 60;
+type PendingFile = { asset: PickedEvidence["asset"]; kind: string; name: string; size?: number | null };
 
 /**
- * Claim evidence (design 32/34): also step 3 of the new-claim wizard when
- * opened with ?wizard=1. Camera photo / video, gallery and document pickers
- * upload through uploadClaimEvidence (documents API for images/PDF, resumable
- * chunks for video) under the selected requirement key.
+ * Claim evidence (design 32/34) for a filed claim. Camera photo / video, gallery and document pickers
+ * (pickEvidence) upload through uploadClaimEvidence (documents API for images/PDF, resumable chunks for
+ * video) under the selected requirement key. The new-claim wizard's evidence step is app/claim/new/evidence
+ * (files kept on the claim draft until it is submitted).
  */
 export default function Evidence() {
-  const { id, requirement: requirementParam, wizard } = useLocalSearchParams<{ id: string; requirement?: string; wizard?: string }>();
+  const { id, requirement: requirementParam } = useLocalSearchParams<{ id: string; requirement?: string }>();
   const { t, td, date } = useTranslation();
-  const inWizard = wizard === "1";
   const claim = useLoad(() => ClaimsApi.show(id), [id]);
   const items = useLoad(() => ClaimRecordsApi.evidence(id), [id]);
   const requirements = useLoad(() => CustomerApi.evidenceRequirements(id), [id]);
@@ -54,7 +48,7 @@ export default function Evidence() {
   const list = items.data ?? [];
 
   // Picking a file shows it first (thumbnail / file row and what it is for); Upload sends it.
-  const stage = (asset: { uri: string; mimeType?: string | null }, kind: string, name?: string | null, size?: number | null) => {
+  const stage = (asset: PickedEvidence["asset"], kind: string, name?: string | null, size?: number | null) => {
     setError(null);
     setNotice(null);
     setPending({ asset, kind, name: name || td(`evidence_${kind}`, kind), size });
@@ -66,7 +60,7 @@ export default function Evidence() {
     if (await upload(pending.asset, pending.kind)) setPending((p) => (p === pending ? null : p));
   };
 
-  const upload = async (asset: { uri: string; mimeType?: string | null }, kind: string): Promise<boolean> => {
+  const upload = async (asset: PickedEvidence["asset"], kind: string): Promise<boolean> => {
     if (!id) return false;
     setBusy(true);
     setError(null);
@@ -86,53 +80,10 @@ export default function Evidence() {
     }
   };
 
-  const capture = async (media: "images" | "videos") => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setError(t("cameraPermissionNeeded"));
-      return;
-    }
-    const result = await withoutRelock(() => ImagePicker.launchCameraAsync({
-      mediaTypes: [media],
-      quality: 0.8,
-      videoMaxDuration: MAX_VIDEO_SECONDS,
-    }));
-    const asset = result.assets?.[0];
-    if (!result.canceled && asset)
-      stage(
-        { uri: asset.uri, mimeType: asset.mimeType ?? (media === "videos" ? "video/mp4" : "image/jpeg") },
-        media === "videos" ? "VIDEO" : "PHOTO",
-        asset.fileName,
-        asset.fileSize,
-      );
-  };
-
-  const library = async () => {
-    const result = await withoutRelock(() => ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
-      quality: 0.8,
-      videoMaxDuration: MAX_VIDEO_SECONDS,
-    }));
-    const asset = result.assets?.[0];
-    if (!result.canceled && asset) {
-      const video = asset.type === "video";
-      stage(
-        { uri: asset.uri, mimeType: asset.mimeType ?? (video ? "video/mp4" : "image/jpeg") },
-        video ? "VIDEO" : "PHOTO",
-        asset.fileName,
-        asset.fileSize,
-      );
-    }
-  };
-
-  const document = async () => {
-    const result = await withoutRelock(() => DocumentPicker.getDocumentAsync({
-      type: ["application/pdf", "image/jpeg", "image/png"],
-      copyToCacheDirectory: true,
-      multiple: false,
-    }));
-    const asset = result.assets?.[0];
-    if (!result.canceled && asset) stage(asset, "DOCUMENT", asset.name, asset.size);
+  const pick = async (source: EvidenceSource) => {
+    const picked = await pickEvidence(source);
+    if (picked === "CAMERA_DENIED") return setError(t("cameraPermissionNeeded"));
+    if (picked) stage(picked.asset, picked.kind, picked.name, picked.size);
   };
 
   const declare = async () => {
@@ -151,10 +102,10 @@ export default function Evidence() {
   };
 
   const pickers: { label: string; icon: typeof Camera; run: () => Promise<void> }[] = [
-    { label: t("evidenceTakePhoto"), icon: Camera, run: () => capture("images") },
-    { label: t("evidenceRecordVideo"), icon: Video, run: () => capture("videos") },
-    { label: t("evidenceFromLibrary"), icon: Images, run: library },
-    { label: t("evidenceChooseDocument"), icon: FileUp, run: document },
+    { label: t("evidenceTakePhoto"), icon: Camera, run: () => pick("photo") },
+    { label: t("evidenceRecordVideo"), icon: Video, run: () => pick("video") },
+    { label: t("evidenceFromLibrary"), icon: Images, run: () => pick("library") },
+    { label: t("evidenceChooseDocument"), icon: FileUp, run: () => pick("document") },
   ];
 
   const summary = claim.data ? (
@@ -171,17 +122,8 @@ export default function Evidence() {
   ) : null;
 
   return (
-    <Screen
-      footer={
-        inWizard ? (
-          <CtaBar>
-            <Button label={t("continue")} icon={ArrowRight} disabled={busy || !!pending} onPress={() => router.push({ pathname: "/claim/new/review" as never, params: { id } })} />
-          </CtaBar>
-        ) : undefined
-      }
-    >
-      <BrandHeader title={inWizard ? t("claimEvidenceTitle") : t("evidenceTitle")} subtitle={inWizard ? t("claimEvidenceSubtitle") : claim.data?.claim_number} right="help" />
-      {inWizard ? <ClaimWizardSteps current={2} /> : null}
+    <Screen>
+      <BrandHeader title={t("evidenceTitle")} subtitle={claim.data?.claim_number} right="help" />
       <StatePanel {...claim} onRetry={claim.reload} isEmpty={() => false} loadingLabel={t("loading")}>
         {() =>
           allowed ? (
@@ -334,7 +276,7 @@ export default function Evidence() {
       </View>
 
       <Banner icon={Info} tint="blue" body={t("claimEvidenceLimits", { seconds: MAX_VIDEO_SECONDS })} />
-      {allowed && !inWizard ? (
+      {allowed ? (
         <Button label={t("evidenceDeclare")} variant="secondary" loading={busy} onPress={() => void declare()} />
       ) : null}
     </Screen>

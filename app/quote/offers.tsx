@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Building2, CheckCircle2, Columns3, Info, RefreshCcw, XCircle } from "lucide-react-native";
 import { Banner, BrandHeader, CtaBar, SectionHeading } from "@/components/design";
-import { Button, Card, Screen, TextField } from "@/components/ui";
+import { Button, Card, Screen, StatusChip, TextField } from "@/components/ui";
 import { FilterButton } from "@/components/SearchBar";
 import { activeFilterCount, FiltersSheet, sortSection, type FilterSection, type FilterValues } from "@/components/filters";
 import { initialsOf } from "@/components/filters/FilteredList";
@@ -20,6 +20,7 @@ import { amountFilter, amountFilterCount, amountInvalid, compareAllIds, MAX_COMP
 import { quoteOutcome } from "@/lib/quoteWorkflow";
 import { bestValueOfferId, carrierLogo } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
+import { focusedCarrierIds, focusFromParams } from "@/lib/quoteFocus";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -42,7 +43,9 @@ export default function Offers() {
   const { t } = useTranslation();
   const f = useFormatters();
   const logoFor = useInsurerLogos();
-  const { quoteId } = useLocalSearchParams<{ quoteId?: string }>();
+  // carriers/from: the insurer (or the broker's insurers) chosen on a profile; the offers open filtered to it.
+  const { quoteId, carriers, from } = useLocalSearchParams<{ quoteId?: string; carriers?: string; from?: string }>();
+  const focus = useMemo(() => focusFromParams(carriers, from), [carriers, from]);
   const open = useOpenQuote(quoteId);
   const { quote, offers } = open;
   const product = useInsurance((s) => s.product);
@@ -88,6 +91,18 @@ export default function Offers() {
   );
   const filterCount = activeFilterCount(filters, sections) + amountFilterCount(filters);
   const clearFilters = () => setFilters({ sort: [sort] });
+
+  // Profile focus: applied once as the insurer filter (the filter sheet can still change it); "See all" clears it.
+  const focusIds = useMemo(() => focusedCarrierIds(focus, insurers.map((i) => i.carrierId)), [focus, insurers]);
+  const focusApplied = useRef(false);
+  useEffect(() => {
+    if (focusApplied.current || !focusIds.length) return;
+    focusApplied.current = true;
+    setFilters((v) => ({ ...v, prov: focusIds }));
+  }, [focusIds]);
+  const focused = !!focusIds.length && (filters.prov ?? []).length === focusIds.length && focusIds.every((id) => filters.prov?.includes(id));
+  const focusMissed = !!focus && insurers.length > 0 && !focusIds.length;
+  const seeAllInsurers = () => setFilters((v) => ({ ...v, prov: [] }));
 
   // Ticks follow what is on screen: a re-rate, a filter or an expiry removes offers that are gone or no longer choosable.
   useEffect(() => {
@@ -195,6 +210,15 @@ export default function Offers() {
         </Card>
       ) : null}
 
+      {focused && focus ? (
+        <View style={st.focusRow}>
+          <StatusChip label={t("ofOffersFrom", { name: focus.name || insurers.find((i) => i.carrierId === focusIds[0])?.name || "" })} tone="info" />
+          <Button label={t("ofSeeAllInsurers")} variant="tertiary" size="small" onPress={seeAllInsurers} />
+        </View>
+      ) : focusMissed && focus ? (
+        <Text style={ps.meta}>{t("ofFocusNoOffer", { name: focus.name })}</Text>
+      ) : null}
+
       {offers.length > 1 ? (
         <>
           <View style={st.sortBlock}>
@@ -292,6 +316,7 @@ const st = StyleSheet.create({
   flex: { flex: 1 },
   range: { flexDirection: "row", gap: space.x3 },
   sortBlock: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  focusRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space.x2 },
   sortLabel: { ...type.label, color: colors.navy950 },
   notice: { ...type.meta, color: colors.warningText, backgroundColor: colors.warningSoft, borderRadius: radius.control, padding: space.x3 },
   insurerRow: {

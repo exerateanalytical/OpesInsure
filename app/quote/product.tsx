@@ -10,6 +10,7 @@ import { Button, ripple, Screen } from "@/components/ui";
 import { colors, radius } from "@/theme/tokens";
 import { useInsurance } from "@/store/insurance";
 import { useTranslation } from "@/i18n";
+import { focusFromParams, focusParams } from "@/lib/quoteFocus";
 
 /** Purchasable lines, in display order; icons come from the shared category list. */
 const PRODUCT_IDS = ["motor", "health", "travel", "home", "life", "business", "accident"] as const;
@@ -30,7 +31,8 @@ const tintOf = (id: ProductId): Tint => {
 export default function Product() {
   const { t } = useTranslation();
   const setProduct = useInsurance((s) => s.setProduct);
-  const { product: param } = useLocalSearchParams<{ product?: string }>();
+  // carriers/from: "Get a quote" from an insurer or broker profile keeps that choice through to the offers.
+  const { product: param, carriers, from } = useLocalSearchParams<{ product?: string; carriers?: string; from?: string }>();
   // Preselect when arriving from a Home tile (/quote/product?product=motor).
   const [selected, setSelected] = useState<ProductId | null>(
     isProduct(param) ? param : null,
@@ -44,7 +46,7 @@ export default function Product() {
   const proceed = (id: ProductId) => {
     setSelected(id);
     setProduct(id);
-    router.push({ pathname: "/quote/risk", params: { product: id } });
+    router.push({ pathname: "/quote/risk", params: { product: id, ...focusParams(focusFromParams(carriers, from)) } });
   };
   const current = products.find(([id]) => id === selected);
   return (

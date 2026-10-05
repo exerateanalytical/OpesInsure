@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useNavigation } from "expo-router";
-import { ProposalsApi, QuoteOffer } from "@/api/client";
+import { QuoteOffer } from "@/api/client";
+import { findApplicationForOffer } from "@/api/proposalLookup";
 import { useInsurance } from "@/store/insurance";
-import { acceptedOfferId, editQuotePlan, proposalForOffer } from "@/lib/offerChoice";
+import { acceptedOfferId, editQuotePlan } from "@/lib/offerChoice";
 
 /**
  * The quote a customer quote screen shows (offers, comparison, risk edit). The insurance store is
@@ -76,7 +77,8 @@ export function useChooseOffer(quoteId: string | null | undefined, offers: Quote
     if (known) return router.replace({ pathname: "/proposals/[id]", params: { id: known } });
     setOpening(true);
     try {
-      const id = proposalForOffer((await ProposalsApi.list(1)).items, acceptedId);
+      // Server filter by offer (then every page): an application older than page 1 is still found.
+      const id = await findApplicationForOffer(acceptedId);
       if (id) router.replace({ pathname: "/proposals/[id]", params: { id } });
       else router.push("/proposals");
     } catch {

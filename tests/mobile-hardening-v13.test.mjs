@@ -70,7 +70,8 @@ test("AppRuntime keeps the navigation stack mounted and overlays the cover/lock"
   assert.match(runtime, /isIdleExpired/);
   assert.match(runtime, /importantForAccessibility=\{overlay \? "no-hide-descendants" : "auto"\}/);
   // Pickers and camera run without re-lock.
-  for (const f of ["app/claim/[id]/evidence.tsx", "app/onboarding/kyc.tsx"])
+  // Claim evidence pickers are shared by the claim and the new-claim wizard (src/components/claims/evidencePickers.ts).
+  for (const f of ["src/components/claims/evidencePickers.ts", "app/onboarding/kyc.tsx"])
     assert.match(read(f), /withoutRelock\(\(\) => ImagePicker\.launchCameraAsync/);
 });
 

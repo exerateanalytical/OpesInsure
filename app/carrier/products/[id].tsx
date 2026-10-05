@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Pause, Play } from "lucide-react-native";
-import { DetailActions, DetailHistory, DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
+import { DetailActions, DetailHistory, DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { CarrierPagedApi } from "@/api/workspace";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import { Card, TextField } from "@/components/ui";
 import { CarrierWorkspaceApi, humanize, shortDate } from "@/api/partner";
@@ -23,7 +25,7 @@ export default function CarrierProductDetail() {
 function Body() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(() => CarrierWorkspaceApi.products(), id);
+  const q = useRecord(CarrierPagedApi.product, id);
   const [reason, setReason] = useState("");
   return (
     <DetailScreen

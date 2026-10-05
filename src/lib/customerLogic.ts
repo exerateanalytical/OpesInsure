@@ -19,6 +19,8 @@ const ALLOWED_PREFIXES = [
   "/documents/",
   "/notifications",
   "/support",
+  "/complaints",
+  "/refunds/",
   "/services",
   "/delivery/",
   "/onboarding/kyc",
@@ -59,6 +61,8 @@ export function resolveNotificationTarget(data: unknown): string | null {
   const [pathname] = path.split(/[?#]/);
   if (!pathname) return null;
   if (TAB_ALIASES[pathname]) return TAB_ALIASES[pathname];
+  // KYC notifications carry /kyc/{submission}: the app has one KYC screen.
+  if (pathname === "/kyc" || pathname.startsWith("/kyc/")) return "/onboarding/kyc";
   return ALLOWED_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix))
     ? path
     : null;

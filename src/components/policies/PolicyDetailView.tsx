@@ -3,23 +3,25 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimens
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { openDocumentUrl } from "@/components/documents/openDocument";
-import { Calendar, CarFront, ChevronRight, Coins, CreditCard, Download, FileText, Headset, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
+import { Calendar, CarFront, ChevronRight, Coins, CreditCard, Download, FileText, Headset, MessageSquareWarning, Phone, RefreshCcw, Settings2, Shield, ShieldAlert, ShieldCheck, Truck } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip, ripple } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
 import { BrandHeader, CheckList, HeroCard, HeroMeta, IconTile, SectionHeading, TintedIcon } from "@/components/design";
 import { LoadingState } from "@/components/StatePanel";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { ErrorCard, InfoRow, purchaseStyles as ps } from "@/components/purchase/PurchaseUi";
-import { Claim, ClaimsApi, Payment, PaymentsApi, PolicyApi, SupportContacts, SupportContactsApi, WalletApi, WalletPolicy } from "@/api/client";
+import { CustomerApi } from "@/api/customer";
+import { Claim, Payment, PolicyApi, SupportContacts, SupportContactsApi, WalletApi, WalletPolicy } from "@/api/client";
 import { Institution, InstitutionsApi } from "@/api/extra";
 import { RegulatoryApi } from "@/api/regulatory";
 import { policyHeaderLabels, RegulatoryTerm } from "@/lib/regulatoryTerms";
-import { humanize, networkName, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo, unwrapPage } from "@/lib/purchase";
+import { humanize, networkName, normalizeCoverage, openableUrl, paymentStatusInfo, policyStatusInfo } from "@/lib/purchase";
 import { insuredObjectLabel } from "@/lib/renewal";
 import { useFormatters } from "@/hooks/useFormatters";
 import { PolicyDocumentsSection } from "@/components/policies/PolicyDocumentsSection";
 import { CoverList } from "@/components/purchase/CoverList";
 import { BeneficiariesSection } from "@/components/policies/BeneficiariesSection";
+import { InstalmentSection } from "@/components/policies/InstalmentSection";
 import { colors, radius, space, type } from "@/theme/tokens";
 import { useTranslation } from "@/i18n";
 
@@ -38,14 +40,26 @@ function coverageTypeLabel(p: WalletPolicy): string | null {
   return null;
 }
 
+/** This policy's payments, filtered by the server (GET /mobile/payments?policy_id=); the local check is a safety net. */
 async function paymentsFor(policy: WalletPolicy): Promise<Payment[]> {
   const out: Payment[] = [];
-  for (let page = 1; page <= 3; page++) {
-    const r = await PaymentsApi.list(page);
+  for (let page = 1; page <= 10; page++) {
+    const r = await CustomerApi.policyPayments(policy.id, page);
     out.push(...r.items);
     if (!r.info.hasMore) break;
   }
   return out.filter((p) => (policy.proposal_id && p.proposal_id === policy.proposal_id) || p.policy_id === policy.id);
+}
+
+/** This policy's claims (GET /mobile/claims?policy_id=), every page. */
+async function claimsFor(policyId: string): Promise<Claim[]> {
+  const out: Claim[] = [];
+  for (let page = 1; page <= 10; page++) {
+    const r = await CustomerApi.claimsPage(page, policyId);
+    out.push(...r.items);
+    if (!r.info.hasMore) break;
+  }
+  return out.filter((c) => c.policy_id === policyId);
 }
 
 /** 0..1 progress of the policy term at `now`, and its length in months. */
@@ -101,9 +115,7 @@ export function PolicyDetailView({ id }: { id: string }) {
       const policy = await WalletApi.policy(id);
       setP(policy);
       paymentsFor(policy).then(setPayments).catch(() => setPayments([]));
-      ClaimsApi.list()
-        .then((x) => setClaims(unwrapPage<Claim>(x).items.filter((c) => c.policy_id === policy.id)))
-        .catch(() => setClaims([]));
+      claimsFor(policy.id).then(setClaims).catch(() => setClaims([]));
       if (policy.carrier_id) InstitutionsApi.show(policy.carrier_id).then(setInsurer).catch(() => setInsurer(null));
       SupportContactsApi.get().then(setSupport).catch(() => setSupport(null));
     } catch (e) {
@@ -367,9 +379,11 @@ export function PolicyDetailView({ id }: { id: string }) {
           <PolicyDocumentsSection policyId={id} />
         </View>
 
+        <InstalmentSection policyId={p.id} />
         <BeneficiariesSection policyId={p.id} />
 
         {canService ? <Button label={t("pdChange")} icon={Settings2} variant="secondary" onPress={() => router.push({ pathname: "/policy/[id]/service", params: { id: p.id } })} /> : null}
+        <Button label={t("cplFileAbout")} icon={MessageSquareWarning} variant="tertiary" onPress={() => router.push({ pathname: "/complaints/new", params: { policyId: p.id, reference: p.policy_number } })} />
 
         {delivery ? (
           <Card>

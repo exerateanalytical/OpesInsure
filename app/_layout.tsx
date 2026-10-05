@@ -118,6 +118,8 @@ export default function RootLayout() {
           {/* Agent account home (AGENT_UI_SPEC_V2) links here too: profile, language,
               notification settings, privacy, KYC and support serve every signed-in role. */}
           <Stack.Screen name="account/profile" />
+          <Stack.Screen name="account/verify-phone" />
+          <Stack.Screen name="account/change-password" />
           <Stack.Screen name="account/language" />
           <Stack.Screen name="account/notifications" />
           <Stack.Screen name="account/privacy" />
@@ -158,6 +160,7 @@ export default function RootLayout() {
           <Stack.Screen name="policy/[id]/renewal-review" />
           <Stack.Screen name="claim/new" />
           <Stack.Screen name="claim/new/incident" />
+          <Stack.Screen name="claim/new/evidence" />
           <Stack.Screen name="claim/new/review" />
           <Stack.Screen name="claim/[id]" />
           <Stack.Screen name="claim/[id]/evidence" />
@@ -198,6 +201,17 @@ export default function RootLayout() {
           <Stack.Screen name="services/[id]" />
           <Stack.Screen name="notifications/index" />
           <Stack.Screen name="notifications/[id]" />
+          {/* Launch customer flows: complaints register, statement, activity, documents hub,
+              instalments, discharge signing and the refund deep link. Server scopes each to the caller. */}
+          <Stack.Screen name="complaints/index" />
+          <Stack.Screen name="complaints/new" />
+          <Stack.Screen name="complaints/[id]" />
+          <Stack.Screen name="payments/statement" />
+          <Stack.Screen name="account/activity" />
+          <Stack.Screen name="documents/index" />
+          <Stack.Screen name="policy/[id]/instalment-pay" />
+          <Stack.Screen name="claim/[id]/discharge" />
+          <Stack.Screen name="refunds/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={agent}>
           <Stack.Screen name="agent/index" />
@@ -211,6 +225,7 @@ export default function RootLayout() {
           <Stack.Screen name="agent/sales/new" />
           <Stack.Screen name="agent/sales/[id]" />
           <Stack.Screen name="agent/renewals" />
+          <Stack.Screen name="agent/renewals/[id]" />
           <Stack.Screen name="agent/wallet" />
           <Stack.Screen name="agent/withdrawal" />
           <Stack.Screen name="agent/offline" />
@@ -257,6 +272,8 @@ export default function RootLayout() {
           <Stack.Screen name="broker/claims/new" />
           <Stack.Screen name="broker/claims/[id]" />
           <Stack.Screen name="broker/renewals/[id]" />
+          <Stack.Screen name="broker/sales/new" />
+          <Stack.Screen name="broker/sales/[id]" />
           <Stack.Screen name="broker/production/[id]" />
           <Stack.Screen name="broker/commissions/[id]" />
           <Stack.Screen name="broker/receivables/[id]" />

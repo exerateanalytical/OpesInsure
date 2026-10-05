@@ -27,6 +27,7 @@ import type { CopyKey } from "@/i18n/strings";
 import { productsByLine, readDirectory, verificationText } from "@/lib/institutions";
 import { insurerFacts, insurerKindKey, legalFooterLines, legalNameLine, officesPending } from "@/lib/insurerProfile";
 import { productFamilyLabels } from "@/lib/productFamilies";
+import { quoteFocusOf } from "@/lib/quoteFocus";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
@@ -86,7 +87,7 @@ function Profile({ insurer }: { insurer: Institution }) {
           lead={(p, line) => <ProductIcon name={p.name} line={line} />}
           meta={entry ? () => t(entry === "sign-in" ? "instSignInToQuote" : "propGetQuote") : undefined}
           accessibilityLabel={entry ? (p) => t("instQuoteFor", { product: p.name }) : undefined}
-          onPress={entry ? (p, line) => start(line, p.name) : undefined}
+          onPress={entry ? (p, line) => start(line, p.name, quoteFocusOf(insurer)) : undefined}
         />
       ) : (
         <EmptyNote text={t("noPlatformProductsBody")} />

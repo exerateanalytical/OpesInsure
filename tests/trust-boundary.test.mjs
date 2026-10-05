@@ -286,11 +286,12 @@ test("agent operations are typed and server mediated", () => {
   assert.match(client, /Idempotency-Key/);
 });
 test("agent UI protects client payment and origin ownership", () => {
-  const sale = read("app/agent/sales/new.tsx");
+  const sale = read("src/components/sales/AssistedSaleNew.tsx");
   const client = read("app/agent/clients/new.tsx");
   // Copy lives in the EN/FR catalogues; the screens reference the keys.
   const en = read("src/i18n/en.ts");
-  assert.match(sale, /t\("agNeverPin"\)/);
+  assert.match(sale, /"agNeverPin"/);
+  assert.match(sale, /"bkNeverPin"/);
   assert.match(en, /agNeverPin: ".*never collect or enter/i);
   assert.match(client, /t\("agOriginLockRules"\)/);
   assert.match(en, /agOriginLockRules: ".*cannot overwrite/i);

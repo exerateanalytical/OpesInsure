@@ -6,7 +6,8 @@ import { DetailScreen, DetailSection, UnavailableSection } from "@/components/de
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import { OperationsList } from "@/components/OperationsList";
 import { SectionTitle } from "@/components/ui";
-import { CarrierApi } from "@/api/client";
+import { ApiError, CarrierApi } from "@/api/client";
+import { CarrierPagedApi } from "@/api/workspace";
 import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
 import { proposalStatusInfo } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
@@ -28,12 +29,15 @@ function Body() {
   const { t, language } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useLoad(async () => {
-    const [proposals, issuance, payments] = await Promise.all([
-      CarrierWorkspaceApi.proposals(),
+    // Phase-1 fix S: the proposal by id (it used to be looked up in the first page of the list).
+    const [p, issuance, payments] = await Promise.all([
+      CarrierPagedApi.proposal(String(id)).catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }),
       CarrierApi.issuance().catch(() => []),
       CarrierWorkspaceApi.payments().catch(() => null),
     ]);
-    const p = proposals.find((x) => x.id === id) ?? null;
     if (!p) return null;
     return {
       p,

@@ -5,7 +5,7 @@
  * permission-gated and scoped server-side to the caller's own partner or
  * carrier (see routes/wave16_partner.php).
  */
-import { api, AgentApi, AgentClient } from "./client";
+import { api, apiPage, AgentApi, AgentClient } from "./client";
 import type { CommissionRow } from "@/components/partner/commissionFilters";
 import { formatDisplayDate } from "@/i18n";
 
@@ -23,6 +23,8 @@ export type PartnerQuote = {
   expires_at: string | null;
   created_at: string | null;
 };
+/** A book policy a broker may file a claim on, with the policyholder (claimant) party id. */
+export type ClaimablePolicyRow = { id: string; policy_number: string | null; customer_name: string; party_id: string; customer_id?: string | null; status: string; coverage_ends_at?: string | null };
 export type PartnerPolicy = {
   id: string;
   policy_number: string | null;
@@ -289,6 +291,9 @@ export const BrokerWorkspaceApi = {
     idempotency_key: string;
   }) =>
     api<{ id: string; claim_number: string; status: string; policy_id: string }>("/mobile/partner/broker/claims", post(payload)),
+  /** Active policies of the broker's book a claim can be filed on (GET mobile/broker/claimable-policies): searchable, 20 per page. */
+  claimablePolicies: (filters: { q?: string; customer_id?: string; policy_id?: string }, page = 1) =>
+    apiPage<ClaimablePolicyRow>(`/mobile/broker/claimable-policies?${Object.entries(filters).filter(([, v]) => !!v).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&")}`, page),
   /** Broker client onboarding (POST /mobile/broker/clients): origin-locked to the broker's own partner. */
   createClient: (payload: { full_name: string; phone_e164: string; city: string; consent_reference: string }) =>
     api<{ id: string; full_name: string }>("/mobile/broker/clients", post(payload)),

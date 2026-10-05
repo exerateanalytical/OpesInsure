@@ -18,6 +18,7 @@ import {
   MapPin,
   Scale,
   MessageSquare,
+  MessageSquareWarning,
   Paperclip,
   Search,
   ShieldCheck,
@@ -279,6 +280,12 @@ export default function ClaimDetail() {
               ) : (
                 <Text style={styles.meta}>{t("claimClosedNoActions")}</Text>
               )}
+              <Button
+                label={t("cplFileAbout")}
+                icon={MessageSquareWarning}
+                variant="tertiary"
+                onPress={() => router.push({ pathname: "/complaints/new", params: { claimId: claim.id, reference: claim.claim_number } })}
+              />
               {claimActionAllowed("withdraw", claim.status) && serverAllows(claim, "withdraw") ? (
                 withdrawing ? (
                   <Card>

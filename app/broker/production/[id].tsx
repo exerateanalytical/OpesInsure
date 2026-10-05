@@ -1,9 +1,10 @@
 import React from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { CircleDollarSign, ContactRound, FileText } from "lucide-react-native";
-import { DetailScreen, DetailSection, useListRecord } from "@/components/detail";
+import { DetailScreen, DetailSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { BrokerPagedApi } from "@/api/workspace";
 import { FlowRow } from "@/components/FlowPrimitives";
-import { BrokerApi } from "@/api/client";
 import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { useLoad } from "@/hooks/useLoad";
@@ -14,7 +15,7 @@ import { SaleCommissionCard } from "@/components/partner/SaleCommission";
 export default function BrokerProductionDetail() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(BrokerApi.production, id);
+  const q = useRecord(BrokerPagedApi.productionItem, id);
   const ledger = useLoad(() => loadBrokerLedger().catch(() => null), []);
   return (
     <DetailScreen title={t("bkProductionSubtitle")} subtitle={(p) => p?.policy_number} query={q} isMissing={(p) => p === null}>

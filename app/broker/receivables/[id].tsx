@@ -1,7 +1,9 @@
 import React from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { CircleDollarSign, FileText } from "lucide-react-native";
-import { DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
+import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { BrokerPagedApi } from "@/api/workspace";
 import { FlowRow } from "@/components/FlowPrimitives";
 import { BrokerApi } from "@/api/client";
 import { humanize, money, shortDate } from "@/api/partner";
@@ -15,7 +17,7 @@ const ageing = (due?: string | null) => (due ? Math.max(0, Math.floor((Date.now(
 export default function BrokerReceivableDetail() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(BrokerApi.receivables as () => Promise<Receivable[]>, id);
+  const q = useRecord(BrokerPagedApi.receivable as (id: string) => Promise<Receivable>, id);
   return (
     <DetailScreen title={t("brReceivables")} subtitle={(r) => r?.customer_name} query={q} isMissing={(r) => r === null}>
       {(r) =>

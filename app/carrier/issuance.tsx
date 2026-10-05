@@ -1,13 +1,14 @@
 import React, { useCallback } from "react";
 import { router, useFocusEffect } from "expo-router";
 import { FileCheck2 } from "lucide-react-native";
-import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { CarrierPagedApi } from "@/api/workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
-import { CarrierApi } from "@/api/client";
 import { humanize, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
@@ -27,7 +28,8 @@ export default function Issuance() {
 
 function Body() {
   const { t } = useTranslation();
-  const q = useLoad(() => CarrierApi.issuance(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 rows).
+  const q = useCursorList(() => CarrierPagedApi.issuance());
   const { reload, data } = q;
   useFocusEffect(
     useCallback(() => {
@@ -62,6 +64,7 @@ function Body() {
           />
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </Screen>
   );
 }

@@ -43,7 +43,7 @@ test("progress comes from server statuses only", () => {
 });
 
 test("assisted sale sends real risk facts on the shared risk schema, never invented defaults", () => {
-  const screen = read("app/agent/sales/new.tsx");
+  const screen = read("src/components/sales/AssistedSaleNew.tsx");
   assert.match(screen, /CatalogueApi\.riskSchema/);
   assert.match(screen, /ContractField/);
   assert.match(screen, /validateStep/);
@@ -55,10 +55,10 @@ test("assisted sale sends real risk facts on the shared risk schema, never inven
 });
 
 test("sale detail guards repeated taps and reports failures", () => {
-  const screen = read("app/agent/sales/[id].tsx");
+  const screen = read("src/components/sales/AssistedSaleDetail.tsx");
   assert.match(screen, /inFlight\.current/);
   assert.match(screen, /catch \(e\)/);
-  assert.match(screen, /AgentApi\.requestPayment\(id, body\)/);
+  assert.match(screen, /saleApi\(portal\)\.requestPayment\(id, body\)/);
   const client = read("src/api/client.ts");
   assert.match(client, /risk_facts: Record<string, unknown>/);
   assert.match(client, /commission_basis\?: "ACCRUED" \| "RULE_ESTIMATE" \| "NOT_CONFIGURED"/);

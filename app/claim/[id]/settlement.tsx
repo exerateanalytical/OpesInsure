@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Check, Circle, Headphones, Receipt } from "lucide-react-native";
+import { Check, Circle, Headphones, PenLine, Receipt } from "lucide-react-native";
 import { Button, Card, Screen, StatusChip } from "@/components/ui";
 import { Banner, BrandHeader, CtaBar, HeroCard } from "@/components/design";
 import { EmptyState, ErrorState, LoadingState } from "@/components/StatePanel";
@@ -19,6 +19,8 @@ import { isNotFound } from "@/lib/purchase";
 import { useTranslation } from "@/i18n";
 import { claimDecisionDate, claimStatusKey, claimTone } from "@/lib/claimStatus";
 import { canDecideSettlement, settlementSteps } from "@/lib/settlement";
+import { canSignDischarge } from "@/lib/customerFlows";
+import type { SettlementDetail } from "@/api/customerFlows";
 import { colors, space, type } from "@/theme/tokens";
 
 /**
@@ -26,8 +28,9 @@ import { colors, space, type } from "@/theme/tokens";
  * navy settlement-amount hero with approved / excess / net, accept or reject
  * the offer (POST settlement/decision, step-up protected), settlement
  * tracking from the offer and payment status, terms, payment
- * tracking and help. The backend exposes no payout method or advice PDF to
- * customers yet, so those blocks are not shown.
+ * tracking and help. Once accepted, "Review & sign discharge" opens
+ * claim/[id]/discharge; payout details and the payment advice live on
+ * claim/[id]/settlement-payment.
  */
 export default function Settlement() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -107,6 +110,9 @@ export default function Settlement() {
     >
       {header}
       <SettlementHero settlement={x} />
+      {canSignDischarge(x as SettlementDetail) ? (
+        <Banner icon={PenLine} tint="gold" title={t("dchReviewSign")} body={t("dchReviewSignBody")} onPress={() => router.push(`/claim/${id}/discharge`)} />
+      ) : null}
       <Card>
         <View style={s.headRow}>
           <Text accessibilityRole="header" style={[s.cardTitle, s.flex]}>{t("settleTracking")}</Text>

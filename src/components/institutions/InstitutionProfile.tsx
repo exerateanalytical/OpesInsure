@@ -40,6 +40,7 @@ import {
   type InsurerDirectory,
 } from "@/lib/institutions";
 import { roleToPortal, useSession } from "@/store/session";
+import { focusParams, quoteFocusOf, type QuoteFocus } from "@/lib/quoteFocus";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 /**
@@ -57,15 +58,19 @@ const open = (url: string | null | undefined) => {
 /** Purchasable lines of the customer quote flow (app/quote/product.tsx). */
 const QUOTE_PRODUCTS = ["motor", "health", "travel", "home", "life", "business", "accident"];
 
-/** "Get a quote" for the current session; `start(line)` preselects the line when it is purchasable. */
+/**
+ * "Get a quote" for the current session; `start(line)` preselects the line when it is purchasable, and `focus`
+ * (quoteFocusOf(profile)) keeps the insurer / the broker's insurers through to the offers.
+ */
 export function useStartQuote() {
   const status = useSession((s) => s.status);
   const role = useSession((s) => s.activeWorkspace?.role_code);
   const entry = quoteEntry(status, roleToPortal(role));
-  const start = (lineCode?: string | null, productName?: string | null) => {
+  const start = (lineCode?: string | null, productName?: string | null, focus?: QuoteFocus | null) => {
     if (entry === "sign-in") return router.push("/(auth)/sign-in");
     const id = lineCode || productName ? productCategory(productName ?? null, lineCode ?? null)?.id : undefined;
-    router.push(id && QUOTE_PRODUCTS.includes(id) ? { pathname: "/quote/product", params: { product: id } } : "/quote/product");
+    const carry = focusParams(focus);
+    router.push(id && QUOTE_PRODUCTS.includes(id) ? { pathname: "/quote/product", params: { product: id, ...carry } } : { pathname: "/quote/product", params: carry });
   };
   return { entry, start };
 }
@@ -126,7 +131,7 @@ export function InstitutionScreen({
               label={t(entry === "sign-in" ? "instSignInToQuote" : compareOnly ? "instCompareInsurers" : "propGetQuote")}
               icon={compareOnly ? Scale : FileText}
               onPress={() =>
-                compareOnly ? router.push("/quote/product") : onlyProduct ? start(onlyProduct.line_code, onlyProduct.name) : start()
+                compareOnly ? router.push("/quote/product") : onlyProduct ? start(onlyProduct.line_code, onlyProduct.name, quoteFocusOf(row)) : start(null, null, quoteFocusOf(row))
               }
             />
           </CtaBar>

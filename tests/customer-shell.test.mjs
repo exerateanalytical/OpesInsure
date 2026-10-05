@@ -102,21 +102,26 @@ test("claim evidence uses the real upload contracts, including video", () => {
   assert.match(api, /"\/mobile\/uploads"/);
   assert.match(api, /chunks\/\$\{index\}/);
   assert.match(api, /upload_session_id/);
-  assert.match(api, /video\/mp4/);
+  // Videos go up with their real type (.mov → video/quicktime), chunk by chunk.
+  assert.match(api, /videoMime\(mime, asset\.name, asset\.uri\)/);
+  assert.match(read("src/lib/evidenceUpload.ts"), /video\/mp4/);
   const evidence = read("app/claim/[id]/evidence.tsx");
-  assert.match(evidence, /"videos"/);
+  assert.match(read("src/components/claims/evidencePickers.ts"), /"videos"/);
+  assert.match(evidence, /pickEvidence/);
   assert.match(evidence, /uploadClaimEvidence/);
   // Step 2 of the wizard renders the server form claim_fnol (date/time via the shared DateTimeField).
   const fresh = read("app/claim/new/incident.tsx");
   assert.match(fresh, /SchemaForm/);
   assert.match(fresh, /form="claim_fnol"/);
-  assert.match(fresh, /ClaimsApi\.create/);
+  // Step 2 only saves the claim draft; the claim is filed on step 4 (drafts/{id}/submit).
+  assert.match(fresh, /updateClaimDraft/);
+  assert.doesNotMatch(fresh, /ClaimsApi\.create/);
   assert.match(fresh, /toCameroonIso/);
   assert.match(read("src/components/forms/ContractField.tsx"), /DateTimeField/);
   assert.doesNotMatch(fresh, /placeholder="2026-/);
   // Step 1 only picks the policy; step 3/4 are the evidence and review screens.
   assert.match(read("app/claim/new.tsx"), /claim\/new\/incident/);
-  assert.match(read("app/claim/new/review.tsx"), /submitDeclaration/);
+  assert.match(read("app/claim/new/review.tsx"), /submitClaimDraft/);
 });
 
 // --- Deep links, timers, renewals ---------------------------------------------

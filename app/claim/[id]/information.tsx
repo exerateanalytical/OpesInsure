@@ -21,13 +21,17 @@ import { withoutRelock } from "@/lib/appLock";
 import { colors, radius, space, type } from "@/theme/tokens";
 
 const MAX_COMMENT = 500;
+/** Same minimum as the support case the comment becomes (POST /mobile/support/cases description). */
+const MIN_COMMENT = 10;
 
 /**
  * Information request (insurance_claim_information_request): the insurer's
  * outstanding evidence requirements (GET /mobile/claims/{id}/evidence-requirements,
  * MISSING or REJECTED) each with its own "Add file" that uploads straight to
- * the claim under that requirement key (uploadClaimEvidence). An optional
- * comment is sent to the claims team as a support case linked to the claim.
+ * the claim under that requirement key (uploadClaimEvidence) — each file is
+ * sent as soon as it is added. Submit sends the comment (10+ characters) to
+ * the claims team as a support case linked to the claim; without a comment
+ * there is nothing more to send, so Submit stays disabled.
  */
 export default function ClaimInformationRequest() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,6 +63,9 @@ export default function ClaimInformationRequest() {
   const all = requirements.data ?? [];
   const outstanding = all.filter((r) => !requirementMet(r.status, r.key, files) || r.status === "REJECTED");
   const allowed = claim.data ? claimActionAllowed("information", claim.data.status) : false;
+  const commentLength = comment.trim().length;
+  const commentOk = commentLength >= MIN_COMMENT;
+  const commentError = commentLength > 0 && !commentOk ? t("infoReqCommentTooShort", { min: MIN_COMMENT }) : undefined;
 
   const add = async (key: string) => {
     setError(null);
@@ -84,24 +91,23 @@ export default function ClaimInformationRequest() {
 
   const review = () => {
     setTouched(true);
-    if (!agreed || !claim.data) return;
+    if (!agreed || !claim.data || !commentOk) return;
     setError(null);
     setReviewing(true);
   };
 
   const submit = async () => {
     setTouched(true);
-    if (!agreed || !claim.data) return;
+    if (!agreed || !claim.data || !commentOk) return;
     setBusy(true);
     setError(null);
     try {
-      if (comment.trim())
-        await CustomerApi.createSupportCase({
-          category: "CLAIM",
-          subject: t("infoReqCaseSubject", { number: claim.data.claim_number }),
-          description: comment.trim(),
-          claim_id: claim.data.id,
-        });
+      await CustomerApi.createSupportCase({
+        category: "CLAIM",
+        subject: t("infoReqCaseSubject", { number: claim.data.claim_number }),
+        description: comment.trim(),
+        claim_id: claim.data.id,
+      });
       router.replace({ pathname: "/claim/[id]", params: { id } });
     } catch (e) {
       setError(e);
@@ -117,7 +123,7 @@ export default function ClaimInformationRequest() {
           <ReviewFooter label={t("infoReqSubmit")} icon={ArrowRight} loading={busy} onConfirm={() => void submit()} onBack={() => setReviewing(false)} />
         ) : allowed ? (
           <CtaBar>
-            <Button label={t("reviewContinue")} icon={ArrowRight} variant="gold" disabled={!!uploading} onPress={review} />
+            <Button label={t("reviewContinue")} icon={ArrowRight} variant="gold" disabled={!!uploading || !commentOk} onPress={review} />
             <Button
               label={t("claimContactClaimsSupport")}
               icon={Headphones}
@@ -234,7 +240,8 @@ export default function ClaimInformationRequest() {
             multiline
             style={s.input}
             placeholder={t("infoReqCommentsPlaceholder")}
-            hint={`${comment.length}/${MAX_COMMENT}`}
+            error={commentError}
+            hint={commentLength ? `${comment.length}/${MAX_COMMENT}` : t("infoReqCommentHint", { min: MIN_COMMENT })}
           />
         </>
       ) : null}

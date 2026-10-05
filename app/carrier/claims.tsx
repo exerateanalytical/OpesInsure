@@ -1,6 +1,8 @@
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
-import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { CarrierPagedApi } from "@/api/workspace";
 import { PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
@@ -9,7 +11,6 @@ import { router } from "expo-router";
 import { AppHeader } from "@/components/ui";
 import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
-import { CarrierApi } from "@/api/client";
 import { useTranslation } from "@/i18n";
 export default function CarrierClaims() {
   return (
@@ -21,7 +22,8 @@ export default function CarrierClaims() {
 
 function CarrierClaimsBody() {
   const { t } = useTranslation();
-  const q = useLoad(() => CarrierApi.claims(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 rows).
+  const q = useCursorList(() => CarrierPagedApi.claims());
   const x = q.data ?? [];
   return (
     <PortalScreen tabs={carrierTabs}>
@@ -55,6 +57,7 @@ function CarrierClaimsBody() {
           </>
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </PortalScreen>
   );
 }

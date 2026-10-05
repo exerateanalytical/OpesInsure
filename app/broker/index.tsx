@@ -40,10 +40,10 @@ export default function BrokerHome() {
       load={() => BrokerApi.dashboard()}
       kpiRoutes={KPI_ROUTES}
       quick={[
+        { title: t("bkNewQuote"), subtitle: t("agQuoteAndRequest"), icon: FileSignature, href: "/broker/sales/new" },
         { title: t("agAddLead"), subtitle: t("brQuickLeadSub"), icon: UserPlus, href: "/broker/leads/new" },
         { title: t("agRegisterClientTitle"), subtitle: t("brQuickRegisterSub"), icon: UserRoundPlus, href: "/broker/clients/new" },
         { title: t("brReportClaim"), subtitle: t("brQuickReportClaimSub"), icon: ShieldAlert, href: "/broker/claims/new" },
-        { title: t("searchTitle"), subtitle: t("searchOpenSubtitle"), icon: Search, href: "/search?role=broker" },
       ]}
       queues={[
         { title: t("brLeads"), subtitle: t("brLeadsSubtitle"), icon: ContactRound, href: "/broker/leads" },
@@ -53,6 +53,7 @@ export default function BrokerHome() {
         { title: t("brComplianceShort"), subtitle: t("brLicencesCases"), icon: BadgeCheck, href: "/broker/compliance" },
       ]}
       more={[
+        { title: t("searchTitle"), subtitle: t("searchOpenSubtitle"), icon: Search, href: "/search?role=broker" },
         { title: t("brSales"), subtitle: t("brProductionRegister"), icon: BookOpenCheck, href: "/broker/production" },
         { title: t("brReceivables"), subtitle: t("brAmountsDue"), icon: ReceiptText, href: "/broker/receivables" },
         { title: t("catTitle"), subtitle: t("catMenuSubtitle"), icon: PackageCheck, href: "/broker/catalogue" },

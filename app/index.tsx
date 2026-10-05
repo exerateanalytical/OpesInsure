@@ -40,7 +40,7 @@ export default function Splash() {
       if (home) {
         // NAV-001: return a reload / deep link to the page it asked for.
         const restored = typeof home === "string" ? takePendingPath(home) : null;
-        router.replace(restored ? (restored as Href) : home);
+        router.replace((restored || home) as Href);
         return;
       }
       // Returning signed-out users skip the marketing slides.

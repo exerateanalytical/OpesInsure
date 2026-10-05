@@ -1,9 +1,10 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import { useLoad } from "@/hooks/useLoad";
+import { useRecord } from "@/hooks/useRecord";
+import { CarrierPagedApi } from "@/api/workspace";
 import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
-import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
+import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -21,7 +22,7 @@ export default function CarrierPaymentDetail() {
 function Body() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useLoad(async () => (await CarrierWorkspaceApi.payments()).items.find((x) => x.id === id) ?? null, [id]);
+  const q = useRecord(CarrierPagedApi.payment, id);
   return (
     <DetailScreen
       title={t("cdPaymentTitle")}

@@ -1,7 +1,8 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import { DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
-import { BrokerApi } from "@/api/client";
+import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { BrokerPagedApi } from "@/api/workspace";
 import { humanize, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
@@ -9,7 +10,7 @@ import { useTranslation } from "@/i18n";
 export default function BrokerComplianceDetail() {
   const { t, td } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(BrokerApi.compliance, id);
+  const q = useRecord(BrokerPagedApi.complianceItem, id);
   return (
     <DetailScreen title={t("brCompliance")} subtitle={(c) => c?.label} query={q} isMissing={(c) => c === null}>
       {(c) =>

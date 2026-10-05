@@ -151,7 +151,8 @@ test("publications toggle is permission-gated with busy and error states", () =>
 });
 
 test("catalogue rows start an assisted sale with the product preselected", () => {
-  assert.match(read("src/components/offers/SellableCatalogueScreen.tsx"), /pathname: "\/agent\/sales\/new", params: \{ product:/);
+  // Agent and broker: the portal's own assisted sale (/agent/sales/new or /broker/sales/new).
+  assert.match(read("src/components/offers/SellableCatalogueScreen.tsx"), /pathname: `\/\$\{portal\}\/sales\/new` as never, params: \{ product:/);
 });
 
 test("staff-portal copy has EN and FR keys", () => {

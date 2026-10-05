@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CalendarDays, CarFront, ChevronRight, CreditCard, HeartPulse, Home, Plane, ShieldCheck, Wallet } from "lucide-react-native";
+import { CalendarDays, CarFront, ChevronRight, CreditCard, HeartPulse, Home, Plane, FileSpreadsheet, ShieldCheck, Wallet } from "lucide-react-native";
 import { Card, Screen, StatusChip } from "@/components/ui";
-import { BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
+import { Banner, BrandHeader, SectionHeading, TintedIcon, type Tint } from "@/components/design";
 import { InstitutionMark } from "@/components/InstitutionMark";
 import { EmptyState, LoadingState } from "@/components/StatePanel";
 import { ErrorCard, LoadMore } from "@/components/purchase/PurchaseUi";
@@ -121,6 +121,7 @@ export default function Payments() {
         ListHeaderComponent={
           <View style={s.header}>
             <BrandHeader title={t("paymentsReceipts")} subtitle={t("paymentsSubtitle")} back right={null} />
+            <Banner icon={FileSpreadsheet} tint="blue" title={t("stmTitle")} body={t("stmEntryBody")} onPress={() => router.push("/payments/statement")} />
             <FilterToolbar
               filters={flt}
               sections={sections}

@@ -92,7 +92,7 @@ test("discovery polish: short names, broker register no., singular counts, searc
   assert.match(search, /router\.push\(customer \? "\/quote\/product" : "\/support"\)/);
   const profile = read("src/components/institutions/InstitutionProfile.tsx");
   assert.match(profile, /instCompareInsurers/);
-  assert.match(profile, /start\(onlyProduct\.line_code, onlyProduct\.name\)/);
+  assert.match(profile, /start\(onlyProduct\.line_code, onlyProduct\.name, quoteFocusOf\(row\)\)/);
   for (const f of ["src/i18n/en.ts", "src/i18n/fr.ts"]) assert.match(read(f), /instCompareInsurers:/);
   assert.equal(existsSync(join(root, "src/components/InsuranceCards.tsx")), false);
 });

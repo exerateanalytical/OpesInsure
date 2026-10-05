@@ -3,7 +3,7 @@ import { useLoad } from "@/hooks/useLoad";
 import { StatePanel } from "@/components/StatePanel";
 import { useLocalSearchParams } from "expo-router";
 import { Text } from "react-native";
-import { ReceiptText, RefreshCw, ShieldAlert, ShieldPlus, UserPlus } from "lucide-react-native";
+import { FileSignature, ReceiptText, RefreshCw, ShieldAlert, ShieldPlus, UserPlus } from "lucide-react-native";
 import { usePermission } from "@/components/carrier/CarrierGate";
 import { AppHeader, Card, Money, Screen, SectionTitle, StatusChip } from "@/components/ui";
 import { allowedAction } from "@/lib/capabilities";
@@ -13,7 +13,7 @@ import { Customer360Panel } from "@/components/crm/Customer360Panel";
 import { ClientDocumentsCard } from "@/components/partner/ClientDocumentsCard";
 import { ClientRelatedRecords } from "@/components/partner/ClientRelatedRecords";
 import { WorkspaceMenu } from "@/components/portal/Workspace";
-import { UnavailableSection } from "@/components/detail";
+
 import { BrokerWorkspaceApi, shortDate } from "@/api/partner";
 
 /** BRK-001 broker client detail: portfolio, related records and next actions. */
@@ -24,6 +24,10 @@ export default function BrokerClientDetail() {
   const x = q.data;
   // Permission gate, narrowed by the record's allowed_actions when the server sends it.
   const canReportClaim = allowedAction(x, "file_for_client", usePermission("broker.claims.file"));
+  // Assisted quote + sale for this client (BROKER channel, POST mobile/broker/sales: quotes.manage + quotes.rate).
+  const canManageQuotes = usePermission("quotes.manage");
+  const canRate = usePermission("quotes.rate");
+  const canQuote = canManageQuotes && canRate;
   const name = encodeURIComponent(x?.full_name ?? "");
   return (
     <Screen>
@@ -47,6 +51,7 @@ export default function BrokerClientDetail() {
           <SectionTitle title={t("bkNextActions")} />
           <WorkspaceMenu
             items={[
+              ...(canQuote ? [{ label: t("bkNewQuote"), subtitle: t("agQuoteAndRequest"), icon: FileSignature, href: `/broker/sales/new?customerId=${id}` }] : []),
               { label: t("leadNewTitle"), subtitle: t("brLeadsSubtitle"), icon: UserPlus, href: "/broker/leads/new" },
               { label: t("claims"), subtitle: t("brClaimsOnBook"), icon: ShieldAlert, href: `/broker/claims?q=${name}` },
               ...(canReportClaim ? [{ label: t("brReportClaim"), subtitle: t("pdFileClaimHint"), icon: ShieldPlus, href: `/broker/claims/new?customerId=${id}` }] : []),
@@ -54,7 +59,6 @@ export default function BrokerClientDetail() {
               { label: t("brReceivables"), subtitle: t("brAmountsDue"), icon: ReceiptText, href: "/broker/receivables" },
             ]}
           />
-          <UnavailableSection title={t("bkNewQuote")} message={t("bkAssistedQuotePending")} />
           <ClientRelatedRecords
             customerId={id}
             base="/broker"

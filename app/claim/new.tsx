@@ -21,16 +21,22 @@ import { usePolicies } from "@/hooks/usePolicies";
 import { useInsurerLogo } from "@/components/claims/insurerLogo";
 import { useTranslation } from "@/i18n";
 import { matchesQuery } from "@/lib/customerLogic";
+import { CustomerApi } from "@/api/customer";
+import { ErrorCard } from "@/components/purchase/PurchaseUi";
 import { colors, type } from "@/theme/tokens";
 
 /**
  * New claim, step 1 of 4 (design 33): choose the ACTIVE policy the loss
- * relates to. The policy id is handed to step 2, which renders the rest of
- * the server form claim_fnol (GET /forms/claim_fnol → POST /mobile/claims).
+ * relates to. Continue saves it on a claim draft (POST /mobile/claims/drafts,
+ * or PATCH when editing a saved draft — never a second claim); step 2 renders
+ * the rest of the server form claim_fnol. Nothing is filed until step 4.
  */
 export default function NewClaim() {
   const { t } = useTranslation();
-  const { policyId } = useLocalSearchParams<{ policyId?: string }>();
+  const { policyId, draftId, from } = useLocalSearchParams<{ policyId?: string; draftId?: string; from?: string }>();
+  const editing = typeof draftId === "string" && draftId ? draftId : null;
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(null);
   const { policies, loading, error, reload } = usePolicies();
   const logoFor = useInsurerLogo();
   const [query, setQuery] = useState("");
@@ -56,6 +62,25 @@ export default function NewClaim() {
     if (!selected && active.length === 1) setSelected(active[0]!.id);
   }, [active, selected]);
 
+  const next = async () => {
+    if (!selected || busy) return;
+    setBusy(true);
+    setSaveError(null);
+    try {
+      // The policy lives on the draft: editing it from the review updates that draft, never files a claim.
+      const id = editing
+        ? (await CustomerApi.updateClaimDraft(editing, { policy_id: selected })).id
+        : (await CustomerApi.createClaimDraft({ policy_id: selected, client_state: { step: "incident" } })).id;
+      const target = { pathname: "/claim/new/incident" as never, params: { draftId: id, policyId: selected, ...(from === "review" ? { from } : {}) } };
+      if (editing) router.replace(target);
+      else router.push(target);
+    } catch (e) {
+      setSaveError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen
       footer={
@@ -63,13 +88,9 @@ export default function NewClaim() {
           <Button
             label={t("continue")}
             icon={ArrowRight}
-            disabled={!selected || !active.some((p) => p.id === selected)}
-            onPress={() =>
-              router.push({
-                pathname: "/claim/new/incident" as never,
-                params: { policyId: selected ?? "" },
-              })
-            }
+            loading={busy}
+            disabled={busy || !selected || !active.some((p) => p.id === selected)}
+            onPress={() => void next()}
           />
         </CtaBar>
       }
@@ -80,6 +101,7 @@ export default function NewClaim() {
         right="help"
       />
       <ClaimWizardSteps current={0} />
+      {saveError ? <ErrorCard error={saveError} fallback={t("claimDraftSaveFailed")} onRetry={() => void next()} /> : null}
       <SearchBar
         value={query}
         onChangeText={setQuery}

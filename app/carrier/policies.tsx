@@ -2,13 +2,15 @@ import { router } from "expo-router";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { FileText } from "lucide-react-native";
-import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { CarrierPagedApi } from "@/api/workspace";
 import { PortalScreen } from "@/components/portal/PortalShell";
 import { carrierTabs } from "@/components/portal/tabs";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader } from "@/components/ui";
 import { OperationsList } from "@/components/OperationsList";
-import { CarrierWorkspaceApi, money, shortDate } from "@/api/partner";
+import { money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierPolicies() {
@@ -21,7 +23,8 @@ export default function CarrierPolicies() {
 
 function CarrierPoliciesBody() {
   const { t } = useTranslation();
-  const q = useLoad(() => CarrierWorkspaceApi.policies(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 rows).
+  const q = useCursorList(() => CarrierPagedApi.policies());
   return (
     <PortalScreen tabs={carrierTabs}>
       <AppHeader title={t("policies")} subtitle={t("caPoliciesSubtitle")} />
@@ -45,6 +48,7 @@ function CarrierPoliciesBody() {
           />
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </PortalScreen>
   );
 }

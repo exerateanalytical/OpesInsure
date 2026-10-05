@@ -71,6 +71,7 @@ const SEGMENT_MODULE: Record<string, string> = {
   settlements: "settlements",
   bordereaux: "bordereaux",
   "quote-requests": "quotes",
+  sales: "quotes",
 };
 
 export function moduleForHref(href: string | undefined): string | undefined {

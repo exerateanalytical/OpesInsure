@@ -2,12 +2,14 @@ import { router } from "expo-router";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
 import React from "react";
 import { Handshake } from "lucide-react-native";
-import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { CarrierPagedApi } from "@/api/workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { AppHeader, Screen } from "@/components/ui";
 import { FilteredList } from "@/components/filters/FilteredList";
 import { listSpec } from "@/components/filters/spec";
-import { CarrierWorkspaceApi, humanize, money } from "@/api/partner";
+import { humanize, money } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 export default function CarrierPartners() {
@@ -20,7 +22,8 @@ export default function CarrierPartners() {
 
 function CarrierPartnersBody() {
   const { t } = useTranslation();
-  const q = useLoad(() => CarrierWorkspaceApi.partners(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 rows).
+  const q = useCursorList(() => CarrierPagedApi.partners());
   return (
     <Screen>
       <AppHeader title={t("caDistributionPartners")} subtitle={t("caPartnersSubtitle")} back />
@@ -55,6 +58,7 @@ function CarrierPartnersBody() {
           />
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </Screen>
   );
 }

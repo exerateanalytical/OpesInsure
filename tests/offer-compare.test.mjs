@@ -196,7 +196,7 @@ test("offers and comparison reload their quote by id and are allowed deep links"
   // Risk: prefilled edit, amend, and replace (not push) to the offers of that quote.
   const risk = read("app/quote/risk.tsx");
   assert.match(risk, /factsToValues\(schema, editQuote\.risk_facts\)/);
-  assert.match(risk, /router\.replace\(\{ pathname: "\/quote\/offers", params: \{ quoteId: result\.quote\.id \} \}\)/);
+  assert.match(risk, /router\.replace\(\{ pathname: "\/quote\/offers", params: \{ quoteId: result\.quote\.id, \.\.\.focus \} \}\)/);
   assert.match(read("src/store/insurance.ts"), /QuoteWorkflowApi\.amend\(opts\.amendQuoteId/);
   // Every entry point passes the quote id.
   assert.match(read("app/quotes/[id].tsx"), /pathname: "\/quote\/offers", params: \{ quoteId/);

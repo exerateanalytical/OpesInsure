@@ -1,8 +1,10 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import { DetailScreen, DetailSection, UnavailableSection, useListRecord } from "@/components/detail";
+import { DetailScreen, DetailSection, UnavailableSection } from "@/components/detail";
+import { useRecord } from "@/hooks/useRecord";
+import { CarrierPagedApi } from "@/api/workspace";
 import { CarrierGate } from "@/components/carrier/CarrierGate";
-import { CarrierWorkspaceApi, humanize, money, shortDate } from "@/api/partner";
+import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 
 /** Carrier Policy Detail (CAR-006): every register row opens its record. */
@@ -17,7 +19,7 @@ export default function CarrierPolicyDetail() {
 function Body() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const q = useListRecord(() => CarrierWorkspaceApi.policies(), id);
+  const q = useRecord(CarrierPagedApi.policy, id);
   return (
     <DetailScreen
       title={t("cdPolicyTitle")}

@@ -80,6 +80,7 @@ export function customerTabForRoute(routeName: string | null | undefined): Custo
     case "delivery":
     case "documents":
     case "services":
+    case "refunds":
     case "verify":
       return "policies";
     case "claim":
@@ -87,6 +88,7 @@ export function customerTabForRoute(routeName: string | null | undefined): Custo
     case "account":
     case "assets":
     case "support":
+    case "complaints":
     case "security":
     case "system":
     case "sync":

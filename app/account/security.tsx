@@ -103,8 +103,8 @@ export default function Security() {
         <AgentOfflineNote />
         <AgentSection title={t("secAccountSecurity")}>
           <AgentCard padded={false}>
-            {/* Sign-in is by one-time code: there is no password, PIN or separate 2FA on the backend yet. */}
-            <AgentNavRow icon={KeyRound} title={t("secPassword")} subtitle={t("secPasswordOtp")} right={notAvailable} chevron={false} divider={false} />
+            {/* Password: PUT /me/password (app/account/change-password). No PIN or separate 2FA on the backend yet. */}
+            <AgentNavRow icon={KeyRound} title={t("secPassword")} subtitle={t("pwChangeRowBody")} divider={false} onPress={() => router.push("/account/change-password" as never)} />
             <AgentNavRow icon={LockKeyhole} title={t("secTxnPin")} right={notAvailable} chevron={false} />
             <AgentNavRow icon={SmartphoneNfc} title={t("secTwoFactor")} right={notAvailable} chevron={false} />
             <View style={[a.row, a.divider]}>
@@ -224,6 +224,14 @@ export default function Security() {
         </View>
         <StatusChip label={enabled ? t("biometricOn") : t("biometricOff")} tone={enabled ? "success" : "warning"} />
         <Text style={styles.meta}>{lockPolicyText}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("pwChangeTitle")} onPress={() => router.push("/account/change-password" as never)} style={[styles.row, styles.divider]}>
+          <TintedIcon icon={KeyRound} tint="blue" size={44} />
+          <View style={styles.flex}>
+            <Text style={styles.title}>{t("pwChangeTitle")}</Text>
+            <Text style={styles.body}>{t("pwChangeRowBody")}</Text>
+          </View>
+          <ChevronRight size={20} color={colors.neutral500} />
+        </Pressable>
         <Pressable accessibilityRole="button" onPress={() => router.push("/security/device-status")} style={[styles.row, styles.divider]}>
           <TintedIcon icon={ShieldCheck} tint="blue" size={44} />
           <View style={styles.flex}>
@@ -258,6 +266,7 @@ export default function Security() {
       <Text style={styles.body}>{t("signOutAllBody")}</Text>
       <Button label={t("signOutAll")} icon={LogOut} variant="danger" loading={busy === "all"} onPress={everywhere} />
       {message ? <Text accessibilityRole="alert" style={styles.error}>{message}</Text> : null}
+      <Banner icon={History} tint="neutral" title={t("actTitle")} body={t("actSecurityBody")} onPress={() => router.push("/account/activity")} />
       <Banner icon={ShieldCheck} tint="blue" title={t("secKeepSafeTitle")} body={t("secKeepSafeBody")} />
     </Screen>
   );

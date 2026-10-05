@@ -10,7 +10,7 @@ import {
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
-  ShoppingBag,
+  Store,
   TrendingUp,
   UserPlus,
   UserRoundPlus,
@@ -66,10 +66,11 @@ const RENEWALS_METRIC = "Renewals due";
 type Action = { label: CopyKey; subtitle: CopyKey; icon: LucideIcon; href: string };
 
 const QUICK: Action[] = [
-  { label: "agNewSale", subtitle: "agQuoteAndRequest", icon: ShoppingBag, href: "/agent/sales/new" },
+  // "Create quote" starts the assisted sale directly (real rating → client application → payment request).
+  { label: "agQuickCreateQuote", subtitle: "agQuoteAndRequest", icon: FileSignature, href: "/agent/sales/new" },
   { label: "agAddLead", subtitle: "agProspectsToFollow", icon: UserPlus, href: "/agent/leads/new" },
   { label: "agRegisterClientTitle", subtitle: "agQuickRegisterSub", icon: UserRoundPlus, href: "/agent/clients/new" },
-  { label: "agQuickCreateQuote", subtitle: "agQuickCreateQuoteSub", icon: FileSignature, href: "/agent/catalogue" },
+  { label: "catTitle", subtitle: "catMenuSubtitle", icon: Store, href: "/agent/catalogue" },
 ];
 
 const ATTENTION: Record<Attention, { icon: LucideIcon; href: string; tone: "warning" | "danger" }> = {

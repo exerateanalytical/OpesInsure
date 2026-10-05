@@ -1336,6 +1336,73 @@ export type OfflineFieldItem = {
   updated_at: string;
   error?: string;
 };
+/** Partner portal whose book a shared sale / renewal screen works on (mobile/agent/* or mobile/broker/*). */
+export type SalePortal = "agent" | "broker";
+/**
+ * Assisted sale endpoints, one implementation for both portals (server: AssistedSaleService; broker sales are
+ * rated on the BROKER channel under the broker's own partner, MobileIntermediaryDeskController).
+ */
+export const saleApi = (portal: SalePortal) => ({
+  /** Prices the client's real risk facts (same risk schema as the customer quote wizard); nothing is sent to the client yet. */
+  createSale: (payload: {
+    customer_id: string;
+    /** Line code (MOTOR, TRAVEL, …). */
+    product: string;
+    payment_phone_e164: string;
+    provider?: "mtn_momo" | "orange_money";
+    risk_facts: Record<string, unknown>;
+  }) =>
+    api<AgentSale>(`/mobile/${portal}/sales`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      idempotent: true,
+    }),
+  sale: (id: string) => api<AgentSale>(`/mobile/${portal}/sales/${encodeURIComponent(id)}`),
+  /** The sale's next server-side step (open the client's application, remind the client, or send the real payment request). Idempotent. */
+  requestPayment: (id: string, body: { offer_id?: string; provider?: "mtn_momo" | "orange_money"; payment_phone_e164?: string } = {}) =>
+    api<AgentSale>(`/mobile/${portal}/sales/${encodeURIComponent(id)}/payment-request`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      idempotent: true,
+    }),
+});
+/**
+ * Renewal desk of one expiring policy of the caller's book (GET mobile/{portal}/renewals/{policy}). `status` is the
+ * renewal case's: NOT_OPENED | DUE | CONTACTED | QUOTED | ISSUANCE_FAILED | RENEWED | LAPSED | DECLINED.
+ */
+export type RenewalDesk = {
+  id: string;
+  policy_id: string;
+  policy_number: string | null;
+  customer_id?: string | null;
+  customer_name: string;
+  expires_at?: string | null;
+  days_remaining?: number | null;
+  premium_minor?: number | null;
+  status: string;
+  case_id?: string | null;
+  window_days?: number | null;
+  closed_reason?: string | null;
+  renewal_quote_id?: string | null;
+  renewal_quote_number?: string | null;
+  renewal_premium_minor?: number | null;
+  /** The re-quote as the caller's assisted sale (open /{portal}/sales/{sale_id}); null until re-quoted. */
+  sale_id?: string | null;
+  successor_policy_id?: string | null;
+  successor_policy_number?: string | null;
+  /** REQUOTE | DECLINE, only what this caller may do now. */
+  allowed_actions?: string[];
+  events?: { action: string; from_status?: string | null; to_status: string; window_days?: number | null; occurred_at: string }[];
+};
+export const renewalDeskApi = (portal: SalePortal) => ({
+  show: (policyId: string) => api<RenewalDesk>(`/mobile/${portal}/renewals/${encodeURIComponent(policyId)}`),
+  /** Re-rates the policy on its current version and hands the renewal quote to the caller as an assisted sale. Idempotent. */
+  requote: (policyId: string) =>
+    api<RenewalDesk>(`/mobile/${portal}/renewals/${encodeURIComponent(policyId)}/requote`, { method: "POST", body: "{}", idempotent: true }),
+  /** Records the client's decision not to renew (reason required). */
+  decline: (policyId: string, reason: string) =>
+    api<RenewalDesk>(`/mobile/${portal}/renewals/${encodeURIComponent(policyId)}/decline`, { method: "POST", body: JSON.stringify({ reason }), idempotent: true }),
+});
 export const AgentApi = {
   profile: () => api<AgentProfile>("/mobile/agent/profile"),
   submitProfile: (payload: Partial<AgentProfile>) =>
@@ -1363,28 +1430,7 @@ export const AgentApi = {
       body: JSON.stringify(payload),
       idempotent: true,
     }),
-  /** Prices the client's real risk facts (same risk schema as the customer quote wizard); nothing is sent to the client yet. */
-  createSale: (payload: {
-    customer_id: string;
-    /** Line code (MOTOR, TRAVEL, …). */
-    product: string;
-    payment_phone_e164: string;
-    provider?: "mtn_momo" | "orange_money";
-    risk_facts: Record<string, unknown>;
-  }) =>
-    api<AgentSale>("/mobile/agent/sales", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      idempotent: true,
-    }),
-  sale: (id: string) => api<AgentSale>(`/mobile/agent/sales/${id}`),
-  /** The sale's next server-side step (open the client's application, remind the client, or send the real payment request). Idempotent. */
-  requestPayment: (id: string, body: { offer_id?: string; provider?: "mtn_momo" | "orange_money"; payment_phone_e164?: string } = {}) =>
-    api<AgentSale>(`/mobile/agent/sales/${id}/payment-request`, {
-      method: "POST",
-      body: JSON.stringify(body),
-      idempotent: true,
-    }),
+  ...saleApi("agent"),
   renewals: () => api<AgentRenewal[]>("/mobile/agent/renewals"),
   commissions: () => api<AgentCommission[]>("/mobile/agent/commissions"),
   withdrawals: () => api<AgentWithdrawal[]>("/mobile/agent/withdrawals"),

@@ -94,7 +94,9 @@ test("every customer submit flow ends on a review", () => {
     "src/components/policies/BeneficiariesSection.tsx",
   ];
   for (const f of flows) assert.match(read(f), /@\/components\/review\/ReviewSummary/, f);
-  assert.match(read("app/claim/new/incident.tsx"), /review=\{\{/);
+  // The new-claim incident step only saves a draft; the whole claim is reviewed on step 4 before it is filed.
+  assert.match(read("app/claim/new/review.tsx"), /ReviewFooter/);
+  assert.doesNotMatch(read("app/claim/new/incident.tsx"), /ClaimsApi\.create/);
   assert.match(read("app/account/beneficiaries.tsx"), /review=\{\{/);
   // Renewal pays with the shared consent rows (no local duplicate).
   assert.doesNotMatch(read("app/policy/[id]/renewal-review.tsx"), /function Consent\(/);

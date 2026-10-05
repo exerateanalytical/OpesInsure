@@ -17,7 +17,7 @@ import {
 import { QuoteWorkflowApi } from "@/api/workflow";
 import * as Crypto from "expo-crypto";
 import { copyText, forgetProposalSlots, paymentAttemptSlot, paymentIdempotencyKey, rememberAttemptKey } from "@/lib/purchase";
-import { proposalForOffer } from "@/lib/offerChoice";
+import { findApplicationForOffer } from "@/api/proposalLookup";
 import { SecureJson } from "@/security/secureJson";
 
 type Network = "mtn_momo" | "orange_money";
@@ -254,7 +254,7 @@ export const useInsurance = create<State>((set, get) => ({
       } catch (e) {
         // 422 quote_offer_id "proposal_exists": the application was opened before (earlier attempt, another device).
         if (!(e instanceof ApiError && e.status === 422 && "quote_offer_id" in (e.fields ?? {}))) throw e;
-        const existing = proposalForOffer((await ProposalsApi.list(1).catch(() => null))?.items, selectedOffer.id);
+        const existing = await findApplicationForOffer(selectedOffer.id).catch(() => null);
         if (!existing) throw e;
         proposal = await InsuranceApi.proposal(existing);
       }

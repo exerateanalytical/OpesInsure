@@ -33,6 +33,9 @@ import {
   Users,
   Headset,
   MessageCircle,
+  FileSpreadsheet,
+  FolderOpen,
+  MessageSquareWarning,
 } from "lucide-react-native";
 import { Card, ripple, Screen, StatusChip } from "@/components/ui";
 import { BrandHeader, TintedIcon, type Tint } from "@/components/design";
@@ -70,6 +73,8 @@ const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string]
     links: [
       ["savedQuotes", Clock3, "/quotes"],
       ["paymentsReceipts", CreditCard, "/payments"],
+      ["stmTitle", FileSpreadsheet, "/payments/statement"],
+      ["dhTitle", FolderOpen, "/documents"],
       ["policyServiceRequests", FileCog, "/services"],
       ["insuranceCompanies", Building2, "/institutions/insurers"],
     ],
@@ -81,6 +86,7 @@ const groups: { title: CopyKey; tint: Tint; links: [CopyKey, LucideIcon, string]
       ["notificationCentre", Bell, "/notifications"],
       ["faqTitle", CircleHelp, "/support/faq"],
       ["helpComplaints", LifeBuoy, "/support"],
+      ["cplTitle", MessageSquareWarning, "/complaints"],
     ],
   },
   {

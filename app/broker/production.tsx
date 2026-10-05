@@ -2,6 +2,9 @@ import React, { useMemo } from "react";
 import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useLoad } from "@/hooks/useLoad";
+import { useCursorList } from "@/hooks/useCursorList";
+import { LoadMore } from "@/components/purchase/PurchaseUi";
+import { BrokerPagedApi } from "@/api/workspace";
 import { StatePanel } from "@/components/StatePanel";
 import { BookOpenCheck } from "lucide-react-native";
 import { AppHeader, Screen } from "@/components/ui";
@@ -10,7 +13,7 @@ import { loadBrokerLedger } from "@/components/partner/brokerLedger";
 import { saleCommissionLine } from "@/components/partner/SaleCommission";
 import { saleCommission } from "@/components/partner/commissionFilters";
 import { byDate, byNumber, byText, filtersFromParams, optionsFrom, periodMatcher, periodSection, sortSection, type FilterSection, type Matchers, type Sorters } from "@/components/filters";
-import { BrokerApi, type BrokerProduction } from "@/api/client";
+import { type BrokerProduction } from "@/api/client";
 import { humanize, money, shortDate } from "@/api/partner";
 import { useTranslation } from "@/i18n";
 import { colors, type } from "@/theme/tokens";
@@ -32,7 +35,8 @@ const haystack = (p: BrokerProduction) => [p.policy_number, p.customer_name, p.c
 export default function BrokerProductionScreen() {
   const { t, td } = useTranslation();
   const params = useLocalSearchParams<Record<string, string>>();
-  const q = useLoad(() => BrokerApi.production(), []);
+  // Phase-1 fix S: cursor-paged (the list used to stop at the first 100 policies).
+  const q = useCursorList(() => BrokerPagedApi.production());
   const ledger = useLoad(() => loadBrokerLedger().catch(() => null), []);
   const rows = useMemo(() => q.data ?? [], [q.data]);
   const sections = useMemo<FilterSection[]>(
@@ -80,6 +84,7 @@ export default function BrokerProductionScreen() {
           </>
         )}
       </StatePanel>
+      <LoadMore {...q.more} />
     </Screen>
   );
 }
