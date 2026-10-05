@@ -31,6 +31,9 @@ it('shows a tenant manager only the issue reports filed by members of their own 
     $manager = makeMobileTenantStaffUser($a, '+237670019001', 'CLAIMS_MANAGER');
     $memberA = makeMobileTenantStaffUser($a, '+237670019002', 'CLAIMS_OFFICER');
     $memberB = makeMobileTenantStaffUser($b, '+237670019003', 'CLAIMS_OFFICER');
+    // Since the 2026-09-30 narrowing the claims manager no longer holds '*': grant the module permission explicitly.
+    $mr = \App\Models\Role::where('tenant_id', $a->id)->where('code', 'CLAIMS_MANAGER')->first();
+    $mr->forceFill(['permissions' => [...$mr->permissions, \App\Interfaces\Http\Controllers\Api\V1\MobileCompletion\MobileWorkspaceController::ISSUE_REPORTS_PERMISSION]])->save();
     wsIssueReport($memberA->id, 'NOTE-A');
     wsIssueReport($memberB->id, 'NOTE-B');
     wsIssueReport(null, 'NOTE-ANON');

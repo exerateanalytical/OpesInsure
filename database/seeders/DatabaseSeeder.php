@@ -96,7 +96,8 @@ final class DatabaseSeeder extends Seeder
             // wildcard staff roles are left alone once created.
             $role = isset($account['permissions'])
                 ? Role::updateOrCreate(['tenant_id' => $tenant->id, 'code' => $account['role_code']], ['permissions' => $account['permissions'], 'is_system' => true])
-                : Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $account['role_code']], ['id' => (string) Str::uuid(), 'permissions' => ['*'], 'is_system' => true]);
+                : Role::firstOrCreate(['tenant_id' => $tenant->id, 'code' => $account['role_code']], ['id' => (string) Str::uuid(), 'permissions' => in_array($account['role_code'], \App\Application\Identity\RoleCatalogue::NARROWED_FROM_WILDCARD, true)
+                    ? \App\Application\Identity\RoleCatalogue::defaultPermissions($account['role_code']) : ['*'], 'is_system' => true]);
 
             $membership->roles()->syncWithoutDetaching([$role->id]);
 

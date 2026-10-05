@@ -46,7 +46,9 @@ it('gives CLAIMS_OFFICER an explicit maker set without the wildcard or any check
     foreach ($perms as $p) {
         expect((bool) preg_match('/\.(approve|review|supervise|conclude|resolve|verify)$/', $p))->toBeFalse("{$p} looks like a checker permission");
     }
-    expect(RoleCatalogue::defaultPermissions('CLAIMS_MANAGER'))->toBe(['*']);
+    // Role narrowing 2026-09-30: the manager holds every claims checker explicitly (no wildcard).
+    expect(RoleCatalogue::defaultPermissions('CLAIMS_MANAGER'))->not->toContain('*')
+        ->toContain('claims.decision.approve', 'claims.reserve.approve', 'claims.payment.approve', 'claims.reopen.approve', 'claims.dispute.resolve');
 });
 
 it('lets a claims officer reach maker endpoints but not checker endpoints', function () {
@@ -95,7 +97,9 @@ it('only suggests roles that exist, with a description, for every catalogued per
     }
     foreach (config('permissions.legacy_catalogue') as $code => $meta) {
         expect($meta['description'])->toBeString()->not->toBeEmpty();
-        foreach ($meta['suggested_roles'] as $role) {
+        // The legacy catalogue lists the former '*' holders on every entry; since the 2026-09-30 narrowing they hold
+        // only their own domain (RoleCatalogue::*_PERMISSIONS), so those suggestions are not grants.
+        foreach (array_diff($meta['suggested_roles'], RoleCatalogue::NARROWED_FROM_WILDCARD) as $role) {
             $perms = RoleCatalogue::defaultPermissions($role);
             expect(in_array('*', $perms, true) || in_array($code, $perms, true))->toBeTrue("{$role} is suggested {$code} but does not hold it");
         }

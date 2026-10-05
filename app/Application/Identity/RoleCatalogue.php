@@ -199,6 +199,122 @@ final class RoleCatalogue
         ...self::CARRIER_CLAIMS_READS,
     ];
 
+    /**
+     * Role narrowing 2026-09-30 (owner rule: every user sees exactly what their RBAC allows). Replaces the former '*':
+     * the claims officer's maker set plus every claims checker, reserves, decisions, payment approval, recoveries,
+     * experts/adjusters, evidence, fraud flagging, health claims/pre-auth, claims reports and dashboards, and the
+     * coverage reads (policies.read). Derived from config/permissions.php suggested_roles (legacy catalogue filtered
+     * to the claims domain) and the permissions the claims flows check. No staff, products, tariffs, underwriting,
+     * journals, cashier, bordereaux, settlements, issuance, stickers or KYC.
+     */
+    public const CLAIMS_MANAGER_PERMISSIONS = [
+        ...self::CLAIMS_OFFICER_PERMISSIONS,
+        'claims.experts.review', 'claims.experts.work', 'claims.assessment.review', 'claims.investigation.conclude',
+        'claims.coverage.resolve', 'claims.carrier.manual_approve', 'claims.carrier.keys', 'claims.types.approve',
+        'claims.late_report.approve', 'claims.decision.approve', 'claims.decision.supervise', 'claims.reserve.approve',
+        'claims.settlement.pay', 'claims.payment.approve', 'claims.payment.execute', 'claims.payment.reverse',
+        'claims.reopen.approve', 'claims.dispute.resolve', 'claims.evidence.verify',
+        'approvals.inbox.view', 'approvals.decide', 'cases.assign', 'cases.decide',
+        'legal.matters.manage', 'providers.manage', 'providers.credential', 'provider_networks.manage', 'provider_tariffs.approve',
+        'reinsurance.recoveries.view', 'reinsurance.recoveries.manage',
+        'fraud.alert.create', 'fraud.indicators.flag',
+        'health.members.view', 'health.eligibility.view', 'health.eligibility.check', 'health.benefits.view',
+        'health.preauth.request', 'health.preauth.review', 'health.preauth.approve', 'health.preauth.supervise',
+        'health.provider_claims.capture', 'health.provider_claims.adjudicate', 'health.provider_claims.approve_payment', 'health.provider_claims.dispute',
+        'documents.medical.read', 'catastrophe.events.view',
+        'reports.insurance.read', 'reporting.dashboards.view', 'reporting.reports.view', 'reporting.kpis.view',
+    ];
+
+    /**
+     * Role narrowing 2026-09-30: the finance checker (replaces '*'). The finance officer's maker set plus the finance
+     * approvals (ledger post/approve/periods, reconciliation, settlements, refunds, payouts, statements, commissions,
+     * bordereaux, collections write-off, FX, allocations, technical accounting, sub-ledger). No claims, underwriting,
+     * products, staff or compliance.
+     */
+    public const FINANCE_MANAGER_PERMISSIONS = [
+        ...self::FINANCE_OFFICER_PERMISSIONS,
+        'customers.read', 'policies.read', 'approvals.inbox.view', 'approvals.decide', 'cases.view',
+        'premium_cover.rules.view', 'policies.issuance_queue.resolve', 'coinsurance.approve', 'reinsurance.cessions.view',
+        'policy.recovery.approve', 'policy.premium.waive', 'finance.obligations.manage', 'payments.allocations.reverse', 'finance.allocation_rules.manage',
+        'premium_components.close', 'refund.reconcile', 'refund.approve', 'clearing.reconcile', 'cashier.sessions.approve', 'fx.rates.manage',
+        'ledger.periods.reopen', 'ledger.approve', 'ledger.post', 'ledger.adjust', 'ledger.reverse',
+        'technical_accounting.actuarial.approve', 'technical_accounting.upr.post',
+        'commission.read', 'commission.manage', 'commission.accrue', 'commission.vest', 'commission.approve', 'commission.clawback',
+        'commission.statements.adjustments.approve', 'commission.statements.dispute.resolve',
+        'reconciliation.resolve', 'reconciliation.approve', 'chargeback.manage', 'chargeback.resolve',
+        'settlement.prepare', 'settlement.approve', 'settlement.submit', 'settlement.confirm', 'settlement.reverse', 'settlement.reconcile',
+        'statements.prepare', 'statements.approve', 'statements.publish',
+        'payout.approve', 'payout.process', 'payout.reverse',
+        'bordereaux.prepare', 'bordereaux.approve', 'bordereaux.submit', 'bordereaux.confirm',
+        'collections.write_off.approve',
+        'finance.accounts.view', 'finance.accounts.export', 'finance.ledger.view', 'finance.adjustments.create', 'finance.adjustments.approve',
+        'finance.commissions.view', 'finance.commissions.configure', 'finance.settlements.create', 'finance.reconciliation.override',
+        'finance.journals.create', 'finance.journals.approve', 'finance.journals.post', 'finance.journals.reverse',
+        'finance.commissions.approve', 'finance.commissions.pay', 'finance.settlements.view', 'finance.settlements.approve', 'finance.reconciliation.view',
+        'finance.payment_providers.approve', 'finance.gl.approve',
+        'reports.insurance.read', 'reporting.dashboards.view', 'reporting.reports.view', 'reporting.kpis.view',
+    ];
+
+    /**
+     * Role narrowing 2026-09-30: finance administrator (platform tier, replaces '*'). The finance domain plus finance
+     * configuration (payment providers, GL, charge tables, institutions) — maker side only: the
+     * payment-provider / GL approvals stay with FINANCE_MANAGER (maker-checker).
+     */
+    public const FINANCE_ADMIN_PERMISSIONS = [
+        ...self::FINANCE_MANAGER_PERMISSIONS,
+        'rating.charges.view', 'rating.charges.manage', 'rating.charges.approve', 'proposals.issuability.read',
+        'finance.payment_providers.configure', 'finance.gl.configure', 'finance.institutions.manage',
+    ];
+
+    /**
+     * Role narrowing 2026-09-30: compliance administrator (replaces '*'). Its config/permissions.php suggested set
+     * (trust, KYC, cases, governance approvals, setup reviews, document governance, master data) plus the compliance,
+     * AML, fraud, privacy, regulatory, security and audit permissions of the legacy catalogue. Business reads only
+     * (customers / policies / claims) — no claim, finance or underwriting writes.
+     */
+    public const COMPLIANCE_ADMIN_PERMISSIONS = [
+        'trust.fraud-alerts.create', 'trust.fraud-alerts.decide', 'trust.compliance-cases.create', 'trust.compliance-cases.transition',
+        'trust.dsr.receive', 'trust.dsr.verify', 'trust.dsr.resolve', 'trust.privileged-access.request', 'trust.privileged-access.approve',
+        'trust.privileged-access.revoke', 'trust.regulatory-reports.prepare', 'trust.regulatory-reports.approve', 'trust.regulatory-reports.submit',
+        'trust.regulatory-reports.acknowledge', 'trust.regulatory',
+        'customers.read', 'policies.read', 'risk_assets.read', 'claims.view',
+        'documents.read', 'documents.status.request', 'documents.status.approve', 'documents.templates.manage', 'documents.review', 'documents.regulatory.read',
+        'approvals.inbox.view', 'approvals.decide', 'approvals.matrix.view', 'configuration.changes.manage',
+        'cases.view', 'cases.manage', 'cases.assign', 'cases.decide', 'cases.admin', 'cases.restricted.view', 'cases.str.view',
+        'kyc.view', 'kyc.manage', 'kyc.review', 'kyc.screen', 'kyc.decide',
+        'capability_profiles.view', 'capability_profiles.approve', 'carrier_setup.view', 'carrier_setup.approve', 'partner_setup.view', 'partner_setup.approve',
+        'distribution.agreements.view', 'distribution.agreements.approve',
+        'master_data.workflow_status.view', 'master_data.merge.request', 'master_data.merge.approve', 'imports.approve',
+        'parties.relationships.manage', 'parties.match.review', 'parties.merge.request', 'parties.merge.approve', 'attribution.transfer',
+        'catalogue.view', 'catalogue.publish', 'catalogue.review', 'rating.charges.view', 'rating.charges.approve', 'rating.charges.verify', 'rating.runs.view',
+        'proposals.issuability.read', 'rules.view', 'rules.approve', 'authority.types.view', 'premium_cover.rules.view', 'premium_cover.rules.approve',
+        'reference_datasets.view', 'reference_datasets.approve', 'directory.institutions.manage', 'directory.verification_labels.manage', 'data_readiness.view',
+        'documents.letterheads.manage', 'documents.letterheads.approve', 'reinsurance.reinsurers.approve_security',
+        'documents.access_log.read', 'documents.retention.manage', 'documents.retention.approve', 'documents.legal_hold.manage',
+        'documents.destruction.request', 'documents.destruction.approve', 'documents.physical_security.manage',
+        'legal.matters.view', 'legal.matters.manage',
+        'fraud.sod.report', 'fraud.rules.manage', 'fraud.alert.create', 'fraud.alert.decide', 'fraud.indicators.flag',
+        'compliance.catalogue.view', 'compliance.catalogue.configure', 'compliance.catalogue.approve', 'compliance.controls.assess',
+        'compliance.access.grant', 'compliance.access.approve', 'compliance.access.revoke',
+        'compliance.cases.create', 'compliance.cases.read', 'compliance.cases.transition', 'compliance.findings.manage',
+        'compliance.actions.manage', 'compliance.actions.verify', 'compliance.evidence.link',
+        'compliance.dsr.receive', 'compliance.dsr.verify', 'compliance.dsr.resolve',
+        'compliance.governance.approve', 'compliance.governance.read', 'compliance.governance.manage',
+        'aml.risk.rate', 'aml.risk.view', 'aml.monitoring.evaluate', 'aml.screening.view', 'aml.screening.lists.manage', 'aml.screening.lists.approve',
+        'aml.screening.run', 'aml.screening.disposition.propose', 'aml.screening.disposition.approve',
+        'privacy.consent.manage', 'privacy.purposes.read', 'privacy.purposes.manage',
+        'regulatory.returns.view', 'regulatory.returns.define', 'regulatory.returns.approve', 'regulatory.rules.view', 'regulatory.rules.draft',
+        'regulatory.rules.review', 'regulatory.rules.approve', 'regulatory.inspections.manage', 'regulatory.inspections.view',
+        'regulatory.inspections.approve', 'regulatory.inspections.access', 'regulatory.profitability.view', 'configuration.regulatory.manage', 'configuration.regulatory.approve',
+        'security.centre.read', 'security.findings.read', 'security.findings.manage', 'audit.read', 'integrations.consent.manage',
+        'operations.taxonomy.read', 'operations.taxonomy.manage', 'operations.cases.escalate', 'operations.notification_templates.approve',
+        'onboarding.private_data.view', 'onboarding.private_data.review',
+        'reports.insurance.read', 'reporting.dashboards.view', 'reporting.reports.view', 'reporting.kpis.view', 'workspace.read',
+    ];
+
+    /** Roles that held '*' before the 2026-09-30 narrowing (the rbac narrowing migration strips '*' from their stored rows). */
+    public const NARROWED_FROM_WILDCARD = ['CLAIMS_MANAGER', 'FINANCE_MANAGER', 'FINANCE_ADMIN', 'COMPLIANCE_ADMIN'];
+
     public const CUSTOMER_SERVICE_PERMISSIONS = ['customers.read', 'policies.read', 'claims.view', 'support.manage', 'beneficiaries.read', 'crm.leads.read' , 'special_policies.view', 'life_surrender.quote', 'policies.portfolio_transfer.read', 'documents.intake.manage', 'policies.cancellation.request', 'policies.reinstatement.request', 'premium_status.read', 'refund.view', 'claims.decision.appeal', 'workspace.read'];
 
     public const REINSURANCE_OFFICER_PERMISSIONS = ['reinsurance.facultative.view', 'reinsurance.facultative.manage', 'reinsurance.facultative.approve', 'reinsurance.recoveries.view', 'reinsurance.recoveries.manage', 'reinsurance.recoveries.approve', 'reinsurance.recoveries.bill', 'reinsurance.recoveries.settle', 'policies.read', 'claims.view', 'documents.financial.read', 'reports.insurance.read', 'reinsurance.reinsurers.manage', 'reinsurance.treaties.view', 'reinsurance.treaties.manage', 'reinsurance.treaties.approve', 'reinsurance.cessions.view', 'reinsurance.cessions.calculate', 'coinsurance.view', 'fx.rates.view', 'finance.reports.view', 'technical_accounting.read', 'workspace.read'];
@@ -339,7 +455,10 @@ final class RoleCatalogue
             // PLATFORM_ONLY role's grants to platform permissions.
             // S12: alert recipients are chosen by the explicit string (never by '*'), so only these two are paged.
             'SYSTEM_ADMIN', 'PLATFORM_ADMIN' => ['*', 'operations.alerts.receive'],
-            'COMPLIANCE_ADMIN', 'FINANCE_ADMIN', 'FINANCE_MANAGER', 'CLAIMS_MANAGER' => ['*'],
+            'COMPLIANCE_ADMIN' => self::COMPLIANCE_ADMIN_PERMISSIONS,
+            'FINANCE_ADMIN' => self::FINANCE_ADMIN_PERMISSIONS,
+            'FINANCE_MANAGER' => self::FINANCE_MANAGER_PERMISSIONS,
+            'CLAIMS_MANAGER' => self::CLAIMS_MANAGER_PERMISSIONS,
             'CLAIMS_OFFICER' => self::CLAIMS_OFFICER_PERMISSIONS,
             default => [],
         };

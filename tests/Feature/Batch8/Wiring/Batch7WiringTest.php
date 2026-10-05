@@ -45,7 +45,8 @@ it('grants the Batch 7 permissions to the existing catalogue roles', function (s
 
 it('keeps the wildcard roles covering the new permissions and every catalogued suggestion an existing role', function () {
     foreach (['FINANCE_MANAGER', 'CLAIMS_MANAGER'] as $role) {
-        expect(RoleCatalogue::defaultPermissions($role))->toBe(['*']);
+        // Role narrowing 2026-09-30: explicit lists, no wildcard.
+        expect(RoleCatalogue::defaultPermissions($role))->not->toContain('*');
     }
     // S12: operational alerts go only to roles holding the explicit string ('*' does not page),
     // so the platform admins carry it on top of the wildcard.

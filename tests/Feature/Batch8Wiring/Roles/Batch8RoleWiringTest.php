@@ -63,10 +63,10 @@ it('separates makers from checkers', function (string $role, array $must, array 
     'customer' => ['CUSTOMER', [], ['policies.cancellation.request', 'documents.access_log.read']],
 ]);
 
-it('keeps compliance and finance manager wildcards covering the document governance and waiver permissions', function () {
-    foreach (['COMPLIANCE_ADMIN', 'FINANCE_MANAGER'] as $role) {
-        expect(RoleCatalogue::defaultPermissions($role))->toBe(['*']);
-    }
+it('keeps compliance and finance manager covering the document governance and waiver permissions (explicit lists since the 2026-09-30 narrowing)', function () {
+    expect(RoleCatalogue::defaultPermissions('COMPLIANCE_ADMIN'))->not->toContain('*')
+        ->toContain('documents.retention.manage', 'documents.retention.approve', 'documents.destruction.request', 'documents.destruction.approve', 'documents.legal_hold.manage', 'documents.access_log.read');
+    expect(RoleCatalogue::defaultPermissions('FINANCE_MANAGER'))->not->toContain('*')->toContain('policy.premium.waive', 'policy.recovery.approve');
 });
 
 it('tops existing tenant roles up with missing catalogue permissions, additive and idempotent, with a dry run', function () {
